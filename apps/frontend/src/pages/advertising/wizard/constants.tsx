@@ -219,210 +219,289 @@ export const PLACEMENTS = [
   },
 ];
 
-export const COUNTRIES = [
-  { code: "EG", name: "مصر" },
-  { code: "SA", name: "السعودية" },
-  { code: "AE", name: "الإمارات" },
-  { code: "KW", name: "الكويت" },
-  { code: "QA", name: "قطر" },
-  { code: "BH", name: "البحرين" },
-  { code: "OM", name: "عمان" },
-  { code: "JO", name: "الأردن" },
-  { code: "LB", name: "لبنان" },
-  { code: "MA", name: "المغرب" },
+export const getCountries = (isEn: boolean) => [
+  { code: "EG", name: isEn ? "Egypt" : "مصر" },
+  { code: "SA", name: isEn ? "Saudi Arabia" : "السعودية" },
+  { code: "AE", name: isEn ? "United Arab Emirates" : "الإمارات" },
+  { code: "KW", name: isEn ? "Kuwait" : "الكويت" },
+  { code: "QA", name: isEn ? "Qatar" : "قطر" },
+  { code: "BH", name: isEn ? "Bahrain" : "البحرين" },
+  { code: "OM", name: isEn ? "Oman" : "عمان" },
+  { code: "JO", name: isEn ? "Jordan" : "الأردن" },
+  { code: "LB", name: isEn ? "Lebanon" : "لبنان" },
+  { code: "MA", name: isEn ? "Morocco" : "المغرب" },
 ];
 
-export const INTEREST_CATEGORIES = [
-  { name: "التسوق", query: "shopping", icon: "🛍️" },
-  { name: "الموضة", query: "fashion", icon: "👗" },
-  { name: "التكنولوجيا", query: "technology", icon: "💻" },
-  { name: "الرياضة", query: "sports", icon: "⚽" },
-  { name: "السفر", query: "travel", icon: "✈️" },
-  { name: "الطعام", query: "food", icon: "🍔" },
-  { name: "الصحة", query: "health", icon: "💪" },
-  { name: "الأعمال", query: "business", icon: "💼" },
-  { name: "الترفيه", query: "entertainment", icon: "🎬" },
-  { name: "الجمال", query: "beauty", icon: "💄" },
+export const COUNTRIES = getCountries(false);
+
+export const getInterestCategories = (isEn: boolean) => [
+  { name: isEn ? "Shopping" : "التسوق", query: "shopping", icon: "🛍️" },
+  { name: isEn ? "Fashion" : "الموضة", query: "fashion", icon: "👗" },
+  { name: isEn ? "Technology" : "التكنولوجيا", query: "technology", icon: "💻" },
+  { name: isEn ? "Sports" : "الرياضة", query: "sports", icon: "⚽" },
+  { name: isEn ? "Travel" : "السفر", query: "travel", icon: "✈️" },
+  { name: isEn ? "Food" : "الطعام", query: "food", icon: "🍔" },
+  { name: isEn ? "Health" : "الصحة", query: "health", icon: "💪" },
+  { name: isEn ? "Business" : "الأعمال", query: "business", icon: "💼" },
+  { name: isEn ? "Entertainment" : "الترفيه", query: "entertainment", icon: "🎬" },
+  { name: isEn ? "Beauty" : "الجمال", query: "beauty", icon: "💄" },
 ];
 
-export const RELATIONSHIP_OPTIONS = [
-  { value: 1, label: "أعزب/عزباء" },
-  { value: 2, label: "في علاقة" },
-  { value: 3, label: "مخطوب/ة" },
-  { value: 4, label: "متزوج/ة" },
+export const INTEREST_CATEGORIES = getInterestCategories(false);
+
+export const getRelationshipOptions = (isEn: boolean) => [
+  { value: 1, label: isEn ? "Single" : "أعزب/عزباء" },
+  { value: 2, label: isEn ? "In a relationship" : "في علاقة" },
+  { value: 3, label: isEn ? "Engaged" : "مخطوب/ة" },
+  { value: 4, label: isEn ? "Married" : "متزوج/ة" },
 ];
 
-export const LANGUAGES = [
-  { id: 6, name: "العربية" },
-  { id: 24, name: "الإنجليزية" },
-  { id: 10, name: "الفرنسية" },
-  { id: 25, name: "التركية" },
+export const RELATIONSHIP_OPTIONS = getRelationshipOptions(false);
+
+export const getLanguages = (isEn: boolean) => [
+  { id: 6, name: isEn ? "Arabic" : "العربية" },
+  { id: 24, name: isEn ? "English" : "الإنجليزية" },
+  { id: 10, name: isEn ? "French" : "الفرنسية" },
+  { id: 25, name: isEn ? "Turkish" : "التركية" },
 ];
+
+export const LANGUAGES = getLanguages(false);
 
 export const DEVICE_PLATFORMS = [
   { value: "iOS", label: "iOS", icon: "📱" },
   { value: "Android", label: "Android", icon: "🤖" },
 ];
 
-export const EDUCATION_LEVELS = [
-  { value: 1, label: "ثانوية عامة" },
-  { value: 2, label: "بعض الكلية" },
-  { value: 3, label: "درجة جامعية" },
-  { value: 4, label: "ماجستير" },
-  { value: 5, label: "دكتوراه" },
+export const getEducationLevels = (isEn: boolean) => [
+  { value: 1, label: isEn ? "High School" : "ثانوية عامة" },
+  { value: 2, label: isEn ? "Some College" : "بعض الكلية" },
+  { value: 3, label: isEn ? "College Degree" : "درجة جامعية" },
+  { value: 4, label: isEn ? "Master's Degree" : "ماجستير" },
+  { value: 5, label: isEn ? "Doctorate" : "دكتوراه" },
 ];
 
-export const JOB_TITLES = [
-  { value: "business_owner", label: "صاحب عمل" },
-  { value: "manager", label: "مدير" },
-  { value: "engineer", label: "مهندس" },
-  { value: "doctor", label: "طبيب" },
-  { value: "teacher", label: "معلم" },
-  { value: "sales", label: "مبيعات" },
-  { value: "marketing", label: "تسويق" },
-  { value: "student", label: "طالب" },
+export const EDUCATION_LEVELS = getEducationLevels(false);
+export const EDUCATION_STATUS_OPTIONS = EDUCATION_LEVELS;
+
+export const getJobTitles = (isEn: boolean) => [
+  { value: "business_owner", label: isEn ? "Business Owner" : "صاحب عمل" },
+  { value: "manager", label: isEn ? "Manager" : "مدير" },
+  { value: "engineer", label: isEn ? "Engineer" : "مهندس" },
+  { value: "doctor", label: isEn ? "Doctor" : "طبيب" },
+  { value: "teacher", label: isEn ? "Teacher" : "معلم" },
+  { value: "sales", label: isEn ? "Sales" : "مبيعات" },
+  { value: "marketing", label: isEn ? "Marketing" : "تسويق" },
+  { value: "student", label: isEn ? "Student" : "طالب" },
 ];
 
-export const BEHAVIORS = [
-  { id: "travel_frequent", name: "مسافرون متكررون", category: "السفر" },
-  { id: "online_shoppers", name: "متسوقون عبر الإنترنت", category: "التسوق" },
+export const JOB_TITLES = getJobTitles(false);
+
+export const getBehaviors = (isEn: boolean) => [
+  {
+    id: "travel_frequent",
+    name: isEn ? "Frequent Travelers" : "مسافرون متكررون",
+    category: isEn ? "Travel" : "السفر",
+  },
+  {
+    id: "online_shoppers",
+    name: isEn ? "Online Shoppers" : "متسوقون عبر الإنترنت",
+    category: isEn ? "Shopping" : "التسوق",
+  },
   {
     id: "tech_early_adopters",
-    name: "متبنو التكنولوجيا المبكرون",
-    category: "التكنولوجيا",
+    name: isEn ? "Early Technology Adopters" : "متبنو التكنولوجيا المبكرون",
+    category: isEn ? "Technology" : "التكنولوجيا",
   },
   {
     id: "mobile_device_users",
-    name: "مستخدمو الأجهزة المحمولة",
-    category: "الأجهزة",
+    name: isEn ? "Mobile Device Users" : "مستخدمو الأجهزة المحمولة",
+    category: isEn ? "Devices" : "الأجهزة",
   },
-  { id: "gamers", name: "اللاعبون", category: "الترفيه" },
+  {
+    id: "gamers",
+    name: isEn ? "Gamers" : "اللاعبون",
+    category: isEn ? "Entertainment" : "الترفيه",
+  },
   {
     id: "small_business_owners",
-    name: "أصحاب الأعمال الصغيرة",
-    category: "الأعمال",
+    name: isEn ? "Small Business Owners" : "أصحاب الأعمال الصغيرة",
+    category: isEn ? "Business" : "الأعمال",
   },
 ];
 
-export const INCOME_LEVELS = [
-  { value: "top_5", label: "أعلى 5%" },
-  { value: "top_10", label: "أعلى 10%" },
-  { value: "top_25", label: "أعلى 25%" },
-  { value: "top_50", label: "أعلى 50%" },
+export const BEHAVIORS = getBehaviors(false);
+
+export const getIncomeLevels = (isEn: boolean) => [
+  { value: "top_5", label: isEn ? "Top 5%" : "أعلى 5%" },
+  { value: "top_10", label: isEn ? "Top 10%" : "أعلى 10%" },
+  { value: "top_25", label: isEn ? "Top 25%" : "أعلى 25%" },
+  { value: "top_50", label: isEn ? "Top 50%" : "أعلى 50%" },
 ];
 
-export const LIFE_EVENTS = [
+export const INCOME_LEVELS = getIncomeLevels(false);
+
+export const getLifeEvents = (isEn: boolean) => [
   {
     id: "anniversary_1year",
-    name: "الذكرى السنوية الأولى",
-    category: "علاقات",
+    name: isEn ? "First Anniversary" : "الذكرى السنوية الأولى",
+    category: isEn ? "Relationships" : "علاقات",
   },
-  { id: "engaged_1year", name: "مخطوبون (سنة واحدة)", category: "علاقات" },
+  {
+    id: "engaged_1year",
+    name: isEn ? "Engaged (1 Year)" : "مخطوبون (سنة واحدة)",
+    category: isEn ? "Relationships" : "علاقات",
+  },
   {
     id: "newlywed_1year",
-    name: "متزوجون حديثاً (سنة واحدة)",
-    category: "علاقات",
+    name: isEn ? "Newlyweds (1 Year)" : "متزوجون حديثاً (سنة واحدة)",
+    category: isEn ? "Relationships" : "علاقات",
   },
-  { id: "recently_moved", name: "انتقلوا مؤخراً", category: "حياة" },
-  { id: "new_job", name: "وظيفة جديدة", category: "عمل" },
-  { id: "birthday", name: "عيد ميلاد قريب", category: "احتفالات" },
+  {
+    id: "recently_moved",
+    name: isEn ? "Recently Moved" : "انتقلوا مؤخراً",
+    category: isEn ? "Life" : "حياة",
+  },
+  {
+    id: "new_job",
+    name: isEn ? "New Job" : "وظيفة جديدة",
+    category: isEn ? "Career" : "عمل",
+  },
+  {
+    id: "birthday",
+    name: isEn ? "Upcoming Birthday" : "عيد ميلاد قريب",
+    category: isEn ? "Celebrations" : "احتفالات",
+  },
 ];
 
-export const PARENTS_OPTIONS = [
-  { id: "expecting_parent", name: "آباء متوقعون", age: "جميع الأعمار" },
-  { id: "new_parents", name: "آباء جدد (0-12 شهر)", age: "0-12 شهر" },
-  { id: "parents_toddler", name: "آباء أطفال صغار", age: "1-2 سنة" },
+export const LIFE_EVENTS = getLifeEvents(false);
+
+export const getParentsOptions = (isEn: boolean) => [
+  {
+    id: "expecting_parent",
+    name: isEn ? "Expecting Parents" : "آباء متوقعون",
+    age: isEn ? "All Ages" : "جميع الأعمار",
+  },
+  {
+    id: "new_parents",
+    name: isEn ? "New Parents (0-12 months)" : "آباء جدد (0-12 شهر)",
+    age: isEn ? "0-12 months" : "0-12 شهر",
+  },
+  {
+    id: "parents_toddler",
+    name: isEn ? "Parents of Toddlers (1-2 yrs)" : "آباء أطفال صغار",
+    age: isEn ? "1-2 years" : "1-2 سنة",
+  },
   {
     id: "parents_preschooler",
-    name: "آباء أطفال ما قبل المدرسة",
-    age: "3-5 سنوات",
+    name: isEn ? "Parents of Preschoolers (3-5 yrs)" : "آباء أطفال ما قبل المدرسة",
+    age: isEn ? "3-5 years" : "3-5 سنوات",
   },
-  { id: "parents_teen", name: "آباء مراهقين", age: "13-18 سنة" },
+  {
+    id: "parents_teen",
+    name: isEn ? "Parents of Teens (13-18 yrs)" : "آباء مراهقين",
+    age: isEn ? "13-18 years" : "13-18 سنة",
+  },
 ];
 
-export const PERFORMANCE_GOALS = [
+export const PARENTS_OPTIONS = getParentsOptions(false);
+
+export const getPerformanceGoals = (isEn: boolean) => [
   {
     value: "MAXIMIZE_CONVERSIONS",
-    label: "زيادة عدد التحويلات",
-    description: "احصل على أكبر عدد من التحويلات",
+    label: isEn ? "Maximize number of conversions" : "زيادة عدد التحويلات",
+    description: isEn
+      ? "Get the highest number of conversions"
+      : "احصل على أكبر عدد من التحويلات",
   },
   {
     value: "MAXIMIZE_CONVERSION_VALUE",
-    label: "زيادة قيمة التحويلات",
-    description: "احصل على أعلى قيمة إجمالية",
+    label: isEn ? "Maximize conversion value" : "زيادة قيمة التحويلات",
+    description: isEn
+      ? "Get the highest total value"
+      : "احصل على أعلى قيمة إجمالية",
   },
   {
     value: "MAXIMIZE_ROAS",
-    label: "زيادة عائد الإنفاق",
-    description: "احصل على أفضل عائد على الاستثمار",
+    label: isEn ? "Maximize ROAS" : "زيادة عائد الإنفاق",
+    description: isEn
+      ? "Get the best return on ad spend"
+      : "احصل على أفضل عائد على الاستثمار",
   },
 ];
 
-export const CONVERSION_EVENTS = [
+export const PERFORMANCE_GOALS = getPerformanceGoals(false);
+
+export const getConversionEvents = (isEn: boolean) => [
   {
     value: "PURCHASE",
-    label: "شراء (Purchase)",
+    label: isEn ? "Purchase" : "شراء (Purchase)",
     icon: "🛒",
-    description: "عند إتمام عملية شراء",
+    description: isEn ? "When a purchase is completed" : "عند إتمام عملية شراء",
   },
   {
     value: "ADD_TO_CART",
-    label: "إضافة للسلة",
+    label: isEn ? "Add to Cart" : "إضافة للسلة",
     icon: "🛍️",
-    description: "عند إضافة منتج للسلة",
+    description: isEn ? "When an item is added to cart" : "عند إضافة منتج للسلة",
   },
   {
     value: "INITIATE_CHECKOUT",
-    label: "بدء الدفع",
+    label: isEn ? "Initiate Checkout" : "بدء الدفع",
     icon: "💳",
-    description: "عند بدء عملية الدفع",
+    description: isEn ? "When checkout process is started" : "عند بدء عملية الدفع",
   },
   {
     value: "VIEW_CONTENT",
-    label: "مشاهدة المحتوى",
+    label: isEn ? "View Content" : "مشاهدة المحتوى",
     icon: "👁️",
-    description: "عند مشاهدة صفحة منتج",
+    description: isEn ? "When a product page is viewed" : "عند مشاهدة صفحة منتج",
   },
   {
     value: "LEAD",
-    label: "عميل محتمل",
+    label: isEn ? "Lead" : "عميل محتمل",
     icon: "📝",
-    description: "عند ملء نموذج",
+    description: isEn ? "When a lead form is submitted" : "عند ملء نموذج",
   },
   {
     value: "COMPLETE_REGISTRATION",
-    label: "تسجيل",
+    label: isEn ? "Complete Registration" : "تسجيل",
     icon: "✅",
-    description: "عند إتمام التسجيل",
+    description: isEn ? "When registration is completed" : "عند إتمام التسجيل",
   },
 ];
 
-export const CONVERSION_LOCATIONS = [
-  { value: "WEBSITE", label: "الموقع الإلكتروني", icon: "🌐" },
-  { value: "APP", label: "التطبيق", icon: "📱" },
+export const CONVERSION_EVENTS = getConversionEvents(false);
+
+export const getConversionLocations = (isEn: boolean) => [
+  { value: "WEBSITE", label: isEn ? "Website" : "الموقع الإلكتروني", icon: "🌐" },
+  { value: "APP", label: isEn ? "App" : "التطبيق", icon: "📱" },
   { value: "MESSENGER", label: "Messenger", icon: "💬" },
   { value: "WHATSAPP", label: "WhatsApp", icon: "📞" },
 ];
 
-export const ATTRIBUTION_WINDOWS = [
+export const CONVERSION_LOCATIONS = getConversionLocations(false);
+
+export const getAttributionWindows = (isEn: boolean) => [
   {
     value: "7d_click_1d_view",
-    label: "7 أيام نقر + يوم مشاهدة",
-    description: "الافتراضي - موصى به",
+    label: isEn ? "7-day click + 1-day view" : "7 أيام نقر + يوم مشاهدة",
+    description: isEn ? "Default - Recommended" : "الافتراضي - موصى به",
   },
   {
     value: "1d_click_1d_view",
-    label: "يوم نقر + يوم مشاهدة",
-    description: "لدورة شراء قصيرة",
+    label: isEn ? "1-day click + 1-day view" : "يوم نقر + يوم مشاهدة",
+    description: isEn ? "For short purchase cycles" : "لدورة شراء قصيرة",
   },
   {
     value: "7d_click",
-    label: "7 أيام نقر فقط",
-    description: "بدون تتبع المشاهدة",
+    label: isEn ? "7-day click only" : "7 أيام نقر فقط",
+    description: isEn ? "Without view-through tracking" : "بدون تتبع المشاهدة",
   },
-  { value: "1d_click", label: "يوم نقر فقط", description: "تتبع دقيق جداً" },
+  {
+    value: "1d_click",
+    label: isEn ? "1-day click only" : "يوم نقر فقط",
+    description: isEn ? "Strict click attribution" : "تتبع دقيق جداً",
+  },
 ];
 
-export {
-  
-};
+export const ATTRIBUTION_WINDOWS = getAttributionWindows(false);

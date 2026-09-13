@@ -1,11 +1,12 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   Sparkles,
   ShieldAlert,
 } from "lucide-react";
 import type { FormData } from "../types";
-import { OBJECTIVES, SPECIAL_AD_CATEGORIES } from "../constants";
+import { getObjectives, getSpecialAdCategories } from "../constants";
 
 interface Step1CampaignProps {
   formData: FormData;
@@ -20,18 +21,26 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
   toggleArrayValue,
   getError,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+  const objectives = React.useMemo(() => getObjectives(isEn), [isEn]);
+  const specialAdCategories = React.useMemo(
+    () => getSpecialAdCategories(isEn),
+    [isEn],
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isEn ? "ltr" : "rtl"}>
       {/* Campaign Name */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          اسم الحملة <span className="text-red-500">*</span>
+          {isEn ? "Campaign Name" : "اسم الحملة"} <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           value={formData.campaignName}
           onChange={(e) => handleChange("campaignName", e.target.value)}
-          placeholder="مثال: حملة رمضان 2024"
+          placeholder={isEn ? "e.g. Ramadan Campaign 2024" : "مثال: حملة رمضان 2024"}
           className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
             getError("campaignName")
               ? "border-red-500"
@@ -49,25 +58,25 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            اسم Ad Set
+            {isEn ? "Ad Set Name" : "اسم Ad Set"}
           </label>
           <input
             type="text"
             value={formData.adSetName}
             onChange={(e) => handleChange("adSetName", e.target.value)}
-            placeholder="مثال: Women Egypt - Broad"
+            placeholder={isEn ? "e.g. Women Egypt - Broad" : "مثال: Women Egypt - Broad"}
             className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            اسم الإعلان
+            {isEn ? "Ad Name" : "اسم الإعلان"}
           </label>
           <input
             type="text"
             value={formData.adName}
             onChange={(e) => handleChange("adName", e.target.value)}
-            placeholder="مثال: Product Hook V1"
+            placeholder={isEn ? "e.g. Product Hook V1" : "مثال: Product Hook V1"}
             className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
           />
         </div>
@@ -76,10 +85,10 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
       {/* Objective */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-          هدف الحملة <span className="text-red-500">*</span>
+          {isEn ? "Campaign Objective" : "هدف الحملة"} <span className="text-red-500">*</span>
         </label>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {OBJECTIVES.map((obj) => (
+          {objectives.map((obj) => (
             <button
               key={obj.value}
               type="button"
@@ -113,7 +122,7 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
       {/* Special Ad Categories */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          فئة الإعلان الخاصة
+          {isEn ? "Special Ad Category" : "فئة الإعلان الخاصة"}
         </label>
         <select
           value={formData.specialAdCategories[0] || "NONE"}
@@ -125,15 +134,16 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
           }
           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         >
-          {SPECIAL_AD_CATEGORIES.map((cat) => (
+          {specialAdCategories.map((cat) => (
             <option key={cat.value} value={cat.value}>
               {cat.label}
             </option>
           ))}
         </select>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          إذا كان إعلانك يتعلق بالإسكان أو التوظيف أو الائتمان، يجب تحديد الفئة
-          المناسبة
+          {isEn
+            ? "If your ad relates to housing, employment, credit, or politics, you must declare it."
+            : "إذا كان إعلانك يتعلق بالإسكان أو التوظيف أو الائتمان، يجب تحديد الفئة المناسبة"}
         </p>
       </div>
 
@@ -144,10 +154,12 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
             <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <div>
               <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-                إنشاء اختبار تجزئة (A/B Test)
+                {isEn ? "Create A/B Split Test" : "إنشاء اختبار تجزئة (A/B Test)"}
               </h4>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                مقارنة نسخ مختلفة إحصائياً لتحديد الاستراتيجية الأفضل أداءً
+                {isEn
+                  ? "Statistically compare different versions to determine the best performing strategy"
+                  : "مقارنة نسخ مختلفة إحصائياً لتحديد الاستراتيجية الأفضل أداءً"}
               </p>
             </div>
           </div>
@@ -165,13 +177,13 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
         {formData.isSplitTest && (
           <div className="pt-2 border-t border-slate-200 dark:border-gray-700 space-y-2">
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
-              المتغير المراد اختباره (Test Variable)
+              {isEn ? "Test Variable" : "المتغير المراد اختباره (Test Variable)"}
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { value: "CREATIVE", label: "المحتوى الإبداعي" },
-                { value: "AUDIENCE", label: "الجمهور والاستهداف" },
-                { value: "PLACEMENT", label: "المواضع والأجهزة" },
+                { value: "CREATIVE", label: isEn ? "Creative" : "المحتوى الإبداعي" },
+                { value: "AUDIENCE", label: isEn ? "Audience & Targeting" : "الجمهور والاستهداف" },
+                { value: "PLACEMENT", label: isEn ? "Placements & Devices" : "المواضع والأجهزة" },
               ].map((v) => (
                 <button
                   key={v.value}
@@ -200,10 +212,12 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
             </div>
             <div>
               <h4 className="text-xs font-bold text-gray-900 dark:text-white">
-                حد إنفاق الحملة الإجمالي (Campaign Spending Limit)
+                {isEn ? "Campaign Spending Limit" : "حد إنفاق الحملة الإجمالي (Campaign Spending Limit)"}
               </h4>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                سقف مالي اختياري لإيقاف الحملة كلياً عند الوصول إليه لحماية الميزانية
+                {isEn
+                  ? "Optional ceiling to stop the entire campaign when reached to protect your budget"
+                  : "سقف مالي اختياري لإيقاف الحملة كلياً عند الوصول إليه لحماية الميزانية"}
               </p>
             </div>
           </div>
@@ -227,7 +241,7 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
         {Boolean(formData.spendLimit && formData.spendLimit > 0) && (
           <div className="pt-2 border-t border-slate-200 dark:border-gray-700">
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-              الحد الأقصى للإنفاق التراكمي للحملة
+              {isEn ? "Cumulative Campaign Spend Cap" : "الحد الأقصى للإنفاق التراكمي للحملة"}
             </label>
             <div className="relative">
               <input
@@ -240,15 +254,17 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
                     e.target.value ? Number(e.target.value) : undefined,
                   )
                 }
-                placeholder="مثال: 20000"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
+                placeholder={isEn ? "e.g. 20000" : "مثال: 20000"}
+                className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-xs font-semibold focus:ring-2 focus:ring-emerald-500 ${isEn ? "pr-12" : "pl-12"}`}
               />
-              <span className="absolute left-3 top-2 text-xs text-gray-400 dark:text-gray-500 font-bold">
+              <span className={`absolute top-2 text-xs text-gray-400 dark:text-gray-500 font-bold ${isEn ? "right-3" : "left-3"}`}>
                 EGP
               </span>
             </div>
             <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
-              ستتوقف جميع الإعلانات والمجموعات داخل هذه الحملة فور وصول إجمالي الصرف لهذا الرقم.
+              {isEn
+                ? "All ads and ad sets in this campaign will pause once total spend hits this amount."
+                : "ستتوقف جميع الإعلانات والمجموعات داخل هذه الحملة فور وصول إجمالي الصرف لهذا الرقم."}
             </p>
           </div>
         )}

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Facebook,
   Loader2,
@@ -18,11 +19,11 @@ import type {
   FacebookSavedAdAccount,
 } from "../../../../services/facebookAdsService";
 import {
-  BID_STRATEGIES,
-  CONVERSION_EVENTS,
-  CONVERSION_LOCATIONS,
-  ATTRIBUTION_WINDOWS,
-  PERFORMANCE_GOALS,
+  getBidStrategies,
+  getConversionEvents,
+  getConversionLocations,
+  getAttributionWindows,
+  getPerformanceGoals,
 } from "../constants";
 import {
   getFullAdMinimumBudgetAmount,
@@ -78,6 +79,16 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
   selectedAdAccountCurrency,
   compatibleAttributionWindows,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+  const bidStrategies = React.useMemo(() => getBidStrategies(isEn), [isEn]);
+  const conversionEvents = React.useMemo(() => getConversionEvents(isEn), [isEn]);
+  const conversionLocations = React.useMemo(
+    () => getConversionLocations(isEn),
+    [isEn],
+  );
+  const performanceGoals = React.useMemo(() => getPerformanceGoals(isEn), [isEn]);
+
   const resolveAdAccountId = (
     account:
       | Pick<FacebookAdAccount, "id" | "account_id">
@@ -108,7 +119,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
   const getAdAccountBusinessName = (account: FacebookAdAccount) =>
     account.business?.name ||
     account.billingHealth?.business?.name ||
-    "حسابات بدون Business واضح";
+    (isEn ? "Accounts without a clear Business" : "حسابات بدون Business واضح");
 
   const adAccountBusinessGroups = adAccounts.reduce<
     Array<{
@@ -137,45 +148,48 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
 
   const selectedBusinessName = selectedRemoteAdAccount
     ? getAdAccountBusinessName(selectedRemoteAdAccount)
-    : "غير محدد";
+    : (isEn ? "Unspecified" : "غير محدد");
 
   const selectedAdAccountName =
     selectedSavedAdAccount?.name ||
     selectedRemoteAdAccount?.name ||
     selectedAdAccountId ||
-    "غير محدد";
+    (isEn ? "Unspecified" : "غير محدد");
 
   const selectedAccountHealthLabel =
     selectedRemoteAdAccount?.billingHealth?.accountStatusLabel ||
-    (selectedAdAccountIsActive ? "مفعل داخل MaxP" : "يحتاج تفعيل");
+    (selectedAdAccountIsActive
+      ? (isEn ? "Active in MaxP" : "مفعل داخل MaxP")
+      : (isEn ? "Needs Activation" : "يحتاج تفعيل"));
 
   const minimumWizardBudget = getFullAdMinimumBudgetAmount(
     selectedAdAccountCurrency,
   );
 
   const formatSelectedAdAccountCurrency = (value?: number) =>
-    new Intl.NumberFormat("ar-EG", {
+    new Intl.NumberFormat(isEn ? "en-US" : "ar-EG", {
       style: "currency",
       currency: selectedAdAccountCurrency || "EGP",
       maximumFractionDigits: 2,
     }).format(value || 0);
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={isEn ? "ltr" : "rtl"}>
       <div className="bg-white dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
             <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
               <Facebook className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              حساب Facebook Ads <span className="text-red-500">*</span>
+              {isEn ? "Facebook Ads Account" : "حساب Facebook Ads"} <span className="text-red-500">*</span>
             </h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              اختر الحساب الإعلاني الذي سنستخدمه لإنشاء الإعلان وتحميل
-              البكسلات.
+              {isEn
+                ? "Choose the ad account to create the ad and load pixels."
+                : "اختر الحساب الإعلاني الذي سنستخدمه لإنشاء الإعلان وتحميل البكسلات."}
             </p>
           </div>
           {selectedAdAccountIsActive && (
             <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-950/60 px-3 py-1 text-xs font-medium text-green-700 dark:text-green-300">
-              الحساب مفعل
+              {isEn ? "Account Active" : "الحساب مفعل"}
             </span>
           )}
         </div>
@@ -183,13 +197,15 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
         {loadingAdAccounts ? (
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">جاري تحميل الحسابات الإعلانية...</span>
+            <span className="text-sm">
+              {isEn ? "Loading ad accounts..." : "جاري تحميل الحسابات الإعلانية..."}
+            </span>
           </div>
         ) : adAccounts.length > 0 ? (
           <div className="space-y-3">
             <select
               name="facebookAdAccountId"
-              aria-label="اختيار الحساب الإعلاني حسب Business"
+              aria-label={isEn ? "Select ad account by Business" : "اختيار الحساب الإعلاني حسب Business"}
               value={selectedAdAccountId}
               onChange={(e) => {
                 const nextAdAccountId = e.target.value;
@@ -211,7 +227,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
               }}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
-              <option value="">اختر الحساب الإعلاني</option>
+              <option value="">{isEn ? "Select Ad Account" : "اختر الحساب الإعلاني"}</option>
               {adAccountBusinessGroups.map((group) => (
                 <optgroup
                   key={group.businessKey}
@@ -228,13 +244,13 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
                       account.billingHealth?.accountStatusLabel ||
                       (account.account_status
                         ? `Status ${account.account_status}`
-                        : "Status غير معروف");
+                        : (isEn ? "Status Unknown" : "Status غير معروف"));
 
                     return (
                       <option key={account.id} value={normalizedAccountId}>
                         {account.name} - act_{normalizedAccountId} -{" "}
                         {account.currency} - {healthLabel}
-                        {isActive ? " - مفعل" : isSaved ? " - محفوظ" : ""}
+                        {isActive ? (isEn ? " - Active" : " - مفعل") : isSaved ? (isEn ? " - Saved" : " - محفوظ") : ""}
                       </option>
                     );
                   })}
@@ -267,8 +283,8 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
                   </div>
                   <div className="mt-1 font-semibold">
                     {selectedAdAccountIsActive
-                      ? "مفعل وجاهز"
-                      : "يحتاج تفعيل قبل الإرسال"}
+                      ? (isEn ? "Active & Ready" : "مفعل وجاهز")
+                      : (isEn ? "Needs activation before publishing" : "يحتاج تفعيل قبل الإرسال")}
                   </div>
                   <div className="text-xs text-blue-700 dark:text-blue-300">
                     {selectedAccountHealthLabel}
@@ -277,17 +293,17 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4 text-sm text-slate-700 dark:text-slate-300">
-                اختر Business ثم الحساب الإعلاني المقصود. لن نختار أول حساب
-                تلقائيا عند وجود أكثر من حساب، حتى لا تختلط حملات المتجر مع أي
-                حساب آخر.
+                {isEn
+                  ? "Select a Business then your target ad account. We do not auto-select the first account to avoid creating campaigns in the wrong account."
+                  : "اختر Business ثم الحساب الإعلاني المقصود. لن نختار أول حساب تلقائيا عند وجود أكثر من حساب، حتى لا تختلط حملات المتجر مع أي حساب آخر."}
               </div>
             )}
 
             {selectedRemoteAdAccount?.billingHealth?.isAccountUsable === false && (
               <div className="rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-800 dark:text-red-300">
-                هذا الحساب ظاهر من Meta لكنه غير جاهز للإعلانات حاليا:{" "}
+                {isEn ? "This account appears on Meta but is not ready for ads: " : "هذا الحساب ظاهر من Meta لكنه غير جاهز للإعلانات حاليا: "}
                 {selectedRemoteAdAccount.billingHealth.disableReason ||
-                  "راجع حالة الحساب أو وسيلة الدفع داخل Business Manager."}
+                  (isEn ? "Review account status or payment method in Business Manager." : "راجع حالة الحساب أو وسيلة الدفع داخل Business Manager.")}
               </div>
             )}
 
@@ -306,24 +322,25 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
                 {syncingAdAccount ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    جاري التفعيل...
+                    {isEn ? "Activating..." : "جاري التفعيل..."}
                   </>
                 ) : (
-                  "تفعيل الحساب وتحميل البيانات"
+                  isEn ? "Activate Account & Load Data" : "تفعيل الحساب وتحميل البيانات"
                 )}
               </button>
 
               {!selectedAdAccountIsActive && (
                 <p className="text-sm text-amber-700 dark:text-amber-400">
-                  فعّل الحساب المختار أولًا حتى تظهر البكسلات الخاصة به.
+                  {isEn ? "Activate selected account first to load its pixels." : "فعّل الحساب المختار أولًا حتى تظهر البكسلات الخاصة به."}
                 </p>
               )}
             </div>
           </div>
         ) : (
           <div className="rounded-lg border border-yellow-200 dark:border-yellow-900/50 bg-yellow-50 dark:bg-yellow-950/40 p-3 text-sm text-yellow-800 dark:text-yellow-300">
-            لا توجد حسابات إعلانية متاحة حاليًا. اربط Facebook أولًا ثم أعد
-            المحاولة.
+            {isEn
+              ? "No ad accounts available currently. Connect Facebook first then try again."
+              : "لا توجد حسابات إعلانية متاحة حاليًا. اربط Facebook أولًا ثم أعد المحاولة."}
           </div>
         )}
         {getError("adAccountId") && (

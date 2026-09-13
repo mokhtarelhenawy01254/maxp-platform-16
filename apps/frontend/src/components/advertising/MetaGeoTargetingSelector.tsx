@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   facebookAdsService,
   MetaGeoLocation,
@@ -27,14 +28,14 @@ interface MetaGeoTargetingSelectorProps {
   onLocationTypesChange: (locationTypes: Array<"home" | "recent">) => void;
 }
 
-const describeGeo = (location: MetaGeoLocation) => {
+const describeGeo = (location: MetaGeoLocation, isEn: boolean) => {
   const region = location.region ? ` - ${location.region}` : "";
   const typeLabel =
     location.type === "region"
-      ? "محافظة"
+      ? (isEn ? "Region" : "محافظة")
       : location.type === "city"
-        ? "مدينة"
-        : "منطقة";
+        ? (isEn ? "City" : "مدينة")
+        : (isEn ? "Area" : "منطقة");
 
   return `${typeLabel}: ${location.name}${region}`;
 };
@@ -52,6 +53,8 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
   onCitiesChange,
   onLocationTypesChange,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
   const [mode, setMode] = useState<GeoMode>(
     selectedRegions.length > 0 || selectedCities.length > 0 ? "LOCAL" : "COUNTRY",
   );
@@ -150,38 +153,42 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" dir={isEn ? "ltr" : "rtl"}>
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-          المواقع <span className="text-red-500">*</span>
+          {isEn ? "Locations" : "المواقع"} <span className="text-red-500">*</span>
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => switchMode("COUNTRY")}
-            className={`rounded-xl border-2 p-4 text-right transition-all ${
+            className={`rounded-xl border-2 p-4 text-start transition-all ${
               mode === "COUNTRY"
                 ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200"
                 : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300"
             }`}
           >
-            <span className="block font-semibold">استهداف دولة كاملة</span>
+            <span className="block font-semibold">{isEn ? "Target Entire Country" : "استهداف دولة كاملة"}</span>
             <span className="mt-1 block text-sm text-gray-600 dark:text-gray-400">
-              مناسب للاختبار العام أو عندما يكون الشحن متاحًا في كل الدولة.
+              {isEn
+                ? "Suitable for broad testing or when nationwide delivery is available."
+                : "مناسب للاختبار العام أو عندما يكون الشحن متاحًا في كل الدولة."}
             </span>
           </button>
           <button
             type="button"
             onClick={() => switchMode("LOCAL")}
-            className={`rounded-xl border-2 p-4 text-right transition-all ${
+            className={`rounded-xl border-2 p-4 text-start transition-all ${
               mode === "LOCAL"
                 ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200"
                 : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300"
             }`}
           >
-            <span className="block font-semibold">محافظات ومدن محددة</span>
+            <span className="block font-semibold">{isEn ? "Specific Regions & Cities" : "محافظات ومدن محددة"}</span>
             <span className="mt-1 block text-sm text-gray-600 dark:text-gray-400">
-              يمنع خلط مصر كلها مع القاهرة/الجيزة مثلًا حتى لا يرفض Meta الاستهداف.
+              {isEn
+                ? "Target specific regions without overlapping whole countries."
+                : "يمنع خلط مصر كلها مع القاهرة/الجيزة مثلًا حتى لا يرفض Meta الاستهداف."}
             </span>
           </button>
         </div>
@@ -206,13 +213,14 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
                     : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300"
                 }`}
               >
-                {country.flag ? <span className="ml-1">{country.flag}</span> : null}
+                {country.flag ? <span className={isEn ? "mr-1" : "ml-1"}>{country.flag}</span> : null}
                 {country.name}
               </button>
             ))}
           </div>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            محدد: {selectedCountryNames || "لا توجد دول محددة"}
+            {isEn ? "Selected: " : "محدد: "}
+            {selectedCountryNames || (isEn ? "No countries selected" : "لا توجد دول محددة")}
           </p>
         </div>
       ) : (
@@ -220,7 +228,7 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                دولة البحث
+                {isEn ? "Search Country" : "دولة البحث"}
               </label>
               <select
                 value={searchCountryCode}
@@ -239,7 +247,7 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                نوع المكان
+                {isEn ? "Location Type" : "نوع المكان"}
               </label>
               <select
                 value={searchType}
@@ -249,13 +257,13 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
                 }}
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
               >
-                <option value="region">محافظة</option>
-                <option value="city">مدينة</option>
+                <option value="region">{isEn ? "Region / State" : "محافظة"}</option>
+                <option value="city">{isEn ? "City" : "مدينة"}</option>
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                نطاق الأشخاص
+                {isEn ? "People Scope" : "نطاق الأشخاص"}
               </label>
               <select
                 value={locationTypes.includes("recent") ? "home_recent" : "home"}
@@ -268,8 +276,8 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
                 }
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
               >
-                <option value="home">المقيمون فقط</option>
-                <option value="home_recent">المقيمون أو الموجودون حديثًا</option>
+                <option value="home">{isEn ? "People living in this location" : "المقيمون فقط"}</option>
+                <option value="home_recent">{isEn ? "People living in or recently in this location" : "المقيمون أو الموجودون حديثًا"}</option>
               </select>
             </div>
           </div>
@@ -284,14 +292,14 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
               }}
               placeholder={
                 searchType === "region"
-                  ? "ابحث عن محافظة مثل Cairo أو Giza"
-                  : "ابحث عن مدينة مثل Mansoura أو Tanta"
+                  ? (isEn ? "Search region e.g. Cairo or Giza" : "ابحث عن محافظة مثل Cairo أو Giza")
+                  : (isEn ? "Search city e.g. Mansoura or Tanta" : "ابحث عن مدينة مثل Mansoura أو Tanta")
               }
               className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500"
             />
             {loading && (
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-emerald-700 dark:text-emerald-400">
-                بحث...
+              <span className={`absolute top-1/2 -translate-y-1/2 text-xs text-emerald-700 dark:text-emerald-400 ${isEn ? "right-3" : "left-3"}`}>
+                {isEn ? "Searching..." : "بحث..."}
               </span>
             )}
           </div>
@@ -303,19 +311,19 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
                   key={`${result.type}-${result.key}`}
                   type="button"
                   onClick={() => addLocation(result)}
-                  className="flex w-full items-center justify-between border-b border-gray-100 dark:border-gray-700 px-4 py-3 text-right last:border-b-0 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                  className="flex w-full items-center justify-between border-b border-gray-100 dark:border-gray-700 px-4 py-3 text-start last:border-b-0 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                 >
                   <span>
                     <span className="block text-sm font-medium text-gray-900 dark:text-white">
                       {result.name}
                     </span>
                     <span className="block text-xs text-gray-500 dark:text-gray-400">
-                      {result.type === "region" ? "محافظة" : "مدينة"} -{" "}
+                      {result.type === "region" ? (isEn ? "Region" : "محافظة") : (isEn ? "City" : "مدينة")} -{" "}
                       {result.region || result.country_name || result.country_code}
                     </span>
                   </span>
                   <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                    إضافة
+                    {isEn ? "Add" : "إضافة"}
                   </span>
                 </button>
               ))}
@@ -326,7 +334,7 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
             {selectedRegions.length > 0 && (
               <div>
                 <p className="mb-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
-                  المحافظات المختارة
+                  {isEn ? "Selected Regions" : "المحافظات المختارة"}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {selectedRegions.map((region) => (
@@ -336,7 +344,7 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
                       onClick={() => removeRegion(region.key)}
                       className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1.5 text-sm font-medium text-emerald-800 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-900/60"
                     >
-                      {describeGeo(region)} ×
+                      {describeGeo(region, isEn)} ×
                     </button>
                   ))}
                 </div>
@@ -346,7 +354,7 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
             {selectedCities.length > 0 && (
               <div>
                 <p className="mb-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
-                  المدن المختارة
+                  {isEn ? "Selected Cities" : "المدن المختارة"}
                 </p>
                 <div className="space-y-2">
                   {selectedCities.map((city) => (
@@ -357,12 +365,12 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
                       <button
                         type="button"
                         onClick={() => removeCity(city.key)}
-                        className="text-right text-sm font-medium text-emerald-800 dark:text-emerald-300 hover:text-red-600 dark:hover:text-red-400"
+                        className="text-start text-sm font-medium text-emerald-800 dark:text-emerald-300 hover:text-red-600 dark:hover:text-red-400"
                       >
-                        {describeGeo(city)} ×
+                        {describeGeo(city, isEn)} ×
                       </button>
                       <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                        نصف القطر
+                        {isEn ? "Radius" : "نصف القطر"}
                         <input
                           type="number"
                           min={1}
@@ -373,7 +381,7 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
                           }
                           className="w-20 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 text-center"
                         />
-                        كم
+                        {isEn ? "km" : "كم"}
                       </label>
                     </div>
                   ))}
@@ -383,8 +391,9 @@ const MetaGeoTargetingSelector: React.FC<MetaGeoTargetingSelectorProps> = ({
 
             {selectedLocalCount === 0 && (
               <p className="rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-3 text-sm text-gray-600 dark:text-gray-400">
-                ابحث واختر محافظة أو مدينة واحدة على الأقل. لن يتم إرسال الدولة
-                كاملة مع المحافظات/المدن حتى لا يحدث تداخل في Meta.
+                {isEn
+                  ? "Search and select at least one region or city. The entire country will not be sent to prevent overlap."
+                  : "ابحث واختر محافظة أو مدينة واحدة على الأقل. لن يتم إرسال الدولة كاملة مع المحافظات/المدن حتى لا يحدث تداخل في Meta."}
               </p>
             )}
           </div>

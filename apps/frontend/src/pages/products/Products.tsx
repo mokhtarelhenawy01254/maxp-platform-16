@@ -315,6 +315,7 @@ const Products: React.FC = () => {
         onDeleteAll={onDeleteAll}
         onImportClick={() => setShowImportModal(true)}
         onExport={handleExport}
+        onQuickAddClick={() => setShowQuickAddModal(true)}
       />
 
       <ProductsStats
