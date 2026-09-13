@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { chatWithMediaBuyer } from "../../../services/facebookAdsService";
 import { useCopilotSessions } from "../../../components/advertising/copilot/useCopilotSessions";
+import { useTranslation } from "react-i18next";
 import type { MarketingProduct } from "./types";
 import type { Message, CopilotSession } from "../../../components/advertising/copilot/types";
 import { MarketingMarkdownMessage } from "./MarketingMarkdownMessage";
@@ -45,6 +46,9 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
   const activeSession = propActiveSession || fallback.activeSession;
   const addMessageToActiveSession = propAddMessage || fallback.addMessageToActiveSession;
   const createNewSession = propCreateSession || fallback.createNewSession;
+
+  const { i18n } = useTranslation();
+  const isRtl = (i18n?.dir ? i18n.dir() === "rtl" : true) || document.documentElement.dir === "rtl" || i18n?.language?.startsWith("ar");
 
   const [inputMessage, setInputMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -160,10 +164,17 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
         ) : (
           activeSession.messages.map((msg) => {
             const isUser = msg.sender === "user";
+            // Arabic: Speaker (User) on Right, Bot on Left.
+            // English: Speaker (User) on Left (opposite of Arabic), Bot on Right.
+            const rowDirectionClass = isUser ? "flex-row" : "flex-row-reverse";
+            const bubbleCornerClass = isRtl
+              ? (isUser ? "rounded-tr-none" : "rounded-tl-none")
+              : (isUser ? "rounded-tl-none" : "rounded-tr-none");
+
             return (
               <div
                 key={msg.id}
-                className={`flex gap-3 text-xs ${isUser ? "flex-row-reverse" : "flex-row"}`}
+                className={`flex gap-3 text-xs ${rowDirectionClass}`}
               >
                 {/* Avatar */}
                 <div
@@ -176,10 +187,10 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
 
                 {/* Bubble */}
                 <div
-                  className={`rounded-2xl p-3.5 space-y-2 leading-relaxed ${
+                  className={`rounded-2xl p-3.5 space-y-2 leading-relaxed ${bubbleCornerClass} ${
                     isUser
-                      ? "max-w-[85%] bg-blue-600 text-white rounded-tr-none shadow-sm"
-                      : "max-w-[95%] sm:max-w-[90%] bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 rounded-tl-none border border-slate-200 dark:border-slate-700/60 shadow-sm"
+                      ? "max-w-[85%] bg-blue-600 text-white shadow-sm"
+                      : "max-w-[95%] sm:max-w-[90%] bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 shadow-sm"
                   }`}
                 >
                   {/* Tool execution badge if present */}
@@ -199,7 +210,7 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
 
                   <MarketingMarkdownMessage content={msg.text} isUser={isUser} />
 
-                  <span className="block text-[9px] opacity-60 text-left pt-1">
+                  <span className="block text-[9px] opacity-60 text-end pt-1">
                     {new Date(msg.timestamp).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -212,7 +223,7 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
         )}
 
         {loading && (
-          <div className="flex gap-3 text-xs items-center text-slate-400">
+          <div className="flex flex-row-reverse gap-3 text-xs items-center text-slate-400">
             <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
               <Bot className="w-4 h-4" />
             </div>
