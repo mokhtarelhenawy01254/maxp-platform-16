@@ -242,6 +242,12 @@ export const CampaignQuickViewModal: React.FC<CampaignQuickViewModalProps> = ({
 
   const activeCampaign = fullCampaign || campaign;
 
+  const isCboCampaign = Boolean(
+    activeCampaign?.budgetOptimization ||
+    (activeCampaign?.budgetAmount && Number(activeCampaign.budgetAmount) > 0) ||
+    (activeCampaign?.dailyBudget && Number(activeCampaign.dailyBudget) > 0)
+  );
+
   // Resolved metrics: prefer live insights totals if available, else passed performance summary
   const metrics: FacebookAdsPerformanceTotals = useMemo(() => {
     if (liveInsights?.totals) {
@@ -808,6 +814,11 @@ export const CampaignQuickViewModal: React.FC<CampaignQuickViewModalProps> = ({
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                       {isEn ? "Budget Configuration:" : "إعداد الميزانية الحالية:"}
                     </span>
+                    <span className="rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-black text-blue-800 dark:bg-blue-950/60 dark:text-blue-300">
+                      {isCboCampaign
+                        ? isEn ? "Advantage Campaign Budget (CBO)" : "ميزانية مجمعة على مستوى الحملة (CBO)"
+                        : isEn ? "Ad Set Budget (ABO)" : "ميزانية مستقلة لكل مجموعة (ABO)"}
+                    </span>
                     <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs font-bold dark:border-slate-800 dark:bg-slate-950">
                       <button
                         type="button"
@@ -1309,6 +1320,48 @@ export const CampaignQuickViewModal: React.FC<CampaignQuickViewModalProps> = ({
                                 )}
                               </div>
                             </div>
+
+                            {/* Creatives / Ads nested in Ad Set */}
+                            {adSet.ads && adSet.ads.length > 0 && (
+                              <div className="mt-2.5 border-t border-slate-100 pt-2 dark:border-slate-800">
+                                <span className="block text-[11px] font-bold text-slate-500 mb-1.5">
+                                  {isEn ? `Creatives inside Ad Set (${adSet.ads.length}):` : `الإعلانات داخل المجموعة (${adSet.ads.length}):`}
+                                </span>
+                                <div className="space-y-1.5">
+                                  {adSet.ads.map((ad: any, aIdx: number) => (
+                                    <div
+                                      key={ad.id || aIdx}
+                                      className="flex items-center justify-between gap-2 rounded-lg border border-slate-200/60 bg-slate-50/50 p-2 text-xs dark:border-slate-800 dark:bg-slate-900/50"
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span
+                                          className={`h-2 w-2 rounded-full shrink-0 ${
+                                            ad.status === "ACTIVE" ? "bg-emerald-500" : "bg-slate-400"
+                                          }`}
+                                        />
+                                        <span className="font-bold text-slate-900 dark:text-white truncate">
+                                          {ad.name}
+                                        </span>
+                                        {ad.primaryText && (
+                                          <span className="text-[11px] text-slate-500 truncate max-w-xs hidden sm:inline">
+                                            "{ad.primaryText}"
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span
+                                        className={`shrink-0 rounded-md px-1.5 py-0.2 text-[10px] font-bold ${
+                                          ad.status === "ACTIVE"
+                                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                                        }`}
+                                      >
+                                        {ad.status === "ACTIVE" ? (isEn ? "Active" : "نشط") : (isEn ? "Paused" : "متوقف")}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -1350,15 +1403,21 @@ export const CampaignQuickViewModal: React.FC<CampaignQuickViewModalProps> = ({
                                 <label className="mb-1 block text-[11px] font-bold text-slate-700 dark:text-slate-300">
                                   {isEn ? `Ad Set Budget (${selectedCurrency})` : `ميزانية المجموعة (${selectedCurrency})`}
                                 </label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="10"
-                                  value={adSetBudget}
-                                  onChange={(e) => setAdSetBudget(Number(e.target.value) || 0)}
-                                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold tabular-nums text-slate-900 shadow-2xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                                  placeholder={isEn ? "Default (Inherits Campaign CBO)" : "افتراضي (حسب ميزانية الحملة CBO)"}
-                                />
+                                {isCboCampaign ? (
+                                  <div className="rounded-lg border border-blue-200/80 bg-blue-50/50 px-3 py-1.5 text-xs font-semibold text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
+                                    {isEn ? "Managed dynamically by Campaign CBO" : "تدار تلقائياً من ميزانية الحملة (CBO)"}
+                                  </div>
+                                ) : (
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="10"
+                                    value={adSetBudget}
+                                    onChange={(e) => setAdSetBudget(Number(e.target.value) || 0)}
+                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold tabular-nums text-slate-900 shadow-2xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                    placeholder={isEn ? "Set budget" : "تحديد الميزانية"}
+                                  />
+                                )}
                               </div>
                             </div>
 

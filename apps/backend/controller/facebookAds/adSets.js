@@ -524,6 +524,7 @@ const updateAdSet = async (req, res) => {
     const data = req.body;
     const adSet = await getSharedPrismaClient().facebookAdset.findFirst({
       where: { id, companyId },
+      include: { facebookCampaign: true },
     });
     if (!adSet)
       return res
@@ -544,7 +545,16 @@ const updateAdSet = async (req, res) => {
         const metaPayload = {};
         if (data.status) metaPayload.status = data.status;
         if (data.name) metaPayload.name = data.name;
-        if (data.budgetAmount !== undefined) {
+
+        // Check if parent campaign is CBO
+        const parentCampaign = adSet.facebookCampaign;
+        const isCboCampaign = Boolean(
+          parentCampaign?.budgetOptimization ||
+          (parentCampaign?.budgetAmount && Number(parentCampaign.budgetAmount) > 0) ||
+          (parentCampaign?.dailyBudget && Number(parentCampaign.dailyBudget) > 0)
+        );
+
+        if (!isCboCampaign && data.budgetAmount !== undefined && Number(data.budgetAmount) > 0) {
           metaPayload.daily_budget = Math.round(Number(data.budgetAmount) * 100);
         }
         if (data.targeting) {
