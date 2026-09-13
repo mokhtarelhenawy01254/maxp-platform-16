@@ -1736,6 +1736,22 @@ export const getGeoPerformanceReport = async ({
   }
 };
 
+export const getGeoPerformanceBreakdown = async (
+  adAccountId?: string,
+  options?: {
+    breakdown?: FacebookGeoPerformanceBreakdown;
+    startDate?: string;
+    endDate?: string;
+  },
+): Promise<FacebookGeoPerformanceReport> => {
+  return getGeoPerformanceReport({
+    adAccountId,
+    breakdown: options?.breakdown,
+    startDate: options?.startDate,
+    endDate: options?.endDate,
+  });
+};
+
 export const getPerformanceBreakdownReport = async ({
   startDate,
   endDate,
@@ -3545,6 +3561,7 @@ export const facebookAdsService = {
   getAdsPerformanceSummary,
   getAdsDecisionSummary,
   getGeoPerformanceReport,
+  getGeoPerformanceBreakdown,
   getPerformanceBreakdownReport,
 
   // Audiences

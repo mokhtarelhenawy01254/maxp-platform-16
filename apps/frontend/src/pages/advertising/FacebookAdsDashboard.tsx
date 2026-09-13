@@ -147,29 +147,54 @@ const FacebookAdsDashboard: React.FC = () => {
 
       try {
         setLoading(true);
-        const [campaignData, summary, decisions] = await Promise.all([
-          facebookAdsService.getCampaigns(adAccountId),
-          facebookAdsService
-            .getAdsPerformanceSummary(
-              dateRange.startDate,
-              dateRange.endDate,
-              adAccountId,
-              forceRefresh,
-            )
-            .catch(() => null),
-          facebookAdsService
-            .getAdsDecisionSummary(
-              dateRange.startDate,
-              dateRange.endDate,
-              adAccountId,
-              forceRefresh,
-            )
-            .catch(() => null),
-        ]);
+        // Load campaigns immediately so the list displays without blocking
+        const campaignPromise = facebookAdsService
+          .getCampaigns(adAccountId)
+          .then((campaignData) => {
+            setCampaigns(campaignData);
+            setLoading(false);
+            return campaignData;
+          })
+          .catch((err) => {
+            console.error("Error loading campaigns:", err);
+            setLoading(false);
+            return [];
+          });
 
-        setCampaigns(campaignData);
-        setPerformanceSummary(summary);
-        setDecisionSummary(decisions);
+        // Load performance & decision summaries in parallel without delaying campaign display
+        const performancePromise = facebookAdsService
+          .getAdsPerformanceSummary(
+            dateRange.startDate,
+            dateRange.endDate,
+            adAccountId,
+            forceRefresh,
+          )
+          .then((summary) => {
+            setPerformanceSummary(summary);
+            return summary;
+          })
+          .catch((e) => {
+            console.warn("Performance summary fetch warning:", e);
+            return null;
+          });
+
+        const decisionsPromise = facebookAdsService
+          .getAdsDecisionSummary(
+            dateRange.startDate,
+            dateRange.endDate,
+            adAccountId,
+            forceRefresh,
+          )
+          .then((decisions) => {
+            setDecisionSummary(decisions);
+            return decisions;
+          })
+          .catch((e) => {
+            console.warn("Decision summary fetch warning:", e);
+            return null;
+          });
+
+        await Promise.allSettled([campaignPromise, performancePromise, decisionsPromise]);
       } catch (error: unknown) {
         toast.error(getApiErrorMessage(error, "فشل تحميل حملات Meta"));
       } finally {
@@ -403,8 +428,31 @@ const FacebookAdsDashboard: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => navigate("/advertising/facebook-ads/create")}
+                onClick={() =>
+                  navigate(
+                    `/advertising/facebook-ads/campaigns/create${
+                      selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
+                    }`,
+                  )
+                }
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 transition-all"
+                title={isEn ? "Create empty campaign container" : "إنشاء هيكل حملة فقط"}
+              >
+                <Layers className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">{isEn ? "Campaign Only" : "حملة فقط"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    `/advertising/facebook-ads/create-ad${
+                      selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
+                    }`,
+                  )
+                }
                 className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3.5 text-xs font-black text-white shadow-xs hover:bg-blue-700 transition-all"
+                title={isEn ? "Full Ad Creation Wizard (Campaign + AdSet + Creative)" : "معالج إنشاء إعلان كامل (حملة + استهداف + إعلان)"}
               >
                 <Plus className="h-4 w-4" />
                 <span>{isEn ? "Create Ad" : "إنشاء إعلان جديد"}</span>

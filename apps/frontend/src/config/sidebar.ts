@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 import { APP_REGISTRY } from './appRegistry';
 import { STORE_APP_SLUGS } from '../utils/storeShortcut';
@@ -912,100 +912,95 @@ export const getSidebarConfig = (
             title: isEn ? 'Marketing & Advertising' : t('sidebar.marketingSection'),
             icon: Megaphone,
             items: [
-                // 0. مركز التسويق الذكي (AI Studio)
+                // 1. مركز التسويق الذكي (AI Studio)
                 {
                     to: '/advertising/marketing-studio',
                     icon: Sparkles,
                     label: isEn ? 'AI Marketing Studio' : 'مركز التسويق الذكي (AI Studio)',
                 },
-                // 1. إعلانات فيسبوك (Meta Ads)
+                // 2. إعلانات فيسبوك (Meta Ads Cockpit)
                 {
                     to: '/advertising/facebook-ads',
                     icon: Megaphone,
-                    label: isEn ? 'Facebook Ads Campaigns' : t('sidebar.facebookAds'),
-                    hidden: false,
-                    children: [
-                        { to: '/advertising/marketing-studio', label: isEn ? 'AI Marketing Studio' : 'مركز التسويق الذكي (AI Studio)' },
-                        { to: '/advertising/facebook-ads', label: isEn ? 'Dashboard & Cockpit' : 'لوحة القيادة والمؤشرات' },
-                        { to: '/advertising/facebook-ads/connection', label: isEn ? 'Meta Ads Connection' : (t('sidebar.metaAdsConnection') || 'ربط إعلانات Meta') },
-                        { to: '/advertising/facebook-ads/create-ad', label: isEn ? 'Create Ad (Wizard)' : 'إنشاء إعلان جديد (سريع / كامل)' },
-                        { to: '/advertising/facebook-ads/campaigns', label: isEn ? 'Campaigns List' : 'قائمة الحملات الإعلانية' },
-                        { to: '/advertising/facebook-ads/automation-rules', label: isEn ? 'Automation Rules' : 'قواعد الأتمتة الإعلانية' },
-                        { to: '/advertising/facebook-ads/budget-alerts', label: isEn ? 'WhatsApp Budget Alerts' : 'تنبيهات الرصيد WhatsApp' },
-                        { to: '/advertising/facebook-ads/decision-reports', label: isEn ? 'Decision Reports & Profit' : 'تقارير الأرباح والقرارات' },
-                        { to: '/advertising/facebook-ads/dco', label: isEn ? 'Dynamic Creative (DCO)' : 'التوليف الإبداعي الديناميكي (DCO)' },
-                        { to: '/advertising/facebook-ads/advantage-plus', label: isEn ? 'Advantage+ Shopping' : 'إعلانات Advantage+ والتسوق' },
-                        { to: '/advertising/facebook-ads/lead-forms', label: isEn ? 'Instant Lead Forms' : 'نماذج العملاء الفورية (Lead Forms)' },
-                        { to: '/advertising/facebook-ads/attribution', label: isEn ? 'Attribution Settings' : 'إعدادات الإسناد ونوافذ التحويل' },
-                        { to: '/advertising/facebook-ads/audiences', label: isEn ? 'Audiences' : 'الجماهير المخصصة والشبيهة' },
-                        { to: '/advertising/facebook-ads/saved-audiences', label: isEn ? 'Saved Audiences' : 'الجماهير المحفوظة (Saved Audiences)' },
-                        { to: '/advertising/facebook-ads/catalogs', label: isEn ? 'Product Catalogs' : 'كتالوجات المنتجات (Catalog)' },
-                        { to: '/advertising/facebook-ads/ad-preview', label: isEn ? 'Ad Preview & QA' : 'معاينة الإعلانات (Ad Preview)' },
-                        { to: '/advertising/facebook-ads/ad-library', label: isEn ? 'Ad Library & Research' : 'مكتبة الكرياتيف والبحث' },
-                        { to: '/advertising/facebook-ads/tests', label: isEn ? 'A/B Tests' : 'اختبارات A/B Tests' },
-                        { to: '/advertising/facebook-ads/geo', label: isEn ? 'Geographic Performance' : 'الأداء الجغرافي والمحافظات' },
-                    ],
+                    label: isEn ? 'Facebook Ads (Meta Ads)' : (t('sidebar.facebookAds') || 'إعلانات فيسبوك (Meta Ads)'),
                 },
-                // 1.5 ربط إعلانات Meta
+                // 3. إنشاء إعلان جديد
+                {
+                    to: '/advertising/facebook-ads/create-ad',
+                    icon: Plus,
+                    label: isEn ? 'Create Ad (Wizard)' : 'إنشاء إعلان جديد',
+                },
+                // 4. الحملات الإعلانية
+                {
+                    to: '/advertising/facebook-ads/campaigns',
+                    icon: BarChart3,
+                    label: isEn ? 'Campaigns List' : 'قائمة الحملات الإعلانية',
+                },
+                // 5. ربط إعلانات Meta (مفرد وغير مكرر)
                 {
                     to: '/advertising/facebook-ads/connection',
                     icon: PlugZap,
                     label: isEn ? 'Meta Ads Connection' : (t('sidebar.metaAdsConnection') || 'ربط إعلانات Meta'),
                 },
-                // 2. التتبع والبيانات (Tracking & Pixels)
+                // 6. البيكسل والتتبع (Pixel & CAPI)
                 {
                     to: '/advertising/facebook-pixel',
-                    icon: BarChart3,
-                    label: isEn ? 'Tracking & Data' : 'التتبع والبيانات',
-                    children: [
-                        { to: '/advertising/facebook-pixel', label: isEn ? 'Facebook Pixel & CAPI' : t('sidebar.facebookPixel') },
-                        { to: '/advertising/google-tag-manager', label: isEn ? 'Google Tag Manager' : t('sidebar.googleTagManager') },
-                        { to: '/advertising/google-analytics', label: isEn ? 'Google Analytics & Ads' : t('sidebar.googleAnalytics') },
-                    ],
+                    icon: Target,
+                    label: isEn ? 'Pixel & CAPI Tracking' : 'البيكسل والتتبع (Pixel & CAPI)',
                 },
-                // 3. صفحات الهبوط ومسارات التحويل (Funnels & Landing Pages)
+                // 7. الأداء الجغرافي والمحافظات
+                {
+                    to: '/advertising/facebook-ads/geo',
+                    icon: Globe,
+                    label: isEn ? 'Geographic Performance' : 'الأداء الجغرافي والمحافظات',
+                },
+                // 8. الجماهير الإعلانية
+                {
+                    to: '/advertising/facebook-ads/audiences',
+                    icon: Users,
+                    label: isEn ? 'Audiences' : 'الجماهير الإعلانية',
+                },
+                // 9. كتالوجات المنتجات (Catalog)
+                {
+                    to: '/advertising/facebook-ads/catalogs',
+                    icon: ShoppingBag,
+                    label: isEn ? 'Product Catalogs' : 'كتالوجات المنتجات (Catalog)',
+                },
+                // 10. تنبيهات الرصيد WhatsApp
+                {
+                    to: '/advertising/facebook-ads/budget-alerts',
+                    icon: BellRing,
+                    label: isEn ? 'WhatsApp Budget Alerts' : 'تنبيهات الرصيد WhatsApp',
+                },
+                // 11. تقارير الأرباح والقرارات
+                {
+                    to: '/advertising/facebook-ads/decision-reports',
+                    icon: FileBarChart,
+                    label: isEn ? 'Decision Reports & Profit' : 'تقارير الأرباح والقرارات',
+                },
+                // 12. صفحات هبوط المنتجات
                 {
                     to: '/advertising/product-landing-pages',
                     icon: Monitor,
-                    label: isEn ? 'Landing Pages & Funnels' : 'صفحات الهبوط والمسارات',
-                    children: [
-                        { to: '/advertising/product-landing-pages', label: isEn ? 'Product Landing Pages' : t('sidebar.productLandingPages') },
-                        { to: '/advertising/funnel-wizard', label: isEn ? 'Quick Funnel' : (t('sidebar.quickFunnel') || 'مسار تحويل سريع') },
-                    ],
+                    label: isEn ? 'Product Landing Pages' : (t('sidebar.productLandingPages') || 'صفحات هبوط المنتجات'),
                 },
-                // 4. نشر المحتوى والقنوات (Publishing & Channels)
+                // 13. مسار تحويل سريع (Funnel)
+                {
+                    to: '/advertising/funnel-wizard',
+                    icon: Filter,
+                    label: isEn ? 'Quick Funnel' : (t('sidebar.quickFunnel') || 'مسار تحويل سريع'),
+                },
+                // 14. نشر منشورات Facebook
                 {
                     to: '/facebook/create-post',
                     icon: SquarePen,
-                    label: isEn ? 'Publishing & Channels' : 'نشر المحتوى والقنوات',
-                    children: [
-                        { to: '/broadcast', label: isEn ? 'Broadcast' : t('sidebar.broadcast'), hidden: !isAppActive('crm-basic') },
-                        { to: '/facebook/create-post', label: isEn ? 'Facebook Post' : t('sidebar.facebookPost') },
-                        { to: '/tiktok/publish', label: isEn ? 'TikTok Publish' : t('sidebar.tiktokPublish'), hidden: !isAppActive('tiktok-integrations') },
-                        { to: '/tiktok/shop', label: isEn ? 'TikTok Shop' : t('sidebar.tiktokShop'), hidden: !isAppActive('tiktok-integrations') },
-                        { to: '/tiktok-inbox', label: isEn ? 'TikTok Inbox' : t('sidebar.tiktokInbox'), hidden: !isAppActive('tiktok-integrations') },
-                        { to: '/tiktok/settings', label: isEn ? 'TikTok Settings' : t('sidebar.tiktokSettings'), hidden: !isAppActive('tiktok-integrations') },
-                    ],
+                    label: isEn ? 'Facebook Post' : (t('sidebar.facebookPost') || 'نشر منشورات Facebook'),
                 },
-                // 5. حاسبات التسويق والربحية (Marketing & Profitability Calculators)
+                // 15. حاسبات التسويق والربحية
                 {
                     to: '/tools/profitability-engine',
                     icon: Calculator,
                     label: isEn ? 'Profitability Calculators' : 'حاسبات التسويق والربحية',
-                    children: [
-                        { to: '/tools/profitability-engine', label: isEn ? 'Profitability Engine' : t('sidebar.profitabilityEngine') },
-                        { to: '/tools/break-even', label: isEn ? 'Project Break-Even' : t('sidebar.projectBreakEven') },
-                        { to: '/tools/product-break-even', label: isEn ? 'Product Break-Even' : t('sidebar.productBreakEven') },
-                        { to: '/tools/pricing-strategy', label: isEn ? 'Pricing Strategy' : t('sidebar.pricingStrategy') },
-                        { to: '/campaign-calculator', label: isEn ? 'Campaign Calculator' : t('sidebar.campaignCalculator') },
-                        { to: '/tools/ad-budget-planner', label: isEn ? 'Ad Budget Planner' : t('sidebar.adBudgetPlanner') },
-                        { to: '/tools/discount-impact', label: isEn ? 'Discount Impact' : t('sidebar.discountImpact') },
-                        { to: '/tools/shipping-optimizer', label: isEn ? 'Shipping Optimizer' : t('sidebar.shippingOptimizer') },
-                        { to: '/tools/monthly-pnl', label: isEn ? 'Monthly P&L' : t('sidebar.monthlyPnL') },
-                        { to: '/tools/clv-calculator', label: isEn ? 'CLV Calculator' : t('sidebar.clvCalculator') },
-                        { to: '/tools/upsell-planner', label: isEn ? 'Upsell Planner' : t('sidebar.upsellPlanner') },
-                        { to: '/tools/refund-rate', label: isEn ? 'Refund Rate Calculator' : t('sidebar.refundRateCalculator') },
-                    ],
                 },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل

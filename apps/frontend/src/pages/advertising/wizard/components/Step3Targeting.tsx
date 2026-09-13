@@ -32,6 +32,9 @@ import {
   EDUCATION_STATUS_OPTIONS,
 } from "../constants";
 
+// Experimental targeting controls flag (disabled until backend targeting schema mapping is finalized)
+const SHOW_EXPERIMENTAL_TARGETING_CONTROLS = false;
+
 interface Step3TargetingProps {
   formData: FormData;
   handleChange: (field: keyof FormData, value: any) => void;
