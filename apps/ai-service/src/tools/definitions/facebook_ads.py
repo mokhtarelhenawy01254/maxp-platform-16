@@ -571,9 +571,10 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 publish_res = await backend.publish_facebook_ad_draft(company_id, first_draft_id)
                 if publish_res.get("success"):
                     pub_data = publish_res.get("data", {})
-                    fb_campaign_id = pub_data.get("campaign", {}).get("id") or pub_data.get("campaignId")
-                    fb_adset_id = pub_data.get("adSet", {}).get("id") or pub_data.get("adSetId")
-                    fb_ad_id = pub_data.get("ad", {}).get("id") or pub_data.get("adId")
+                    fb_ids = pub_data.get("facebookIds", {})
+                    fb_campaign_id = fb_ids.get("campaignId") or pub_data.get("campaign", {}).get("facebookCampaignId") or pub_data.get("campaignId") or pub_data.get("campaign", {}).get("id")
+                    fb_adset_id = fb_ids.get("adSetId") or pub_data.get("adSet", {}).get("facebookAdSetId") or pub_data.get("adSetId") or pub_data.get("adSet", {}).get("id")
+                    fb_ad_id = fb_ids.get("adId") or pub_data.get("ad", {}).get("facebookAdId") or pub_data.get("adId") or pub_data.get("ad", {}).get("id")
                     saved_drafts[0]["status"] = "PUBLISHED"
                     saved_drafts[0]["facebookCampaignId"] = fb_campaign_id
                     saved_drafts[0]["facebookAdSetId"] = fb_adset_id
@@ -649,9 +650,10 @@ async def facebook_ad_publish_draft(input_data: FacebookAdPublishDraftInput) -> 
         res = await backend.publish_facebook_ad_draft(company_id, input_data.draft_id)
         if res.get("success"):
             data = res.get("data", {})
-            campaign_id = data.get("campaign", {}).get("id") or data.get("campaignId")
-            ad_set_id = data.get("adSet", {}).get("id") or data.get("adSetId")
-            ad_id = data.get("ad", {}).get("id") or data.get("adId")
+            fb_ids = data.get("facebookIds", {})
+            campaign_id = fb_ids.get("campaignId") or data.get("campaign", {}).get("facebookCampaignId") or data.get("campaignId") or data.get("campaign", {}).get("id")
+            ad_set_id = fb_ids.get("adSetId") or data.get("adSet", {}).get("facebookAdSetId") or data.get("adSetId") or data.get("adSet", {}).get("id")
+            ad_id = fb_ids.get("adId") or data.get("ad", {}).get("facebookAdId") or data.get("adId") or data.get("ad", {}).get("id")
             return {
                 "success": True,
                 "draft_id": input_data.draft_id,
@@ -1413,9 +1415,25 @@ async def facebook_ad_update_status(input_data: FacebookAdUpdateStatusInput) -> 
     from src.tools.backend_client import get_backend_client
     backend = get_backend_client()
 
+    target_campaign_id = str(input_data.campaign_id or "").strip()
+    if target_campaign_id and not target_campaign_id.isdigit():
+        sf = _db_mod.async_session
+        if sf:
+            try:
+                async with sf() as session:
+                    db_camp_res = await session.execute(
+                        text('SELECT "facebookCampaignId" FROM public.facebook_campaigns WHERE (id = :cid OR "facebookCampaignId" = :cid) AND "companyId" = :comp_id LIMIT 1'),
+                        {"cid": target_campaign_id, "comp_id": company_id}
+                    )
+                    row = db_camp_res.fetchone()
+                    if row and row[0]:
+                        target_campaign_id = str(row[0])
+            except Exception as resolve_err:
+                logger.warning("failed_to_resolve_campaign_id_for_status", error=str(resolve_err))
+
     res = await backend.update_facebook_campaign_status(
         company_id=company_id,
-        campaign_id=input_data.campaign_id,
+        campaign_id=target_campaign_id,
         status=input_data.status,
     )
 
@@ -1466,12 +1484,25 @@ async def facebook_ad_update_budget(input_data: FacebookAdUpdateBudgetInput) -> 
             "campaign_id": input_data.campaign_id
         }
 
-    from src.tools.backend_client import get_backend_client
-    backend = get_backend_client()
+    target_campaign_id = str(input_data.campaign_id or "").strip()
+    if target_campaign_id and not target_campaign_id.isdigit():
+        sf = _db_mod.async_session
+        if sf:
+            try:
+                async with sf() as session:
+                    db_camp_res = await session.execute(
+                        text('SELECT "facebookCampaignId" FROM public.facebook_campaigns WHERE (id = :cid OR "facebookCampaignId" = :cid) AND "companyId" = :comp_id LIMIT 1'),
+                        {"cid": target_campaign_id, "comp_id": company_id}
+                    )
+                    row = db_camp_res.fetchone()
+                    if row and row[0]:
+                        target_campaign_id = str(row[0])
+            except Exception as resolve_err:
+                logger.warning("failed_to_resolve_campaign_id_for_budget", error=str(resolve_err))
 
     res = await backend.update_facebook_campaign_budget(
         company_id=company_id,
-        campaign_id=input_data.campaign_id,
+        campaign_id=target_campaign_id,
         daily_budget=input_data.daily_budget,
     )
 
