@@ -1077,11 +1077,14 @@ router.post('/', async (req, res) => {
 
         item.productColor = color || '';
         item.productSize = size || '';
+        item.sku = variant?.sku || product?.sku || product?.barcode || '';
+        item.productSku = item.sku;
         item.image = image; // ✅ Save image for frontend
         item.productImage = image; // ✅ Duplicate for safety
         item.variant = {
           id: variant.id,
           name: variant.name,
+          sku: variant.sku || null,
           metadata: variant.metadata
         };
         // Add to metadata as well for redundancy
@@ -1108,6 +1111,11 @@ router.post('/', async (req, res) => {
               error: `المخزون غير كافي للمنتج: ${item.name || product.name}. المتوفر: ${product.stock}`
             });
           }
+        }
+        if (!item.sku) {
+          const itemSku = product?.sku || product?.barcode || '';
+          item.sku = itemSku;
+          item.productSku = itemSku;
         }
       }
 

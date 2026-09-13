@@ -65,12 +65,13 @@ function toInvoiceData(inv: Invoice): InvoiceData {
       orderNumber: inv.order.orderNumber,
       trackingNumber: (inv.order as any).trackingNumber || inv.order.turboTrackingNumber || null,
       turboTrackingNumber: inv.order.turboTrackingNumber,
-      orderItems: inv.order.orderItems?.map((item) => ({
+      orderItems: inv.order.orderItems?.map((item: any) => ({
+        ...item,
         productName: item.productName,
         quantity: item.quantity,
         price: item.price,
         total: item.total,
-        productSku: item.productSku,
+        productSku: item.productSku || item.sku || item.productVariant?.sku || item.product?.sku || item.code || item.barcode || null,
         productColor: item.productColor,
         productSize: item.productSize,
       })),
@@ -170,12 +171,13 @@ function guestOrderToInvoiceData(guest: GuestOrderPrint, company: GuestPrintComp
       orderNumber: guest.orderNumber,
       trackingNumber: guest.trackingNumber || guest.turboTrackingNumber || null,
       turboTrackingNumber: guest.turboTrackingNumber,
-      orderItems: (guest.items || []).map((item) => ({
-        productName: item.productName || "منتج",
+      orderItems: (guest.items || []).map((item: any) => ({
+        ...item,
+        productName: item.productName || item.name || "منتج",
         quantity: Number(item.quantity || 1),
         price: Number(item.price || 0),
         total: Number(item.total != null ? item.total : (Number(item.price || 0) * Number(item.quantity || 1))),
-        productSku: item.productSku,
+        productSku: item.productSku || item.sku || item.code || item.barcode || item.variant?.sku || item.product?.sku || null,
         productColor: item.productColor,
         productSize: item.productSize,
       })),

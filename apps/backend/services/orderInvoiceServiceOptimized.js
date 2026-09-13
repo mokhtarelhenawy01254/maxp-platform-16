@@ -21,7 +21,8 @@ async function fetchOrdersBatch(orderIds) {
       company: true,
       orderItems: {
         include: {
-          product: true
+          product: true,
+          productVariant: true
         }
       }
     }
@@ -30,7 +31,7 @@ async function fetchOrdersBatch(orderIds) {
   return orders;
 }
 
-// Batch: جلب طلبات الضيف للمعرفات غير الموجودة في الطلبات العادية
+// Batch: جلب طلبات الضيف للمعرفات غير الموجودة في الطلبات العادية مع استخراج أكواد المنتجات
 async function fetchGuestOrdersBatch(orderIds) {
   const prisma = getSharedPrismaClient();
   
@@ -41,6 +42,90 @@ async function fetchGuestOrdersBatch(orderIds) {
         { orderNumber: { in: orderIds } }
       ]
     }
+  });
+
+  // جمع المعرفات للمتغيرات والمنتجات التي ينقصها كود SKU
+  const variantIds = new Set();
+  const productIds = new Set();
+
+  guestOrders.forEach(go => {
+    let items = [];
+    if (typeof go.items === 'string') {
+      try { items = JSON.parse(go.items); } catch (e) { items = []; }
+    } else if (Array.isArray(go.items)) {
+      items = go.items;
+    }
+    items.forEach(item => {
+      const hasSku = Boolean(item.sku || item.productSku || item.code || item.barcode || item.variant?.sku);
+      if (!hasSku) {
+        const vId = item.variantId || item.variant?.id;
+        if (vId) variantIds.add(vId);
+        const pId = item.productId || item.id;
+        if (pId) productIds.add(pId);
+      }
+    });
+  });
+
+  const variantMap = new Map();
+  const productMap = new Map();
+
+  if (variantIds.size > 0) {
+    try {
+      const variants = await prisma.productVariant.findMany({
+        where: { id: { in: Array.from(variantIds) } },
+        select: { id: true, sku: true, productId: true }
+      });
+      variants.forEach(v => {
+        if (v.sku) variantMap.set(v.id, v.sku);
+        if (v.productId) productIds.add(v.productId);
+      });
+    } catch (e) {
+      console.warn('⚠️ [INVOICE-BATCH] Error querying variant SKUs:', e.message);
+    }
+  }
+
+  if (productIds.size > 0) {
+    try {
+      const products = await prisma.product.findMany({
+        where: { id: { in: Array.from(productIds) } },
+        select: { id: true, sku: true, barcode: true }
+      });
+      products.forEach(p => {
+        const code = p.sku || p.barcode || null;
+        if (code) productMap.set(p.id, code);
+      });
+    } catch (e) {
+      console.warn('⚠️ [INVOICE-BATCH] Error querying product SKUs:', e.message);
+    }
+  }
+
+  // ربط الأكواد بعناصر طلبات الضيف
+  guestOrders.forEach(go => {
+    let items = [];
+    if (typeof go.items === 'string') {
+      try { items = JSON.parse(go.items); } catch (e) { items = []; }
+    } else if (Array.isArray(go.items)) {
+      items = go.items;
+    }
+    const enriched = items.map(item => {
+      const vId = item.variantId || item.variant?.id;
+      const pId = item.productId || item.id;
+      const resolvedSku =
+        item.sku ||
+        item.productSku ||
+        item.code ||
+        item.barcode ||
+        item.variant?.sku ||
+        (vId ? variantMap.get(vId) : null) ||
+        (pId ? productMap.get(pId) : null) ||
+        null;
+      return {
+        ...item,
+        sku: resolvedSku,
+        productSku: resolvedSku
+      };
+    });
+    go.items = enriched;
   });
 
   return guestOrders;
@@ -106,7 +191,7 @@ function mapGuestOrderForPrint(guestOrder) {
       productName: item.productName || item.name || 'منتج',
       productColor: item.productColor || item.color || null,
       productSize: item.productSize || item.size || null,
-      productSku: item.sku || item.productSku || null,
+      productSku: item.sku || item.productSku || item.code || item.barcode || item.variant?.sku || null,
       price: Number(item.price || 0),
       quantity: Number(item.quantity || 1),
       total: Number(item.total != null ? item.total : (Number(item.price || 0) * Number(item.quantity || 1))),
@@ -224,10 +309,13 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
       const existingInvoice = existingInvoicesMap.get(order.id);
       
       if (existingInvoice) {
-        // إضافة بيانات الطلب للفاتورة الموجودة
+        // إضافة بيانات الطلب للفاتورة الموجودة مع التأكد من وجود كود المنتج
         existingInvoice.order = {
           orderNumber: order.orderNumber,
-          orderItems: order.orderItems
+          orderItems: (order.orderItems || []).map(item => ({
+            ...item,
+            productSku: item.productSku || item.productVariant?.sku || item.product?.sku || item.product?.barcode || null
+          }))
         };
         
         results.existing.push({
@@ -260,7 +348,7 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
 
       console.log(`✅ [INVOICE-BATCH] Created ${createdInvoices.count} invoices`);
 
-      // جلب الفواتير المُنشأة مع بيانات الطلب الكاملة
+      // جلب الفواتير المُنشأة مع بيانات الطلب الكاملة والأكواد
       const newInvoices = await prisma.orderInvoice.findMany({
         where: {
           orderId: { in: invoicesToCreate.map(item => item.order.id) }
@@ -268,7 +356,12 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
         include: {
           order: {
             include: {
-              orderItems: true
+              orderItems: {
+                include: {
+                  product: true,
+                  productVariant: true
+                }
+              }
             }
           }
         }
@@ -277,6 +370,12 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
       // ربط النتائج
       const newInvoiceMap = new Map();
       newInvoices.forEach(inv => {
+        if (inv.order?.orderItems) {
+          inv.order.orderItems = inv.order.orderItems.map(item => ({
+            ...item,
+            productSku: item.productSku || item.productVariant?.sku || item.product?.sku || item.product?.barcode || null
+          }));
+        }
         newInvoiceMap.set(inv.orderId, inv);
       });
 
@@ -368,12 +467,24 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
         include: {
           order: {
             include: {
-              orderItems: true
+              orderItems: {
+                include: {
+                  product: true,
+                  productVariant: true
+                }
+              }
             }
           }
         }
       });
     });
+
+    if (invoice?.order?.orderItems) {
+      invoice.order.orderItems = invoice.order.orderItems.map(item => ({
+        ...item,
+        productSku: item.productSku || item.productVariant?.sku || item.product?.sku || item.product?.barcode || null
+      }));
+    }
 
     return {
       success: true,

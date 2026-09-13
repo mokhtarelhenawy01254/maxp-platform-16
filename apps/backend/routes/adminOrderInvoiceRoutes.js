@@ -239,6 +239,17 @@ router.get('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
                   productSku: true,
                   productColor: true,
                   productSize: true,
+                  product: {
+                    select: {
+                      sku: true,
+                      barcode: true,
+                    }
+                  },
+                  productVariant: {
+                    select: {
+                      sku: true,
+                    }
+                  }
                 }
               }
             }
@@ -252,6 +263,13 @@ router.get('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
         success: false,
         message: 'الفاتورة غير موجودة'
       });
+    }
+
+    if (invoice?.order?.orderItems) {
+      invoice.order.orderItems = invoice.order.orderItems.map(item => ({
+        ...item,
+        productSku: item.productSku || item.productVariant?.sku || item.product?.sku || item.product?.barcode || null
+      }));
     }
 
     res.json({

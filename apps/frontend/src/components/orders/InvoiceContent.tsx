@@ -34,9 +34,38 @@ interface InvoiceItem {
   total?: number | string;
   totalPrice?: number | string;
   productSku?: string | null;
+  sku?: string | null;
+  code?: string | null;
+  barcode?: string | null;
+  variantSku?: string | null;
   productColor?: string | null;
   productSize?: string | null;
+  [key: string]: any;
 }
+
+const resolveItemCode = (item: InvoiceItem): string | null => {
+  if (item.productSku && String(item.productSku).trim()) return String(item.productSku).trim();
+  const raw = item as Record<string, any>;
+  if (raw.sku && String(raw.sku).trim()) return String(raw.sku).trim();
+  if (raw.code && String(raw.code).trim()) return String(raw.code).trim();
+  if (raw.barcode && String(raw.barcode).trim()) return String(raw.barcode).trim();
+  if (raw.variantSku && String(raw.variantSku).trim()) return String(raw.variantSku).trim();
+  if (raw.productVariant?.sku && String(raw.productVariant.sku).trim()) return String(raw.productVariant.sku).trim();
+  if (raw.variant?.sku && String(raw.variant.sku).trim()) return String(raw.variant.sku).trim();
+  if (raw.product?.sku && String(raw.product.sku).trim()) return String(raw.product.sku).trim();
+  if (raw.product?.barcode && String(raw.product.barcode).trim()) return String(raw.product.barcode).trim();
+  if (typeof raw.metadata === "string" && raw.metadata.includes("sku")) {
+    try {
+      const parsed = JSON.parse(raw.metadata);
+      if (parsed?.sku) return String(parsed.sku).trim();
+      if (parsed?.variantSku) return String(parsed.variantSku).trim();
+    } catch {}
+  } else if (raw.metadata && typeof raw.metadata === "object") {
+    if (raw.metadata.sku) return String(raw.metadata.sku).trim();
+    if (raw.metadata.variantSku) return String(raw.metadata.variantSku).trim();
+  }
+  return null;
+};
 
 export interface InvoiceData {
   id?: string;
@@ -263,7 +292,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
                       )}
                    </td>
                     <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "center", fontFamily: "monospace", fontSize: compact ? "11px" : "13px", fontWeight: 900 }}>
-                      {item.productSku || "—"}
+                      {resolveItemCode(item) || "—"}
                     </td>
                     <td style={{ padding: "4px 6px", borderLeft: innerBorderStyle, textAlign: "center", fontSize: compact ? "12px" : "14px", fontWeight: 800 }}>
                       {item.quantity}

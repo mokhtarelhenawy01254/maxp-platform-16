@@ -65,7 +65,7 @@ export function toOrderDetailsType(order: SimpleOrderForLabel): OrderDetailsType
       productName: String(item.productName || item.name || "منتج"),
       productColor: item.color || "",
       productSize: item.size || "",
-      productSku: item.sku || item.productSku || null,
+      productSku: item.sku || item.productSku || (item as any).code || (item as any).barcode || (item as any).variant?.sku || (item as any).product?.sku || null,
       price: Number(item.price || 0),
       quantity: Number(item.quantity || 0),
       total: Number(item.total || 0),

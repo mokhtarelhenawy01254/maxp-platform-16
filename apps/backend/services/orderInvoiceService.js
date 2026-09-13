@@ -7,7 +7,13 @@ const {
 
 function resolveItemSku(item) {
   if (!item) return item;
-  const productSku = item.product?.sku || item.productSku || null;
+  const productSku =
+    item.productSku ||
+    item.productVariant?.sku ||
+    item.product?.sku ||
+    item.sku ||
+    item.product?.barcode ||
+    null;
   return { ...item, productSku };
 }
 
@@ -32,7 +38,8 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
         company: true,
         orderItems: {
           include: {
-            product: true
+            product: true,
+            productVariant: true
           }
         }
       }
@@ -52,7 +59,8 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
           company: true,
           orderItems: {
             include: {
-              product: true
+              product: true,
+              productVariant: true
             }
           }
         }
@@ -107,7 +115,8 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
             include: {
               orderItems: {
                 include: {
-                  product: true
+                  product: true,
+                  productVariant: true
                 }
               },
               customer: true
@@ -145,7 +154,8 @@ async function getInvoiceByOrderId(orderId) {
             include: {
               orderItems: {
                 include: {
-                  product: true
+                  product: true,
+                  productVariant: true
                 }
               },
               customer: true
@@ -178,7 +188,8 @@ async function getInvoiceById(invoiceId) {
             include: {
               orderItems: {
                 include: {
-                  product: true
+                  product: true,
+                  productVariant: true
                 }
               },
               customer: true
@@ -211,7 +222,8 @@ async function getInvoiceByNumber(invoiceNumber) {
             include: {
               orderItems: {
                 include: {
-                  product: true
+                  product: true,
+                  productVariant: true
                 }
               },
               customer: true
