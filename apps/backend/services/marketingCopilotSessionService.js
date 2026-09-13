@@ -306,6 +306,24 @@ class MarketingCopilotSessionService {
       return false;
     }
   }
+
+  /**
+   * Merge updates into the session's context JSONB (e.g. activeProduct entity).
+   */
+  async updateContext(companyId, sessionId, newContext = {}) {
+    if (!companyId || !sessionId) return;
+    await this.ensureTables();
+    try {
+      await this.prisma.$executeRawUnsafe(`
+        UPDATE public.facebook_ads_ai_chat_sessions
+        SET context = coalesce(context, '{}'::jsonb) || $3::jsonb,
+            "updatedAt" = CURRENT_TIMESTAMP
+        WHERE "companyId" = $1 AND id = $2
+      `, companyId, sessionId, JSON.stringify(newContext));
+    } catch (err) {
+      console.warn('⚠️ [MarketingCopilotSessionService] updateContext error:', err.message);
+    }
+  }
 }
 
 module.exports = new MarketingCopilotSessionService();

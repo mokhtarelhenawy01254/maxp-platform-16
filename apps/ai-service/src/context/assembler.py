@@ -338,6 +338,39 @@ You are continuing an existing conversation on Facebook Messenger that was previ
                 if desc:
                     state_lines.append(f"  Referred Product Description: {desc[:240]}")
 
+            # Hermes Working Memory: Track Active Focus Entity (Product) for Instant Pronoun Resolution
+            active_prod = (
+                session_state.get("activeProduct")
+                or session_state.get("active_product_context")
+                or session_state.get("referredProduct")
+            )
+            if active_prod:
+                if isinstance(active_prod, dict):
+                    ap_name = active_prod.get("name") or active_prod.get("title") or active_prod.get("id") or ""
+                    ap_sku = active_prod.get("sku") or ""
+                    ap_stock = active_prod.get("stock")
+                    ap_price = active_prod.get("price")
+                elif isinstance(active_prod, str):
+                    ap_name = active_prod
+                    ap_sku = ""
+                    ap_stock = None
+                    ap_price = None
+                else:
+                    ap_name = ""
+
+                if ap_name:
+                    state_lines.append(f"  Active Focus Product: {ap_name}")
+                    if ap_sku:
+                        state_lines.append(f"  Active Product SKU: {ap_sku}")
+                    if ap_stock is not None:
+                        state_lines.append(f"  Active Product Stock: {ap_stock}")
+                    if ap_price:
+                        state_lines.append(f"  Active Product Price: {ap_price}")
+                    state_lines.append(
+                        f"  [HERMES ENTITY RESOLUTION]: When merchant says 'المنتج ده' (this product), 'إعلانه', 'سعره', 'مخزونه', or refers to a product without repeating its name, they strictly refer to '{ap_name}'. "
+                        "Do NOT ask the merchant for the product name again! Use this product's name and details directly."
+                    )
+
             if state_lines:
                 state_xml = "\n<session_state>\n" + "\n".join(state_lines) + "\n</session_state>"
                 dynamic_sections.append(("session_state", state_xml))

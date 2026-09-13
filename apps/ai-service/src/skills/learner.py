@@ -303,6 +303,107 @@ class AutonomousSkillLearner:
         async with sf() as new_session:
             return await self._do_upsert(new_session, company_id, skill_id, skill_name, skill_type, new_rule_line, rule_metadata)
 
+    @staticmethod
+    def _consolidate_playbook_rules(existing_instructions: str, new_rule_line: str, new_title: str, base_header: str) -> str:
+        """Hermes Canonical Rule Consolidation:
+        Parses existing rule blocks, identifies semantic relationships (EXCEPTION_TO, SUPERSEDES, REINFORCES),
+        and merges exceptions into compound canonical rules rather than accumulating messy duplicate bullets.
+        """
+        clean_new = new_rule_line.strip()
+        if not existing_instructions or not existing_instructions.strip():
+            return f"{base_header}\n{clean_new}\n"
+
+        # Split existing content into header vs rule blocks
+        header_part = base_header.strip()
+        if "## القواعد والدروس التشغيلية المعتمدة:" in existing_instructions:
+            parts = existing_instructions.split("## القواعد والدروس التشغيلية المعتمدة:", 1)
+            header_part = parts[0].strip() + "\n\n## القواعد والدروس التشغيلية المعتمدة:"
+            body_part = parts[1].strip()
+        else:
+            body_part = existing_instructions.replace(base_header, "").strip()
+
+        # Parse existing rule blocks
+        rule_blocks: list[dict[str, str]] = []
+        current_title = ""
+        current_lines: list[str] = []
+
+        for line in body_part.splitlines():
+            sline = line.strip()
+            if sline.startswith("- ["):
+                if current_lines:
+                    rule_blocks.append({
+                        "title": current_title,
+                        "text": "\n".join(current_lines).strip()
+                    })
+                    current_lines = []
+                end_idx = sline.find("]")
+                if end_idx != -1:
+                    current_title = sline[3:end_idx].strip()
+                else:
+                    current_title = ""
+                current_lines.append(sline)
+            elif current_lines:
+                current_lines.append(line)
+
+        if current_lines:
+            rule_blocks.append({
+                "title": current_title,
+                "text": "\n".join(current_lines).strip()
+            })
+
+        # Relationship Detection & Reconciliation
+        new_title_clean = (new_title or "").strip()
+        is_exception = any(kw in new_title_clean or kw in clean_new for kw in ["استثناء", "حجز مسبق", "Pre-Order", "pre_order"])
+        
+        merged = False
+        updated_blocks: list[dict[str, str]] = []
+
+        for b in rule_blocks:
+            b_title = b["title"]
+            b_text = b["text"]
+
+            # Case 1: Exception / Qualification to an existing rule
+            if is_exception and ("مخزون" in b_title or "مخزون" in b_text or "حماية" in b_title):
+                if "حجز مسبق" in b_text or "Pre-Order" in b_text:
+                    b_text = clean_new
+                else:
+                    raw_rule_body = clean_new
+                    if raw_rule_body.startswith("- ["):
+                        c_idx = raw_rule_body.find("]")
+                        if c_idx != -1:
+                            raw_rule_body = raw_rule_body[c_idx+1:].strip()
+                    b_text = f"{b_text.rstrip()}\n  ↳ [استثناء التاجر المعتمد (Pre-Order)]: {raw_rule_body}"
+                merged = True
+                updated_blocks.append({"title": b_title, "text": b_text})
+                continue
+
+            # Case 2: Direct Override / Topic Overlap (e.g. duplicate discount or style rules)
+            is_same_topic = False
+            if new_title_clean and b_title:
+                if new_title_clean in b_title or b_title in new_title_clean:
+                    is_same_topic = True
+                elif ("خصم" in new_title_clean and "خصم" in b_title) or ("معاينة" in new_title_clean and "معاينة" in b_title):
+                    is_same_topic = True
+
+            if is_same_topic:
+                updated_blocks.append({"title": new_title_clean, "text": clean_new})
+                merged = True
+                continue
+
+            # Case 3: Exact or near duplicate check
+            if clean_new in b_text or b_text in clean_new:
+                updated_blocks.append(b)
+                merged = True
+                continue
+
+            updated_blocks.append(b)
+
+        if not merged:
+            updated_blocks.append({"title": new_title_clean, "text": clean_new})
+
+        assembled_body = "\n\n".join(b["text"] for b in updated_blocks)
+        return f"{header_part}\n\n{assembled_body}\n"
+
     async def _do_upsert(
         self,
         session: AsyncSession,
@@ -351,13 +452,13 @@ class AutonomousSkillLearner:
                 session.add(skill)
             else:
                 existing_instructions = skill.instructions or skill.content or base_header
-                # Prevent exact duplicate lines
-                lines = [l.strip() for l in existing_instructions.splitlines() if l.strip()]
-                clean_new_rule = new_rule_line.strip()
-                if clean_new_rule not in lines:
-                    updated_instructions = f"{existing_instructions.strip()}\n{clean_new_rule}\n"
-                else:
-                    updated_instructions = existing_instructions
+                new_title = str(rule_metadata.get("title") or "")
+                updated_instructions = self._consolidate_playbook_rules(
+                    existing_instructions=existing_instructions,
+                    new_rule_line=new_rule_line,
+                    new_title=new_title,
+                    base_header=base_header,
+                )
 
                 meta = dict(skill.skill_metadata or {})
                 history = list(meta.get("history") or [])

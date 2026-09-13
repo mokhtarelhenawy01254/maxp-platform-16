@@ -263,16 +263,57 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
 
         resolved_product_url = resolved_product_url or "https://store.maxp.online"
 
+        # Resolve product snapshot (title, price, mainImage)
+        resolved_product_snapshot_str = None
+        try:
+            prod_search_id = resolved_product_id
+            prod_res = None
+            if prod_search_id:
+                prod_res = (await session.execute(
+                    text("""
+                        SELECT id, name, price, "mainImage", images 
+                        FROM public.products 
+                        WHERE "companyId" = :cid 
+                          AND (id = :pid OR slug ILIKE :pid OR name ILIKE :pid)
+                        LIMIT 1
+                    """),
+                    {"cid": company_id, "pid": prod_search_id}
+                )).first()
+            if not prod_res and resolved_product_url:
+                slug_guess = resolved_product_url.rstrip("/").split("/")[-1]
+                if slug_guess and len(slug_guess) > 2:
+                    prod_res = (await session.execute(
+                        text("""
+                            SELECT id, name, price, "mainImage", images 
+                            FROM public.products 
+                            WHERE "companyId" = :cid 
+                              AND (slug ILIKE :slug OR name ILIKE :slug)
+                            LIMIT 1
+                        """),
+                        {"cid": company_id, "slug": f"%{slug_guess}%"}
+                    )).first()
+
+            if prod_res:
+                resolved_product_snapshot_str = json.dumps({
+                    "id": prod_res.id,
+                    "name": prod_res.name,
+                    "title": prod_res.name,
+                    "price": float(prod_res.price or 0),
+                    "imageUrl": prod_res.mainImage or "",
+                }, ensure_ascii=False)
+        except Exception as snap_err:
+            logger.warning("failed_to_resolve_product_snapshot", error=str(snap_err))
+
         # 1. Insert Draft Run
         run_insert_sql = text("""
             INSERT INTO public.facebook_ads_ai_draft_runs (
-                id, "companyId", "inputHash", "productUrl",
+                id, "companyId", "inputHash", "productUrl", "productSnapshot",
                 "adAccountId", "pageId", "pixelId",
                 "requestedCampaignCount", "budgetAmount", "targetCountry",
                 "ageMin", "ageMax", "requestedStatus", status,
                 "createdAt", "updatedAt"
             ) VALUES (
-                :id, :companyId, :inputHash, :productUrl,
+                :id, :companyId, :inputHash, :productUrl, :productSnapshot,
                 :adAccountId, :pageId, :pixelId,
                 :requestedCampaignCount, :budgetAmount, :targetCountry,
                 :ageMin, :ageMax, 'PAUSED', 'COMPLETED',
@@ -284,6 +325,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
             "companyId": company_id,
             "inputHash": uuid.uuid4().hex,
             "productUrl": resolved_product_url,
+            "productSnapshot": resolved_product_snapshot_str,
             "adAccountId": resolved_ad_account_id,
             "pageId": resolved_page_id,
             "pixelId": resolved_pixel_id,
@@ -303,6 +345,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
             full_ad_data = {
                 "productId": resolved_product_id,
                 "productUrl": resolved_product_url,
+                "productName": json.loads(resolved_product_snapshot_str).get("name") if resolved_product_snapshot_str else None,
                 "campaignName": angle.campaign_name,
                 "objective": "OUTCOME_SALES",
                 "status": "PAUSED",
@@ -331,13 +374,13 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
 
             draft_insert_sql = text("""
                 INSERT INTO public.facebook_ads_ai_drafts (
-                    id, "runId", "companyId", "productUrl",
+                    id, "runId", "companyId", "productUrl", "productSnapshot",
                     index, angle, "campaignName", "adSetName", "adName",
                     "primaryText", headline, description, "callToAction",
                     "budgetAmount", "targetCountry", "ageMin", "ageMax",
                     notes, "createFullAdData", status, "createdAt", "updatedAt"
                 ) VALUES (
-                    :id, :runId, :companyId, :productUrl,
+                    :id, :runId, :companyId, :productUrl, :productSnapshot,
                     :index, :angle, :campaignName, :adSetName, :adName,
                     :primaryText, :headline, :description, :callToAction,
                     :budgetAmount, :targetCountry, :ageMin, :ageMax,
@@ -349,6 +392,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 "runId": run_id,
                 "companyId": company_id,
                 "productUrl": resolved_product_url,
+                "productSnapshot": resolved_product_snapshot_str,
                 "index": index,
                 "angle": angle.angle,
                 "campaignName": angle.campaign_name,
@@ -356,13 +400,13 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 "adName": angle.ad_name,
                 "primaryText": angle.primary_text,
                 "headline": angle.headline,
-                "description": angle.description,
-                "callToAction": angle.call_to_action,
+                "description": angle.description or "",
+                "callToAction": angle.call_to_action or "SHOP_NOW",
                 "budgetAmount": angle.budget_amount,
                 "targetCountry": angle.target_country,
                 "ageMin": angle.age_min,
                 "ageMax": angle.age_max,
-                "notes": angle.notes,
+                "notes": angle.notes or "",
                 "createFullAdData": json.dumps(full_ad_data, ensure_ascii=False),
             })
 

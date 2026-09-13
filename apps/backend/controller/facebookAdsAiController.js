@@ -438,16 +438,37 @@ class FacebookAdsAiController {
         console.warn('[FacebookAdsAI] Failed to persist user message in DB:', dbErr.message);
       }
 
-      // Retrieve recent conversation messages for Hermes memory continuity
+      // Retrieve recent conversation messages and active working memory for Hermes continuity
       let recentMessages = [];
+      let activeProductContext = null;
       try {
         const sessionData = await marketingCopilotSessionService.getSession(companyId, threadId);
-        if (sessionData && Array.isArray(sessionData.messages) && sessionData.messages.length > 1) {
-          // Exclude the message we just appended (the last one) so the current prompt isn't duplicated
-          recentMessages = sessionData.messages.slice(0, -1).slice(-15).map(m => ({
-            role: m.sender === 'user' ? 'user' : 'assistant',
-            content: m.text || '',
-          }));
+        if (sessionData) {
+          activeProductContext = sessionData.context?.activeProduct || null;
+          if (Array.isArray(sessionData.messages) && sessionData.messages.length > 1) {
+            // Exclude the message we just appended (the last one) so the current prompt isn't duplicated
+            recentMessages = sessionData.messages.slice(0, -1).slice(-15).map(m => ({
+              role: m.sender === 'user' ? 'user' : 'assistant',
+              content: m.text || '',
+            }));
+
+            // If activeProductContext not explicitly saved yet, scan previous messages for recently discussed product
+            if (!activeProductContext) {
+              for (let i = sessionData.messages.length - 2; i >= 0; i--) {
+                const pText = sessionData.messages[i].text || '';
+                // Check if message mentions product quotes or SKU
+                const quoteMatch = pText.match(/["'«]([^"'»]{3,40})["'»]/);
+                if (quoteMatch && !quoteMatch[1].includes('المهارة') && !quoteMatch[1].includes('المرحلة') && !quoteMatch[1].includes('بلاك فرايداي')) {
+                  const skuMatch = pText.match(/SKU:\s*([a-zA-Z0-9_-]+)/i);
+                  activeProductContext = {
+                    name: quoteMatch[1].trim(),
+                    sku: skuMatch ? skuMatch[1].trim() : '',
+                  };
+                  break;
+                }
+              }
+            }
+          }
         }
       } catch (memErr) {
         console.warn('[FacebookAdsAI] Could not load prior messages for context:', memErr.message);
@@ -463,6 +484,8 @@ class FacebookAdsAiController {
           source_channel: 'dashboard',
           memory_context: {
             recentMessages,
+            activeProduct: activeProductContext,
+            active_product_context: activeProductContext,
           },
         });
 
@@ -513,6 +536,24 @@ class FacebookAdsAiController {
             text: result?.reply || '',
             toolCalls: result?.tool_calls || [],
           });
+
+          // Update activeProduct in session context if any tool calls referenced or analyzed a product
+          if (result?.tool_calls && Array.isArray(result.tool_calls)) {
+            for (const tc of result.tool_calls) {
+              const args = tc.arguments || tc.args || {};
+              const pName = args.product_name || args.product_slug || args.product_id;
+              if (pName && typeof pName === 'string' && pName.length > 2 && !pName.includes('بلاك فرايداي')) {
+                marketingCopilotSessionService.updateContext(companyId, threadId, {
+                  activeProduct: {
+                    name: pName,
+                    sku: args.product_id || args.sku || '',
+                    updatedAt: new Date().toISOString(),
+                  }
+                }).catch(() => {});
+                break;
+              }
+            }
+          }
         } catch (dbErr) {
           console.warn('[FacebookAdsAI] Failed to persist agent reply in DB:', dbErr.message);
         }
