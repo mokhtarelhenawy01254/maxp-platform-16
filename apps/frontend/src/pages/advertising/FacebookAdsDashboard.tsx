@@ -362,9 +362,6 @@ const FacebookAdsDashboard: React.FC = () => {
                   </span>
                 )}
               </div>
-              <h1 className="mt-1.5 text-xl font-black tracking-tight sm:text-2xl">
-                {isEn ? "Facebook & Instagram Ads Cockpit" : "قمرة قيادة إعلانات فيسبوك وإنستجرام"}
-              </h1>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -535,7 +532,7 @@ const FacebookAdsDashboard: React.FC = () => {
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                 <div className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs">
                   <Layers className="h-3.5 w-3.5" />
-                  <span>{isEn ? "Live Cockpit" : "قمرة الحملات المباشرة"}</span>
+                  <span>{isEn ? "Live Campaigns" : "الحملات المباشرة"}</span>
                   <span className="rounded-full bg-white/20 px-1.5 py-0.2 text-[11px] font-black text-white">
                     {stats.total}
                   </span>
