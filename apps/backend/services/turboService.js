@@ -89,6 +89,11 @@ class TurboService {
   async getTicket(i) { return this._ticket.getTicket(i); }
   async getTicketLog(i) { return this._ticket.getTicketLog(i); }
   async replyToTicket(...a) { return this._ticket.replyToTicket(...a); }
+  async rateTicket(i, r) { return this._ticket.rateTicket(i, r); }
+  async getTicketStatuses() { return this._ticket.getStatuses(); }
+  async getTicketInstructions() { return this._ticket.getInstructions(); }
+  async canCreateTicket() { return this._ticket.canCreateTicket(); }
+  async getTotalOpenTickets() { return this._ticket.getTotalOpenTickets(); }
   async getUnreadTicketsCount() { return this._ticket.getUnreadTicketsCount(); }
 
   // ── Shipping Cost ─────────────────────────────────────

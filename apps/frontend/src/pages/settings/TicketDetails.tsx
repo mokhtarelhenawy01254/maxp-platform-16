@@ -8,7 +8,9 @@ import {
   ExclamationCircleIcon,
   PaperAirplaneIcon,
   PhotoIcon,
+  StarIcon as StarOutlineIcon,
 } from "@heroicons/react/24/outline";
+import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { toast } from "sonner";
 import i18n from "../../i18n";
 import { tToast } from "../../utils/i18n-toast";
@@ -46,6 +48,7 @@ interface TicketDetails {
   description: string;
   content: string; // Turbo API uses content
   status: number;
+  rate?: number | null;
   created_at: string;
   messages: Message[];
   logs?: any[];
@@ -60,6 +63,8 @@ const TicketDetails: React.FC = () => {
   const [replyMessage, setReplyMessage] = useState("");
   const [replyImage, setReplyImage] = useState<File | null>(null);
   const [sendingReply, setSendingReply] = useState(false);
+  const [currentRating, setCurrentRating] = useState<number | null>(null);
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   useEffect(() => {
     if (ticketId) {
@@ -76,8 +81,8 @@ const TicketDetails: React.FC = () => {
 
       // Call both backend endpoints parallel
       const [ticketResponse, logResponse] = await Promise.all([
-        apiClient.get(`/turbo/tickets/${ticketId}`),
-        apiClient.get(`/turbo/tickets/${ticketId}/log`),
+        apiClient.get<any>(`/turbo/tickets/${ticketId}`),
+        apiClient.get<any>(`/turbo/tickets/${ticketId}/log`),
       ]);
 
       console.log("📋 Backend ticket response:", ticketResponse.data);
@@ -119,7 +124,14 @@ const TicketDetails: React.FC = () => {
         created_at: ticketData.created_at || new Date().toISOString(),
         messages: sortedMessages,
         logs: logsData,
+        rate: ticketData.rate ?? ticketData.rating ?? null,
       };
+
+      if (ticketData.rate !== undefined && ticketData.rate !== null) {
+        setCurrentRating(Number(ticketData.rate));
+      } else if (ticketData.rating !== undefined && ticketData.rating !== null) {
+        setCurrentRating(Number(ticketData.rating));
+      }
 
       console.log("✅ Combined ticket data:", combinedTicket);
       console.log(
@@ -208,7 +220,7 @@ const TicketDetails: React.FC = () => {
         formData.append("image", replyImage);
       }
 
-      const response = await apiClient.post(
+      const response = await apiClient.post<any>(
         `/turbo/tickets/${ticketId}/reply`,
         formData,
         {
@@ -251,6 +263,24 @@ const TicketDetails: React.FC = () => {
         return;
       }
       setReplyImage(file);
+    }
+  };
+
+  const handleRateTicket = async (score: number) => {
+    if (!ticketId || submittingRating) return;
+    try {
+      setSubmittingRating(true);
+      const res = await apiClient.post<any>(`/turbo/tickets/${ticketId}/rate`, { rate: score });
+      if (res.data?.success) {
+        setCurrentRating(score);
+        toast.success("تم تقييم التذكرة بنجاح");
+      } else {
+        toast.error(res.data?.message || "تعذر إرسال التقييم");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "حدث خطأ أثناء التقييم");
+    } finally {
+      setSubmittingRating(false);
     }
   };
 
@@ -349,11 +379,36 @@ const TicketDetails: React.FC = () => {
               </h2>
             </div>
 
-            <span
-              className={`px-3 py-1 text-sm rounded-full ${getStatusColor(ticket.status)}`}
-            >
-              {getStatusText(ticket.status)}
-            </span>
+            <div className="flex items-center gap-3">
+              {/* Rating Component */}
+              <div className="flex items-center gap-1 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 rounded-xl px-2.5 py-1">
+                <span className="text-xs font-semibold text-amber-900 dark:text-amber-200 ml-1">
+                  {currentRating ? `التقييم (${currentRating}/5):` : "تقييم الدعم:"}
+                </span>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    disabled={submittingRating}
+                    onClick={() => handleRateTicket(star)}
+                    className="p-0.5 text-amber-500 hover:scale-110 transition disabled:opacity-50"
+                    title={`تقييم ${star} من 5 نجوم`}
+                  >
+                    {currentRating && currentRating >= star ? (
+                      <StarSolidIcon className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    ) : (
+                      <StarOutlineIcon className="h-4 w-4 text-amber-400 hover:text-amber-500" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <span
+                className={`px-3 py-1 text-sm rounded-full ${getStatusColor(ticket.status)}`}
+              >
+                {getStatusText(ticket.status)}
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

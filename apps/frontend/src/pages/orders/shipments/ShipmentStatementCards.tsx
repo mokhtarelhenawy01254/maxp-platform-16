@@ -11,6 +11,7 @@ import {
   BuildingOfficeIcon,
   ArrowPathRoundedSquareIcon,
   XCircleIcon,
+  TicketIcon,
 } from "@heroicons/react/24/outline";
 import { useCurrency } from "../../../hooks/useCurrency";
 import { ShipmentRowItem } from "./ShipmentStatementTable";
@@ -23,6 +24,7 @@ interface ShipmentStatementCardsProps {
   onSyncShipment: (id: string) => void;
   onPrintWaybill: (shipment: ShipmentRowItem) => void;
   onOpenChat: (shipment: ShipmentRowItem) => void;
+  onOpenTicket?: (shipment: ShipmentRowItem) => void;
   onResendShipment: (shipment: ShipmentRowItem) => void;
   onCancelShipment: (shipment: ShipmentRowItem) => void;
   onCopyTracking: (tracking: string) => void;
@@ -38,6 +40,7 @@ export const ShipmentStatementCards: React.FC<ShipmentStatementCardsProps> = ({
   onSyncShipment,
   onPrintWaybill,
   onOpenChat,
+  onOpenTicket,
   onResendShipment,
   onCancelShipment,
   onCopyTracking,
@@ -239,6 +242,16 @@ export const ShipmentStatementCards: React.FC<ShipmentStatementCardsProps> = ({
                     title="محادثة تربو"
                   >
                     <ChatBubbleLeftRightIcon className="h-4 w-4" />
+                  </button>
+                )}
+                {isTurbo && tracking && onOpenTicket && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenTicket(s)}
+                    className="p-1.5 text-gray-500 hover:text-amber-600"
+                    title="فتح تذكرة دعم تربو"
+                  >
+                    <TicketIcon className="h-4 w-4" />
                   </button>
                 )}
                 {isTurbo && tracking && (

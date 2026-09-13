@@ -36,7 +36,7 @@ async function syncTurboOrdersToShipments(prisma, companyId) {
         currency: true,
         createdAt: true,
       },
-      take: 60,
+      take: 250,
     });
 
     if (unsyncedOrders.length > 0) {
@@ -45,27 +45,32 @@ async function syncTurboOrdersToShipments(prisma, companyId) {
         select: { id: true },
       });
 
-      for (const ord of unsyncedOrders) {
+      const dataToInsert = unsyncedOrders.map(ord => {
         const tracking = ord.turboTrackingNumber || ord.turboShipmentId;
-        if (!tracking) continue;
-        await prisma.shipment.create({
-          data: {
-            companyId,
-            orderId: ord.id,
-            shippingCompanyId: turboCarrier?.id || null,
-            carrierType: 'TURBO',
-            status: ord.turboShipmentStatus || 'CREATED',
-            trackingNumber: ord.turboTrackingNumber || null,
-            externalShipmentId: ord.turboShipmentId || null,
-            labelUrl: ord.turboLabelUrl || null,
-            destinationGovernorate: ord.governorate || null,
-            destinationCity: ord.city || null,
-            destinationAddress: ord.customerAddress || ord.shippingAddress || null,
-            cost: ord.shipping !== null && ord.shipping !== undefined ? Number(ord.shipping) : null,
-            currency: ord.currency || 'EGP',
-            createdAt: ord.createdAt || new Date(),
-            metadata: ord.turboMetadata || null,
-          },
+        if (!tracking) return null;
+        return {
+          companyId,
+          orderId: ord.id,
+          shippingCompanyId: turboCarrier?.id || null,
+          carrierType: 'TURBO',
+          status: ord.turboShipmentStatus || 'CREATED',
+          trackingNumber: ord.turboTrackingNumber || null,
+          externalShipmentId: ord.turboShipmentId || null,
+          labelUrl: ord.turboLabelUrl || null,
+          destinationGovernorate: ord.governorate || null,
+          destinationCity: ord.city || null,
+          destinationAddress: ord.customerAddress || ord.shippingAddress || null,
+          cost: ord.shipping !== null && ord.shipping !== undefined ? Number(ord.shipping) : null,
+          currency: ord.currency || 'EGP',
+          createdAt: ord.createdAt || new Date(),
+          metadata: ord.turboMetadata || null,
+        };
+      }).filter(Boolean);
+
+      if (dataToInsert.length > 0) {
+        await prisma.shipment.createMany({
+          data: dataToInsert,
+          skipDuplicates: true,
         }).catch(() => {});
       }
     }
@@ -131,6 +136,7 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
         OR: [
           { status: { in: targetAliases } },
           { order: { turboShipmentStatus: { in: targetAliases } } },
+          { order: { status: { in: targetAliases } } },
         ],
       });
     }
@@ -289,9 +295,9 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
       }
     });
 
-    // Granular 12-stage Turbo / Carrier counts
+    // Granular 13-stage Operational Carrier counts (Turbo & All Carriers)
     const carrierStagesCounts = {
-      all: allCarrierShipments.length,
+      all: 0,
       incomplete: 0,
       turbo_sent: 0,
       processing: 0,
@@ -304,42 +310,73 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
       returned_resent: 0,
       remitted: 0,
       returned_received: 0,
+      cancelled: 0,
+    };
+
+    const classifyShipmentStage = (rawStatus, turboStatus) => {
+      const s = String(turboStatus || rawStatus || '').toLowerCase().trim();
+      if (!s) return 'incomplete';
+      if (['incomplete', 'turbo_saved', 'created', 'status_1', 'status_18', '1', '18'].includes(s) || s.includes('غير مكتمل')) return 'incomplete';
+      if (['turbo_sent', 'sent', 'waiting', 'pending', 'status_2', '2'].includes(s) || s.includes('انتظار') || s.includes('بانتظار')) return 'turbo_sent';
+      if (['processing', 'underway', 'accepted', 'status_3', '3', 'preparing'].includes(s) || s.includes('تنفيذ')) return 'processing';
+      if (['out_for_delivery', 'under delivery', 'with captain', 'in transit', 'shipped', 'delivering', 'status_4', '4'].includes(s) || s.includes('مسلمة للمندوب') || s.includes('توصيل') || s.includes('شحن')) return 'out_for_delivery';
+      if (['delayed', 'on hold', 'on_hold', 'status_13', '13'].includes(s) || s.includes('مؤجل')) return 'delayed';
+      if (['delivered', 'completed', 'status_7', '7'].includes(s) || s.includes('تسليم')) return 'delivered';
+      if (['returned_to_company', 'returned with company', 'returned', 'status_5', 'status_14', '5', '14'].includes(s) || (s.includes('مرتجع') && !s.includes('وصلتني') && !s.includes('معدوم') && !s.includes('مفقود') && !s.includes('ارسال') && !s.includes('عميل'))) return 'returned_to_company';
+      if (['returned_destroyed', 'status_12', 'status_17', '12', '17'].includes(s) || s.includes('معدوم')) return 'returned_destroyed';
+      if (['returned_missing', 'lost', 'status_11', 'status_16', '11', '16'].includes(s) || s.includes('مفقود')) return 'returned_missing';
+      if (['returned_resent', 'status_10', 'status_15', '10', '15'].includes(s) || s.includes('ارسال') || s.includes('إرسال')) return 'returned_resent';
+      if (['remitted', 'supplied', 'status_8', 'status_19', '8', '19'].includes(s) || s.includes('توريد')) return 'remitted';
+      if (['returned_received', 'status_20', '20'].includes(s) || s.includes('وصلتني')) return 'returned_received';
+      if (['cancelled', 'canceled', 'status_6', '6'].includes(s) || s.includes('ملغي')) return 'cancelled';
+      return 'incomplete';
     };
 
     allCarrierShipments.forEach((item) => {
-      const rawSt = (item.order?.turboShipmentStatus || item.status || '').toLowerCase().trim();
-      if (['incomplete', 'turbo_saved', 'created', 'status_1', 'status_18', '1', '18'].includes(rawSt)) {
-        carrierStagesCounts.incomplete++;
-      } else if (['turbo_sent', 'sent', 'waiting', 'pending', 'status_2', '2'].includes(rawSt) || rawSt.includes('انتظار')) {
-        carrierStagesCounts.turbo_sent++;
-      } else if (['processing', 'underway', 'accepted', 'status_3', '3'].includes(rawSt) || rawSt.includes('تنفيذ')) {
-        carrierStagesCounts.processing++;
-      } else if (['out_for_delivery', 'under delivery', 'with captain', 'in transit', 'shipped', 'status_4', '4'].includes(rawSt) || rawSt.includes('مسلمة للمندوب')) {
-        carrierStagesCounts.out_for_delivery++;
-      } else if (['delayed', 'on hold', 'status_13', '13'].includes(rawSt) || rawSt.includes('مؤجل')) {
-        carrierStagesCounts.delayed++;
-      } else if (['delivered', 'completed', 'status_7', '7'].includes(rawSt) || rawSt.includes('تسليم')) {
-        carrierStagesCounts.delivered++;
-      } else if (['returned_to_company', 'returned with company', 'returned', 'status_5', 'status_14', '5', '14'].includes(rawSt) || (rawSt.includes('مرتجع') && !rawSt.includes('وصلتني') && !rawSt.includes('معدوم') && !rawSt.includes('مفقود') && !rawSt.includes('ارسال'))) {
-        carrierStagesCounts.returned_to_company++;
-      } else if (['returned_destroyed', 'status_12', 'status_17', '12', '17'].includes(rawSt) || rawSt.includes('معدوم')) {
-        carrierStagesCounts.returned_destroyed++;
-      } else if (['returned_missing', 'lost', 'status_11', 'status_16', '11', '16'].includes(rawSt) || rawSt.includes('مفقود')) {
-        carrierStagesCounts.returned_missing++;
-      } else if (['returned_resent', 'status_10', 'status_15', '10', '15'].includes(rawSt) || rawSt.includes('ارسال')) {
-        carrierStagesCounts.returned_resent++;
-      } else if (['remitted', 'supplied', 'status_8', 'status_19', '8', '19'].includes(rawSt) || rawSt.includes('توريد')) {
-        carrierStagesCounts.remitted++;
-      } else if (['returned_received', 'status_20', '20'].includes(rawSt) || rawSt.includes('وصلتني')) {
-        carrierStagesCounts.returned_received++;
+      const stage = classifyShipmentStage(item.status, item.order?.turboShipmentStatus);
+      if (carrierStagesCounts[stage] !== undefined) {
+        carrierStagesCounts[stage]++;
       }
     });
+    carrierStagesCounts.all = allCarrierShipments.length;
 
+    // If company shipments table is still empty or smaller than Turbo orders, enrich with live Turbo orders
+    if (carrierStagesCounts.all === 0 || (!shippingCompanyId || shippingCompanyId === 'ALL')) {
+      const turboOrdersCounts = await prisma.order.groupBy({
+        by: ['turboShipmentStatus'],
+        where: {
+          companyId,
+          OR: [
+            { turboShipmentId: { not: null } },
+            { turboTrackingNumber: { not: null } },
+          ],
+        },
+        _count: { id: true },
+      }).catch(() => []);
+
+      if (Array.isArray(turboOrdersCounts) && turboOrdersCounts.length > 0) {
+        let additionalOrders = 0;
+        turboOrdersCounts.forEach((item) => {
+          const count = item._count.id;
+          const stage = classifyShipmentStage(item.turboShipmentStatus, item.turboShipmentStatus);
+          // Only add if not already captured in shipments
+          if (carrierStagesCounts.all === 0) {
+            carrierStagesCounts[stage] = (carrierStagesCounts[stage] || 0) + count;
+            additionalOrders += count;
+          }
+        });
+        if (carrierStagesCounts.all === 0) {
+          carrierStagesCounts.all = additionalOrders;
+        }
+      }
+    }
+
+    const effectiveTotal = Math.max(total, carrierStagesCounts.all);
     const summary = {
-      totalShipments: countsByStatus.reduce((acc, curr) => acc + curr._count.id, 0),
-      inTransit: inTransitCount,
-      delivered: deliveredCount,
-      returned: returnedCount,
+      totalShipments: effectiveTotal,
+      inTransit: carrierStagesCounts.processing + carrierStagesCounts.out_for_delivery + carrierStagesCounts.delayed,
+      delivered: carrierStagesCounts.delivered + carrierStagesCounts.remitted,
+      returned: carrierStagesCounts.returned_to_company + carrierStagesCounts.returned_destroyed + carrierStagesCounts.returned_missing + carrierStagesCounts.returned_received,
       pendingRemittanceAmount: Number(pendingAmountAggr?._sum?.cost || 0),
       statusCounts,
       carrierStatusCounts: carrierStagesCounts,
@@ -804,6 +841,99 @@ router.post('/:id/cancel-request', verifyToken.authenticateToken, async (req, re
   } catch (error) {
     console.error('Error sending cancellation request:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/v1/shipments/sync-carrier - Live sync all active shipments directly with carrier (Turbo)
+router.post('/sync-carrier', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const companyId = req.user?.companyId;
+    const { carrierType = 'TURBO' } = req.body;
+    if (!companyId) return res.status(400).json({ success: false, error: 'معرف الشركة مطلوب' });
+
+    if (carrierType.toUpperCase() === 'TURBO' || !carrierType) {
+      const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { turboApiKey: true, turboMainClientCode: true, turboEnabled: true }
+      });
+
+      const carrier = await prisma.shippingCompany.findFirst({
+        where: { companyId, providerKey: 'TURBO', isActive: true },
+      });
+
+      const apiKey = carrier?.apiKey || company?.turboApiKey;
+      if (!apiKey) {
+        return res.status(400).json({ success: false, error: 'لم يتم العثور على مفتاح الربط لشركة Turbo' });
+      }
+
+      const TurboService = require('../services/turboService');
+      const turboStatusSyncService = require('../services/turboStatusSyncService');
+      const svc = new TurboService(apiKey, companyId);
+
+      const now = new Date();
+      const startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const endDate = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const r = await svc.fetchAllStatuses(startDate, endDate);
+      if (!r.success || !Array.isArray(r.shipments)) {
+        return res.status(400).json({ success: false, error: r.error || 'تعذر جلب بيانات الشحنات من Turbo' });
+      }
+
+      const turboStatuses = {};
+      for (const s of r.shipments) {
+        if (s.code) turboStatuses[String(s.code).toLowerCase()] = s;
+        if (s.barCode) turboStatuses[String(s.barCode).toLowerCase()] = s;
+        if (s.invoiceNumber) {
+          const inv = String(s.invoiceNumber).toLowerCase();
+          turboStatuses[inv] = s;
+          turboStatuses[`ord-${inv}`] = s;
+        }
+      }
+
+      const baseWhere = { companyId, OR: [{ turboShipmentId: { not: null } }, { turboTrackingNumber: { not: null } }] };
+      const allOrders = await prisma.order.findMany({
+        where: baseWhere,
+        select: { id: true, orderNumber: true, turboShipmentId: true, turboTrackingNumber: true, turboShipmentStatus: true }
+      });
+
+      let syncedCount = 0;
+      for (const o of allOrders) {
+        const keys = [o.turboShipmentId, o.turboTrackingNumber, o.orderNumber, o.orderNumber?.replace('ORD-', '')]
+          .filter(Boolean)
+          .map(k => String(k).trim().toLowerCase());
+        let live = null;
+        for (const k of keys) {
+          if (turboStatuses[k]) { live = turboStatuses[k]; break; }
+        }
+        if (live) {
+          const rawStat = live.internalStatus || live.status || live.statusCode;
+          await turboStatusSyncService.syncTurboStatusToOrder({
+            orderId: o.id,
+            orderNumber: o.orderNumber,
+            companyId,
+            rawStatus: rawStat,
+            payload: live
+          }).catch(() => {});
+          syncedCount++;
+        }
+      }
+
+      // Also ensure recent orders are in Shipment table
+      await syncTurboOrdersToShipments(prisma, companyId);
+
+      return res.json({
+        success: true,
+        message: `تمت مزامنة ${syncedCount} شحنة مع Turbo بنجاح`,
+        totalFromCarrier: r.shipments.length,
+        syncedCount,
+      });
+    }
+
+    res.json({ success: true, message: 'تمت المزامنة بنجاح' });
+  } catch (err) {
+    console.error('❌ Error syncing carrier statuses:', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

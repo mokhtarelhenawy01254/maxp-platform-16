@@ -4,7 +4,20 @@ const { trackShipment, syncShipmentStatus } = require('./trackingHandlers');
 const { calculateShippingCost, getShippingComparison } = require('./shippingHandlers');
 const { printLabel, printWaybill } = require('./labelHandlers');
 const { getGovernments, getAreas, getBranches, searchAreaByText, searchAreaByTextPublic } = require('./locationHandlers');
-const { addTicket, getInquiriesTypes, getTickets, getTicket, getTicketLog, replyToTicket, getUnreadTicketsCount } = require('./ticketHandlers');
+const {
+  addTicket,
+  getInquiriesTypes,
+  getTickets,
+  getTicket,
+  getTicketLog,
+  replyToTicket,
+  getUnreadTicketsCount,
+  getTicketStatuses,
+  getTicketInstructions,
+  getCanCreateTicket,
+  getTotalOpenTickets,
+  rateTicket,
+} = require('./ticketHandlers');
 
 module.exports = {
   getRecords,
@@ -30,5 +43,10 @@ module.exports = {
   getTicket,
   getTicketLog,
   replyToTicket,
-  getUnreadTicketsCount
+  getUnreadTicketsCount,
+  getTicketStatuses,
+  getTicketInstructions,
+  getCanCreateTicket,
+  getTotalOpenTickets,
+  rateTicket,
 };

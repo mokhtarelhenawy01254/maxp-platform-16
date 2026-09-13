@@ -109,18 +109,88 @@ const replyToTicket = async (req, res) => {
   }
 };
 
-const getUnreadTicketsCount = async (req, res) => {
+const getTicketStatuses = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
     const turboService = new TurboService(null, companyId);
-    const result = await turboService.getUnreadTicketsCount();
-    res.json({ success: true, data: result });
+    const result = await turboService.getTicketStatuses();
+    res.json(result);
   } catch (error) {
-    console.error('❌ [TURBO-CONTROLLER] Error getting unread tickets count:', error);
-    const isConfigError = error.message?.includes('Turbo is not enabled') || error.message?.includes('not configured');
-    res.status(isConfigError ? 400 : 500).json({ success: false, error: error.message || 'Failed to get unread tickets count', counts: { tickets: 0, missions: 0, orders: 0 } });
+    console.error('❌ [TURBO-CONTROLLER] Error getting ticket statuses:', error);
+    res.status(500).json({ success: false, error: error.message, statuses: [] });
   }
 };
 
-module.exports = { addTicket, getInquiriesTypes, getTickets, getTicket, getTicketLog, replyToTicket, getUnreadTicketsCount };
+const getTicketInstructions = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    const turboService = new TurboService(null, companyId);
+    const result = await turboService.getTicketInstructions();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [TURBO-CONTROLLER] Error getting ticket instructions:', error);
+    res.status(500).json({ success: false, error: error.message, instructions: [] });
+  }
+};
+
+const getCanCreateTicket = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    const turboService = new TurboService(null, companyId);
+    const result = await turboService.canCreateTicket();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [TURBO-CONTROLLER] Error checking can-create ticket:', error);
+    res.status(500).json({ success: false, error: error.message, canCreate: true });
+  }
+};
+
+const getTotalOpenTickets = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    const turboService = new TurboService(null, companyId);
+    const result = await turboService.getTotalOpenTickets();
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [TURBO-CONTROLLER] Error getting total open tickets:', error);
+    res.status(500).json({ success: false, error: error.message, total: 0 });
+  }
+};
+
+const rateTicket = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const { id } = req.params;
+    const { rate } = req.body;
+    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    if (!id) return res.status(400).json({ success: false, error: 'Ticket ID is required' });
+    if (!rate || Number(rate) < 1 || Number(rate) > 5) {
+      return res.status(400).json({ success: false, error: 'Rate must be a number between 1 and 5' });
+    }
+    const turboService = new TurboService(null, companyId);
+    const result = await turboService.rateTicket(id, Number(rate));
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [TURBO-CONTROLLER] Error rating ticket:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+module.exports = {
+  addTicket,
+  getInquiriesTypes,
+  getTickets,
+  getTicket,
+  getTicketLog,
+  replyToTicket,
+  getUnreadTicketsCount,
+  getTicketStatuses,
+  getTicketInstructions,
+  getCanCreateTicket,
+  getTotalOpenTickets,
+  rateTicket,
+};

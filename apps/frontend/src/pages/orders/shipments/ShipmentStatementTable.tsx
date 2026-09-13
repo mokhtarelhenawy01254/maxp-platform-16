@@ -12,6 +12,7 @@ import {
   MapPinIcon,
   BuildingOfficeIcon,
   UserIcon,
+  TicketIcon,
 } from "@heroicons/react/24/outline";
 import { useCurrency } from "../../../hooks/useCurrency";
 import { ShippingCompanyRef } from "./CarrierTabsBar";
@@ -71,6 +72,7 @@ interface ShipmentStatementTableProps {
   onSyncShipment: (id: string) => void;
   onPrintWaybill: (shipment: ShipmentRowItem) => void;
   onOpenChat: (shipment: ShipmentRowItem) => void;
+  onOpenTicket?: (shipment: ShipmentRowItem) => void;
   onResendShipment: (shipment: ShipmentRowItem) => void;
   onCancelShipment: (shipment: ShipmentRowItem) => void;
   onCopyTracking: (tracking: string) => void;
@@ -88,6 +90,7 @@ export const ShipmentStatementTable: React.FC<ShipmentStatementTableProps> = ({
   onSyncShipment,
   onPrintWaybill,
   onOpenChat,
+  onOpenTicket,
   onResendShipment,
   onCancelShipment,
   onCopyTracking,
@@ -120,12 +123,12 @@ export const ShipmentStatementTable: React.FC<ShipmentStatementTableProps> = ({
               />
             </th>
             <th className="px-3 py-3 whitespace-nowrap">الطلب والتاريخ</th>
+            <th className="px-3 py-3 min-w-[160px]">الحالة والملاحظات</th>
             <th className="px-3 py-3 min-w-[180px]">العميل والوجهة</th>
             <th className="px-3 py-3 whitespace-nowrap">شركة الشحن</th>
             <th className="px-3 py-3 whitespace-nowrap">رقم التتبع (AWB)</th>
             <th className="px-3 py-3 min-w-[160px]">مندوب الشحن</th>
             <th className="px-3 py-3 min-w-[140px]">الفرع والمركز</th>
-            <th className="px-3 py-3 min-w-[170px]">الحالة والملاحظات</th>
             <th className="px-3 py-3 whitespace-nowrap text-left">قيمة التحصيل</th>
             <th className="px-3 py-3 text-center whitespace-nowrap">إجراءات</th>
           </tr>
@@ -174,6 +177,33 @@ export const ShipmentStatementTable: React.FC<ShipmentStatementTableProps> = ({
                   <span className="text-[10px] text-muted-foreground block mt-0.5 font-mono tabular-nums">
                     {formatDate(s.createdAt)}
                   </span>
+                </td>
+
+                {/* Status & Reasons / Notes (Prominently at the front) */}
+                <td className="px-3 py-3">
+                  <div>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badge.className}`}
+                    >
+                      {badge.label}
+                    </span>
+                  </div>
+
+                  {/* Delay Reason */}
+                  {s.delayReason && (
+                    <div className="mt-1 p-1 px-1.5 rounded bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-800 text-[10px] text-yellow-800 dark:text-yellow-300 font-medium">
+                      <span>سبب التأجيل: </span>
+                      <span>{s.delayReason}</span>
+                    </div>
+                  )}
+
+                  {/* Return Reason */}
+                  {s.returnReason && (
+                    <div className="mt-1 p-1 px-1.5 rounded bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-[10px] text-rose-800 dark:text-rose-300 font-medium">
+                      <span>سبب الإرجاع: </span>
+                      <span>{s.returnReason}</span>
+                    </div>
+                  )}
                 </td>
 
                 {/* Customer, Phone & Destination */}
@@ -302,33 +332,6 @@ export const ShipmentStatementTable: React.FC<ShipmentStatementTableProps> = ({
                   )}
                 </td>
 
-                {/* Status & Reasons / Notes */}
-                <td className="px-3 py-3">
-                  <div>
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badge.className}`}
-                    >
-                      {badge.label}
-                    </span>
-                  </div>
-
-                  {/* Delay Reason */}
-                  {s.delayReason && (
-                    <div className="mt-1 p-1 px-1.5 rounded bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-800 text-[10px] text-yellow-800 dark:text-yellow-300 font-medium">
-                      <span>سبب التأجيل: </span>
-                      <span>{s.delayReason}</span>
-                    </div>
-                  )}
-
-                  {/* Return Reason */}
-                  {s.returnReason && (
-                    <div className="mt-1 p-1 px-1.5 rounded bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-[10px] text-rose-800 dark:text-rose-300 font-medium">
-                      <span>سبب الإرجاع: </span>
-                      <span>{s.returnReason}</span>
-                    </div>
-                  )}
-                </td>
-
                 {/* COD & Received Amount */}
                 <td className="px-3 py-3 whitespace-nowrap text-left font-mono tabular-nums">
                   <div className="font-bold text-gray-900 dark:text-white">
@@ -376,6 +379,18 @@ export const ShipmentStatementTable: React.FC<ShipmentStatementTableProps> = ({
                         title="فتح محادثة الشحنة مع تربو والمندوب"
                       >
                         <ChatBubbleLeftRightIcon className="h-4 w-4" />
+                      </button>
+                    )}
+
+                    {/* Support Ticket (Only for Turbo) */}
+                    {isTurbo && tracking && onOpenTicket && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenTicket(s)}
+                        className="p-1.5 text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg transition"
+                        title="فتح تذكرة دعم ومتابعة مع شركة الشحن"
+                      >
+                        <TicketIcon className="h-4 w-4" />
                       </button>
                     )}
 

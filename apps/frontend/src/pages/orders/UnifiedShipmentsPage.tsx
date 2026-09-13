@@ -21,6 +21,7 @@ import { ShipmentStatementCards } from "./shipments/ShipmentStatementCards";
 import { ShipmentStatsBar } from "./shipments/ShipmentStatsBar";
 import { TurboShipmentChatModal } from "./shipments/TurboShipmentChatModal";
 import { CreateShipmentModal } from "./shipments/CreateShipmentModal";
+import { CreateTicketModal } from "./shipments/CreateTicketModal";
 
 interface ShipmentsSummary {
   totalShipments: number;
@@ -55,10 +56,12 @@ const UnifiedShipmentsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [bulkSyncing, setBulkSyncing] = useState(false);
+  const [carrierSyncing, setCarrierSyncing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Modals state
   const [chatShipment, setChatShipment] = useState<ShipmentRowItem | null>(null);
+  const [ticketShipment, setTicketShipment] = useState<ShipmentRowItem | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const [summary, setSummary] = useState<ShipmentsSummary>({
@@ -252,6 +255,28 @@ const UnifiedShipmentsPage: React.FC = () => {
     toast.success(`تمت مزامنة ${successCount} شحنة بنجاح`);
     setBulkSyncing(false);
     fetchShipments();
+  };
+
+  // Live sync directly from shipping company API
+  const handleCarrierLiveSync = async () => {
+    setCarrierSyncing(true);
+    try {
+      const carrierType = activeCarrierType || "TURBO";
+      const res = await apiClient.post<any>("/shipments/sync-carrier", {
+        carrierType,
+        companyId: selectedCompanyId !== "ALL" ? selectedCompanyId : undefined,
+      });
+      if (res.data?.success) {
+        toast.success(res.data.message || "تمت مزامنة الحالات مباشرة من شركة الشحن وتحديث البيان");
+        await fetchShipments();
+      } else {
+        toast.error(res.data?.error || "فشل التحديث من شركة الشحن");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "حدث خطأ أثناء الاتصال بشركة الشحن");
+    } finally {
+      setCarrierSyncing(false);
+    }
   };
 
   // Resend shipment request (Turbo)
@@ -512,17 +537,8 @@ const UnifiedShipmentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Stats Strip */}
-      <ShipmentStatsBar
-        totalShipments={summary.totalShipments}
-        inTransit={summary.inTransit}
-        delivered={summary.delivered}
-        returned={summary.returned}
-        pendingRemittanceAmount={summary.pendingRemittanceAmount}
-      />
-
       {/* Seamless Cockpit Chassis Container */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden p-3.5 sm:p-4 space-y-3">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden p-3.5 sm:p-4 space-y-3.5">
         {/* 1. Carrier Selector Tabs */}
         <CarrierTabsBar
           companies={companies}
@@ -531,16 +547,29 @@ const UnifiedShipmentsPage: React.FC = () => {
           totalShipmentsCount={summary.totalShipments}
         />
 
-        {/* 2. Dynamic Carrier Operational Stages (Turbo 12 stages or Generic) */}
-        <CarrierStagesBar
-          carrierType={activeCarrierType}
-          selectedStage={selectedStatus}
-          onSelectStage={(stageKey) => updateParams({ status: stageKey, page: 1 })}
-          stageCounts={summary.carrierStatusCounts || {}}
-          onOpenCreateShipment={() => setShowCreateModal(true)}
+        {/* 2. Operational Stages Board (واضح ومتشاف وفوق مش تحت لجميع الحالات) */}
+        <div className="pt-0.5 pb-1 border-b border-gray-100 dark:border-gray-750">
+          <CarrierStagesBar
+            carrierType={activeCarrierType}
+            selectedStage={selectedStatus}
+            onSelectStage={(stageKey) => updateParams({ status: stageKey, page: 1 })}
+            stageCounts={summary.carrierStatusCounts || {}}
+            onOpenCreateShipment={() => setShowCreateModal(true)}
+            onLiveSync={handleCarrierLiveSync}
+            isLiveSyncing={carrierSyncing}
+          />
+        </div>
+
+        {/* 3. KPI Stats Strip */}
+        <ShipmentStatsBar
+          totalShipments={summary.totalShipments}
+          inTransit={summary.inTransit}
+          delivered={summary.delivered}
+          returned={summary.returned}
+          pendingRemittanceAmount={summary.pendingRemittanceAmount}
         />
 
-        {/* 3. Search & Date Filter Bar */}
+        {/* 4. Search & Date Filter Bar */}
         <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 pt-1">
           <div className="relative sm:col-span-6">
             <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -659,6 +688,7 @@ const UnifiedShipmentsPage: React.FC = () => {
                   onSyncShipment={handleSyncShipment}
                   onPrintWaybill={handlePrintWaybill}
                   onOpenChat={(s) => setChatShipment(s)}
+                  onOpenTicket={(s) => setTicketShipment(s)}
                   onResendShipment={handleResendShipment}
                   onCancelShipment={handleCancelShipment}
                   onCopyTracking={copyTracking}
@@ -677,6 +707,7 @@ const UnifiedShipmentsPage: React.FC = () => {
                   onSyncShipment={handleSyncShipment}
                   onPrintWaybill={handlePrintWaybill}
                   onOpenChat={(s) => setChatShipment(s)}
+                  onOpenTicket={(s) => setTicketShipment(s)}
                   onResendShipment={handleResendShipment}
                   onCancelShipment={handleCancelShipment}
                   onCopyTracking={copyTracking}
@@ -722,6 +753,17 @@ const UnifiedShipmentsPage: React.FC = () => {
           trackingCode={chatShipment.trackingNumber || chatShipment.externalShipmentId || ""}
           orderNumber={chatShipment.order?.orderNumber}
           onClose={() => setChatShipment(null)}
+        />
+      )}
+
+      {/* Turbo Ticket Modal */}
+      {ticketShipment && (
+        <CreateTicketModal
+          shipment={ticketShipment}
+          onClose={() => setTicketShipment(null)}
+          onSuccess={() => {
+            fetchShipments();
+          }}
         />
       )}
 

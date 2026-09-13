@@ -99,19 +99,134 @@ class TicketService {
   async replyToTicket(ticketId, message, imageFile = null) {
     try {
       const apiKey = await this._client.getApiKey();
+      const mainClientCode = await this._client.getMainClientCode();
       const formData = new FormData();
       formData.append('ticket_id', String(ticketId));
+      formData.append('content', message);
       formData.append('message', message);
       formData.append('authentication_key', apiKey);
-      if (imageFile?.buffer) formData.append('image', imageFile.buffer, { filename: imageFile.originalname || 'image.jpg', contentType: imageFile.mimetype || 'image/jpeg' });
+      if (imageFile?.buffer) {
+        formData.append('media[0]', imageFile.buffer, {
+          filename: imageFile.originalname || 'image.jpg',
+          contentType: imageFile.mimetype || 'image/jpeg'
+        });
+        formData.append('image', imageFile.buffer, {
+          filename: imageFile.originalname || 'image.jpg',
+          contentType: imageFile.mimetype || 'image/jpeg'
+        });
+      }
       const requestHeaders = { ...formData.getHeaders() };
-      const response = await axios.post(`${this._client.baseUrl}/tickets/reply`, formData, { headers: requestHeaders, timeout: this._client.timeout, maxContentLength: Infinity, maxBodyLength: Infinity });
-      const result = response.data;
-      if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
-      return { success: true, message: result.message || 'تم إرسال الرد بنجاح', data: result };
+
+      // Primary: Modern message-store endpoint from Postman doc
+      try {
+        const response = await axios.post(
+          `${this._client.baseUrl}/tickets/${ticketId}/message-store?authentication_key=${encodeURIComponent(apiKey)}&main_client_code=${mainClientCode || 37321}`,
+          formData,
+          { headers: requestHeaders, timeout: this._client.timeout, maxContentLength: Infinity, maxBodyLength: Infinity }
+        );
+        const result = response.data;
+        if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
+        return { success: true, message: result.message || 'تم إرسال الرد بنجاح', data: result };
+      } catch (storeErr) {
+        // Fallback to legacy /tickets/reply if message-store returns 404
+        if (storeErr.response?.status === 404) {
+          const response = await axios.post(
+            `${this._client.baseUrl}/tickets/reply`,
+            formData,
+            { headers: requestHeaders, timeout: this._client.timeout, maxContentLength: Infinity, maxBodyLength: Infinity }
+          );
+          const result = response.data;
+          if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
+          return { success: true, message: result.message || 'تم إرسال الرد بنجاح', data: result };
+        }
+        throw storeErr;
+      }
     } catch (error) {
       handleError(error, 'Reply Ticket');
       return { success: false, error: error.message, message: 'فشل في إرسال الرد' };
+    }
+  }
+
+  async rateTicket(ticketId, rate) {
+    try {
+      const apiKey = await this._client.getApiKey();
+      const mainClientCode = await this._client.getMainClientCode();
+      const formData = new FormData();
+      formData.append('rate', String(rate));
+      const requestHeaders = { ...formData.getHeaders() };
+      const response = await axios.post(
+        `${this._client.baseUrl}/tickets/${ticketId}/rate?authentication_key=${encodeURIComponent(apiKey)}&main_client_code=${mainClientCode || 37321}`,
+        formData,
+        { headers: requestHeaders, timeout: this._client.timeout }
+      );
+      return { success: true, message: 'تم تقييم التذكرة بنجاح', data: response.data };
+    } catch (error) {
+      handleError(error, 'Rate Ticket');
+      return { success: false, error: error.message, message: 'فشل في تقييم التذكرة' };
+    }
+  }
+
+  async getStatuses() {
+    try {
+      const apiKey = await this._client.getApiKey();
+      const headers = await this._client.getHeaders();
+      const mainClientCode = await this._client.getMainClientCode();
+      const response = await axios.get(
+        `${this._client.baseUrl}/tickets/statuses?authentication_key=${encodeURIComponent(apiKey)}&main_client_code=${mainClientCode || 37321}`,
+        { headers, timeout: this._client.timeout }
+      );
+      return { success: true, statuses: response.data?.data || response.data || [], message: 'تم جلب حالات التذاكر بنجاح', data: response.data };
+    } catch (error) {
+      handleError(error, 'Get Ticket Statuses');
+      return { success: false, error: error.message, statuses: [] };
+    }
+  }
+
+  async getInstructions() {
+    try {
+      const apiKey = await this._client.getApiKey();
+      const headers = await this._client.getHeaders();
+      const mainClientCode = await this._client.getMainClientCode();
+      const response = await axios.get(
+        `${this._client.baseUrl}/tickets/instructions?authentication_key=${encodeURIComponent(apiKey)}&main_client_code=${mainClientCode || 37321}`,
+        { headers, timeout: this._client.timeout }
+      );
+      return { success: true, instructions: response.data?.data || response.data || [], message: 'تم جلب تعليمات التذاكر بنجاح', data: response.data };
+    } catch (error) {
+      handleError(error, 'Get Ticket Instructions');
+      return { success: false, error: error.message, instructions: [] };
+    }
+  }
+
+  async canCreateTicket() {
+    try {
+      const apiKey = await this._client.getApiKey();
+      const headers = await this._client.getHeaders();
+      const mainClientCode = await this._client.getMainClientCode();
+      const response = await axios.get(
+        `${this._client.baseUrl}/tickets/can-create?authentication_key=${encodeURIComponent(apiKey)}&main_client_code=${mainClientCode || 37321}`,
+        { headers, timeout: this._client.timeout }
+      );
+      return { success: true, canCreate: response.data?.can_create ?? true, data: response.data };
+    } catch (error) {
+      handleError(error, 'Can Create Ticket');
+      return { success: false, error: error.message, canCreate: true };
+    }
+  }
+
+  async getTotalOpenTickets() {
+    try {
+      const apiKey = await this._client.getApiKey();
+      const headers = await this._client.getHeaders();
+      const mainClientCode = await this._client.getMainClientCode();
+      const response = await axios.get(
+        `${this._client.baseUrl}/tickets/total-open-tickets?authentication_key=${encodeURIComponent(apiKey)}&main_client_code=${mainClientCode || 37321}`,
+        { headers, timeout: this._client.timeout }
+      );
+      return { success: true, total: response.data?.total || response.data?.data || 0, data: response.data };
+    } catch (error) {
+      handleError(error, 'Get Total Open Tickets');
+      return { success: false, error: error.message, total: 0 };
     }
   }
 

@@ -151,6 +151,36 @@ router.get('/inquiries-types', verifyToken.authenticateToken, checkAppAccess('or
 router.post('/inquiries-types', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getInquiriesTypes);
 
 /**
+ * GET /api/turbo/tickets/categories
+ * جلب تصنيفات التذاكر
+ */
+router.get('/tickets/categories', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getInquiriesTypes);
+
+/**
+ * GET /api/turbo/tickets/statuses
+ * جلب حالات التذاكر
+ */
+router.get('/tickets/statuses', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getTicketStatuses);
+
+/**
+ * GET /api/turbo/tickets/instructions
+ * جلب تعليمات التذاكر
+ */
+router.get('/tickets/instructions', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getTicketInstructions);
+
+/**
+ * GET /api/turbo/tickets/can-create
+ * فحص إمكانية إنشاء تذاكر
+ */
+router.get('/tickets/can-create', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getCanCreateTicket);
+
+/**
+ * GET /api/turbo/tickets/total-open
+ * جلب إجمالي التذاكر المفتوحة
+ */
+router.get('/tickets/total-open', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getTotalOpenTickets);
+
+/**
  * GET /api/turbo/tickets/unread-count
  * جلب عدد التذاكر غير المقروءة من Turbo
  * يجب أن يأتي قبل /tickets/:id لتجنب التطابق الخاطئ
@@ -165,11 +195,18 @@ router.get('/tickets/unread-count', verifyToken.authenticateToken, checkAppAcces
 router.get('/tickets/:id/log', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getTicketLog);
 
 /**
- * POST /api/turbo/tickets/:id/reply
+ * POST /api/turbo/tickets/:id/reply & message-store
  * الرد على تذكرة في Turbo
  * يجب أن يأتي قبل /tickets/:id لتجنب التطابق الخاطئ
  */
 router.post('/tickets/:id/reply', verifyToken.authenticateToken, upload.single('image'), checkAppAccess('order-shipping-turbo'), turboController.replyToTicket);
+router.post('/tickets/:id/message-store', verifyToken.authenticateToken, upload.single('image'), checkAppAccess('order-shipping-turbo'), turboController.replyToTicket);
+
+/**
+ * POST /api/turbo/tickets/:id/rate
+ * تقييم التذكرة
+ */
+router.post('/tickets/:id/rate', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.rateTicket);
 
 /**
  * GET /api/turbo/tickets/:id
