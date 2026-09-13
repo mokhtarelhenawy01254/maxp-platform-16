@@ -16,13 +16,32 @@ import {
   Copy,
   Check,
   Undo2,
+  Paperclip,
+  Image as ImageIcon,
+  Video as VideoIcon,
+  Mic,
+  Music,
+  X,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { chatWithMediaBuyer } from "../../../services/facebookAdsService";
 import { useCopilotSessions } from "../../../components/advertising/copilot/useCopilotSessions";
 import { useTranslation } from "react-i18next";
+import uploadService from "../../../services/uploadService";
 import type { MarketingProduct } from "./types";
 import type { Message, CopilotSession } from "../../../components/advertising/copilot/types";
 import { MarketingMarkdownMessage } from "./MarketingMarkdownMessage";
+
+export interface AttachedMediaItem {
+  file: File;
+  type: "image" | "video" | "audio" | "file";
+  previewUrl: string;
+  uploading: boolean;
+  uploadedUrl?: string;
+  name: string;
+  size: number;
+}
 
 interface MarketingSquadChatFeedProps {
   selectedProduct: MarketingProduct | null;
@@ -58,8 +77,11 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
   const [inputMessage, setInputMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [copiedSessionId, setCopiedSessionId] = useState(false);
+  const [attachedMedia, setAttachedMedia] = useState<AttachedMediaItem[]>([]);
+
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCopySessionId = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -77,22 +99,129 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [activeSession.messages, loading]);
+  }, [activeSession.messages, loading, attachedMedia]);
+
+  const removeAttachedMedia = (index: number) => {
+    setAttachedMedia((prev) => {
+      const item = prev[index];
+      if (item?.previewUrl) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    for (const file of files) {
+      const isImg = file.type.startsWith("image/");
+      const isVid = file.type.startsWith("video/");
+      const isAud = file.type.startsWith("audio/");
+      const mediaType: "image" | "video" | "audio" | "file" = isImg
+        ? "image"
+        : isVid
+        ? "video"
+        : isAud
+        ? "audio"
+        : "file";
+
+      const previewUrl = URL.createObjectURL(file);
+      const mediaItem: AttachedMediaItem = {
+        file,
+        type: mediaType,
+        previewUrl,
+        uploading: true,
+        name: file.name,
+        size: file.size,
+      };
+
+      setAttachedMedia((prev) => [...prev, mediaItem]);
+
+      try {
+        const res = await uploadService.uploadMedia(file);
+        if (res.success && (res.data?.url || res.data?.fullUrl)) {
+          const finalUrl = res.data.url || res.data.fullUrl;
+          setAttachedMedia((prev) =>
+            prev.map((m) =>
+              m.file === file
+                ? { ...m, uploading: false, uploadedUrl: finalUrl }
+                : m
+            )
+          );
+          toast.success(
+            `تم رفع ${
+              isImg ? "الصورة" : isVid ? "الفيديو" : isAud ? "الملف الصوتي" : "الملف"
+            } بنجاح`
+          );
+        } else {
+          toast.error(res.error || "فشل رفع الملف");
+          setAttachedMedia((prev) => prev.filter((m) => m.file !== file));
+        }
+      } catch (err: any) {
+        toast.error(err.message || "حدث خطأ أثناء رفع الملف");
+        setAttachedMedia((prev) => prev.filter((m) => m.file !== file));
+      }
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSend = async (customText?: string) => {
     const textToSend = (customText || inputMessage).trim();
-    if (!textToSend || loading) return;
+    const hasMedia = attachedMedia.length > 0;
+    if ((!textToSend && !hasMedia) || loading) return;
+
+    const stillUploading = attachedMedia.some((m) => m.uploading);
+    if (stillUploading) {
+      toast.error("يرجى الانتظار حتى يكتمل رفع الملفات أولاً");
+      return;
+    }
+
+    const readyAttachments = attachedMedia
+      .filter((m) => m.uploadedUrl)
+      .map((m) => ({
+        type: m.type,
+        url: m.uploadedUrl!,
+        name: m.name,
+        size: m.size,
+      }));
+
+    const finalTextToSend =
+      textToSend ||
+      (readyAttachments.length > 0 ? "مرفق ملف وسائط للمراجعة والتحليل" : "");
 
     const userMsg: Message = {
       id: `user-${Date.now()}`,
       sender: "user",
-      text: textToSend,
+      text: finalTextToSend,
+      attachments: readyAttachments.length > 0 ? readyAttachments : undefined,
       timestamp: new Date().toISOString(),
     };
 
     addMessageToActiveSession(userMsg);
     setInputMessage("");
+    setAttachedMedia([]);
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
     setLoading(true);
+
+    let promptWithAttachments = finalTextToSend;
+    if (readyAttachments.length > 0) {
+      const attachmentsSummary = readyAttachments
+        .map(
+          (a) =>
+            `[مرفق ${
+              a.type === "video" ? "فيديو" : a.type === "audio" ? "صوت" : "صورة"
+            }: ${a.url}]`
+        )
+        .join("\n");
+      promptWithAttachments = `${finalTextToSend}\n\n${attachmentsSummary}`;
+    }
 
     // 2026 SOTA Standard: Keep user prompt 100% pristine.
     // Transmit active entity via structured ephemeral state channel (activeProduct payload).
@@ -107,7 +236,12 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
       : undefined;
 
     try {
-      const res = await chatWithMediaBuyer(textToSend, activeSession.id, productPayload, activeAgent?.id);
+      const res = await chatWithMediaBuyer(
+        promptWithAttachments,
+        activeSession.id,
+        productPayload,
+        activeAgent?.id
+      );
       if (res.success) {
         const agentMsg: Message = {
           id: `agent-${Date.now()}`,
@@ -281,6 +415,58 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
                     </div>
                   )}
 
+                  {/* Media Attachments in Bubble */}
+                  {msg.attachments && msg.attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2 my-2">
+                      {msg.attachments.map((att, attIdx) => {
+                        if (att.type === "image") {
+                          return (
+                            <div
+                              key={attIdx}
+                              className="relative group overflow-hidden rounded-xl border border-black/10 dark:border-white/10 max-w-sm"
+                            >
+                              <img
+                                src={att.url}
+                                alt={att.name || "مرفق صورة"}
+                                className="max-h-64 rounded-xl object-contain bg-black/5 dark:bg-white/5 cursor-pointer hover:scale-[1.01] transition"
+                                onClick={() => window.open(att.url, "_blank")}
+                              />
+                            </div>
+                          );
+                        }
+                        if (att.type === "video") {
+                          return (
+                            <div
+                              key={attIdx}
+                              className="rounded-xl overflow-hidden max-w-sm border border-black/10 dark:border-white/10 bg-black"
+                            >
+                              <video src={att.url} controls className="max-h-64 w-full rounded-xl" />
+                            </div>
+                          );
+                        }
+                        if (att.type === "audio") {
+                          return (
+                            <div
+                              key={attIdx}
+                              className={`p-2.5 rounded-xl border flex flex-col gap-1.5 w-full max-w-xs ${
+                                isUser
+                                  ? "bg-blue-700/70 border-blue-400/40 text-white"
+                                  : "bg-slate-200/80 dark:bg-slate-700/80 border-slate-300/60 dark:border-slate-600 text-slate-800 dark:text-slate-200"
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                                <Mic className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                                <span className="truncate">{att.name || "تسجيل صوتي"}</span>
+                              </div>
+                              <audio src={att.url} controls className="w-full h-8" />
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                  )}
+
                   <MarketingMarkdownMessage content={msg.text} isUser={isUser} />
 
                   {/* Hermes Telemetry HUD & Performance Stats */}
@@ -348,28 +534,68 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
 
       {/* Input Bar (Sticky Mobile Composer) */}
       <div className="p-2 sm:p-3 pb-[calc(0.6rem+env(safe-area-inset-bottom,0px))] border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex-shrink-0 z-10 space-y-2">
-        {/* Horizontal Quick Actions Chips Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
-          <span className="text-[10px] text-slate-400 font-bold flex-shrink-0 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-indigo-500" />
-            صياغة سريعة:
-          </span>
-          {QUICK_COPY_PROMPTS.map((item, pIdx) => {
-            const IconComp = item.icon;
-            return (
-              <button
-                key={pIdx}
-                type="button"
-                onClick={() => handleSend(item.prompt)}
-                disabled={loading}
-                className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/80 dark:border-slate-700/80 text-[10px] font-semibold flex items-center gap-1 flex-shrink-0 transition cursor-pointer active:scale-95 disabled:opacity-40"
+        {/* Media Attachments Preview Strip */}
+        {attachedMedia.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto py-1 px-1 no-scrollbar">
+            {attachedMedia.map((item, mIdx) => (
+              <div
+                key={mIdx}
+                className="relative group p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800/90 flex items-center gap-2 flex-shrink-0 shadow-2xs"
               >
-                <IconComp className="w-2.5 h-2.5 text-indigo-500" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
+                {item.type === "image" && (
+                  <img
+                    src={item.previewUrl}
+                    alt={item.name}
+                    className="w-10 h-10 rounded-lg object-cover border border-slate-300 dark:border-slate-600"
+                  />
+                )}
+                {item.type === "video" && (
+                  <div className="w-10 h-10 rounded-lg bg-indigo-950/80 text-indigo-400 flex items-center justify-center flex-shrink-0 border border-indigo-700/50">
+                    <VideoIcon className="w-5 h-5" />
+                  </div>
+                )}
+                {item.type === "audio" && (
+                  <div className="w-10 h-10 rounded-lg bg-emerald-950/80 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-700/50">
+                    <Music className="w-5 h-5" />
+                  </div>
+                )}
+                <div className="min-w-0 max-w-[120px]">
+                  <p className="text-[11px] font-medium text-slate-800 dark:text-slate-200 truncate">
+                    {item.name}
+                  </p>
+                  <p className="text-[9px] text-slate-400 font-mono">
+                    {item.uploading ? (
+                      <span className="inline-flex items-center gap-1 text-indigo-500 animate-pulse font-semibold">
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> جاري الرفع...
+                      </span>
+                    ) : (
+                      <span>{(item.size / (1024 * 1024)).toFixed(1)} MB</span>
+                    )}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeAttachedMedia(mIdx)}
+                  className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-red-500 hover:text-white text-slate-500 flex items-center justify-center transition cursor-pointer"
+                  title="حذف المرفق"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+
+        {/* Hidden File Input for Media Upload */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,video/*,audio/*"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
 
         {/* Multiline Composer Form */}
         <form
@@ -377,37 +603,83 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
             e.preventDefault();
             handleSend();
           }}
-          className="flex items-end gap-1.5 sm:gap-2"
+          className="space-y-1"
         >
-          <div className="flex-1 relative">
-            <textarea
-              ref={inputRef}
-              rows={2}
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
+          <div className="flex items-end gap-1.5 sm:gap-2">
+            {/* Paperclip Media Upload Button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
               disabled={loading}
-              placeholder={
-                selectedProduct
-                  ? `اطلب من ${activeAgent?.name || "فريق التسويق"} زوايا، هوكات، أو صياغة إعلانات لـ ${selectedProduct.name}... (Enter للإرسال)`
-                  : `وجه ${activeAgent?.name || "فريق التسويق"} بصياغة أي زاوية أو اسأل عن حملة... (Enter للإرسال)`
+              className="w-10 h-10 rounded-xl border border-slate-300 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-2xs mb-0.5"
+              title="إرفاق صورة، فيديو، أو تسجيل صوتي"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
+
+            {/* Auto-expanding Textarea */}
+            <div className="flex-1 relative">
+              <textarea
+                ref={inputRef}
+                rows={2}
+                value={inputMessage}
+                onChange={(e) => {
+                  setInputMessage(e.target.value);
+                  e.target.style.height = "auto";
+                  e.target.style.height = Math.min(e.target.scrollHeight, 180) + "px";
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    if (e.shiftKey) {
+                      // Shift + Enter: Allow default newline insertion and auto-expand height
+                      setTimeout(() => {
+                        if (inputRef.current) {
+                          inputRef.current.style.height = "auto";
+                          inputRef.current.style.height =
+                            Math.min(inputRef.current.scrollHeight, 180) + "px";
+                        }
+                      }, 0);
+                      return;
+                    }
+                    // Enter alone: Send message
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                disabled={loading}
+                placeholder={
+                  selectedProduct
+                    ? `اطلب من ${activeAgent?.name || "فريق التسويق"} زوايا، هوكات، أو صياغة إعلانات لـ ${selectedProduct.name}... (Enter للإرسال • Shift+Enter لسطر جديد)`
+                    : `وجه ${activeAgent?.name || "فريق التسويق"} أو ارفع صورة/فيديو/صوت... (Enter للإرسال • Shift+Enter لسطر جديد)`
+                }
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none leading-relaxed"
+              />
+            </div>
+
+            {/* Send Button */}
+            <button
+              type="submit"
+              disabled={
+                (!inputMessage.trim() && attachedMedia.length === 0) ||
+                loading ||
+                attachedMedia.some((m) => m.uploading)
               }
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none leading-relaxed"
-            />
+              className="w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition disabled:opacity-40 flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-xs mb-0.5"
+              title="إرسال (Enter)"
+            >
+              <Send className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            type="submit"
-            disabled={!inputMessage.trim() || loading}
-            className="w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition disabled:opacity-40 flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-xs mb-0.5"
-            title="إرسال (Enter)"
-          >
-            <Send className="w-4 h-4" />
-          </button>
+
+          {/* Subtitle / Key Guide */}
+          <div className="flex items-center justify-between px-1 text-[10px] text-slate-400">
+            <span>
+              💡 اضغط <kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[9px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Shift + Enter</kbd> للنزول لسطر جديد • <kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[9px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Enter</kbd> للإرسال
+            </span>
+            <span className="hidden sm:inline">
+              يدعم إرفاق الصور والفيديو والتسجيلات الصوتية 📎
+            </span>
+          </div>
         </form>
       </div>
     </div>

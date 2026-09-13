@@ -19,6 +19,12 @@ export interface Message {
   }>;
   telemetry?: AgentTelemetry;
   timestamp: string | Date;
+  attachments?: Array<{
+    type: "image" | "video" | "audio" | "file";
+    url: string;
+    name?: string;
+    size?: number;
+  }>;
 }
 
 export interface DraftItem {

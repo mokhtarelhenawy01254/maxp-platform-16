@@ -284,11 +284,15 @@ const mediaStorage = multer.diskStorage({
 });
 
 const mediaFileFilter = (req, file, cb) => {
-  // Accept both images and videos
-  if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+  // Accept images, videos, and audio files
+  if (
+    file.mimetype.startsWith('image/') ||
+    file.mimetype.startsWith('video/') ||
+    file.mimetype.startsWith('audio/')
+  ) {
     cb(null, true);
   } else {
-    cb(new Error('Only image and video files are allowed!'), false);
+    cb(new Error('Only image, video, and audio files are allowed!'), false);
   }
 };
 
@@ -296,12 +300,12 @@ const mediaUpload = multer({
   storage: mediaStorage,
   fileFilter: mediaFileFilter,
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB limit for videos
+    fileSize: 100 * 1024 * 1024, // 100MB limit for media files
     files: 10
   }
 });
 
-// Upload single media file (image or video) - for Facebook posts, etc.
+// Upload single media file (image, video, or audio)
 router.post('/media', mediaUpload.single('media'), (req, res) => {
   try {
     if (!req.file) {
@@ -313,8 +317,10 @@ router.post('/media', mediaUpload.single('media'), (req, res) => {
 
     const mediaUrl = `/uploads/media/${req.file.filename}`;
     const isVideo = req.file.mimetype.startsWith('video/');
+    const isAudio = req.file.mimetype.startsWith('audio/');
+    const mediaType = isVideo ? 'video' : (isAudio ? 'audio' : 'image');
 
-    if (!isVideo) {
+    if (!isVideo && !isAudio) {
       const filePath = req.file.path || path.join(mediaDir, req.file.filename);
       setImmediate(() => {
         pregenerateCommonUploadVariants(filePath).catch((err) => {
@@ -331,7 +337,7 @@ router.post('/media', mediaUpload.single('media'), (req, res) => {
         size: req.file.size,
         url: mediaUrl,
         fullUrl: `${req.protocol}://${req.get('host')}${mediaUrl}`,
-        type: isVideo ? 'video' : 'image'
+        type: mediaType
       }
     });
   } catch (error) {
