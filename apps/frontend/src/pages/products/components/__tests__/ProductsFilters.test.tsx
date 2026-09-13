@@ -82,4 +82,65 @@ describe("ProductsFilters", () => {
     expect(onFilterChange).toHaveBeenCalledWith("stockFilter", "all");
     expect(onFilterChange).toHaveBeenCalledWith("offersOnly", "");
   });
+
+  it("renders unpublished quick chip and toggles it", () => {
+    const onFilterChange = jest.fn();
+
+    render(
+      <ProductsFilters
+        filters={initialFilters}
+        categories={[]}
+        allTags={[]}
+        showAdvancedFilters={false}
+        onFilterChange={onFilterChange}
+        onToggleAdvancedFilters={jest.fn()}
+        onResetAdvancedFilters={jest.fn()}
+      />,
+    );
+
+    const unpublishedChip = screen.getByRole("button", { name: /^ملغي النشر$/i });
+    expect(unpublishedChip).toBeInTheDocument();
+
+    fireEvent.click(unpublishedChip);
+    expect(onFilterChange).toHaveBeenCalledWith("statusFilter", "unpublished");
+  });
+
+  it("renders stock filter dropdown in the top row and updates stockFilter", () => {
+    const onFilterChange = jest.fn();
+
+    render(
+      <ProductsFilters
+        filters={initialFilters}
+        categories={["Electronics"]}
+        allTags={[]}
+        showAdvancedFilters={false}
+        onFilterChange={onFilterChange}
+        onToggleAdvancedFilters={jest.fn()}
+        onResetAdvancedFilters={jest.fn()}
+      />,
+    );
+
+    const stockSelect = screen.getByRole("combobox", { name: /تصفية حسب المخزون/i });
+    expect(stockSelect).toBeInTheDocument();
+
+    fireEvent.change(stockSelect, { target: { value: "low-stock" } });
+    expect(onFilterChange).toHaveBeenCalledWith("stockFilter", "low-stock");
+  });
+
+  it("ensures category select is unique and not duplicated in the DOM", () => {
+    render(
+      <ProductsFilters
+        filters={initialFilters}
+        categories={["Electronics", "Clothing"]}
+        allTags={[]}
+        showAdvancedFilters={false}
+        onFilterChange={jest.fn()}
+        onToggleAdvancedFilters={jest.fn()}
+        onResetAdvancedFilters={jest.fn()}
+      />,
+    );
+
+    const categorySelects = screen.getAllByRole("combobox", { name: /تصفية حسب الفئة/i });
+    expect(categorySelects).toHaveLength(1);
+  });
 });

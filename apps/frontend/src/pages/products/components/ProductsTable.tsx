@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Product, SortField, SortDirection } from "./ProductsTypes";
 import ProductTableRow from "./ProductTableRow";
 
@@ -77,6 +78,9 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
   canDeleteProducts,
   onDelete,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
   const SortIcon = ({ field }: { field: SortField }) => {
     const active = sortField === field;
     return (
@@ -86,6 +90,8 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
     );
   };
 
+  const alignClass = isEn ? "text-left" : "text-right";
+
   return (
     <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-md border border-gray-100 dark:border-gray-700/50 overflow-hidden">
       <div className="overflow-x-auto">
@@ -93,7 +99,7 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
           <thead className="bg-gray-50/80 dark:bg-gray-900/80">
             <tr>
               {canSelectProducts && (
-                <th className="px-4 py-3 text-right">
+                <th className={`px-4 py-3 ${alignClass}`}>
                   <input
                     type="checkbox"
                     checked={selectAll}
@@ -103,17 +109,17 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
                 </th>
               )}
               {[
-                { label: "المنتج", field: "name" as SortField },
-                { label: "النوع", field: null },
+                { label: isEn ? "Product" : "المنتج", field: "name" as SortField },
+                { label: isEn ? "Type" : "النوع", field: null },
                 { label: "SKU", field: null },
-                { label: "السعر", field: "price" as SortField },
-                { label: "المخزون", field: "stock" as SortField },
+                { label: isEn ? "Price" : "السعر", field: "price" as SortField },
+                { label: isEn ? "Stock" : "المخزون", field: "stock" as SortField },
               ].map(({ label, field }) => {
                 if (!field) {
                   return (
                     <th
                       key={label}
-                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                      className={`px-6 py-3 ${alignClass} text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}
                     >
                       {label}
                     </th>
@@ -124,7 +130,7 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
                   <th
                     key={field}
                     onClick={() => onSort(field)}
-                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                    className={`px-6 py-3 ${alignClass} text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800`}
                   >
                     <div className="flex items-center gap-1">
                       {label}
@@ -133,17 +139,21 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
                   </th>
                 );
               })}
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الحالة</th>
+              <th className={`px-6 py-3 ${alignClass} text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                {isEn ? "Status" : "الحالة"}
+              </th>
               <th
                 onClick={() => onSort("updatedAt")}
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                className={`px-6 py-3 ${alignClass} text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800`}
               >
                 <div className="flex items-center gap-1">
-                  آخر تحديث
+                  {isEn ? "Last Updated" : "آخر تحديث"}
                   <SortIcon field="updatedAt" />
                 </div>
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الإجراءات</th>
+              <th className={`px-6 py-3 ${alignClass} text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider`}>
+                {isEn ? "Actions" : "الإجراءات"}
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white/60 dark:bg-gray-800/60 divide-y divide-gray-200 dark:divide-gray-700">

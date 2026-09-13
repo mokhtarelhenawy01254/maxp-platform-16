@@ -100,24 +100,46 @@ export const ensureProductWorkflow = (
   isActive?: boolean,
 ): ProductWorkflow => normalizeProductWorkflow(workflow || DEFAULT_WORKFLOW, isActive);
 
-export const getWorkflowStatusLabel = (status: ProductWorkflowStatus): string => {
+export const isUnpublishedWorkflow = (
+  workflow: ProductWorkflow | null | undefined,
+): boolean => {
+  const resolved = ensureProductWorkflow(workflow);
+  return Boolean(resolved.unpublishedAt) && resolved.status !== PRODUCT_WORKFLOW_STATUSES.PUBLISHED;
+};
+
+export const getWorkflowStatusLabel = (
+  status: ProductWorkflowStatus,
+  workflow?: ProductWorkflow | null,
+  isEn = false,
+): string => {
+  if (workflow && isUnpublishedWorkflow(workflow)) {
+    return isEn ? "Unpublished" : "ملغي النشر";
+  }
+
   switch (status) {
     case PRODUCT_WORKFLOW_STATUSES.DRAFT:
-      return "مسودة";
+      return isEn ? "Draft" : "مسودة";
     case PRODUCT_WORKFLOW_STATUSES.IN_REVIEW:
-      return "قيد المراجعة";
+      return isEn ? "In Review" : "قيد المراجعة";
     case PRODUCT_WORKFLOW_STATUSES.APPROVED:
-      return "معتمد";
+      return isEn ? "Approved" : "معتمد";
     case PRODUCT_WORKFLOW_STATUSES.REJECTED:
-      return "مرفوض";
+      return isEn ? "Rejected" : "مرفوض";
     case PRODUCT_WORKFLOW_STATUSES.PUBLISHED:
-      return "منشور";
+      return isEn ? "Published" : "منشور";
     default:
-      return "غير معروف";
+      return isEn ? "Unknown" : "غير معروف";
   }
 };
 
-export const getWorkflowStatusColor = (status: ProductWorkflowStatus): string => {
+export const getWorkflowStatusColor = (
+  status: ProductWorkflowStatus,
+  workflow?: ProductWorkflow | null,
+): string => {
+  if (workflow && isUnpublishedWorkflow(workflow)) {
+    return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300";
+  }
+
   switch (status) {
     case PRODUCT_WORKFLOW_STATUSES.DRAFT:
       return "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200";
@@ -198,5 +220,13 @@ export const matchesWorkflowFilter = (
     return true;
   }
 
-  return ensureProductWorkflow(workflow).status.toLowerCase() === filterValue.toLowerCase();
+  const resolved = ensureProductWorkflow(workflow);
+  if (filterValue.toLowerCase() === "unpublished") {
+    return (
+      Boolean(resolved.unpublishedAt) ||
+      (resolved.status === PRODUCT_WORKFLOW_STATUSES.APPROVED && !isPublishedWorkflow(workflow))
+    );
+  }
+
+  return resolved.status.toLowerCase() === filterValue.toLowerCase();
 };

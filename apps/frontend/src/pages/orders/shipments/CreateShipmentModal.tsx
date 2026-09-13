@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { XMarkIcon, TruckIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
@@ -46,7 +46,7 @@ export const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
     if (!query.trim()) return;
     setLoadingOrders(true);
     try {
-      const res = await apiClient.get("/orders", {
+      const res = await apiClient.get<any>("/orders", {
         params: {
           search: query.trim(),
           limit: 10,
@@ -82,7 +82,7 @@ export const CreateShipmentModal: React.FC<CreateShipmentModalProps> = ({
 
     setSubmitting(true);
     try {
-      const res = await apiClient.post("/shipments/create", {
+      const res = await apiClient.post<any>("/shipments/create", {
         orderId: selectedOrder.id,
         shippingCompanyId: selectedCompanyId || undefined,
         trackingNumber: !isLive && manualTracking ? manualTracking.trim() : undefined,

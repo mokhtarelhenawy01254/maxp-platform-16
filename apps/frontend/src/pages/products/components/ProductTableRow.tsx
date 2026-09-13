@@ -96,7 +96,7 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
   const stockStatus = getStockStatus(product);
   const isVariableProduct = product.productType === "variable";
   const isWorkflowBusy = workflowLoadingId === product.id;
-  const workflowLabel = getWorkflowStatusLabel(product.workflow.status);
+  const workflowLabel = getWorkflowStatusLabel(product.workflow.status, product.workflow);
   const canEditStock =
     product.merchantContext?.canEditStock !== false &&
     product.inventorySnapshot?.canEditStock !== false;
@@ -347,6 +347,7 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           <span
             className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getWorkflowStatusColor(
               product.workflow.status,
+              product.workflow,
             )}`}
           >
             {workflowLabel}

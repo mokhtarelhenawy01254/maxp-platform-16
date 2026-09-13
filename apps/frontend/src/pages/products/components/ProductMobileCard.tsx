@@ -99,24 +99,26 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
   const stockText = getStockStatusText(stockStatus);
   const isWorkflowBusy = workflowLoadingId === product.id;
   const isVariableProduct = product.productType === "variable";
-  const workflowLabel = getWorkflowStatusLabel(product.workflow.status);
+  const workflowLabel = getWorkflowStatusLabel(product.workflow.status, product.workflow);
 
   const mainImage = product.mainImage || (product.images && product.images[0]);
   const imageUrl = getImageUrl(mainImage, "thumbnail");
   const editUrl = `/products/${product.id}/edit`;
 
   const renderWorkflowActions = () => {
+    const btnSize = "inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg transition-colors disabled:opacity-50";
+
     if (canSubmitReviewWorkflow && canSubmitReview(product.workflow)) {
       return (
         <button
           type="button"
           onClick={() => onWorkflowAction(product, "submit_review")}
           disabled={isWorkflowBusy}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors disabled:opacity-50"
+          className={`${btnSize} text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40`}
           title="إرسال للمراجعة"
           aria-label="إرسال للمراجعة"
         >
-          <PaperAirplaneIcon className="h-4 w-4" />
+          <PaperAirplaneIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </button>
       );
     }
@@ -128,21 +130,21 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
             type="button"
             onClick={() => onWorkflowAction(product, "approve")}
             disabled={isWorkflowBusy}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-green-600 hover:bg-green-50 dark:hover:bg-green-950/40 transition-colors disabled:opacity-50"
+            className={`${btnSize} text-green-600 hover:bg-green-50 dark:hover:bg-green-950/40`}
             title="اعتماد"
             aria-label="اعتماد"
           >
-            <CheckCircleIcon className="h-4 w-4" />
+            <CheckCircleIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
           <button
             type="button"
             onClick={() => onWorkflowAction(product, "reject")}
             disabled={isWorkflowBusy}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors disabled:opacity-50"
+            className={`${btnSize} text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40`}
             title="رفض"
             aria-label="رفض"
           >
-            <XCircleIcon className="h-4 w-4" />
+            <XCircleIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
         </>
       );
@@ -154,11 +156,11 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
           type="button"
           onClick={() => onWorkflowAction(product, "publish")}
           disabled={isWorkflowBusy}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-green-600 hover:bg-green-50 dark:hover:bg-green-950/40 transition-colors disabled:opacity-50"
+          className={`${btnSize} text-green-600 hover:bg-green-50 dark:hover:bg-green-950/40`}
           title="نشر"
           aria-label="نشر"
         >
-          <CheckCircleIcon className="h-4 w-4" />
+          <CheckCircleIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </button>
       );
     }
@@ -169,11 +171,11 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
           type="button"
           onClick={() => onWorkflowAction(product, "unpublish")}
           disabled={isWorkflowBusy}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/40 transition-colors disabled:opacity-50"
+          className={`${btnSize} text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/40`}
           title="إلغاء النشر"
           aria-label="إلغاء النشر"
         >
-          <XCircleIcon className="h-4 w-4" />
+          <XCircleIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </button>
       );
     }
@@ -202,7 +204,7 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
         {/* Product Image - Clickable to full edit */}
         <Link
           to={editUrl}
-          className="relative h-18 w-18 shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-700/50 border border-gray-200/70 dark:border-gray-600/70 hover:opacity-85 transition-opacity"
+          className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-700/50 border border-gray-200/70 dark:border-gray-600/70 hover:opacity-85 transition-opacity"
           title="انقر لتعديل تفاصيل المنتج"
         >
           {imageUrl ? (
@@ -261,8 +263,8 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
                 مخفي
               </span>
             )}
-            {product.workflow?.status && product.workflow.status !== "published" && (
-              <span className={`rounded px-1.5 py-0.2 text-[9px] font-semibold ${getWorkflowStatusColor(product.workflow.status)}`}>
+            {product.workflow?.status && (product.workflow.status !== "published" || product.workflow?.unpublishedAt) && (
+              <span className={`rounded px-1.5 py-0.2 text-[9px] font-semibold ${getWorkflowStatusColor(product.workflow.status, product.workflow)}`}>
                 {workflowLabel}
               </span>
             )}
@@ -344,12 +346,12 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
         </div>
       ) : (
         /* Action Bar */
-        <div className="mt-3 flex items-center justify-between border-t border-gray-100 dark:border-gray-700/60 pt-2.5">
+        <div className="mt-3 flex items-center justify-between border-t border-gray-100 dark:border-gray-700/60 pt-2.5 gap-1.5">
           {/* Main Edit & Storefront Actions */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             <Link
               to={editUrl}
-              className="inline-flex items-center gap-1 min-h-[36px] px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-all active:scale-95"
+              className="inline-flex items-center gap-1 min-h-[34px] sm:min-h-[36px] px-2.5 sm:px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-all active:scale-95"
               title="تعديل كافة تفاصيل المنتج"
             >
               <PencilSquareIcon className="h-3.5 w-3.5" />
@@ -361,7 +363,7 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
               target="_blank"
               rel="noreferrer"
               onClick={() => prepareStorefrontContext()}
-              className="inline-flex items-center gap-1 min-h-[36px] px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold shadow-xs transition-colors"
+              className="inline-flex items-center gap-1 min-h-[34px] sm:min-h-[36px] px-2 sm:px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold shadow-xs transition-colors"
               title="عرض في المتجر"
             >
               <EyeIcon className="h-3.5 w-3.5" />
@@ -370,26 +372,26 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
           </div>
 
           {/* Quick Icons: Quick Edit, Duplicate, Workflow, Delete */}
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 shrink-0">
             <button
               type="button"
               onClick={() => onStartQuickEdit(product)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
               title="تعديل سريع (سعر ومخزون)"
               aria-label="تعديل سريع"
             >
-              <PencilIcon className="h-4 w-4" />
+              <PencilIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
 
             <button
               type="button"
               onClick={() => onDuplicate(product)}
               disabled={duplicatingProductId === product.id}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors disabled:opacity-40"
+              className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors disabled:opacity-40"
               title="نسخ المنتج"
               aria-label="نسخ المنتج"
             >
-              <DocumentDuplicateIcon className="h-4 w-4" />
+              <DocumentDuplicateIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
 
             {renderWorkflowActions()}
@@ -398,11 +400,11 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
               <button
                 type="button"
                 onClick={() => onDelete(product.id)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-700 transition-colors"
+                className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-700 transition-colors"
                 title="حذف المنتج"
                 aria-label="حذف المنتج"
               >
-                <TrashIcon className="h-4 w-4" />
+                <TrashIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
             )}
           </div>

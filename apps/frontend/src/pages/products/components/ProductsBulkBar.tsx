@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   TrashIcon,
   XMarkIcon,
@@ -29,6 +30,9 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
   onEnableTrack,
   onDisableTrack,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
   if (selectedCount === 0) return null;
 
   return (
@@ -36,9 +40,18 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
       {/* Top row on mobile / Left side on desktop */}
       <div className="flex items-center justify-between sm:justify-start gap-2">
         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-xs sm:text-sm font-bold shadow-xs">
-          <span>تم تحديد</span>
-          <span className="font-mono px-1 bg-white/20 rounded">{selectedCount}</span>
-          <span>منتج</span>
+          {isEn ? (
+            <>
+              <span className="font-mono px-1 bg-white/20 rounded">{selectedCount}</span>
+              <span>{selectedCount === 1 ? "product selected" : "products selected"}</span>
+            </>
+          ) : (
+            <>
+              <span>تم تحديد</span>
+              <span className="font-mono px-1 bg-white/20 rounded">{selectedCount}</span>
+              <span>منتج</span>
+            </>
+          )}
         </div>
         <button
           type="button"
@@ -46,7 +59,7 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
           className="sm:hidden inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 bg-white/80 dark:bg-gray-800/80 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xs"
         >
           <XMarkIcon className="h-3.5 w-3.5" />
-          <span>إلغاء</span>
+          <span>{isEn ? "Cancel" : "إلغاء"}</span>
         </button>
       </div>
 
@@ -58,7 +71,7 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
           className="inline-flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-purple-700 transition-all shadow-xs shrink-0 active:scale-95"
         >
           <ArrowPathIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          <span>حوّل لعروض</span>
+          <span>{isEn ? "Presentations" : "حوّل لعروض"}</span>
         </button>
 
         {onEnableTrack && (
@@ -66,10 +79,10 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
             type="button"
             onClick={onEnableTrack}
             className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-teal-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-teal-700 transition-all shadow-xs shrink-0 active:scale-95"
-            title="تفعيل تتبع المخزون"
+            title={isEn ? "Enable stock tracking" : "تفعيل تتبع المخزون"}
           >
             <CubeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span>تفعيل التتبع</span>
+            <span>{isEn ? "Enable Track" : "تفعيل التتبع"}</span>
           </button>
         )}
 
@@ -78,10 +91,10 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
             type="button"
             onClick={onDisableTrack}
             className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-gray-700 transition-all shadow-xs shrink-0 active:scale-95"
-            title="إيقاف تتبع المخزون"
+            title={isEn ? "Disable stock tracking" : "إيقاف تتبع المخزون"}
           >
             <CubeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-70" />
-            <span>إيقاف التتبع</span>
+            <span>{isEn ? "Disable Track" : "إيقاف التتبع"}</span>
           </button>
         )}
 
@@ -91,7 +104,7 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
           className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-orange-500 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-orange-600 transition-all shadow-xs shrink-0 active:scale-95"
         >
           <EyeSlashIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          <span>إخفاء</span>
+          <span>{isEn ? "Hide" : "إخفاء"}</span>
         </button>
 
         <button
@@ -100,7 +113,7 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
           className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-emerald-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-emerald-700 transition-all shadow-xs shrink-0 active:scale-95"
         >
           <EyeIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          <span>إظهار</span>
+          <span>{isEn ? "Show" : "إظهار"}</span>
         </button>
 
         <button
@@ -109,7 +122,7 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
           className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-red-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-red-700 transition-all shadow-xs shrink-0 active:scale-95"
         >
           <TrashIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          <span>حذف</span>
+          <span>{isEn ? "Delete" : "حذف"}</span>
         </button>
 
         <button
@@ -118,7 +131,7 @@ const ProductsBulkBar: React.FC<ProductsBulkBarProps> = ({
           className="hidden sm:inline-flex items-center gap-1 px-3 py-2 bg-gray-500 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-gray-600 transition-all shadow-xs shrink-0 active:scale-95"
         >
           <XMarkIcon className="h-4 w-4" />
-          <span>إلغاء التحديد</span>
+          <span>{isEn ? "Clear" : "إلغاء التحديد"}</span>
         </button>
       </div>
     </div>

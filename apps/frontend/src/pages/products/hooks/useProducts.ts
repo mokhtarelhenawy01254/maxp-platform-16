@@ -241,7 +241,7 @@ export const useProducts = () => {
               )
             : fallback?.dimensions,
         workflow: normalizeProductWorkflow(
-          p.workflow,
+          p.workflow || (typeof rawMetadata === "object" && rawMetadata ? rawMetadata.workflow : safeJsonParse(rawMetadata, {})?.workflow),
           p.isActive !== undefined ? Boolean(p.isActive) : fallback?.isActive,
         ),
         productType: resolvedVariantsCount > 0 ? "variable" : "simple",
@@ -389,7 +389,10 @@ export const useProducts = () => {
           );
         const matchesCategory =
           filters.categoryFilter === "all" || p.category === filters.categoryFilter;
-        const matchesStatus = matchesWorkflowFilter(p.workflow, filters.statusFilter);
+        const matchesStatus =
+          filters.statusFilter === "unpublished"
+            ? (matchesWorkflowFilter(p.workflow, "unpublished") || (!isPublishedWorkflow(p.workflow) && !p.isActive && p.workflow?.status !== "DRAFT"))
+            : matchesWorkflowFilter(p.workflow, filters.statusFilter);
         const stockStatus = getStockStatus(p);
         const matchesStock = filters.stockFilter === "all" || stockStatus === filters.stockFilter;
         const matchesOffers =

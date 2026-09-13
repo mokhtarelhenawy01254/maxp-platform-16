@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   PhotoIcon,
   CheckCircleIcon,
@@ -27,6 +28,9 @@ const ProductsStats: React.FC<ProductsStatsProps> = ({
   activeStatusFilter = "all",
   onStatClick,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
   const lowStockCount = products.filter(
     (p) => getStockStatus(p) === "low-stock",
   ).length;
@@ -49,7 +53,7 @@ const ProductsStats: React.FC<ProductsStatsProps> = ({
   }> = [
     {
       type: "all",
-      label: "إجمالي المنتجات",
+      label: isEn ? "Total Products" : "إجمالي المنتجات",
       value: totalItems || products.length,
       icon: PhotoIcon,
       iconBg: "bg-blue-100 dark:bg-blue-900/30",
@@ -59,7 +63,7 @@ const ProductsStats: React.FC<ProductsStatsProps> = ({
     },
     {
       type: "published",
-      label: "منتجات منشورة",
+      label: isEn ? "Published Products" : "منتجات منشورة",
       value: publishedCount,
       icon: CheckCircleIcon,
       iconBg: "bg-green-100 dark:bg-green-900/30",
@@ -69,7 +73,7 @@ const ProductsStats: React.FC<ProductsStatsProps> = ({
     },
     {
       type: "low-stock",
-      label: "مخزون منخفض",
+      label: isEn ? "Low Stock" : "مخزون منخفض",
       value: lowStockCount,
       icon: ExclamationTriangleIcon,
       iconBg: "bg-yellow-100 dark:bg-yellow-900/30",
@@ -79,7 +83,7 @@ const ProductsStats: React.FC<ProductsStatsProps> = ({
     },
     {
       type: "out-of-stock",
-      label: "نفد المخزون",
+      label: isEn ? "Out of Stock" : "نفد المخزون",
       value: outOfStockCount,
       icon: XCircleIcon,
       iconBg: "bg-red-100 dark:bg-red-900/30",
@@ -93,15 +97,15 @@ const ProductsStats: React.FC<ProductsStatsProps> = ({
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3.5 animate-slide-up">
       {cards.map((card) => (
         <button
-          key={card.label}
+          key={card.type}
           type="button"
           onClick={() => onStatClick?.(card.type)}
-          className={`text-right w-full backdrop-blur-sm rounded-xl border p-2.5 sm:p-4 transition-all duration-200 active:scale-[0.98] ${
+          className={`${isEn ? "text-left" : "text-right"} w-full backdrop-blur-sm rounded-xl border p-2.5 sm:p-4 transition-all duration-200 active:scale-[0.98] ${
             card.isActive
               ? "border-indigo-500/80 bg-indigo-50/70 dark:bg-indigo-950/40 shadow-sm ring-2 ring-indigo-500/20"
               : "border-gray-200/80 dark:border-gray-700/60 bg-white/90 dark:bg-gray-800/90 hover:border-gray-300 dark:hover:border-gray-600 shadow-xs hover:shadow-sm"
           }`}
-          title={`تصفية حسب: ${card.label}`}
+          title={isEn ? `Filter by: ${card.label}` : `تصفية حسب: ${card.label}`}
         >
           <div className="flex items-center gap-2.5 sm:gap-3.5">
             <div className={`p-2 sm:p-2.5 ${card.iconBg} rounded-lg sm:rounded-xl shrink-0`}>

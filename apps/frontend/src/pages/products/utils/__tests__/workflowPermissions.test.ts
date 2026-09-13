@@ -60,4 +60,33 @@ describe("product workflow role permissions", () => {
 
     expect(merchantWorkflow.status).toBe(PRODUCT_WORKFLOW_STATUSES.DRAFT);
   });
+
+  it("accurately detects unpublished products and formats label and color", async () => {
+    const {
+      isUnpublishedWorkflow,
+      getWorkflowStatusLabel,
+      getWorkflowStatusColor,
+      matchesWorkflowFilter,
+    } = await import("../workflow");
+
+    const unpublishedWorkflow = {
+      status: PRODUCT_WORKFLOW_STATUSES.APPROVED,
+      submittedAt: "2026-05-14T08:00:00.000Z",
+      approvedAt: "2026-05-14T08:10:00.000Z",
+      rejectedAt: null,
+      publishedAt: "2026-05-14T08:20:00.000Z",
+      unpublishedAt: "2026-05-14T09:00:00.000Z",
+      rejectionReason: null,
+      lastActionAt: "2026-05-14T09:00:00.000Z",
+      lastActionById: null,
+      lastActionByName: null,
+      lastActionByRole: null,
+    };
+
+    expect(isUnpublishedWorkflow(unpublishedWorkflow)).toBe(true);
+    expect(getWorkflowStatusLabel(unpublishedWorkflow.status, unpublishedWorkflow)).toBe("ملغي النشر");
+    expect(getWorkflowStatusColor(unpublishedWorkflow.status, unpublishedWorkflow)).toContain("orange");
+    expect(matchesWorkflowFilter(unpublishedWorkflow, "unpublished")).toBe(true);
+    expect(matchesWorkflowFilter(unpublishedWorkflow, "published")).toBe(false);
+  });
 });

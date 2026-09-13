@@ -40,7 +40,7 @@ export const TurboShipmentChatModal: React.FC<TurboShipmentChatModalProps> = ({
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get(`/shipments/${shipmentId}/messages`);
+      const res = await apiClient.get<any>(`/shipments/${shipmentId}/messages`);
       if (res.data?.success) {
         setMessages(res.data.messages || []);
         if (res.data.can_send !== undefined) {
@@ -67,7 +67,7 @@ export const TurboShipmentChatModal: React.FC<TurboShipmentChatModalProps> = ({
     const messageText = text.trim();
     setSending(true);
     try {
-      const res = await apiClient.post(`/shipments/${shipmentId}/messages`, {
+      const res = await apiClient.post<any>(`/shipments/${shipmentId}/messages`, {
         message: messageText,
       });
 

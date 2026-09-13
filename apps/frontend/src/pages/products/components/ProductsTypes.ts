@@ -89,16 +89,16 @@ export const getStockStatusColor = (status: StockStatus): string => {
   }
 };
 
-export const getStockStatusText = (status: StockStatus): string => {
+export const getStockStatusText = (status: StockStatus, isEn = false): string => {
   switch (status) {
     case "in-stock":
-      return "متوفر";
+      return isEn ? "In Stock" : "متوفر";
     case "low-stock":
-      return "مخزون منخفض";
+      return isEn ? "Low Stock" : "مخزون منخفض";
     case "out-of-stock":
-      return "نفد المخزون";
+      return isEn ? "Out of Stock" : "نفد المخزون";
     default:
-      return "غير محدد";
+      return isEn ? "Unspecified" : "غير محدد";
   }
 };
 

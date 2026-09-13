@@ -9,6 +9,8 @@ import {
   ChatBubbleLeftRightIcon,
   UserIcon,
   BuildingOfficeIcon,
+  ArrowPathRoundedSquareIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { useCurrency } from "../../../hooks/useCurrency";
 import { ShipmentRowItem } from "./ShipmentStatementTable";
@@ -182,9 +184,19 @@ export const ShipmentStatementCards: React.FC<ShipmentStatementCardsProps> = ({
                   {s.shippingCompany?.name || s.carrierType || "يدوي"}
                 </span>
                 {tracking && (
-                  <span className="font-mono text-[10px] text-gray-700 dark:text-gray-300">
-                    {tracking}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-mono text-[10px] text-gray-700 dark:text-gray-300">
+                      {tracking}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onCopyTracking(tracking)}
+                      className="text-gray-400 hover:text-gray-600 p-0.5"
+                      title="نسخ رقم البوليصة"
+                    >
+                      <ClipboardDocumentIcon className="h-3 w-3" />
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -227,6 +239,26 @@ export const ShipmentStatementCards: React.FC<ShipmentStatementCardsProps> = ({
                     title="محادثة تربو"
                   >
                     <ChatBubbleLeftRightIcon className="h-4 w-4" />
+                  </button>
+                )}
+                {isTurbo && tracking && (
+                  <button
+                    type="button"
+                    onClick={() => onResendShipment(s)}
+                    className="p-1.5 text-gray-500 hover:text-cyan-600"
+                    title="طلب إعادة الإرسال في تربو"
+                  >
+                    <ArrowPathRoundedSquareIcon className="h-4 w-4" />
+                  </button>
+                )}
+                {tracking && s.status !== "CANCELLED" && s.status !== "DELIVERED" && (
+                  <button
+                    type="button"
+                    onClick={() => onCancelShipment(s)}
+                    className="p-1.5 text-gray-500 hover:text-rose-600"
+                    title="طلب إلغاء الشحنة"
+                  >
+                    <XCircleIcon className="h-4 w-4" />
                   </button>
                 )}
               </div>

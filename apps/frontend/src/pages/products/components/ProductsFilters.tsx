@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -41,6 +42,8 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
   onToggleAdvancedFilters,
   onResetAdvancedFilters,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Calculate active filters count (excluding search)
@@ -59,7 +62,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
   // Quick filter chips definitions
   const quickChips = [
     {
-      label: "الكل",
+      label: isEn ? "All" : "الكل",
       isActive: filters.statusFilter === "all" && filters.stockFilter === "all" && !filters.offersOnly,
       isSpecial: false,
       icon: null,
@@ -70,7 +73,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
       },
     },
     {
-      label: "منشور",
+      label: isEn ? "Published" : "منشور",
       isActive: filters.statusFilter === "published",
       isSpecial: false,
       icon: null,
@@ -79,7 +82,16 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
       },
     },
     {
-      label: "عروض الكميات" + (offersCount !== undefined && offersCount > 0 ? ` (${offersCount})` : ""),
+      label: isEn ? "Unpublished" : "ملغي النشر",
+      isActive: filters.statusFilter === "unpublished",
+      isSpecial: false,
+      icon: null,
+      onClick: () => {
+        onFilterChange("statusFilter", filters.statusFilter === "unpublished" ? "all" : "unpublished");
+      },
+    },
+    {
+      label: (isEn ? "Quantity Offers" : "عروض الكميات") + (offersCount !== undefined && offersCount > 0 ? ` (${offersCount})` : ""),
       isActive: filters.offersOnly === "true",
       isSpecial: true,
       icon: SparklesIcon,
@@ -88,7 +100,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
       },
     },
     {
-      label: "مخزون منخفض",
+      label: isEn ? "Low Stock" : "مخزون منخفض",
       isActive: filters.stockFilter === "low-stock",
       isSpecial: false,
       icon: null,
@@ -97,7 +109,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
       },
     },
     {
-      label: "نفد المخزون",
+      label: isEn ? "Out of Stock" : "نفد المخزون",
       isActive: filters.stockFilter === "out-of-stock",
       isSpecial: false,
       icon: null,
@@ -106,7 +118,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
       },
     },
     {
-      label: "مسودة",
+      label: isEn ? "Draft" : "مسودة",
       isActive: filters.statusFilter === "draft",
       isSpecial: false,
       icon: null,
@@ -115,7 +127,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
       },
     },
     {
-      label: "قيد المراجعة",
+      label: isEn ? "In Review" : "قيد المراجعة",
       isActive: filters.statusFilter === "in_review",
       isSpecial: false,
       icon: null,
@@ -131,21 +143,21 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
       <div className="flex items-center gap-2">
         {/* Search Input */}
         <div className="relative flex-1">
-          <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
+          <MagnifyingGlassIcon className={`h-4 w-4 sm:h-5 sm:w-5 absolute ${isEn ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none`} />
           <input
             type="text"
-            aria-label="البحث عن منتج أو SKU أو Tag"
-            placeholder="بحث بالاسم أو SKU أو Tag..."
+            aria-label={isEn ? "Search by product, SKU or Tag" : "البحث عن منتج أو SKU أو Tag"}
+            placeholder={isEn ? "Search by name, SKU or Tag..." : "بحث بالاسم أو SKU أو Tag..."}
             value={filters.searchQuery}
             onChange={(e) => onFilterChange("searchQuery", e.target.value)}
-            className="w-full pr-9 pl-8 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 dark:placeholder-gray-400 transition-all shadow-xs"
+            className={`w-full ${isEn ? "pl-9 pr-8" : "pr-9 pl-8"} py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 dark:placeholder-gray-400 transition-all shadow-xs`}
           />
           {filters.searchQuery && (
             <button
               type="button"
               onClick={() => onFilterChange("searchQuery", "")}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5"
-              aria-label="مسح البحث"
+              className={`absolute ${isEn ? "right-2.5" : "left-2.5"} top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5`}
+              aria-label={isEn ? "Clear search" : "مسح البحث"}
             >
               <XMarkIcon className="h-4 w-4" />
             </button>
@@ -163,7 +175,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
           }`}
         >
           <AdjustmentsHorizontalIcon className="h-4 w-4" />
-          <span>فلاتر</span>
+          <span>{isEn ? "Filters" : "فلاتر"}</span>
           {activeCount > 0 && (
             <span className="inline-flex items-center justify-center bg-indigo-600 text-white rounded-full h-4 w-4 text-[10px] font-bold">
               {activeCount}
@@ -181,36 +193,53 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
               : "border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
           }`}
         >
-          <FunnelIcon className="h-3.5 w-3.5 ml-1.5" />
-          فلاتر متقدمة
+          <FunnelIcon className={`h-3.5 w-3.5 ${isEn ? "mr-1.5" : "ml-1.5"}`} />
+          {isEn ? "Advanced Filters" : "فلاتر متقدمة"}
           {activeCount > 0 && (
-            <span className="mr-1.5 bg-indigo-600 text-white rounded-full px-1.5 py-0.2 text-[10px] font-bold">
+            <span className={`${isEn ? "ml-1.5" : "mr-1.5"} bg-indigo-600 text-white rounded-full px-1.5 py-0.2 text-[10px] font-bold`}>
               {activeCount}
             </span>
           )}
         </button>
       </div>
 
-      {/* Quick Filter Chips + Category Dropdown (always visible, scrollable row) */}
+      {/* Quick Filter Chips + Category & Stock Dropdowns (always visible, scrollable row) */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
         {/* Category select — always visible */}
         {categories.length > 0 && (
           <select
             value={filters.categoryFilter}
             onChange={(e) => onFilterChange("categoryFilter", e.target.value)}
-            aria-label="تصفية حسب الفئة"
+            aria-label={isEn ? "Filter by category" : "تصفية حسب الفئة"}
             className={`shrink-0 px-2.5 py-1 text-[11px] sm:text-xs font-semibold border rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${
               filters.categoryFilter !== "all"
                 ? "bg-indigo-600 text-white border-indigo-600"
                 : "bg-gray-100 dark:bg-gray-700/70 text-gray-600 dark:text-gray-300 border-gray-200/50 dark:border-gray-600/50 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
           >
-            <option value="all">جميع الفئات</option>
+            <option value="all">{isEn ? "All Categories" : "جميع الفئات"}</option>
             {categories.map((cat) => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
         )}
+
+        {/* Stock select — moved up alongside Category */}
+        <select
+          value={filters.stockFilter}
+          onChange={(e) => onFilterChange("stockFilter", e.target.value)}
+          aria-label={isEn ? "Filter by stock" : "تصفية حسب المخزون"}
+          className={`shrink-0 px-2.5 py-1 text-[11px] sm:text-xs font-semibold border rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${
+            filters.stockFilter !== "all"
+                ? "bg-indigo-600 text-white border-indigo-600"
+                : "bg-gray-100 dark:bg-gray-700/70 text-gray-600 dark:text-gray-300 border-gray-200/50 dark:border-gray-600/50 hover:bg-gray-200 dark:hover:bg-gray-600"
+          }`}
+        >
+          <option value="all">{isEn ? "All Stock" : "جميع المخزون"}</option>
+          <option value="in-stock">{isEn ? "In Stock" : "متوفر"}</option>
+          <option value="low-stock">{isEn ? "Low Stock" : "مخزون منخفض"}</option>
+          <option value="out-of-stock">{isEn ? "Out of Stock" : "نفد المخزون"}</option>
+        </select>
 
         {quickChips.map((chip) => {
           const Icon = chip.icon;
@@ -239,98 +268,136 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
           <button
             type="button"
             onClick={onResetAdvancedFilters}
-            className="whitespace-nowrap px-2 py-1 text-[11px] text-red-600 dark:text-red-400 hover:underline font-medium shrink-0 mr-1"
+            className={`whitespace-nowrap px-2 py-1 text-[11px] text-red-600 dark:text-red-400 hover:underline font-medium shrink-0 ${isEn ? "ml-1" : "mr-1"}`}
           >
-            إعادة تعيين ({activeCount})
+            {isEn ? `Reset (${activeCount})` : `إعادة تعيين (${activeCount})`}
           </button>
         )}
       </div>
 
-      {/* Desktop Standard Dropdown Filters & Mobile Collapsible Filter Drawer */}
-      <div
-        className={`${
-          showMobileFilters ? "block" : "hidden"
-        } md:grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 pt-2 border-t border-gray-100 dark:border-gray-700/60`}
-      >
-        {/* Category */}
-        <div>
-          <label className="block md:hidden text-[10px] text-gray-500 dark:text-gray-400 mb-1">الفئة</label>
-          <select
-            value={filters.categoryFilter}
-            onChange={(e) => onFilterChange("categoryFilter", e.target.value)}
-            aria-label="تصفية حسب الفئة"
-            className="w-full px-2.5 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 shadow-xs"
-          >
-            <option value="all">جميع الفئات</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
+      {/* Mobile Collapsible Filter Drawer */}
+      {showMobileFilters && (
+        <div className="md:hidden pt-3 border-t border-gray-100 dark:border-gray-700/60 space-y-3 animate-in fade-in duration-150">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1">{isEn ? "Status" : "الحالة"}</label>
+              <select
+                value={filters.statusFilter}
+                onChange={(e) => onFilterChange("statusFilter", e.target.value)}
+                aria-label={isEn ? "Filter by status" : "تصفية حسب الحالة"}
+                className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 shadow-xs"
+              >
+                <option value="all">{isEn ? "All Statuses" : "جميع الحالات"}</option>
+                <option value="published">{isEn ? "Published" : "منشور"}</option>
+                <option value="unpublished">{isEn ? "Unpublished" : "ملغي النشر"}</option>
+                <option value="draft">{isEn ? "Draft" : "مسودة"}</option>
+                <option value="in_review">{isEn ? "In Review" : "قيد المراجعة"}</option>
+                <option value="approved">{isEn ? "Approved" : "معتمد"}</option>
+                <option value="rejected">{isEn ? "Rejected" : "مرفوض"}</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1">{isEn ? "Stock" : "المخزون"}</label>
+              <select
+                value={filters.stockFilter}
+                onChange={(e) => onFilterChange("stockFilter", e.target.value)}
+                aria-label={isEn ? "Filter by stock" : "تصفية حسب المخزون"}
+                className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 shadow-xs"
+              >
+                <option value="all">{isEn ? "All Stock" : "جميع المخزون"}</option>
+                <option value="in-stock">{isEn ? "In Stock" : "متوفر"}</option>
+                <option value="low-stock">{isEn ? "Low Stock" : "مخزون منخفض"}</option>
+                <option value="out-of-stock">{isEn ? "Out of Stock" : "نفد المخزون"}</option>
+              </select>
+            </div>
+          </div>
 
-        {/* Status */}
-        <div>
-          <label className="block md:hidden text-[10px] text-gray-500 dark:text-gray-400 mb-1">الحالة</label>
-          <select
-            value={filters.statusFilter}
-            onChange={(e) => onFilterChange("statusFilter", e.target.value)}
-            aria-label="تصفية حسب الحالة"
-            className="w-full px-2.5 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 shadow-xs"
-          >
-            <option value="all">جميع الحالات</option>
-            <option value="draft">مسودة</option>
-            <option value="in_review">قيد المراجعة</option>
-            <option value="approved">معتمد</option>
-            <option value="rejected">مرفوض</option>
-            <option value="published">منشور</option>
-          </select>
-        </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label htmlFor="filter-mobile-price-min" className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1">{isEn ? "Price From" : "السعر من"}</label>
+              <input
+                id="filter-mobile-price-min"
+                type="number"
+                value={filters.priceMin}
+                onChange={(e) => onFilterChange("priceMin", e.target.value)}
+                placeholder="0"
+                className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 shadow-xs"
+              />
+            </div>
+            <div>
+              <label htmlFor="filter-mobile-price-max" className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1">{isEn ? "Price To" : "السعر إلى"}</label>
+              <input
+                id="filter-mobile-price-max"
+                type="number"
+                value={filters.priceMax}
+                onChange={(e) => onFilterChange("priceMax", e.target.value)}
+                placeholder="999999"
+                className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 shadow-xs"
+              />
+            </div>
+          </div>
 
-        {/* Stock */}
-        <div>
-          <label className="block md:hidden text-[10px] text-gray-500 dark:text-gray-400 mb-1">المخزون</label>
-          <select
-            value={filters.stockFilter}
-            onChange={(e) => onFilterChange("stockFilter", e.target.value)}
-            aria-label="تصفية حسب المخزون"
-            className="w-full px-2.5 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 shadow-xs"
-          >
-            <option value="all">جميع المخزون</option>
-            <option value="in-stock">متوفر</option>
-            <option value="low-stock">مخزون منخفض</option>
-            <option value="out-of-stock">نفد المخزون</option>
-          </select>
-        </div>
+          <div>
+            <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1">{isEn ? "Tags" : "الوسوم (Tags)"}</label>
+            <select
+              value={filters.tagsFilter}
+              onChange={(e) => onFilterChange("tagsFilter", e.target.value)}
+              aria-label={isEn ? "Filter by tags" : "تصفية حسب الوسوم"}
+              className="w-full px-2.5 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 shadow-xs"
+            >
+              <option value="">{isEn ? "All Tags" : "جميع الـ Tags"}</option>
+              {allTags.map((tag) => (
+                <option key={tag} value={tag}>{tag}</option>
+              ))}
+            </select>
+          </div>
 
-        {/* On mobile, also display a link to toggle advanced filters inside the drawer */}
-        <div className="md:hidden pt-1 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onToggleAdvancedFilters}
-            className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold inline-flex items-center gap-1"
-          >
-            <FunnelIcon className="h-3.5 w-3.5" />
-            <span>{showAdvancedFilters ? "إخفاء الفلاتر الإضافية" : "فلاتر إضافية (السعر والتاريخ والوسوم)"}</span>
-          </button>
-          {activeCount > 0 && (
+          <div className="pt-1 flex items-center justify-between">
             <button
               type="button"
               onClick={onResetAdvancedFilters}
               className="text-xs text-red-600 dark:text-red-400 font-medium"
             >
-              مسح الكل
+              {isEn ? "Clear All" : "مسح الكل"}
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => setShowMobileFilters(false)}
+              className="text-xs bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-lg shadow-xs"
+            >
+              {isEn ? "Done" : "تم"}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Advanced Filters Panel */}
       {showAdvancedFilters && (
         <div className="mt-2 pt-3 border-t border-gray-100 dark:border-gray-700/60 animate-in fade-in duration-150">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-2 sm:gap-3">
+            <div>
+              <label htmlFor="filter-status-adv" className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {isEn ? "Status" : "الحالة"}
+              </label>
+              <select
+                id="filter-status-adv"
+                value={filters.statusFilter}
+                onChange={(e) => onFilterChange("statusFilter", e.target.value)}
+                aria-label={isEn ? "Filter by status" : "تصفية حسب الحالة"}
+                className="w-full px-2.5 py-1.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 shadow-xs"
+              >
+                <option value="all">{isEn ? "All Statuses" : "جميع الحالات"}</option>
+                <option value="published">{isEn ? "Published" : "منشور"}</option>
+                <option value="unpublished">{isEn ? "Unpublished" : "ملغي النشر"}</option>
+                <option value="draft">{isEn ? "Draft" : "مسودة"}</option>
+                <option value="in_review">{isEn ? "In Review" : "قيد المراجعة"}</option>
+                <option value="approved">{isEn ? "Approved" : "معتمد"}</option>
+                <option value="rejected">{isEn ? "Rejected" : "مرفوض"}</option>
+              </select>
+            </div>
             <div>
               <label htmlFor="filter-price-min" className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
-                السعر من
+                {isEn ? "Price From" : "السعر من"}
               </label>
               <input
                 id="filter-price-min"
@@ -343,7 +410,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
             </div>
             <div>
               <label htmlFor="filter-price-max" className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
-                السعر إلى
+                {isEn ? "Price To" : "السعر إلى"}
               </label>
               <input
                 id="filter-price-max"
@@ -356,7 +423,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
             </div>
             <div>
               <label htmlFor="filter-date-from" className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
-                من تاريخ
+                {isEn ? "From Date" : "من تاريخ"}
               </label>
               <input
                 id="filter-date-from"
@@ -368,7 +435,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
             </div>
             <div>
               <label htmlFor="filter-date-to" className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
-                إلى تاريخ
+                {isEn ? "To Date" : "إلى تاريخ"}
               </label>
               <input
                 id="filter-date-to"
@@ -380,15 +447,15 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
             </div>
             <div className="col-span-2 md:col-span-1">
               <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Tags
+                {isEn ? "Tags" : "الوسوم"}
               </label>
               <select
                 value={filters.tagsFilter}
                 onChange={(e) => onFilterChange("tagsFilter", e.target.value)}
-                aria-label="تصفية حسب الوسوم"
+                aria-label={isEn ? "Filter by tags" : "تصفية حسب الوسوم"}
                 className="w-full px-2.5 py-1.5 text-xs sm:text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700/80 dark:text-gray-100 shadow-xs"
               >
-                <option value="">جميع الـ Tags</option>
+                <option value="">{isEn ? "All Tags" : "جميع الـ Tags"}</option>
                 {allTags.map((tag) => (
                   <option key={tag} value={tag}>{tag}</option>
                 ))}
@@ -401,7 +468,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
               onClick={onResetAdvancedFilters}
               className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"
             >
-              إعادة تعيين الفلاتر
+              {isEn ? "Reset Filters" : "إعادة تعيين الفلاتر"}
             </button>
           </div>
         </div>

@@ -490,9 +490,10 @@ const Products: React.FC = () => {
                     <span
                       className={`inline-flex px-2 py-1 text-[11px] font-semibold rounded-full ${getWorkflowStatusColor(
                         product.workflow.status,
+                        product.workflow,
                       )}`}
                     >
-                      {getWorkflowStatusLabel(product.workflow.status)}
+                      {getWorkflowStatusLabel(product.workflow.status, product.workflow)}
                     </span>
                     {!isPublishedWorkflow(product.workflow) && (
                       <span className="rounded-full bg-black/70 px-2 py-1 text-[11px] font-semibold text-white">

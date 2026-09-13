@@ -110,7 +110,7 @@ const UnifiedShipmentsPage: React.FC = () => {
   // Fetch all active shipping companies for filter tabs
   const fetchCompanies = async () => {
     try {
-      const res = await apiClient.get("/shipping-companies?all=true");
+      const res = await apiClient.get<any>("/shipping-companies?all=true");
       if (res.data?.success && Array.isArray(res.data.data)) {
         setCompanies(res.data.data);
       }
@@ -128,17 +128,17 @@ const UnifiedShipmentsPage: React.FC = () => {
         page,
         limit,
       };
-      if (searchQuery) params.search = searchQuery;
+      if (searchQuery) params['search'] = searchQuery;
       if (selectedCompanyId && selectedCompanyId !== "ALL") {
-        params.shippingCompanyId = selectedCompanyId;
+        params['shippingCompanyId'] = selectedCompanyId;
       }
       if (selectedStatus && selectedStatus !== "ALL") {
-        params.status = selectedStatus;
+        params['status'] = selectedStatus;
       }
-      if (dateFrom) params.dateFrom = dateFrom;
-      if (dateTo) params.dateTo = dateTo;
+      if (dateFrom) params['dateFrom'] = dateFrom;
+      if (dateTo) params['dateTo'] = dateTo;
 
-      const res = await apiClient.get("/shipments", { params });
+      const res = await apiClient.get<any>("/shipments", { params });
       if (res.data?.success) {
         setShipments(res.data.data || []);
         if (res.data.pagination) {
@@ -224,7 +224,7 @@ const UnifiedShipmentsPage: React.FC = () => {
   const handleSyncShipment = async (id: string) => {
     setSyncingId(id);
     try {
-      const res = await apiClient.post(`/shipments/${id}/sync`);
+      const res = await apiClient.post<any>(`/shipments/${id}/sync`);
       if (res.data?.success) {
         toast.success(res.data.message || "تمت مزامنة حالة الشحنة مع الشركة");
         fetchShipments();
@@ -245,7 +245,7 @@ const UnifiedShipmentsPage: React.FC = () => {
     let successCount = 0;
     for (const id of selectedIds) {
       try {
-        const res = await apiClient.post(`/shipments/${id}/sync`);
+        const res = await apiClient.post<any>(`/shipments/${id}/sync`);
         if (res.data?.success) successCount++;
       } catch (_) {}
     }
@@ -258,7 +258,7 @@ const UnifiedShipmentsPage: React.FC = () => {
   const handleResendShipment = async (s: ShipmentRowItem) => {
     if (!window.confirm(`هل أنت متأكد من إرسال طلب إعادة شحن الشحنة #${s.trackingNumber || s.externalShipmentId}؟`)) return;
     try {
-      const res = await apiClient.post(`/shipments/${s.id}/resend`);
+      const res = await apiClient.post<any>(`/shipments/${s.id}/resend`);
       if (res.data?.success) {
         toast.success(res.data.message || "تم طلب إعادة الإرسال بنجاح");
         fetchShipments();
@@ -275,7 +275,7 @@ const UnifiedShipmentsPage: React.FC = () => {
     const reason = window.prompt("يرجى كتابة سبب إلغاء الشحنة:", "إلغاء بناءً على طلب العميل");
     if (reason === null) return;
     try {
-      const res = await apiClient.post(`/shipments/${s.id}/cancel-request`, { reason });
+      const res = await apiClient.post<any>(`/shipments/${s.id}/cancel-request`, { reason });
       if (res.data?.success) {
         toast.success(res.data.message || "تم إلغاء الشحنة بنجاح");
         fetchShipments();

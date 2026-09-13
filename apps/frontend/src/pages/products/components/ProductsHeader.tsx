@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   PlusIcon,
   TrashIcon,
@@ -41,6 +42,8 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
   onExport,
   onQuickAddClick,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -60,21 +63,23 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
   }, [showMenu]);
 
   return (
-    <div className="relative z-30 flex items-center justify-between gap-3 animate-slide-up">
+    <div className="relative z-30 flex items-center justify-between gap-2 sm:gap-3 animate-slide-up">
       {/* Title & Subtitle */}
-      <div className="min-w-0">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-l from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent truncate">
-          {isMerchant ? "منتجاتي" : "إدارة المنتجات"}
+      <div className="min-w-0 flex-1">
+        <h1 className="text-base sm:text-2xl lg:text-3xl font-bold bg-gradient-to-l from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent truncate">
+          {isMerchant
+            ? (isEn ? "My Products" : "منتجاتي")
+            : (isEn ? "Products" : "إدارة المنتجات")}
         </h1>
         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block">
           {isMerchant
-            ? "عدّل سعر المورد والمخزون المسموح لك بإدارته، والشركة تراجع السعر النهائي للعملاء."
-            : "إدارة وتتبع جميع منتجاتك ومخزونك بكل سهولة"}
+            ? (isEn ? "Manage supplier price and stock under your scope; final retail prices are reviewed by the company." : "عدّل سعر المورد والمخزون المسموح لك بإدارته، والشركة تراجع السعر النهائي للعملاء.")
+            : (isEn ? "Track and manage all your products, pricing, and inventory with ease." : "إدارة وتتبع جميع منتجاتك ومخزونك بكل سهولة")}
         </p>
       </div>
 
       {/* Action Buttons Cluster */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
         {/* View Mode Toggle */}
         <div className="flex border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-xs bg-white dark:bg-gray-800">
           <button
@@ -85,10 +90,10 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
                 ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400"
                 : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
             }`}
-            title="عرض جدول"
-            aria-label="عرض جدول"
+            title={isEn ? "Table view" : "عرض جدول"}
+            aria-label={isEn ? "Table view" : "عرض جدول"}
           >
-            <ListBulletIcon className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+            <ListBulletIcon className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
           </button>
           <button
             type="button"
@@ -98,10 +103,10 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
                 ? "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400"
                 : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
             }`}
-            title="عرض شبكة"
-            aria-label="عرض شبكة"
+            title={isEn ? "Grid view" : "عرض شبكة"}
+            aria-label={isEn ? "Grid view" : "عرض شبكة"}
           >
-            <Squares2X2Icon className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+            <Squares2X2Icon className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
           </button>
         </div>
 
@@ -111,8 +116,8 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
             to="/products/trash"
             className="hidden md:inline-flex items-center px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-xs"
           >
-            <TrashIcon className="h-3.5 w-3.5 ml-1.5 text-gray-500" />
-            سلة المحذوفات
+            <TrashIcon className={`h-3.5 w-3.5 ${isEn ? "mr-1.5" : "ml-1.5"} text-gray-500`} />
+            {isEn ? "Trash" : "سلة المحذوفات"}
           </Link>
         )}
 
@@ -122,8 +127,8 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
             onClick={onImportClick}
             className="hidden md:inline-flex items-center px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-xs"
           >
-            <ArrowUpTrayIcon className="h-3.5 w-3.5 ml-1.5 text-gray-500" />
-            استيراد CSV
+            <ArrowUpTrayIcon className={`h-3.5 w-3.5 ${isEn ? "mr-1.5" : "ml-1.5"} text-gray-500`} />
+            {isEn ? "Import CSV" : "استيراد CSV"}
           </button>
         )}
 
@@ -134,8 +139,10 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
             disabled={isLoading}
             className="hidden md:inline-flex items-center px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-xs disabled:opacity-50"
           >
-            <ArrowDownTrayIcon className="h-3.5 w-3.5 ml-1.5 text-gray-500" />
-            {isLoading ? "تصدير..." : "تصدير CSV"}
+            <ArrowDownTrayIcon className={`h-3.5 w-3.5 ${isEn ? "mr-1.5" : "ml-1.5"} text-gray-500`} />
+            {isLoading
+              ? (isEn ? "Exporting..." : "تصدير...")
+              : (isEn ? "Export CSV" : "تصدير CSV")}
           </button>
         )}
 
@@ -147,28 +154,28 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
                 <button
                   type="button"
                   onClick={onQuickAddClick}
-                  className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-white bg-gradient-to-l from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all transform active:scale-95 shrink-0"
-                  title="إضافة منتج سريع (وضع المبتدئين)"
+                  className="inline-flex items-center px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-white bg-gradient-to-l from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all transform active:scale-95 shrink-0"
+                  title={isEn ? "Quick Add (Beginner mode)" : "إضافة منتج سريع (وضع المبتدئين)"}
                 >
-                  <PlusIcon className="h-4 w-4 ml-1 sm:ml-1.5" />
-                  <span>إضافة منتج</span>
+                  <PlusIcon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isEn ? "mr-1 sm:mr-1.5" : "ml-1 sm:ml-1.5"}`} />
+                  <span>{isEn ? "Add Product" : "إضافة منتج"}</span>
                 </button>
                 <Link
                   to="/products/new"
-                  className="inline-flex items-center px-2 py-1.5 border-r border-white/20 text-white bg-purple-600 hover:bg-purple-700 transition-colors shrink-0"
-                  title="النموذج المتقدم الكامل"
+                  className="inline-flex items-center px-1.5 sm:px-2 py-1.5 border-r border-white/20 text-white bg-purple-600 hover:bg-purple-700 transition-colors shrink-0"
+                  title={isEn ? "Full Advanced Form" : "النموذج المتقدم الكامل"}
                 >
-                  <span className="text-[10px] hidden sm:inline ml-1 font-medium opacity-90">متقدم</span>
+                  <span className={`text-[10px] hidden sm:inline ${isEn ? "mr-1" : "ml-1"} font-medium opacity-90`}>{isEn ? "Advanced" : "متقدم"}</span>
                   <span className="text-xs">▾</span>
                 </Link>
               </>
             ) : (
               <Link
                 to="/products/new"
-                className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold text-white bg-gradient-to-l from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all transform active:scale-95 shrink-0"
+                className="inline-flex items-center px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold text-white bg-gradient-to-l from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all transform active:scale-95 shrink-0"
               >
-                <PlusIcon className="h-4 w-4 ml-1 sm:ml-1.5" />
-                <span>إضافة منتج</span>
+                <PlusIcon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isEn ? "mr-1 sm:mr-1.5" : "ml-1 sm:ml-1.5"}`} />
+                <span>{isEn ? "Add Product" : "إضافة منتج"}</span>
               </Link>
             )}
           </div>
@@ -180,14 +187,14 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
             type="button"
             onClick={() => setShowMenu((prev) => !prev)}
             className="p-1.5 sm:p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-xs"
-            title="خيارات إضافية"
-            aria-label="خيارات إضافية"
+            title={isEn ? "More Options" : "خيارات إضافية"}
+            aria-label={isEn ? "More Options" : "خيارات إضافية"}
           >
             <EllipsisVerticalIcon className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
 
           {showMenu && (
-            <div className="absolute left-0 mt-1.5 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-1.5 z-50 ring-1 ring-black/10 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-100">
+            <div className={`absolute ${isEn ? "right-0" : "left-0"} mt-1.5 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-1.5 z-50 ring-1 ring-black/10 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-100`}>
               {/* Quick Add / Advanced links in dropdown */}
               {canCreateProducts && onQuickAddClick && (
                 <>
@@ -199,16 +206,16 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
                     }}
                     className="flex w-full items-center px-3.5 py-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
                   >
-                    <PlusIcon className="h-4 w-4 ml-2.5 text-indigo-500" />
-                    إضافة منتج سريع
+                    <PlusIcon className={`h-4 w-4 ${isEn ? "mr-2.5" : "ml-2.5"} text-indigo-500`} />
+                    {isEn ? "Quick Add Product" : "إضافة منتج سريع"}
                   </button>
                   <Link
                     to="/products/new"
                     onClick={() => setShowMenu(false)}
                     className="flex w-full items-center px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors border-b border-gray-100 dark:border-gray-700/50 pb-2 mb-1"
                   >
-                    <span className="h-4 w-4 ml-2.5 text-gray-400 text-center text-xs font-bold">⚙</span>
-                    النموذج المتقدم الكامل
+                    <span className={`h-4 w-4 ${isEn ? "mr-2.5" : "ml-2.5"} text-gray-400 text-center text-xs font-bold`}>⚙</span>
+                    {isEn ? "Full Advanced Form" : "النموذج المتقدم الكامل"}
                   </Link>
                 </>
               )}
@@ -219,8 +226,8 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
                   onClick={() => setShowMenu(false)}
                   className="flex md:hidden items-center px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors"
                 >
-                  <TrashIcon className="h-4 w-4 ml-2.5 text-gray-400" />
-                  سلة المحذوفات
+                  <TrashIcon className={`h-4 w-4 ${isEn ? "mr-2.5" : "ml-2.5"} text-gray-400`} />
+                  {isEn ? "Trash" : "سلة المحذوفات"}
                 </Link>
               )}
 
@@ -233,8 +240,8 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
                   }}
                   className="flex md:hidden w-full items-center px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors"
                 >
-                  <ArrowUpTrayIcon className="h-4 w-4 ml-2.5 text-gray-400" />
-                  استيراد CSV
+                  <ArrowUpTrayIcon className={`h-4 w-4 ${isEn ? "mr-2.5" : "ml-2.5"} text-gray-400`} />
+                  {isEn ? "Import CSV" : "استيراد CSV"}
                 </button>
               )}
 
@@ -248,8 +255,8 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
                   disabled={isLoading}
                   className="flex md:hidden w-full items-center px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors disabled:opacity-50"
                 >
-                  <ArrowDownTrayIcon className="h-4 w-4 ml-2.5 text-gray-400" />
-                  تصدير CSV
+                  <ArrowDownTrayIcon className={`h-4 w-4 ${isEn ? "mr-2.5" : "ml-2.5"} text-gray-400`} />
+                  {isEn ? "Export CSV" : "تصدير CSV"}
                 </button>
               )}
 
@@ -266,8 +273,12 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
                     disabled={isDeletingAll || productsCount === 0}
                     className="flex w-full items-center px-3.5 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <ExclamationTriangleIcon className="h-4 w-4 ml-2.5 text-red-500" />
-                    <span>{isDeletingAll ? "جاري الحذف..." : "حذف جميع المنتجات"}</span>
+                    <ExclamationTriangleIcon className={`h-4 w-4 ${isEn ? "mr-2.5" : "ml-2.5"} text-red-500`} />
+                    <span>
+                      {isDeletingAll
+                        ? (isEn ? "Deleting..." : "جاري الحذف...")
+                        : (isEn ? "Delete All Products" : "حذف جميع المنتجات")}
+                    </span>
                   </button>
                 </>
               )}

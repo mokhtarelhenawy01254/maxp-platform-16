@@ -55,7 +55,6 @@ export const CarrierTabsBar: React.FC<CarrierTabsBarProps> = ({
       {companies.map((c) => {
         const isSelected = selectedCompanyId === c.id;
         const isLive = c.integrationMode === "LIVE" || c.providerKey === "TURBO" || c.providerKey === "BOSTA";
-        const providerName = c.providerKey || "MANUAL";
 
         return (
           <button
