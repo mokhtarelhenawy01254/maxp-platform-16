@@ -109,6 +109,20 @@ const replyToTicket = async (req, res) => {
   }
 };
 
+const getUnreadTicketsCount = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    const turboService = new TurboService(null, companyId);
+    const result = await turboService.getUnreadTicketsCount();
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ [TURBO-CONTROLLER] Error getting unread tickets count:', error);
+    const isConfigError = error.message?.includes('Turbo is not enabled') || error.message?.includes('not configured');
+    res.status(isConfigError ? 400 : 500).json({ success: false, error: error.message || 'Failed to get unread tickets count', counts: { tickets: 0, missions: 0, orders: 0 } });
+  }
+};
+
 const getTicketStatuses = async (req, res) => {
   try {
     const companyId = req.user?.companyId;

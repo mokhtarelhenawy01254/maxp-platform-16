@@ -26,6 +26,7 @@ import {
   getPerformanceGoals,
 } from "../constants";
 import {
+  formatAdAccountCurrency,
   getFullAdMinimumBudgetAmount,
   isCappedBidStrategy,
 } from "../../CreateAdWizard.helpers";
@@ -98,30 +99,37 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
       ? account.accountId
       : account.account_id || account.id.replace(/^act_/, "");
 
-  const activeSavedAdAccount = savedAdAccounts.find((a) => a.isActive);
+  const safeSavedAccounts = Array.isArray(savedAdAccounts) ? savedAdAccounts : [];
+  const safeAdAccounts = Array.isArray(adAccounts) ? adAccounts : [];
+  const safePixels = Array.isArray(facebookPixels) ? facebookPixels : [];
+  const safeAttributionWindows = Array.isArray(compatibleAttributionWindows)
+    ? compatibleAttributionWindows
+    : [];
+
+  const activeSavedAdAccount = safeSavedAccounts.find((a) => a?.isActive);
   const activeSavedAdAccountId = activeSavedAdAccount?.accountId || "";
 
   const selectedSavedAdAccount =
-    savedAdAccounts.find(
-      (account) => account.accountId === selectedAdAccountId,
+    safeSavedAccounts.find(
+      (account) => account?.accountId === selectedAdAccountId,
     ) || null;
 
   const selectedRemoteAdAccount =
-    adAccounts.find(
+    safeAdAccounts.find(
       (account) => resolveAdAccountId(account) === selectedAdAccountId,
     ) || null;
 
   const getAdAccountBusinessKey = (account: FacebookAdAccount) =>
-    account.business?.id ||
-    account.billingHealth?.business?.id ||
+    account?.business?.id ||
+    account?.billingHealth?.business?.id ||
     "unassigned-business";
 
   const getAdAccountBusinessName = (account: FacebookAdAccount) =>
-    account.business?.name ||
-    account.billingHealth?.business?.name ||
+    account?.business?.name ||
+    account?.billingHealth?.business?.name ||
     (isEn ? "Accounts without a clear Business" : "حسابات بدون Business واضح");
 
-  const adAccountBusinessGroups = adAccounts.reduce<
+  const adAccountBusinessGroups = safeAdAccounts.reduce<
     Array<{
       businessKey: string;
       businessName: string;
@@ -167,11 +175,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
   );
 
   const formatSelectedAdAccountCurrency = (value?: number) =>
-    new Intl.NumberFormat(isEn ? "en-US" : "ar-EG", {
-      style: "currency",
-      currency: selectedAdAccountCurrency || "EGP",
-      maximumFractionDigits: 2,
-    }).format(value || 0);
+    formatAdAccountCurrency(value, selectedAdAccountCurrency, isEn);
   return (
     <div className="space-y-6" dir={isEn ? "ltr" : "rtl"}>
       <div className="bg-white dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
@@ -492,7 +496,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
       )}
 
       {/* Attribution Window */}
-      {compatibleAttributionWindows.length > 0 && (
+      {safeAttributionWindows.length > 0 && (
         <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/40 rounded-xl p-4">
           <h4 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
@@ -504,7 +508,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
               : "المدة الزمنية التي يُنسب فيها التحويل إلى إعلانك"}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {compatibleAttributionWindows.map((window) => (
+            {safeAttributionWindows.map((window) => (
               <label
                 key={window.value}
                 className={`flex items-start p-3 border-2 rounded-lg cursor-pointer transition-all ${
