@@ -63,6 +63,8 @@ const ProductLandingPages: React.FC = () => {
       customDomain || undefined,
       companyId,
     );
+  }, [liveSlug, companySlug, customDomain, companyId]);
+
   const previewUrl = useMemo(() => {
     if (!customerUrl) return "";
     return selectedPage?.status === "PUBLISHED" ? customerUrl : `${customerUrl}?preview=1`;
@@ -160,6 +162,107 @@ const ProductLandingPages: React.FC = () => {
             : undefined,
         timerEndsMinutes: type === "COUNTDOWN" ? 45 : undefined,
         lowStockCount: type === "COUNTDOWN" ? 14 : undefined,
+        comparisonTitle:
+          type === "COMPARISON"
+            ? "لماذا تختار منتجنا الأصلي بدلاً من البدائل في السوق؟"
+            : undefined,
+        comparisonUsLabel: type === "COMPARISON" ? "منتجنا الأصلي" : undefined,
+        comparisonThemLabel:
+          type === "COMPARISON" ? "المنتجات المقلدة في السوق" : undefined,
+        comparisonItems:
+          type === "COMPARISON"
+            ? [
+                {
+                  feature: "جودة الخامات",
+                  us: "خامات أصلية عالية التحمل ومقاومة للتآكل",
+                  them: "خامات بلاستيكية سريعة التلف والتقشير",
+                },
+                {
+                  feature: "الراحة وسهولة الاستخدام",
+                  us: "تصميم مريح للاستخدام اليومي والمشاوير الطويلة",
+                  them: "يسبب إجهاد وتعب بعد الاستخدام لفترة وجيزة",
+                },
+                {
+                  feature: "معاينة قبل الدفع",
+                  us: "افحص المنتج براحتك قبل الاستلام والدفع",
+                  them: "ممنوع فتح الشحنة قبل الدفع",
+                },
+                {
+                  feature: "الضمان والاستبدال",
+                  us: "ضمان 14 يوم استرجاع واستبدال فوري",
+                  them: "لا يوجد أي ضمان أو استرجاع بعد البيع",
+                },
+              ]
+            : undefined,
+        breakdownTitle:
+          type === "BREAKDOWN"
+            ? "تشريح ومواصفات المنتج الدقيقة"
+            : undefined,
+        breakdownItems:
+          type === "BREAKDOWN"
+            ? [
+                {
+                  title: "نعل طبي ماص للصدمات",
+                  desc: "مرونة كاملة لراحة الكعب والركبة طوال اليوم",
+                  icon: "👟",
+                  tag: "طبي 100%",
+                },
+                {
+                  title: "خامات مسامية مانعة للتعرق",
+                  desc: "تهوية مستمرة لانتعاش القدم ومنع الروائح",
+                  icon: "💨",
+                  tag: "انتعاش",
+                },
+                {
+                  title: "خياطة يدوية مدعمة",
+                  desc: "متانة فائقة تتحمل المشاوير اليومية الشاقة",
+                  icon: "🧵",
+                  tag: "متانة",
+                },
+                {
+                  title: "خفة وزن استثنائية",
+                  desc: "وزن خفيف جداً يمنحك راحة وسرعة في الحركة",
+                  icon: "🪶",
+                  tag: "خفيف جداً",
+                },
+              ]
+            : undefined,
+        galleryTitle:
+          type === "GALLERY" ? "لقطات حية للمنتج على الطبيعة" : undefined,
+        galleryImages:
+          type === "GALLERY"
+            ? [
+                {
+                  url: selectedProduct?.mainImage || "",
+                  caption: "زاوية أمامية للمنتج",
+                },
+              ]
+            : undefined,
+        satisfactionRate:
+          type === "LIVE_PROOF" ? "4.9 / 5 (أكثر من 1,420 تقييم)" : undefined,
+        recentOrders:
+          type === "LIVE_PROOF"
+            ? [
+                {
+                  buyer: "أميرة م.",
+                  city: "مدينة نصر، القاهرة",
+                  timeAgo: "منذ 4 دقائق",
+                  item: selectedProduct?.name || "المنتج",
+                },
+                {
+                  buyer: "محمود ع.",
+                  city: "سموحة، الإسكندرية",
+                  timeAgo: "منذ 11 دقيقة",
+                  item: `${selectedProduct?.name || "المنتج"} (باقة قطعتين)`,
+                },
+                {
+                  buyer: "نورهان س.",
+                  city: "المنصورة، الدقهلية",
+                  timeAgo: "منذ 19 دقيقة",
+                  item: selectedProduct?.name || "المنتج",
+                },
+              ]
+            : undefined,
       },
     };
 

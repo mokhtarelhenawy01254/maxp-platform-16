@@ -402,6 +402,61 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                     );
                   }
 
+                  if (type === "BREAKDOWN") {
+                    const items = content.breakdownItems || [];
+                    return (
+                      <div key={id} className="eo-sync-breakdown-section" style={{ padding: "12px 8px", background: "#f8fafc", borderRadius: 10, margin: "8px 0" }}>
+                        <h4 style={{ fontSize: "0.85rem", fontWeight: 800, margin: "0 0 8px" }}>{content.breakdownTitle || "تشريح ومواصفات المنتج"}</h4>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                          {items.map((item: any, i: number) => (
+                            <div key={i} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 8 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                                <span>{item.icon || "✨"}</span>
+                                <strong style={{ fontSize: "0.75rem", color: "#0f172a" }}>{item.title}</strong>
+                              </div>
+                              <p style={{ fontSize: "0.68rem", color: "#64748b", margin: 0, lineHeight: 1.3 }}>{item.desc}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (type === "COMPARISON") {
+                    const items = content.comparisonItems || [];
+                    return (
+                      <div key={id} className="eo-sync-comp-section" style={{ padding: "12px 8px", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 10, margin: "8px 0" }}>
+                        <h4 style={{ fontSize: "0.85rem", fontWeight: 800, margin: "0 0 8px", color: "#0f172a" }}>{content.comparisonTitle || "جدول مقارنة التميز"}</h4>
+                        <div style={{ fontSize: "0.72rem" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 1fr", background: "#0f172a", color: "#fff", padding: "6px 8px", borderRadius: 6, fontWeight: 700 }}>
+                            <span>الميزة</span>
+                            <span style={{ color: "#34d399" }}>{content.comparisonUsLabel || "الأصلي"}</span>
+                            <span style={{ color: "#94a3b8" }}>{content.comparisonThemLabel || "التقليد"}</span>
+                          </div>
+                          {items.map((it: any, i: number) => (
+                            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr 1fr", padding: "6px 8px", borderBottom: "1px solid #f1f5f9", alignItems: "center" }}>
+                              <strong>{it.feature}</strong>
+                              <span style={{ color: "#059669", fontWeight: 600 }}>✓ {it.us}</span>
+                              <span style={{ color: "#dc2626" }}>✕ {it.them}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (type === "LIVE_PROOF") {
+                    const recent = content.recentOrders || [];
+                    return (
+                      <div key={id} className="eo-sync-liveproof-bar" style={{ display: "flex", alignItems: "center", gap: 6, background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "6px 10px", borderRadius: 8, margin: "6px 0", fontSize: "0.72rem" }}>
+                        <span style={{ width: 6, height: 6, background: "#22c55e", borderRadius: "50%" }} />
+                        <small style={{ color: "#166534", fontWeight: 700 }}>
+                          طلب نشط: {recent[0]?.buyer || "عميل"} من {recent[0]?.city || "القاهرة"} ({recent[0]?.timeAgo || "الآن"})
+                        </small>
+                      </div>
+                    );
+                  }
+
                   return null;
                 })
               )}

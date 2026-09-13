@@ -32,7 +32,11 @@ export type SectionType =
   | "FEATURES"
   | "REVIEWS"
   | "BANNERS"
-  | "COUNTDOWN";
+  | "COUNTDOWN"
+  | "COMPARISON"
+  | "BREAKDOWN"
+  | "GALLERY"
+  | "LIVE_PROOF";
 
 export interface LandingSection {
   id: string;
@@ -58,6 +62,16 @@ export interface LandingSection {
     text?: string;
     timerEndsMinutes?: number;
     lowStockCount?: number;
+    comparisonTitle?: string;
+    comparisonUsLabel?: string;
+    comparisonThemLabel?: string;
+    comparisonItems?: Array<{ feature: string; us: string; them: string }>;
+    breakdownTitle?: string;
+    breakdownItems?: Array<{ title: string; desc: string; icon?: string; tag?: string }>;
+    galleryTitle?: string;
+    galleryImages?: Array<{ url: string; caption?: string }>;
+    recentOrders?: Array<{ buyer: string; city: string; timeAgo: string; item?: string }>;
+    satisfactionRate?: string;
   };
 }
 

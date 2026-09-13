@@ -1088,15 +1088,255 @@ const ProductImageLandingPage: React.FC = () => {
       );
     }
 
+    if (type === "BREAKDOWN") {
+      const items = content.breakdownItems || [
+        {
+          title: "نعل طبي ماص للصدمات",
+          desc: "مرونة كاملة لراحة الكعب والركبة طوال اليوم",
+          icon: "👟",
+          tag: "طبي 100%",
+        },
+        {
+          title: "فرش هوائي مانع للتعرق",
+          desc: "مسامات تهوية نشطة لمنع الروائح والحفاظ على انتعاش القدمين",
+          icon: "💨",
+          tag: "انتعاش",
+        },
+        {
+          title: "خياطة يدوية مدعمة",
+          desc: "غرز متينة ومقاومة للتمزق والفك للمشاوير الشاقة",
+          icon: "🧵",
+          tag: "متانة",
+        },
+        {
+          title: "خفة وزن استثنائية",
+          desc: "وزن فائق الخفة يمنحك سرعة وراحة في الحركة",
+          icon: "🪶",
+          tag: "خفيف جداً",
+        },
+      ];
+      const title =
+        content.breakdownTitle || `تشريح ومواصفات تصنيع ${activeProduct.name}`;
+
+      return (
+        <section
+          key={section.id || idx}
+          className="pil-breakdown-section"
+          aria-label="مواصفات التصنيع"
+        >
+          <div className="pil-section-heading">
+            <span>الهندسة وجودة التصنيع</span>
+            <h2>{title}</h2>
+          </div>
+          <div className="pil-breakdown-grid">
+            {items.map((item: any, bIdx: number) => (
+              <div key={bIdx} className="pil-breakdown-card">
+                <div className="pil-breakdown-top">
+                  <span className="pil-breakdown-icon">
+                    {item.icon || "✨"}
+                  </span>
+                  {item.tag && (
+                    <span className="pil-breakdown-tag">{item.tag}</span>
+                  )}
+                </div>
+                <h3 className="pil-breakdown-card-title">{item.title}</h3>
+                <p className="pil-breakdown-card-desc">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    if (type === "COMPARISON") {
+      const title =
+        content.comparisonTitle ||
+        `لماذا تختار ${activeProduct.name} الأصلي بدلاً من البدائل؟`;
+      const usLabel =
+        content.comparisonUsLabel || `${activeProduct.name} الأصلي`;
+      const themLabel =
+        content.comparisonThemLabel || "المنتجات المقلدة في السوق";
+      const items = content.comparisonItems || [
+        {
+          feature: "جودة الخامات",
+          us: "خامات نخب أول مقاومة للاهتراء والتقشير",
+          them: "خامات بلاستيكية تتشقق سريعاً",
+        },
+        {
+          feature: "راحة المشي والاستخدام",
+          us: "نعل طبي يوزع ثقل الجسم بدون إجهاد",
+          them: "نعل ناشف يسبب آلام القدم والظهر",
+        },
+        {
+          feature: "حق الفحص والمعاينة",
+          us: "افتح الشحنة وقيس المنتج قبل دفع قرش",
+          them: "ممنوع فتح الشحنة إلا بعد الدفع",
+        },
+        {
+          feature: "الضمان والاسترجاع",
+          us: "ضمان 14 يوم استبدال واسترجاع سهل",
+          them: "لا يوجد أي ضمان أو استرجاع بعد البيع",
+        },
+      ];
+
+      return (
+        <section
+          key={section.id || idx}
+          className="pil-comparison-section"
+          aria-label="جدول المقارنة"
+        >
+          <div className="pil-section-heading">
+            <span>مقارنة التميز</span>
+            <h2>{title}</h2>
+          </div>
+          <div className="pil-comparison-card">
+            <div className="pil-comparison-header">
+              <div className="pil-comp-col pil-comp-feat">وجه المقارنة</div>
+              <div className="pil-comp-col pil-comp-us">
+                <span className="pil-comp-badge">الأصلي</span>
+                <strong>{usLabel}</strong>
+              </div>
+              <div className="pil-comp-col pil-comp-them">
+                <strong>{themLabel}</strong>
+              </div>
+            </div>
+            <div className="pil-comparison-body">
+              {items.map((row: any, rIdx: number) => (
+                <div key={rIdx} className="pil-comparison-row">
+                  <div className="pil-comp-col pil-comp-feat">
+                    <strong>{row.feature}</strong>
+                  </div>
+                  <div className="pil-comp-col pil-comp-us">
+                    <span className="pil-comp-check">✓</span>
+                    <span>{row.us}</span>
+                  </div>
+                  <div className="pil-comp-col pil-comp-them">
+                    <span className="pil-comp-cross">✕</span>
+                    <span>{row.them}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    if (type === "GALLERY") {
+      const title = content.galleryTitle || "لقطات حية للمنتج على الطبيعة";
+      const images =
+        content.galleryImages && content.galleryImages.length > 0
+          ? content.galleryImages
+          : activeProduct.images &&
+              Array.isArray(activeProduct.images) &&
+              activeProduct.images.length > 0
+            ? activeProduct.images.map((src: string) => ({
+                url: src,
+                caption: activeProduct.name,
+              }))
+            : [];
+
+      if (!images.length) return null;
+
+      return (
+        <section
+          key={section.id || idx}
+          className="pil-gallery-section"
+          aria-label="معرض الصور الحية"
+        >
+          <div className="pil-section-heading">
+            <span>على الطبيعة</span>
+            <h2>{title}</h2>
+          </div>
+          <div className="pil-gallery-grid">
+            {images.map((img: any, gIdx: number) => (
+              <div key={gIdx} className="pil-gallery-card">
+                <img
+                  src={img.url}
+                  alt={img.caption || activeProduct.name}
+                  loading="lazy"
+                />
+                {img.caption && (
+                  <span className="pil-gallery-caption">{img.caption}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    if (type === "LIVE_PROOF") {
+      const satisfaction =
+        content.satisfactionRate || "4.9 / 5 (أكثر من 1,420 تقييم)";
+      const recent = content.recentOrders || [
+        {
+          buyer: "أميرة م.",
+          city: "مدينة نصر، القاهرة",
+          timeAgo: "منذ 4 دقائق",
+          item: activeProduct.name,
+        },
+        {
+          buyer: "محمود ع.",
+          city: "سموحة، الإسكندرية",
+          timeAgo: "منذ 11 دقيقة",
+          item: `${activeProduct.name} (باقة قطعتين)`,
+        },
+        {
+          buyer: "نورهان س.",
+          city: "المنصورة، الدقهلية",
+          timeAgo: "منذ 19 دقيقة",
+          item: activeProduct.name,
+        },
+      ];
+
+      return (
+        <div
+          key={section.id || idx}
+          className="pil-liveproof-strip"
+          aria-label="الإثبات الاجتماعي"
+        >
+          <div className="pil-liveproof-inner">
+            <div className="pil-liveproof-badge">
+              <span className="pil-live-dot" />
+              <strong>طلب مباشر نشط الآن</strong>
+            </div>
+            <div className="pil-liveproof-ticker">
+              <span>
+                {recent[0]?.buyer} من {recent[0]?.city} طلب {recent[0]?.item} (
+                {recent[0]?.timeAgo})
+              </span>
+            </div>
+            <div className="pil-liveproof-rating">
+              <span className="pil-stars">★★★★★</span>
+              <small>{satisfaction}</small>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     if (type === "FEATURES") {
       return (
-        <section key={section.id || idx} className="pil-benefits" aria-label="أسباب الشراء">
-          {landingBenefitCards.map((card) => (
-            <div className="pil-benefit" key={card.title}>
-              <strong>{card.title}</strong>
-              <span>{card.text}</span>
-            </div>
-          ))}
+        <section
+          key={section.id || idx}
+          className="pil-trust-grid"
+          aria-label="أسباب الشراء والضمانات"
+        >
+          {landingBenefitCards.map((card, cIdx) => {
+            const icons = ["🚚", "🔍", "💵", "🛡️"];
+            return (
+              <div className="pil-trust-card" key={card.title}>
+                <span className="pil-trust-card-icon">
+                  {icons[cIdx % icons.length]}
+                </span>
+                <div className="pil-trust-card-content">
+                  <strong>{card.title}</strong>
+                  <span>{card.text}</span>
+                </div>
+              </div>
+            );
+          })}
         </section>
       );
     }
@@ -1107,7 +1347,8 @@ const ProductImageLandingPage: React.FC = () => {
         content.bannerText ||
         countdownSection?.content?.text ||
         "عرض لفترة محدودة — اطلب الآن قبل انتهاء الكمية!";
-      const lowStock = content.lowStockCount || countdownSection?.content?.lowStockCount;
+      const lowStock =
+        content.lowStockCount || countdownSection?.content?.lowStockCount;
 
       return (
         <div
@@ -1153,18 +1394,18 @@ const ProductImageLandingPage: React.FC = () => {
     if (type === "FORM") {
       return (
         <React.Fragment key={section.id || idx}>
-          <section className="pil-order-intro" aria-label="ملخص المنتج">
+          <section
+            id="order"
+            className="pil-order"
+            aria-labelledby="pil-order-title"
+          >
             <div className="pil-section-heading">
-              <span>{activeConfig.orderKicker}</span>
-              <h2>{activeConfig.orderTitle}</h2>
+              <span className="pil-order-kicker">
+                {activeConfig.orderKicker}
+              </span>
+              <h2 id="pil-order-title">{activeConfig.orderTitle}</h2>
+              <p className="pil-order-copy">{activeConfig.orderCopy}</p>
             </div>
-            <p>{activeConfig.orderCopy}</p>
-          </section>
-
-          <section id="order" className="pil-order" aria-labelledby="pil-order-title">
-            <span className="pil-order-kicker">بيانات الطلب</span>
-            <h1 id="pil-order-title">{activeConfig.orderTitle}</h1>
-            <p>{activeConfig.orderCopy}</p>
 
             <div className="pil-summary" aria-label="ملخص المنتج">
               <div className="pil-summary-cell">

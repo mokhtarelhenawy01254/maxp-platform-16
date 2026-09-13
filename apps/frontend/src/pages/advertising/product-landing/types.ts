@@ -1,9 +1,12 @@
-import React from "react";
 import {
+  CheckCircle,
   Clock,
   Code,
+  Flame,
   HelpCircle,
   Image as ImageIcon,
+  Layers,
+  LayoutGrid,
   Megaphone,
   ShoppingBag,
   Star,
@@ -58,11 +61,39 @@ export const SIDEBAR_ITEMS: SidebarElementItem[] = [
     desc: "معرض صور المنتج والفيديوهات الرئيسية",
   },
   {
+    type: "BREAKDOWN",
+    label: "تشريح ومواصفات دقيقة",
+    icon: React.createElement(Layers, { size: 20 }),
+    iconBg: "#2563EB",
+    desc: "كروت بصرية لمواصفات النعل والخامات والراحة",
+  },
+  {
+    type: "COMPARISON",
+    label: "جدول المقارنة الذكي",
+    icon: React.createElement(CheckCircle, { size: 20 }),
+    iconBg: "#059669",
+    desc: "مقارنة مقنعة: منتجنا الأصلي vs المنتجات المقلدة",
+  },
+  {
     type: "TEXT",
     label: "نص ووصف",
     icon: React.createElement(Type, { size: 20 }),
     iconBg: "#4B5563",
     desc: "عناوين، وصف تسويقي، وتفاصيل المنتج",
+  },
+  {
+    type: "GALLERY",
+    label: "معرض صور على الطبيعة",
+    icon: React.createElement(LayoutGrid, { size: 20 }),
+    iconBg: "#7C3AED",
+    desc: "لقطات للمنتج في الشارع ومن زوايا متعددة",
+  },
+  {
+    type: "LIVE_PROOF",
+    label: "إثبات اجتماعي وطلبات حية",
+    icon: React.createElement(Flame, { size: 20 }),
+    iconBg: "#EA580C",
+    desc: "إشعارات الشراء الحديثة وشارات الأمان",
   },
   {
     type: "COUNTDOWN",
@@ -142,6 +173,52 @@ export const buildDefaultSectionsForProduct = (
         heading: `${prodName} — جودة عالية وتصميم عصري`,
         subheading: "احصل على أفضل تجربة شراء مع شحن سريع وضمان شامل",
         bodyText: "تصميم أنيق وعملي يلبي احتياجاتك بدقة. مصنوع من خامات عالية الجودة لتدوم طويلاً، مع ضمان الرضا التام وسهولة الاستخدام.",
+      },
+    },
+    {
+      id: "sec-breakdown-1",
+      type: "BREAKDOWN",
+      title: "تشريح ومواصفات المنتج الفاخرة",
+      enabled: true,
+      content: {
+        breakdownTitle: `تشريح ومميزات تصنيع ${prodName}`,
+        breakdownItems: [
+          { title: "نعل طبي ماص للصدمات", desc: "مصنوع من مادة EVA المرنة لراحة الكعب والركبة طوال اليوم", icon: "👟", tag: "طبي 100%" },
+          { title: "فرش هوائي مانع للتعرق", desc: "مسامات تهوية نشطة لمنع الروائح والحفاظ على انتعاش القدمين", icon: "💨", tag: "انتعاش دائم" },
+          { title: "خياطة يدوية مدبلة", desc: "غرز متينة ومقاومة للتمزق والفك حتى مع المشاوير اليومية الشاقة", icon: "🧵", tag: "متانة فائقة" },
+          { title: "خفة وزن استثنائية", desc: "وزن خفيف جداً يجعلك تشعر وكأنك تمشي بخفة بدون إجهاد", icon: "🪶", tag: "خفيف جداً" },
+        ],
+      },
+    },
+    {
+      id: "sec-comparison-1",
+      type: "COMPARISON",
+      title: "جدول المقارنة الذكي",
+      enabled: true,
+      content: {
+        comparisonTitle: `لماذا تختار ${prodName} بدلاً من البدائل العادية في السوق؟`,
+        comparisonUsLabel: `${prodName} الأصلي`,
+        comparisonThemLabel: "المنتجات المقلدة في السوق",
+        comparisonItems: [
+          { feature: "جودة الخامات", us: "خامات نخب أول متينة ومقاومة للاهتراء", them: "خامات بلاستيكية رديئة تتشقق سريعاً" },
+          { feature: "راحة المشي والاستخدام", us: "تصميم مريح يوزع ثقل الجسم بدون إجهاد", them: "نعل ناشف يسبب آلام القدم والظهر" },
+          { feature: "حق الفحص والمعاينة", us: "افتح الشحنة وافحص براحتك قبل دفع قرش", them: "ممنوع فتح الشحنة إلا بعد الدفع" },
+          { feature: "الضمان والاسترجاع", us: "ضمان استبدال واسترجاع سهل خلال 14 يوماً", them: "لا يوجد أي ضمان بعد استلام الشحنة" },
+        ],
+      },
+    },
+    {
+      id: "sec-liveproof-1",
+      type: "LIVE_PROOF",
+      title: "إثبات اجتماعي وطلبات حية",
+      enabled: true,
+      content: {
+        satisfactionRate: "4.9 / 5 (أكثر من 1,420 تقييم)",
+        recentOrders: [
+          { buyer: "أميرة م.", city: "مدينة نصر، القاهرة", timeAgo: "منذ 4 دقائق", item: prodName },
+          { buyer: "محمود ع.", city: "سموحة، الإسكندرية", timeAgo: "منذ 11 دقيقة", item: `${prodName} (باقة قطعتين)` },
+          { buyer: "نورهان س.", city: "المنصورة، الدقهلية", timeAgo: "منذ 19 دقيقة", item: prodName },
+        ],
       },
     },
     {

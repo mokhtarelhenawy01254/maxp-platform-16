@@ -245,4 +245,92 @@ describe("ProductImageLandingPage", () => {
     });
     HTMLCanvasElement.prototype.getContext = originalGetContext;
   });
+
+  it("renders rich sections: BREAKDOWN, COMPARISON, LIVE_PROOF, and single order heading", async () => {
+    storefrontApiMocks.getProductLandingPreview.mockResolvedValueOnce({
+      data: {
+        landing: {
+          id: "landing-rich",
+          companyId: "company-1",
+          productId: "prod-1",
+          slug: "swan-sneaker-rich",
+          title: "Swan Sneaker Rich",
+          status: "DRAFT",
+          generationMode: "IMAGE_STACK",
+          generationStatus: "READY_TO_REVIEW",
+          slices: [],
+          sections: [
+            {
+              id: "sec-bd",
+              type: "BREAKDOWN",
+              title: "تشريح المنتج",
+              enabled: true,
+              content: {
+                breakdownTitle: "تشريح ومواصفات تصنيع Swan Sneaker",
+                breakdownItems: [
+                  { title: "نعل طبي ماص للصدمات", desc: "راحة الكعب", icon: "👟", tag: "طبي 100%" },
+                ],
+              },
+            },
+            {
+              id: "sec-comp",
+              type: "COMPARISON",
+              title: "جدول المقارنة",
+              enabled: true,
+              content: {
+                comparisonTitle: "لماذا تختار Swan Sneaker الأصلي؟",
+                comparisonUsLabel: "Swan Sneaker الأصلي",
+                comparisonThemLabel: "المنتجات المقلدة",
+                comparisonItems: [
+                  { feature: "الخامات", us: "جلد صناعي نخب أول", them: "بلاستيك رديء" },
+                ],
+              },
+            },
+            {
+              id: "sec-proof",
+              type: "LIVE_PROOF",
+              title: "إثبات حي",
+              enabled: true,
+              content: {
+                satisfactionRate: "4.9 / 5",
+                recentOrders: [
+                  { buyer: "أحمد م.", city: "الإسكندرية", timeAgo: "منذ دقيقتين", item: "Swan Sneaker" },
+                ],
+              },
+            },
+            {
+              id: "sec-form",
+              type: "FORM",
+              title: "نموذج الشراء",
+              enabled: true,
+              content: {
+                orderKicker: "نموذج الطلب",
+                orderTitle: "اطلب Swan Sneaker الآن",
+                orderCopy: "املأ بياناتك للشحن السريع.",
+                buttonLabel: "تأكيد الطلب",
+              },
+            },
+          ],
+          formConfig: {
+            orderTitle: "اطلب Swan Sneaker الآن",
+            buttonLabel: "تأكيد الطلب",
+          },
+        },
+        product: baseProduct,
+        company: {
+          id: "company-1",
+          name: "Swan",
+          currency: "EGP",
+        },
+      },
+    });
+
+    renderLanding("/store/lp/swan-sneaker-rich?companyId=company-1&preview=1");
+
+    expect(await screen.findByText("تشريح ومواصفات تصنيع Swan Sneaker")).toBeInTheDocument();
+    expect(screen.getByText("لماذا تختار Swan Sneaker الأصلي؟")).toBeInTheDocument();
+    expect(screen.getByText("طلب مباشر نشط الآن")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "اطلب Swan Sneaker الآن" })).toBeInTheDocument();
+    expect(screen.getByText("جلد صناعي نخب أول")).toBeInTheDocument();
+  });
 });
