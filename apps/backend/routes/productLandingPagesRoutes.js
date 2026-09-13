@@ -511,24 +511,62 @@ async function getCompanyProduct(prisma, productId, companyId) {
   return product;
 }
 
-router.get('/public/:slug', extractSubdomainMiddleware, requireCompany, async (req, res) => {
+router.get('/public/:slug', extractSubdomainMiddleware, async (req, res) => {
   try {
     const prisma = await getPrisma();
     await ensureProductLandingPagesTable(prisma);
 
     const slug = normalizeSlug(req.params.slug);
-    const landing = await prisma.productLandingPage.findFirst({
-      where: {
-        companyId: req.company.id,
-        slug,
-        status: 'PUBLISHED',
-      },
-      include: {
-        product: {
-          select: PRODUCT_SELECT,
+    let landing = null;
+
+    if (req.company?.id) {
+      landing = await prisma.productLandingPage.findFirst({
+        where: {
+          companyId: req.company.id,
+          slug,
+          status: 'PUBLISHED',
         },
-      },
-    });
+        include: {
+          product: {
+            select: PRODUCT_SELECT,
+          },
+          company: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+              currency: true,
+              customDomain: true,
+            },
+          },
+        },
+      });
+    }
+
+    if (!landing) {
+      landing = await prisma.productLandingPage.findFirst({
+        where: {
+          slug,
+          status: 'PUBLISHED',
+        },
+        include: {
+          product: {
+            select: PRODUCT_SELECT,
+          },
+          company: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+              currency: true,
+              customDomain: true,
+            },
+          },
+        },
+      });
+    }
 
     if (!landing || !landing.product || landing.product.isActive === false) {
       return res.status(404).json({
@@ -536,6 +574,8 @@ router.get('/public/:slug', extractSubdomainMiddleware, requireCompany, async (r
         message: 'صفحة الهبوط غير موجودة أو غير منشورة',
       });
     }
+
+    const companyInfo = landing.company || req.company || {};
 
     await prisma.productLandingPage
       .update({
@@ -552,11 +592,12 @@ router.get('/public/:slug', extractSubdomainMiddleware, requireCompany, async (r
         landing: formatLandingPage(landing),
         product: formatProduct(landing.product),
         company: {
-          id: req.company.id,
-          name: req.company.name,
-          slug: req.company.slug,
-          logo: req.company.logo,
-          currency: req.company.currency,
+          id: companyInfo.id,
+          name: companyInfo.name,
+          slug: companyInfo.slug,
+          logo: companyInfo.logo,
+          currency: companyInfo.currency,
+          customDomain: companyInfo.customDomain,
         },
       },
     });
@@ -570,20 +611,34 @@ router.get('/public/:slug', extractSubdomainMiddleware, requireCompany, async (r
   }
 });
 
-router.post('/public/:slug/order', extractSubdomainMiddleware, requireCompany, async (req, res) => {
+router.post('/public/:slug/order', extractSubdomainMiddleware, async (req, res) => {
   try {
     const prisma = await getPrisma();
     await ensureProductLandingPagesTable(prisma);
 
     const slug = normalizeSlug(req.params.slug);
-    const landing = await prisma.productLandingPage.findFirst({
-      where: {
-        companyId: req.company.id,
-        slug,
-        status: 'PUBLISHED',
-      },
-      select: { id: true },
-    });
+    let landing = null;
+
+    if (req.company?.id) {
+      landing = await prisma.productLandingPage.findFirst({
+        where: {
+          companyId: req.company.id,
+          slug,
+          status: 'PUBLISHED',
+        },
+        select: { id: true },
+      });
+    }
+
+    if (!landing) {
+      landing = await prisma.productLandingPage.findFirst({
+        where: {
+          slug,
+          status: 'PUBLISHED',
+        },
+        select: { id: true },
+      });
+    }
 
     if (!landing) {
       return res.status(404).json({

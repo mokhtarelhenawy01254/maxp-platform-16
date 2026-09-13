@@ -297,24 +297,24 @@ const CreateAd: React.FC = () => {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6 pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>
           <button
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 mb-2 transition"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 mb-2 transition"
           >
             <ArrowLeftIcon className="h-4 w-4" />
             <span>{isEn ? "Back" : "رجوع"}</span>
           </button>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-950">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white">
               {isEn ? "Create New Ad (Creative v26)" : "إنشاء إعلان جديد (Meta v26 Suite)"}
             </h1>
-            <span className="rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[11px] font-bold text-indigo-700">
+            <span className="rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 px-2 py-0.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
               Meta v26
             </span>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             {isEn
               ? "Design high-converting creatives with AI optimizations, dynamic copy, and accurate tracking."
               : "صمم إعلاناً بيعياً عالي التحويل مدعوماً بالذكاء الاصطناعي وتنويع النصوص وتتبع المبيعات."}
@@ -323,7 +323,7 @@ const CreateAd: React.FC = () => {
       </div>
 
       {/* Stepper Bar */}
-      <div className="grid grid-cols-5 gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
+      <div className="grid grid-cols-5 gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 overflow-x-auto">
         {steps.map((step) => (
           <button
             key={step.num}
@@ -335,10 +335,10 @@ const CreateAd: React.FC = () => {
             }}
             className={`flex items-center gap-2 p-2 rounded-xl text-right transition border ${
               currentStep === step.num
-                ? "border-indigo-600 bg-indigo-50/50 text-indigo-950 font-black shadow-xs"
+                ? "border-indigo-600 dark:border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-200 font-black shadow-xs"
                 : step.num < currentStep
-                  ? "border-emerald-200 bg-emerald-50/40 text-emerald-900 font-bold"
-                  : "border-transparent text-slate-400 font-semibold hover:text-slate-600"
+                  ? "border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-300 font-bold"
+                  : "border-transparent text-slate-400 dark:text-slate-500 font-semibold hover:text-slate-600 dark:hover:text-slate-300"
             }`}
           >
             <div
@@ -347,7 +347,7 @@ const CreateAd: React.FC = () => {
                   ? "bg-indigo-600 text-white"
                   : step.num < currentStep
                     ? "bg-emerald-600 text-white"
-                    : "bg-slate-200 text-slate-600"
+                    : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
               }`}
             >
               {step.num < currentStep ? <CheckIcon className="h-3.5 w-3.5 stroke-3" /> : step.num}
@@ -360,7 +360,7 @@ const CreateAd: React.FC = () => {
       {/* Main Grid: Form + Live Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Step Content */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs">
+        <div className="lg:col-span-7 bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 sm:p-6 shadow-xs">
           {currentStep === 1 && (
             <AdIdentityMediaStep
               formData={formData}
@@ -404,12 +404,12 @@ const CreateAd: React.FC = () => {
           )}
 
           {/* Navigation Controls */}
-          <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-4">
+          <div className="mt-8 flex items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-4">
             <button
               type="button"
               disabled={currentStep === 1}
               onClick={() => setCurrentStep((prev) => Math.max(prev - 1, 1))}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 transition"
+              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-gray-700 disabled:opacity-40 transition"
             >
               {isEn ? "Previous" : "السابق"}
             </button>
@@ -427,7 +427,7 @@ const CreateAd: React.FC = () => {
                 type="button"
                 disabled={submitting}
                 onClick={handleSubmit}
-                className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 text-xs font-black text-white hover:bg-slate-800 disabled:opacity-50 shadow-sm transition"
+                className="inline-flex items-center gap-2 rounded-xl bg-slate-950 dark:bg-indigo-600 px-6 py-2.5 text-xs font-black text-white hover:bg-slate-800 dark:hover:bg-indigo-700 disabled:opacity-50 shadow-sm transition"
               >
                 {submitting ? (
                   <>
@@ -463,22 +463,22 @@ const CreateAd: React.FC = () => {
           className="inline-flex items-center gap-2 rounded-full bg-slate-950 text-white px-5 py-2.5 text-xs font-black shadow-2xl border border-slate-700/60 transition active:scale-95"
         >
           <DevicePhoneMobileIcon className="h-4 w-4 text-indigo-400" />
-          <span>{isEn ? "Live Ad Preview" : "👁️ معاينة الإعلان الحية"}</span>
+          <span>{isEn ? "Live Ad Preview" : "معاينة الإعلان الحية"}</span>
         </button>
       </div>
 
       {/* Mobile Preview Bottom Sheet Modal */}
       {showMobilePreview && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-950/70 backdrop-blur-sm lg:hidden animate-in fade-in duration-200">
-          <div className="bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto p-4 shadow-2xl space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <span className="text-xs font-black text-slate-900">
+          <div className="bg-white dark:bg-gray-800 rounded-t-3xl max-h-[85vh] overflow-y-auto p-4 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2.5">
+              <span className="text-xs font-black text-slate-900 dark:text-white">
                 {isEn ? "Live Mobile Ad Preview" : "المعاينة الحية للإعلان"}
               </span>
               <button
                 type="button"
                 onClick={() => setShowMobilePreview(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-gray-700 transition"
               >
                 <XMarkIcon className="h-5 w-5" />
               </button>

@@ -7,66 +7,20 @@ import {
   TruckIcon,
   MagnifyingGlassIcon,
   ArrowPathIcon,
-  PrinterIcon,
   XMarkIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  ClipboardDocumentIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  ExclamationCircleIcon,
-  BanknotesIcon,
   ArrowDownTrayIcon,
-  ArrowTopRightOnSquareIcon,
-  PhoneIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import tokenManager from "../../utils/tokenManager";
-import { useCurrency } from "../../hooks/useCurrency";
-
-interface ShippingCompanyRef {
-  id: string;
-  name: string;
-  slug?: string;
-  providerKey?: string;
-  integrationMode?: string;
-  phone?: string;
-  website?: string;
-}
-
-interface ShipmentItem {
-  id: string;
-  orderId?: string | null;
-  trackingNumber?: string | null;
-  externalShipmentId?: string | null;
-  status: string;
-  carrierType: string;
-  serviceLevel?: string | null;
-  cost?: number | null;
-  currency?: string;
-  settlementStatus?: string | null;
-  destinationGovernorate?: string | null;
-  destinationCity?: string | null;
-  labelUrl?: string | null;
-  createdAt: string;
-  shippingCompany?: ShippingCompanyRef | null;
-  order?: {
-    id: string;
-    orderNumber: string;
-    total: number;
-    currency: string;
-    status: string;
-    governorate?: string;
-    city?: string;
-    customerName?: string;
-    customerPhone?: string;
-    customer?: {
-      id?: string | null;
-      name?: string;
-      phone?: string;
-    } | null;
-  } | null;
-}
+import { CarrierTabsBar, ShippingCompanyRef } from "./shipments/CarrierTabsBar";
+import { CarrierStagesBar } from "./shipments/CarrierStagesBar";
+import { ShipmentStatementTable, ShipmentRowItem } from "./shipments/ShipmentStatementTable";
+import { ShipmentStatementCards } from "./shipments/ShipmentStatementCards";
+import { ShipmentStatsBar } from "./shipments/ShipmentStatsBar";
+import { TurboShipmentChatModal } from "./shipments/TurboShipmentChatModal";
+import { CreateShipmentModal } from "./shipments/CreateShipmentModal";
 
 interface ShipmentsSummary {
   totalShipments: number;
@@ -75,23 +29,10 @@ interface ShipmentsSummary {
   returned: number;
   pendingRemittanceAmount: number;
   statusCounts?: Record<string, number>;
+  carrierStatusCounts?: Record<string, number>;
 }
 
-const STATUS_BADGE_STYLES: Record<string, string> = {
-  PENDING: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800",
-  CREATED: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
-  SHIPPED: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800",
-  IN_TRANSIT: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800",
-  DELIVERING: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800",
-  OUT_FOR_DELIVERY: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800",
-  DELIVERED: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
-  COMPLETED: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
-  RETURNED: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800",
-  CANCELLED: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
-  FAILED: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800",
-};
-
-// Safe date formatter to prevent RangeError crashes
+// Safe date formatter
 const formatSafeDate = (dateVal: string | Date | null | undefined): string => {
   if (!dateVal) return "-";
   try {
@@ -106,16 +47,19 @@ const formatSafeDate = (dateVal: string | Date | null | undefined): string => {
 const UnifiedShipmentsPage: React.FC = () => {
   const { t: tVal } = useTranslation();
   const t = tVal as any;
-  const { formatPrice } = useCurrency();
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [shipments, setShipments] = useState<ShipmentItem[]>([]);
+  const [shipments, setShipments] = useState<ShipmentRowItem[]>([]);
   const [companies, setCompanies] = useState<ShippingCompanyRef[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [bulkSyncing, setBulkSyncing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Modals state
+  const [chatShipment, setChatShipment] = useState<ShipmentRowItem | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const [summary, setSummary] = useState<ShipmentsSummary>({
     totalShipments: 0,
@@ -123,6 +67,7 @@ const UnifiedShipmentsPage: React.FC = () => {
     delivered: 0,
     returned: 0,
     pendingRemittanceAmount: 0,
+    carrierStatusCounts: {},
   });
 
   const page = parseInt(searchParams.get("page") || "1", 10);
@@ -139,18 +84,28 @@ const UnifiedShipmentsPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  // Active shipping company object
+  const activeCompany = useMemo(() => {
+    return companies.find((c) => c.id === selectedCompanyId);
+  }, [companies, selectedCompanyId]);
+
+  const activeCarrierType = activeCompany?.providerKey || (selectedCompanyId === "ALL" ? undefined : "MANUAL");
+
   // Update query params in URL
-  const updateParams = useCallback((newParams: Record<string, string | number | undefined>) => {
-    const current = Object.fromEntries(searchParams.entries());
-    Object.entries(newParams).forEach(([k, v]) => {
-      if (v === undefined || v === "" || v === "ALL") {
-        delete current[k];
-      } else {
-        current[k] = String(v);
-      }
-    });
-    setSearchParams(current, { replace: true });
-  }, [searchParams, setSearchParams]);
+  const updateParams = useCallback(
+    (newParams: Record<string, string | number | undefined>) => {
+      const current = Object.fromEntries(searchParams.entries());
+      Object.entries(newParams).forEach(([k, v]) => {
+        if (v === undefined || v === "" || v === "ALL") {
+          delete current[k];
+        } else {
+          current[k] = String(v);
+        }
+      });
+      setSearchParams(current, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
 
   // Fetch all active shipping companies for filter tabs
   const fetchCompanies = async () => {
@@ -164,7 +119,7 @@ const UnifiedShipmentsPage: React.FC = () => {
     }
   };
 
-  // Fetch shipments list
+  // Fetch shipments statement list
   const fetchShipments = useCallback(async () => {
     setLoading(true);
     setSelectedIds([]);
@@ -196,7 +151,7 @@ const UnifiedShipmentsPage: React.FC = () => {
       }
     } catch (err) {
       console.error("Error loading shipments:", err);
-      toast.error(t("orders.fetchError", "تعذر تحميل سجلات الشحنات"));
+      toast.error(t("orders.fetchError", "تعذر تحميل بيان الشحنات"));
     } finally {
       setLoading(false);
     }
@@ -228,7 +183,7 @@ const UnifiedShipmentsPage: React.FC = () => {
   };
 
   // Universal waybill print
-  const handlePrintWaybill = (s: ShipmentItem) => {
+  const handlePrintWaybill = (s: ShipmentRowItem) => {
     const token = tokenManager.getAccessToken();
     const carrier = (s.shippingCompany?.providerKey || s.carrierType || "").toUpperCase();
 
@@ -265,23 +220,13 @@ const UnifiedShipmentsPage: React.FC = () => {
     toast.info("لا يتوفر ملف بوليصة جاهز لهذه الشحنة");
   };
 
-  // Carrier tracking link
-  const getCarrierTrackUrl = (carrierType: string, trackingNumber?: string | null) => {
-    if (!trackingNumber) return null;
-    const c = (carrierType || "").toUpperCase();
-    if (c === "TURBO") return `https://turbo-eg.com/track?trackingNumber=${encodeURIComponent(trackingNumber)}`;
-    if (c === "BOSTA") return `https://bosta.co/tracking-shipment/?track=${encodeURIComponent(trackingNumber)}`;
-    if (c === "QP_EXPRESS" || c === "QPEXPRESS") return `https://qpexpress.net/track/${encodeURIComponent(trackingNumber)}`;
-    return null;
-  };
-
   // Sync single shipment
   const handleSyncShipment = async (id: string) => {
     setSyncingId(id);
     try {
       const res = await apiClient.post(`/shipments/${id}/sync`);
       if (res.data?.success) {
-        toast.success(res.data.message || "تمت مزامنة حالة الشحنة");
+        toast.success(res.data.message || "تمت مزامنة حالة الشحنة مع الشركة");
         fetchShipments();
       } else {
         toast.error(res.data?.error || "فشلت المزامنة");
@@ -309,38 +254,91 @@ const UnifiedShipmentsPage: React.FC = () => {
     fetchShipments();
   };
 
-  // Export to CSV manifest
+  // Resend shipment request (Turbo)
+  const handleResendShipment = async (s: ShipmentRowItem) => {
+    if (!window.confirm(`هل أنت متأكد من إرسال طلب إعادة شحن الشحنة #${s.trackingNumber || s.externalShipmentId}؟`)) return;
+    try {
+      const res = await apiClient.post(`/shipments/${s.id}/resend`);
+      if (res.data?.success) {
+        toast.success(res.data.message || "تم طلب إعادة الإرسال بنجاح");
+        fetchShipments();
+      } else {
+        toast.error(res.data?.message || "تعذر إعادة الإرسال");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "حدث خطأ أثناء إرسال طلب إعادة الشحن");
+    }
+  };
+
+  // Cancel shipment request
+  const handleCancelShipment = async (s: ShipmentRowItem) => {
+    const reason = window.prompt("يرجى كتابة سبب إلغاء الشحنة:", "إلغاء بناءً على طلب العميل");
+    if (reason === null) return;
+    try {
+      const res = await apiClient.post(`/shipments/${s.id}/cancel-request`, { reason });
+      if (res.data?.success) {
+        toast.success(res.data.message || "تم إلغاء الشحنة بنجاح");
+        fetchShipments();
+      } else {
+        toast.error(res.data?.message || "تعذر إلغاء الشحنة");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "حدث خطأ أثناء إلغاء الشحنة");
+    }
+  };
+
+  // Export full detailed shipping manifest
   const handleExportCsv = () => {
     if (shipments.length === 0) {
       toast.error("لا توجد شحنات في العرض الحالي لتصديرها");
       return;
     }
     const headers = [
-      "معرف الشحنة",
+      "رقم الشحنة",
       "رقم الطلب",
+      "تاريخ الطلب",
       "اسم العميل",
       "هاتف العميل",
       "المحافظة",
       "المدينة",
+      "العنوان التفصيلي",
       "شركة الشحن",
-      "رقم التتبع (AWB)",
+      "نوع الربط",
+      "رقم البوليصة والتتبع (AWB)",
+      "مندوب التوصيل",
+      "هاتف المندوب",
+      "فرع الشحن",
+      "هاتف الفرع",
+      "الفرع المتوقع",
+      "سبب التأجيل",
+      "سبب الإرجاع",
       "قيمة التحصيل COD",
+      "المبلغ المستلم",
       "الحالة",
-      "تاريخ الإنشاء",
     ];
 
     const rows = shipments.map((s) => [
       s.id,
       s.order?.orderNumber || s.orderId || "",
+      formatSafeDate(s.createdAt),
       s.order?.customer?.name || s.order?.customerName || "",
       s.order?.customer?.phone || s.order?.customerPhone || "",
       s.destinationGovernorate || s.order?.governorate || "",
       s.destinationCity || s.order?.city || "",
+      s.destinationAddress || "",
       s.shippingCompany?.name || s.carrierType || "يدوي",
-      s.trackingNumber || "",
-      s.order?.total || 0,
-      getStatusLabel(s.status),
-      formatSafeDate(s.createdAt),
+      s.shippingCompany?.integrationMode || "MANUAL",
+      s.trackingNumber || s.externalShipmentId || "",
+      s.captainName || "",
+      s.captainPhone || "",
+      s.branchName || "",
+      s.branchPhone || "",
+      s.expectedBranch || "",
+      s.delayReason || "",
+      s.returnReason || "",
+      s.order?.total || s.cost || 0,
+      s.receivedAmount || 0,
+      getStatusBadge(s.status, s).label,
     ]);
 
     const csvContent =
@@ -352,43 +350,103 @@ const UnifiedShipmentsPage: React.FC = () => {
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", `shipments_manifest_${format(new Date(), "yyyyMMdd_HHmm")}.csv`);
+    link.setAttribute("download", `shipment_statement_${format(new Date(), "yyyyMMdd_HHmm")}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success("تم تصدير كشف الشحنات بنجاح");
+    toast.success("تم تصدير بيان تفاصيل الشحنات بنجاح");
   };
 
-  // Status text translation
-  const getStatusLabel = (status: string) => {
-    const s = String(status || "").toUpperCase();
-    switch (s) {
-      case "PENDING":
-        return "بانتظار الشحن";
-      case "CREATED":
-        return "تم إنشاء الشحنة";
-      case "SHIPPED":
-        return "تم الشحن";
-      case "IN_TRANSIT":
-      case "DELIVERING":
-        return "في الطريق للعميل";
-      case "OUT_FOR_DELIVERY":
-        return "خرج للتوصيل";
-      case "DELIVERED":
-      case "COMPLETED":
-        return "تم التسليم بنجاح";
-      case "RETURNED":
-        return "مرتجع";
-      case "CANCELLED":
-        return "ملغي";
-      case "FAILED":
-        return "فشل التوصيل";
-      default:
-        return status || "غير محدد";
+  // Status text & style mapping (with exact Turbo labels)
+  const getStatusBadge = (status: string, shipment?: ShipmentRowItem) => {
+    const s = String(shipment?.order?.turboShipmentStatus || status || "").toLowerCase().trim();
+
+    if (["incomplete", "turbo_saved", "created", "status_1", "status_18", "1", "18"].includes(s)) {
+      return {
+        label: "غير مكتملة",
+        className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800",
+      };
     }
+    if (["turbo_sent", "sent", "waiting", "pending", "status_2", "2"].includes(s) || s.includes("انتظار")) {
+      return {
+        label: "قيد الإنتظار",
+        className: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
+      };
+    }
+    if (["processing", "underway", "accepted", "status_3", "3"].includes(s) || s.includes("تنفيذ")) {
+      return {
+        label: "قيد التنفيذ",
+        className: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800",
+      };
+    }
+    if (["out_for_delivery", "under delivery", "with captain", "in transit", "shipped", "status_4", "4"].includes(s) || s.includes("مسلمة للمندوب")) {
+      return {
+        label: "مسلمة للمندوب",
+        className: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800",
+      };
+    }
+    if (["delayed", "on hold", "status_13", "13"].includes(s) || s.includes("مؤجل")) {
+      return {
+        label: "مؤجلة مع المندوب",
+        className: "bg-yellow-50 text-yellow-800 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800 font-bold",
+      };
+    }
+    if (["delivered", "completed", "status_7", "7"].includes(s) || s.includes("تسليم")) {
+      return {
+        label: "تم التسليم",
+        className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 font-semibold",
+      };
+    }
+    if (["returned_to_company", "returned with company", "returned", "status_5", "status_14", "5", "14"].includes(s)) {
+      return {
+        label: "مرتجعات في الشركة",
+        className: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 font-semibold",
+      };
+    }
+    if (["returned_destroyed", "status_12", "status_17", "12", "17"].includes(s) || s.includes("معدوم")) {
+      return {
+        label: "مرتجعات معدومة",
+        className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800",
+      };
+    }
+    if (["returned_missing", "lost", "status_11", "status_16", "11", "16"].includes(s) || s.includes("مفقود")) {
+      return {
+        label: "مرتجعات مفقودة",
+        className: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800",
+      };
+    }
+    if (["returned_resent", "status_10", "status_15", "10", "15"].includes(s) || s.includes("ارسال")) {
+      return {
+        label: "معاد ارسالها",
+        className: "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-800",
+      };
+    }
+    if (["remitted", "supplied", "status_8", "status_19", "8", "19"].includes(s) || s.includes("توريد")) {
+      return {
+        label: "تم التوريد",
+        className: "bg-green-100 text-green-800 border-green-300 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800 font-bold",
+      };
+    }
+    if (["returned_received", "status_20", "20"].includes(s) || s.includes("وصلتني")) {
+      return {
+        label: "مرتجعات وصلتني",
+        className: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800 font-semibold",
+      };
+    }
+    if (["cancelled", "status_6", "6"].includes(s) || s.includes("ملغي")) {
+      return {
+        label: "ملغي",
+        className: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
+      };
+    }
+
+    return {
+      label: status || "غير محدد",
+      className: "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300",
+    };
   };
 
-  // Toggle selection
+  // Selection helpers
   const isAllSelected = useMemo(() => {
     return shipments.length > 0 && selectedIds.length === shipments.length;
   }, [shipments, selectedIds]);
@@ -408,146 +466,90 @@ const UnifiedShipmentsPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-3 sm:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="w-full max-w-7xl mx-auto p-2.5 sm:p-5 space-y-4">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <TruckIcon className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
-            <span>سجلات الشحنات والتوصيل</span>
+            <TruckIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+            <span>بيان تفاصيل الأوردرات في شركات الشحن</span>
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-            متابعة وإدارة شحنات جميع الشركات (تربو، بوسطة، QP Express، والمناديب) من شاشة موحدة واحدة
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            متابعة دقيقة لبيانات المناديب والفروع وأسباب التأجيل والارتجاع لكل شركة شحن على حدة
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
+            type="button"
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-750 transition shadow-xs"
           >
             <ArrowDownTrayIcon className="h-4 w-4 text-gray-500" />
-            <span>تصدير الكشف</span>
+            <span>تصدير بيان الشحنات</span>
           </button>
           <Link
             to="/shipping-companies"
-            className="px-3.5 py-2 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+            className="px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-750 transition"
           >
-            إدارة شركات الشحن
+            إدارة الشركات
           </Link>
           <Link
             to="/shipping-settlement"
-            className="px-3.5 py-2 text-xs sm:text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 transition"
+            className="px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-xl hover:bg-indigo-100 transition"
           >
             التسويات المالية
           </Link>
           <button
+            type="button"
             onClick={() => fetchShipments()}
             disabled={loading}
-            className="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg"
+            className="p-1.5 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl"
             title="تحديث البيانات"
           >
-            <ArrowPathIcon className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
+            <ArrowPathIcon className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
 
-      {/* KPI Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-        <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs">
-            <TruckIcon className="h-4 w-4 text-blue-500" />
-            <span>إجمالي الشحنات</span>
-          </div>
-          <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
-            {summary.totalShipments}
-          </p>
-        </div>
+      {/* KPI Stats Strip */}
+      <ShipmentStatsBar
+        totalShipments={summary.totalShipments}
+        inTransit={summary.inTransit}
+        delivered={summary.delivered}
+        returned={summary.returned}
+        pendingRemittanceAmount={summary.pendingRemittanceAmount}
+      />
 
-        <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs">
-            <ClockIcon className="h-4 w-4 text-indigo-500" />
-            <span>قيد التوصيل</span>
-          </div>
-          <p className="text-lg sm:text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">
-            {summary.inTransit}
-          </p>
-        </div>
+      {/* Seamless Cockpit Chassis Container */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden p-3.5 sm:p-4 space-y-3">
+        {/* 1. Carrier Selector Tabs */}
+        <CarrierTabsBar
+          companies={companies}
+          selectedCompanyId={selectedCompanyId}
+          onSelectCompany={(companyId) => updateParams({ company: companyId, status: "ALL", page: 1 })}
+          totalShipmentsCount={summary.totalShipments}
+        />
 
-        <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs">
-            <CheckCircleIcon className="h-4 w-4 text-emerald-500" />
-            <span>تم التسليم</span>
-          </div>
-          <p className="text-lg sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-            {summary.delivered}
-          </p>
-        </div>
+        {/* 2. Dynamic Carrier Operational Stages (Turbo 12 stages or Generic) */}
+        <CarrierStagesBar
+          carrierType={activeCarrierType}
+          selectedStage={selectedStatus}
+          onSelectStage={(stageKey) => updateParams({ status: stageKey, page: 1 })}
+          stageCounts={summary.carrierStatusCounts || {}}
+          onOpenCreateShipment={() => setShowCreateModal(true)}
+        />
 
-        <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs">
-            <ExclamationCircleIcon className="h-4 w-4 text-rose-500" />
-            <span>مرتجع / ملغي</span>
-          </div>
-          <p className="text-lg sm:text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">
-            {summary.returned}
-          </p>
-        </div>
-
-        <div className="col-span-2 sm:col-span-4 lg:col-span-1 p-3.5 sm:p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs">
-            <BanknotesIcon className="h-4 w-4 text-amber-500" />
-            <span>معلق التحصيل</span>
-          </div>
-          <p className="text-lg sm:text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
-            {formatPrice(summary.pendingRemittanceAmount || 0)}
-          </p>
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 space-y-3 shadow-sm">
-        {/* Dynamic Carrier Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar border-b border-gray-100 dark:border-gray-700">
-          <button
-            onClick={() => updateParams({ company: "ALL", page: 1 })}
-            className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition ${
-              selectedCompanyId === "ALL"
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-            }`}
-          >
-            جميع الشركات
-          </button>
-          {companies.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => updateParams({ company: c.id, page: 1 })}
-              className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition flex items-center gap-1.5 ${
-                selectedCompanyId === c.id
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              <span>{c.name}</span>
-              {c.integrationMode === "LIVE" && (
-                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Search, Date Filters & Status Dropdown */}
-        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-          {/* Search Query */}
-          <div className="relative sm:col-span-5">
+        {/* 3. Search & Date Filter Bar */}
+        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 pt-1">
+          <div className="relative sm:col-span-6">
             <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="ابحث برقم الطلب، اسم العميل، الهاتف، أو رقم البوليصة..."
+              placeholder="ابحث برقم الطلب، كود البوليصة، اسم العميل، هاتف العميل، المندوب، أو الفرع..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              className="w-full pl-3 pr-9 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+              className="w-full pl-8 pr-9 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50/70 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:bg-white"
             />
             {localSearch && (
               <button
@@ -556,442 +558,182 @@ const UnifiedShipmentsPage: React.FC = () => {
                   setLocalSearch("");
                   updateParams({ search: undefined, page: 1 });
                 }}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 <XMarkIcon className="h-4 w-4" />
               </button>
             )}
           </div>
 
-          {/* Date From */}
           <div className="relative sm:col-span-2">
             <input
               type="date"
               value={localDateFrom}
               onChange={(e) => setLocalDateFrom(e.target.value)}
-              className="w-full px-2.5 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-2.5 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
               title="من تاريخ"
             />
           </div>
 
-          {/* Date To */}
           <div className="relative sm:col-span-2">
             <input
               type="date"
               value={localDateTo}
               onChange={(e) => setLocalDateTo(e.target.value)}
-              className="w-full px-2.5 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-2.5 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
               title="إلى تاريخ"
             />
           </div>
 
-          {/* Status Dropdown */}
-          <div className="sm:col-span-2">
-            <select
-              value={selectedStatus}
-              onChange={(e) => updateParams({ status: e.target.value, page: 1 })}
-              className="w-full px-2.5 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="ALL">كل الحالات</option>
-              <option value="PENDING">بانتظار الشحن</option>
-              <option value="CREATED">تم إنشاء الشحنة</option>
-              <option value="IN_TRANSIT">قيد التوصيل</option>
-              <option value="OUT_FOR_DELIVERY">خرج للتوصيل</option>
-              <option value="DELIVERED">تم التسليم</option>
-              <option value="RETURNED">مرتجع</option>
-              <option value="CANCELLED">ملغي</option>
-            </select>
-          </div>
-
-          {/* Submit Search Button */}
-          <div className="sm:col-span-1 flex items-center">
+          <div className="sm:col-span-2 flex items-center">
             <button
               type="submit"
-              className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs sm:text-sm font-medium transition"
+              className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-xs"
             >
-              تصفية
+              تصفية البيان
             </button>
           </div>
         </form>
+
+        {/* 4. Bulk Actions Bar */}
+        {selectedIds.length > 0 && (
+          <div className="bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl p-2.5 px-3 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] flex items-center justify-center font-bold">
+                {selectedIds.length}
+              </span>
+              <span className="text-xs font-semibold text-indigo-900 dark:text-indigo-200">
+                تم تحديد {selectedIds.length} شحنة في البيان
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleBulkSync}
+                disabled={bulkSyncing}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-200 bg-white dark:bg-gray-800 border border-indigo-300 dark:border-indigo-700 rounded-lg hover:bg-indigo-50 transition shadow-2xs"
+              >
+                <ArrowPathIcon className={`h-3.5 w-3.5 ${bulkSyncing ? "animate-spin" : ""}`} />
+                <span>مزامنة الحالات المحددة</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedIds([])}
+                className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400"
+              >
+                إلغاء التحديد
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 5. Statement Table & Mobile Cards */}
+        <div className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden mt-2">
+          {loading ? (
+            <div className="p-12 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto" />
+              <p className="mt-3 text-xs text-gray-500">جاري تحميل بيان تفاصيل الأوردرات...</p>
+            </div>
+          ) : shipments.length === 0 ? (
+            <div className="p-12 text-center">
+              <TruckIcon className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                لا توجد أوردرات مسجلة في هذا البيان
+              </h3>
+              <p className="text-xs text-gray-400 mt-0.5">
+                لم يتم العثور على أي شحنات وفق الشركة أو الحالة المحددة
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Desktop Table */}
+              <div className="hidden sm:block">
+                <ShipmentStatementTable
+                  shipments={shipments}
+                  selectedIds={selectedIds}
+                  onToggleSelectOne={toggleSelectOne}
+                  onToggleSelectAll={toggleSelectAll}
+                  isAllSelected={isAllSelected}
+                  syncingId={syncingId}
+                  onSyncShipment={handleSyncShipment}
+                  onPrintWaybill={handlePrintWaybill}
+                  onOpenChat={(s) => setChatShipment(s)}
+                  onResendShipment={handleResendShipment}
+                  onCancelShipment={handleCancelShipment}
+                  onCopyTracking={copyTracking}
+                  getStatusBadge={getStatusBadge}
+                  formatDate={formatSafeDate}
+                />
+              </div>
+
+              {/* Mobile Responsive Cards */}
+              <div className="sm:hidden">
+                <ShipmentStatementCards
+                  shipments={shipments}
+                  selectedIds={selectedIds}
+                  onToggleSelectOne={toggleSelectOne}
+                  syncingId={syncingId}
+                  onSyncShipment={handleSyncShipment}
+                  onPrintWaybill={handlePrintWaybill}
+                  onOpenChat={(s) => setChatShipment(s)}
+                  onResendShipment={handleResendShipment}
+                  onCancelShipment={handleCancelShipment}
+                  onCopyTracking={copyTracking}
+                  getStatusBadge={getStatusBadge}
+                  formatDate={formatSafeDate}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-4 py-2.5 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between text-xs">
+              <p className="text-gray-500 font-mono tabular-nums">
+                إجمالي {totalItems} شحنة — صفحة {page} من {totalPages}
+              </p>
+
+              <div className="flex items-center gap-1">
+                <button
+                  disabled={page <= 1}
+                  onClick={() => updateParams({ page: page - 1 })}
+                  className="p-1 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-100"
+                >
+                  <ChevronRightIcon className="h-4 w-4" />
+                </button>
+                <button
+                  disabled={page >= totalPages}
+                  onClick={() => updateParams({ page: page + 1 })}
+                  className="p-1 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-100"
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Floating/Sticky Bulk Actions Bar */}
-      {selectedIds.length > 0 && (
-        <div className="bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm transition-all animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold">
-              {selectedIds.length}
-            </span>
-            <span className="text-xs sm:text-sm font-medium text-indigo-900 dark:text-indigo-200">
-              تم تحديد {selectedIds.length} شحنة
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleBulkSync}
-              disabled={bulkSyncing}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs sm:text-sm font-medium text-indigo-700 dark:text-indigo-200 bg-white dark:bg-gray-800 border border-indigo-300 dark:border-indigo-700 rounded-lg hover:bg-indigo-50 transition"
-            >
-              <ArrowPathIcon className={`h-4 w-4 ${bulkSyncing ? "animate-spin text-indigo-600" : ""}`} />
-              <span>مزامنة الحالات</span>
-            </button>
-            <button
-              onClick={() => setSelectedIds([])}
-              className="px-3 py-1.5 text-xs sm:text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400"
-            >
-              إلغاء التحديد
-            </button>
-          </div>
-        </div>
+      {/* Turbo Chat Modal */}
+      {chatShipment && (
+        <TurboShipmentChatModal
+          shipmentId={chatShipment.id}
+          trackingCode={chatShipment.trackingNumber || chatShipment.externalShipmentId || ""}
+          orderNumber={chatShipment.order?.orderNumber}
+          onClose={() => setChatShipment(null)}
+        />
       )}
 
-      {/* Main Shipments Container */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto"></div>
-            <p className="mt-3 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-              جاري تحميل سجلات الشحنات الموحدة...
-            </p>
-          </div>
-        ) : shipments.length === 0 ? (
-          <div className="p-12 text-center">
-            <TruckIcon className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-              لا توجد شحنات مطابقة
-            </h3>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-              لم يتم العثور على أي شحنات وفق معايير البحث أو التصفية الحالية
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Desktop Table View */}
-            <div className="hidden sm:block overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-right">
-                <thead className="bg-gray-50 dark:bg-gray-900/60 text-xs font-semibold text-gray-600 dark:text-gray-400">
-                  <tr>
-                    <th className="px-3 py-3 w-8 text-center">
-                      <input
-                        type="checkbox"
-                        checked={isAllSelected}
-                        onChange={toggleSelectAll}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                    </th>
-                    <th className="px-3 py-3">الطلب</th>
-                    <th className="px-3 py-3">العميل والوجهة</th>
-                    <th className="px-3 py-3">شركة الشحن</th>
-                    <th className="px-3 py-3">رقم التتبع (AWB)</th>
-                    <th className="px-3 py-3">قيمة التحصيل</th>
-                    <th className="px-3 py-3">الحالة</th>
-                    <th className="px-3 py-3">تاريخ الإنشاء</th>
-                    <th className="px-3 py-3 text-center">إجراءات</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-xs sm:text-sm">
-                  {shipments.map((s) => {
-                    const companyName = s.shippingCompany?.name || s.carrierType || "يدوي";
-                    const badgeStyle =
-                      STATUS_BADGE_STYLES[s.status] ||
-                      "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300";
-                    const trackUrl = getCarrierTrackUrl(s.carrierType, s.trackingNumber);
-                    const customerName = s.order?.customer?.name || s.order?.customerName || "عميل غير محدد";
-                    const customerPhone = s.order?.customer?.phone || s.order?.customerPhone;
-                    const isSelected = selectedIds.includes(s.id);
-
-                    return (
-                      <tr
-                        key={s.id}
-                        className={`hover:bg-gray-50/80 dark:hover:bg-gray-750 transition ${
-                          isSelected ? "bg-indigo-50/40 dark:bg-indigo-950/20" : ""
-                        }`}
-                      >
-                        {/* Checkbox */}
-                        <td className="px-3 py-3.5 text-center">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleSelectOne(s.id)}
-                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                        </td>
-
-                        {/* Order Number */}
-                        <td className="px-3 py-3.5 whitespace-nowrap">
-                          {s.order?.id || s.orderId ? (
-                            <Link
-                              to={`/orders/${encodeURIComponent(String(s.order?.id || s.orderId))}`}
-                              className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
-                            >
-                              #{s.order?.orderNumber || (s.order?.id || s.orderId || "").slice(0, 8)}
-                            </Link>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-
-                        {/* Customer & Destination */}
-                        <td className="px-3 py-3.5">
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {customerName}
-                          </p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {customerPhone && (
-                              <a
-                                href={`tel:${customerPhone}`}
-                                className="inline-flex items-center gap-0.5 text-indigo-600 dark:text-indigo-400 hover:underline"
-                                title="اتصال بالعميل"
-                              >
-                                <PhoneIcon className="h-3 w-3" />
-                                <span>{customerPhone}</span>
-                              </a>
-                            )}
-                            <span>
-                              {s.destinationGovernorate || s.order?.governorate || ""}{" "}
-                              {s.destinationCity || s.order?.city || ""}
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Courier Name & Mode */}
-                        <td className="px-3 py-3.5 whitespace-nowrap">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                            {companyName}
-                          </span>
-                          {s.shippingCompany?.integrationMode && (
-                            <span className="mr-1.5 text-[10px] text-gray-400">
-                              ({s.shippingCompany.integrationMode})
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Tracking / Waybill */}
-                        <td className="px-3 py-3.5 whitespace-nowrap">
-                          {s.trackingNumber ? (
-                            <div className="flex items-center gap-1 font-mono text-xs">
-                              {trackUrl ? (
-                                <a
-                                  href={trackUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-0.5"
-                                  title="تتبع الشحنة على موقع الناقل"
-                                >
-                                  <span>{s.trackingNumber}</span>
-                                  <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-                                </a>
-                              ) : (
-                                <span className="font-semibold text-gray-800 dark:text-gray-200">
-                                  {s.trackingNumber}
-                                </span>
-                              )}
-                              <button
-                                onClick={() => copyTracking(s.trackingNumber!)}
-                                className="text-gray-400 hover:text-gray-600 p-0.5"
-                                title="نسخ رقم التتبع"
-                              >
-                                <ClipboardDocumentIcon className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-gray-400">لا يوجد كود</span>
-                          )}
-                        </td>
-
-                        {/* COD Total */}
-                        <td className="px-3 py-3.5 whitespace-nowrap font-medium text-gray-900 dark:text-white">
-                          {formatPrice(s.order?.total || 0)}
-                        </td>
-
-                        {/* Status */}
-                        <td className="px-3 py-3.5 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${badgeStyle}`}
-                          >
-                            {getStatusLabel(s.status)}
-                          </span>
-                        </td>
-
-                        {/* Date */}
-                        <td className="px-3 py-3.5 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
-                          {formatSafeDate(s.createdAt)}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-3 py-3.5 whitespace-nowrap text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            {/* Sync */}
-                            <button
-                              onClick={() => handleSyncShipment(s.id)}
-                              disabled={syncingId === s.id}
-                              className="p-1.5 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                              title="مزامنة الحالة مع شركة الشحن"
-                            >
-                              <ArrowPathIcon
-                                className={`h-4 w-4 ${syncingId === s.id ? "animate-spin text-indigo-600" : ""}`}
-                              />
-                            </button>
-
-                            {/* Print Waybill */}
-                            <button
-                              onClick={() => handlePrintWaybill(s)}
-                              className="p-1.5 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                              title="طباعة البوليصة"
-                            >
-                              <PrinterIcon className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Responsive Cards View */}
-            <div className="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
-              {shipments.map((s) => {
-                const companyName = s.shippingCompany?.name || s.carrierType || "يدوي";
-                const badgeStyle =
-                  STATUS_BADGE_STYLES[s.status] ||
-                  "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300";
-                const customerName = s.order?.customer?.name || s.order?.customerName || "عميل غير محدد";
-                const customerPhone = s.order?.customer?.phone || s.order?.customerPhone;
-                const trackUrl = getCarrierTrackUrl(s.carrierType, s.trackingNumber);
-                const isSelected = selectedIds.includes(s.id);
-
-                return (
-                  <div
-                    key={s.id}
-                    className={`p-3.5 space-y-2.5 transition ${
-                      isSelected ? "bg-indigo-50/40 dark:bg-indigo-950/20" : ""
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSelectOne(s.id)}
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        {s.order?.id || s.orderId ? (
-                          <Link
-                            to={`/orders/${encodeURIComponent(String(s.order?.id || s.orderId))}`}
-                            className="font-bold text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                          >
-                            #{s.order?.orderNumber || (s.order?.id || s.orderId || "").slice(0, 8)}
-                          </Link>
-                        ) : (
-                          <span className="text-xs text-gray-400">بدون رقم طلب</span>
-                        )}
-                      </div>
-
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${badgeStyle}`}
-                      >
-                        {getStatusLabel(s.status)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs">
-                      <div>
-                        <p className="font-semibold text-gray-900 dark:text-white">{customerName}</p>
-                        <p className="text-gray-500 dark:text-gray-400 text-[11px] mt-0.5">
-                          {s.destinationGovernorate || s.order?.governorate || ""}{" "}
-                          {s.destinationCity || s.order?.city || ""}
-                        </p>
-                      </div>
-
-                      <div className="text-left">
-                        <span className="font-bold text-gray-900 dark:text-white">
-                          {formatPrice(s.order?.total || 0)}
-                        </span>
-                        <p className="text-[10px] text-gray-400 mt-0.5">
-                          {formatSafeDate(s.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-750 text-xs">
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-                          {companyName}
-                        </span>
-                        {s.trackingNumber && (
-                          <span className="font-mono text-[11px] text-gray-700 dark:text-gray-300">
-                            {s.trackingNumber}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        {trackUrl && (
-                          <a
-                            href={trackUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 text-gray-500 hover:text-indigo-600"
-                            title="تتبع الشحنة"
-                          >
-                            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-                          </a>
-                        )}
-                        <button
-                          onClick={() => handleSyncShipment(s.id)}
-                          disabled={syncingId === s.id}
-                          className="p-1.5 text-gray-500 hover:text-indigo-600"
-                          title="مزامنة"
-                        >
-                          <ArrowPathIcon
-                            className={`h-4 w-4 ${syncingId === s.id ? "animate-spin text-indigo-600" : ""}`}
-                          />
-                        </button>
-                        <button
-                          onClick={() => handlePrintWaybill(s)}
-                          className="p-1.5 text-gray-500 hover:text-indigo-600"
-                          title="طباعة"
-                        >
-                          <PrinterIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {/* Pagination Bar */}
-        {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              إجمالي {totalItems} شحنة — صفحة {page} من {totalPages}
-            </p>
-
-            <div className="flex items-center gap-1">
-              <button
-                disabled={page <= 1}
-                onClick={() => updateParams({ page: page - 1 })}
-                className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                <ChevronRightIcon className="h-4 w-4" />
-              </button>
-              <button
-                disabled={page >= totalPages}
-                onClick={() => updateParams({ page: page + 1 })}
-                className="p-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                <ChevronLeftIcon className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Create Shipment Modal */}
+      {showCreateModal && (
+        <CreateShipmentModal
+          companies={companies}
+          defaultCompanyId={selectedCompanyId}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => fetchShipments()}
+        />
+      )}
     </div>
   );
 };

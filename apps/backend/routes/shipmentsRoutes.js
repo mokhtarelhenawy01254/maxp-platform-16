@@ -6,6 +6,7 @@ const shippingProviderService = require('../services/shippingProviderService');
 const TurboService = require('../services/turboService');
 const BostaService = require('../services/bostaService');
 const QpExpressService = require('../services/qpExpressService');
+const { STATUS_FILTER_ALIASES } = require('../utils/turbo/constants');
 
 // Ensure recent Turbo orders are reflected in prisma.shipment
 async function syncTurboOrdersToShipments(prisma, companyId) {
@@ -100,7 +101,7 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
     const take = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
     const skip = (pageNum - 1) * take;
 
-    const where = { companyId };
+    const andConditions = [{ companyId }];
 
     if (shippingCompanyId && shippingCompanyId !== 'ALL') {
       const selectedComp = await prisma.shippingCompany.findFirst({
@@ -108,63 +109,75 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
         select: { id: true, providerKey: true },
       });
       if (selectedComp?.providerKey && selectedComp.providerKey !== 'MANUAL') {
-        where.OR = [
-          { shippingCompanyId },
-          { carrierType: selectedComp.providerKey },
-        ];
+        andConditions.push({
+          OR: [
+            { shippingCompanyId },
+            { carrierType: selectedComp.providerKey },
+          ],
+        });
       } else {
-        where.shippingCompanyId = shippingCompanyId;
+        andConditions.push({ shippingCompanyId });
       }
     }
 
     if (carrierType && carrierType !== 'ALL') {
-      where.carrierType = carrierType;
+      andConditions.push({ carrierType });
     }
 
     if (status && status !== 'ALL') {
-      where.status = status;
+      const sKey = String(status).toLowerCase().trim();
+      const targetAliases = STATUS_FILTER_ALIASES[sKey] || [status, sKey, sKey.toUpperCase()];
+      andConditions.push({
+        OR: [
+          { status: { in: targetAliases } },
+          { order: { turboShipmentStatus: { in: targetAliases } } },
+        ],
+      });
     }
 
     if (dateFrom || dateTo) {
-      where.createdAt = {};
-      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      const dateCondition = {};
+      if (dateFrom) dateCondition.gte = new Date(dateFrom);
       if (dateTo) {
         const to = new Date(dateTo);
         to.setHours(23, 59, 59, 999);
-        where.createdAt.lte = to;
+        dateCondition.lte = to;
       }
+      andConditions.push({ createdAt: dateCondition });
     }
 
     if (search && String(search).trim()) {
       const q = String(search).trim();
-      const searchConditions = [
-        { trackingNumber: { contains: q, mode: 'insensitive' } },
-        { externalShipmentId: { contains: q, mode: 'insensitive' } },
-        { destinationGovernorate: { contains: q, mode: 'insensitive' } },
-        { destinationCity: { contains: q, mode: 'insensitive' } },
-        {
-          order: {
-            OR: [
-              { orderNumber: { contains: q, mode: 'insensitive' } },
-              { customerName: { contains: q, mode: 'insensitive' } },
-              { customerPhone: { contains: q, mode: 'insensitive' } },
-              { customer: { firstName: { contains: q, mode: 'insensitive' } } },
-              { customer: { lastName: { contains: q, mode: 'insensitive' } } },
-              { customer: { phone: { contains: q, mode: 'insensitive' } } },
-            ],
+      andConditions.push({
+        OR: [
+          { trackingNumber: { contains: q, mode: 'insensitive' } },
+          { externalShipmentId: { contains: q, mode: 'insensitive' } },
+          { destinationGovernorate: { contains: q, mode: 'insensitive' } },
+          { destinationCity: { contains: q, mode: 'insensitive' } },
+          {
+            order: {
+              OR: [
+                { orderNumber: { contains: q, mode: 'insensitive' } },
+                { customerName: { contains: q, mode: 'insensitive' } },
+                { customerPhone: { contains: q, mode: 'insensitive' } },
+                { turboTrackingNumber: { contains: q, mode: 'insensitive' } },
+                { turboShipmentId: { contains: q, mode: 'insensitive' } },
+                { turboCaptainName: { contains: q, mode: 'insensitive' } },
+                { turboCaptainPhone: { contains: q, mode: 'insensitive' } },
+                { turboBranchName: { contains: q, mode: 'insensitive' } },
+                { customer: { firstName: { contains: q, mode: 'insensitive' } } },
+                { customer: { lastName: { contains: q, mode: 'insensitive' } } },
+                { customer: { phone: { contains: q, mode: 'insensitive' } } },
+              ],
+            },
           },
-        },
-      ];
-
-      if (where.OR) {
-        where.AND = [{ OR: where.OR }, { OR: searchConditions }];
-        delete where.OR;
-      } else {
-        where.OR = searchConditions;
-      }
+        ],
+      });
     }
 
-    const [total, shipments, countsByStatus, pendingAmountAggr] = await Promise.all([
+    const where = { AND: andConditions };
+
+    const [total, shipments, countsByStatus, pendingAmountAggr, allCarrierShipments] = await Promise.all([
       prisma.shipment.count({ where }),
       prisma.shipment.findMany({
         where,
@@ -191,6 +204,22 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
               status: true,
               governorate: true,
               city: true,
+              shippingAddress: true,
+              customerAddress: true,
+              shipping: true,
+              paymentMethod: true,
+              notes: true,
+              turboShipmentId: true,
+              turboTrackingNumber: true,
+              turboShipmentStatus: true,
+              turboCaptainName: true,
+              turboCaptainPhone: true,
+              turboBranchName: true,
+              turboBranchPhone: true,
+              turboDelayReason: true,
+              turboReturnReason: true,
+              turboExpectedBranch: true,
+              turboMetadata: true,
               customer: {
                 select: {
                   id: true,
@@ -224,6 +253,20 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
         },
         _sum: { cost: true },
       }),
+      prisma.shipment.findMany({
+        where: {
+          companyId,
+          ...(shippingCompanyId && shippingCompanyId !== 'ALL' ? { shippingCompanyId } : {}),
+        },
+        select: {
+          status: true,
+          order: {
+            select: {
+              turboShipmentStatus: true,
+            },
+          },
+        },
+      }),
     ]);
 
     const totalPages = Math.ceil(total / take) || 1;
@@ -246,6 +289,52 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
       }
     });
 
+    // Granular 12-stage Turbo / Carrier counts
+    const carrierStagesCounts = {
+      all: allCarrierShipments.length,
+      incomplete: 0,
+      turbo_sent: 0,
+      processing: 0,
+      out_for_delivery: 0,
+      delayed: 0,
+      delivered: 0,
+      returned_to_company: 0,
+      returned_destroyed: 0,
+      returned_missing: 0,
+      returned_resent: 0,
+      remitted: 0,
+      returned_received: 0,
+    };
+
+    allCarrierShipments.forEach((item) => {
+      const rawSt = (item.order?.turboShipmentStatus || item.status || '').toLowerCase().trim();
+      if (['incomplete', 'turbo_saved', 'created', 'status_1', 'status_18', '1', '18'].includes(rawSt)) {
+        carrierStagesCounts.incomplete++;
+      } else if (['turbo_sent', 'sent', 'waiting', 'pending', 'status_2', '2'].includes(rawSt) || rawSt.includes('انتظار')) {
+        carrierStagesCounts.turbo_sent++;
+      } else if (['processing', 'underway', 'accepted', 'status_3', '3'].includes(rawSt) || rawSt.includes('تنفيذ')) {
+        carrierStagesCounts.processing++;
+      } else if (['out_for_delivery', 'under delivery', 'with captain', 'in transit', 'shipped', 'status_4', '4'].includes(rawSt) || rawSt.includes('مسلمة للمندوب')) {
+        carrierStagesCounts.out_for_delivery++;
+      } else if (['delayed', 'on hold', 'status_13', '13'].includes(rawSt) || rawSt.includes('مؤجل')) {
+        carrierStagesCounts.delayed++;
+      } else if (['delivered', 'completed', 'status_7', '7'].includes(rawSt) || rawSt.includes('تسليم')) {
+        carrierStagesCounts.delivered++;
+      } else if (['returned_to_company', 'returned with company', 'returned', 'status_5', 'status_14', '5', '14'].includes(rawSt) || (rawSt.includes('مرتجع') && !rawSt.includes('وصلتني') && !rawSt.includes('معدوم') && !rawSt.includes('مفقود') && !rawSt.includes('ارسال'))) {
+        carrierStagesCounts.returned_to_company++;
+      } else if (['returned_destroyed', 'status_12', 'status_17', '12', '17'].includes(rawSt) || rawSt.includes('معدوم')) {
+        carrierStagesCounts.returned_destroyed++;
+      } else if (['returned_missing', 'lost', 'status_11', 'status_16', '11', '16'].includes(rawSt) || rawSt.includes('مفقود')) {
+        carrierStagesCounts.returned_missing++;
+      } else if (['returned_resent', 'status_10', 'status_15', '10', '15'].includes(rawSt) || rawSt.includes('ارسال')) {
+        carrierStagesCounts.returned_resent++;
+      } else if (['remitted', 'supplied', 'status_8', 'status_19', '8', '19'].includes(rawSt) || rawSt.includes('توريد')) {
+        carrierStagesCounts.remitted++;
+      } else if (['returned_received', 'status_20', '20'].includes(rawSt) || rawSt.includes('وصلتني')) {
+        carrierStagesCounts.returned_received++;
+      }
+    });
+
     const summary = {
       totalShipments: countsByStatus.reduce((acc, curr) => acc + curr._count.id, 0),
       inTransit: inTransitCount,
@@ -253,23 +342,47 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
       returned: returnedCount,
       pendingRemittanceAmount: Number(pendingAmountAggr?._sum?.cost || 0),
       statusCounts,
+      carrierStatusCounts: carrierStagesCounts,
     };
 
     const formattedShipments = shipments.map((s) => {
-      const cust = s.order?.customer;
+      const ord = s.order;
+      const cust = ord?.customer;
       const customerName =
-        s.order?.customerName ||
+        ord?.customerName ||
         (cust ? [cust.firstName, cust.lastName].filter(Boolean).join(' ') : null) ||
         'عميل';
-      const customerPhone = s.order?.customerPhone || cust?.phone || null;
+      const customerPhone = ord?.customerPhone || cust?.phone || null;
+      const metadata = shippingProviderService.safeJsonParse(s.metadata, {});
+      const liveStatus = metadata.liveStatus || {};
+
+      const fullAddress =
+        s.destinationAddress ||
+        (ord?.shippingAddress && typeof ord.shippingAddress === 'object'
+          ? [ord.shippingAddress.address, ord.shippingAddress.street, ord.shippingAddress.city].filter(Boolean).join(', ')
+          : ord?.shippingAddress) ||
+        (ord?.customerAddress && typeof ord.customerAddress === 'object'
+          ? [ord.customerAddress.address, ord.customerAddress.street, ord.customerAddress.city].filter(Boolean).join(', ')
+          : ord?.customerAddress) ||
+        null;
 
       return {
         ...s,
         cost: s.cost !== null && s.cost !== undefined ? Number(s.cost) : null,
-        order: s.order
+        destinationAddress: fullAddress,
+        captainName: ord?.turboCaptainName || liveStatus.captain || liveStatus.captainName || null,
+        captainPhone: ord?.turboCaptainPhone || liveStatus.captainPhone || liveStatus.captainNumber1 || null,
+        branchName: ord?.turboBranchName || liveStatus.branch || liveStatus.branchName || null,
+        branchPhone: ord?.turboBranchPhone || liveStatus.branchPhone || liveStatus.branchNumber1 || null,
+        expectedBranch: ord?.turboExpectedBranch || liveStatus.expectedBranch || null,
+        delayReason: ord?.turboDelayReason || liveStatus.delayReason || liveStatus.delay_reason || null,
+        returnReason: ord?.turboReturnReason || liveStatus.returnReason || liveStatus.return_reason || null,
+        receivedAmount: liveStatus.receivedAmount || liveStatus.received_amount || null,
+        notes: ord?.notes || null,
+        order: ord
           ? {
-              ...s.order,
-              total: s.order.total !== null && s.order.total !== undefined ? Number(s.order.total) : 0,
+              ...ord,
+              total: ord.total !== null && ord.total !== undefined ? Number(ord.total) : 0,
               customer: {
                 id: cust?.id || null,
                 name: customerName,
@@ -523,6 +636,173 @@ router.post('/:id/cancel', verifyToken.authenticateToken, async (req, res) => {
     res.json({ success: true, data: updated, message: 'تم إلغاء الشحنة بنجاح' });
   } catch (error) {
     console.error('Error cancelling shipment:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/v1/shipments/:id/messages - Get shipment chat/messages
+router.get('/:id/messages', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const { id } = req.params;
+    const { companyId } = req.user;
+
+    const shipment = await prisma.shipment.findFirst({
+      where: { id, companyId },
+      include: { shippingCompany: true, order: true },
+    });
+
+    if (!shipment) {
+      return res.status(404).json({ success: false, error: 'الشحنة غير موجودة' });
+    }
+
+    const code =
+      shipment.trackingNumber ||
+      shipment.externalShipmentId ||
+      shipment.order?.turboTrackingNumber ||
+      shipment.order?.turboShipmentId;
+
+    if (!code) {
+      return res.status(400).json({ success: false, error: 'لا يوجد كود تتبع لهذه الشحنة' });
+    }
+
+    const company = await prisma.company.findUnique({ where: { id: companyId } });
+    const turboApiKey = shipment.shippingCompany?.apiKey || company?.turboApiKey;
+    const turboService = new TurboService(turboApiKey, companyId);
+
+    const result = await turboService.getShipmentMessages(code);
+    res.json({ success: true, code, ...result });
+  } catch (error) {
+    console.error('Error fetching shipment messages:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/v1/shipments/:id/messages - Send shipment message to courier
+router.post('/:id/messages', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const { id } = req.params;
+    const { companyId } = req.user;
+    const { message } = req.body;
+
+    if (!message || !String(message).trim()) {
+      return res.status(400).json({ success: false, error: 'نص الرسالة مطلوب' });
+    }
+
+    const shipment = await prisma.shipment.findFirst({
+      where: { id, companyId },
+      include: { shippingCompany: true, order: true },
+    });
+
+    if (!shipment) {
+      return res.status(404).json({ success: false, error: 'الشحنة غير موجودة' });
+    }
+
+    const code =
+      shipment.trackingNumber ||
+      shipment.externalShipmentId ||
+      shipment.order?.turboTrackingNumber ||
+      shipment.order?.turboShipmentId;
+
+    if (!code) {
+      return res.status(400).json({ success: false, error: 'لا يوجد كود تتبع لهذه الشحنة' });
+    }
+
+    const company = await prisma.company.findUnique({ where: { id: companyId } });
+    const turboApiKey = shipment.shippingCompany?.apiKey || company?.turboApiKey;
+    const turboService = new TurboService(turboApiKey, companyId);
+
+    const result = await turboService.sendShipmentMessage(code, String(message).trim());
+    res.json({ success: true, ...result, message: 'تم إرسال الرسالة بنجاح' });
+  } catch (error) {
+    console.error('Error sending shipment message:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/v1/shipments/:id/resend - Request resending from Turbo API
+router.post('/:id/resend', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const { id } = req.params;
+    const { companyId } = req.user;
+
+    const shipment = await prisma.shipment.findFirst({
+      where: { id, companyId },
+      include: { shippingCompany: true, order: true },
+    });
+
+    if (!shipment) {
+      return res.status(404).json({ success: false, error: 'الشحنة غير موجودة' });
+    }
+
+    const code =
+      shipment.trackingNumber ||
+      shipment.externalShipmentId ||
+      shipment.order?.turboTrackingNumber ||
+      shipment.order?.turboShipmentId;
+
+    if (!code) {
+      return res.status(400).json({ success: false, error: 'لا يوجد كود تتبع لهذه الشحنة' });
+    }
+
+    const company = await prisma.company.findUnique({ where: { id: companyId } });
+    const turboApiKey = shipment.shippingCompany?.apiKey || company?.turboApiKey;
+    const turboService = new TurboService(turboApiKey, companyId);
+
+    const result = await turboService.resendRequest(code);
+    await prisma.shipment.update({
+      where: { id: shipment.id },
+      data: { status: 'RETURNED_RESENT' },
+    });
+
+    res.json({ success: true, ...result, message: 'تم إرسال طلب إعادة التوصيل لشركة الشحن بنجاح' });
+  } catch (error) {
+    console.error('Error requesting shipment resend:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /api/v1/shipments/:id/cancel-request - Request shipment cancellation via Turbo API
+router.post('/:id/cancel-request', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const { id } = req.params;
+    const { companyId } = req.user;
+
+    const shipment = await prisma.shipment.findFirst({
+      where: { id, companyId },
+      include: { shippingCompany: true, order: true },
+    });
+
+    if (!shipment) {
+      return res.status(404).json({ success: false, error: 'الشحنة غير موجودة' });
+    }
+
+    const code =
+      shipment.trackingNumber ||
+      shipment.externalShipmentId ||
+      shipment.order?.turboTrackingNumber ||
+      shipment.order?.turboShipmentId;
+
+    if (!code) {
+      return res.status(400).json({ success: false, error: 'لا يوجد كود تتبع لهذه الشحنة' });
+    }
+
+    const company = await prisma.company.findUnique({ where: { id: companyId } });
+    const turboApiKey = shipment.shippingCompany?.apiKey || company?.turboApiKey;
+    const turboService = new TurboService(turboApiKey, companyId);
+
+    const result = await turboService.cancelRequest(code);
+    await prisma.shipment.update({
+      where: { id: shipment.id },
+      data: { status: 'CANCELLED' },
+    });
+
+    res.json({ success: true, ...result, message: 'تم إرسال طلب إلغاء الشحنة لشركة الشحن بنجاح' });
+  } catch (error) {
+    console.error('Error sending cancellation request:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

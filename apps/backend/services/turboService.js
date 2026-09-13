@@ -10,6 +10,7 @@ const TrackingService = require('./turbo/trackingService');
 const LocationService = require('./turbo/locationService');
 const LabelService = require('./turbo/labelService');
 const TicketService = require('./turbo/ticketService');
+const MessageService = require('./turbo/messageService');
 const { handleError } = require('../utils/turbo/errorHandler');
 
 class TurboService {
@@ -20,6 +21,7 @@ class TurboService {
     this._location = new LocationService(this._client);
     this._label = new LabelService(this._client);
     this._ticket = new TicketService(this._client);
+    this._message = new MessageService(this._client);
 
     // Backward compatibility for tests that spy on these
     this.apiKey = apiKey;
@@ -91,6 +93,13 @@ class TurboService {
 
   // ── Shipping Cost ─────────────────────────────────────
   async calculateShippingCost(a, w, d) { return this._shipment.calculateShippingCost(a, w, d); }
+
+  // ── Shipment Messages & Requests ──────────────────────
+  async resendRequest(shipmentId) { return this._message.resendRequest(shipmentId); }
+  async cancelRequest(shipmentId) { return this._message.cancelRequest(shipmentId); }
+  async getConversations(options) { return this._message.getConversations(options); }
+  async getShipmentMessages(shipmentCode) { return this._message.getShipmentMessages(shipmentCode); }
+  async sendShipmentMessage(shipmentCode, messageText) { return this._message.sendShipmentMessage(shipmentCode, messageText); }
 }
 
 module.exports = TurboService;

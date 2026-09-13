@@ -141,6 +141,28 @@ const extractSubdomainMiddleware = async (req, res, next) => {
               select: COMPANY_SELECT,
             });
           });
+
+          // 2.1 إذا لم تكن شركة، تحقق مما إذا كان الـ slug يخص صفحة هبوط منشورة
+          if (!company) {
+            try {
+              const prisma = await getPrisma();
+              const landing = await prisma.productLandingPage.findFirst({
+                where: { slug: inferredSlug, status: 'PUBLISHED' },
+                select: { companyId: true },
+              });
+              if (landing?.companyId) {
+                company = await companyCacheService.getCompanyLookup('id', landing.companyId, async () => {
+                  return prisma.company.findUnique({
+                    where: { id: landing.companyId },
+                    select: COMPANY_SELECT,
+                  });
+                });
+                if (company) {
+                  req.inferredLandingSlug = inferredSlug;
+                }
+              }
+            } catch (_) {}
+          }
         }
       }
 

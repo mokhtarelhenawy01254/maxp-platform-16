@@ -19,6 +19,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
+import { useAuth } from "../../hooks/useAuthSimple";
+import { buildStoreUrl } from "../../utils/storeUrl";
 import "./FunnelWizardPage.css";
 
 type ProductOption = {
@@ -51,6 +53,11 @@ const DEFAULT_TITLE_OVERRIDE = "";
 
 const FunnelWizardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const companySlug = user?.company?.slug || "";
+  const customDomain = user?.company?.customDomain || "";
+  const companyId = user?.companyId || user?.company?.id;
+
   const [step, setStep] = useState<WizardStep>("product");
 
   // Step 1 state
@@ -148,8 +155,7 @@ const FunnelWizardPage: React.FC = () => {
       const data = (res as { data?: { data?: FunnelSummary } }).data?.data;
       if (data) {
         setFunnel(data);
-        const host = typeof window !== "undefined" ? window.location.origin : "";
-        setPublishedUrl(`${host}${data.publicPath}`);
+        setPublishedUrl(buildStoreUrl(companySlug, data.publicPath, customDomain || undefined, companyId));
         setStep("publish");
         toast.success("تم إنشاء الـ Funnel بنجاح! 🎉");
       } else {
@@ -171,8 +177,7 @@ const FunnelWizardPage: React.FC = () => {
         },
       };
       setFunnel(summary);
-      const host = typeof window !== "undefined" ? window.location.origin : "";
-      setPublishedUrl(`${host}${summary.publicPath}`);
+      setPublishedUrl(buildStoreUrl(companySlug, summary.publicPath, customDomain || undefined, companyId));
       setStep("publish");
       toast.success("تم إنشاء معاينة الـ Funnel (Local Mode)");
     } finally {

@@ -465,6 +465,21 @@ const ProductImageLandingPage: React.FC = () => {
     };
   }, [fallbackConfig, isLandingPreview, isLocalLandingTest, landingKey]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !landingData) return;
+    const hostname = window.location.hostname.toLowerCase();
+    const company = landingData.company;
+    if (hostname === "maxp.online" || hostname === "www.maxp.online") {
+      const targetDomain =
+        company?.customDomain ||
+        (company?.slug ? `${company.slug}.maxp.online` : null);
+      if (targetDomain) {
+        const targetUrl = `https://${targetDomain}${location.pathname}${location.search}`;
+        window.location.replace(targetUrl);
+      }
+    }
+  }, [landingData, location.pathname, location.search]);
+
   const activeLanding = landingData?.landing || null;
   const activeProduct =
     landingData?.product || fallbackConfig?.fallbackProduct || null;

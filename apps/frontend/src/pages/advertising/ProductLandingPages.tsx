@@ -21,6 +21,8 @@ import { SectionsStackEditor } from "./product-landing/SectionsStackEditor";
 import { ElementsSidebarDrawer } from "./product-landing/ElementsSidebarDrawer";
 import { PhoneMockupPreview } from "./product-landing/PhoneMockupPreview";
 import { CreateLandingModal } from "./product-landing/CreateLandingModal";
+import { useAuth } from "../../hooks/useAuthSimple";
+import { buildStoreUrl } from "../../utils/storeUrl";
 import "./ProductLandingPages.css";
 
 const ProductLandingPages: React.FC = () => {
@@ -41,6 +43,7 @@ const ProductLandingPages: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showPhonePreview, setShowPhonePreview] = useState(true);
 
+  const { user } = useAuth();
   const selectedPage = useMemo(
     () => pages.find((page) => page.id === selectedId) || null,
     [pages, selectedId],
@@ -48,9 +51,19 @@ const ProductLandingPages: React.FC = () => {
   const selectedProduct = selectedPage?.product || null;
 
   const liveSlug = selectedPage?.slug || "";
-  const customerUrl = liveSlug
-    ? `${window.location.origin}/store/lp/${liveSlug}`
-    : "";
+  const companySlug = user?.company?.slug || "";
+  const customDomain = user?.company?.customDomain || "";
+  const companyId = user?.companyId || user?.company?.id || selectedPage?.companyId;
+
+  const customerUrl = useMemo(() => {
+    if (!liveSlug) return "";
+    return buildStoreUrl(
+      companySlug,
+      `/store/lp/${liveSlug}`,
+      customDomain || undefined,
+      companyId,
+    );
+  }, [liveSlug, companySlug, customDomain, companyId]);
   const previewUrl = customerUrl ? `${customerUrl}?preview=1` : "";
 
   // Load landing pages list

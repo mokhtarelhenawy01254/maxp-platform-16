@@ -78,6 +78,7 @@ import {
   isStorefrontMarketplaceAppEnabled,
 } from "./utils/marketplaceApps";
 import ProductImageLandingPage from "./pages/ProductImageLandingPage";
+import FunnelCodSalesPage from "./pages/FunnelCodSalesPage";
 import ReturnsPage from "./pages/ReturnsPage";
 import StorefrontNotFound from "./components/StorefrontNotFound";
 import { useStorePage } from "../hooks/useStorePage";
@@ -268,6 +269,9 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
   const isProductImageLandingPage =
     layoutStorefrontSegments[0] === "lp" ||
     layoutStorefrontSegments[0] === "landing";
+  const isFunnelPage =
+    layoutStorefrontSegments[0] === "funnel" ||
+    layoutStorefrontSegments[0] === "p";
   const shouldWarmLayoutCategories =
     layoutStorefrontSegments.length === 0 ||
     layoutStorefrontSegments[0] === "shop" ||
@@ -278,6 +282,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
 
   const isMinimal =
     isProductImageLandingPage ||
+    isFunnelPage ||
     normalizedPath.endsWith("/checkout") ||
     normalizedPath.endsWith("/thank-you");
   const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
@@ -1303,6 +1308,14 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           element={<ProductImageLandingPage />}
         />
         <Route
+          path={scopedPath("funnel/:slug")}
+          element={<FunnelCodSalesPage />}
+        />
+        <Route
+          path={scopedPath("p/:slug")}
+          element={<FunnelCodSalesPage />}
+        />
+        <Route
           path={scopedPath("shop/products/:id")}
           element={productPageElement}
         />
@@ -1463,6 +1476,8 @@ const StorefrontShell: React.FC<StorefrontShellProps> = ({
     routeSegments[0] === "store" ? routeSegments.slice(1) : routeSegments;
   const isStandaloneProductLanding =
     storefrontSegments[0] === "lp" || storefrontSegments[0] === "landing";
+  const isStandaloneFunnel =
+    storefrontSegments[0] === "funnel" || storefrontSegments[0] === "p";
   const shouldPrefetchCategories =
     storefrontSegments.length === 0 ||
     storefrontSegments[0] === "shop" ||
@@ -1473,7 +1488,7 @@ const StorefrontShell: React.FC<StorefrontShellProps> = ({
   useCategories(undefined, { enabled: shouldPrefetchCategories });
 
   const { settings, isLoading, error, previewThemeId } =
-    useStorefrontSettings({ enabled: !isStandaloneProductLanding });
+    useStorefrontSettings({ enabled: !isStandaloneProductLanding && !isStandaloneFunnel });
   const initialTheme = useMemo(
     () =>
       (settings?.storefront || undefined) as StorefrontThemeInput | undefined,
@@ -1487,6 +1502,10 @@ const StorefrontShell: React.FC<StorefrontShellProps> = ({
 
   if (isStandaloneProductLanding) {
     return <ProductImageLandingPage />;
+  }
+
+  if (isStandaloneFunnel) {
+    return <FunnelCodSalesPage />;
   }
 
   if (isLoading) {

@@ -358,6 +358,17 @@ const FunnelCodSalesPage: React.FC = () => {
     };
   }, [slug]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !company?.slug) return;
+    const hostname = window.location.hostname.toLowerCase();
+    if (hostname === "maxp.online" || hostname === "www.maxp.online") {
+      if (company.slug !== "swan-store" && company.slug !== "demo-company") {
+        const targetUrl = `https://${company.slug}.maxp.online${window.location.pathname}${window.location.search}`;
+        window.location.replace(targetUrl);
+      }
+    }
+  }, [company]);
+
   const config = funnel?.config ?? FALLBACK_CONFIG;
 
   // Sync document.title and meta tags for dynamic COD Funnel landing page
