@@ -404,11 +404,16 @@ class FacebookAdsAiController {
           capturedResponse = { statusCode: 200, data };
           if (data?.success && data?.data) {
             try {
+              const metaCampaignId = data.data.facebookIds?.campaignId || data.data.campaign?.facebookCampaignId || data.data.campaignId || data.data.campaign?.id;
+              const metaAdSetId = data.data.facebookIds?.adSetId || data.data.adSet?.facebookAdSetId || data.data.adSetId || data.data.adSet?.id;
+              const metaAdId = data.data.facebookIds?.adId || data.data.ad?.facebookAdId || data.data.adId || data.data.ad?.id;
+              const metaCreativeId = data.data.facebookIds?.creativeId || data.data.creative?.facebookCreativeId || data.data.creativeId || data.data.creative?.id;
+
               await facebookAdsAiDraftService.markDraftPublished(companyId, draftId, {
-                facebookCampaignId: data.data.campaign?.id || data.data.campaignId,
-                facebookAdSetId: data.data.adSet?.id || data.data.adSetId,
-                facebookAdId: data.data.ad?.id || data.data.adId,
-                facebookCreativeId: data.data.creative?.id || data.data.creativeId,
+                facebookCampaignId: metaCampaignId,
+                facebookAdSetId: metaAdSetId,
+                facebookAdId: metaAdId,
+                facebookCreativeId: metaCreativeId,
               });
             } catch (updateErr) {
               console.warn('⚠️ Failed to update draft publish status:', updateErr.message);
@@ -1262,8 +1267,32 @@ class FacebookAdsAiController {
         });
       }
 
+      let targetCampaignId = campaignId;
+      const { getSharedPrismaClient } = require('../services/sharedDatabase');
+      const prisma = getSharedPrismaClient();
+
+      // 🛡️ Auto-resolve local CUID to Meta facebookCampaignId if non-numeric
+      if (!/^\d+$/.test(campaignId)) {
+        try {
+          const dbCamp = await prisma.facebookCampaign.findFirst({
+            where: {
+              OR: [
+                { id: campaignId },
+                { facebookCampaignId: campaignId }
+              ],
+              companyId
+            }
+          });
+          if (dbCamp?.facebookCampaignId) {
+            targetCampaignId = dbCamp.facebookCampaignId;
+          }
+        } catch (resolveErr) {
+          console.warn('⚠️ Could not resolve campaignId from DB:', resolveErr.message);
+        }
+      }
+
       const adsService = new FacebookAdsService(accessToken);
-      const updateResult = await adsService.updateCampaign(campaignId, { status: targetStatus });
+      const updateResult = await adsService.updateCampaign(targetCampaignId, { status: targetStatus });
 
       if (!updateResult.success) {
         const rawErr = updateResult.error;
@@ -1276,9 +1305,23 @@ class FacebookAdsAiController {
         });
       }
 
+      // Sync status back to local DB if found
+      try {
+        await prisma.facebookCampaign.updateMany({
+          where: {
+            OR: [
+              { id: campaignId },
+              { facebookCampaignId: targetCampaignId }
+            ],
+            companyId
+          },
+          data: { status: targetStatus }
+        });
+      } catch (_) {}
+
       return res.json({
         success: true,
-        campaignId,
+        campaignId: targetCampaignId,
         status: targetStatus,
         message: targetStatus === 'PAUSED' ? 'تم إيقاف الحملة بنجاح على فيسبوك ⏸️' : 'تم تفعيل الحملة بنجاح على فيسبوك 🚀',
       });
@@ -1337,9 +1380,33 @@ class FacebookAdsAiController {
         });
       }
 
+      let targetCampaignId = campaignId;
+      const { getSharedPrismaClient } = require('../services/sharedDatabase');
+      const prisma = getSharedPrismaClient();
+
+      // 🛡️ Auto-resolve local CUID to Meta facebookCampaignId if non-numeric
+      if (!/^\d+$/.test(campaignId)) {
+        try {
+          const dbCamp = await prisma.facebookCampaign.findFirst({
+            where: {
+              OR: [
+                { id: campaignId },
+                { facebookCampaignId: campaignId }
+              ],
+              companyId
+            }
+          });
+          if (dbCamp?.facebookCampaignId) {
+            targetCampaignId = dbCamp.facebookCampaignId;
+          }
+        } catch (resolveErr) {
+          console.warn('⚠️ Could not resolve campaignId from DB:', resolveErr.message);
+        }
+      }
+
       const adsService = new FacebookAdsService(accessToken);
       // Try CBO first (daily_budget on campaign node)
-      let updateResult = await adsService.updateCampaign(campaignId, {
+      let updateResult = await adsService.updateCampaign(targetCampaignId, {
         daily_budget: Math.round(budget * 100),
       });
 
@@ -1347,7 +1414,7 @@ class FacebookAdsAiController {
       if (!updateResult.success && String(updateResult.error || '').toLowerCase().includes('ad set')) {
         try {
           const axios = require('axios');
-          const adsetsRes = await axios.get(`${adsService.baseUrl}/${campaignId}/adsets`, {
+          const adsetsRes = await axios.get(`${adsService.baseUrl}/${targetCampaignId}/adsets`, {
             params: { access_token: accessToken, fields: 'id,name,status', limit: 5 }
           });
           const activeAdSet = (adsetsRes.data?.data || []).find(a => a.status === 'ACTIVE') || adsetsRes.data?.data?.[0];
@@ -1376,9 +1443,23 @@ class FacebookAdsAiController {
         });
       }
 
+      // Sync budget back to local DB if found
+      try {
+        await prisma.facebookCampaign.updateMany({
+          where: {
+            OR: [
+              { id: campaignId },
+              { facebookCampaignId: targetCampaignId }
+            ],
+            companyId
+          },
+          data: { budgetAmount: budget }
+        });
+      } catch (_) {}
+
       return res.json({
         success: true,
-        campaignId,
+        campaignId: targetCampaignId,
         daily_budget: budget,
         message: `تم تعديل الميزانية اليومية بنجاح إلى ${budget} ج.م 💰`,
       });
