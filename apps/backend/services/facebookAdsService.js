@@ -1050,21 +1050,21 @@ class FacebookAdsService {
       advantage_audience: resolvedAdvantageAudience
     };
 
-    // ✅ v22.0: Audience Expansion Settings
-    if (targeting.audienceExpansion) {
-      spec.targeting_automation.audience_expansion = targeting.audienceExpansion;
-    }
-
-    // ✅ v22.0: Lookalike Expansion
-    if (targeting.lookalikeExpansion !== undefined) {
-      spec.targeting_automation.lookalike_expansion = targeting.lookalikeExpansion;
-    }
-
-    // ✅ v22.0: Detailed Targeting Expansion - Enhanced
-    if (targeting.targetingExpansion) {
-      spec.targeting_optimization = targeting.targetingExpansion === true 
-        ? 'expansion_all' 
-        : targeting.targetingExpansion;
+    // In Meta v26: When Advantage+ Audience is active (1), detailed targeting expansion
+    // is automatically managed by Meta's AI algorithm, so legacy expansion flags are only
+    // sent when running in standard manual custom audience mode (0) to prevent API schema rejections.
+    if (resolvedAdvantageAudience === 0) {
+      if (targeting.audienceExpansion) {
+        spec.targeting_automation.audience_expansion = targeting.audienceExpansion;
+      }
+      if (targeting.lookalikeExpansion !== undefined) {
+        spec.targeting_automation.lookalike_expansion = targeting.lookalikeExpansion;
+      }
+      if (targeting.targetingExpansion) {
+        spec.targeting_optimization = targeting.targetingExpansion === true 
+          ? 'expansion_all' 
+          : targeting.targetingExpansion;
+      }
     }
 
     // Flexible targeting (AND/OR logic)
@@ -1112,7 +1112,11 @@ class FacebookAdsService {
         musicEnhancement = false,
         imageTemplates = false,
         videoHighlight = false,
-        textOptimizations = false
+        textOptimizations = false,
+        expandImage = false,
+        visualTouchups = false,
+        relevantComments = false,
+        priceOverlay = false
       } = creativeData;
 
       // إنشاء Creative أولاً
@@ -1135,7 +1139,11 @@ class FacebookAdsService {
         musicEnhancement,
         imageTemplates,
         videoHighlight,
-        textOptimizations
+        textOptimizations,
+        expandImage,
+        visualTouchups,
+        relevantComments,
+        priceOverlay
       });
 
       if (!creativeResult.success) {
