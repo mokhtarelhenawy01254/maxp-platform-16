@@ -737,6 +737,9 @@ export default defineConfig(({ mode }) => {
               // القاعدة دي كانت تنزّل route-customers كامل (509KB) معها
               if (normalizedId.includes('/src/pages/customers/CustomerNotifications')) return 'route-customer-notifications';
               if (normalizedId.includes('/src/pages/customers/')) return 'route-customers';
+              if (normalizedId.includes('/src/pages/advertising/product-landing/')) return 'route-product-landing';
+              if (normalizedId.includes('/src/pages/advertising/marketing-studio/')) return 'route-marketing-studio';
+              if (normalizedId.includes('/src/pages/advertising/creative-studio/')) return 'route-creative-studio';
               if (normalizedId.includes('/src/pages/advertising/')) return 'route-advertising';
               if (normalizedId.includes('/src/pages/affiliates/')) return 'route-affiliates';
 if (normalizedId.includes('SuperAdminAIKeyManager')) return 'route-ai-key-manager';

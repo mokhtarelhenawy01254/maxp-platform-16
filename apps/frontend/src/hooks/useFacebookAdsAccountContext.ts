@@ -25,11 +25,16 @@ function findAccount(
 
   return accounts.find((account) => {
     const accountSelectionId = getAccountSelectionId(account);
+    const normalizedSelectionId = accountSelectionId.startsWith("act_")
+      ? accountSelectionId.slice(4)
+      : accountSelectionId;
     return (
       account.id === accountId ||
+      account.id === normalized ||
       accountSelectionId === accountId ||
       accountSelectionId === normalized ||
-      `act_${accountSelectionId}` === accountId
+      normalizedSelectionId === normalized ||
+      `act_${normalizedSelectionId}` === accountId
     );
   });
 }
@@ -87,7 +92,36 @@ export function useFacebookAdsAccountContext() {
       return getAccountSelectionId(activeAccount);
     }
 
-    return adAccounts.length === 1 ? getAccountSelectionId(adAccounts[0]) : "";
+    // Smart auto-selection for multi-account workspaces (e.g. Swan):
+    // 1. Account matching "swan" brand name
+    const brandAccount = adAccounts.find(
+      (account) => account.name?.trim().toLowerCase() === "swan",
+    );
+    if (brandAccount) {
+      return getAccountSelectionId(brandAccount);
+    }
+
+    // 2. Any active usable Meta account (status 1 with usable billing)
+    const liveMetaAccount = adAccounts.find(
+      (account) =>
+        (account.account_status === 1 || Number(account.account_status) === 1) &&
+        account.billingHealth?.isAccountUsable !== false,
+    );
+    if (liveMetaAccount) {
+      return getAccountSelectionId(liveMetaAccount);
+    }
+
+    // 3. Any account with status 1
+    const statusOneAccount = adAccounts.find(
+      (account) =>
+        account.account_status === 1 || Number(account.account_status) === 1,
+    );
+    if (statusOneAccount) {
+      return getAccountSelectionId(statusOneAccount);
+    }
+
+    // 4. Default to first available account so user never sees an empty screen
+    return adAccounts.length > 0 ? getAccountSelectionId(adAccounts[0]) : "";
   }, [adAccounts, loading, requestedAdAccountId]);
 
   const selectedAdAccount = useMemo(
