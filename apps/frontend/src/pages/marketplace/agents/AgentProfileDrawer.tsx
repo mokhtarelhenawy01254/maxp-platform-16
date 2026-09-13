@@ -85,8 +85,13 @@ export const AgentProfileDrawer: React.FC<AgentProfileDrawerProps> = ({
         onClick={(e) => e.stopPropagation()}
         className="relative flex h-full w-full max-w-xl flex-col bg-background border-s border-border shadow-2xl transition-transform duration-200 overflow-hidden text-start select-none"
       >
+        {/* ── Native Mobile Sheet Grabber ── */}
+        <div className="flex justify-center pt-2 pb-1 sm:hidden bg-muted/20 border-b border-border/30">
+          <div className="h-1 w-10 rounded-full bg-muted-foreground/30" aria-hidden="true" />
+        </div>
+
         {/* ── Top Header Bar ── */}
-        <div className="flex items-center justify-between border-b border-border/60 px-6 py-4 bg-muted/20">
+        <div className="flex items-center justify-between border-b border-border/60 px-6 py-3.5 bg-muted/20">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               الملف الوظيفي التنفيذي (Dossier)
