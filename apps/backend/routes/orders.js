@@ -3282,7 +3282,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           },
           orderItems: {
             include: {
-              product: { select: { id: true, name: true, images: true } }
+              product: { select: { id: true, name: true, images: true, mainImage: true } },
+              productVariant: { select: { id: true, name: true, sku: true, images: true } }
             }
           },
           conversation: { select: { id: true, channel: true } },
@@ -3646,18 +3647,39 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         shippingAddress: shippingAddress,
         items: Array.isArray(order.orderItems) && order.orderItems.length > 0 ? order.orderItems.map(item => {
           const parsedMetadata = JSON.parse(item.metadata || '{}');
+          const resolvedImg = item.productImage || item.product?.mainImage || (() => {
+            if (item.productVariant?.images) {
+              try {
+                const vImgs = typeof item.productVariant.images === 'string' ? JSON.parse(item.productVariant.images) : item.productVariant.images;
+                if (Array.isArray(vImgs) && vImgs.length > 0) return vImgs[0];
+                if (typeof vImgs === 'string') return vImgs;
+              } catch (_) { /* ignore */ }
+            }
+            if (item.product?.images) {
+              try {
+                const imgs = typeof item.product.images === 'string' ? JSON.parse(item.product.images) : item.product.images;
+                return Array.isArray(imgs) ? imgs[0] : imgs;
+              } catch (_) { return null; }
+            }
+            return parsedMetadata.image || parsedMetadata.productImage || null;
+          })();
           return {
             id: item.id,
             productId: item.productId,
             name: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
             productName: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
+            productColor: item.productColor || parsedMetadata.color || parsedMetadata.productColor || '',
+            productSize: item.productSize || parsedMetadata.size || parsedMetadata.productSize || '',
+            productImage: resolvedImg,
+            productSku: item.productSku || item.productVariant?.sku || parsedMetadata.sku || '',
             price: item.price,
             quantity: item.quantity,
             total: item.total,
             metadata: {
               ...parsedMetadata,
               color: item.productColor || parsedMetadata.color || parsedMetadata.productColor,
-              size: item.productSize || parsedMetadata.size || parsedMetadata.productSize
+              size: item.productSize || parsedMetadata.size || parsedMetadata.productSize,
+              image: resolvedImg
             }
           };
         }) : [],
@@ -4901,6 +4923,15 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
               select: {
                 id: true,
                 name: true,
+                images: true,
+                mainImage: true
+              }
+            },
+            productVariant: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
                 images: true
               }
             }
@@ -5364,6 +5395,15 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
                 select: {
                   id: true,
                   name: true,
+                  images: true,
+                  mainImage: true
+                }
+              },
+              productVariant: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true,
                   images: true
                 }
               }
@@ -5417,6 +5457,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             productColor: true,  // ✅ FIX: Include color
             productSize: true,   // ✅ FIX: Include size
             productSku: true,    // ✅ FIX: Include SKU
+            productImage: true,  // ✅ FIX: Include productImage
             productDetails: true, // ✅ FIX: Include details
             price: true,
             quantity: true,
@@ -5428,6 +5469,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
                 name: true,  // ✅ Correct: Variant name (e.g. "Red / L")
                 type: true,  // ✅ Correct: Variant type
                 sku: true,
+                images: true, // ✅ FIX: Include variant images
                 metadata: true // ✅ Correct: JSON metadata
               }
             },
@@ -5435,6 +5477,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
               select: {
                 id: true,
                 name: true,
+                mainImage: true, // ✅ FIX: Include mainImage
                 images: true
               }
             }
@@ -5958,6 +6001,15 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             productSize: item.productSize || parsedMetadata.size || parsedMetadata.productSize || parsedMetadata.originalData?.productSize || '',
             productDetails: item.productDetails || parsedMetadata.details || parsedMetadata.productDetails || '',
             productImage: (() => {
+              if (item.productImage) return item.productImage;
+              if (item.product?.mainImage) return item.product.mainImage;
+              if (item.productVariant?.images) {
+                try {
+                  const vImgs = typeof item.productVariant.images === 'string' ? JSON.parse(item.productVariant.images) : item.productVariant.images;
+                  if (Array.isArray(vImgs) && vImgs.length > 0) return vImgs[0];
+                  if (typeof vImgs === 'string') return vImgs;
+                } catch (e) { /* ignore */ }
+              }
               if (item.product?.images) {
                 try {
                   const images = typeof item.product.images === 'string' ? JSON.parse(item.product.images) : item.product.images;
@@ -5975,7 +6027,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
               color: item.productColor || parsedMetadata.color || parsedMetadata.productColor,
               size: item.productSize || parsedMetadata.size || parsedMetadata.productSize,
               details: item.productDetails || parsedMetadata.details || parsedMetadata.productDetails,
-              image: item.product?.images ? (typeof item.product.images === 'string' ? JSON.parse(item.product.images)[0] : item.product.images[0]) : (parsedMetadata.image || parsedMetadata.productImage)
+              image: item.productImage || item.product?.mainImage || (item.product?.images ? (typeof item.product.images === 'string' ? JSON.parse(item.product.images)[0] : item.product.images[0]) : (parsedMetadata.image || parsedMetadata.productImage))
             }
           };
         }),
@@ -6570,14 +6622,19 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
       });
 
       return {
-        productId: item.productId,
-        productName: item.productName,
-        productColor: item.productColor ? String(item.productColor) : null,
-        productSize: item.productSize != null ? String(item.productSize) : null,
-        price: parseFloat(item.price),
-        quantity: item.quantity,
-        total: parseFloat(item.total),
-        variantId: item.variantId
+        productId: item.productId || null,
+        productName: item.productName || item.name || '',
+        productColor: item.productColor ? String(item.productColor) : (item.color ? String(item.color) : null),
+        productSize: item.productSize != null ? String(item.productSize) : (item.size != null ? String(item.size) : null),
+        price: parseFloat(item.price) || 0,
+        quantity: parseInt(item.quantity, 10) || 1,
+        total: parseFloat(item.total || ((parseFloat(item.price) || 0) * (parseInt(item.quantity, 10) || 1))),
+        variantId: item.variantId || null,
+        sku: item.sku || item.productSku || null,
+        productSku: item.productSku || item.sku || null,
+        productImage: item.productImage || item.image || null,
+        image: item.image || item.productImage || null,
+        attributes: item.attributes || item.productAttributes || null,
       };
     });
 
@@ -6590,10 +6647,13 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
       conversationId,
 
       // معلومات المنتجات
-      productName: products.map(p => p.productName).join(', '),
+      productId: products[0]?.productId || null,
+      productName: products.map(p => p.productName).filter(Boolean).join(', '),
       productColor: products[0]?.productColor,
       productSize: products[0]?.productSize,
       productPrice: products[0]?.price,
+      productImage: products[0]?.productImage || null,
+      productSku: products[0]?.productSku || null,
       quantity: products.reduce((sum, p) => sum + p.quantity, 0),
 
       // معلومات الشحن

@@ -419,17 +419,22 @@ class OrderService {
         : null;
 
       let productSku = null;
-      if (productId && productName) {
+      let productImage = data.productImage || data.image || null;
+      if (productId) {
         const product = await this.getPrisma().product.findUnique({
           where: { id: productId },
-          select: { sku: true }
+          select: { sku: true, mainImage: true, images: true }
         });
         productSku = product?.sku || null;
+        if (!productImage) {
+          productImage = product?.mainImage || (product?.images ? (typeof product.images === 'string' ? JSON.parse(product.images)[0] : product.images[0]) : null);
+        }
       }
 
       const orderItem = {
         productId,
         productSku,
+        productImage,
         quantity,
         price: parseFloat(Number(productPrice).toFixed(2)),
         total: parseFloat(subtotal.toFixed(2)),
@@ -441,6 +446,7 @@ class OrderService {
         metadata: JSON.stringify({
           source: 'conversation_automation',
           conversationId: conversationId || null,
+          image: productImage || null,
         }),
       };
 

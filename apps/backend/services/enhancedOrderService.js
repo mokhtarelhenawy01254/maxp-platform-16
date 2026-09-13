@@ -952,10 +952,17 @@ class EnhancedOrderService {
       notes: this.buildOrderNotes(data),
 
       // ✅ تمرير بيانات المنتج لـ createOrderItems
-      productName: data.productName,
-      productColor: data.productColor,
-      productSize: data.productSize,
-      productPrice: costs.productPrice,
+      productId: data.productId || (Array.isArray(data.products) && data.products[0]?.productId) || null,
+      productName: data.productName || (Array.isArray(data.products) ? data.products.map(p => p.productName).filter(Boolean).join(', ') : null),
+      productColor: data.productColor || (Array.isArray(data.products) ? data.products[0]?.productColor : null),
+      productSize: data.productSize || (Array.isArray(data.products) ? data.products[0]?.productSize : null),
+      productPrice: costs.productPrice || (Array.isArray(data.products) ? data.products[0]?.price : null),
+      productImage: data.productImage || data.image || (Array.isArray(data.products) ? (data.products[0]?.productImage || data.products[0]?.image) : null) || null,
+      productSku: data.productSku || data.sku || (Array.isArray(data.products) ? (data.products[0]?.productSku || data.products[0]?.sku) : null) || null,
+      productAttributes: data.productAttributes || data.attributes || (Array.isArray(data.products) ? (data.products[0]?.attributes || data.products[0]?.productAttributes) : null) || null,
+      quantity: data.quantity || (Array.isArray(data.products) ? data.products.reduce((sum, p) => sum + (parseInt(p.quantity, 10) || 1), 0) : 1),
+      products: data.products, // ✅ تمرير مصفوفة المنتجات
+      easyWarehouseMode: data.easyWarehouseMode,
 
       // metadata
       metadata: JSON.stringify({
@@ -1131,16 +1138,36 @@ class EnhancedOrderService {
 
       // ✅ حفظ بيانات المنتج قبل إزالتها من orderData
       const productData = {
+        productId: orderData.productId,
         productName: orderData.productName,
         productColor: orderData.productColor,
         productSize: orderData.productSize,
         productPrice: orderData.productPrice,
+        productImage: orderData.productImage,
+        productSku: orderData.productSku,
+        productAttributes: orderData.productAttributes,
         quantity: orderData.quantity,
         products: orderData.products // ✅ تمرير مصفوفة المنتجات
       };
 
       // ✅ إزالة حقول المنتج من orderData لأنها مش جزء من Order schema
-      const { products, productName, productColor, productSize, productPrice, quantity, ...cleanOrderData } = orderData;
+      const {
+        products,
+        productId,
+        productName,
+        productColor,
+        productSize,
+        productPrice,
+        productImage,
+        productSku,
+        productAttributes,
+        quantity,
+        easyWarehouseMode,
+        autoDiscountVoucherId,
+        autoDiscountApplied,
+        autoDiscountTotal,
+        ...cleanOrderData
+      } = orderData;
 
       // 🎁 تسجيل كوبون الخصم التلقائي في الـ metadata (لو الطلب استخدم كوبون)
       if (orderData.autoDiscountVoucherId || orderData.autoDiscountApplied) {
@@ -1250,7 +1277,25 @@ class EnhancedOrderService {
                 }
               })
             );
-          } else if (productItem.productName) {
+          } else if (productItem.sku || productItem.productSku) {
+            product = await this.safeQuery(() =>
+              this.getPrisma().product.findFirst({
+                where: {
+                  sku: productItem.sku || productItem.productSku,
+                  companyId: orderData.companyId,
+                  deletedAt: null
+                },
+                include: {
+                  productVariants: true,
+                  merchantProducts: {
+                    where: { isActive: true, syncEnabled: true },
+                    include: { merchant: true }
+                  }
+                }
+              })
+            );
+          }
+          if (!product && productItem.productName) {
             product = await this.findProductByName(productItem.productName, orderData.companyId);
           }
 
@@ -1406,6 +1451,29 @@ class EnhancedOrderService {
             basePrice
           );
 
+          let resolvedItemImage = productItem.productImage || productItem.image || null;
+          if (!resolvedItemImage && variant?.images) {
+            try {
+              const vImgs = typeof variant.images === 'string' ? JSON.parse(variant.images) : variant.images;
+              if (Array.isArray(vImgs) && vImgs.length > 0) resolvedItemImage = vImgs[0];
+              else if (typeof vImgs === 'string') resolvedItemImage = vImgs;
+            } catch (_) {
+              if (typeof variant.images === 'string') resolvedItemImage = variant.images;
+            }
+          }
+          if (!resolvedItemImage && product?.mainImage) {
+            resolvedItemImage = product.mainImage;
+          }
+          if (!resolvedItemImage && product?.images) {
+            try {
+              const pImgs = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
+              if (Array.isArray(pImgs) && pImgs.length > 0) resolvedItemImage = pImgs[0];
+              else if (typeof pImgs === 'string') resolvedItemImage = pImgs;
+            } catch (_) {
+              if (typeof product.images === 'string') resolvedItemImage = product.images;
+            }
+          }
+
           const itemData = {
             orderId: orderId,
             productId: product?.id || productItem.productId || null,
@@ -1417,8 +1485,8 @@ class EnhancedOrderService {
             productName: productItem.productName || product?.name || null,
             productColor: extractedColor || null, // ✨ استخدام البيانات المستخرجة
             productSize: extractedSize != null ? String(extractedSize) : null, // ✨ استخدام البيانات المستخرجة
-            productImage: productItem.productImage || null,
-            productSku: variant?.sku || product?.sku || `MANUAL-${Date.now()}`,
+            productImage: resolvedItemImage || null,
+            productSku: productItem.sku || productItem.productSku || variant?.sku || product?.sku || `MANUAL-${Date.now()}`,
             basePrice: Number.isFinite(basePrice) ? basePrice : null,
             merchantPrice: Number.isFinite(merchantPrice) ? merchantPrice : null,
 
@@ -1428,6 +1496,7 @@ class EnhancedOrderService {
             metadata: JSON.stringify({
               manualEntry: true,
               catalogMatch: !!product,
+              image: resolvedItemImage || null,
               productId: product?.id || null,
               variantId: productItem.variantId || null,
               variantName: variant?.name || null,
@@ -1465,7 +1534,58 @@ class EnhancedOrderService {
       // ✅ منتج واحد (الطريقة القديمة)
       // البحث عن المنتج في الكتالوج
       let product = null;
-      if (orderData.productName) {
+      if (orderData.productId) {
+        product = await this.safeQuery(() =>
+          this.getPrisma().product.findUnique({
+            where: { id: orderData.productId },
+            include: {
+              productVariants: true,
+              merchantProducts: {
+                where: {
+                  isActive: true,
+                  syncEnabled: true
+                },
+                include: {
+                  merchant: true
+                },
+                orderBy: [
+                  { merchantPrice: 'asc' },
+                  { stock: 'desc' },
+                  { createdAt: 'asc' }
+                ]
+              }
+            }
+          })
+        );
+      } else if (orderData.productSku || orderData.sku) {
+        product = await this.safeQuery(() =>
+          this.getPrisma().product.findFirst({
+            where: {
+              sku: orderData.productSku || orderData.sku,
+              companyId: orderData.companyId,
+              deletedAt: null
+            },
+            include: {
+              productVariants: true,
+              merchantProducts: {
+                where: {
+                  isActive: true,
+                  syncEnabled: true
+                },
+                include: {
+                  merchant: true
+                },
+                orderBy: [
+                  { merchantPrice: 'asc' },
+                  { stock: 'desc' },
+                  { createdAt: 'asc' }
+                ]
+              }
+            }
+          })
+        );
+      }
+      if (!product && orderData.productName) {
         product = await this.findProductByName(orderData.productName, orderData.companyId);
       }
 
@@ -1483,9 +1603,23 @@ class EnhancedOrderService {
         orderData.productAttributes || orderData.attributes || orderData.variantAttributes
       );
 
+      let resolvedSingleImage = orderData.productImage || orderData.image || null;
+      if (!resolvedSingleImage && product?.mainImage) {
+        resolvedSingleImage = product.mainImage;
+      }
+      if (!resolvedSingleImage && product?.images) {
+        try {
+          const pImgs = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
+          if (Array.isArray(pImgs) && pImgs.length > 0) resolvedSingleImage = pImgs[0];
+          else if (typeof pImgs === 'string') resolvedSingleImage = pImgs;
+        } catch (_) {
+          if (typeof product.images === 'string') resolvedSingleImage = product.images;
+        }
+      }
+
       const itemData = {
         orderId: orderId,
-        productId: product?.id || null,
+        productId: product?.id || orderData.productId || null,
         quantity: quantity,
         price: productPrice,
         total: total,
@@ -1494,8 +1628,8 @@ class EnhancedOrderService {
         productName: orderData.productName || product?.name || null,
         productColor: orderData.productColor || selectedAttributes.Color || null,
         productSize: orderData.productSize != null ? String(orderData.productSize) : (selectedAttributes.Size != null ? String(selectedAttributes.Size) : null),
-        productImage: orderData.productImage || null,
-        productSku: product?.sku || `AUTO-${Date.now()}`,
+        productImage: resolvedSingleImage || null,
+        productSku: product?.sku || orderData.productSku || orderData.sku || `AUTO-${Date.now()}`,
         basePrice: product?.basePrice || product?.price || null,
         merchantPrice: selectedMerchantProduct?.merchantPrice || product?.cost || null,
 
@@ -1504,6 +1638,7 @@ class EnhancedOrderService {
 
         metadata: JSON.stringify({
           aiExtracted: true,
+          image: resolvedSingleImage || null,
           originalData: {
             productName: orderData.productName,
             productColor: orderData.productColor,
@@ -1512,7 +1647,7 @@ class EnhancedOrderService {
             productPrice: orderData.productPrice
           },
           catalogMatch: !!product,
-          productId: product?.id || null,
+          productId: product?.id || orderData.productId || null,
           catalogProduct: product ? {
             name: product.name,
             price: product.price,

@@ -768,14 +768,19 @@ router.post('/', manualOrderAccess, async (req, res) => {
     // تحويل المنتجات (متوافق مع EnhancedOrderService)
     const rawProducts = req.body.products || req.body.items || [];
     const products = Array.isArray(rawProducts) ? rawProducts.map(item => ({
-      productId: item.productId,
-      productName: item.productName,
-      productColor: item.productColor,
-      productSize: item.productSize,
-      price: parseFloat(item.price),
-      quantity: item.quantity,
-      total: parseFloat(item.total),
-      variantId: item.variantId
+      productId: item.productId || null,
+      productName: item.productName || item.name || '',
+      productColor: item.productColor ? String(item.productColor) : (item.color ? String(item.color) : null),
+      productSize: item.productSize != null ? String(item.productSize) : (item.size != null ? String(item.size) : null),
+      price: parseFloat(item.price) || 0,
+      quantity: parseInt(item.quantity, 10) || 1,
+      total: parseFloat(item.total || ((parseFloat(item.price) || 0) * (parseInt(item.quantity, 10) || 1))),
+      variantId: item.variantId || null,
+      sku: item.sku || item.productSku || null,
+      productSku: item.productSku || item.sku || null,
+      productImage: item.productImage || item.image || null,
+      image: item.image || item.productImage || null,
+      attributes: item.attributes || item.productAttributes || null,
     })) : [];
 
     // Map address field to customerAddress for the order service
@@ -786,8 +791,16 @@ router.post('/', manualOrderAccess, async (req, res) => {
     const orderData = {
       ...req.body,
       products,
+      productId: req.body.productId || products[0]?.productId || null,
+      productName: req.body.productName || products.map(p => p.productName).filter(Boolean).join(', ') || null,
+      productPrice: req.body.productPrice || products[0]?.price || 0,
+      productColor: req.body.productColor || products[0]?.productColor || null,
+      productSize: req.body.productSize || products[0]?.productSize || null,
+      productImage: req.body.productImage || req.body.image || products[0]?.productImage || null,
+      productSku: req.body.productSku || req.body.sku || products[0]?.productSku || null,
+      quantity: req.body.quantity || products.reduce((sum, p) => sum + (p.quantity || 1), 0),
       companyId: req.user.companyId,
-      extractionMethod: 'manual',
+      extractionMethod: req.body.extractionMethod || 'manual',
 
       // Affiliate info
       ...(affiliateId && { affiliateId, orderSource }),
