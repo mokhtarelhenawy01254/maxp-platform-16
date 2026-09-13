@@ -719,6 +719,8 @@ class FacebookAdsAiController {
           const ruleTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'record_learned_rule' || (t.name || t.function?.name || t.tool) === 'facebook_ad_record_learned_rule');
           const decTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'facebook_ad_get_decision');
           const compTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'competitor_get_ads');
+          const searchTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'session_search');
+          const auditTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'audit_read');
 
           if (draftTool) {
             const dArgs = draftTool.args || draftTool.arguments || {};
@@ -736,6 +738,24 @@ class FacebookAdsAiController {
             finalReply = `تم فحص أداء الحملات وتحليل قرارات الـ SCALE والـ KILL بنجاح 📊`;
           } else if (compTool) {
             finalReply = `تم استخراج استخبارات إعلانات المنافسين ومؤشرات السوق المصري 🔎`;
+          } else if (searchTool) {
+            const sRes = searchTool.result || {};
+            const items = sRes.results || [];
+            if (items.length > 0) {
+              const snippets = items.map((r, i) => `${i + 1}. **[${r.context_title || 'محادثة سابقة'}]**: ${r.content}`).join('\n');
+              finalReply = `بحثت في محادثاتنا وسجلاتنا السابقة بخصوص "${sRes.query || ''}" ووجدت هذه القواعد والقرارات المسجلة:\n\n${snippets}`;
+            } else {
+              finalReply = `بحثت في المحادثات السابقة ولم أجد أي قواعد أو رسائل مسجلة لـ "${sRes.query || ''}".`;
+            }
+          } else if (auditTool) {
+            const aRes = auditTool.result || {};
+            const acts = aRes.activities || [];
+            if (acts.length > 0) {
+              const actsList = acts.slice(0, 3).map(a => `- **${a.action || a.title || 'إجراء'}**: ${a.details || a.description || ''}`).join('\n');
+              finalReply = `راجعت سجل الأنشطة والقرارات السابقة ووجدت التالي:\n\n${actsList}`;
+            } else {
+              finalReply = `تمت مراجعة سجل الأنشطة بنجاح.`;
+            }
           } else {
             // Run synthesis LLM prompt for other complex tools
             try {

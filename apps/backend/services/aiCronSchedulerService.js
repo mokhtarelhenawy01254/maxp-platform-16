@@ -114,7 +114,12 @@ class AiCronSchedulerService {
    */
   resolveTargetRole(description) {
     const desc = (description || '').toLowerCase();
-    if (desc.includes('إعلان') || desc.includes('حملة') || desc.includes('فيسبوك') || desc.includes('roas') || desc.includes('cpa') || desc.includes('ميزانية')) {
+    if (
+      desc.includes('إعلان') || desc.includes('اعلان') || desc.includes('إعلانات') || desc.includes('اعلانات') ||
+      desc.includes('حملة') || desc.includes('حملات') || desc.includes('فيسبوك') || desc.includes('ميتا') ||
+      desc.includes('meta') || desc.includes('roas') || desc.includes('cpa') || desc.includes('ميزانية') ||
+      desc.includes('ميديا باير') || desc.includes('استهداف')
+    ) {
       return 'MEDIA_BUYER';
     }
     if (desc.includes('مخزون') || desc.includes('قطع') || desc.includes('منتجات') || desc.includes('جرد') || desc.includes('نقص')) {
@@ -173,13 +178,13 @@ class AiCronSchedulerService {
   /**
    * Create and persist a new natural language cron job.
    */
-  async createJob(companyId, { description, naturalInput, taskType = null, payload = {} } = {}) {
+  async createJob(companyId, { description, naturalInput, taskType = null, role = null, payload = {} } = {}) {
     if (!companyId) throw new Error('companyId is required');
     const desc = description || naturalInput || '';
     if (!desc.trim()) throw new Error('description or naturalInput is required');
 
     const cronExpr = this.parseNaturalCron(desc);
-    const resolvedType = taskType || this.resolveTargetRole(desc);
+    const resolvedType = taskType || role || this.resolveTargetRole(desc);
     const id = `cron_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
     const jobData = {
