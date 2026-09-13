@@ -255,12 +255,12 @@ const createFullAd = async (req, res) => {
         .status(400)
         .json({ success: false, error: "Facebook Page ID is required" });
     }
-    if (!primaryText) {
+    if (creativeType !== "EXISTING_POST" && !primaryText) {
       return res
         .status(400)
         .json({ success: false, error: "Ad primary text is required" });
     }
-    if (!linkUrl) {
+    if (creativeType !== "EXISTING_POST" && !linkUrl) {
       return res
         .status(400)
         .json({ success: false, error: "Destination URL is required" });

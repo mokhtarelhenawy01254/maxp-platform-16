@@ -236,24 +236,34 @@ const createAd = async (req, res) => {
         ? req.body.descriptions.find((d) => typeof d === "string" && d.trim())
         : null);
 
-    // التحقق من البيانات المطلوبة
-    if (!name || !finalPrimaryText) {
-      return res.status(400).json({
-        success: false,
-        error: "Missing required fields: name, primaryText",
-      });
-    }
     if (!pageId) {
       return res.status(400).json({
         success: false,
         error: "Facebook Page ID is required",
       });
     }
-    if (!linkUrl) {
-      return res.status(400).json({
-        success: false,
-        error: "Destination URL is required",
-      });
+
+    // التحقق من البيانات المطلوبة
+    if (normalizedCreativeType !== "EXISTING_POST") {
+      if (!name || !finalPrimaryText) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required fields: name, primaryText",
+        });
+      }
+      if (!linkUrl) {
+        return res.status(400).json({
+          success: false,
+          error: "Destination URL is required",
+        });
+      }
+    } else {
+      if (!name) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required field: name",
+        });
+      }
     }
 
     const creativeValidationError = validateFullAdCreativePayload(
@@ -965,6 +975,50 @@ const createWhatsAppAd = async (req, res) => {
     }
 };
 
+/**
+ * 📄 جلب منشورات الصفحة لاستخدامها كإعلان (Use Existing Post)
+ */
+const getPagePosts = async (req, res) => {
+  try {
+    const { pageId } = req.params;
+    const limit = parseInt(req.query.limit, 10) || 25;
+    const companyId = req.user?.companyId;
+
+    if (!pageId) {
+      return res.status(400).json({
+        success: false,
+        error: "Page ID is required",
+      });
+    }
+
+    const storedPage = await getSharedPrismaClient().facebookPage.findFirst({
+      where: { companyId, pageId: String(pageId) },
+    });
+
+    const token =
+      storedPage?.pageAccessToken ||
+      (await getCompanyPageAccessToken(companyId)) ||
+      (await getCompanyAdsAccessToken(companyId));
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: "Facebook Access Token not found for this page.",
+      });
+    }
+
+    const adsService = new FacebookAdsService(token);
+    const result = await adsService.getPagePublishedPosts(pageId, limit);
+    return res.json(result);
+  } catch (error) {
+    console.error("Error fetching page published posts:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Failed to fetch page posts",
+    });
+  }
+};
+
 module.exports = {
   getAds,
   createAd,
@@ -980,4 +1034,5 @@ module.exports = {
   getCreativePreview,
   createInstagramReelsCreative,
   createWhatsAppAd,
+  getPagePosts,
 };

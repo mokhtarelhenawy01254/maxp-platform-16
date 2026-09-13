@@ -949,12 +949,13 @@ export interface CreateFullAdData {
   // Ad Creative Data
   adName?: string;
   pageId: string;
-  creativeType?: "SINGLE_IMAGE" | "SINGLE_VIDEO" | "CAROUSEL" | "FLEXIBLE";
-  primaryText: string;
+  creativeType?: "SINGLE_IMAGE" | "SINGLE_VIDEO" | "CAROUSEL" | "COLLECTION" | "FLEXIBLE" | "EXISTING_POST";
+  postId?: string;
+  primaryText?: string;
   headline?: string;
   description?: string;
   callToAction?: string;
-  linkUrl: string;
+  linkUrl?: string;
   productId?: string;
   displayLink?: string;
   urlParameters?: string;
@@ -1082,6 +1083,34 @@ export const getProductLaunchMetadata = async (
     return response.data.data;
   } catch (error: unknown) {
     console.error("❌ Error loading product launch metadata:", error);
+    throw error;
+  }
+};
+
+export interface FacebookPagePost {
+  id: string;
+  message: string;
+  createdTime: string;
+  pictureUrl?: string | null;
+  permalinkUrl?: string;
+  sharesCount?: number;
+}
+
+/**
+ * 📄 جلب منشورات الصفحة لاستخدامها كإعلان (Use Existing Post)
+ */
+export const getPagePublishedPosts = async (
+  pageId: string,
+  limit = 25,
+): Promise<{ success: boolean; posts: FacebookPagePost[]; error?: string }> => {
+  try {
+    const response = await apiClient.get<{ success: boolean; posts: FacebookPagePost[]; error?: string }>(
+      `/facebook-ads/pages/${pageId}/posts`,
+      { params: { limit } },
+    );
+    return response.data;
+  } catch (error: unknown) {
+    console.error("❌ Error loading page posts:", error);
     throw error;
   }
 };
@@ -3697,6 +3726,9 @@ export const facebookAdsService = {
 
   // v25.0: Meta Ad Library / Ads Archive
   searchAdLibrary,
+
+  // v26.0: Page Posts & Existing Post Creative
+  getPagePublishedPosts,
 
   // Constants
   CAMPAIGN_OBJECTIVES,

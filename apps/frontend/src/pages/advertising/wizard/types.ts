@@ -95,7 +95,9 @@ export interface FormData {
   // Step 4: Ad Creative
   pageId: string;
   instagramActorId: string;
-  creativeType: "SINGLE_IMAGE" | "SINGLE_VIDEO" | "CAROUSEL" | "COLLECTION" | "FLEXIBLE";
+  creativeSource?: "NEW_AD" | "EXISTING_POST";
+  creativeType: "SINGLE_IMAGE" | "SINGLE_VIDEO" | "CAROUSEL" | "COLLECTION" | "FLEXIBLE" | "EXISTING_POST";
+  postId?: string;
   headline: string;
   primaryText: string;
   description: string;

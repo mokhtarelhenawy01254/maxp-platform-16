@@ -657,6 +657,8 @@ function validateFullAdCreativePayload(data, creativeType) {
     if (invalidIndex >= 0) {
       return `بطاقة الدوّار رقم ${invalidIndex + 1} تحتاج صورة وعنوان ورابط وجهة.`;
     }
+  if (creativeType === "EXISTING_POST" && !data.postId) {
+    return "معرّف المنشور (Post ID) مطلوب عند استخدام منشور حالي من الصفحة.";
   }
 
   return null;
@@ -667,11 +669,12 @@ function getPersistedCreativePayload(data, result, creativeType) {
     creativeId: result.creativeId,
     pageId: data.pageId,
     creativeType,
-    primaryText: data.primaryText,
+    postId: data.postId || null,
+    primaryText: data.primaryText || null,
     headline: data.headline || null,
     description: data.description || null,
     callToAction: data.callToAction || "LEARN_MORE",
-    linkUrl: data.linkUrl,
+    linkUrl: data.linkUrl || null,
     productId: data.productId || null,
     displayLink: data.displayLink || null,
     urlParameters: data.urlParameters || null,

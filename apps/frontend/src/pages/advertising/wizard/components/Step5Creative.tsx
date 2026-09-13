@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Facebook,
   Loader2,
@@ -14,14 +14,18 @@ import {
   Layout,
   X,
   Instagram,
+  FileText,
 } from "lucide-react";
 import type { FormData, CarouselCard } from "../types";
 import type {
   FacebookAdAccount,
   FacebookPage,
   FacebookPagesMeta,
+  FacebookPagePost,
 } from "../../../../services/facebookAdsService";
 import { CALL_TO_ACTIONS } from "../constants";
+import { PagePostsSelector } from "./PagePostsSelector";
+import { AdPlacementPreview } from "./AdPlacementPreview";
 
 interface Step5CreativeProps {
   formData: FormData;
@@ -60,6 +64,22 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
   isAiDraftPrefill,
   launchPrefillProductTitle,
 }) => {
+  const [creativeSource, setCreativeSource] = useState<"NEW_AD" | "EXISTING_POST">(
+    formData.creativeType === "EXISTING_POST" ? "EXISTING_POST" : "NEW_AD",
+  );
+
+  const handleSelectPagePost = (post: FacebookPagePost) => {
+    handleChange("postId", post.id);
+    handleChange("creativeType", "EXISTING_POST");
+    if (post.message) handleChange("primaryText", post.message);
+    if (post.pictureUrl) handleChange("imageUrl", post.pictureUrl);
+    if (post.permalinkUrl) handleChange("linkUrl", post.permalinkUrl);
+  };
+
+  const handleManualPostId = (postId: string) => {
+    handleChange("postId", postId);
+    handleChange("creativeType", "EXISTING_POST");
+  };
   const readyCompanyPages = facebookPages.filter(
     (page) => page.status === "READY",
   );
@@ -184,12 +204,65 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
             )}
           </div>
 
-          {/* Creative Type */}
+          {/* Creative Source Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              نوع المحتوى
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              مصدر الإعلان (Creative Source)
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setCreativeSource("NEW_AD");
+                  if (formData.creativeType === "EXISTING_POST") {
+                    handleChange("creativeType", "SINGLE_IMAGE");
+                  }
+                }}
+                className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 transition-all font-medium text-sm ${
+                  creativeSource === "NEW_AD"
+                    ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
+                    : "border-gray-200 hover:border-gray-300 text-gray-600 bg-white"
+                }`}
+              >
+                <Plus className="w-4 h-4" />
+                إنشاء إعلان جديد
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCreativeSource("EXISTING_POST");
+                  handleChange("creativeType", "EXISTING_POST");
+                }}
+                className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 transition-all font-medium text-sm ${
+                  creativeSource === "EXISTING_POST"
+                    ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
+                    : "border-gray-200 hover:border-gray-300 text-gray-600 bg-white"
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                استخدام منشور حالي
+              </button>
+            </div>
+          </div>
+
+          {creativeSource === "EXISTING_POST" ? (
+            <div className="p-4 bg-white border border-gray-200 rounded-xl space-y-4">
+              <PagePostsSelector
+                pageId={formData.pageId}
+                selectedPostId={formData.postId}
+                onSelectPost={handleSelectPagePost}
+                onManualPostIdChange={handleManualPostId}
+                error={getError("postId")}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Creative Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  نوع المحتوى
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <button
                 type="button"
                 onClick={() => handleChange("creativeType", "SINGLE_IMAGE")}
@@ -695,6 +768,8 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
               </p>
             </div>
           </div>
+        </>
+      )}
 
           {/* Call to Action */}
           <div>
@@ -750,82 +825,12 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
         </div>
 
         {/* Right Column - Preview */}
-        <div className="lg:sticky lg:top-6">
-          <div className="bg-gray-100 rounded-xl p-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-              <Eye className="w-4 h-4" />
-              معاينة الإعلان
-            </h4>
-
-            {/* Facebook Feed Preview */}
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              {/* Header */}
-              <div className="p-3 flex items-center gap-2">
-                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                  <Facebook className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">اسم صفحتك</p>
-                  <p className="text-xs text-gray-500">إعلان ممول</p>
-                </div>
-              </div>
-
-              {/* Text */}
-              <div className="px-3 pb-2">
-                <p className="text-sm text-gray-800">
-                  {formData.primaryText || "النص الأساسي لإعلانك سيظهر هنا..."}
-                </p>
-              </div>
-
-              {/* Image */}
-              <div className="aspect-square bg-gray-200 flex items-center justify-center">
-                {formData.imageUrl ? (
-                  <img
-                    src={formData.imageUrl}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="text-center text-gray-400">
-                    <Image className="w-16 h-16 mx-auto mb-2" />
-                    <p className="text-sm">صورة الإعلان</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Link Preview */}
-              <div className="p-3 bg-gray-50 border-t">
-                <p className="text-xs text-gray-500 truncate">
-                  {formData.linkUrl || "yourwebsite.com"}
-                </p>
-                <p className="font-medium text-sm mt-1">
-                  {formData.headline || "العنوان"}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {formData.description || "الوصف"}
-                </p>
-              </div>
-
-              {/* CTA Button */}
-              <div className="p-3 border-t">
-                <button className="w-full py-2 bg-blue-500 text-white rounded-lg text-sm font-medium">
-                  {CALL_TO_ACTIONS.find(
-                    (c) => c.value === formData.callToAction,
-                  )?.label || "معرفة المزيد"}
-                </button>
-              </div>
-            </div>
-
-            {/* Platform Tabs */}
-            <div className="flex gap-2 mt-3">
-              <button className="flex-1 py-2 bg-blue-500 text-white rounded-lg text-xs font-medium flex items-center justify-center gap-1">
-                <Facebook className="w-3 h-3" /> Facebook
-              </button>
-              <button className="flex-1 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1">
-                <Instagram className="w-3 h-3" /> Instagram
-              </button>
-            </div>
-          </div>
+        <div className="lg:sticky lg:top-6 space-y-4">
+          <AdPlacementPreview
+            formData={formData}
+            pageName={selectedFacebookPage?.name || "اسم صفحتك"}
+            isExistingPost={creativeSource === "EXISTING_POST"}
+          />
 
           {/* Advantage+ Creative */}
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl space-y-3 mt-4">

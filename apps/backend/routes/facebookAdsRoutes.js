@@ -168,6 +168,9 @@ router.put('/ads/:id', facebookAdsController.updateAd);
 // DELETE /api/v1/facebook-ads/ads/:id - حذف إعلان
 router.delete('/ads/:id', facebookAdsController.deleteAd);
 
+// GET /api/v1/facebook-ads/pages/:pageId/posts - جلب منشورات الصفحة لاستخدامها كإعلان (Use Existing Post)
+router.get('/pages/:pageId/posts', facebookAdsController.getPagePosts);
+
 /**
  * ============================================
  * Upload Routes

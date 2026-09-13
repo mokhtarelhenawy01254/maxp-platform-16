@@ -407,41 +407,47 @@ const CreateAdWizard: React.FC = () => {
           newErrors["pageId"] =
             "اختار صفحة مربوطة بالشركة وجاهزة للنشر داخل MaxP.";
         }
-        if (!formData.primaryText.trim()) {
-          newErrors["primaryText"] = "النص الأساسي مطلوب";
-        }
-        if (!formData.linkUrl.trim()) {
-          newErrors["linkUrl"] = "رابط الوجهة مطلوب";
-        }
-        if (formData.creativeType === "FLEXIBLE") {
-          newErrors["creativeType"] =
-            "التنسيق المرن قيد التجهيز. استخدم صورة أو فيديو أو دوّار حالياً.";
-        }
-        if (
-          formData.creativeType === "SINGLE_IMAGE" &&
-          !formData.imageUrl.trim()
-        ) {
-          newErrors["imageUrl"] = "رابط الصورة مطلوب حالياً قبل الإرسال";
-        }
-        if (
-          formData.creativeType === "SINGLE_VIDEO" &&
-          !formData.videoUrl.trim()
-        ) {
-          newErrors["videoUrl"] = "رابط الفيديو مطلوب حالياً قبل الإرسال";
-        }
-        if (formData.creativeType === "CAROUSEL") {
-          if (formData.carouselCards.length < 2) {
-            newErrors["carouselCards"] = "الدوّار يحتاج بطاقتين على الأقل";
-          } else {
-            const invalidCardIndex = formData.carouselCards.findIndex(
-              (card) =>
-                !card.imageUrl.trim() ||
-                !card.headline.trim() ||
-                !card.linkUrl.trim(),
-            );
-            if (invalidCardIndex >= 0) {
-              newErrors["carouselCards"] =
-                `بطاقة الدوّار رقم ${invalidCardIndex + 1} تحتاج صورة وعنوان ورابط`;
+        if (formData.creativeType === "EXISTING_POST") {
+          if (!formData.postId?.trim()) {
+            newErrors["postId"] = "يجب اختيار أو إدخال معرف المنشور الحالي من الصفحة";
+          }
+        } else {
+          if (!formData.primaryText.trim()) {
+            newErrors["primaryText"] = "النص الأساسي مطلوب";
+          }
+          if (!formData.linkUrl.trim()) {
+            newErrors["linkUrl"] = "رابط الوجهة مطلوب";
+          }
+          if (formData.creativeType === "FLEXIBLE") {
+            newErrors["creativeType"] =
+              "التنسيق المرن قيد التجهيز. استخدم صورة أو فيديو أو دوّار حالياً.";
+          }
+          if (
+            formData.creativeType === "SINGLE_IMAGE" &&
+            !formData.imageUrl.trim()
+          ) {
+            newErrors["imageUrl"] = "رابط الصورة مطلوب حالياً قبل الإرسال";
+          }
+          if (
+            formData.creativeType === "SINGLE_VIDEO" &&
+            !formData.videoUrl.trim()
+          ) {
+            newErrors["videoUrl"] = "رابط الفيديو مطلوب حالياً قبل الإرسال";
+          }
+          if (formData.creativeType === "CAROUSEL") {
+            if (formData.carouselCards.length < 2) {
+              newErrors["carouselCards"] = "الدوّار يحتاج بطاقتين على الأقل";
+            } else {
+              const invalidCardIndex = formData.carouselCards.findIndex(
+                (card) =>
+                  !card.imageUrl.trim() ||
+                  !card.headline.trim() ||
+                  !card.linkUrl.trim(),
+              );
+              if (invalidCardIndex >= 0) {
+                newErrors["carouselCards"] =
+                  `بطاقة الدوّار رقم ${invalidCardIndex + 1} تحتاج صورة وعنوان ورابط`;
+              }
             }
           }
         }
@@ -915,6 +921,7 @@ const CreateAdWizard: React.FC = () => {
         ...(formData.adName && { adName: formData.adName }),
         pageId: formData.pageId,
         creativeType: formData.creativeType,
+        ...(formData.postId && { postId: formData.postId }),
         primaryText: formData.primaryText,
         ...(formData.headline && { headline: formData.headline }),
         ...(formData.description && { description: formData.description }),
