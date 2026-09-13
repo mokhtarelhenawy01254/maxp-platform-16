@@ -49,6 +49,7 @@ import { QuantityOffersTab } from "./components/tabs/QuantityOffersTab";
 import { PresentationsTab } from "./components/tabs/PresentationsTab";
 import { ConvertToPresentationModal } from "./components/ConvertToPresentationModal";
 import { CategoryFormModal } from "../../components/category/CategoryFormModal";
+import { QuickAddProductModal } from "./components/QuickAddProductModal";
 import type { FieldErrors } from "./types";
 import type { ConvertPresentationResult } from "./hooks/useProductPresentations";
 import {
@@ -375,6 +376,7 @@ export const ProductNewFinal: React.FC = () => {
 
   // Convert-to-presentation State
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
   const [convertSuccess, setConvertSuccess] =
     useState<ConvertPresentationResult | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -1467,6 +1469,16 @@ export const ProductNewFinal: React.FC = () => {
             <div className="hidden sm:block">
               <ThemeToggle />
             </div>
+            {!isEditMode && (
+              <button
+                type="button"
+                onClick={() => setShowQuickAddModal(true)}
+                className="inline-flex shrink-0 whitespace-nowrap items-center gap-1 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 shadow-2xs transition-colors"
+                title="فتح نافذة الإضافة السريعة المبسطة"
+              >
+                <span>الوضع السريع للمبتدئين</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => navigate("/products")}
@@ -2024,6 +2036,19 @@ export const ProductNewFinal: React.FC = () => {
           setError(null);
         }}
       />
+
+      {showQuickAddModal && (
+        <QuickAddProductModal
+          open={showQuickAddModal}
+          onClose={() => setShowQuickAddModal(false)}
+          onSuccess={(newProd) => {
+            if (newProd?.id) {
+              navigate(`/products/${newProd.id}/edit`, { replace: true });
+            }
+          }}
+          initialCategories={categories}
+        />
+      )}
     </div>
   );
 };

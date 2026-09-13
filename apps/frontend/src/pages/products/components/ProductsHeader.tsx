@@ -24,6 +24,7 @@ interface ProductsHeaderProps {
   onDeleteAll: () => void;
   onImportClick: () => void;
   onExport: () => void;
+  onQuickAddClick?: () => void;
 }
 
 const ProductsHeader: React.FC<ProductsHeaderProps> = ({
@@ -38,6 +39,7 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
   onDeleteAll,
   onImportClick,
   onExport,
+  onQuickAddClick,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -139,13 +141,37 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
 
         {/* Primary Action Button: Add Product */}
         {canCreateProducts && (
-          <Link
-            to="/products/new"
-            className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold text-white bg-gradient-to-l from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-sm transition-all transform active:scale-95 shrink-0"
-          >
-            <PlusIcon className="h-4 w-4 ml-1 sm:ml-1.5" />
-            <span>إضافة منتج</span>
-          </Link>
+          <div className="inline-flex items-stretch rounded-lg shadow-xs overflow-hidden shrink-0">
+            {onQuickAddClick ? (
+              <>
+                <button
+                  type="button"
+                  onClick={onQuickAddClick}
+                  className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-white bg-gradient-to-l from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all transform active:scale-95 shrink-0"
+                  title="إضافة منتج سريع (وضع المبتدئين)"
+                >
+                  <PlusIcon className="h-4 w-4 ml-1 sm:ml-1.5" />
+                  <span>إضافة منتج</span>
+                </button>
+                <Link
+                  to="/products/new"
+                  className="inline-flex items-center px-2 py-1.5 border-r border-white/20 text-white bg-purple-600 hover:bg-purple-700 transition-colors shrink-0"
+                  title="النموذج المتقدم الكامل"
+                >
+                  <span className="text-[10px] hidden sm:inline ml-1 font-medium opacity-90">متقدم</span>
+                  <span className="text-xs">▾</span>
+                </Link>
+              </>
+            ) : (
+              <Link
+                to="/products/new"
+                className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold text-white bg-gradient-to-l from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all transform active:scale-95 shrink-0"
+              >
+                <PlusIcon className="h-4 w-4 ml-1 sm:ml-1.5" />
+                <span>إضافة منتج</span>
+              </Link>
+            )}
+          </div>
         )}
 
         {/* More Actions Dropdown Menu */}
@@ -162,6 +188,30 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
 
           {showMenu && (
             <div className="absolute left-0 mt-1.5 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-1.5 z-50 ring-1 ring-black/10 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-100">
+              {/* Quick Add / Advanced links in dropdown */}
+              {canCreateProducts && onQuickAddClick && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      onQuickAddClick();
+                    }}
+                    className="flex w-full items-center px-3.5 py-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                  >
+                    <PlusIcon className="h-4 w-4 ml-2.5 text-indigo-500" />
+                    إضافة منتج سريع
+                  </button>
+                  <Link
+                    to="/products/new"
+                    onClick={() => setShowMenu(false)}
+                    className="flex w-full items-center px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors border-b border-gray-100 dark:border-gray-700/50 pb-2 mb-1"
+                  >
+                    <span className="h-4 w-4 ml-2.5 text-gray-400 text-center text-xs font-bold">⚙</span>
+                    النموذج المتقدم الكامل
+                  </Link>
+                </>
+              )}
               {/* Mobile-only menu items */}
               {!isMerchant && (
                 <Link

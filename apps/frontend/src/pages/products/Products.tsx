@@ -20,6 +20,7 @@ import ProductsTable from "./components/ProductsTable";
 import ProductsEmptyState from "./components/ProductsEmptyState";
 import { BulkConvertModal } from "./components/BulkConvertModal";
 import ProductMobileCard from "./components/ProductMobileCard";
+import { QuickAddProductModal } from "./components/QuickAddProductModal";
 
 // Hooks & Types
 import { useProducts } from "./hooks/useProducts";
@@ -100,6 +101,7 @@ const Products: React.FC = () => {
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onBulkVisibility = async (isHidden: boolean) => {
@@ -362,7 +364,10 @@ const Products: React.FC = () => {
       )}
 
       {!isLoading && !error && products.length === 0 && (
-        <ProductsEmptyState isMerchant={isMerchant} />
+        <ProductsEmptyState
+          isMerchant={isMerchant}
+          onQuickAddClick={() => setShowQuickAddModal(true)}
+        />
       )}
 
       {!isLoading && !error && products.length > 0 && viewMode === "table" && (
@@ -564,6 +569,15 @@ const Products: React.FC = () => {
           sourceProducts={bulkConvertSourceProducts}
           onClose={() => setShowBulkConvertModal(false)}
           onSuccess={handleBulkConvertSuccess}
+        />
+      )}
+
+      {showQuickAddModal && (
+        <QuickAddProductModal
+          open={showQuickAddModal}
+          onClose={() => setShowQuickAddModal(false)}
+          onSuccess={() => loadProducts()}
+          initialCategories={categories}
         />
       )}
     </div>
