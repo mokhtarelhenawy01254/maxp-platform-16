@@ -759,7 +759,12 @@ class FacebookAdsService {
       } = data;
 
       // بناء بيانات الاستهداف
-      const targetingSpec = this.buildAdvancedTargetingSpec(targeting);
+      const effectiveTargeting = {
+        ...(targeting || {}),
+        ...(data.devicePlatforms && { devicePlatforms: data.devicePlatforms }),
+        ...(data.onlyWifi !== undefined && { onlyWifi: data.onlyWifi })
+      };
+      const targetingSpec = this.buildAdvancedTargetingSpec(effectiveTargeting);
 
       // استخدام Ad Account ID الصحيح (act_ prefix)
       const accountId = this.adAccountId?.startsWith('act_') 
@@ -1107,6 +1112,11 @@ class FacebookAdsService {
         displayLink,
         urlParameters,
         carouselCards = [],
+        textVariations = [],
+        headlineVariations = [],
+        whatsappGreeting,
+        whatsappQuickFaqs = [],
+        postId,
         advantageCreative = false,
         textGeneration = false,
         imageEnhancement = false,
@@ -1134,6 +1144,11 @@ class FacebookAdsService {
         displayLink,
         urlParameters,
         carouselCards,
+        textVariations,
+        headlineVariations,
+        whatsappGreeting,
+        whatsappQuickFaqs,
+        postId,
         advantageCreative,
         textGeneration,
         imageEnhancement,
@@ -1216,7 +1231,11 @@ class FacebookAdsService {
         visualTouchups = false,
         relevantComments = false,
         priceOverlay = false,
-        postId
+        postId,
+        textVariations = [],
+        headlineVariations = [],
+        whatsappGreeting,
+        whatsappQuickFaqs = []
       } = data;
 
       if (!pageId) {
@@ -1238,6 +1257,10 @@ class FacebookAdsService {
         type: callToAction || 'LEARN_MORE',
         value: { link: linkUrl }
       };
+
+      if ((callToAction === 'WHATSAPP_MESSAGE' || String(linkUrl).includes('wa.me')) && whatsappGreeting) {
+        callToActionPayload.value.app_destination = 'WHATSAPP';
+      }
 
       const creativeData = {
         object_story_spec: {
@@ -1263,6 +1286,9 @@ class FacebookAdsService {
         if (headline) creativeData.object_story_spec.link_data.name = headline;
         if (description) creativeData.object_story_spec.link_data.description = description;
         if (displayLink) creativeData.object_story_spec.link_data.caption = displayLink;
+        if (whatsappGreeting && (callToAction === 'WHATSAPP_MESSAGE' || String(linkUrl).includes('wa.me'))) {
+          creativeData.object_story_spec.link_data.page_welcome_message = whatsappGreeting;
+        }
       } else if (normalizedCreativeType === 'SINGLE_VIDEO') {
         if (!videoId) {
           return {
@@ -1557,6 +1583,10 @@ class FacebookAdsService {
         carouselCards = [],
         textVariations = [],
         headlineVariations = [],
+        whatsappGreeting,
+        whatsappQuickFaqs = [],
+        devicePlatforms = [],
+        onlyWifi = false,
         leadFormId,
         postId,
         
@@ -1798,6 +1828,8 @@ class FacebookAdsService {
         billingEvent,
         placementType,
         placements,
+        devicePlatforms,
+        onlyWifi,
         
         // الميزات الجديدة
         performanceGoal: supportsConversionOptimization ? performanceGoal : undefined,
@@ -1868,6 +1900,10 @@ class FacebookAdsService {
         videoId: finalVideoId,
         carouselCards: preparedCarouselCards,
         postId,
+        textVariations,
+        headlineVariations,
+        whatsappGreeting,
+        whatsappQuickFaqs,
         // Advantage+ Creative (v26.0)
         advantageCreative,
         textGeneration,
@@ -4378,6 +4414,24 @@ class FacebookAdsService {
     // Relationship Status
     if (targeting.relationshipStatuses && targeting.relationshipStatuses.length > 0) {
       spec.relationship_statuses = targeting.relationshipStatuses;
+    }
+
+    // Device Platforms (Mobile / Desktop)
+    if (targeting.devicePlatforms && targeting.devicePlatforms.length > 0) {
+      spec.device_platforms = targeting.devicePlatforms;
+    }
+
+    // Wi-Fi Only Connection
+    if (targeting.onlyWifi) {
+      spec.wireless_carrier = ['Wifi'];
+    }
+
+    // Detailed Targeting Exclusions
+    if (targeting.excludedInterests && targeting.excludedInterests.length > 0) {
+      spec.exclusions = spec.exclusions || {};
+      spec.exclusions.interests = targeting.excludedInterests.map(i =>
+        typeof i === 'object' ? i : { id: i, name: i }
+      );
     }
 
     return spec;

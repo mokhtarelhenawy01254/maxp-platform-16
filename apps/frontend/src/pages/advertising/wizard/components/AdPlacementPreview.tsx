@@ -36,18 +36,36 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
   isExistingPost = false,
 }) => {
   const [mode, setMode] = useState<PlacementPreviewMode>("FACEBOOK_FEED");
+  const [selectedVariationIndex, setSelectedVariationIndex] = useState<number>(0);
 
   const ctaLabel =
     CALL_TO_ACTIONS.find((c) => c.value === formData.callToAction)?.label ||
     "معرفة المزيد";
 
-  const displayPrimaryText =
+  const allTexts = [
+    formData.primaryText,
+    ...(formData.textVariations || []).map((v) => v.text),
+  ].filter(Boolean);
+
+  const activeText =
+    allTexts[selectedVariationIndex] ||
     formData.primaryText ||
     (isExistingPost
       ? "نص المنشور الحالي المختار..."
       : "النص الأساسي لإعلانك سيظهر هنا...");
 
-  const displayHeadline = formData.headline || (isExistingPost ? pageName : "العنوان الرئيسي للإعلان");
+  const allHeadlines = [
+    formData.headline,
+    ...(formData.headlineVariations || []).map((v) => v.text),
+  ].filter(Boolean);
+
+  const activeHeadline =
+    allHeadlines[selectedVariationIndex] ||
+    formData.headline ||
+    (isExistingPost ? pageName : "العنوان الرئيسي للإعلان");
+
+  const displayPrimaryText = activeText;
+  const displayHeadline = activeHeadline;
   const displayUrl = formData.displayLink || formData.linkUrl || "yoursite.com";
   const displayMediaUrl =
     formData.imageUrl ||
@@ -67,6 +85,27 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
           </span>
         )}
       </div>
+
+      {/* Variation Switcher if multiple texts exist */}
+      {allTexts.length > 1 && (
+        <div className="flex items-center gap-1.5 p-1.5 bg-blue-50/80 border border-blue-200/70 rounded-xl overflow-x-auto">
+          <span className="text-[10px] text-blue-700 font-bold shrink-0">معاينة النص:</span>
+          {allTexts.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setSelectedVariationIndex(i)}
+              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
+                selectedVariationIndex === i
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-white text-blue-800 hover:bg-blue-100"
+              }`}
+            >
+              نص {i + 1}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Placement Switcher Tabs */}
       <div className="grid grid-cols-4 gap-1 bg-white p-1 rounded-xl border border-gray-200">

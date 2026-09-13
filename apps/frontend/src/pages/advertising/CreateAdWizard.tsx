@@ -258,11 +258,14 @@ const CreateAdWizard: React.FC = () => {
     cities: [],
     locationTypes: ["home", "recent"],
     interests: [],
+    excludedInterests: [],
     advantageAudience: storedLaunchPrefill?.advantageAudience || false,
 
     // Step 4
     placementType: "AUTOMATIC",
     placements: [],
+    devicePlatforms: [],
+    onlyWifi: false,
 
     // Step 5
     pageId: prefillPageId,
@@ -302,6 +305,13 @@ const CreateAdWizard: React.FC = () => {
     flexibleAssets: [],
     textVariations: [],
     headlineVariations: [],
+    whatsappGreeting:
+      "أهلاً بك! رأيت إعلانك على فيسبوك وأرغب بالاستفسار عن تفاصيل المنتج والطلب.",
+    whatsappQuickFaqs: [
+      "أرغب بطلب هذا المنتج، ما هي خطوات التأكيد؟",
+      "ما هي مدة وتكلفة الشحن لمحافظتي؟",
+      "هل متاح المعاينة قبل الاستلام والدفع؟",
+    ],
     useLeadForm: false,
     leadFormId: undefined,
     advantageCreative: false,
@@ -858,6 +868,7 @@ const CreateAdWizard: React.FC = () => {
         selectedCustomAudiences,
         selectedLookalikeAudiences,
         excludedAudiences,
+        excludedInterests: formData.excludedInterests,
         selectedLanguages,
         selectedDevices,
         relationshipStatuses,
@@ -912,10 +923,16 @@ const CreateAdWizard: React.FC = () => {
 
         // Placements
         placementType: formData.placementType,
-        ...(formData.placementType === "MANUAL" &&
-          formData.placements.length > 0 && {
+        ...(formData.placementType === "MANUAL" && {
+          ...(formData.placements.length > 0 && {
             placements: formData.placements,
           }),
+          ...(formData.devicePlatforms &&
+            formData.devicePlatforms.length > 0 && {
+              devicePlatforms: formData.devicePlatforms,
+            }),
+          ...(formData.onlyWifi && { onlyWifi: formData.onlyWifi }),
+        }),
 
         // Creative
         ...(formData.adName && { adName: formData.adName }),
@@ -950,6 +967,13 @@ const CreateAdWizard: React.FC = () => {
         ...(formData.headlineVariations.length > 0 && {
           headlineVariations: formData.headlineVariations,
         }),
+        ...(formData.whatsappGreeting && {
+          whatsappGreeting: formData.whatsappGreeting,
+        }),
+        ...(formData.whatsappQuickFaqs &&
+          formData.whatsappQuickFaqs.length > 0 && {
+            whatsappQuickFaqs: formData.whatsappQuickFaqs,
+          }),
         ...(formData.useLeadForm &&
           formData.leadFormId && { leadFormId: formData.leadFormId }),
 
