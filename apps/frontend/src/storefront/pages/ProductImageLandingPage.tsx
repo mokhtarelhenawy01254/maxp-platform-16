@@ -76,6 +76,20 @@ type LandingFormState = {
 
 type AttributeMap = Record<string, string>;
 
+const getColorSwatch = (name: string): string | null => {
+  if (!name) return null;
+  const n = name.trim().toLowerCase();
+  if (n.includes("أبيض") || n.includes("ابيض") || n === "white") return "#ffffff";
+  if (n.includes("أسود") || n.includes("اسود") || n === "black") return "#111827";
+  if (n.includes("بيج") || n.includes("كافيه") || n === "beige") return "#d4b996";
+  if (n.includes("أحمر") || n.includes("احمر") || n === "red") return "#dc2626";
+  if (n.includes("كحلي") || n.includes("أزرق") || n.includes("ازرق") || n === "navy" || n === "blue") return "#1e3a8a";
+  if (n.includes("رمادي") || n.includes("رصاصي") || n === "gray") return "#64748b";
+  if (n.includes("زيتي") || n.includes("أخضر") || n.includes("اخضر") || n === "green") return "#15803d";
+  if (n.includes("هافان") || n.includes("بني") || n === "brown") return "#78350f";
+  return null;
+};
+
 const PRODUCT_IMAGE_LANDING_CONFIGS: Record<string, ProductLandingConfig> = {
   "swan-high-skotch": {
     fallbackProduct: {
@@ -1585,6 +1599,40 @@ const ProductImageLandingPage: React.FC = () => {
         );
       }
 
+      const customFeatures = Array.isArray(content.features) && content.features.length > 0
+        ? content.features
+        : null;
+
+      if (customFeatures) {
+        return (
+          <section
+            key={section.id || idx}
+            className="pil-features-bento-section"
+            aria-label={section.title || "مميزات المنتج"}
+          >
+            {section.title || content.kicker ? (
+              <div className="pil-section-heading">
+                {content.kicker ? <span>{content.kicker}</span> : null}
+                <h2>{section.title || "مميزات هندسية صُنعت لتدوم"}</h2>
+              </div>
+            ) : null}
+            <div className="pil-features-bento-grid">
+              {customFeatures.map((feat: any, fIdx: number) => (
+                <div className="pil-bento-feature-card" key={fIdx}>
+                  <div className="pil-bento-card-num">
+                    0{fIdx + 1}
+                  </div>
+                  <div className="pil-bento-card-text">
+                    <strong>{feat.title}</strong>
+                    <p>{feat.desc || feat.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      }
+
       return (
         <section
           key={section.id || idx}
@@ -1779,16 +1827,34 @@ const ProductImageLandingPage: React.FC = () => {
                         role="radiogroup"
                         aria-label="اختيار اللون"
                       >
-                        {colorOptions.map((color) => (
-                          <button
-                            key={color}
-                            type="button"
-                            className={`pil-chip ${selectedColor === color ? "is-selected" : ""}`}
-                            onClick={() => setSelectedColor(color)}
-                          >
-                            {color}
-                          </button>
-                        ))}
+                        {colorOptions.map((color) => {
+                          const swatch = getColorSwatch(color);
+                          return (
+                            <button
+                              key={color}
+                              type="button"
+                              className={`pil-chip ${selectedColor === color ? "is-selected" : ""}`}
+                              onClick={() => setSelectedColor(color)}
+                            >
+                              {swatch ? (
+                                <span
+                                  className="pil-color-swatch-dot"
+                                  style={{
+                                    display: "inline-block",
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: "50%",
+                                    backgroundColor: swatch,
+                                    border: swatch === "#ffffff" ? "1px solid #cbd5e1" : "1px solid rgba(0,0,0,0.15)",
+                                    marginInlineEnd: 6,
+                                    verticalAlign: "middle",
+                                  }}
+                                />
+                              ) : null}
+                              {color}
+                            </button>
+                          );
+                        })}
                       </div>
                       <select
                         id="pil-color"
@@ -2086,7 +2152,6 @@ const ProductImageLandingPage: React.FC = () => {
           key={section.id || idx}
           className="pil-faq"
           aria-label="الأسئلة الشائعة"
-          style={{ padding: "32px 16px", maxWidth: 760, margin: "0 auto" }}
         >
           <div className="pil-section-heading">
             <span>إجابات واضحة</span>
@@ -2094,44 +2159,16 @@ const ProductImageLandingPage: React.FC = () => {
               {content.title || faqSection?.content?.title || "الأسئلة الشائعة"}
             </h2>
           </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-              marginTop: 16,
-            }}
-          >
+          <div className="pil-faq-list">
             {faqs.map((faq: any, fIdx: number) => (
-              <details
-                key={fIdx}
-                style={{
-                  background: "#ffffff",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 10,
-                  padding: "14px 18px",
-                  cursor: "pointer",
-                }}
-              >
-                <summary
-                  style={{
-                    fontWeight: 600,
-                    fontSize: "0.95rem",
-                    color: "#1e293b",
-                  }}
-                >
-                  {faq.q || faq.question}
+              <details key={fIdx} className="pil-faq-item">
+                <summary className="pil-faq-summary">
+                  <span>{faq.q || faq.question}</span>
+                  <span className="pil-faq-chevron" aria-hidden="true">
+                    ▾
+                  </span>
                 </summary>
-                <p
-                  style={{
-                    margin: "10px 0 0",
-                    fontSize: "0.88rem",
-                    color: "#64748b",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {faq.a || faq.answer}
-                </p>
+                <p className="pil-faq-answer">{faq.a || faq.answer}</p>
               </details>
             ))}
           </div>
