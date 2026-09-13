@@ -748,6 +748,9 @@ const AbandonedCartAnalytics = React.lazy(
 const FacebookOAuth = React.lazy(
   () => import("./pages/settings/FacebookOAuth"),
 );
+const InventoryAiStudioPage = React.lazy(
+  () => import("./pages/inventory/studio/InventoryAiStudioPage"),
+);
 const Inventory = React.lazy(() => import("./pages/inventory/Inventory"));
 const InventoryAudits = React.lazy(
   () => import("./pages/inventory/InventoryAudits"),
@@ -1698,6 +1701,7 @@ if (typeof window !== "undefined") {
   p["/unified-inbox/connections"] = () => import("./pages/unified-inbox/connections/PlatformConnections");
   p["/tasks"] = () => import("./pages/tasks/Dashboard");
   p["/inventory"] = () => import("./pages/inventory/Inventory");
+  p["/inventory/studio"] = () => import("./pages/inventory/studio/InventoryAiStudioPage");
   p["/support"] = () => import("./pages/support/SupportCenter");
   p["/profile"] = () => import("./pages/profile/Profile");
   p["/marketplace"] = () => import("./pages/marketplace/MarketplaceV2");
@@ -5567,6 +5571,20 @@ const AppContent = () => {
                   }
                 />
                 {/* <Route path="/opportunities" element={<Layout><Opportunities /></Layout>} /> */}
+                <Route
+                  path="/inventory/studio"
+                  element={
+                    <Layout fullWidth>
+                      <AppAccessRoute requiredAppSlugs={['inventory-pro', 'multi-warehouse-pro', 'store-pro', 'store']}>
+                        <InventoryAiStudioPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/products/studio"
+                  element={<Navigate to="/inventory/studio" replace />}
+                />
                 <Route
                   path="/inventory"
                   element={

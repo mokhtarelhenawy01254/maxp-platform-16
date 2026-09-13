@@ -42,4 +42,24 @@ router.post('/approve-movement', checkAppAccess('inventory-pro'), inventoryContr
 // Transfer stock between warehouses (requires inventory-pro, falls back to multi-warehouse-pro)
 router.post('/transfer', checkAppAccess('inventory-pro'), inventoryController.transferStock);
 
+// ==========================================
+// 🤖 Inventory AI Studio Routes
+// ==========================================
+const inventoryAiController = require('../controller/inventoryAiController');
+
+// Chat with Inventory & Pricing Agent
+router.post('/ai/chat', (req, res) => inventoryAiController.chat(req, res));
+
+// Get active routed agent for inventory
+router.get('/ai/active-agent', (req, res) => inventoryAiController.getActiveAgent(req, res));
+
+// Cloud Session Persistence
+router.get('/ai/sessions', (req, res) => inventoryAiController.listSessions(req, res));
+router.post('/ai/sessions', (req, res) => inventoryAiController.saveSession(req, res));
+router.delete('/ai/sessions/:id', (req, res) => inventoryAiController.deleteSession(req, res));
+
+// Action Canvas execution (apply price/stock adjustment)
+router.post('/ai/apply-action', (req, res) => inventoryAiController.applyAction(req, res));
+
 module.exports = router;
+

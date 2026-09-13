@@ -477,9 +477,11 @@ class ModelManager:
                     model_candidates = ["deepseek-flash", "deepseek-v4-flash"]
                 elif "deepseek" in model_name.lower() and provider_type == "DEEPSEEK":
                     model_candidates = [model_name, "deepseek-flash", "deepseek-v4-flash"]
+                elif "gemma" in model_name.lower():
+                    model_candidates = [model_name, "gemma-4-31b-it", "gemma-4-27b-it", "gemma4:31b-cloud", "gemma-4-26b-a4b-it", "gemma4"]
 
                 stmt = (
-                    select(AiKey)
+                    select(AiKey, AiModelConfig.model_name)
                     .join(AiModelConfig, AiModelConfig.key_id == AiKey.id)
                     .where(
                         cast(AiKey.provider, String) == provider_type,
@@ -491,15 +493,16 @@ class ModelManager:
                 if key_id:
                     stmt = stmt.where(AiKey.id == key_id)
                 result = await db.execute(stmt)
-                keys = result.scalars().all()
-                for key in keys:
+                rows = result.all()
+                for key, actual_model in rows:
                     if key.company_id and key.company_id != company_id and key.key_type != "CENTRAL":
                         continue
                     # Return first matching key — no round-robin, no cooldown
+                    effective_model = actual_model if actual_model in model_candidates else model_name
                     return RoutingResult(
                         key_id=key.id,
                         api_key=key.api_key,
-                        model=model_name,
+                        model=effective_model,
                         provider=key.provider,
                         base_url=key.base_url,
                         key_name=key.name,

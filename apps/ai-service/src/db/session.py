@@ -19,7 +19,12 @@ async def init_db() -> None:
     settings = get_settings()
     global engine, async_session, async_session_factory
     engine = create_async_engine(
-        settings.database_url, pool_size=5, max_overflow=10, echo=settings.debug
+        settings.database_url,
+        pool_size=5,
+        max_overflow=10,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        echo=settings.debug,
     )
     async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async_session_factory = async_session
