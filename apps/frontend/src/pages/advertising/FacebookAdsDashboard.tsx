@@ -622,6 +622,18 @@ const FacebookAdsDashboard: React.FC = () => {
               filters={filters}
               updateFilters={updateFilters}
               defaultFilters={defaultFilters}
+              onCampaignUpdated={(updatedCampaign) => {
+                setCampaigns((prev) =>
+                  prev.map((c) =>
+                    c.id === updatedCampaign.id ? { ...c, ...updatedCampaign } : c,
+                  ),
+                );
+              }}
+              onRefresh={() => {
+                if (selectedAdAccountId) {
+                  loadCampaigns(selectedAdAccountId, true);
+                }
+              }}
             />
           </>
         )}

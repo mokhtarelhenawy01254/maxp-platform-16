@@ -6,6 +6,7 @@ import {
   Check,
   Clock3,
   Edit2,
+  Eye,
   Filter,
   Loader2,
   Megaphone,
@@ -19,6 +20,7 @@ import {
 import { toast } from "sonner";
 import MiniMetric from "./MiniMetric";
 import SelectFilter from "./SelectFilter";
+import CampaignQuickViewModal from "./CampaignQuickViewModal";
 import {
   CAMPAIGN_OBJECTIVES,
   type FacebookCampaign,
@@ -54,6 +56,8 @@ interface CampaignsListSectionProps {
   filters: DashboardFilters;
   updateFilters: (patch: Partial<DashboardFilters>) => void;
   defaultFilters: DashboardFilters;
+  onCampaignUpdated?: (updatedCampaign: FacebookCampaign) => void;
+  onRefresh?: () => void;
 }
 
 const PAGE_SIZE = 35;
@@ -88,6 +92,8 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
   filters,
   updateFilters,
   defaultFilters,
+  onCampaignUpdated,
+  onRefresh,
 }) => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
@@ -95,6 +101,12 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
   const [showExtraFilters, setShowExtraFilters] = useState(false);
   const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
   const statusChips = useMemo(() => getDeliveryFilterOptions(isEn), [isEn]);
+
+  // Quick View / Edit & Diagnosis Modal state
+  const [quickViewCampaign, setQuickViewCampaign] = useState<FacebookCampaign | null>(null);
+  const [quickViewPerformance, setQuickViewPerformance] = useState<
+    FacebookAdsPerformanceSummary["campaigns"][number]["performance"] | null
+  >(null);
 
   // Status and budget overrides for instant optimistic UI
   const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({});
@@ -212,6 +224,34 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
         performanceByCampaignKey.get(campaign.facebookCampaignId)) ||
       performanceByCampaignKey.get(campaign.id),
     [performanceByCampaignKey],
+  );
+
+  const handleOpenQuickView = useCallback(
+    (campaign: FacebookCampaign) => {
+      const perf = getCampaignPerformance(campaign);
+      setQuickViewCampaign(campaign);
+      setQuickViewPerformance(perf || null);
+    },
+    [getCampaignPerformance],
+  );
+
+  const handleCloseQuickView = useCallback(() => {
+    setQuickViewCampaign(null);
+    setQuickViewPerformance(null);
+  }, []);
+
+  const handleModalCampaignUpdated = useCallback(
+    (updated: FacebookCampaign) => {
+      if (updated.status) {
+        setStatusOverrides((prev) => ({ ...prev, [updated.id]: updated.status }));
+      }
+      if (updated.budgetAmount) {
+        setBudgetOverrides((prev) => ({ ...prev, [updated.id]: updated.budgetAmount }));
+      }
+      onCampaignUpdated?.(updated);
+      onRefresh?.();
+    },
+    [onCampaignUpdated, onRefresh],
   );
 
   const objectiveOptions = useMemo(
@@ -517,15 +557,14 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <Link
-                            to={`/advertising/facebook-ads/campaigns/${campaign.id}${
-                              selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
-                            }`}
-                            className="truncate text-xs font-bold text-slate-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 transition-colors"
-                            title={campaign.name}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenQuickView(campaign)}
+                            className="truncate text-start text-xs font-bold text-slate-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 transition-colors"
+                            title={isEn ? `Quick View: ${campaign.name}` : `ملخص وتشخيص: ${campaign.name}`}
                           >
                             {campaign.name}
-                          </Link>
+                          </button>
                           {decision.label && decision.label !== "مستقر" && (
                             <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${decision.className}`}>
                               {isEn ? decision.labelEn : decision.label}
@@ -665,14 +704,9 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                     <div className="col-span-1 text-end">
                       <button
                         type="button"
-                        onClick={() =>
-                          navigate(
-                            `/advertising/facebook-ads/campaigns/${campaign.id}${
-                              selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
-                            }`,
-                          )
-                        }
-                        className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:border-blue-500 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all"
+                        onClick={() => handleOpenQuickView(campaign)}
+                        title={isEn ? "Quick View, Edit & Diagnostics" : "عرض ملخص وتشخيص وتعديل الحملة"}
+                        className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:border-blue-500 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all active:scale-[0.97]"
                       >
                         <span>{isEn ? "Details" : "تفاصيل"}</span>
                         <ArrowUpRight className="h-3 w-3" />
@@ -707,14 +741,13 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <Link
-                            to={`/advertising/facebook-ads/campaigns/${campaign.id}${
-                              selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
-                            }`}
-                            className="text-xs font-bold text-slate-900 dark:text-white"
+                          <button
+                            type="button"
+                            onClick={() => handleOpenQuickView(campaign)}
+                            className="text-start text-xs font-bold text-slate-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 transition-colors"
                           >
                             {campaign.name}
-                          </Link>
+                          </button>
                           {decision.label && decision.label !== "مستقر" && (
                             <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold ${decision.className}`}>
                               {isEn ? decision.labelEn : decision.label}
@@ -781,14 +814,8 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                       </div>
                       <button
                         type="button"
-                        onClick={() =>
-                          navigate(
-                            `/advertising/facebook-ads/campaigns/${campaign.id}${
-                              selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
-                            }`,
-                          )
-                        }
-                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                        onClick={() => handleOpenQuickView(campaign)}
+                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 active:scale-[0.97]"
                       >
                         <span>{isEn ? "Details" : "تفاصيل"}</span>
                         <ArrowUpRight className="h-3 w-3" />
@@ -813,6 +840,17 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
           </button>
         </div>
       )}
+
+      {/* Campaign Quick View, Edit & Weakness Diagnostic Modal */}
+      <CampaignQuickViewModal
+        isOpen={Boolean(quickViewCampaign)}
+        campaign={quickViewCampaign}
+        performance={quickViewPerformance}
+        selectedCurrency={selectedCurrency}
+        selectedAdAccountId={selectedAdAccountId}
+        onClose={handleCloseQuickView}
+        onCampaignUpdated={handleModalCampaignUpdated}
+      />
     </section>
   );
 };
