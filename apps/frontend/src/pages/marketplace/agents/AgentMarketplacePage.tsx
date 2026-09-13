@@ -12,7 +12,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   Search, 
   X, 
@@ -23,6 +23,7 @@ import {
   Users, 
   Filter
 } from "lucide-react";
+import { apiClient } from "../../../services/apiClient";
 import { 
   AGENT_LISTINGS, 
   AGENT_CATEGORIES, 
@@ -43,7 +44,7 @@ export default function AgentMarketplacePage() {
   const [hireModalOpen, setHireModalOpen] = useState<boolean>(false);
   const [agentToHire, setAgentToHire] = useState<AgentListing | null>(null);
 
-  // Track locally hired agents for immediate UI feedback
+  // Track locally & remotely hired agents for seamless UI feedback
   const [hiredSlugs, setHiredSlugs] = useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem("maxp_hired_agents");
@@ -52,6 +53,34 @@ export default function AgentMarketplacePage() {
       return new Set<string>();
     }
   });
+
+  // Sync with company's backend agent context
+  useEffect(() => {
+    apiClient
+      .get("/agent-manager/context")
+      .then((res) => {
+        if (res.data?.success && Array.isArray(res.data?.context?.agents)) {
+          const backendAgents = res.data.context.agents;
+          const slugs = backendAgents
+            .map((a: any) => a.templateSlug || a.slug || a.id)
+            .filter(Boolean);
+          if (slugs.length > 0) {
+            setHiredSlugs((prev) => {
+              const next = new Set([...prev, ...slugs]);
+              try {
+                localStorage.setItem("maxp_hired_agents", JSON.stringify([...next]));
+              } catch {
+                // ignore
+              }
+              return next;
+            });
+          }
+        }
+      })
+      .catch(() => {
+        // graceful offline fallback
+      });
+  }, []);
 
   const handleOpenProfile = (agent: AgentListing) => {
     setSelectedAgent(agent);
