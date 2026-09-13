@@ -527,15 +527,17 @@ class ApiClient {
     }
 
     // Show error toast - check both error.message and message (backend sends message directly)
+    const isTimeout = error.code === "ECONNABORTED" || error.message?.includes("timeout");
     const errorMessage =
       typeof errorData?.error === "object" && errorData?.error !== null
         ? repairMojibakeText(errorData.error.message)
         : typeof errorData?.error === "string"
           ? repairMojibakeText(errorData.error)
-          : repairMojibakeText(
-              errorData?.message,
-              "حدث خطأ غير متوقع",
-            );
+          : errorData?.message
+            ? repairMojibakeText(errorData.message)
+            : isTimeout
+              ? "استغرقت العملية وقتاً أطول من المتوقع، يرجى المحاولة مرة أخرى أو مراجعة الاتصال"
+              : repairMojibakeText(error.message, "حدث خطأ غير متوقع");
 
     // استخراج تفاصيل إضافية للخطأ
     const errorDetails = errorData?.details;

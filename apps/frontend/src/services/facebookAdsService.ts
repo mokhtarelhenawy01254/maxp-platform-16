@@ -3919,6 +3919,10 @@ export async function publishAiDraft(
   const response = await apiClient.post<{ success: boolean; data?: any; error?: string }>(
     `/facebook-ads/ai/drafts/${draftId}/publish`,
     overrides || {},
+    {
+      timeout: 180000,
+      _skipErrorToast: true,
+    },
   );
   return response.data;
 }

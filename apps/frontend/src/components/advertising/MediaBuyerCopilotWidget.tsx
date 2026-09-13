@@ -16,6 +16,7 @@ import {
   Check,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
 import {
   chatWithMediaBuyer,
   publishAiDraft,
@@ -64,10 +65,14 @@ export const MediaBuyerCopilotWidget: React.FC = () => {
   } = useCopilotSessions(companyId);
 
   const [isOpen, setIsOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const adAccountIdFromUrl = searchParams.get("adAccountId");
+
   const [showSessionsList, setShowSessionsList] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [publishingDraftId, setPublishingDraftId] = useState<string | null>(null);
+  const [publishedDraftIds, setPublishedDraftIds] = useState<Set<string>>(new Set());
   const [copiedSessionId, setCopiedSessionId] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -130,8 +135,12 @@ export const MediaBuyerCopilotWidget: React.FC = () => {
   const handlePublishDraft = async (draftId: string) => {
     try {
       setPublishingDraftId(draftId);
-      const res = await publishAiDraft(draftId);
+      const res = await publishAiDraft(
+        draftId,
+        adAccountIdFromUrl ? { adAccountId: adAccountIdFromUrl } : undefined,
+      );
       if (res.success) {
+        setPublishedDraftIds((prev) => new Set(prev).add(draftId));
         toast.success("✅ تم نشر الحملة الإعلانية بنجاح إلى حساب إعلانات فيسبوك!");
       } else {
         toast.error(res.error || "فشل نشر المسودة إلى فيسبوك");
@@ -409,14 +418,23 @@ export const MediaBuyerCopilotWidget: React.FC = () => {
                                   </span>
                                   <button
                                     type="button"
-                                    disabled={publishingDraftId === draft.draft_id}
+                                    disabled={publishingDraftId === draft.draft_id || publishedDraftIds.has(draft.draft_id)}
                                     onClick={() => handlePublishDraft(draft.draft_id)}
-                                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[10px] font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
+                                    className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-bold text-white shadow-xs active:scale-95 disabled:opacity-50 ${
+                                      publishedDraftIds.has(draft.draft_id)
+                                        ? "bg-slate-700 hover:bg-slate-700 text-slate-300 cursor-default"
+                                        : "bg-emerald-600 hover:bg-emerald-700"
+                                    }`}
                                   >
                                     {publishingDraftId === draft.draft_id ? (
                                       <>
                                         <Loader2 className="h-3 w-3 animate-spin" />
                                         جاري النشر...
+                                      </>
+                                    ) : publishedDraftIds.has(draft.draft_id) ? (
+                                      <>
+                                        <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                                        تم النشر في فيسبوك
                                       </>
                                     ) : (
                                       <>
