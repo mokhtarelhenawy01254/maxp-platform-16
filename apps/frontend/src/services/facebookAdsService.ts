@@ -932,6 +932,9 @@ export interface CreateFullAdData {
       platforms?: string[];
       deviceTypes?: string[];
     };
+    devicePlatforms?: string[];
+    onlyWifi?: boolean;
+    excludedInterests?: unknown[];
     customAudiences?: string[];
     lookalikeAudiences?: string[];
     excludedAudiences?: string[];
@@ -945,6 +948,9 @@ export interface CreateFullAdData {
   // Placements Data
   placementType?: "AUTOMATIC" | "MANUAL";
   placements?: string[];
+  publisherPlatforms?: string[];
+  devicePlatforms?: string[];
+  onlyWifi?: boolean;
 
   // Ad Creative Data
   adName?: string;
@@ -974,6 +980,8 @@ export interface CreateFullAdData {
   flexibleAssets?: Array<{ id: string; type: "IMAGE" | "VIDEO"; url: string }>;
   textVariations?: Array<{ id: string; text: string }>;
   headlineVariations?: Array<{ id: string; text: string }>;
+  whatsappGreeting?: string;
+  whatsappQuickFaqs?: string[];
   useLeadForm?: boolean;
   leadFormId?: string;
 

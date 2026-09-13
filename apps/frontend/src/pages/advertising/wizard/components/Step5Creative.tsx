@@ -26,6 +26,8 @@ import type {
 import { CALL_TO_ACTIONS } from "../constants";
 import { PagePostsSelector } from "./PagePostsSelector";
 import { AdPlacementPreview } from "./AdPlacementPreview";
+import { AdCopyVariationsEditor } from "./AdCopyVariationsEditor";
+import { WhatsAppGreetingEditor } from "./WhatsAppGreetingEditor";
 
 interface Step5CreativeProps {
   formData: FormData;
@@ -650,50 +652,22 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
             </div>
           )}
 
-          {/* Primary Text */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              النص الأساسي <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={formData.primaryText}
-              onChange={(e) => handleChange("primaryText", e.target.value)}
-              placeholder="اكتب النص الرئيسي لإعلانك..."
-              rows={3}
-              maxLength={125}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                getError("primaryText") ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            <div className="flex justify-between mt-1">
-              {getError("primaryText") ? (
-                <p className="text-sm text-red-500">{getError("primaryText")}</p>
-              ) : (
-                <span></span>
-              )}
-              <span className="text-xs text-gray-400">
-                {formData.primaryText.length}/125
-              </span>
-            </div>
-          </div>
-
-          {/* Headline */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              العنوان
-            </label>
-            <input
-              type="text"
-              value={formData.headline}
-              onChange={(e) => handleChange("headline", e.target.value)}
-              placeholder="عنوان جذاب لإعلانك"
-              maxLength={40}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-xs text-gray-400 mt-1 text-left">
-              {formData.headline.length}/40
-            </p>
-          </div>
+          {/* Primary Text & Headline Variations */}
+          <AdCopyVariationsEditor
+            primaryText={formData.primaryText}
+            onPrimaryTextChange={(val) => handleChange("primaryText", val)}
+            textVariations={formData.textVariations || []}
+            onTextVariationsChange={(variations) =>
+              handleChange("textVariations", variations)
+            }
+            headline={formData.headline}
+            onHeadlineChange={(val) => handleChange("headline", val)}
+            headlineVariations={formData.headlineVariations || []}
+            onHeadlineVariationsChange={(variations) =>
+              handleChange("headlineVariations", variations)
+            }
+            primaryTextError={getError("primaryText")}
+          />
 
           {/* Description */}
           <div>
@@ -793,6 +767,19 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
               ))}
             </div>
           </div>
+
+          {/* WhatsApp Greeting & Quick FAQs Editor */}
+          {(formData.callToAction === "WHATSAPP_MESSAGE" ||
+            formData.conversionLocation === "WHATSAPP") && (
+            <WhatsAppGreetingEditor
+              greeting={formData.whatsappGreeting || ""}
+              onGreetingChange={(val) => handleChange("whatsappGreeting", val)}
+              quickFaqs={formData.whatsappQuickFaqs || []}
+              onQuickFaqsChange={(faqs) =>
+                handleChange("whatsappQuickFaqs", faqs)
+              }
+            />
+          )}
 
           {/* Advantage+ Creative Enhancements */}
           <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-200">

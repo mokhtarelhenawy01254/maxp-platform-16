@@ -27,6 +27,7 @@ export interface WizardTargetingSelections {
   selectedCustomAudiences: string[];
   selectedLookalikeAudiences: string[];
   excludedAudiences: string[];
+  excludedInterests?: TargetingOptionSelection[];
   selectedLanguages: number[];
   selectedDevices: string[];
   relationshipStatuses: number[];
@@ -123,6 +124,12 @@ export const buildCreateAdWizardTargetingPayload = (
     }),
     ...(selections.excludedAudiences.length > 0 && {
       excludedAudiences: selections.excludedAudiences,
+    }),
+    ...(selections.excludedInterests && selections.excludedInterests.length > 0 && {
+      excludedInterests: selections.excludedInterests.map((interest) => ({
+        id: interest.id,
+        name: interest.name || interest.id,
+      })),
     }),
     ...(selections.selectedLanguages.length > 0 && {
       locales: selections.selectedLanguages,

@@ -23,6 +23,7 @@ import type {
   FacebookLookalikeAudience,
 } from "../../../../services/facebookAdsService";
 import MetaGeoTargetingSelector from "../../../../components/advertising/MetaGeoTargetingSelector";
+import { DetailedTargetingExclusions } from "./DetailedTargetingExclusions";
 import {
   COUNTRIES,
   INTEREST_CATEGORIES,
@@ -328,6 +329,26 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                   {cat.name}
                 </button>
               ))}
+            </div>
+
+            {/* Detailed Targeting Exclusions */}
+            <div className="mt-4">
+              <DetailedTargetingExclusions
+                excludedInterests={formData.excludedInterests || []}
+                onAddExcludedInterest={(interest) => {
+                  const current = formData.excludedInterests || [];
+                  if (!current.some((e) => e.id === interest.id)) {
+                    handleChange("excludedInterests", [...current, interest]);
+                  }
+                }}
+                onRemoveExcludedInterest={(id) => {
+                  const current = formData.excludedInterests || [];
+                  handleChange(
+                    "excludedInterests",
+                    current.filter((e) => e.id !== id),
+                  );
+                }}
+              />
             </div>
           </div>
 

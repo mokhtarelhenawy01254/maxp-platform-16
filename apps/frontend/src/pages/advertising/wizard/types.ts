@@ -83,6 +83,7 @@ export interface FormData {
   demographics: string[];
   customAudiences: string[];
   excludedCustomAudiences: string[];
+  excludedInterests?: TargetingOption[];
   advantageAudience: boolean;
   placementType: "AUTOMATIC" | "MANUAL";
   publisherPlatforms: string[];
@@ -91,6 +92,7 @@ export interface FormData {
   messengerPositions: string[];
   audienceNetworkPositions: string[];
   devicePlatforms: string[];
+  onlyWifi?: boolean;
 
   // Step 4: Ad Creative
   pageId: string;
@@ -112,6 +114,8 @@ export interface FormData {
   flexibleAssets: { id: string; type: "IMAGE" | "VIDEO"; url: string }[];
   textVariations: TextVariation[];
   headlineVariations: HeadlineVariation[];
+  whatsappGreeting?: string;
+  whatsappQuickFaqs?: string[];
   useLeadForm: boolean;
   leadFormId?: string;
 

@@ -158,44 +158,40 @@ export const CampaignDraftLaunchCard: React.FC<CampaignDraftLaunchCardProps> = (
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-      {/* Top Header */}
-      <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 flex items-center justify-between flex-shrink-0">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900 min-h-0 overflow-hidden">
+      {/* Top Sub-Header: Perfectly aligned with chat feed */}
+      <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between gap-2 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
-            <Sparkles className="w-4 h-4" />
+          <div className="p-1 rounded-md bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+            <Sparkles className="w-3.5 h-3.5" />
           </div>
-          <div>
-            <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-              غرفة إطلاق الحملة (Meta Ad Studio)
-            </h3>
-            <p className="text-[10px] text-slate-400">
-              مسودة الإعلان، الزوايا التسويقية، والميزانية
-            </p>
-          </div>
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            مسودة إعلان فيسبوك (Meta Ad Studio)
+          </span>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             جاهز للإطلاق
           </span>
         </div>
       </div>
 
       {/* Body: Scrollable Workspace */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 min-h-0">
-        {/* 1. Compact Product Card with Thumbnail & Unit Economics */}
-        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3.5 min-h-0">
+        {/* 1. Single-Depth Product Summary (No nested card borders) */}
+        <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60">
           <div className="flex items-center gap-3">
             {selectedProduct?.mainImage ? (
               <img
                 src={selectedProduct.mainImage}
                 alt={productName}
-                className="w-14 h-14 rounded-xl object-cover border border-slate-200 dark:border-slate-700 flex-shrink-0 shadow-xs"
+                className="w-13 h-13 rounded-xl object-cover border border-slate-200 dark:border-slate-700 flex-shrink-0 shadow-xs"
               />
             ) : (
-              <div className="w-14 h-14 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 text-slate-400">
-                <Package className="w-6 h-6" />
+              <div className="w-13 h-13 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 text-slate-400">
+                <Package className="w-5 h-5" />
               </div>
             )}
 
@@ -212,21 +208,21 @@ export const CampaignDraftLaunchCard: React.FC<CampaignDraftLaunchCardProps> = (
             </div>
           </div>
 
-          {/* Economics Strip */}
-          <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-slate-200/80 dark:border-slate-700/60 text-center">
-            <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+          {/* Clean Economics Strip with Dividers (Zero Box-in-Box Nesting) */}
+          <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-slate-200/70 dark:border-slate-700/50 text-center">
+            <div>
               <span className="block text-[10px] text-slate-400">سعر البيع</span>
               <span className="text-xs font-black text-slate-900 dark:text-white">
                 {sellingPrice} ج.م
               </span>
             </div>
-            <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
-              <span className="block text-[10px] text-slate-400">سقف تكلفة الطلب (Max CPA)</span>
+            <div className="border-x border-slate-200/60 dark:border-slate-700/40 px-1">
+              <span className="block text-[10px] text-slate-400">سقف تكلفة الطلب (CPA)</span>
               <span className="text-xs font-black text-blue-600 dark:text-blue-400">
                 ~{targetCpa} ج.م
               </span>
             </div>
-            <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+            <div>
               <span className="block text-[10px] text-slate-400">هامش الربح</span>
               <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
                 {profitMargin}%
