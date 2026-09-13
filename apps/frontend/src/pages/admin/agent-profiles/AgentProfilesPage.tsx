@@ -222,6 +222,28 @@ export default function AgentProfilesPage() {
   }, [createOpen]);
 
   /* ── Load selected agent profile ── */
+  const loadProfileData = useCallback(async (id: string) => {
+    setProfileLoading(true);
+    setProfileError(null);
+    setProfile(null);
+    setEditing(false);
+
+    try {
+      const data = await sandboxApi.getAgentProfile(id);
+      setProfile(data);
+      setDraftName(data.agent.name || "");
+      setDraftIcon(data.agent.icon || "🤖");
+      setDraftDescription(data.agent.description || "");
+      setDraftFiles({ ...(data.files || {}) });
+      setDraftConfig({ ...((data.agent as { config?: Record<string, string> }).config || {}) });
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to load profile";
+      setProfileError(errorMsg);
+    } finally {
+      setProfileLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!selectedId) return;
     setSearchParams((prev) => {
@@ -230,34 +252,8 @@ export default function AgentProfilesPage() {
       return next;
     }, { replace: true });
 
-    let cancelled = false;
-    setProfileLoading(true);
-    setProfileError(null);
-    setProfile(null);
-    setEditing(false);
-
-    sandboxApi.getAgentProfile(selectedId)
-      .then((data) => {
-        if (!cancelled) {
-          setProfile(data);
-          setDraftName(data.agent.name || "");
-          setDraftIcon(data.agent.icon || "🤖");
-          setDraftDescription(data.agent.description || "");
-          setDraftFiles({ ...(data.files || {}) });
-          setDraftConfig({ ...((data.agent as { config?: Record<string, string> }).config || {}) });
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setProfileError(err?.message || "Failed to load profile");
-      })
-      .finally(() => {
-        if (!cancelled) setProfileLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedId, setSearchParams]);
+    loadProfileData(selectedId);
+  }, [selectedId, setSearchParams, loadProfileData]);
 
   /* ── beforeunload warning ── */
   useEffect(() => {
@@ -370,7 +366,23 @@ export default function AgentProfilesPage() {
     setDeleting(false);
   };
 
-  const selectedAgent = agents.find((a) => a.id === selectedId);
+  const selectedAgent = useMemo(() => {
+    const found = agents.find((a) => a.id === selectedId);
+    if (found) return found;
+    if (profile?.agent && profile.agent.id === selectedId) {
+      return {
+        id: profile.agent.id,
+        name: profile.agent.name || "",
+        role: profile.agent.role || "",
+        icon: profile.agent.icon,
+        status: profile.agent.status,
+        allowedChannels: profile.agent.allowedChannels,
+        templateSlug: profile.agent.templateSlug,
+        description: profile.agent.description,
+      } as AgentItem;
+    }
+    return undefined;
+  }, [agents, selectedId, profile]);
 
   /* ── Dynamic Page Title ── */
   useEffect(() => {
@@ -720,9 +732,30 @@ export default function AgentProfilesPage() {
               )}
             </div>
           </>
-        ) : profileLoading ? (
+        ) : profileLoading || (agentsLoading && selectedId && !profile) ? (
           <div className="flex items-center justify-center flex-1 py-20">
             <Loader2 className="size-6 text-primary animate-spin" />
+          </div>
+        ) : profileError && !profile ? (
+          <div className="flex flex-col items-center justify-center flex-1 py-20 text-center px-4">
+            <AlertCircle className="size-10 text-destructive mb-3" />
+            <p className="text-sm font-medium text-foreground mb-1">
+              {t("agentProfiles.header.loadFailed", "فشل تحميل بيانات الوكيل")}
+            </p>
+            <p className="text-xs text-muted-foreground mb-4 max-w-sm">
+              {profileError}
+            </p>
+            {selectedId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadProfileData(selectedId)}
+                className="gap-2 text-xs"
+              >
+                <RefreshCw className="size-3.5" />
+                {t("common.retry", "إعادة المحاولة")}
+              </Button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center flex-1 py-20 text-center">
