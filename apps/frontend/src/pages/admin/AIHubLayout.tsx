@@ -195,8 +195,8 @@ export default function AIHubLayout() {
           {currentTab === "sandbox" && <AIAgentSandboxPage />}
           {currentTab === "train" && <div className="h-full overflow-y-auto"><AgentTrainingPage /></div>}
           {currentTab === "widget" && <div className="h-full overflow-y-auto"><WebChatWidgetPage /></div>}
-          {currentTab === "skills" && <div className="h-full overflow-y-auto"><AgentSkillsPage /></div>}
-          {currentTab === "tools" && <div className="h-full overflow-y-auto"><AgentToolsPage /></div>}
+          {currentTab === "skills" && <div className="h-full overflow-y-auto"><AgentSkillsPage companyId={isSuper ? selectedCompanyId || undefined : undefined} /></div>}
+          {currentTab === "tools" && <div className="h-full overflow-y-auto"><AgentToolsPage companyId={isSuper ? selectedCompanyId || undefined : undefined} /></div>}
           {currentTab === "routing" && <div className="h-full overflow-y-auto"><ChannelRoutingPage /></div>}
           {currentTab === "ignoreList" && (
             <div className="h-full overflow-y-auto">

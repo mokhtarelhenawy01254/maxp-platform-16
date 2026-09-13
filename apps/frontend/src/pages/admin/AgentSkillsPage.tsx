@@ -4,287 +4,455 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Sparkles,
-  Zap,
-  ExternalLink,
-  UserPlus,
-  RefreshCw,
-  Search,
-  Check,
-  AlertCircle,
   Plus,
+  RefreshCw,
+  AlertCircle,
+  Cpu,
+  Layers,
+  Search,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { AdminPageHeader } from "@/components/Admin";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { cn } from "@/lib/utils";
+import { useAuth } from "../../hooks/useAuthSimple";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 
-interface ToolDefinition { name: string; description: string; sideEffects: "read" | "write"; requiresApproval: boolean; }
-interface SkillDefinition { id: string; displayName: string; version?: string; description?: string; allowedTools: string[]; requiresHumanApproval?: boolean; maxToolCount?: number; skillMd?: string; group?: string; }
-
-const SKILL_GROUP_KEYS: Record<string, string> = {
-  sales: "agentSkills.groups.sales", marketing: "agentSkills.groups.marketing",
-  support: "agentSkills.groups.support", product: "agentSkills.groups.product",
-  customer: "agentSkills.groups.customer", management: "agentSkills.groups.management",
-  inventory: "agentSkills.groups.inventory", order: "agentSkills.groups.order",
-  pricing: "agentSkills.groups.pricing", store: "agentSkills.groups.store",
-  other: "agentSkills.groups.other",
-};
-interface AgentDefinition { id: string; name: string; role: string; icon: string; status: string; allowedSkills?: string[]; allowedTools?: string[]; }
+import {
+  SkillDefinition,
+  ToolDefinition,
+  AgentDefinition,
+  SkillVertical,
+  getSkillMeta,
+} from "./agent-skills/types";
+import { SkillTelemetryBar } from "./agent-skills/SkillTelemetryBar";
+import { SkillFilterBar } from "./agent-skills/SkillFilterBar";
+import { SkillBentoCard } from "./agent-skills/SkillBentoCard";
+import { SkillMatrixRow } from "./agent-skills/SkillMatrixRow";
+import { SkillInspectorDrawer } from "./agent-skills/SkillInspectorDrawer";
+import { AssignSkillModal } from "./agent-skills/AssignSkillModal";
+import { CreateSkillModal } from "./agent-skills/CreateSkillModal";
 
 const cq = (path: string, companyId?: string) =>
-  companyId ? `${path}${path.includes("?") ? "&" : "?"}companyId=${encodeURIComponent(companyId)}` : path;
+  companyId
+    ? `${path}${path.includes("?") ? "&" : "?"}companyId=${encodeURIComponent(companyId)}`
+    : path;
+
 const apiRequest = async <T,>(path: string, companyId?: string): Promise<T> => {
-  const response = await fetch(buildApiUrl(cq(path, companyId)), { headers: tokenManager.createAuthHeaders() });
+  const response = await fetch(buildApiUrl(cq(path, companyId)), {
+    headers: tokenManager.createAuthHeaders(),
+  });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.success === false) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
+  if (!response.ok || data.success === false) {
+    throw new Error(
+      data.error || data.message || `Request failed: ${response.status}`
+    );
+  }
   return data as T;
 };
-const apiPut = async <T,>(path: string, body: unknown, companyId?: string): Promise<T> => {
-  const response = await fetch(buildApiUrl(cq(path, companyId)), { method: "PUT", headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+const apiPut = async <T,>(
+  path: string,
+  body: unknown,
+  companyId?: string
+): Promise<T> => {
+  const response = await fetch(buildApiUrl(cq(path, companyId)), {
+    method: "PUT",
+    headers: {
+      ...tokenManager.createAuthHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.success === false) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
+  if (!response.ok || data.success === false) {
+    throw new Error(
+      data.error || data.message || `Request failed: ${response.status}`
+    );
+  }
   return data as T;
 };
 
-function AssignSkillDialog({ open, skillId, agents, onClose, onSaved, companyId }: { open: boolean; skillId: string; agents: AgentDefinition[]; onClose: () => void; onSaved: () => void; companyId?: string }) {
-  const { t } = useTranslation();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [search, setSearch] = useState(""); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => { if (open) { setSelected(new Set(agents.filter((a) => a.allowedSkills?.includes(skillId)).map((a) => a.id))); setSearch(""); setError(null); } }, [open, skillId, agents]);
-  const filtered = useMemo(() => { if (!search.trim()) return agents; const q = search.toLowerCase(); return agents.filter((a) => [a.name, a.role, a.id].some((v) => String(v).toLowerCase().includes(q))); }, [agents, search]);
-  const toggle = (id: string) => setSelected((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const toggleAll = () => { if (selected.size === filtered.length) setSelected(new Set()); else setSelected(new Set(filtered.map((a) => a.id))); };
-  const handleSave = async () => { setSaving(true); setError(null); try { await Promise.all(agents.map(async (agent) => { const has = agent.allowedSkills?.includes(skillId); const add = selected.has(agent.id); if (has === add) return; const ns = add ? [...(agent.allowedSkills || []), skillId] : (agent.allowedSkills || []).filter((s) => s !== skillId); return apiPut(`/agent/agents/${agent.id}/files`, { name: agent.name, role: agent.role, allowedTools: agent.allowedTools || [], allowedSkills: ns }, companyId); })); onSaved(); onClose(); } catch (err: any) { setError(err.message || t("common.saveError")); } finally { setSaving(false); } };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle><div className="flex items-center gap-2"><UserPlus className="size-5 text-primary" /><span>{t("agentSkills.dialogAssignTitle")}</span></div></DialogTitle>
-          <DialogDescription className="font-mono text-xs">{skillId}</DialogDescription>
-        </DialogHeader>
-        {saving && <div className="h-0.5 w-full animate-pulse bg-primary" />}
-        {error && <Alert variant="destructive"><AlertCircle className="size-4" /><AlertDescription>{error}</AlertDescription></Alert>}
-        <div className="relative mb-3"><Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder={t("agentSkills.dialogSearch")} value={search} onChange={(e) => setSearch(e.target.value)} className="pr-9" /></div>
-        <div className="mb-2 flex items-center justify-between"><span className="text-xs text-muted-foreground">{t("agentSkills.dialogSelected", { selected: selected.size, total: filtered.length })}</span><Button size="sm" variant="link" onClick={toggleAll}>{selected.size === filtered.length ? t("agentSkills.dialogDeselectAll") : t("agentSkills.dialogSelectAll")}</Button></div>
-        <div className="max-h-[360px] space-y-1 overflow-auto">
-          {filtered.map((agent) => { const checked = selected.has(agent.id); const already = agent.allowedSkills?.includes(skillId); return (
-            <div key={agent.id} onClick={() => toggle(agent.id)} className={cn("flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition-all", checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted")}>
-              <div className={cn("flex size-4 shrink-0 items-center justify-center rounded-sm border", checked ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground")}>{checked && <Check className="size-3" />}</div>
-              <span className="text-lg">{agent.icon || "🤖"}</span>
-              <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{agent.name}</p><span className="text-xs text-muted-foreground">{agent.role}</span></div>
-              {already && !checked && <Badge variant="outline" className="h-4 text-[0.6rem]">{t("agentSkills.dialogCurrent")}</Badge>}
-            </div>); })}
-          {filtered.length === 0 && <p className="py-4 text-center text-muted-foreground">{t("agentSkills.dialogNoResults")}</p>}
-        </div>
-        <DialogFooter><Button variant="outline" onClick={onClose} disabled={saving}>{t("common.cancel")}</Button><Button onClick={handleSave} disabled={saving}>{saving ? <LoadingSpinner size="sm" /> : <Check className="size-4" />}{saving ? t("agentSkills.dialogSaving") : t("common.save")}</Button></DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function CreateSkillDialog({ open, tools, onClose, onSaved, companyId }: { open: boolean; tools: ToolDefinition[]; onClose: () => void; onSaved: () => void; companyId?: string }) {
-  const { t } = useTranslation();
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [instructions, setInstructions] = useState("");
-  const [selectedTools, setSelectedTools] = useState<Set<string>>(new Set());
-  const [priority, setPriority] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [toolSearch, setToolSearch] = useState("");
-
-  useEffect(() => { if (open) { setName(""); setDescription(""); setInstructions(""); setSelectedTools(new Set()); setPriority(0); setError(null); setToolSearch(""); } }, [open]);
-
-  const filteredTools = useMemo(() => {
-    if (!toolSearch.trim()) return tools;
-    const q = toolSearch.toLowerCase();
-    return tools.filter((t) => [t.name, t.description].filter(Boolean).some((v) => String(v).toLowerCase().includes(q)));
-  }, [tools, toolSearch]);
-
-  const toggleTool = (tn: string) => setSelectedTools((p) => { const n = new Set(p); if (n.has(tn)) n.delete(tn); else n.add(tn); return n; });
-
-  const handleCreate = async () => {
-    if (!name.trim()) { setError(t("agentSkills.errorNameRequired")); return; }
-    if (!instructions.trim()) { setError(t("agentSkills.errorInstructionsRequired")); return; }
-    setSaving(true); setError(null);
-    try {
-      const response = await fetch(buildApiUrl(cq("agent/skills", companyId)), {
-        method: "POST",
-        headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim(),
-          instructions: instructions.trim(),
-          tools: Array.from(selectedTools),
-          priority,
-        }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || data.success === false) throw new Error(data.error || t("agentSkills.errorCreateFailed"));
-      toast.success(t("common.saved"));
-      onSaved();
-      onClose();
-    } catch (err: any) {
-      setError(err.message || t("common.saveError"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle><div className="flex items-center gap-2"><Plus className="size-5 text-primary" /><span>{t("agentSkills.dialogCreateTitle")}</span></div></DialogTitle>
-        </DialogHeader>
-        {saving && <div className="h-0.5 w-full animate-pulse bg-primary" />}
-        {error && <Alert variant="destructive"><AlertCircle className="size-4" /><AlertDescription>{error}</AlertDescription></Alert>}
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="mb-1 block text-sm font-bold">{t("agentSkills.dialogName")}</label>
-            <Input placeholder={t("agentSkills.dialogNamePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-bold">{t("agentSkills.dialogDescription")}</label>
-            <Input placeholder={t("agentSkills.dialogDescriptionPlaceholder")} value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-bold">{t("agentSkills.dialogInstructions")}</label>
-            <textarea
-              className="min-h-[120px] w-full rounded-xl border bg-background p-3 text-sm outline-none focus:ring-2 focus:ring-primary"
-              placeholder={t("agentSkills.dialogInstructionsPlaceholder")}
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-bold">{t("agentSkills.dialogTools")}</label>
-            <div className="relative mb-2"><Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder={t("agentSkills.search")} value={toolSearch} onChange={(e) => setToolSearch(e.target.value)} className="pr-9" /></div>
-            <div className="max-h-[140px] space-y-1 overflow-auto rounded-xl border p-2">
-              {filteredTools.map((tool) => { const checked = selectedTools.has(tool.name); return (
-                <div key={tool.name} onClick={() => toggleTool(tool.name)} className={cn("flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors", checked ? "bg-primary/10 text-primary" : "hover:bg-muted")}>
-                  <div className={cn("flex size-4 shrink-0 items-center justify-center rounded-sm border", checked ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground")}>{checked && <Check className="size-3" />}</div>
-                  <span className="min-w-0 flex-1 truncate font-mono text-xs">{tool.name}</span>
-                </div>); })}
-              {filteredTools.length === 0 && <p className="py-2 text-center text-xs text-muted-foreground">{t("agentSkills.dialogNoResults")}</p>}
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-bold">{t("agentSkills.dialogPriority")}</label>
-            <Input type="number" min={0} placeholder={t("agentSkills.dialogPriorityPlaceholder")} value={priority} onChange={(e) => setPriority(Number(e.target.value) || 0)} className="w-24" />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={saving}>{t("common.cancel")}</Button>
-          <Button onClick={handleCreate} disabled={saving}>
-            {saving ? <LoadingSpinner size="sm" /> : <Plus className="size-4" />}
-            {saving ? t("agentSkills.dialogCreating") : t("agentSkills.createSkill")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-export default function AgentSkillsPage({ companyId }: { companyId?: string } = {}) {
+export default function AgentSkillsPage({
+  companyId: propCompanyId,
+}: { companyId?: string } = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const effectiveCompanyId = propCompanyId || user?.companyId || undefined;
+
   const [skills, setSkills] = useState<SkillDefinition[]>([]);
   const [tools, setTools] = useState<ToolDefinition[]>([]);
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
-  const [assignSkill, setAssignSkill] = useState<string | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [query, setQuery] = useState(""); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const allGroups = useMemo(() => {
-    const groups = [...new Set(skills.map((s) => s.group).filter(Boolean))] as string[];
-    const lang = document.documentElement.lang || "ar";
-    const label = (g: string) => SKILL_GROUP_KEYS[g] ? t(SKILL_GROUP_KEYS[g]) : g;
-    return groups.sort((a, b) => label(a).localeCompare(label(b), lang));
+  // Filter & Search states
+  const [query, setQuery] = useState("");
+  const [selectedVertical, setSelectedVertical] = useState<SkillVertical>("all");
+  const [safetyFilter, setSafetyFilter] = useState<"all" | "autonomous" | "approval" | "equipped">("all");
+  const [viewMode, setViewMode] = useState<"grid" | "matrix">("grid");
+
+  // Inspection Drawer & Dialogs
+  const [inspectedSkill, setInspectedSkill] = useState<SkillDefinition | null>(null);
+  const [assignSkill, setAssignSkill] = useState<SkillDefinition | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  // Tools Map for fast O(1) lookup
+  const toolsMap = useMemo(() => new Map(tools.map((t) => [t.name, t])), [tools]);
+
+  // Skill -> Equipped Agents mapping
+  const skillEquippedAgentsMap = useMemo(() => {
+    const map = new Map<string, AgentDefinition[]>();
+    for (const agent of agents) {
+      for (const sid of agent.allowedSkills || []) {
+        const existing = map.get(sid) || [];
+        existing.push(agent);
+        map.set(sid, existing);
+      }
+    }
+    return map;
+  }, [agents]);
+
+  // Load all skills, tools, and agents
+  const loadAll = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [sd, td, ad] = await Promise.all([
+        apiRequest<{ success: true; skills: SkillDefinition[] }>(
+          "agent/skills",
+          effectiveCompanyId
+        ),
+        apiRequest<{ success: true; tools: ToolDefinition[] }>(
+          "agent/tools",
+          effectiveCompanyId
+        ),
+        effectiveCompanyId
+          ? apiRequest<{ success: true; agents: AgentDefinition[] }>(
+              "agent-manager/agents",
+              effectiveCompanyId
+            ).catch(() => ({ success: true as const, agents: [] }))
+          : { success: true as const, agents: [] as AgentDefinition[] },
+      ]);
+
+      setSkills(sd.skills || []);
+      setTools(td.tools || []);
+      setAgents(ad.agents || []);
+    } catch (err: any) {
+      setError(err.message || t("common.loadError"));
+    } finally {
+      setLoading(false);
+    }
+  }, [effectiveCompanyId, t]);
+
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
+
+  // Counts by vertical for the filter tabs
+  const verticalCounts = useMemo(() => {
+    const counts: Record<SkillVertical, number> = {
+      all: skills.length,
+      sales: 0,
+      support: 0,
+      marketing: 0,
+      medical: 0,
+      hotels: 0,
+      education: 0,
+      inventory: 0,
+      management: 0,
+      other: 0,
+    };
+
+    for (const s of skills) {
+      const meta = getSkillMeta(s);
+      if (meta.vertical in counts) {
+        counts[meta.vertical] = (counts[meta.vertical] || 0) + 1;
+      } else {
+        counts.other = (counts.other || 0) + 1;
+      }
+    }
+    return counts;
   }, [skills]);
+
+  // Filtered skills list
   const filteredSkills = useMemo(() => {
     let list = skills;
-    const n = query.trim().toLowerCase();
-    if (n) list = list.filter((s) => [s.id, s.displayName, s.description, ...(s.allowedTools || [])].filter(Boolean).some((v) => String(v).toLowerCase().includes(n)));
-    if (selectedGroup) list = list.filter((s) => s.group === selectedGroup);
+    const q = query.trim().toLowerCase();
+
+    // 1. Text search
+    if (q) {
+      list = list.filter((s) => {
+        const meta = getSkillMeta(s);
+        return [
+          s.id,
+          s.displayName,
+          s.description,
+          meta.titleAr,
+          meta.descAr,
+          meta.triggerAr,
+          ...(s.allowedTools || []),
+        ]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q));
+      });
+    }
+
+    // 2. Vertical filter
+    if (selectedVertical !== "all") {
+      list = list.filter((s) => getSkillMeta(s).vertical === selectedVertical);
+    }
+
+    // 3. Safety filter
+    if (safetyFilter === "autonomous") {
+      list = list.filter((s) => !s.requiresHumanApproval && !getSkillMeta(s).isApprovalRequired);
+    } else if (safetyFilter === "approval") {
+      list = list.filter((s) => s.requiresHumanApproval || getSkillMeta(s).isApprovalRequired);
+    } else if (safetyFilter === "equipped") {
+      list = list.filter((s) => (skillEquippedAgentsMap.get(s.id) || []).length > 0);
+    }
+
     return list;
-  }, [skills, query, selectedGroup]);
-  const loadAll = useCallback(async () => { setLoading(true); setError(null); try { const [sd, td, ad] = await Promise.all([apiRequest<{ success: true; skills: SkillDefinition[] }>("agent/skills", companyId), apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools", companyId), companyId ? apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents", companyId) : { success: true as const, agents: [] as AgentDefinition[] }]); setSkills(sd.skills || []); setTools(td.tools || []); setAgents(ad.agents || []); } catch (err: any) { setError(err.message || t("common.loadError")); } finally { setLoading(false); } }, [companyId]);
-  useEffect(() => { loadAll(); }, [loadAll]);
-  const skillAgentCount = useMemo(() => { const m = new Map<string, number>(); for (const a of agents) { for (const sid of a.allowedSkills || []) m.set(sid, (m.get(sid) || 0) + 1); } return m; }, [agents]);
+  }, [skills, query, selectedVertical, safetyFilter, skillEquippedAgentsMap]);
+
+  // Single Agent Toggle Handler (from Drawer)
+  const handleToggleAgent = async (agentId: string, enabled: boolean) => {
+    if (!inspectedSkill) return;
+    const targetSkillId = inspectedSkill.id;
+    const agent = agents.find((a) => a.id === agentId);
+    if (!agent) return;
+
+    const currentSkills = agent.allowedSkills || [];
+    const newSkills = enabled
+      ? [...new Set([...currentSkills, targetSkillId])]
+      : currentSkills.filter((s) => s !== targetSkillId);
+
+    await apiPut(
+      `/agent/agents/${agent.id}/files`,
+      {
+        name: agent.name,
+        role: agent.role,
+        allowedTools: agent.allowedTools || [],
+        allowedSkills: newSkills,
+      },
+      effectiveCompanyId
+    );
+
+    // Optimistic state update
+    setAgents((prev) =>
+      prev.map((a) => (a.id === agentId ? { ...a, allowedSkills: newSkills } : a))
+    );
+  };
+
+  // Bulk Agent Assign Handler (from Modal)
+  const handleSaveBulkAssign = async (selectedAgentIds: string[]) => {
+    if (!assignSkill) return;
+    const targetSkillId = assignSkill.id;
+
+    await Promise.all(
+      agents.map(async (agent) => {
+        const has = (agent.allowedSkills || []).includes(targetSkillId);
+        const shouldHave = selectedAgentIds.includes(agent.id);
+        if (has === shouldHave) return;
+
+        const newSkills = shouldHave
+          ? [...(agent.allowedSkills || []), targetSkillId]
+          : (agent.allowedSkills || []).filter((s) => s !== targetSkillId);
+
+        return apiPut(
+          `/agent/agents/${agent.id}/files`,
+          {
+            name: agent.name,
+            role: agent.role,
+            allowedTools: agent.allowedTools || [],
+            allowedSkills: newSkills,
+          },
+          effectiveCompanyId
+        );
+      })
+    );
+
+    toast.success("تم تحديث تعيين المهارة بنجاح");
+    loadAll();
+  };
+
+  const handleTestSandbox = (skill: SkillDefinition) => {
+    navigate(`/admin/ai-hub?tab=sandbox&skill=${encodeURIComponent(skill.id)}`);
+  };
 
   return (
-    <div dir="rtl" className="min-h-[calc(100dvh-64px)] bg-background p-4 md:p-6">
-      <AdminPageHeader
-        title={t("agentSkills.title")}
-        subtitle={t("agentSkills.subtitle")}
-        icon={<Sparkles className="size-7" />}
-        actions={<>
-          <Button onClick={() => setCreateOpen(true)}><Plus className="size-4" />{t("agentSkills.createSkill")}</Button>
-          <div className="relative"><Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder={t("agentSkills.search")} value={query} onChange={(e) => setQuery(e.target.value)} className="w-56 pr-9" /></div>
-          <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={loadAll}>{loading ? <LoadingSpinner size="sm" /> : <RefreshCw className="size-4" />}</Button></TooltipTrigger><TooltipContent>{t("agentSkills.refresh")}</TooltipContent></Tooltip></TooltipProvider>
-        </>}
+    <div dir="rtl" className="flex flex-col gap-4 p-3.5 sm:p-6 w-full max-w-[1750px] mx-auto">
+      {/* 1. Vanguard Cockpit Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/60">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="flex size-7 items-center justify-center rounded-xl bg-gradient-to-tr from-primary to-indigo-600 text-white shadow-xs">
+              <Sparkles className="size-4" />
+            </div>
+            <h1 className="text-lg sm:text-xl font-black tracking-tight text-foreground">
+              مركز قدرات ومهارات الوكلاء (Agent Capability Studio)
+            </h1>
+            <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[0.65rem] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              Autonomous Core 2026
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            كتالوج القدرات التنفيذية المستقلة لتشغيل وكلاء المبيعات، العيادات، الفنادق، وخدمة العملاء بأعلى درجات الأمان والربحية.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="h-9 gap-1.5 font-bold shadow-xs bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+          >
+            <Plus className="size-4" />
+            <span>مهارة مخصصة جديدة</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={loadAll}
+            disabled={loading}
+            className="h-9 w-9 text-muted-foreground hover:text-foreground border-border/80"
+            title="تحديث البيانات"
+          >
+            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+      </div>
+
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="size-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* 2. Live Telemetry Bar */}
+      <SkillTelemetryBar skills={skills} agents={agents} tools={tools} />
+
+      {/* 3. Segmented Filter & Controls Bar */}
+      <SkillFilterBar
+        query={query}
+        onQueryChange={setQuery}
+        selectedVertical={selectedVertical}
+        onSelectVertical={setSelectedVertical}
+        safetyFilter={safetyFilter}
+        onSafetyFilterChange={setSafetyFilter}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        verticalCounts={verticalCounts}
+        totalFiltered={filteredSkills.length}
       />
 
-      {error && <Alert variant="destructive" className="mb-4"><AlertCircle className="size-4" /><AlertDescription>{error}</AlertDescription></Alert>}
-
+      {/* 4. Main Content: Grid Bento Cards vs Matrix View */}
       {loading ? (
-        <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-card"><LoadingSpinner size="lg" /></div>
+        <div className="flex min-h-[350px] items-center justify-center rounded-2xl border border-dashed bg-card/40">
+          <div className="flex flex-col items-center gap-2">
+            <LoadingSpinner size="lg" />
+            <span className="text-xs text-muted-foreground font-mono">جارٍ مزامنة قدرات الوكلاء...</span>
+          </div>
+        </div>
+      ) : filteredSkills.length === 0 ? (
+        <div className="flex min-h-[250px] flex-col items-center justify-center rounded-2xl border border-dashed bg-card/30 p-8 text-center">
+          <div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground mb-3">
+            <Search className="size-5" />
+          </div>
+          <h3 className="font-bold text-sm text-foreground">لا توجد مهارات مطابقة للبحث</h3>
+          <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+            جرب تعديل كلمات البحث أو اختيار قطاع آخر من شريط التصنيفات بالأعلى.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setQuery("");
+              setSelectedVertical("all");
+              setSafetyFilter("all");
+            }}
+            className="mt-3 text-xs"
+          >
+            إعادة تعيين الفلاتر
+          </Button>
+        </div>
+      ) : viewMode === "grid" ? (
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredSkills.map((skill) => (
+            <SkillBentoCard
+              key={skill.id}
+              skill={skill}
+              equippedAgents={skillEquippedAgentsMap.get(skill.id) || []}
+              toolsMap={toolsMap}
+              onInspect={(s) => setInspectedSkill(s)}
+              onAssign={(s) => setAssignSkill(s)}
+              onTestSandbox={handleTestSandbox}
+            />
+          ))}
+        </div>
       ) : (
-        <div className="flex gap-4">
-          {allGroups.length > 0 && (
-            <aside className="hidden w-44 shrink-0 md:block">
-              <div className="sticky top-20 space-y-1 rounded-xl border bg-card p-2">
-                <button onClick={() => setSelectedGroup(null)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${!selectedGroup ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{t("common.all")} ({skills.length})</button>
-                {allGroups.map((g) => (
-                  <button key={g} onClick={() => setSelectedGroup(g)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${selectedGroup === g ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{(SKILL_GROUP_KEYS[g] ? t(SKILL_GROUP_KEYS[g]) : g)} ({skills.filter((s) => s.group === g).length})</button>
+        <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-2xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-right border-collapse">
+              <thead>
+                <tr className="border-b border-border/80 bg-muted/40 text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
+                  <th className="py-3 px-4">القدرة والرمز الفني</th>
+                  <th className="py-3 px-3 hidden sm:table-cell">القطاع التجاري</th>
+                  <th className="py-3 px-3">نمط التشغيل</th>
+                  <th className="py-3 px-3 hidden md:table-cell">الأدوات</th>
+                  <th className="py-3 px-3 hidden lg:table-cell">الوكلاء المجهزون</th>
+                  <th className="py-3 px-4 text-left">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSkills.map((skill) => (
+                  <SkillMatrixRow
+                    key={skill.id}
+                    skill={skill}
+                    equippedAgents={skillEquippedAgentsMap.get(skill.id) || []}
+                    toolsMap={toolsMap}
+                    onInspect={(s) => setInspectedSkill(s)}
+                    onAssign={(s) => setAssignSkill(s)}
+                    onTestSandbox={handleTestSandbox}
+                  />
                 ))}
-              </div>
-            </aside>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {filteredSkills.map((skill) => { const ac = skillAgentCount.get(skill.id) || 0; return (
-                <div key={skill.id} className="flex flex-col rounded-xl border bg-card p-4">
-                  <div className="mb-3 flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2"><Sparkles className="size-5 shrink-0 text-primary" /><h3 className="truncate text-sm font-black">{skill.displayName || skill.id}</h3></div>
-                    <div className="flex shrink-0 gap-1"><Badge variant="outline" className="h-5 text-[0.65rem]">v{skill.version || "1"}</Badge>{ac > 0 && <Badge variant="outline" className="h-5 text-[0.65rem] text-green-600">{ac} {t("agentSkills.agents")}</Badge>}</div>
-                  </div>
-                  <p className="mb-3 min-h-[42px] text-sm text-muted-foreground">{skill.description || t("agentSkills.noDescription")}</p>
-                  <div className="mb-4 flex flex-wrap gap-2">{(skill.allowedTools || []).map((t) => (<Badge key={t} variant="outline" className="h-5 gap-1 text-[0.6rem]"><Zap className="size-3" />{t}</Badge>))}</div>
-                  <div className="mt-auto flex gap-2"><Button onClick={() => navigate(`/admin/ai-hub/skills/${skill.id}`, { state: { skill, tools, agents, companyId } })} className="flex-1"><ExternalLink className="size-4" />{t("agentSkills.details")}</Button><Button variant="outline" onClick={() => setAssignSkill(skill.id)} className="flex-1"><UserPlus className="size-4" />{t("agentSkills.assignToAgent")}</Button></div>
-                </div>); })}
-            </div>
-            {filteredSkills.length === 0 && <div className="flex min-h-[200px] items-center justify-center rounded-xl bg-card"><p className="text-muted-foreground">{t("agentSkills.noDescription")}</p></div>}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      <AssignSkillDialog open={!!assignSkill} skillId={assignSkill || ""} agents={agents} onClose={() => setAssignSkill(null)} onSaved={loadAll} companyId={companyId} />
-      <CreateSkillDialog open={createOpen} tools={tools} onClose={() => setCreateOpen(false)} onSaved={loadAll} companyId={companyId} />
+      {/* 5. Slide-Over Quick Inspector Drawer */}
+      <SkillInspectorDrawer
+        skill={inspectedSkill}
+        open={!!inspectedSkill}
+        onClose={() => setInspectedSkill(null)}
+        agents={agents}
+        toolsMap={toolsMap}
+        onAgentToggled={handleToggleAgent}
+        companyId={effectiveCompanyId}
+      />
+
+      {/* 6. Assign Skill Modal */}
+      <AssignSkillModal
+        open={!!assignSkill}
+        skill={assignSkill}
+        agents={agents}
+        onClose={() => setAssignSkill(null)}
+        onSave={handleSaveBulkAssign}
+      />
+
+      {/* 7. Create Custom Skill Modal */}
+      <CreateSkillModal
+        open={createOpen}
+        tools={tools}
+        onClose={() => setCreateOpen(false)}
+        onSaved={loadAll}
+        companyId={effectiveCompanyId}
+      />
     </div>
   );
 }

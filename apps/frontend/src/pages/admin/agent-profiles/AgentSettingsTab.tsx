@@ -2,7 +2,6 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import AgentQuickTestCard from "./AgentQuickTestCard";
 
 interface AgentSettingsTabProps {
   editing: boolean;
@@ -14,7 +13,7 @@ interface AgentSettingsTabProps {
   setDraftConfig: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   draftFiles: Record<string, string>;
   setDraftFiles: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  agentId: string;
+  agentId?: string;
   agentIcon?: string;
 }
 
@@ -28,8 +27,6 @@ export default function AgentSettingsTab({
   setDraftConfig,
   draftFiles,
   setDraftFiles,
-  agentId,
-  agentIcon = "🤖",
 }: AgentSettingsTabProps) {
   const { t } = useTranslation();
 
@@ -190,13 +187,6 @@ export default function AgentSettingsTab({
           </div>
         )}
       </div>
-
-      {/* ── Quick Test Card ── */}
-      <AgentQuickTestCard
-        agentId={agentId}
-        agentName={draftName}
-        agentIcon={agentIcon}
-      />
     </div>
   );
 }

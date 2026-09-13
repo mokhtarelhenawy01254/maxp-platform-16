@@ -7705,6 +7705,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/admin/ai-hub/skills/:skillId"
+                  element={
+                    <Layout fullWidth>
+                      <SkillDetailPage />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/admin/agent-profiles"
                   element={
                     <Layout fullWidth>

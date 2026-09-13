@@ -3,11 +3,14 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Loader2, AlertCircle, Bot, Search, Plus, Trash2,
   Shield, RefreshCw, Menu, MessageSquare, Archive, Lock,
+  Wrench, Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sandboxApi, type AgentProfileResponse } from "../ai-agent-sandbox/services/sandboxApi";
 import AgentProfileHeader from "./AgentProfileHeader";
 import AgentSettingsTab from "./AgentSettingsTab";
+import AgentSkillsTab from "./AgentSkillsTab";
+import AgentToolsTab from "./AgentToolsTab";
 import CreateAgentDialog from "./CreateAgentDialog";
 import AgentGuardrailsTab from "./AgentGuardrailsTab";
 import { Input } from "@/components/ui/input";
@@ -38,7 +41,7 @@ function useIsMobile(breakpoint = 1024) {
   return isMobile;
 }
 
-type Tab = "settings" | "guardrails";
+type Tab = "settings" | "skills" | "tools" | "guardrails";
 
 const FILES_EQUAL = (a: Record<string, string>, b: Record<string, string>) => {
   const keys = new Set([...Object.keys(a || {}), ...Object.keys(b || {})]);
@@ -137,8 +140,20 @@ export default function AgentProfilesPage() {
     );
   }, [profile, draftName, draftIcon, draftDescription, draftConfig, draftFiles]);
 
-  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+  const tabs: { key: Tab; label: string; count?: number; icon: React.ReactNode }[] = [
     { key: "settings", label: t("agentProfiles.tabs.settings", "الإعدادات"), icon: <Shield className="size-4" /> },
+    {
+      key: "skills",
+      label: t("agentProfiles.tabs.skills", "المهارات"),
+      count: profile?.skills?.length ?? 0,
+      icon: <Zap className="size-4 text-indigo-500" />,
+    },
+    {
+      key: "tools",
+      label: t("agentProfiles.tabs.tools", "الأدوات"),
+      count: profile?.allowedTools?.length ?? 0,
+      icon: <Wrench className="size-4 text-primary" />,
+    },
     { key: "guardrails", label: t("agentProfiles.tabs.guardrails", "القواعد والتعلم"), icon: <Lock className="size-4" /> },
   ];
 
@@ -384,7 +399,7 @@ export default function AgentProfilesPage() {
 
   /* ── Sidebar Component ── */
   const sidebarContent = (
-    <aside className="w-64 shrink-0 border-r border-border/50 flex flex-col overflow-hidden bg-card/40">
+    <aside className="w-64 shrink-0 border-e border-border/50 flex flex-col overflow-hidden bg-card/40">
       <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bot className="size-4 text-primary" />
@@ -503,7 +518,7 @@ export default function AgentProfilesPage() {
   );
 
   return (
-    <div className="flex h-[calc(100dvh-140px)] lg:h-[calc(100dvh-90px)] bg-slate-50 dark:bg-slate-950 overflow-hidden">
+    <div className="flex h-full w-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
       {/* ── Mobile Drawer ── */}
       {isMobile && (
         <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
@@ -517,7 +532,7 @@ export default function AgentProfilesPage() {
       {!isMobile && sidebarContent}
 
       {/* ── Main Panel ── */}
-      <main className="flex-1 flex flex-col overflow-y-auto min-h-0 min-w-0">
+      <main className="flex-1 flex flex-col overflow-hidden min-h-0 min-w-0">
         {/* Mobile Header Row */}
         <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50 lg:hidden bg-card/60">
           <button
@@ -578,26 +593,38 @@ export default function AgentProfilesPage() {
             />
 
             {/* Tabs Bar */}
-            <div className="border-b border-border/50 px-4 lg:px-6 flex gap-2 bg-card/40">
-              {tabs.map(({ key, label, icon }) => (
+            <div className="border-b border-border/50 px-4 lg:px-6 flex gap-2 bg-card/40 overflow-x-auto no-scrollbar shrink-0">
+              {tabs.map(({ key, label, count, icon }) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
                   className={cn(
                     "flex items-center gap-2 px-3 lg:px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
                     tab === key
-                      ? "border-primary text-primary"
+                      ? "border-primary text-primary font-semibold"
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {icon}
-                  {label}
+                  <span>{label}</span>
+                  {typeof count === "number" && (
+                    <span
+                      className={cn(
+                        "text-[11px] px-1.5 py-0.5 rounded-full font-mono font-medium",
+                        tab === key
+                          ? "bg-primary/15 text-primary font-bold"
+                          : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {count}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-6 min-h-0 min-w-0">
               {profileError && (
                 <div role="alert" className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-xl max-w-2xl mb-5 text-destructive text-xs">
                   <AlertCircle className="size-4 shrink-0 mt-0.5" />
@@ -659,8 +686,25 @@ export default function AgentProfilesPage() {
                       setDraftConfig={setDraftConfig}
                       draftFiles={draftFiles}
                       setDraftFiles={setDraftFiles}
+                    />
+                  )}
+
+                  {tab === "skills" && (
+                    <AgentSkillsTab
+                      skills={profile.skills || []}
                       agentId={selectedAgent.id}
-                      agentIcon={draftIcon}
+                      agentName={selectedAgent.name}
+                      onRefresh={loadAgents}
+                    />
+                  )}
+
+                  {tab === "tools" && (
+                    <AgentToolsTab
+                      allowedTools={profile.allowedTools || []}
+                      agentId={selectedAgent.id}
+                      agentName={selectedAgent.name}
+                      companyId={companyId}
+                      onRefresh={loadAgents}
                     />
                   )}
 
