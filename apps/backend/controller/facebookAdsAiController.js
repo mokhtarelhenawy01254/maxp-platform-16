@@ -902,12 +902,16 @@ class FacebookAdsAiController {
         return res.status(401).json({ success: false, error: 'Company ID is required' });
       }
 
-      const limit = parseInt(req.query?.limit || '50', 10);
-      const sessions = await marketingCopilotSessionService.listSessions(companyId, limit);
+      const limit = parseInt(req.query?.limit || '100', 10);
+      const result = await marketingCopilotSessionService.listSessions(companyId, limit);
+
+      const sessions = Array.isArray(result) ? result : (result?.sessions || []);
+      const totalCount = typeof result?.totalCount === 'number' ? result.totalCount : sessions.length;
 
       return res.json({
         success: true,
         data: sessions,
+        totalCount,
       });
     } catch (error) {
       console.error('❌ Error listing marketing copilot sessions:', error);

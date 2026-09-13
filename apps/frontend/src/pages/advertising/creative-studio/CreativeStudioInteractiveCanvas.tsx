@@ -519,7 +519,7 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
 
       {/* Product Angles & Multi-Image Gallery Strip */}
       {selectedProduct && productPhotos.length > 0 && (
-        <div className="flex items-center justify-between px-3 sm:px-5 py-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800/70 flex-shrink-0 gap-2 overflow-x-auto">
+        <div data-testid="product-angles-strip" className="flex items-center justify-between px-3 sm:px-5 py-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800/70 flex-shrink-0 gap-2 overflow-x-auto">
           <div className="flex items-center gap-1.5 text-xs font-black text-slate-800 dark:text-slate-200 flex-shrink-0">
             <Package className="w-3.5 h-3.5 text-indigo-500" />
             <span>زوايا المنتج ({productPhotos.length}):</span>

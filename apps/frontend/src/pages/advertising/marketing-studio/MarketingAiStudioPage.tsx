@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles, Rocket } from "lucide-react";
+import { Sparkles, Rocket, X } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { useCopilotSessions } from "../../../components/advertising/copilot/useCopilotSessions";
 import { getMarketingActiveAgent } from "../../../services/facebookAdsService";
@@ -46,8 +46,9 @@ const MarketingAiStudioPage: React.FC = () => {
   // Modal / Drawer states
   const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
   const [isSessionsDrawerOpen, setIsSessionsDrawerOpen] = useState(false);
+  const [isDraftDrawerOpen, setIsDraftDrawerOpen] = useState(false);
 
-  // Mobile 2-view state: CHAT vs CANVAS
+  // Mobile view state
   const [mobileView, setMobileView] = useState<"CHAT" | "CANVAS">("CHAT");
 
   const handleProductSelect = (product: MarketingProduct) => {
@@ -80,10 +81,9 @@ const MarketingAiStudioPage: React.FC = () => {
       format: args.format || firstDraft.format || "Reels / Video",
       status: "DRAFT",
     });
-    // Switch view to preview canvas on mobile if draft ready
-    if (window.innerWidth < 1024) {
-      setMobileView("CANVAS");
-    }
+
+    // Auto-open draft drawer when a new campaign draft is generated
+    setIsDraftDrawerOpen(true);
   };
 
   return (
@@ -95,20 +95,30 @@ const MarketingAiStudioPage: React.FC = () => {
       selectedEntity={selectedProduct}
       entitySelectorPlaceholder="اختر منتج الحملة"
       onOpenEntityPicker={() => setIsProductPickerOpen(true)}
-      sessionsCount={copilotSessions.sessions.length}
+      sessionsCount={copilotSessions.totalCount || copilotSessions.sessions.length}
       onOpenSessions={() => setIsSessionsDrawerOpen(true)}
       onNewSession={() => copilotSessions.createNewSession()}
       activeAgent={activeAgent}
       agentRoutingHref="/admin/ai-hub?tab=routing"
       statusBadge={
-        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400">
-          <Rocket className="w-3.5 h-3.5 text-blue-500" />
-          <span>مسودة Meta Ads جاهزة</span>
-        </div>
+        currentDraft ? (
+          <button
+            type="button"
+            onClick={() => setIsDraftDrawerOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-xs font-bold text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition cursor-pointer shadow-xs active:scale-95"
+            title="عرض ومراجعة مسودة الإعلان"
+          >
+            <Rocket className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 animate-pulse" />
+            <span>مسودة الإعلان جاهزة (مراجعة)</span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>مساعد التسويق جاهز</span>
+          </div>
+        )
       }
       chatTabLabel="المحادثة والاستراتيجية"
-      canvasTabLabel="مسودة الإعلان"
-      canvasTabIcon={Rocket}
       hasActiveDraft={!!currentDraft}
       mobileView={mobileView}
       onMobileViewChange={setMobileView}
@@ -121,15 +131,6 @@ const MarketingAiStudioPage: React.FC = () => {
           activeSession={copilotSessions.activeSession}
           addMessageToActiveSession={copilotSessions.addMessageToActiveSession}
           createNewSession={() => copilotSessions.createNewSession()}
-        />
-      }
-      canvasPanel={
-        <CampaignDraftLaunchCard
-          draft={currentDraft}
-          selectedProduct={selectedProduct}
-          onDraftPublished={() => {
-            setCurrentDraft(null);
-          }}
         />
       }
       extraDrawers={
@@ -145,11 +146,63 @@ const MarketingAiStudioPage: React.FC = () => {
             isOpen={isSessionsDrawerOpen}
             onClose={() => setIsSessionsDrawerOpen(false)}
             sessions={copilotSessions.sessions}
+            totalCount={copilotSessions.totalCount}
             activeSessionId={copilotSessions.activeSessionId}
             onSelectSession={copilotSessions.switchSession}
             onNewSession={() => copilotSessions.createNewSession()}
             onDeleteSession={copilotSessions.deleteSession}
           />
+
+          {/* Slide-over Drawer for Campaign Draft */}
+          {isDraftDrawerOpen && (
+            <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200">
+              <div
+                className="flex-1 cursor-pointer"
+                onClick={() => setIsDraftDrawerOpen(false)}
+                aria-hidden="true"
+              />
+              <aside
+                aria-label="مسودة إطلاق الحملة الإعلانية"
+                className="w-full sm:w-[540px] lg:w-[600px] max-w-full h-full bg-white dark:bg-slate-900 border-r sm:border-r-0 sm:border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-200"
+              >
+                <div className="p-3.5 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-800/50 flex-shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-blue-600 text-white shadow-sm">
+                      <Rocket className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        مسودة الحملة الإعلانية
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                          جاهزة للإطلاق
+                        </span>
+                      </h2>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsDraftDrawerOpen(false)}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                    title="إغلاق"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  <CampaignDraftLaunchCard
+                    draft={currentDraft}
+                    selectedProduct={selectedProduct}
+                    onDraftPublished={() => {
+                      setCurrentDraft(null);
+                      setIsDraftDrawerOpen(false);
+                    }}
+                  />
+                </div>
+              </aside>
+            </div>
+          )}
         </>
       }
     />

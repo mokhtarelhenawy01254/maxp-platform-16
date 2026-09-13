@@ -77,11 +77,20 @@ class MarketingCopilotSessionService {
   /**
    * List all active sessions for a company with their messages.
    */
-  async listSessions(companyId, limit = 50) {
-    if (!companyId) return [];
+  async listSessions(companyId, limit = 100) {
+    if (!companyId) return { sessions: [], totalCount: 0 };
     await this.ensureTables();
 
     try {
+      // 1. Get real total non-deleted sessions count
+      const countResult = await this.prisma.$queryRawUnsafe(`
+        SELECT count(*)::int as total
+        FROM public.facebook_ads_ai_chat_sessions
+        WHERE "companyId" = $1 AND status != 'DELETED'
+      `, companyId);
+      const totalCount = countResult?.[0]?.total || 0;
+
+      // 2. Fetch recent sessions
       const sessions = await this.prisma.$queryRawUnsafe(`
         SELECT id, "companyId", "userId", title, status, context, "createdAt", "updatedAt"
         FROM public.facebook_ads_ai_chat_sessions
@@ -91,7 +100,7 @@ class MarketingCopilotSessionService {
       `, companyId, limit);
 
       if (!sessions || sessions.length === 0) {
-        return [];
+        return { sessions: [], totalCount };
       }
 
       const sessionIds = sessions.map(s => s.id);
@@ -118,7 +127,7 @@ class MarketingCopilotSessionService {
         });
       }
 
-      return sessions.map(s => ({
+      const formattedSessions = sessions.map(s => ({
         id: s.id,
         title: s.title || 'جلسة جديدة',
         createdAt: s.createdAt,
@@ -126,9 +135,14 @@ class MarketingCopilotSessionService {
         messages: messagesBySession[s.id] || [],
         context: s.context || {},
       }));
+
+      return {
+        sessions: formattedSessions,
+        totalCount,
+      };
     } catch (err) {
       console.error('❌ [MarketingCopilotSessionService] listSessions error:', err);
-      return [];
+      return { sessions: [], totalCount: 0 };
     }
   }
 

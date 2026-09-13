@@ -17,6 +17,7 @@ interface MarketingControlHubProps {
   isOpen: boolean;
   onClose: () => void;
   sessions: CopilotSession[];
+  totalCount?: number;
   activeSessionId: string;
   onSelectSession: (sessionId: string) => void;
   onNewSession: () => void;
@@ -27,6 +28,7 @@ export const MarketingControlHub: React.FC<MarketingControlHubProps> = ({
   isOpen,
   onClose,
   sessions,
+  totalCount,
   activeSessionId,
   onSelectSession,
   onNewSession,
@@ -81,7 +83,7 @@ export const MarketingControlHub: React.FC<MarketingControlHubProps> = ({
               <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 سجل الجلسات السابقة
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
-                  {sessions.length}
+                  {totalCount || sessions.length}
                 </span>
               </h2>
             </div>

@@ -3930,19 +3930,20 @@ export async function publishAiDraft(
 /**
  * جلب كافة جلسات محادثة الوكيل الذكي المتزامنة سحابياً عبر قاعدة البيانات
  */
-export async function getMarketingCopilotSessions(limit = 50): Promise<{
+export async function getMarketingCopilotSessions(limit = 100): Promise<{
   success: boolean;
   data: any[];
+  totalCount?: number;
   error?: string;
 }> {
   try {
-    const response = await apiClient.get<{ success: boolean; data: any[] }>(
+    const response = await apiClient.get<{ success: boolean; data: any[]; totalCount?: number }>(
       "/facebook-ads/ai/sessions",
       { params: { limit } }
     );
     return response.data;
   } catch (err: any) {
-    return { success: false, data: [], error: err?.message || "Failed to load sessions" };
+    return { success: false, data: [], totalCount: 0, error: err?.message || "Failed to load sessions" };
   }
 }
 

@@ -75,6 +75,7 @@ export function useCopilotSessions(companyId?: string | null) {
   });
 
   const [isLoadingCloud, setIsLoadingCloud] = useState<boolean>(false);
+  const [totalCount, setTotalCount] = useState<number>(() => sessions.length);
 
   // 2. Fetch from Cloud Database (PostgreSQL) and seamlessly auto-migrate local sessions
   useEffect(() => {
@@ -85,10 +86,16 @@ export function useCopilotSessions(companyId?: string | null) {
 
     async function syncCloudSessions() {
       try {
-        const res = await getMarketingCopilotSessions(50);
+        const res = await getMarketingCopilotSessions(100);
         if (!isMounted) return;
 
         if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          if (typeof res.totalCount === "number") {
+            setTotalCount(res.totalCount);
+          } else {
+            setTotalCount(res.data.length);
+          }
+
           const cloudSessions: CopilotSession[] = res.data.map((s: any) => ({
             id: s.id,
             title: typeof s?.title === "string" && s.title.trim() ? s.title : "جلسة جديدة",
@@ -199,6 +206,7 @@ export function useCopilotSessions(companyId?: string | null) {
     const newSession = createDefaultSession(validTitle);
     setSessions((prev) => [newSession, ...prev]);
     setActiveSessionId(newSession.id);
+    setTotalCount((prev) => prev + 1);
 
     // Sync to Cloud DB in background
     saveMarketingCopilotSession(newSession).catch((err) =>
@@ -224,6 +232,7 @@ export function useCopilotSessions(companyId?: string | null) {
       }
       return filtered;
     });
+    setTotalCount((prev) => Math.max(1, prev - 1));
 
     // Delete from Cloud DB in background
     deleteMarketingCopilotSession(sessionId).catch((err) =>
@@ -236,6 +245,7 @@ export function useCopilotSessions(companyId?: string | null) {
     const fresh = createDefaultSession();
     setSessions([fresh]);
     setActiveSessionId(fresh.id);
+    setTotalCount(1);
     saveMarketingCopilotSession(fresh).catch(console.warn);
   }, []);
 
@@ -271,6 +281,7 @@ export function useCopilotSessions(companyId?: string | null) {
 
   return {
     sessions,
+    totalCount: totalCount || sessions.length,
     activeSession,
     activeSessionId,
     isLoadingCloud,

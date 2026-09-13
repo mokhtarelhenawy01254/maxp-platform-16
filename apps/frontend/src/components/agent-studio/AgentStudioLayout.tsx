@@ -33,10 +33,10 @@ export interface AgentStudioLayoutProps {
   canvasTabLabel?: string;
   canvasTabIcon?: LucideIcon;
   hasActiveDraft?: boolean;
-  mobileView: "CHAT" | "CANVAS";
-  onMobileViewChange: (view: "CHAT" | "CANVAS") => void;
+  mobileView?: "CHAT" | "CANVAS";
+  onMobileViewChange?: (view: "CHAT" | "CANVAS") => void;
   chatPanel: React.ReactNode;
-  canvasPanel: React.ReactNode;
+  canvasPanel?: React.ReactNode;
   extraDrawers?: React.ReactNode;
 }
 
@@ -253,62 +253,74 @@ export const AgentStudioLayout: React.FC<AgentStudioLayoutProps> = ({
             </div>
           </div>
 
-          {/* Mobile Tier 2: iOS-Style Segmented Tab Switcher */}
-          <div className="px-2.5 py-1.5 bg-slate-50/60 dark:bg-slate-900/60">
-            <div className="grid grid-cols-2 p-0.5 bg-slate-200/70 dark:bg-slate-800/70 rounded-xl gap-1 text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => onMobileViewChange("CHAT")}
-                className={`py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition ${
-                  mobileView === "CHAT"
-                    ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
-                }`}
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>{chatTabLabel}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onMobileViewChange("CANVAS")}
-                className={`py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition relative ${
-                  mobileView === "CANVAS"
-                    ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
-                }`}
-              >
-                <CanvasIcon className="w-3.5 h-3.5" />
-                <span>{canvasTabLabel}</span>
-                {hasActiveDraft && (
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                )}
-              </button>
+          {/* Mobile Tier 2: iOS-Style Segmented Tab Switcher (Only if canvasPanel exists) */}
+          {canvasPanel && (
+            <div className="px-2.5 py-1.5 bg-slate-50/60 dark:bg-slate-900/60">
+              <div className="grid grid-cols-2 p-0.5 bg-slate-200/70 dark:bg-slate-800/70 rounded-xl gap-1 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => onMobileViewChange?.("CHAT")}
+                  className={`py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition ${
+                    mobileView === "CHAT"
+                      ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>{chatTabLabel}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onMobileViewChange?.("CANVAS")}
+                  className={`py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition relative ${
+                    mobileView === "CANVAS"
+                      ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+                  }`}
+                >
+                  <CanvasIcon className="w-3.5 h-3.5" />
+                  <span>{canvasTabLabel}</span>
+                  {hasActiveDraft && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </header>
 
-      {/* Main 2-Panel Unified Surface (One Seamless Chassis) */}
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-0 overflow-hidden divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-slate-200 dark:divide-slate-800">
-        {/* Panel 1: Strategy & Chat Feed (58% desktop width) */}
+      {/* Main Unified Surface (One Seamless Chassis) */}
+      <main
+        className={`flex-1 grid grid-cols-1 ${
+          canvasPanel
+            ? "lg:grid-cols-12 min-h-0 overflow-hidden divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-slate-200 dark:divide-slate-800"
+            : "min-h-0 overflow-hidden"
+        }`}
+      >
+        {/* Panel 1: Strategy & Chat Feed (100% full width if no canvasPanel, or 58% if canvasPanel present) */}
         <section
           aria-label={chatTabLabel}
-          className={`h-full lg:col-span-7 min-h-0 flex flex-col ${
-            mobileView === "CHAT" ? "flex" : "hidden lg:flex"
+          className={`h-full ${
+            canvasPanel ? "lg:col-span-7" : "w-full"
+          } min-h-0 flex flex-col ${
+            !canvasPanel || mobileView === "CHAT" ? "flex" : "hidden lg:flex"
           }`}
         >
           {chatPanel}
         </section>
 
-        {/* Panel 2: Live Action Canvas & Draft Center (42% desktop width) */}
-        <section
-          aria-label={canvasTabLabel}
-          className={`h-full lg:col-span-5 min-h-0 flex flex-col bg-slate-50/30 dark:bg-slate-900/30 ${
-            mobileView === "CANVAS" ? "flex" : "hidden lg:flex"
-          }`}
-        >
-          {canvasPanel}
-        </section>
+        {/* Panel 2: Live Action Canvas (Only rendered when canvasPanel is provided) */}
+        {canvasPanel && (
+          <section
+            aria-label={canvasTabLabel}
+            className={`h-full lg:col-span-5 min-h-0 flex flex-col bg-slate-50/30 dark:bg-slate-900/30 ${
+              mobileView === "CANVAS" ? "flex" : "hidden lg:flex"
+            }`}
+          >
+            {canvasPanel}
+          </section>
+        )}
       </main>
 
       {/* Slide-over Drawers (Sessions, Entity Pickers, Modals) */}
