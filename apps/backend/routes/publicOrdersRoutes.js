@@ -1407,7 +1407,8 @@ router.post('/', async (req, res) => {
         const autoDiscountService = require('../services/autoDiscountService');
         const loyaltySettings = await autoDiscountService.getSettings(company.id);
         const autoActive = loyaltySettings.autoDiscountEnabled === true && loyaltySettings.enabled !== false;
-        const tiersActive = loyaltySettings.tiersEnabled === true;
+        const hasTiers = await prisma.customerLoyaltyTier.count({ where: { companyId: company.id } });
+        const tiersActive = loyaltySettings.tiersEnabled === true || hasTiers > 0;
         const discountCombination = loyaltySettings.discountCombination || 'ADDITIVE';
         const maxTotalDiscountPercent = Number(loyaltySettings.maxTotalDiscountPercent || 0);
 

@@ -739,14 +739,41 @@ class EnhancedOrderService {
       console.log(`📦 [COSTS-CALC] نتيجة حساب الشحن التلقائي: ${shipping} جنيه`);
     }
 
+    // 🎁 فحص وتطبيق مزايا مستوى الولاء (شحن مجاني + خصم نسبة المستوى)
+    let loyaltyRewards = null;
+    try {
+      const customerLoyaltyService = require('./hr/customerLoyaltyService');
+      let targetCustomerId = data.customerId;
+      if (!targetCustomerId && (data.customerPhone || data.phone) && data.companyId) {
+        const { findCustomerByPhone } = require('../utils/customerIdentity');
+        const cust = await findCustomerByPhone(this.getPrisma(), data.customerPhone || data.phone, data.companyId);
+        if (cust) targetCustomerId = cust.id;
+      }
+      if (targetCustomerId && data.companyId) {
+        loyaltyRewards = await customerLoyaltyService.getCustomerActiveRewards(data.companyId, targetCustomerId);
+      }
+    } catch (loyaltyErr) {
+      console.warn('⚠️ [COSTS-CALC] Could not fetch loyalty rewards:', loyaltyErr.message);
+    }
+
+    if (loyaltyRewards?.freeShipping) {
+      shipping = 0;
+      console.log(`📦 [COSTS-CALC] تم تطبيق شحن مجاني بناءً على مستوى ولاء العميل`);
+    }
+
     // حساب الضرائب (0% حالياً)
     const tax = parseFloat(data.tax) || 0;
 
-    // حساب الخصم (يدوي + كوبون + الخصم التلقائي)
+    // حساب الخصم (يدوي + كوبون + الخصم التلقائي + خصم المستوى)
     const manualDiscount = parseFloat(data.manualDiscount) || 0;
     const couponDiscount = parseFloat(data.couponDiscount) || 0;
     const autoDiscount = parseFloat(data.autoDiscountApplied) || 0;
-    const discount = manualDiscount + couponDiscount + autoDiscount || parseFloat(data.discount) || 0;
+    let loyaltyTierDiscount = 0;
+    if (loyaltyRewards && Number(loyaltyRewards.discountPercent) > 0) {
+      loyaltyTierDiscount = (subtotal * Number(loyaltyRewards.discountPercent)) / 100;
+      console.log(`💰 [COSTS-CALC] تم تطبيق خصم مستوى الولاء (${loyaltyRewards.discountPercent}%): ${loyaltyTierDiscount} جنيه`);
+    }
+    const discount = manualDiscount + couponDiscount + autoDiscount + loyaltyTierDiscount || parseFloat(data.discount) || 0;
 
     const total = subtotal + shipping + tax - discount;
 

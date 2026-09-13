@@ -17,6 +17,8 @@ import {
   MapPin,
   Globe,
   SlidersHorizontal,
+  Truck,
+  Users,
 } from "lucide-react";
 
 interface CustomerLoyaltyTier {
@@ -31,6 +33,9 @@ interface CustomerLoyaltyTier {
   maxItems?: number;
   calculationType?: string;
   benefits: any;
+  discountPercent?: number;
+  freeShipping?: boolean;
+  rawBenefits?: any;
   targetGovernorates?: string[];
   conditions?: {
     minOrders?: number;
@@ -138,6 +143,44 @@ const LoyaltyTiers: React.FC = () => {
     return [];
   };
 
+  // استخراج وتنسيق مزايا المستوى من استجابة الخادم
+  const parseTierFromApi = (t: any): CustomerLoyaltyTier => {
+    let raw = t.benefits;
+    if (typeof raw === "string") {
+      try { raw = JSON.parse(raw); } catch (e) { raw = {}; }
+    }
+    let discountPercent = Number(t.discountPercent || 0);
+    let freeShipping = Boolean(t.freeShipping);
+
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      if (raw.discountPercent != null) discountPercent = Number(raw.discountPercent) || 0;
+      if (raw.freeShipping) freeShipping = true;
+      if (Array.isArray(raw.items)) {
+        for (const item of raw.items) {
+          const str = String(item);
+          if (/شحن\s*مجاني|free\s*shipping/i.test(str)) freeShipping = true;
+          const m = str.match(/(?:خصم|discount)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*%/i) || str.match(/(\d+(?:\.\d+)?)\s*%\s*(?:خصم|discount)/i);
+          if (m) discountPercent = parseFloat(m[1]) || 0;
+        }
+      }
+    } else if (Array.isArray(raw)) {
+      for (const item of raw) {
+        const str = String(item);
+        if (/شحن\s*مجاني|free\s*shipping/i.test(str)) freeShipping = true;
+        const m = str.match(/(?:خصم|discount)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*%/i) || str.match(/(\d+(?:\.\d+)?)\s*%\s*(?:خصم|discount)/i);
+        if (m) discountPercent = parseFloat(m[1]) || 0;
+      }
+    }
+
+    return {
+      ...t,
+      discountPercent,
+      freeShipping,
+      rawBenefits: raw,
+      benefits: normalizeBenefits(raw || { discountPercent, freeShipping }),
+    };
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -149,7 +192,7 @@ const LoyaltyTiers: React.FC = () => {
         apiClient.get("/hr/customer-loyalty/tiers"),
         apiClient.get("/hr/customer-loyalty/programs"),
       ]);
-      setTiers((tiersRes.data.data || []).map((t: any) => ({ ...t, benefits: normalizeBenefits(t.benefits) })));
+      setTiers((tiersRes.data.data || []).map(parseTierFromApi));
       setPrograms(programsRes.data.data?.filter((p: any) => p.status === "ACTIVE" || p.type === "TIERS" || p.type === "POINTS") || []);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -162,7 +205,7 @@ const LoyaltyTiers: React.FC = () => {
     try {
       setIsLoading(true);
       const res = await apiClient.get("/hr/customer-loyalty/tiers");
-      setTiers((res.data.data || []).map((t: any) => ({ ...t, benefits: normalizeBenefits(t.benefits) })));
+      setTiers((res.data.data || []).map(parseTierFromApi));
     } catch (error) {
       console.error("Error fetching tiers:", error);
     } finally {
@@ -197,6 +240,8 @@ const LoyaltyTiers: React.FC = () => {
     if (tier) {
       setEditingTier({
         ...tier,
+        discountPercent: tier.discountPercent ?? 0,
+        freeShipping: Boolean(tier.freeShipping),
         targetGovernorates: Array.isArray(tier.targetGovernorates) ? [...tier.targetGovernorates] : [],
         conditions: tier.conditions ? { ...tier.conditions } : { minOrders: undefined, minSpent: undefined }
       });
@@ -206,7 +251,9 @@ const LoyaltyTiers: React.FC = () => {
         nameAr: "",
         minPoints: 0,
         maxPoints: 0,
-        benefits: [""],
+        discountPercent: 0,
+        freeShipping: false,
+        benefits: [],
         targetGovernorates: [],
         conditions: { minOrders: undefined, minSpent: undefined },
         color: "#6366f1",
@@ -222,12 +269,20 @@ const LoyaltyTiers: React.FC = () => {
     if (!editingTier) return;
     try {
       setIsSaving(true);
-      // Clean up benefits: remove empty ones
-      const cleanBenefits = (editingTier.benefits || []).filter((b) => typeof b === "string" && b.trim() !== "");
+      const discount = Math.max(0, Math.min(100, Number(editingTier.discountPercent || 0)));
+      const freeShip = Boolean(editingTier.freeShipping);
       const hasConditions = editingTier.conditions && (editingTier.conditions.minOrders || editingTier.conditions.minSpent);
+
+      const benefitsObj: any = {
+        discountPercent: discount,
+        freeShipping: freeShip,
+      };
+
       const payload: any = {
         ...editingTier,
-        benefits: cleanBenefits,
+        discountPercent: discount,
+        freeShipping: freeShip,
+        benefits: benefitsObj,
         targetGovernorates: Array.isArray(editingTier.targetGovernorates) ? editingTier.targetGovernorates : [],
         conditions: hasConditions
           ? {
@@ -266,24 +321,6 @@ const LoyaltyTiers: React.FC = () => {
       console.error("Error deleting tier:", error);
       alert(error.response?.data?.error || "لا يمكن حذف المستوى لوجود عملاء مرتبطين به أو حدث خطأ");
     }
-  };
-
-  const updateBenefit = (index: number, value: string) => {
-    if (!editingTier) return;
-    const newBenefits = [...(editingTier.benefits || [])];
-    newBenefits[index] = value;
-    setEditingTier({ ...editingTier, benefits: newBenefits });
-  };
-
-  const addBenefit = () => {
-    if (!editingTier) return;
-    setEditingTier({ ...editingTier, benefits: [...(editingTier.benefits || []), ""] });
-  };
-
-  const removeBenefit = (index: number) => {
-    if (!editingTier) return;
-    const newBenefits = (editingTier.benefits || []).filter((_, i) => i !== index);
-    setEditingTier({ ...editingTier, benefits: newBenefits });
   };
 
   const getTierIcon = (iconName: string) => {
@@ -564,19 +601,33 @@ const LoyaltyTiers: React.FC = () => {
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   مميزات المستوى:
                 </p>
-                {tier.benefits && tier.benefits.length > 0 ? (
-                  tier.benefits.map((benefit, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
-                    >
-                      <Zap className="w-3 h-3 text-yellow-500 flex-shrink-0" />
-                      {benefit}
-                    </div>
-                  ))
+                {Number(tier.discountPercent) > 0 || tier.freeShipping || (tier.benefits && tier.benefits.length > 0) ? (
+                  <div className="space-y-1.5">
+                    {Number(tier.discountPercent) > 0 && (
+                      <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1.5 rounded-lg border border-emerald-200/80 dark:border-emerald-800/40">
+                        <Zap className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                        <span>خصم {tier.discountPercent}% على الطلبات</span>
+                      </div>
+                    )}
+                    {tier.freeShipping && (
+                      <div className="flex items-center gap-2 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1.5 rounded-lg border border-blue-200/80 dark:border-blue-800/40">
+                        <Truck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <span>شحن مجاني على كافة الطلبات</span>
+                      </div>
+                    )}
+                    {tier.benefits?.filter((b: string) => !b.includes("شحن مجاني") && !b.includes("خصم")).map((benefit: string, index: number) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 px-1 py-0.5"
+                      >
+                        <Zap className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+                        <span>{benefit}</span>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <span className="text-sm text-gray-400 italic">
-                    لا توجد ميزات إضافية
+                  <span className="text-xs text-gray-400 italic">
+                    لا توجد مميزات مضافة
                   </span>
                 )}
               </div>
@@ -835,37 +886,85 @@ const LoyaltyTiers: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    مميزات المستوى (Benefits)
+              {/* 🎁 مميزات ومكافآت المستوى المطبقة فعلياً */}
+              <div className="space-y-4 p-4 bg-purple-50/40 dark:bg-purple-950/20 rounded-xl border border-purple-100 dark:border-purple-800/40">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <label className="text-sm font-bold text-gray-900 dark:text-white">
+                    مميزات ومكافآت المستوى (تُطبق تلقائياً على طلبات عملاء هذا المستوى)
                   </label>
-                  <button
-                    type="button"
-                    onClick={addBenefit}
-                    className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
-                  >
-                    + إضافة ميزة
-                  </button>
                 </div>
-                {editingTier.benefits?.map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={benefit}
-                      onChange={(e) => updateBenefit(index, e.target.value)}
-                      placeholder={`ميزة ${index + 1}`}
-                      className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeBenefit(index)}
-                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* ميزة الخصم مع القيمة المتغيرة */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                      <span>خصم على الطلبات (%)</span>
+                      <span className="text-[11px] text-gray-400 font-normal">0 = بدون خصم</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.5}
+                        value={editingTier.discountPercent ?? 0}
+                        onChange={(e) => {
+                          const val = e.target.value === "" ? 0 : Number(e.target.value);
+                          setEditingTier({ ...editingTier, discountPercent: val });
+                        }}
+                        placeholder="مثال: 10"
+                        className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      />
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 select-none">
+                        %
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                      نسبة الخصم التي يتم تطبيقها تلقائياً على إجمالي مشتريات العميل عند الطلب.
+                    </p>
                   </div>
-                ))}
+
+                  {/* ميزة شحن مجاني */}
+                  <div className="space-y-1.5 flex flex-col justify-between">
+                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      شحن مجاني
+                    </label>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setEditingTier({ ...editingTier, freeShipping: !editingTier.freeShipping })}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setEditingTier({ ...editingTier, freeShipping: !editingTier.freeShipping });
+                        }
+                      }}
+                      className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer select-none transition-all ${
+                        editingTier.freeShipping
+                          ? "bg-purple-100/60 dark:bg-purple-900/40 border-purple-400 dark:border-purple-600 shadow-sm"
+                          : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Truck className={`w-4 h-4 ${editingTier.freeShipping ? "text-purple-600 dark:text-purple-400" : "text-gray-400"}`} />
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                          تفعيل الشحن المجاني
+                        </span>
+                      </div>
+                      <div
+                        className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors ${
+                          editingTier.freeShipping ? "bg-purple-600 justify-end" : "bg-gray-300 dark:bg-gray-600 justify-start"
+                        }`}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-white shadow-md transform transition-transform" />
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                      إعفاء العميل في هذا المستوى من رسوم الشحن تلقائياً عند الدفع.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800 pb-2">

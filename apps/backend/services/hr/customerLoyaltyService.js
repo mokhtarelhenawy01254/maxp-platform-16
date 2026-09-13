@@ -215,11 +215,34 @@ class CustomerLoyaltyService {
           });
 
           const parsedBenefits = tier.benefits ? parseJsonMaybe(tier.benefits, null) : null;
+          let discountPercent = 0;
+          let freeShipping = false;
+          if (parsedBenefits && typeof parsedBenefits === 'object' && !Array.isArray(parsedBenefits)) {
+            if (parsedBenefits.discountPercent != null) discountPercent = Number(parsedBenefits.discountPercent) || 0;
+            if (parsedBenefits.freeShipping) freeShipping = true;
+          } else if (Array.isArray(parsedBenefits)) {
+            for (const item of parsedBenefits) {
+              const str = String(item);
+              if (/شحن\s*مجاني|free\s*shipping/i.test(str)) freeShipping = true;
+              const m = str.match(/(?:خصم|discount)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*%/i) || str.match(/(\d+(?:\.\d+)?)\s*%\s*(?:خصم|discount)/i);
+              if (m) discountPercent = parseFloat(m[1]) || 0;
+            }
+          }
+          if (parsedBenefits && Array.isArray(parsedBenefits.items)) {
+            for (const item of parsedBenefits.items) {
+              const str = String(item);
+              if (/شحن\s*مجاني|free\s*shipping/i.test(str)) freeShipping = true;
+              const m = str.match(/(?:خصم|discount)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*%/i) || str.match(/(\d+(?:\.\d+)?)\s*%\s*(?:خصم|discount)/i);
+              if (m) discountPercent = parseFloat(m[1]) || 0;
+            }
+          }
           return {
             ...tier,
             program: tier.customerLoyaltyProgram,
             customersCount: count,
             benefits: parsedBenefits || [],
+            discountPercent,
+            freeShipping,
             targetGovernorates: Array.isArray(parsedBenefits?.targetGovernorates) ? parsedBenefits.targetGovernorates : [],
             conditions: parsedBenefits?.conditions || null
           };
@@ -355,6 +378,18 @@ class CustomerLoyaltyService {
         benefitsObj.conditions = conditions;
       }
 
+      if (data.discountPercent !== undefined) {
+        benefitsObj.discountPercent = Math.max(0, Math.min(100, Number(data.discountPercent) || 0));
+      } else if (data.benefits?.discountPercent !== undefined) {
+        benefitsObj.discountPercent = Math.max(0, Math.min(100, Number(data.benefits.discountPercent) || 0));
+      }
+
+      if (data.freeShipping !== undefined) {
+        benefitsObj.freeShipping = Boolean(data.freeShipping);
+      } else if (data.benefits?.freeShipping !== undefined) {
+        benefitsObj.freeShipping = Boolean(data.benefits.freeShipping);
+      }
+
       const tier = await prisma.customerLoyaltyTier.create({
         data: {
           companyId,
@@ -375,10 +410,23 @@ class CustomerLoyaltyService {
         }
       });
 
+      // 🚀 ضمان تفعيل نظام المستويات للشركة حتى تُطبق المزايا على الفور
+      try {
+        const autoDiscountService = require('../autoDiscountService');
+        const s = await autoDiscountService.getSettings(companyId);
+        if (!s.tiersEnabled) {
+          await autoDiscountService.updateLoyaltyConfig(companyId, { tiersEnabled: true });
+        }
+      } catch (cfgErr) {
+        console.warn('⚠️ [LOYALTY] Could not auto-enable tiersEnabled:', cfgErr.message);
+      }
+
       const parsedBenefits = tier.benefits ? parseJsonMaybe(tier.benefits, null) : null;
       return {
         ...tier,
         benefits: parsedBenefits,
+        discountPercent: Number(parsedBenefits?.discountPercent || 0),
+        freeShipping: Boolean(parsedBenefits?.freeShipping),
         targetGovernorates: Array.isArray(parsedBenefits?.targetGovernorates) ? parsedBenefits.targetGovernorates : [],
         conditions: parsedBenefits?.conditions || null
       };
@@ -440,6 +488,18 @@ class CustomerLoyaltyService {
         delete benefitsObj.conditions;
       }
 
+      if (data.discountPercent !== undefined) {
+        benefitsObj.discountPercent = Math.max(0, Math.min(100, Number(data.discountPercent) || 0));
+      } else if (data.benefits?.discountPercent !== undefined) {
+        benefitsObj.discountPercent = Math.max(0, Math.min(100, Number(data.benefits.discountPercent) || 0));
+      }
+
+      if (data.freeShipping !== undefined) {
+        benefitsObj.freeShipping = Boolean(data.freeShipping);
+      } else if (data.benefits?.freeShipping !== undefined) {
+        benefitsObj.freeShipping = Boolean(data.benefits.freeShipping);
+      }
+
       const updateData = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.nameAr !== undefined) updateData.nameAr = data.nameAr;
@@ -470,10 +530,23 @@ class CustomerLoyaltyService {
         data: updateData
       });
 
+      // 🚀 ضمان تفعيل نظام المستويات للشركة حتى تُطبق المزايا على الفور
+      try {
+        const autoDiscountService = require('../autoDiscountService');
+        const s = await autoDiscountService.getSettings(companyId);
+        if (!s.tiersEnabled) {
+          await autoDiscountService.updateLoyaltyConfig(companyId, { tiersEnabled: true });
+        }
+      } catch (cfgErr) {
+        console.warn('⚠️ [LOYALTY] Could not auto-enable tiersEnabled:', cfgErr.message);
+      }
+
       const parsedBenefits = tier.benefits ? parseJsonMaybe(tier.benefits, null) : null;
       return {
         ...tier,
         benefits: parsedBenefits,
+        discountPercent: Number(parsedBenefits?.discountPercent || 0),
+        freeShipping: Boolean(parsedBenefits?.freeShipping),
         targetGovernorates: Array.isArray(parsedBenefits?.targetGovernorates) ? parsedBenefits.targetGovernorates : [],
         conditions: parsedBenefits?.conditions || null
       };
@@ -1311,7 +1384,7 @@ class CustomerLoyaltyService {
         activeVoucher,
         walletBalance,
         loyaltySystem,
-        tiersEnabled: _adSettings.tiersEnabled === true,
+        tiersEnabled: _adSettings.tiersEnabled === true || tiers.length > 0,
         autoDiscountEnabled: _adSettings.autoDiscountEnabled === true,
         discountCombination: _adSettings.discountCombination || 'ADDITIVE',
         maxTotalDiscountPercent: Number(_adSettings.maxTotalDiscountPercent || 0)
@@ -1514,14 +1587,68 @@ class CustomerLoyaltyService {
         }
       };
 
-      const tierBenefits = records[0]?.customerLoyaltyTier ? parseBenefits(records[0].customerLoyaltyTier.benefits) : {};
+      let activeTier = records.find((r) => r.customerLoyaltyTier)?.customerLoyaltyTier;
+      if (!activeTier) {
+        // 🔄 Fallback: تحديد المستوى ديناميكياً للعميل بناءً على نقاطه/إنفاقه
+        try {
+          const activeProg = await prisma.customerLoyaltyProgram.findFirst({
+            where: { companyId, type: 'POINTS', status: 'ACTIVE' },
+            orderBy: { createdAt: 'asc' }
+          });
+          if (activeProg) {
+            const method = await this.resolveTierMethod(companyId, customerId, activeProg.id);
+            const metric = await this.computeTierMetric(companyId, customerId, activeProg.id, method);
+            const governorate = await this.resolveCustomerGovernorate(companyId, customerId);
+            activeTier = await this.determineTier(companyId, activeProg.id, metric, method, { customerId, governorate });
+            if (activeTier && records[0] && !records[0].tierId) {
+              await prisma.customerLoyaltyRecord.update({
+                where: { id: records[0].id },
+                data: { tierId: activeTier.id }
+              }).catch(() => {});
+            }
+          }
+        } catch (dynErr) {
+          console.warn('⚠️ [LOYALTY] Failed to dynamically determine tier in getCustomerActiveRewards:', dynErr.message);
+        }
+      }
+
+      const tierBenefits = activeTier ? parseBenefits(activeTier.benefits) : {};
       const overrideBenefits = customer ? parseBenefits(customer.tierBenefits) : {};
 
       const applyBenefits = (b) => {
-        if (!b || typeof b !== 'object') return;
-        if (b.freeShipping) effectiveRewards.freeShipping = true;
+        if (!b) return;
+        if (typeof b === 'string') {
+          b = parseBenefits(b);
+        }
+        if (Array.isArray(b)) {
+          b = { items: b };
+        }
+        if (typeof b !== 'object') return;
+
+        if (b.freeShipping === true || b.freeShipping === 'true' || b.freeShipping === 1) {
+          effectiveRewards.freeShipping = true;
+        }
         const d = Number(b.discountPercent || 0);
-        if (d > 0 && d > effectiveRewards.discountPercent) effectiveRewards.discountPercent = d;
+        if (d > 0 && d > effectiveRewards.discountPercent) {
+          effectiveRewards.discountPercent = d;
+        }
+
+        // قراءة العناصر النصية (للتوافق القديم)
+        if (Array.isArray(b.items)) {
+          for (const item of b.items) {
+            const str = String(item).trim();
+            if (/شحن\s*مجاني|free\s*shipping/i.test(str)) {
+              effectiveRewards.freeShipping = true;
+            }
+            const match = str.match(/(?:خصم|discount)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*%/i) || str.match(/(\d+(?:\.\d+)?)\s*%\s*(?:خصم|discount)/i);
+            if (match) {
+              const val = parseFloat(match[1]);
+              if (val > 0 && val > effectiveRewards.discountPercent) {
+                effectiveRewards.discountPercent = val;
+              }
+            }
+          }
+        }
       };
       applyBenefits(tierBenefits);
       applyBenefits(overrideBenefits);
