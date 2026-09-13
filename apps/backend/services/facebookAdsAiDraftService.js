@@ -193,7 +193,24 @@ class FacebookAdsAiDraftService {
     const rawBudget = Number(overrides.budgetAmount || overrides.budget || draft.budgetAmount || rawData.budgetAmount || rawData.budget) || 200;
     const budgetVal = Math.max(200, rawBudget);
     const destUrl = overrides.linkUrl || overrides.productUrl || draft.productUrl || rawData.productUrl || rawData.linkUrl || '';
-    const imgUrl = overrides.imageUrl || draft.imageUrl || rawData.imageUrl || null;
+
+    // 🛡️ Auto-hydrate product image from snapshot or draft data
+    const snapshot = safeParseJson(draft.productSnapshot, {});
+    let imgUrl = overrides.imageUrl || draft.imageUrl || rawData.imageUrl || snapshot.imageUrl || snapshot.mainImage || null;
+
+    if (!imgUrl && Array.isArray(snapshot.images) && snapshot.images.length > 0) {
+      imgUrl = snapshot.images[0];
+    }
+
+    // Ensure image URL is an absolute URL if relative path provided
+    if (typeof imgUrl === 'string' && imgUrl.startsWith('/')) {
+      try {
+        if (destUrl && destUrl.startsWith('http')) {
+          const parsedDest = new URL(destUrl);
+          imgUrl = `${parsedDest.origin}${imgUrl}`;
+        }
+      } catch (_) {}
+    }
 
     const payload = {
       ...rawData,

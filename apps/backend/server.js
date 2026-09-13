@@ -1700,15 +1700,45 @@ function startMemoryMonitor() {
   }, CHECK_INTERVAL);
 }
 
-// Graceful shutdown — disconnect WhatsApp sessions before exit
+// Graceful shutdown — drain in-flight HTTP connections and clean up resources before exit
+let isShuttingDown = false;
 async function shutdownGracefully(signal) {
-  console.log(`\n🛑 [SERVER] Received ${signal}, starting graceful shutdown...`);
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  console.log(`\n🛑 [SERVER] Received ${signal}, starting graceful HTTP draining & shutdown...`);
 
-  const timeout = setTimeout(() => {
-    console.error('⚠️ [SERVER] Forced shutdown after timeout');
+  // Hard timeout safeguard (matches PM2 kill_timeout with margin)
+  const forceExitTimeout = setTimeout(() => {
+    console.error('⚠️ [SERVER] Forced shutdown: in-flight drain exceeded 18s timeout');
     process.exit(1);
-  }, 15000);
+  }, 18000);
+  if (typeof forceExitTimeout.unref === 'function') {
+    forceExitTimeout.unref();
+  }
 
+  // 1. Stop receiving new HTTP requests and wait for in-flight requests (e.g. AI turns) to drain
+  const closeHttpServer = () => new Promise((resolve) => {
+    if (server && typeof server.close === 'function') {
+      server.close((err) => {
+        if (err) {
+          console.warn('⚠️ [SERVER] Error closing HTTP server:', err.message);
+        } else {
+          console.log('✅ [SERVER] HTTP server closed, all in-flight requests drained cleanly');
+        }
+        resolve();
+      });
+    } else {
+      resolve();
+    }
+  });
+
+  try {
+    await closeHttpServer();
+  } catch (httpErr) {
+    console.warn('⚠️ [SERVER] HTTP drain warning:', httpErr.message);
+  }
+
+  // 2. Disconnect WhatsApp sessions cleanly
   try {
     const WhatsAppManager = require("./services/whatsapp/WhatsAppManager");
     const sessionCount = WhatsAppManager.getAllSessions()?.length || 0;
@@ -1724,7 +1754,7 @@ async function shutdownGracefully(signal) {
     console.error('⚠️ [SERVER] Error during WhatsApp shutdown:', err.message);
   }
 
-  clearTimeout(timeout);
+  clearTimeout(forceExitTimeout);
   console.log('✅ [SERVER] Graceful shutdown complete');
   process.exit(0);
 }

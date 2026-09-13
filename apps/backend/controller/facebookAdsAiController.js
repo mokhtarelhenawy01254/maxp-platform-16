@@ -301,6 +301,43 @@ class FacebookAdsAiController {
             fullAdPayload.pixelId = String(resolvedPixelId);
           }
         }
+
+        // 🛡️ Auto-resolve imageUrl from product if missing or relative
+        if (!fullAdPayload.imageUrl || String(fullAdPayload.imageUrl).startsWith('/')) {
+          try {
+            const snapshot = typeof draft.productSnapshot === 'object' ? draft.productSnapshot : JSON.parse(draft.productSnapshot || '{}');
+            let candImg = fullAdPayload.imageUrl || snapshot.imageUrl || snapshot.mainImage || null;
+
+            if (!candImg && (fullAdPayload.productId || snapshot.id)) {
+              const prod = await prisma.product.findFirst({
+                where: {
+                  companyId,
+                  id: fullAdPayload.productId || snapshot.id,
+                },
+                select: { mainImage: true, images: true }
+              });
+              if (prod) {
+                candImg = prod.mainImage || (Array.isArray(prod.images) ? prod.images[0] : null);
+              }
+            }
+
+            if (candImg) {
+              if (candImg.startsWith('http')) {
+                fullAdPayload.imageUrl = candImg;
+              } else {
+                const company = await prisma.company.findUnique({
+                  where: { id: companyId },
+                  select: { customDomain: true, slug: true }
+                });
+                const storeHost = company?.customDomain || (company?.slug ? `${company.slug}.maxp.online` : 'store.maxp.online');
+                const cleanPath = candImg.startsWith('/') ? candImg : `/${candImg}`;
+                fullAdPayload.imageUrl = `https://${storeHost}${cleanPath}`;
+              }
+            }
+          } catch (imgResolveErr) {
+            console.warn('⚠️ Could not auto-resolve ad image URL:', imgResolveErr.message);
+          }
+        }
       } catch (dbErr) {
         console.warn('⚠️ Could not auto-resolve FB assets:', dbErr.message);
       }
