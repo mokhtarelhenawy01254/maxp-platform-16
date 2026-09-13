@@ -733,40 +733,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             </div>
           </div>
 
-          {/* شريط حالة إشعارات المتصفح في الخلفية */}
-          <div className="px-3 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-100 dark:border-amber-900/30 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
-            <span className="flex items-center gap-1.5 font-medium">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              تنبيهات الخلفية (الطلبات والرسائل)
-            </span>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  const { subscribeToBrowserPush } = await import("../../utils/pushNotifications");
-                  await Notification.requestPermission();
-                  await subscribeToBrowserPush();
-                  await apiClient.post("/notifications/test", {
-                    testConfig: {
-                      channel: "browser",
-                      type: "order_created",
-                      title: "🔔 تجربة إشعار المتصفح",
-                      message: "مبروك! إشعارات المتصفح في الخلفية تعمل بنجاح.",
-                      requireInteraction: true,
-                    },
-                  });
-                } catch (e) {
-                  console.error(e);
-                }
-              }}
-              className="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-medium transition shadow-xs"
-            >
-              تجربة إشعار 🧪
-            </button>
-          </div>
 
           {/* Notifications List */}
           <div className="max-h-80 overflow-y-auto">

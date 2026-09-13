@@ -7,6 +7,11 @@ const mockApiGet = jest.fn();
 const mockShowBrowserNotification = jest.fn();
 const socketHandlers: Record<string, (...args: unknown[]) => void> = {};
 
+const mockNavigate = jest.fn();
+jest.mock("react-router-dom", () => ({
+  useNavigate: () => mockNavigate,
+}));
+
 jest.mock("../../../hooks/useAuthSimple", () => ({
   useAuth: () => mockUseAuth(),
 }));

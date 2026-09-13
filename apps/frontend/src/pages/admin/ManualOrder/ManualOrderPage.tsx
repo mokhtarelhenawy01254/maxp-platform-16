@@ -23,7 +23,8 @@ type ManualAccessState = {
 };
 
 const ManualOrderPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
   const { user } = useAuth();
   const isAffiliate = user?.role === "AFFILIATE";
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -224,27 +225,27 @@ const ManualOrderPage = () => {
   };
 
   const pageTitle = isAffiliate
-    ? t("manualOrder.affiliateTitle", "إنشاء طلب يدوي كمسوّق")
-    : t("manualOrder.title", "الطلبات اليدوية");
+    ? t("manualOrder.affiliateTitle", isEn ? "Create Manual Order as Affiliate" : "إنشاء طلب يدوي كمسوّق")
+    : t("manualOrder.title", isEn ? "Manual Orders" : "الطلبات اليدوية");
   const pageSubtitle = isAffiliate
-    ? t("manualOrder.affiliateSubtitle", "إنشاء طلبات مباشرة لعملائك ومتابعة عمولاتك الخاصة بكل طلب")
-    : t("manualOrder.adminSubtitle", "إنشاء وتأكيد طلبات العملاء المباشرة وإسنادها بسرعة للمخزون والشحن");
+    ? t("manualOrder.affiliateSubtitle", isEn ? "Create direct orders for your customers and track your commissions per order" : "إنشاء طلبات مباشرة لعملائك ومتابعة عمولاتك الخاصة بكل طلب")
+    : t("manualOrder.adminSubtitle", isEn ? "Create and confirm direct customer orders and quickly allocate them to inventory and shipping" : "إنشاء وتأكيد طلبات العملاء المباشرة وإسنادها بسرعة للمخزون والشحن");
 
   const mobilePanels = [
     {
       id: "products" as const,
-      label: t("manualOrder.productsStep", "المنتجات"),
+      label: t("manualOrder.productsStep", isEn ? "Products" : "المنتجات"),
       icon: ShoppingBagIcon,
     },
     {
       id: "cart" as const,
-      label: t("manualOrder.cartStep", "السلة"),
+      label: t("manualOrder.cartStep", isEn ? "Cart" : "السلة"),
       icon: ShoppingCartIcon,
       count: cartItems.length,
     },
     {
       id: "checkout" as const,
-      label: t("manualOrder.checkoutStep", "بيانات الطلب"),
+      label: t("manualOrder.checkoutStep", isEn ? "Order Details" : "بيانات الطلب"),
       icon: UserCircleIcon,
     },
   ];
@@ -252,7 +253,7 @@ const ManualOrderPage = () => {
   if (accessLoading) {
     return (
       <div className="flex h-screen items-center justify-center text-sm text-slate-500 dark:text-slate-400">
-        جاري التحقق من الاشتراك...
+        {isEn ? "Checking subscription..." : "جاري التحقق من الاشتراك..."}
       </div>
     );
   }
@@ -262,10 +263,12 @@ const ManualOrderPage = () => {
       <div className="flex h-screen items-center justify-center p-4">
         <div className="max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            {t("manualOrder.title", "الطلبات اليدوية")}
+            {t("manualOrder.title", isEn ? "Manual Orders" : "الطلبات اليدوية")}
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            هذه الميزة تتطلب تفعيل تطبيق مخصص. فعّل تطبيق "الطلبات اليدوية" من متجر التطبيقات للمتابعة.
+            {isEn
+              ? "This feature requires activating a dedicated app. Activate the 'Manual Orders' app from the app store to proceed."
+              : "هذه الميزة تتطلب تفعيل تطبيق مخصص. فعّل تطبيق \"الطلبات اليدوية\" من متجر التطبيقات للمتابعة."}
           </p>
         </div>
       </div>
@@ -275,12 +278,19 @@ const ManualOrderPage = () => {
   return (
     <div
       className="relative flex h-[calc(100dvh-64px)] min-h-[560px] flex-col overflow-y-auto bg-slate-50 p-3 dark:bg-gray-900 sm:p-4 lg:h-[calc(100dvh-64px)]"
-      dir="rtl"
+      dir={isEn ? "ltr" : "rtl"}
     >
       {access?.subscription === "EXPIRED" ? (
         <div className="mb-3 shrink-0 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/25 dark:text-amber-200">
-          اشتراك الطلبات اليدوية منتهي. يمكنك إنشاء أوردرات جديدة، لكن لو رصيد المحفظة صفر
-          ستكون <b className="font-semibold">معلّقة (مخفية)</b> في صفحة الطلبات حتى تجدّد اشتراكك.
+          {isEn ? (
+            <>
+              Your Manual Orders subscription has expired. You can still create new orders, but if your wallet balance is zero, they will be <b className="font-semibold">held (hidden)</b> on the orders page until you renew.
+            </>
+          ) : (
+            <>
+              اشتراك الطلبات اليدوية منتهي. يمكنك إنشاء أوردرات جديدة، لكن لو رصيد المحفظة صفر ستكون <b className="font-semibold">معلّقة (مخفية)</b> في صفحة الطلبات حتى تجدّد اشتراكك.
+            </>
+          )}
         </div>
       ) : null}
 
@@ -297,7 +307,7 @@ const ManualOrderPage = () => {
         <button
           onClick={() => setShowShortcuts((prev) => !prev)}
           className="shrink-0 rounded-lg p-2 text-slate-400 transition-colors hover:bg-white hover:text-slate-700 dark:text-slate-500 dark:hover:bg-gray-800 dark:hover:text-slate-200"
-          title={`${t("manualOrder.keyboardShortcuts", "اختصارات لوحة المفاتيح")} (F1)`}
+          title={`${t("manualOrder.keyboardShortcuts", isEn ? "Keyboard Shortcuts" : "اختصارات لوحة المفاتيح")} (F1)`}
         >
           <InformationCircleIcon className="h-5 w-5" />
         </button>
@@ -346,28 +356,29 @@ const ManualOrderPage = () => {
           <div
             className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-sm w-full overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            dir={isEn ? "ltr" : "rtl"}
           >
             <div className="p-4 border-b bg-gray-50 dark:bg-gray-900">
               <h3 className="font-bold">
-                {t("manualOrder.keyboardShortcuts", "اختصارات لوحة المفاتيح")}
+                {t("manualOrder.keyboardShortcuts", isEn ? "Keyboard Shortcuts" : "اختصارات لوحة المفاتيح")}
               </h3>
             </div>
 
             <div className="p-4 space-y-3 text-sm">
               <div className="flex justify-between">
-                <span>{t("manualOrder.showShortcuts", "عرض الاختصارات")}</span>
+                <span>{t("manualOrder.showShortcuts", isEn ? "Show Shortcuts" : "عرض الاختصارات")}</span>
                 <kbd>F1</kbd>
               </div>
               <div className="flex justify-between">
-                <span>{t("manualOrder.searchProduct", "البحث عن منتج")}</span>
+                <span>{t("manualOrder.searchProduct", isEn ? "Search Product" : "البحث عن منتج")}</span>
                 <kbd>F2</kbd>
               </div>
               <div className="flex justify-between">
-                <span>{t("manualOrder.clearCart", "إفراغ السلة")}</span>
+                <span>{t("manualOrder.clearCart", isEn ? "Clear Cart" : "إفراغ السلة")}</span>
                 <span>Ctrl + Delete</span>
               </div>
               <div className="flex justify-between">
-                <span>{t("manualOrder.closeCancel", "إغلاق / إلغاء")}</span>
+                <span>{t("manualOrder.closeCancel", isEn ? "Close / Cancel" : "إغلاق / إلغاء")}</span>
                 <kbd>Esc</kbd>
               </div>
             </div>
@@ -377,7 +388,7 @@ const ManualOrderPage = () => {
                 onClick={() => setShowShortcuts(false)}
                 className="w-full py-2 bg-blue-600 text-white rounded-lg"
               >
-                {t("manualOrder.ok", "حسناً")}
+                {t("manualOrder.ok", isEn ? "OK" : "حسناً")}
               </button>
             </div>
           </div>

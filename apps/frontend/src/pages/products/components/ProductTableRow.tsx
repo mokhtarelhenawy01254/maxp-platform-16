@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Product,
   getStockStatus,
@@ -93,10 +94,13 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
   canDelete,
   onDelete,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
   const stockStatus = getStockStatus(product);
   const isVariableProduct = product.productType === "variable";
   const isWorkflowBusy = workflowLoadingId === product.id;
-  const workflowLabel = getWorkflowStatusLabel(product.workflow.status, product.workflow);
+  const workflowLabel = getWorkflowStatusLabel(product.workflow.status, product.workflow, isEn);
   const canEditStock =
     product.merchantContext?.canEditStock !== false &&
     product.inventorySnapshot?.canEditStock !== false;
@@ -111,12 +115,21 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
     if (product.quantityOffers && product.quantityOffers.length > 0) {
       const summary = product.quantityOffers
         .slice(0, 3)
-        .map((o) => o.buyText || `${o.quantity} قطع بسعر ${o.unitPrice}`)
+        .map((o) =>
+          o.buyText ||
+          (isEn
+            ? `${o.quantity} pcs for ${o.unitPrice}`
+            : `${o.quantity} قطع بسعر ${o.unitPrice}`)
+        )
         .join(" | ");
-      return `عروض الكميات: ${summary}${product.quantityOffers.length > 3 ? "..." : ""} (انقر للتعديل)`;
+      return isEn
+        ? `Quantity Offers: ${summary}${product.quantityOffers.length > 3 ? "..." : ""} (click to edit)`
+        : `عروض الكميات: ${summary}${product.quantityOffers.length > 3 ? "..." : ""} (انقر للتعديل)`;
     }
-    return `يحتوي هذا المنتج على عروض كميات أو خصومات حجمية نشطة (انقر للتعديل)`;
-  }, [product]);
+    return isEn
+      ? "This product has active quantity offers or volume discounts (click to edit)"
+      : `يحتوي هذا المنتج على عروض كميات أو خصومات حجمية نشطة (انقر للتعديل)`;
+  }, [product, isEn]);
 
   const openStorefront = () => {
     prepareStorefrontContext();
@@ -132,8 +145,8 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           onClick={() => onWorkflowAction(product, "submit_review")}
           disabled={isWorkflowBusy}
           className={`${actionBtn} text-amber-600 hover:text-amber-900 disabled:cursor-wait disabled:opacity-50`}
-          aria-label="إرسال للمراجعة"
-          title="إرسال للمراجعة"
+          aria-label={isEn ? "Submit for review" : "إرسال للمراجعة"}
+          title={isEn ? "Submit for review" : "إرسال للمراجعة"}
         >
           <PaperAirplaneIcon className="h-4 w-4" />
         </button>
@@ -147,8 +160,8 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
             onClick={() => onWorkflowAction(product, "approve")}
             disabled={isWorkflowBusy}
             className={`${actionBtn} text-green-600 hover:text-green-900 disabled:cursor-wait disabled:opacity-50`}
-            aria-label="اعتماد"
-            title="اعتماد"
+            aria-label={isEn ? "Approve" : "اعتماد"}
+            title={isEn ? "Approve" : "اعتماد"}
           >
             <CheckCircleIcon className="h-4 w-4" />
           </button>
@@ -156,8 +169,8 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
             onClick={() => onWorkflowAction(product, "reject")}
             disabled={isWorkflowBusy}
             className={`${actionBtn} text-rose-600 hover:text-rose-900 disabled:cursor-wait disabled:opacity-50`}
-            aria-label="رفض"
-            title="رفض"
+            aria-label={isEn ? "Reject" : "رفض"}
+            title={isEn ? "Reject" : "رفض"}
           >
             <XCircleIcon className="h-4 w-4" />
           </button>
@@ -171,8 +184,8 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           onClick={() => onWorkflowAction(product, "publish")}
           disabled={isWorkflowBusy}
           className={`${actionBtn} text-green-600 hover:text-green-900 disabled:cursor-wait disabled:opacity-50`}
-          aria-label="نشر"
-          title="نشر"
+          aria-label={isEn ? "Publish" : "نشر"}
+          title={isEn ? "Publish" : "نشر"}
         >
           <CheckCircleIcon className="h-4 w-4" />
         </button>
@@ -185,8 +198,8 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           onClick={() => onWorkflowAction(product, "unpublish")}
           disabled={isWorkflowBusy}
           className={`${actionBtn} text-orange-600 hover:text-orange-900 disabled:cursor-wait disabled:opacity-50`}
-          aria-label="إلغاء النشر"
-          title="إلغاء النشر"
+          aria-label={isEn ? "Unpublish" : "إلغاء النشر"}
+          title={isEn ? "Unpublish" : "إلغاء النشر"}
         >
           <XCircleIcon className="h-4 w-4" />
         </button>
@@ -233,7 +246,7 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
               </div>
             )}
           </a>
-          <div className="mr-4 flex flex-col gap-1">
+          <div className={`${isEn ? "ml-4" : "mr-4"} flex flex-col gap-1`}>
             <a
               href={getStorefrontUrl(product)}
               onClick={prepareStorefrontContext}
@@ -257,7 +270,7 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors shadow-xs"
                 >
                   <SparklesIcon className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                  <span>عروض كميات</span>
+                  <span>{isEn ? "Quantity Offers" : "عروض كميات"}</span>
                   {product.quantityOffersCount ? (
                     <span className="font-mono text-[10px]">
                       ({product.quantityOffersCount})
@@ -278,11 +291,11 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
                 : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
             }`}
           >
-            {isVariableProduct ? "متغيرات" : "بسيط"}
+            {isVariableProduct ? (isEn ? "Variable" : "متغيرات") : (isEn ? "Simple" : "بسيط")}
           </span>
           {isVariableProduct && (
             <span className="text-xs text-gray-500 dark:text-gray-400">
-              {product.variantsCount} متغير
+              {product.variantsCount} {isEn ? (product.variantsCount === 1 ? "variant" : "variants") : "متغير"}
             </span>
           )}
         </div>
@@ -330,9 +343,9 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           />
         ) : (
           <>
-            <div className="text-sm text-gray-900 dark:text-white">{product.stock} قطعة</div>
+            <div className="text-sm text-gray-900 dark:text-white">{product.stock} {isEn ? "pcs" : "قطعة"}</div>
             <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getStockStatusColor(stockStatus)}`}>
-              {getStockStatusText(stockStatus)}
+              {getStockStatusText(stockStatus, isEn)}
             </span>
             {!canEditStock && stockLocationLabel && (
               <div className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-300">
@@ -354,13 +367,13 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           </span>
           {product.isHidden && (
             <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
-              <EyeSlashIcon className="h-3 w-3 ml-1" />
-              مخفي
+              <EyeSlashIcon className={`h-3 w-3 ${isEn ? "mr-1" : "ml-1"}`} />
+              {isEn ? "Hidden" : "مخفي"}
             </span>
           )}
           {product.workflow.rejectionReason && (
             <span className="max-w-[180px] truncate text-xs text-rose-600 dark:text-rose-300">
-              سبب الرفض: {product.workflow.rejectionReason}
+              {isEn ? "Rejection reason: " : "سبب الرفض: "}{product.workflow.rejectionReason}
             </span>
           )}
         </div>
@@ -369,13 +382,23 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
         {formatDate(product.updatedAt)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <div className="flex items-center space-x-2 space-x-reverse">
+        <div className={`flex items-center ${isEn ? "space-x-2" : "space-x-2 space-x-reverse"}`}>
           {isEditing ? (
             <>
-              <button onClick={() => onSaveQuickEdit(product.id)} className={`${actionBtn} text-green-600 hover:text-green-900`} aria-label="حفظ" title="حفظ">
+              <button
+                onClick={() => onSaveQuickEdit(product.id)}
+                className={`${actionBtn} text-green-600 hover:text-green-900`}
+                aria-label={isEn ? "Save" : "حفظ"}
+                title={isEn ? "Save" : "حفظ"}
+              >
                 <CheckCircleIcon className="h-4 w-4" />
               </button>
-              <button onClick={onCancelQuickEdit} className={`${actionBtn} text-red-600 hover:text-red-900`} aria-label="إلغاء" title="إلغاء">
+              <button
+                onClick={onCancelQuickEdit}
+                className={`${actionBtn} text-red-600 hover:text-red-900`}
+                aria-label={isEn ? "Cancel" : "إلغاء"}
+                title={isEn ? "Cancel" : "إلغاء"}
+              >
                 <XCircleIcon className="h-4 w-4" />
               </button>
             </>
@@ -384,23 +407,33 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
               <button
                 onClick={openStorefront}
                 className={`${actionBtn} text-indigo-600 hover:text-indigo-900`}
-                aria-label={product.isActive ? "عرض في المتجر" : "معاينة قبل النشر"}
-                title={product.isActive ? "عرض في المتجر" : "معاينة قبل النشر"}
+                aria-label={product.isActive ? (isEn ? "View in store" : "عرض في المتجر") : (isEn ? "Preview before publishing" : "معاينة قبل النشر")}
+                title={product.isActive ? (isEn ? "View in store" : "عرض في المتجر") : (isEn ? "Preview before publishing" : "معاينة قبل النشر")}
               >
                 <EyeIcon className="h-4 w-4" />
               </button>
-              <button onClick={() => window.open(`/products/${product.id}/edit`, "_blank", "noopener,noreferrer")} className={`${actionBtn} text-green-600 hover:text-green-900`} aria-label="تعديل" title="تعديل">
+              <button
+                onClick={() => window.open(`/products/${product.id}/edit`, "_blank", "noopener,noreferrer")}
+                className={`${actionBtn} text-green-600 hover:text-green-900`}
+                aria-label={isEn ? "Edit" : "تعديل"}
+                title={isEn ? "Edit" : "تعديل"}
+              >
                 <PencilIcon className="h-4 w-4" />
               </button>
-              <button onClick={() => onStartQuickEdit(product)} className={`${actionBtn} text-blue-600 hover:text-blue-900`} aria-label="تعديل سريع" title="تعديل سريع">
+              <button
+                onClick={() => onStartQuickEdit(product)}
+                className={`${actionBtn} text-blue-600 hover:text-blue-900`}
+                aria-label={isEn ? "Quick Edit" : "تعديل سريع"}
+                title={isEn ? "Quick Edit" : "تعديل سريع"}
+              >
                 <PencilIcon className="h-4 w-4" />
               </button>
               <button
                 onClick={() => onDuplicate(product)}
                 disabled={!!duplicatingProductId}
                 className={`transition-colors ${duplicatingProductId === product.id ? "text-purple-300 cursor-wait" : "text-purple-600 hover:text-purple-900"} disabled:opacity-50 ${actionBtn}`}
-                aria-label={duplicatingProductId === product.id ? "جاري النسخ..." : "نسخ"}
-                title={duplicatingProductId === product.id ? "جاري النسخ..." : "نسخ"}
+                aria-label={duplicatingProductId === product.id ? (isEn ? "Duplicating..." : "جاري النسخ...") : (isEn ? "Duplicate" : "نسخ")}
+                title={duplicatingProductId === product.id ? (isEn ? "Duplicating..." : "جاري النسخ...") : (isEn ? "Duplicate" : "نسخ")}
               >
                 {duplicatingProductId === product.id ? (
                   <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -413,7 +446,12 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
               </button>
               {renderWorkflowActions()}
               {canDelete && (
-                <button onClick={() => onDelete(product.id)} className={`${actionBtn} text-red-600 hover:text-red-900`} aria-label="حذف" title="حذف">
+                <button
+                  onClick={() => onDelete(product.id)}
+                  className={`${actionBtn} text-red-600 hover:text-red-900`}
+                  aria-label={isEn ? "Delete" : "حذف"}
+                  title={isEn ? "Delete" : "حذف"}
+                >
                   <TrashIcon className="h-4 w-4" />
                 </button>
               )}

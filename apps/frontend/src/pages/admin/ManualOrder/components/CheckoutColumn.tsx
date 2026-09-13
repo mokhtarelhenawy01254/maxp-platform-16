@@ -92,7 +92,8 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   cartItems,
   onClearCart,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAffiliate = user?.role === "AFFILIATE";
@@ -915,7 +916,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
               >
                 <option value="delivery">{t('manualOrder.k_19')}</option>
-                <option value="partial_delivery">طلب تسليم جزئي</option>
+                <option value="partial_delivery">{isEn ? "Partial Delivery Order" : "طلب تسليم جزئي"}</option>
                 <option value="return">{t('manualOrder.k_20')}</option>
                 <option value="exchange">{t('manualOrder.k_21')}</option>
               </select>
@@ -925,22 +926,32 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
           {/* قيمة المرتجع الافتراضية */}
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              💰 مبلغ التحصيل في حالة المرتجع (افتراضي: مصاريف الشحن)
+              {isEn
+                ? "💰 Return Collection Amount (Default: Shipping Cost)"
+                : "💰 مبلغ التحصيل في حالة المرتجع (افتراضي: مصاريف الشحن)"}
             </label>
             <div className="relative">
               <input
                 type="number"
                 value={returnAmount}
                 onChange={(e) => setReturnAmount(e.target.value)}
-                placeholder={shippingInfo ? `${shippingInfo.price} (مصاريف الشحن)` : 'سيتم استخدام مصاريف الشحن تلقائياً'}
+                placeholder={
+                  shippingInfo
+                    ? `${shippingInfo.price} ${isEn ? "(Shipping Cost)" : "(مصاريف الشحن)"}`
+                    : (isEn ? "Shipping cost will be used automatically" : "سيتم استخدام مصاريف الشحن تلقائياً")
+                }
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 pe-16"
                 min="0"
                 step="1"
               />
-              <span className="absolute start-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">ج.م</span>
+              <span className={`absolute ${isEn ? "end-2" : "start-2"} top-1/2 -translate-y-1/2 text-xs text-gray-400`}>
+                {isEn ? "EGP" : "ج.م"}
+              </span>
             </div>
             <p className="text-[10px] text-gray-400 mt-0.5">
-              هذا المبلغ يظهر في شركة الشحن كـ "مبلغ التحصيل في حالة المرتجع"
+              {isEn
+                ? 'This amount appears in the courier system as "Return Collection Amount"'
+                : 'هذا المبلغ يظهر في شركة الشحن كـ "مبلغ التحصيل في حالة المرتجع"'}
             </p>
           </div>
 

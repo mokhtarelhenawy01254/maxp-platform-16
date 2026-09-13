@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Product,
   getStockStatus,
@@ -94,12 +95,15 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
   canDelete,
   onDelete,
 }) => {
+  const { t, i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
   const stockStatus = getStockStatus(product);
   const stockColor = getStockStatusColor(stockStatus);
-  const stockText = getStockStatusText(stockStatus);
+  const stockText = getStockStatusText(stockStatus, isEn);
   const isWorkflowBusy = workflowLoadingId === product.id;
   const isVariableProduct = product.productType === "variable";
-  const workflowLabel = getWorkflowStatusLabel(product.workflow.status, product.workflow);
+  const workflowLabel = getWorkflowStatusLabel(product.workflow.status, product.workflow, isEn);
 
   const mainImage = product.mainImage || (product.images && product.images[0]);
   const imageUrl = getImageUrl(mainImage, "thumbnail");
@@ -115,8 +119,8 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
           onClick={() => onWorkflowAction(product, "submit_review")}
           disabled={isWorkflowBusy}
           className={`${btnSize} text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40`}
-          title="إرسال للمراجعة"
-          aria-label="إرسال للمراجعة"
+          title={isEn ? "Submit for review" : "إرسال للمراجعة"}
+          aria-label={isEn ? "Submit for review" : "إرسال للمراجعة"}
         >
           <PaperAirplaneIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </button>
@@ -131,8 +135,8 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
             onClick={() => onWorkflowAction(product, "approve")}
             disabled={isWorkflowBusy}
             className={`${btnSize} text-green-600 hover:bg-green-50 dark:hover:bg-green-950/40`}
-            title="اعتماد"
-            aria-label="اعتماد"
+            title={isEn ? "Approve" : "اعتماد"}
+            aria-label={isEn ? "Approve" : "اعتماد"}
           >
             <CheckCircleIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
@@ -141,8 +145,8 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
             onClick={() => onWorkflowAction(product, "reject")}
             disabled={isWorkflowBusy}
             className={`${btnSize} text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40`}
-            title="رفض"
-            aria-label="رفض"
+            title={isEn ? "Reject" : "رفض"}
+            aria-label={isEn ? "Reject" : "رفض"}
           >
             <XCircleIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
@@ -157,8 +161,8 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
           onClick={() => onWorkflowAction(product, "publish")}
           disabled={isWorkflowBusy}
           className={`${btnSize} text-green-600 hover:bg-green-50 dark:hover:bg-green-950/40`}
-          title="نشر"
-          aria-label="نشر"
+          title={isEn ? "Publish" : "نشر"}
+          aria-label={isEn ? "Publish" : "نشر"}
         >
           <CheckCircleIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </button>
@@ -172,8 +176,8 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
           onClick={() => onWorkflowAction(product, "unpublish")}
           disabled={isWorkflowBusy}
           className={`${btnSize} text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/40`}
-          title="إلغاء النشر"
-          aria-label="إلغاء النشر"
+          title={isEn ? "Unpublish" : "إلغاء النشر"}
+          aria-label={isEn ? "Unpublish" : "إلغاء النشر"}
         >
           <XCircleIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </button>
@@ -205,7 +209,7 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
         <Link
           to={editUrl}
           className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-700/50 border border-gray-200/70 dark:border-gray-600/70 hover:opacity-85 transition-opacity"
-          title="انقر لتعديل تفاصيل المنتج"
+          title={isEn ? "Click to edit product details" : "انقر لتعديل تفاصيل المنتج"}
         >
           {imageUrl ? (
             <img
@@ -227,7 +231,7 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
             <Link
               to={editUrl}
               className="truncate text-xs sm:text-sm font-bold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              title="انقر لتعديل تفاصيل المنتج"
+              title={isEn ? "Click to edit product details" : "انقر لتعديل تفاصيل المنتج"}
             >
               {product.name}
             </Link>
@@ -239,28 +243,28 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
           {/* Badges & SKU */}
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono" dir="ltr">
-              {product.sku || "بدون SKU"}
+              {product.sku || (isEn ? "No SKU" : "بدون SKU")}
             </span>
             {isVariableProduct && (
               <span className="rounded px-1.5 py-0.2 text-[9px] font-semibold bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300">
-                {product.variantsCount} متغير
+                {product.variantsCount} {isEn ? (product.variantsCount === 1 ? "variant" : "variants") : "متغير"}
               </span>
             )}
             {product.hasQuantityOffers && (
               <Link
                 to={`/products/${product.id}/edit?tab=quantity-offers`}
                 className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[9px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
-                title="عروض الكميات متاحة - انقر للتعديل"
+                title={isEn ? "Quantity offers available - click to edit" : "عروض الكميات متاحة - انقر للتعديل"}
               >
                 <span>⚡</span>
-                <span>عروض كميات</span>
+                <span>{isEn ? "Quantity Offers" : "عروض كميات"}</span>
                 {product.quantityOffersCount ? ` (${product.quantityOffersCount})` : ""}
               </Link>
             )}
             {product.isHidden && (
               <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-semibold bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300">
-                <EyeSlashIcon className="h-2.5 w-2.5 ml-0.5" />
-                مخفي
+                <EyeSlashIcon className={`h-2.5 w-2.5 ${isEn ? "mr-0.5" : "ml-0.5"}`} />
+                {isEn ? "Hidden" : "مخفي"}
               </span>
             )}
             {product.workflow?.status && (product.workflow.status !== "published" || product.workflow?.unpublishedAt) && (
@@ -276,7 +280,10 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
               {formatPrice(product.price)}
             </span>
             <span className="text-[11px] text-gray-500 dark:text-gray-400">
-              المخزون: <strong className={`font-mono ${product.stock <= 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100"}`}>{product.stock}</strong>
+              {isEn ? "Stock:" : "المخزون:"}{" "}
+              <strong className={`font-mono ${product.stock <= 0 ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-gray-100"}`}>
+                {product.stock}
+              </strong>
             </span>
           </div>
         </div>
@@ -286,19 +293,23 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
       {isEditing ? (
         <div className="mt-3 border-t border-gray-100 dark:border-gray-700/80 pt-3 space-y-2.5 bg-gray-50/80 dark:bg-gray-750/50 -mx-3.5 -mb-3.5 p-3.5 rounded-b-2xl">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-700 dark:text-gray-200">تعديل سريع</span>
+            <span className="text-xs font-bold text-gray-700 dark:text-gray-200">
+              {isEn ? "Quick Edit" : "تعديل سريع"}
+            </span>
             <Link
               to={editUrl}
               className="inline-flex items-center gap-1 text-[11px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
             >
-              <span>تعديل كامل للتفاصيل</span>
+              <span>{isEn ? "Full Details Edit" : "تعديل كامل للتفاصيل"}</span>
               <ArrowTopRightOnSquareIcon className="h-3 w-3" />
             </Link>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
-              <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">السعر</label>
+              <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">
+                {isEn ? "Price" : "السعر"}
+              </label>
               <input
                 type="number"
                 value={editPrice}
@@ -307,7 +318,9 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">المخزون</label>
+              <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">
+                {isEn ? "Stock" : "المخزون"}
+              </label>
               <input
                 type="number"
                 value={editStock}
@@ -316,7 +329,9 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">SKU</label>
+              <label className="block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5">
+                SKU
+              </label>
               <input
                 type="text"
                 value={editSku}
@@ -333,14 +348,14 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
               onClick={onCancelQuickEdit}
               className="min-h-[36px] rounded-lg px-3 py-1.5 text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
-              إلغاء
+              {isEn ? "Cancel" : "إلغاء"}
             </button>
             <button
               type="button"
               onClick={() => onSaveQuickEdit(product.id)}
               className="min-h-[36px] rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-1.5 text-xs font-bold text-white shadow-xs transition-all active:scale-95"
             >
-              حفظ
+              {isEn ? "Save" : "حفظ"}
             </button>
           </div>
         </div>
@@ -352,10 +367,10 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
             <Link
               to={editUrl}
               className="inline-flex items-center gap-1 min-h-[34px] sm:min-h-[36px] px-2.5 sm:px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-all active:scale-95"
-              title="تعديل كافة تفاصيل المنتج"
+              title={isEn ? "Edit all product details" : "تعديل كافة تفاصيل المنتج"}
             >
               <PencilSquareIcon className="h-3.5 w-3.5" />
-              <span>تعديل</span>
+              <span>{isEn ? "Edit" : "تعديل"}</span>
             </Link>
 
             <a
@@ -364,10 +379,10 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
               rel="noreferrer"
               onClick={() => prepareStorefrontContext()}
               className="inline-flex items-center gap-1 min-h-[34px] sm:min-h-[36px] px-2 sm:px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold shadow-xs transition-colors"
-              title="عرض في المتجر"
+              title={isEn ? "View in store" : "عرض في المتجر"}
             >
               <EyeIcon className="h-3.5 w-3.5" />
-              <span>عرض</span>
+              <span>{isEn ? "View" : "عرض"}</span>
             </a>
           </div>
 
@@ -377,8 +392,8 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
               type="button"
               onClick={() => onStartQuickEdit(product)}
               className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-              title="تعديل سريع (سعر ومخزون)"
-              aria-label="تعديل سريع"
+              title={isEn ? "Quick edit (price & stock)" : "تعديل سريع (سعر ومخزون)"}
+              aria-label={isEn ? "Quick Edit" : "تعديل سريع"}
             >
               <PencilIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
@@ -388,8 +403,8 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
               onClick={() => onDuplicate(product)}
               disabled={duplicatingProductId === product.id}
               className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors disabled:opacity-40"
-              title="نسخ المنتج"
-              aria-label="نسخ المنتج"
+              title={isEn ? "Duplicate product" : "نسخ المنتج"}
+              aria-label={isEn ? "Duplicate product" : "نسخ المنتج"}
             >
               <DocumentDuplicateIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
@@ -401,8 +416,8 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
                 type="button"
                 onClick={() => onDelete(product.id)}
                 className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-700 transition-colors"
-                title="حذف المنتج"
-                aria-label="حذف المنتج"
+                title={isEn ? "Delete product" : "حذف المنتج"}
+                aria-label={isEn ? "Delete product" : "حذف المنتج"}
               >
                 <TrashIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
