@@ -164,9 +164,6 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
                 متصل
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 hidden sm:block">
-              خبير الميديا باير • كاتب الهوكس • مصمم العروض
-            </p>
           </div>
         </div>
 
@@ -208,10 +205,10 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
               <Sparkles className="w-6 h-6 text-indigo-500" />
             </div>
             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">
-              مرحباً بك في مركز التسويق الذكي!
+              ابدأ التخطيط التسويقي
             </h3>
             <p className="text-xs text-slate-500 max-w-sm mb-4">
-              اختر منتجاً من القائمة أو اضغط على أي أمر سريع بالأسفل لتبدأ الخطة التسويقية وتجهيز الحملات الإعلانية فوراً.
+              اكتب طلبك أو اختر أحد الأوامر السريعة بالأسفل لتجهيز الزوايا والمسودة فوراً.
             </p>
           </div>
         ) : (

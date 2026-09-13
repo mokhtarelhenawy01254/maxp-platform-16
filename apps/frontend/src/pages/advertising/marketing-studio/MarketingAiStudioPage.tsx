@@ -1,10 +1,19 @@
 import React, { useState } from "react";
-import { Sparkles, ShoppingBag, MessageSquare, Layers } from "lucide-react";
+import {
+  Sparkles,
+  ShoppingBag,
+  MessageSquare,
+  Rocket,
+  ChevronDown,
+  FolderArchive,
+  Package,
+} from "lucide-react";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { useCopilotSessions } from "../../../components/advertising/copilot/useCopilotSessions";
 import { ProductOpportunityRadar } from "./ProductOpportunityRadar";
 import { MarketingSquadChatFeed } from "./MarketingSquadChatFeed";
 import { MarketingControlHub } from "./MarketingControlHub";
+import { CampaignDraftLaunchCard } from "./CampaignDraftLaunchCard";
 import type { MarketingProduct, MarketingCampaignDraft } from "./types";
 
 const MarketingAiStudioPage: React.FC = () => {
@@ -15,17 +24,16 @@ const MarketingAiStudioPage: React.FC = () => {
 
   const [selectedProduct, setSelectedProduct] = useState<MarketingProduct | null>(null);
   const [currentDraft, setCurrentDraft] = useState<MarketingCampaignDraft | null>(null);
-  const [hubTab, setHubTab] = useState<"SESSIONS" | "DRAFT">("SESSIONS");
 
-  // Mobile/Tablet Tab state
-  const [mobileTab, setMobileTab] = useState<"RADAR" | "CHAT" | "HUB">("CHAT");
+  // Modal / Drawer states
+  const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
+  const [isSessionsDrawerOpen, setIsSessionsDrawerOpen] = useState(false);
+
+  // Mobile 2-view state: CHAT vs CANVAS
+  const [mobileView, setMobileView] = useState<"CHAT" | "CANVAS">("CHAT");
 
   const handleProductSelect = (product: MarketingProduct) => {
     setSelectedProduct(product);
-    // If mobile, switch view to chat when product is selected
-    if (window.innerWidth < 1024) {
-      setMobileTab("CHAT");
-    }
   };
 
   const handleDraftGenerated = (toolData: any) => {
@@ -36,7 +44,8 @@ const MarketingAiStudioPage: React.FC = () => {
         productName: selectedProduct?.name || args.product_name || "منتج المتجر",
         angleTitle: args.angle || "عرض القيمة المباشر للعميل",
         headline: args.headline || "العرض الأقوى لفترة محدودة!",
-        primaryText: args.primary_text || args.copy || "احصل على المنتج مع شحن مجاني ودفع عند الاستلام.",
+        primaryText:
+          args.primary_text || args.copy || "احصل على المنتج مع شحن مجاني ودفع عند الاستلام.",
         callToAction: args.call_to_action || "SHOP_NOW",
         budgetAmount: Number(args.daily_budget) || 350,
         currency: "EGP",
@@ -44,53 +53,92 @@ const MarketingAiStudioPage: React.FC = () => {
         format: args.format || "Reels / Video",
         status: "DRAFT",
       });
-      setHubTab("DRAFT");
+      // Switch view to preview canvas on mobile if draft ready
       if (window.innerWidth < 1024) {
-        setMobileTab("HUB");
+        setMobileView("CANVAS");
       }
     }
   };
 
   return (
-    <div className="h-[calc(100vh-4.5rem)] flex flex-col p-3 sm:p-4 gap-3 bg-slate-100/60 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-      {/* Top Header & Mobile Tabs Bar */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm">
-            <Sparkles className="w-5 h-5" />
+    <div className="h-[calc(100dvh-4.5rem)] flex flex-col p-2.5 sm:p-3.5 gap-2.5 sm:gap-3 bg-slate-100/60 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+      {/* Top Ergonomic Control Bar */}
+      <header className="flex items-center justify-between gap-2.5 bg-white dark:bg-slate-900 px-3.5 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex-shrink-0 flex-wrap">
+        {/* Brand & Cockpit Badge */}
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-xl bg-blue-600 text-white shadow-sm flex-shrink-0">
+            <Sparkles className="w-4 h-4" />
           </div>
-          <div>
-            <h1 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              مركز التسويق الذكي للمتجر
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
-                Marketing AI Cockpit
-              </span>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
+              مركز التسويق الذكي
             </h1>
-            <p className="text-xs text-slate-500 hidden sm:block">
-              تخطيط الحملات وصياغة الزوايا والإطلاق بضغطة زر بناءً على اقتصاديات المتجر والمخزون
-            </p>
+            <span className="hidden md:inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+              AI Cockpit
+            </span>
           </div>
         </div>
 
-        {/* Mobile View Switcher */}
+        {/* Central Ergonomic Selectors: Single-use actions moved to Top-Bar */}
+        <div className="flex items-center gap-2">
+          {/* Smart Product Selector Button */}
+          <button
+            type="button"
+            onClick={() => setIsProductPickerOpen(true)}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs font-bold shadow-sm"
+            title="تغيير منتج الحملة"
+          >
+            {selectedProduct ? (
+              <>
+                <div className="w-5 h-5 rounded-md overflow-hidden bg-slate-200 dark:bg-slate-700 flex-shrink-0 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                  {selectedProduct.mainImage ? (
+                    <img
+                      src={selectedProduct.mainImage}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Package className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </div>
+                <span className="truncate max-w-[120px] sm:max-w-[180px] text-slate-800 dark:text-slate-100">
+                  {selectedProduct.name}
+                </span>
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-black">
+                  {selectedProduct.price} ج.م
+                </span>
+              </>
+            ) : (
+              <>
+                <Package className="w-4 h-4 text-blue-600" />
+                <span className="text-slate-700 dark:text-slate-300">اختر منتج الحملة</span>
+              </>
+            )}
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+          </button>
+
+          {/* Sessions History Button */}
+          <button
+            type="button"
+            onClick={() => setIsSessionsDrawerOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs font-bold text-slate-700 dark:text-slate-300 shadow-sm"
+            title="استعراض الجلسات السابقة"
+          >
+            <FolderArchive className="w-3.5 h-3.5 text-indigo-500" />
+            <span className="hidden sm:inline">الجلسات</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 font-bold">
+              {copilotSessions.sessions.length}
+            </span>
+          </button>
+        </div>
+
+        {/* Mobile View Switcher (2-Tab Clean Toggle) */}
         <div className="flex lg:hidden bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1">
           <button
             type="button"
-            onClick={() => setMobileTab("RADAR")}
-            className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5 ${
-              mobileTab === "RADAR"
-                ? "bg-white dark:bg-slate-900 text-blue-600 shadow-sm"
-                : "text-slate-500"
-            }`}
-          >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            المنتجات
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab("CHAT")}
-            className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5 ${
-              mobileTab === "CHAT"
+            onClick={() => setMobileView("CHAT")}
+            className={`py-1 px-2.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
+              mobileView === "CHAT"
                 ? "bg-white dark:bg-slate-900 text-blue-600 shadow-sm"
                 : "text-slate-500"
             }`}
@@ -100,39 +148,29 @@ const MarketingAiStudioPage: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => setMobileTab("HUB")}
-            className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5 ${
-              mobileTab === "HUB"
+            onClick={() => setMobileView("CANVAS")}
+            className={`py-1 px-2.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
+              mobileView === "CANVAS"
                 ? "bg-white dark:bg-slate-900 text-blue-600 shadow-sm"
                 : "text-slate-500"
             }`}
           >
-            <Layers className="w-3.5 h-3.5" />
-            الجلسات والمسودات
+            <Rocket className="w-3.5 h-3.5" />
+            معاينة الإعلان
+            {currentDraft && (
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            )}
           </button>
         </div>
       </header>
 
-      {/* Main 3-Column Studio Canvas */}
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0 overflow-hidden">
-        {/* Column 1: Product Opportunity Radar */}
+      {/* Main 2-Panel Focused Workspace (Zero Wasted Space) */}
+      <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-3 min-h-0 overflow-hidden">
+        {/* Panel 1: Strategy & Chat Studio (58% of screen) */}
         <section
-          aria-label="رادار منتجات المتجر"
-          className={`h-full lg:col-span-3 min-h-0 ${
-            mobileTab === "RADAR" ? "block" : "hidden lg:block"
-          }`}
-        >
-          <ProductOpportunityRadar
-            selectedProduct={selectedProduct}
-            onSelectProduct={handleProductSelect}
-          />
-        </section>
-
-        {/* Column 2: Marketing Squad Chat Feed */}
-        <section
-          aria-label="محادثة فريق التسويق"
-          className={`h-full lg:col-span-6 min-h-0 ${
-            mobileTab === "CHAT" ? "block" : "hidden lg:block"
+          aria-label="استوديو استراتيجية التسويق"
+          className={`h-full lg:col-span-7 min-h-0 ${
+            mobileView === "CHAT" ? "block" : "hidden lg:block"
           }`}
         >
           <MarketingSquadChatFeed
@@ -145,29 +183,40 @@ const MarketingAiStudioPage: React.FC = () => {
           />
         </section>
 
-        {/* Column 3: Control Hub (Sessions History & Campaign Drafts) */}
+        {/* Panel 2: Live Ad Mockup & One-Click Launch (42% of screen) */}
         <section
-          aria-label="مركز الجلسات والمسودات"
-          className={`h-full lg:col-span-3 min-h-0 ${
-            mobileTab === "HUB" ? "block" : "hidden lg:block"
+          aria-label="معاينة إعلان فيسبوك وإطلاق الحملة"
+          className={`h-full lg:col-span-5 min-h-0 ${
+            mobileView === "CANVAS" ? "block" : "hidden lg:block"
           }`}
         >
-          <MarketingControlHub
-            sessions={copilotSessions.sessions}
-            activeSessionId={copilotSessions.activeSessionId}
-            onSelectSession={copilotSessions.switchSession}
-            onNewSession={() => copilotSessions.createNewSession()}
-            onDeleteSession={copilotSessions.deleteSession}
+          <CampaignDraftLaunchCard
             draft={currentDraft}
             selectedProduct={selectedProduct}
-            activeTab={hubTab}
-            onTabChange={setHubTab}
             onDraftPublished={() => {
               setCurrentDraft(null);
             }}
           />
         </section>
       </main>
+
+      {/* Slide-over On-Demand Drawers */}
+      <ProductOpportunityRadar
+        isOpen={isProductPickerOpen}
+        onClose={() => setIsProductPickerOpen(false)}
+        selectedProduct={selectedProduct}
+        onSelectProduct={handleProductSelect}
+      />
+
+      <MarketingControlHub
+        isOpen={isSessionsDrawerOpen}
+        onClose={() => setIsSessionsDrawerOpen(false)}
+        sessions={copilotSessions.sessions}
+        activeSessionId={copilotSessions.activeSessionId}
+        onSelectSession={copilotSessions.switchSession}
+        onNewSession={() => copilotSessions.createNewSession()}
+        onDeleteSession={copilotSessions.deleteSession}
+      />
     </div>
   );
 };
