@@ -41,16 +41,23 @@ async def close_db() -> None:
 
 
 async def get_session() -> AsyncSession:
-    """Dependency: yield async session."""
+    """Dependency: yield async session with safe teardown."""
     global async_session
     if async_session is None:
         await init_db()
-    async with async_session() as session:
+    session = async_session()
+    try:
+        yield session
+    except Exception:
         try:
-            yield session
-        except Exception:
             await session.rollback()
-            raise
-        finally:
+        except Exception:
+            pass
+        raise
+    finally:
+        try:
             await session.close()
+        except Exception:
+            pass
+
 

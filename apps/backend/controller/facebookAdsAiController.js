@@ -17,6 +17,15 @@ function sanitizeClientFacingReply(text) {
   if (!text || typeof text !== 'string') return '';
   const sanitized = text.trim();
 
+  // 🛡️ 2026 Anti-Slop: Intercept raw English system/tool leaks
+  if (
+    sanitized.includes('Draft campaigns created successfully') ||
+    sanitized.includes('Awaiting merchant review') ||
+    /^\[facebook_ad_create_full_draft\]/i.test(sanitized)
+  ) {
+    return 'تم حفظ وتجهيز مسودات الحملات الإعلانية بنجاح في لوحة التحكم للمراجعة والاعتماد ✅ يمكنك مراجعة الزوايا الإعلانية وإطلاقها بضغطة واحدة.';
+  }
+
   const hasTechnicalLeak =
     /(POST|GET|PUT|DELETE)\s+\/api\/[^\s]+/i.test(sanitized) ||
     /Request failed:/i.test(sanitized) ||
@@ -42,6 +51,7 @@ function sanitizeClientFacingReply(text) {
 
   return sanitized;
 }
+
 
 class FacebookAdsAiController {
   /**
@@ -756,9 +766,15 @@ class FacebookAdsAiController {
 
           // Update activeProduct in session context if a valid product creation/analysis tool succeeded
           if (result?.tool_calls && Array.isArray(result.tool_calls)) {
-            for (const tc of result.tool_calls) {
-              const tName = tc.name || tc.tool || tc.function?.name;
-              if (tName === 'facebook_ad_analyze_product' || tName === 'facebook_ad_create_full_draft') {
+            const analyzeCalls = result.tool_calls.filter(tc => (tc.name || tc.tool || tc.function?.name) === 'facebook_ad_analyze_product');
+            const draftCalls = result.tool_calls.filter(tc => (tc.name || tc.tool || tc.function?.name) === 'facebook_ad_create_full_draft');
+
+            // 🛡️ Hermes Continuity: Only update activeProduct if a draft was created for that product,
+            // or if a single product was explicitly analyzed and no active product was previously anchored.
+            // Never let a batch comparison (analyzeCalls > 1) overwrite the merchant's active product.
+            const shouldUpdateProd = draftCalls.length > 0 || (analyzeCalls.length === 1 && !activeProductContext?.name);
+            if (shouldUpdateProd) {
+              for (const tc of (draftCalls.length > 0 ? draftCalls : analyzeCalls)) {
                 const args = tc.arguments || tc.args || {};
                 const resProd = tc.result?.product;
                 const pName = resProd?.name || args.product_name || args.product_slug;
@@ -825,9 +841,26 @@ class FacebookAdsAiController {
         }
 
         console.error('❌ Error in Facebook Ads AI Copilot chat:', chatError);
-        return res.status(500).json({
-          success: false,
-          error: chatError.message || 'Failed to communicate with AI Media Buyer',
+
+        // 🛡️ 2026 Resilience Standard: Never leave user turn unanswered/dropped in DB
+        const fallbackReply = 'عذراً يا فندم، حصل انقطاع مؤقت في الاتصال أثناء معالجة الطلب. تم حفظ استفسارك، وتقدر تعيد إرساله أو تطلب مني المتابعة فوراً.';
+        try {
+          await marketingCopilotSessionService.appendMessage(companyId, threadId, {
+            sender: 'agent',
+            text: fallbackReply,
+          });
+        } catch (saveErr) {
+          console.warn('[FacebookAdsAI] Failed to persist fallback reply:', saveErr.message);
+        }
+
+        return res.status(200).json({
+          success: true,
+          status: 'fallback',
+          reply: fallbackReply,
+          threadId,
+          scopedThreadId: `${threadId}_${companyId}`,
+          draft_id: null,
+          agentId: targetAgentId,
         });
       }
     } catch (outerError) {
@@ -837,6 +870,7 @@ class FacebookAdsAiController {
         error: outerError.message || 'Unexpected server error',
       });
     }
+
   }
 
   /**

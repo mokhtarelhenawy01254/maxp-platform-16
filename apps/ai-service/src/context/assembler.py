@@ -95,7 +95,12 @@ class ContextAssembler:
                 if role in {"user", "assistant"} and content:
                     history_messages.append({"role": role, "content": content})
             if history_messages:
-                return self._dedupe_adjacent_messages(history_messages)
+                res = self._dedupe_adjacent_messages(history_messages)
+                current_clean = (ctx.message or "").strip()
+                if res and res[-1].get("role") == "user" and res[-1].get("content", "").strip() == current_clean:
+                    res.pop()
+                return res
+
 
         lookup_id = ctx.conversation_id or ctx.thread_id
         if not lookup_id or not ctx.session:
@@ -135,7 +140,11 @@ class ContextAssembler:
                             if content:
                                 history_messages.append({"role": role, "content": content})
                         if history_messages:
-                            return self._dedupe_adjacent_messages(history_messages)
+                            deduped = self._dedupe_adjacent_messages(history_messages)
+                            current_clean = (ctx.message or "").strip()
+                            if deduped and deduped[-1].get("role") == "user" and deduped[-1].get("content", "").strip() == current_clean:
+                                deduped.pop()
+                            return deduped
                 except Exception as fb_err:
                     logger.warning("failed to fetch dashboard message history from DB", error=str(fb_err))
 
@@ -184,7 +193,12 @@ class ContextAssembler:
         except Exception as e:
             logger.warning("failed to fetch message history from DB", error=str(e))
 
-        return self._dedupe_adjacent_messages(history_messages)
+        deduped = self._dedupe_adjacent_messages(history_messages)
+        current_clean = (ctx.message or "").strip()
+        if deduped and deduped[-1].get("role") == "user" and deduped[-1].get("content", "").strip() == current_clean:
+            deduped.pop()
+        return deduped
+
 
     async def fetch_session_state(self, ctx: PipelineContext) -> dict[str, Any] | None:
         """Fetch current working memory session state (cart, search filters, etc.)."""
@@ -579,6 +593,32 @@ You are continuing an existing conversation on Facebook Messenger that was previ
             budget=ctx.token_budget,
         )
 
+        # Detect elliptical/punctuation queries (e.g. "؟", "?", "ليه ؟", "وقفت ليه ؟", "ها", "وبعدين")
+        # and resolve context against immediate preceding user turn.
+        raw_user_msg = (ctx.message or "").strip()
+        is_elliptical = (
+            raw_user_msg in {"؟", "?", "؟؟", "??", "ليه", "ليه؟", "ليه ؟", "ها", "ها؟", "وبعدين", "وبعدين؟", "وقفت ليه", "وقفت ليه؟", "وقفت ليه ؟", "ايه الاخبار", "ايه الأخبار", "كمل", "تمام؟", "تمام ؟"}
+            or (len(raw_user_msg) <= 4 and bool(re.match(r"^[\s\.\?؟!]+$", raw_user_msg)))
+        )
+        if is_elliptical and retained_history:
+            # Find the most recent prior user request in history
+            prior_user_turns = [
+                m["content"] for m in reversed(retained_history)
+                if m.get("role") == "user" and m.get("content", "").strip() not in {"؟", "?", "ليه", "ها", "وقفت ليه"}
+            ]
+            if prior_user_turns:
+                last_request = prior_user_turns[0].strip()
+                resolution_instruction = (
+                    f"\n\n<context_resolution>\n"
+                    f"[HERMES CONVERSATIONAL CONTINUITY]:\n"
+                    f"The merchant just sent a short elliptical prompt or inquiry ('{raw_user_msg}'). "
+                    f"They are specifically following up on and waiting for their prior request: \"{last_request}\".\n"
+                    f"Fulfill and address that prior request directly and completely right now. "
+                    f"Do NOT treat this as an empty message, do NOT greet or re-introduce yourself, and NEVER say 'وصلتني رسالتك فاضية'.\n"
+                    f"</context_resolution>"
+                )
+                system_prompt += resolution_instruction
+
         # Update context prompt
         ctx.system_prompt = system_prompt
 
@@ -597,3 +637,4 @@ You are continuing an existing conversation on Facebook Messenger that was previ
         })
 
         return compiled
+

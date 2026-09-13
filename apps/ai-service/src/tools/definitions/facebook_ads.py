@@ -571,7 +571,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
         "run_id": run_id,
         "drafts_count": len(saved_drafts),
         "drafts": saved_drafts,
-        "message": "Draft campaigns created successfully. Awaiting merchant review and approval before publishing to Meta.",
+        "message": "تم إنشاء مسودات الحملات الإعلانية بنجاح، وهي الآن محفوظة في لوحة التحكم وبانتظار مراجعة واعتماد التاجر قبل النشر على ميتا.",
     }
 
 
@@ -1347,6 +1347,96 @@ async def orders_campaign_attribution_report(input_data: OrdersCampaignAttributi
         }
 
 
+# ── Tool Formatters ──────────────────────────────────────────────────────────
+
+def _format_facebook_ad_analyze_product(result: dict[str, Any]) -> str:
+    res = result.get("result", result) if isinstance(result, dict) else {}
+    if not res.get("success"):
+        return f"تعذر تحليل بيانات المنتج: {res.get('error', 'خطأ غير معروف')}"
+    p_name = res.get("product_name") or "المنتج"
+    price = res.get("selling_price", 0)
+    margin = res.get("margin_percent", 0)
+    cpa = res.get("target_cpa", 0)
+    budget = res.get("recommended_daily_budget", 0)
+    roas = res.get("break_even_roas", 0)
+    return (
+        f"تحليل اقتصاديات '{p_name}': سعر البيع {price} ج.م، هامش الربح {margin}%، "
+        f"سقف تكلفة الشراء (Target CPA) {cpa} ج.م، الـ Break-even ROAS: {roas}x، "
+        f"الميزانية اليومية المقترحة للاختبار: {budget} ج.م."
+    )
+
+
+def _format_facebook_ad_create_full_draft(result: dict[str, Any]) -> str:
+    res = result.get("result", result) if isinstance(result, dict) else {}
+    if not res.get("success"):
+        return f"تعذر تجهيز مسودات الإعلان: {res.get('error', 'خطأ غير معروف')}"
+    count = res.get("drafts_count", 0)
+    drafts = res.get("drafts", [])
+    angles = [d.get("angle", "") for d in drafts if isinstance(d, dict)]
+    angles_str = "، ".join(filter(None, angles))
+    msg = res.get("message") or "تم حفظ وتجهيز مسودات الحملات الإعلانية بنجاح في لوحة التحكم للمراجعة والاعتماد"
+    if angles_str:
+        return f"{msg} (تم تجهيز {count} مسودات بالزوايا: {angles_str})."
+    return f"{msg} (تم تجهيز {count} مسودات إعلانية)."
+
+
+def _format_facebook_ad_publish_draft(result: dict[str, Any]) -> str:
+    res = result.get("result", result) if isinstance(result, dict) else {}
+    if not res.get("success"):
+        return f"تعذر نشر المسودة: {res.get('message') or res.get('error', 'عائق في الاتصال بميتا')}"
+    camp_id = res.get("facebook_campaign_id") or ""
+    return f"تم نشر الحملة الإعلانية بنجاح على Meta Ads (معرف الحملة: {camp_id}) بحالة PAUSED بانتظار بدء التشغيل."
+
+
+def _format_facebook_ad_get_decision(result: dict[str, Any]) -> str:
+    res = result.get("result", result) if isinstance(result, dict) else {}
+    if not res.get("success"):
+        return f"تعذر استخراج قرارات الحملات: {res.get('error', 'خطأ غير معروف')}"
+    decisions = res.get("decisions", []) or res.get("campaigns", [])
+    if not decisions:
+        return "تم فحص الحساب الإعلاني: لا توجد حملات نشطة حالياً بحاجة إلى اتخاذ قرارات فورية."
+    summary_parts = []
+    for d in decisions[:5]:
+        c_name = d.get("campaign_name") or d.get("name") or "حملة"
+        dec = d.get("decision") or "WATCH"
+        spend = d.get("spend", 0)
+        summary_parts.append(f"{c_name}: [{dec}] (الإنفاق: {spend} ج.م)")
+    return f"قرارات أداء الحملات ({len(decisions)} حملة): " + " | ".join(summary_parts)
+
+
+def _format_facebook_ad_account_info(result: dict[str, Any]) -> str:
+    res = result.get("result", result) if isinstance(result, dict) else {}
+    if not res.get("success"):
+        return f"تعذر استرجاع بيانات الحساب الإعلاني: {res.get('error', 'غير متصل')}"
+    accounts = res.get("ad_accounts") or res.get("accounts") or []
+    if not accounts and res.get("account_id"):
+        accounts = [res]
+    if not accounts:
+        return "لا توجد حسابات إعلانية متصلة حالياً بمتجرك على فيسبوك."
+    acc_strs = []
+    for a in accounts[:3]:
+        name = a.get("name") or a.get("account_name") or a.get("account_id") or "حساب"
+        status = "نشط" if (a.get("is_active") or a.get("status") == "ACTIVE") else "غير مفعّل"
+        currency = a.get("currency", "EGP")
+        acc_strs.append(f"{name} ({status} - {currency})")
+    return f"الحسابات الإعلانية المتصلة: " + "، ".join(acc_strs)
+
+
+def _format_orders_campaign_attribution_report(result: dict[str, Any]) -> str:
+    res = result.get("result", result) if isinstance(result, dict) else {}
+    if not res.get("success"):
+        return f"تعذر استخراج تقرير العائد والربط: {res.get('error', 'لا توجد بيانات')}"
+    orders_count = res.get("orders_count") or res.get("total_orders", 0)
+    rev = res.get("total_revenue") or res.get("revenue", 0)
+    return f"تقرير المبيعات والربط الإعلاني: {orders_count} طلب محقق بإجمالي إيرادات {rev} ج.م."
+
+
+def _format_facebook_ad_record_learned_rule(result: dict[str, Any]) -> str:
+    res = result.get("result", result) if isinstance(result, dict) else {}
+    rule = res.get("rule_title") or res.get("title") or "القاعدة"
+    return f"تم تثبيت '{rule}' بنجاح كقاعدة استراتيجية دائمة في كتيب إعلانات المتجر."
+
+
 # ── Tool Definitions ─────────────────────────────────────────────────────────
 
 facebook_ad_analyze_product_tool = FunctionTool(
@@ -1354,6 +1444,7 @@ facebook_ad_analyze_product_tool = FunctionTool(
     description="Analyze a catalog product's economics, price, margins, and calculate target CPA and recommended testing budget for Meta Ads.",
     func=facebook_ad_analyze_product,
     input_model=FacebookAdAnalyzeProductInput,
+    format_result=_format_facebook_ad_analyze_product,
 )
 
 facebook_ad_create_full_draft_tool = FunctionTool(
@@ -1361,6 +1452,7 @@ facebook_ad_create_full_draft_tool = FunctionTool(
     description="Create full Facebook ad drafts with multiple strategic angles (Pain-Point, Offer, Social Proof). Set publish_now=True to immediately publish to Meta Ads Manager.",
     func=facebook_ad_create_full_draft,
     input_model=FacebookAdCreateFullDraftInput,
+    format_result=_format_facebook_ad_create_full_draft,
 )
 
 facebook_ad_publish_draft_tool = FunctionTool(
@@ -1368,6 +1460,7 @@ facebook_ad_publish_draft_tool = FunctionTool(
     description="Publish an approved Facebook ad draft directly to Meta Ads Manager and return the live Facebook IDs.",
     func=facebook_ad_publish_draft,
     input_model=FacebookAdPublishDraftInput,
+    format_result=_format_facebook_ad_publish_draft,
 )
 
 facebook_ad_get_decision_tool = FunctionTool(
@@ -1375,6 +1468,7 @@ facebook_ad_get_decision_tool = FunctionTool(
     description="Get Media Buyer performance recommendations (SCALE, KILL, FIX_CREATIVE, WATCH, LEARNING) for active Facebook campaigns and ads based on live unit economics, budgets, and ROAS.",
     func=facebook_ad_get_decision,
     input_model=FacebookAdGetDecisionInput,
+    format_result=_format_facebook_ad_get_decision,
 )
 
 facebook_ad_record_learned_rule_tool = FunctionTool(
@@ -1382,6 +1476,7 @@ facebook_ad_record_learned_rule_tool = FunctionTool(
     description="Record a newly learned operational rule or insight into the merchant's persistent playbook (Hermes self-learning).",
     func=facebook_ad_record_learned_rule,
     input_model=FacebookAdRecordLearnedRuleInput,
+    format_result=_format_facebook_ad_record_learned_rule,
 )
 
 facebook_ad_account_info_tool = FunctionTool(
@@ -1389,6 +1484,7 @@ facebook_ad_account_info_tool = FunctionTool(
     description="Get details of connected Facebook Ad Accounts (Account ID, Name, Currency, Timezone, Active status, Connected Pages, and Pixel ID) for the merchant's store.",
     func=facebook_ad_account_info,
     input_model=FacebookAdAccountInfoInput,
+    format_result=_format_facebook_ad_account_info,
 )
 
 orders_campaign_attribution_report_tool = FunctionTool(
@@ -1396,6 +1492,7 @@ orders_campaign_attribution_report_tool = FunctionTool(
     description="Retrieve UTM campaign attribution analytics and real store sales matching Facebook campaigns and ad sources (revenue, order counts, conversion rates, AOV, utm_source, utm_campaign).",
     func=orders_campaign_attribution_report,
     input_model=OrdersCampaignAttributionInput,
+    format_result=_format_orders_campaign_attribution_report,
 )
 
 __all_tools__ = [
@@ -1407,3 +1504,4 @@ __all_tools__ = [
     facebook_ad_account_info_tool,
     orders_campaign_attribution_report_tool,
 ]
+
