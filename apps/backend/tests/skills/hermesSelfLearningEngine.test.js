@@ -11,10 +11,12 @@
 const tenantSkillsService = require('../../services/tenantSkillsService');
 
 describe('Hermes Agent Self-Learning Engine - Production Test Suite', () => {
-  const companyA = 'tenant_hermes_alpha_101';
-  const companyB = 'tenant_hermes_beta_202';
+  let companyA;
+  let companyB;
 
   beforeEach(() => {
+    companyA = `tenant_hermes_alpha_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    companyB = `tenant_hermes_beta_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     // Hermetic in-memory reset for test isolation
     tenantSkillsService._memoryStore.clear();
     tenantSkillsService._approvalPolicy.clear();

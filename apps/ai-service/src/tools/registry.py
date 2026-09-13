@@ -104,6 +104,7 @@ READ_TOOL_NAMES: set[str] = CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
     "search_area_by_text",
     "order_lookup_by_phone",
     "session_search",
+    "delegate_task",
 }
 
 WRITE_TOOL_NAMES: set[str] = {

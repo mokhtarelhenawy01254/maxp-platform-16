@@ -721,6 +721,7 @@ class FacebookAdsAiController {
           const compTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'competitor_get_ads');
           const searchTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'session_search');
           const auditTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'audit_read');
+          const delegateTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'delegate_task');
 
           if (draftTool) {
             const dArgs = draftTool.args || draftTool.arguments || {};
@@ -755,6 +756,15 @@ class FacebookAdsAiController {
               finalReply = `راجعت سجل الأنشطة والقرارات السابقة ووجدت التالي:\n\n${actsList}`;
             } else {
               finalReply = `تمت مراجعة سجل الأنشطة بنجاح.`;
+            }
+          } else if (delegateTool) {
+            const dRes = delegateTool.result || {};
+            const role = dRes.target_role || 'المتخصص';
+            const briefing = dRes.briefing || '';
+            if (briefing) {
+              finalReply = `استشرت وكيل [${role}] وحصلت منه على التقرير التالي:\n\n${briefing}`;
+            } else {
+              finalReply = `تم تفويض المهمة بنجاح إلى وكيل [${role}].`;
             }
           } else {
             // Run synthesis LLM prompt for other complex tools

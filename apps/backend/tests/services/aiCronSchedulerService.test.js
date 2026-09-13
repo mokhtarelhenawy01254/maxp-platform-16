@@ -6,10 +6,12 @@
 const aiCronSchedulerService = require('../../services/aiCronSchedulerService');
 
 describe('AiCronSchedulerService - Production Test Suite', () => {
-  const companyA = 'tenant_cron_alpha_1';
-  const companyB = 'tenant_cron_beta_2';
+  let companyA;
+  let companyB;
 
   beforeEach(() => {
+    companyA = `tenant_cron_alpha_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    companyB = `tenant_cron_beta_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     aiCronSchedulerService._memoryJobs.clear();
     for (const [, task] of aiCronSchedulerService._activeTasks) {
       task.stop();

@@ -250,6 +250,9 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 provider_response.tool_calls.append(tc_msg["tool_calls"][0])
 
         try:
+            from src.agents.stall_guard import ToolLoopGuard
+            loop_guard = ToolLoopGuard(identical_threshold=2)
+
             tool_dicts = _build_skill_tool_dicts(skills, ctx)
             followup_messages = await _build_followup_messages(ctx, provider_response, executed)
             max_rounds = 4
@@ -259,10 +262,22 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 current_round += 1
                 final_response = await _raw_llm_call(ctx, followup_messages, tools=tool_dicts, tool_choice="auto")
                 if final_response.tool_calls:
-                    # 🛡️ 2026 Failure Deduplication: Do not re-execute tools that already failed in this run
+                    # 🛡️ 2026 Stall Guard & Failure Deduplication
                     valid_tool_calls = []
+                    halt_triggered = False
+                    halt_reason = None
+
                     for tc in final_response.tool_calls:
                         f_name = tc.get("function", {}).get("name", "")
+                        f_args = tc.get("function", {}).get("arguments", {})
+
+                        # Check for identical loop / stall
+                        is_loop, reason = loop_guard.check_call(f_name, f_args)
+                        if is_loop:
+                            halt_triggered = True
+                            halt_reason = reason
+                            break
+
                         already_failed = any(
                             ex.get("tool") == f_name and ex.get("status") != "success"
                             for ex in executed
@@ -271,6 +286,12 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                             logger.warning("skipping_repeated_failed_tool_call", name=f_name)
                             continue
                         valid_tool_calls.append(tc)
+
+                    if halt_triggered:
+                        logger.warning("stall_guard_halted_tool_loop", reason=halt_reason)
+                        if halt_reason:
+                            followup_messages.append({"role": "system", "content": halt_reason})
+                        break
 
                     if not valid_tool_calls:
                         logger.info("all_followup_tool_calls_were_failed_duplicates_breaking")
@@ -295,6 +316,11 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                         res_item = extra_results[idx] if idx < len(extra_results) else {}
                         status = res_item.get("status", "unknown")
                         result_content = res_item.get("result", {}) if status == "success" else {"error": res_item.get("error", "Failed")}
+                        # Hermes Duplicate Result Stubbing
+                        tc_name = tc.get("function", {}).get("name", "")
+                        tc_args = tc.get("function", {}).get("arguments", {})
+                        result_content = loop_guard.stub_if_duplicate(tc_name, tc_args, result_content)
+
                         followup_messages.append({
                             "role": "tool",
                             "tool_call_id": tc.get("id", f"call_{current_round}_{idx}"),

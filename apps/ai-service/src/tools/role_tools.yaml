@@ -274,7 +274,11 @@ roles:
     - audit_read
     - generate_social_image
     - session_search
+    - delegate_task
     - agent_handoff_to
 
-  CEO: []
+  CEO:
+    - delegate_task
+    - company_snapshot
+    - audit_read
 
