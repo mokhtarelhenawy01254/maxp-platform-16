@@ -376,7 +376,10 @@ const CreateAdWizard: React.FC = () => {
   // Validation
   // ============================================
 
-  const validateStep = (step: number): boolean => {
+  const validateStep = (
+    step: number,
+    outErrors?: { current?: CreateAdWizardErrors },
+  ): boolean => {
     const newErrors: CreateAdWizardErrors = {};
     const stepsToValidate = step === 6 ? [1, 2, 3, 4, 5] : [step];
 
@@ -510,6 +513,7 @@ const CreateAdWizard: React.FC = () => {
     }
 
     setErrors(newErrors);
+    if (outErrors) outErrors.current = newErrors;
     return Object.keys(newErrors).length === 0;
   };
 
@@ -694,7 +698,10 @@ const CreateAdWizard: React.FC = () => {
   );
 
   const refreshSavedAdAccounts = useCallback(async () => {
-    const nextSavedAdAccounts = await facebookAdsService.getSavedAdAccounts();
+    const res = await facebookAdsService.getSavedAdAccounts();
+    const nextSavedAdAccounts = Array.isArray(res)
+      ? res
+      : (res as any)?.data || [];
     setSavedAdAccounts(nextSavedAdAccounts);
     return nextSavedAdAccounts;
   }, []);
@@ -758,15 +765,11 @@ const CreateAdWizard: React.FC = () => {
     );
 
     if (!activeSavedAccount) {
-      throw new Error(
-        isEn
-          ? "Activate the selected ad account before creating the ad to prevent publishing to the wrong account"
-          : "فعّل الحساب الإعلاني المختار قبل إنشاء الإعلان حتى لا يتم الإرسال لحساب غير مقصود",
-      );
+      await activateSelectedAdAccount();
     }
 
     return selectedAdAccountId;
-  }, [isEn, savedAdAccounts, selectedAdAccountId]);
+  }, [activateSelectedAdAccount, isEn, savedAdAccounts, selectedAdAccountId]);
 
   const handleActivateSelectedAdAccount = useCallback(async () => {
     try {
@@ -806,18 +809,28 @@ const CreateAdWizard: React.FC = () => {
         ]);
 
         const custom =
-          customResult.status === "fulfilled" ? customResult.value || [] : [];
+          customResult.status === "fulfilled"
+            ? Array.isArray(customResult.value)
+              ? customResult.value
+              : (customResult.value as any)?.data || []
+            : [];
         const lookalike =
           lookalikeResult.status === "fulfilled"
-            ? lookalikeResult.value || []
+            ? Array.isArray(lookalikeResult.value)
+              ? lookalikeResult.value
+              : (lookalikeResult.value as any)?.data || []
             : [];
         const remoteAdAccounts =
           adAccountsResult.status === "fulfilled"
-            ? adAccountsResult.value || []
+            ? Array.isArray(adAccountsResult.value)
+              ? adAccountsResult.value
+              : (adAccountsResult.value as any)?.data || []
             : [];
         const existingSavedAccounts =
           savedAccountsResult.status === "fulfilled"
-            ? savedAccountsResult.value || []
+            ? Array.isArray(savedAccountsResult.value)
+              ? savedAccountsResult.value
+              : (savedAccountsResult.value as any)?.data || []
             : [];
 
         if (isCancelled) {
@@ -1017,7 +1030,19 @@ const CreateAdWizard: React.FC = () => {
         ...(formData.adName && { adName: formData.adName }),
         pageId: formData.pageId,
         creativeType: formData.creativeType,
-        ...(formData.postId && { postId: formData.postId }),
+        ...(formData.postId && {
+          postId: (() => {
+            const rawPostId = formData.postId.trim();
+            const pageIdStr = formData.pageId.trim();
+            if (rawPostId.includes("_")) {
+              const [p1, p2] = rawPostId.split("_");
+              if (p2 === pageIdStr) return `${pageIdStr}_${p1}`;
+              if (p1 === pageIdStr) return `${pageIdStr}_${p2}`;
+              return `${pageIdStr}_${p2 || p1}`;
+            }
+            return `${pageIdStr}_${rawPostId}`;
+          })(),
+        }),
         primaryText: formData.primaryText,
         ...(formData.headline && { headline: formData.headline }),
         ...(formData.description && { description: formData.description }),
@@ -1159,7 +1184,11 @@ const CreateAdWizard: React.FC = () => {
       if (shouldRotatePublishRequest) {
         setPublishRequestId(createClientRequestId("fb-full-ad"));
       }
-      toast.error(responseData?.error || (isEn ? "An error occurred while creating the ad" : "حدث خطأ أثناء إنشاء الإعلان"));
+      const errorMessage =
+        responseData?.error ||
+        (error instanceof Error ? error.message : null) ||
+        (isEn ? "An error occurred while creating the ad" : "حدث خطأ أثناء إنشاء الإعلان");
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -1279,26 +1308,67 @@ const CreateAdWizard: React.FC = () => {
     (relationshipStatuses?.length || 0) +
     (selectedEducation?.length || 0);
 
-  const handleRequestPublishConfirmation = () => {
-    if (!validateStep(6)) {
-      if (isAiDraftPrefill) {
-        setShowFullWizard(true);
-        setCurrentStep(1);
+  const handleRequestPublishConfirmation = async () => {
+    const errorHolder: { current?: CreateAdWizardErrors } = {};
+    if (!validateStep(6, errorHolder)) {
+      const stepErrorKeys: Record<number, string[]> = {
+        1: ["campaignName", "objective"],
+        2: ["adAccountId", "budgetAmount", "bidValue", "pixelId"],
+        3: ["locations", "age"],
+        4: ["placements"],
+        5: [
+          "pageId",
+          "postId",
+          "primaryText",
+          "linkUrl",
+          "creativeType",
+          "imageUrl",
+          "videoUrl",
+          "carouselCards",
+        ],
+      };
+      const foundErrors = errorHolder.current || {};
+      let firstErrorStep = 1;
+      let firstErrorMessage = "";
+      for (const [stepNum, keys] of Object.entries(stepErrorKeys)) {
+        const foundKey = keys.find((k) => foundErrors[k]);
+        if (foundKey) {
+          firstErrorStep = Number(stepNum);
+          firstErrorMessage = foundErrors[foundKey] || "";
+          break;
+        }
       }
+      setShowFullWizard(true);
+      setCurrentStep(firstErrorStep);
+      toast.error(
+        firstErrorMessage ||
+          (isEn
+            ? "Please complete all required fields before reviewing"
+            : "يرجى استكمال الحقول المطلوبة قبل مراجعة الإعلان"),
+      );
       return;
     }
 
-    if (!selectedAdAccountIsActive) {
-      setShowFullWizard(true);
-      setCurrentStep(2);
-      setErrors((prev) => ({
-        ...prev,
-        adAccountId: isEn
-          ? "Activate the selected ad account before creating the ad to confirm the intended account."
-          : "فعّل الحساب الإعلاني المختار قبل إنشاء الإعلان حتى نثبت الحساب المقصود.",
-      }));
-      tToast.error("CreateAdWizard.msg_93bd");
-      return;
+    if (!selectedAdAccountIsActive && selectedAdAccountId) {
+      try {
+        await activateSelectedAdAccount();
+      } catch (activateError) {
+        console.warn("Auto-activation notice:", activateError);
+        setShowFullWizard(true);
+        setCurrentStep(2);
+        const errMsg =
+          activateError instanceof Error
+            ? activateError.message
+            : isEn
+              ? "Activate the selected ad account before creating the ad."
+              : "فعّل الحساب الإعلاني المختار قبل إنشاء الإعلان.";
+        setErrors((prev) => ({
+          ...prev,
+          adAccountId: errMsg,
+        }));
+        toast.error(errMsg);
+        return;
+      }
     }
 
     restorePublishFocusRef.current = document.activeElement as HTMLElement | null;
@@ -2050,6 +2120,7 @@ const CreateAdWizard: React.FC = () => {
                 customAudiences={customAudiences}
                 selectedLookalikeAudiences={selectedLookalikeAudiences}
                 lookalikeAudiences={lookalikeAudiences}
+                errors={errors}
               />
             </ErrorBoundary>
           )}

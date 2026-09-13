@@ -1410,8 +1410,22 @@ class FacebookAdsService {
           };
         }
         // In Meta Marketing API, existing post creative uses object_story_id
-        // Format: {page_id}_{post_id} or direct post id
-        const formattedStoryId = String(postId).includes('_') ? String(postId) : `${pageId}_${postId}`;
+        // Format: {page_id}_{post_id}
+        let formattedStoryId;
+        const normalizedPageId = String(pageId).trim();
+        const strPostId = String(postId).trim();
+        if (strPostId.includes('_')) {
+          const [part1, part2] = strPostId.split('_');
+          if (part1 === normalizedPageId) {
+            formattedStoryId = `${normalizedPageId}_${part2}`;
+          } else if (part2 === normalizedPageId) {
+            formattedStoryId = `${normalizedPageId}_${part1}`;
+          } else {
+            formattedStoryId = `${normalizedPageId}_${part2 || part1}`;
+          }
+        } else {
+          formattedStoryId = `${normalizedPageId}_${strPostId}`;
+        }
         delete creativeData.object_story_spec;
         creativeData.object_story_id = formattedStoryId;
       } else {

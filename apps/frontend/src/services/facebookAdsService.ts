@@ -3871,7 +3871,14 @@ export async function chatWithMediaBuyer(
     tool_calls?: any[];
     agentId?: string;
     error?: string;
-  }>("/facebook-ads/ai/chat", { message, threadId, activeProduct, agentId });
+  }>(
+    "/facebook-ads/ai/chat",
+    { message, threadId, activeProduct, agentId },
+    {
+      timeout: 180000,
+      _skipErrorToast: true,
+    }
+  );
   return response.data;
 }
 

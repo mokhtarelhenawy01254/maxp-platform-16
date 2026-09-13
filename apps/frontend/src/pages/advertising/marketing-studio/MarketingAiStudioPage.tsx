@@ -55,26 +55,34 @@ const MarketingAiStudioPage: React.FC = () => {
   };
 
   const handleDraftGenerated = (toolData: any) => {
-    if (toolData?.args) {
-      const args = toolData.args;
-      setCurrentDraft({
-        id: `draft_${Date.now()}`,
-        productName: selectedProduct?.name || args.product_name || "منتج المتجر",
-        angleTitle: args.angle || "عرض القيمة المباشر للعميل",
-        headline: args.headline || "العرض الأقوى لفترة محدودة!",
-        primaryText:
-          args.primary_text || args.copy || "احصل على المنتج مع شحن مجاني ودفع عند الاستلام.",
-        callToAction: args.call_to_action || "SHOP_NOW",
-        budgetAmount: Number(args.daily_budget) || 350,
-        currency: "EGP",
-        targetAudience: args.target_audience || "مصر • المهتمون بالشراء أونلاين",
-        format: args.format || "Reels / Video",
-        status: "DRAFT",
-      });
-      // Switch view to preview canvas on mobile if draft ready
-      if (window.innerWidth < 1024) {
-        setMobileView("CANVAS");
+    let args = toolData?.args || toolData?.arguments || {};
+    if (typeof args === "string") {
+      try {
+        args = JSON.parse(args);
+      } catch {
+        args = {};
       }
+    }
+    const resData = toolData?.result || {};
+    const firstDraft = resData.drafts?.[0] || {};
+
+    setCurrentDraft({
+      id: firstDraft.id || `draft_${Date.now()}`,
+      productName: selectedProduct?.name || args.product_name || firstDraft.name || "منتج المتجر",
+      angleTitle: args.angle || firstDraft.angle || "عرض القيمة المباشر للعميل",
+      headline: args.headline || firstDraft.headline || "العرض الأقوى لفترة محدودة!",
+      primaryText:
+        args.primary_text || args.copy || firstDraft.primary_text || "احصل على المنتج مع شحن مجاني ودفع عند الاستلام.",
+      callToAction: args.call_to_action || firstDraft.call_to_action || "SHOP_NOW",
+      budgetAmount: Number(args.daily_budget) || Number(firstDraft.daily_budget) || 350,
+      currency: "EGP",
+      targetAudience: args.target_audience || firstDraft.target_audience || "مصر • المهتمون بالشراء أونلاين",
+      format: args.format || firstDraft.format || "Reels / Video",
+      status: "DRAFT",
+    });
+    // Switch view to preview canvas on mobile if draft ready
+    if (window.innerWidth < 1024) {
+      setMobileView("CANVAS");
     }
   };
 

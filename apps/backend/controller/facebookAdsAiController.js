@@ -676,67 +676,68 @@ class FacebookAdsAiController {
         const toolNames = toolCallsList.map(tc => tc.name || tc.function?.name || tc.tool || (typeof tc === 'string' ? tc : '')).filter(Boolean);
 
         let finalReply = (result?.reply || '').trim();
-        if (!finalReply && toolCallsList.length > 0) {
-          // 2026 SOTA Standard: Enforced Superstep LLM Synthesis
-          // If the model yielded without natural language synthesis after executing tools,
-          // execute an immediate follow-up synthesis prompt so the agent formulates its own explanation.
-          try {
-            const toolSummaries = toolCallsList.map(tc => {
-              const name = tc.name || tc.function?.name || tc.tool || 'أداة';
-              const args = tc.arguments || tc.args || {};
-              const res = tc.result || {};
-              return `- أداة [${name}]: المعطيات (${JSON.stringify(args)}) -> النتيجة: (${JSON.stringify(res).slice(0, 300)})`;
-            }).join('\n');
+        const isStubOrGeneric = (
+          !finalReply ||
+          finalReply.includes('تم تنفيذ الإجراء بنجاح') ||
+          finalReply.includes('Draft campaigns created successfully') ||
+          finalReply.includes('Awaiting merchant review')
+        );
 
-            const synthesisPrompt = `لقد قمت كـ Media Buyer بتنفيذ الأدوات التالية بنجاح:\n${toolSummaries}\n\nالمطلوب: اشرح للتاجر بأسلوبك البشري الودود والمحترف بالعامية المصرية الراقية ما تم إنجازه بدقة، وما هي التوصيات والخطوات التالية بناءً على نتائج الأدوات، دون أي صيغ آلية.`;
+        if (isStubOrGeneric && toolCallsList.length > 0) {
+          const draftTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'facebook_ad_create_full_draft');
+          const skillTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'manage_agent_skill');
+          const ruleTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'record_learned_rule' || (t.name || t.function?.name || t.tool) === 'facebook_ad_record_learned_rule');
+          const decTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'facebook_ad_get_decision');
+          const compTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'competitor_get_ads');
 
-            const synthResult = await aiServiceAdminClient.chatWithAgent({
-              companyId,
-              agentId: targetAgentId,
-              message: synthesisPrompt,
-              threadId: scopedThreadId,
-              conversationId: threadId,
-              channel: 'dashboard',
-              source_channel: 'dashboard',
-              memoryContext: {
-                recentMessages,
-                activeProduct: activeProductContext,
-                active_product_context: activeProductContext,
-              },
-              memory_context: {
-                recentMessages,
-                activeProduct: activeProductContext,
-                active_product_context: activeProductContext,
-              },
-            });
+          if (draftTool) {
+            const dArgs = draftTool.args || draftTool.arguments || {};
+            const pName = dArgs.product_name || activeProductContext?.name || 'المنتج';
+            const headline = dArgs.headline ? `\n- **العنوان:** ${dArgs.headline}` : '';
+            const angle = dArgs.angle ? `\n- **الزاوية:** ${dArgs.angle}` : '';
+            const budget = dArgs.daily_budget ? `\n- **الميزانية اليومية المقترحة:** ${dArgs.daily_budget} ج.م` : '';
+            finalReply = `تمام يا فندم 🚀 تم تجهيز مسودة الحملة الإعلانية لـ **"${pName}"** بنجاح:${angle}${headline}${budget}\n\nمسودة الإعلان والزوايا الإعلانية جاهزة الآن في اللوحة الجانبية للمراجعة والاعتماد لإطلاقها إلى Meta Ads فوراً!`;
+          } else if (skillTool) {
+            const skillName = skillTool.result?.skill?.name || skillTool.args?.skill_name || 'المهارة المطلوبة';
+            finalReply = `تمام يا فندم، تم إنشاء وتفعيل "${skillName}" بنجاح في نظام المتجر الدائم! 🎯\n\nأقدر دلوقتي أستخدمها في حساب الـ CAC والـ ROAS وربط أرقام الحملات بمبيعاتك الفعلية. تحب نبدأ بتطبيقها فوراً؟`;
+          } else if (ruleTool) {
+            finalReply = `تم حفظ وتثبيت التفضيل/القاعدة بنجاح في كتيب استراتيجيات المتجر ✅`;
+          } else if (decTool) {
+            finalReply = `تم فحص أداء الحملات وتحليل قرارات الـ SCALE والـ KILL بنجاح 📊`;
+          } else if (compTool) {
+            finalReply = `تم استخراج استخبارات إعلانات المنافسين ومؤشرات السوق المصري 🔎`;
+          } else {
+            // Run synthesis LLM prompt for other complex tools
+            try {
+              const toolSummaries = toolCallsList.map(tc => {
+                const name = tc.name || tc.function?.name || tc.tool || 'أداة';
+                const args = tc.arguments || tc.args || {};
+                const res = tc.result || {};
+                return `- أداة [${name}]: المعطيات (${JSON.stringify(args)}) -> النتيجة: (${JSON.stringify(res).slice(0, 300)})`;
+              }).join('\n');
 
-            if (synthResult?.reply && synthResult.reply.trim().length > 10) {
-              finalReply = synthResult.reply.trim();
-            }
-          } catch (synthErr) {
-            console.warn('[FacebookAdsAI] Enforced synthesis step failed, falling back to heuristic template:', synthErr.message);
-          }
+              const synthesisPrompt = `لقد قمت كـ Media Buyer بتنفيذ الأدوات التالية بنجاح:\n${toolSummaries}\n\nالمطلوب: اشرح للتاجر بأسلوبك البشري الودود والمحترف بالعامية المصرية الراقية ما تم إنجازه بدقة، وما هي التوصيات والخطوات التالية بناءً على نتائج الأدوات، دون أي صيغ آلية.`;
 
-          // Graceful fallback if synthesis failed or returned empty
-          if (!finalReply) {
-            const skillTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'manage_agent_skill');
-            const ruleTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'record_learned_rule' || (t.name || t.function?.name || t.tool) === 'facebook_ad_record_learned_rule');
-            const draftTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'facebook_ad_create_full_draft');
-            const decTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'facebook_ad_get_decision');
-            const compTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'competitor_get_ads');
+              const synthResult = await aiServiceAdminClient.chatWithAgent({
+                companyId,
+                agentId: targetAgentId,
+                message: synthesisPrompt,
+                threadId: scopedThreadId,
+                conversationId: threadId,
+                channel: 'dashboard',
+                source_channel: 'dashboard',
+                memory_context: {
+                  recentMessages,
+                  activeProduct: activeProductContext,
+                  active_product_context: activeProductContext,
+                },
+              });
 
-            if (skillTool) {
-              const skillName = skillTool.result?.skill?.name || skillTool.args?.skill_name || 'المهارة المطلوبة';
-              finalReply = `تمام يا فندم، تم إنشاء وتفعيل "${skillName}" بنجاح في نظام المتجر الدائم! 🎯\n\nأقدر دلوقتي أستخدمها في حساب الـ CAC والـ ROAS وربط أرقام الحملات بمبيعاتك الفعلية. تحب نبدأ بتطبيقها فوراً؟`;
-            } else if (ruleTool) {
-              finalReply = `تم حفظ وتثبيت التفضيل/القاعدة بنجاح في كتيب استراتيجيات المتجر ✅`;
-            } else if (draftTool) {
-              finalReply = `تم تجهيز مسودات الحملات الإعلانية بنجاح وجاهزة للمراجعة والإطلاق 🚀`;
-            } else if (decTool) {
-              finalReply = `تم فحص أداء الحملات وتحليل قرارات الـ SCALE والـ KILL بنجاح 📊`;
-            } else if (compTool) {
-              finalReply = `تم استخراج استخبارات إعلانات المنافسين ومؤشرات السوق المصري 🔎`;
-            } else {
+              if (synthResult?.reply && synthResult.reply.trim().length > 10) {
+                finalReply = synthResult.reply.trim();
+              }
+            } catch (synthErr) {
+              console.warn('[FacebookAdsAI] Enforced synthesis step failed:', synthErr.message);
               finalReply = `تم تنفيذ الإجراء المطلوب بنجاح ✅`;
             }
           }

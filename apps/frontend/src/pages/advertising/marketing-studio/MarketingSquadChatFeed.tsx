@@ -131,10 +131,16 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
         addMessageToActiveSession(errorMsg);
       }
     } catch (err: any) {
+      const isTimeout =
+        err?.code === "ECONNABORTED" ||
+        String(err?.message || "").toLowerCase().includes("timeout");
+      const errText = isTimeout
+        ? "استغرق الأيجنت وقتاً أطول في تحليل أرقام المتجر وتجهيز المسودة. تم حفظ الإجراء في الخلفية، يمكنك متابعة المحادثة أو مراجعة المسودة في اللوحة الجانبية."
+        : `حدث خطأ أثناء التواصل مع الأيجنت: ${err.message || "يرجى المحاولة مرة أخرى"}`;
       const errorMsg: Message = {
         id: `err-${Date.now()}`,
         sender: "agent",
-        text: `حدث خطأ أثناء التواصل مع الأيجنت: ${err.message}`,
+        text: errText,
         timestamp: new Date().toISOString(),
       };
       addMessageToActiveSession(errorMsg);

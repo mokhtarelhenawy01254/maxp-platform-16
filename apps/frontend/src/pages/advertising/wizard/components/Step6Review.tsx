@@ -9,6 +9,7 @@ import {
   Users,
   Layout,
   Image,
+  AlertCircle,
 } from "lucide-react";
 import type { FormData, CreatedFullAdSummary, TargetingOption } from "../types";
 import type {
@@ -47,6 +48,7 @@ interface Step6ReviewProps {
   customAudiences?: FacebookCustomAudience[];
   selectedLookalikeAudiences?: string[];
   lookalikeAudiences?: FacebookLookalikeAudience[];
+  errors?: Record<string, string>;
 }
 
 export const Step6Review: React.FC<Step6ReviewProps> = ({
@@ -64,6 +66,7 @@ export const Step6Review: React.FC<Step6ReviewProps> = ({
   customAudiences,
   selectedLookalikeAudiences,
   lookalikeAudiences,
+  errors,
 }) => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
@@ -102,6 +105,24 @@ export const Step6Review: React.FC<Step6ReviewProps> = ({
     (formData.devicePlatforms?.length || 0);
   return (
     <div className="space-y-6">
+      {errors && Object.keys(errors).length > 0 && (
+        <div className="rounded-2xl border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 p-5 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-red-800 dark:text-red-200">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />
+            <span>
+              {isEn
+                ? "Please resolve the following required fields before confirming:"
+                : "يرجى استكمال البيانات التالية قبل تأكيد النشر:"}
+            </span>
+          </div>
+          <ul className="list-disc list-inside text-sm text-red-700 dark:text-red-300 space-y-1">
+            {Object.entries(errors).map(([key, msg]) => (
+              <li key={key}>{msg}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {createdFullAd && (
         <div
           className="rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 p-5"

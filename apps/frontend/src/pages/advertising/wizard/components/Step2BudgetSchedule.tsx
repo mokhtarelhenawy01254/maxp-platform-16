@@ -221,13 +221,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
                   void loadPagesAndPixels();
                   return;
                 }
-                if (activeSavedAdAccountId === nextAdAccountId) {
-                  void loadPagesAndPixels(nextAdAccountId);
-                  return;
-                }
-
-                setFacebookPixels([]);
-                setFormData((prev) => ({ ...prev, pixelId: "" }));
+                void loadPagesAndPixels(nextAdAccountId);
               }}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
