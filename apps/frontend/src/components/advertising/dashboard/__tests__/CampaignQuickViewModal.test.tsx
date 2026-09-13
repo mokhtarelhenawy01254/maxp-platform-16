@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import CampaignQuickViewModal from "../CampaignQuickViewModal";
-import type { FacebookCampaign } from "../../../../services/facebookAdsService";
+import { facebookAdsService, type FacebookCampaign } from "../../../../services/facebookAdsService";
 
 jest.mock("../../../../services/facebookAdsService", () => ({
   facebookAdsService: {
@@ -11,6 +11,7 @@ jest.mock("../../../../services/facebookAdsService", () => ({
     updateCampaign: jest.fn().mockResolvedValue({}),
     pauseCampaign: jest.fn().mockResolvedValue({}),
     resumeCampaign: jest.fn().mockResolvedValue({}),
+    updateAdSet: jest.fn().mockResolvedValue({}),
   },
   CAMPAIGN_OBJECTIVES: [
     { value: "OUTCOME_SALES", label: "المبيعات والتحويلات" },
@@ -169,5 +170,65 @@ describe("CampaignQuickViewModal", () => {
     expect(screen.getByText(/ضعف الـ Hook/)).toBeInTheDocument();
     // Verify audience fatigue is diagnosed (Frequency 3.2 >= 2.8)
     expect(screen.getByText(/إرهاق الجمهور/)).toBeInTheDocument();
+  });
+
+  it("renders ad set structure and allows editing targeting in Tab 3", async () => {
+    (facebookAdsService.updateAdSet as jest.Mock).mockResolvedValueOnce({
+      id: "adset-1",
+      name: "مجموعة استهداف القاهرة والنساء المحدثة",
+      budgetAmount: 150,
+      ageMin: 20,
+      ageMax: 50,
+      genders: ["2"],
+      locations: ["Cairo", "Giza"],
+    });
+
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <CampaignQuickViewModal
+            isOpen={true}
+            campaign={mockCampaign}
+            selectedCurrency="EGP"
+            selectedAdAccountId="act_123"
+            onClose={jest.fn()}
+          />
+        </MemoryRouter>,
+      );
+    });
+
+    // Switch to Tab 3 (المجموعات وتعديل الاستهداف)
+    const structureTab = screen.getByText(/المجموعات وتعديل الاستهداف/);
+    fireEvent.click(structureTab);
+
+    // Verify existing ad set name is present
+    expect(screen.getByText("مجموعة القاهرة والجيزة")).toBeInTheDocument();
+
+    // Click "تعديل الاستهداف والمجموعة" button
+    const editTargetingBtn = screen.getByText(/تعديل الاستهداف والمجموعة/);
+    fireEvent.click(editTargetingBtn);
+
+    // Verify targeting editing fields are rendered
+    expect(screen.getByText("الفئة العمرية المستهدفة")).toBeInTheDocument();
+    expect(screen.getByText("الجنس المستهدف")).toBeInTheDocument();
+    expect(screen.getByText(/المحافظات المستهدفة/)).toBeInTheDocument();
+
+    // Select Women only gender
+    const womenBtn = screen.getByText("نساء");
+    fireEvent.click(womenBtn);
+
+    // Click Save targeting button
+    const saveTargetingBtn = screen.getByText("حفظ استهداف المجموعة");
+    await act(async () => {
+      fireEvent.click(saveTargetingBtn);
+    });
+
+    // Verify facebookAdsService.updateAdSet was called
+    expect(facebookAdsService.updateAdSet).toHaveBeenCalledWith(
+      "adset-1",
+      expect.objectContaining({
+        genders: ["2"],
+      }),
+    );
   });
 });

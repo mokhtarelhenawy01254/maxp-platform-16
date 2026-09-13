@@ -547,6 +547,26 @@ const updateAdSet = async (req, res) => {
         if (data.budgetAmount !== undefined) {
           metaPayload.daily_budget = Math.round(Number(data.budgetAmount) * 100);
         }
+        if (data.targeting) {
+          metaPayload.targeting = typeof data.targeting === "string" ? JSON.parse(data.targeting) : data.targeting;
+        } else if (data.locations || data.ageMin || data.ageMax || data.genders) {
+          const targetingObj = {};
+          if (data.ageMin) targetingObj.age_min = Number(data.ageMin);
+          if (data.ageMax) targetingObj.age_max = Number(data.ageMax);
+          if (data.genders) {
+            const g = Array.isArray(data.genders) ? data.genders : [data.genders];
+            targetingObj.genders = g.map(Number).filter((n) => !isNaN(n));
+          }
+          if (data.locations) {
+            const locList = Array.isArray(data.locations) ? data.locations : [data.locations];
+            targetingObj.geo_locations = {
+              countries: ["EG"],
+              regions: locList.map((name) => ({ key: name, name })),
+            };
+          }
+          metaPayload.targeting = targetingObj;
+        }
+
         if (Object.keys(metaPayload).length > 0) {
           const result = await adsService.updateAdSet(adSet.facebookAdSetId, metaPayload);
           if (!result.success) {
@@ -558,6 +578,18 @@ const updateAdSet = async (req, res) => {
 
     // Update in Database
     const updatePayload = { ...data };
+    if (data.genders !== undefined) {
+      updatePayload.genders = Array.isArray(data.genders) ? JSON.stringify(data.genders) : data.genders;
+    }
+    if (data.locations !== undefined) {
+      updatePayload.locations = Array.isArray(data.locations) ? JSON.stringify(data.locations) : data.locations;
+    }
+    if (data.targeting !== undefined && typeof data.targeting === "object") {
+      updatePayload.targeting = JSON.stringify(data.targeting);
+    }
+    if (data.ageMin !== undefined) updatePayload.ageMin = Number(data.ageMin);
+    if (data.ageMax !== undefined) updatePayload.ageMax = Number(data.ageMax);
+
     const parsedSettings = parseJsonObject(adSet.settings);
     if (data.status) {
       parsedSettings.meta = {

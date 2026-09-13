@@ -3273,6 +3273,10 @@ export interface UpdateAdSetData {
   targeting?: unknown;
   startTime?: string;
   endTime?: string;
+  ageMin?: number;
+  ageMax?: number;
+  genders?: string[];
+  locations?: string[];
 }
 
 export const updateAdSet = async (
