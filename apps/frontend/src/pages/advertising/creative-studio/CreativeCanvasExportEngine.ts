@@ -94,9 +94,10 @@ export async function renderCompositeCanvas({
     ctx.fillRect(0, 0, width, height);
   }
 
-  // 3. Layer 1 & 2: Product & Shadow
+  // 3. Layer 1 & 2: Product & Shadow (Only if showProductLayer is not explicitly false)
   const resolvedProductImg = product?.mainImage;
-  if (resolvedProductImg) {
+  const shouldRenderProductLayer = overlay.showProductLayer !== false;
+  if (resolvedProductImg && shouldRenderProductLayer) {
     try {
       const pImg = await loadImage(resolvedProductImg);
       const transform = overlay.productTransform || {
@@ -315,6 +316,41 @@ export async function renderCompositeCanvas({
   }
 
   ctx.restore();
+
+  // 6. Layer 5: Brand Logo Overlay (if enabled)
+  if (overlay.logo?.show && overlay.logo?.url) {
+    try {
+      const logoImg = await loadImage(overlay.logo.url);
+      const logoRatio = logoImg.width / logoImg.height;
+      const sizeMultiplier = overlay.logo.size === "sm" ? 0.08 : overlay.logo.size === "lg" ? 0.16 : 0.12;
+      const logoW = width * sizeMultiplier;
+      const logoH = logoW / logoRatio;
+      const logoPadding = width * 0.06;
+
+      let lx = logoPadding;
+      let ly = logoPadding;
+      if (overlay.logo.position === "top-right") {
+        lx = width - logoPadding - logoW;
+        ly = logoPadding;
+      } else if (overlay.logo.position === "bottom-left") {
+        lx = logoPadding;
+        ly = height - logoPadding - logoH;
+      } else if (overlay.logo.position === "bottom-right") {
+        lx = width - logoPadding - logoW;
+        ly = height - logoPadding - logoH;
+      }
+
+      ctx.save();
+      ctx.globalAlpha = overlay.logo.opacity ?? 1;
+      ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+      ctx.drawImage(logoImg, lx, ly, logoW, logoH);
+      ctx.restore();
+    } catch (e) {
+      console.warn("Could not load logo image onto composite canvas", e);
+    }
+  }
 
   return canvas;
 }

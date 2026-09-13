@@ -562,3 +562,89 @@ exports.generateCaption = async (req, res) => {
     return res.status(status).json({ success: false, message: detail });
   }
 };
+
+exports.chatWithCreativeDirector = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const { message, productName = "", productPrice, history = [] } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ success: false, message: "الرسالة مطلوبة" });
+    }
+
+    const { apiKey, keyId, keyName } = await getOpenRouterKey();
+    const startTime = Date.now();
+
+    const systemPrompt = `You are the 2026 AI Creative Director & E-Commerce Commercial Art Director for MaxP Platform.
+Your mission is to collaborate with Egyptian/Arabic merchants to brainstorm, refine, and generate breathtaking commercial ad visuals and photography scenes.
+Guidelines:
+1. Speak in friendly, professional, confident Egyptian/Arabic dialect.
+2. The merchant's active product is: "${productName || 'المنتج التجاري'}" ${productPrice ? `(السعر: ${productPrice} ج.م)` : ''}.
+3. Analyze their request, explain why this visual idea will convert customers (ROAS / Engagement), and suggest lighting, reflections, and atmosphere.
+4. Always construct a detailed, evocative English diffusion prompt tailored for commercial product photography (photorealistic, 8k, pristine lighting, realistic contact shadows, award-winning advertising).
+5. You MUST return ONLY a valid JSON object with the following structure:
+{
+  "reply": "ردك الودود والمهني بالعامية المصرية مع الشرح التسويقي",
+  "suggestedPrompt": "The full detailed English image generation prompt...",
+  "suggestedAngle": "عنوان مختصر للزاوية التسويقية (بالعربية)"
+}`;
+
+    const formattedMessages = [
+      { role: "system", content: systemPrompt },
+      ...(Array.isArray(history) ? history.slice(-6).map((h) => ({
+        role: h.role === "user" ? "user" : "assistant",
+        content: String(h.content || ""),
+      })) : []),
+      { role: "user", content: message },
+    ];
+
+    const headers = {
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": "https://maxp.online",
+      "X-Title": "MaxP Creative Director Chat",
+    };
+
+    const resp = await axios.post(
+      `${OPENROUTER_BASE}/chat/completions`,
+      {
+        model: "google/gemini-3.1-flash-lite-001",
+        messages: formattedMessages,
+        response_format: { type: "json_object" },
+      },
+      { headers, timeout: 60000 }
+    );
+
+    const raw = resp.data?.choices?.[0]?.message?.content;
+    let parsed = {};
+    try {
+      parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    } catch {
+      parsed = {
+        reply: raw || "فكرة رائعة! قمت بتجهيز البرومبت الإعلاني المناسب.",
+        suggestedPrompt: `commercial advertisement shoot for ${productName || "product"}, inspired by ${message}, cinematic lighting, 8k resolution`,
+        suggestedAngle: "مشهد مخصص",
+      };
+    }
+
+    const latencyMs = Date.now() - startTime;
+    writeProviderLog({
+      companyId, keyId, keyName,
+      action: 'creative_chat_success',
+      status: 'success',
+      latencyMs,
+      model: "google/gemini-3.1-flash-lite-001",
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        reply: parsed.reply || "تمت صياغة المشهد بنجاح.",
+        suggestedPrompt: parsed.suggestedPrompt || "",
+        suggestedAngle: parsed.suggestedAngle || "مشهد مخصص",
+      },
+    });
+  } catch (error) {
+    const detail = error.response?.data?.error?.message || error.message;
+    return res.status(500).json({ success: false, message: detail });
+  }
+};

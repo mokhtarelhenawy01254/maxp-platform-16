@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from "react";
+﻿import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Download,
@@ -9,11 +9,10 @@ import {
   Sparkles,
   Loader2,
   Move,
-  RotateCw,
-  ZoomIn,
-  ZoomOut,
-  RefreshCw,
-  Layers,
+  Scissors,
+  Eye,
+  EyeOff,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -32,9 +31,15 @@ interface CreativeStudioInteractiveCanvasProps {
   aspectRatio: AspectRatioType;
   onChangeAspectRatio: (ratio: AspectRatioType) => void;
   overlay: CanvasOverlaySettings;
+  onUpdateOverlay?: (updates: Partial<CanvasOverlaySettings>) => void;
   onUpdateProductTransform?: (updates: Partial<ProductTransformSettings>) => void;
   backgroundUrl: string | null;
   isGenerating: boolean;
+  onUploadCustomProduct?: (file: File) => void;
+  variantUrls?: string[];
+  onSelectVariant?: (url: string) => void;
+  cutoutProductUrl?: string | null;
+  onSetCutoutProductUrl?: (url: string | null) => void;
 }
 
 export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractiveCanvasProps> = ({
@@ -43,14 +48,22 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
   aspectRatio,
   onChangeAspectRatio,
   overlay,
+  onUpdateOverlay,
   onUpdateProductTransform,
   backgroundUrl,
   isGenerating,
+  onUploadCustomProduct,
+  variantUrls = [],
+  onSelectVariant,
+  cutoutProductUrl,
+  onSetCutoutProductUrl,
 }) => {
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isRemovingBg, setIsRemovingBg] = useState(false);
 
   // Dragging interaction state for product
   const [isDragging, setIsDragging] = useState(false);
@@ -140,47 +153,120 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
         prefillDraft: {
           headline: overlay.headline,
           primaryText: overlay.subheadline,
-          callToAction: overlay.callToAction || "SHOP_NOW",
+          callToAction: overlay.callToAction,
           price: overlay.price,
-          creativeUrl: backgroundUrl,
+          format: aspectRatio === "9:16" ? "Story / Reels" : "Feed / Square",
         },
       },
     });
-    toast.success("جاري فتح مسودة الحملة في مركز التسويق...");
   };
 
-  // High-DPI Composite Canvas 2K Export
   const handleDownloadSnapshot = async () => {
-    if (!selectedProduct) {
-      toast.error("يرجى اختيار منتج من الكتالوج أولاً");
+    if (!selectedProduct && !backgroundUrl) {
+      toast.error("لا يوجد مشهد أو منتج لتصديره");
       return;
     }
 
+    setIsExporting(true);
     try {
-      setIsExporting(true);
-      toast.info("جاري رندرة المشهد الإعلاني بدقة فائقة 2K...");
+      // Use cutout product image if available, else standard product image
+      const effectiveProduct = selectedProduct
+        ? {
+            ...selectedProduct,
+            mainImage: cutoutProductUrl || selectedProduct.mainImage,
+          }
+        : null;
+
       await downloadCompositeImage({
         backgroundUrl,
-        product: selectedProduct,
+        product: effectiveProduct,
         aspectRatio,
         overlay,
         previewGradient: selectedPreset.previewGradient,
       });
-      toast.success("✓ تم تصدير التصميم الإعلاني الكامل بنجاح");
+      toast.success("تم تنزيل التصميم الإعلاني بدقة 2K بنجاح");
     } catch (err: any) {
-      toast.error("حدث خطأ أثناء رندرة وتصدير الصورة");
-      console.error(err);
+      console.error("Export error:", err);
+      toast.error("تعذر تصدير الصورة، يرجى المحاولة مرة أخرى");
     } finally {
       setIsExporting(false);
     }
   };
 
+  // Instant In-Browser Chroma Background Remover
+  const handleRemoveBackground = () => {
+    const imgSrc = selectedProduct?.mainImage;
+    if (!imgSrc) return;
+
+    setIsRemovingBg(true);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const c = document.createElement("canvas");
+        c.width = img.naturalWidth || img.width;
+        c.height = img.naturalHeight || img.height;
+        const ctx = c.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, c.width, c.height);
+        const data = imgData.data;
+
+        // Sample corner pixels to determine background tone
+        const corners = [
+          0,
+          (c.width - 1) * 4,
+          ((c.height - 1) * c.width) * 4,
+          ((c.height - 1) * c.width + (c.width - 1)) * 4,
+        ];
+        let bgR = 0, bgG = 0, bgB = 0;
+        corners.forEach((idx) => {
+          bgR += data[idx];
+          bgG += data[idx + 1];
+          bgB += data[idx + 2];
+        });
+        bgR = Math.round(bgR / 4);
+        bgG = Math.round(bgG / 4);
+        bgB = Math.round(bgB / 4);
+
+        const threshold = 38;
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          const dist = Math.sqrt((r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2);
+          // If close to background tone or pure near-white/light gray studio background
+          if (dist < threshold || (r > 240 && g > 240 && b > 240)) {
+            data[i + 3] = 0; // Zero alpha (transparent)
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        const resultUrl = c.toDataURL("image/png");
+        onSetCutoutProductUrl?.(resultUrl);
+        onUpdateOverlay?.({ isBackgroundRemoved: true });
+        toast.success("تم تفريغ خلفية المنتج تلقائياً بنجاح");
+      } catch (e) {
+        console.warn("Chroma cutout failed:", e);
+        toast.error("تعذر التفريغ التلقائي لهذه الصورة");
+      } finally {
+        setIsRemovingBg(false);
+      }
+    };
+    img.onerror = () => {
+      setIsRemovingBg(false);
+      toast.error("تعذر تحميل صورة المنتج لتفريغها");
+    };
+    img.src = imgSrc;
+  };
+
+  const activeProductImage = cutoutProductUrl || selectedProduct?.mainImage;
+
   return (
-    <div className="h-full flex flex-col bg-slate-100/70 dark:bg-slate-950 min-h-0 select-none overflow-hidden">
-      {/* Canvas Top Bar: Aspect Ratio Switcher + Quick Actions */}
-      <div className="px-4 py-2 border-b border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 flex items-center justify-between gap-3 flex-shrink-0">
-        {/* Multi-Format Aspect Ratio Switcher */}
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
+    <div className="flex flex-col h-full bg-slate-100/60 dark:bg-slate-950/80 select-none overflow-hidden">
+      {/* Top Workspace Canvas Control Bar */}
+      <div className="flex items-center justify-between px-3 sm:px-5 py-2.5 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 flex-shrink-0 gap-2 flex-wrap">
+        {/* Aspect Ratio Switcher */}
+        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60">
           {(
             [
               { id: "1:1", label: "1:1 Feed" },
@@ -204,6 +290,77 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
           ))}
         </div>
 
+        {/* Canvas Visibility & Cutout Controls */}
+        <div className="flex items-center gap-1.5">
+          {/* Toggle Product Cutout Layer */}
+          {selectedProduct && (
+            <button
+              type="button"
+              onClick={() =>
+                onUpdateOverlay?.({
+                  showProductLayer: overlay.showProductLayer === false ? true : false,
+                })
+              }
+              className={`h-8 px-2 text-xs font-bold rounded-lg border transition flex items-center gap-1 cursor-pointer ${
+                overlay.showProductLayer !== false
+                  ? "bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
+                  : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500"
+              }`}
+              title="إظهار أو إخفاء مجسم المنتج المفرغ فوق خلفية الذكاء الاصطناعي"
+            >
+              {overlay.showProductLayer !== false ? (
+                <Eye className="w-3.5 h-3.5" />
+              ) : (
+                <EyeOff className="w-3.5 h-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {overlay.showProductLayer !== false ? "طبقة المنتج: نشطة" : "طبقة المنتج: مخفية"}
+              </span>
+            </button>
+          )}
+
+          {/* Instant Background Remover Button */}
+          {selectedProduct && overlay.showProductLayer !== false && (
+            <button
+              type="button"
+              disabled={isRemovingBg}
+              onClick={handleRemoveBackground}
+              className="h-8 px-2 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1 cursor-pointer"
+              title="تفريغ الخلفية البيضاء أو الاستوديو تلقائياً ليصبح المنتج شفافاً 100%"
+            >
+              {isRemovingBg ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Scissors className="w-3.5 h-3.5 text-amber-500" />
+              )}
+              <span className="hidden md:inline">تفريغ الخلفية</span>
+            </button>
+          )}
+
+          {/* Upload Custom External Product Button */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file && onUploadCustomProduct) {
+                onUploadCustomProduct(file);
+              }
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="h-8 px-2 text-xs font-bold rounded-lg border border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-400 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition flex items-center gap-1 cursor-pointer"
+            title="رفع صورة منتج خارجي من حاسوبك أو هاتفك"
+          >
+            <Upload className="w-3.5 h-3.5 text-indigo-500" />
+            <span className="hidden md:inline">رفع منتج خارجي</span>
+          </button>
+        </div>
+
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <Button
@@ -222,7 +379,7 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
             onClick={handleDownloadSnapshot}
             disabled={isExporting}
             className="h-8 text-xs gap-1.5 rounded-lg border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-50 dark:hover:bg-indigo-950/40 cursor-pointer"
-            title="تصدير تصميم متكامل بدقة 2K (الخلفية + المنتج + الظلال + النصوص)"
+            title="تصدير تصميم متكامل بدقة 2K (الخلفية + المنتج + اللوجو + الظلال + النصوص)"
           >
             {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             <span>{isExporting ? "جاري الرندرة..." : "تحميل بدقة 2K"}</span>
@@ -241,11 +398,11 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
       </div>
 
       {/* Center Interactive Canvas Viewport */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 overflow-auto relative">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 overflow-auto relative">
         {/* The Live Layered Canvas Frame */}
         <div
           ref={canvasRef}
-          className={`w-full ${aspectClass} relative rounded-2xl overflow-hidden shadow-2xl border border-slate-900/10 dark:border-white/10 transition-all duration-300 flex flex-col justify-between`}
+          className={`w-full ${aspectClass} relative rounded-2xl overflow-hidden shadow-2xl border border-slate-900/10 dark:border-white/10 transition-all duration-300 flex flex-col justify-between flex-shrink-0`}
         >
           {/* Layer 0: Background Layer (AI image or Simulated Studio Preset) */}
           {backgroundUrl ? (
@@ -264,166 +421,222 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
             </div>
           )}
 
-          {/* Layer 1 & 2: Interactive Transform Product Container with Real Shadow Physics */}
-          <div className="absolute inset-0 flex items-center justify-center p-6 pointer-events-none z-10">
-            {selectedProduct?.mainImage ? (
-              <div
-                className="relative inline-block select-none pointer-events-auto cursor-grab active:cursor-grabbing transition-transform duration-75"
-                style={{
-                  transform: `translate(${transform.x * 2.5}px, ${transform.y * 2.5}px) scale(${transform.scale}) rotate(${transform.rotation}deg)`,
-                }}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                title="اسحب بالماوس لتحريك المنتج في أي مكان"
-              >
-                {/* Physical Contact Shadow */}
-                {transform.shadowType === "contact" && (
-                  <>
+          {/* Layer 5: Brand Logo Overlay */}
+          {overlay.logo?.show && overlay.logo?.url && (
+            <div
+              className={`absolute z-30 pointer-events-none p-3.5 ${
+                overlay.logo.position === "top-left"
+                  ? "top-0 left-0"
+                  : overlay.logo.position === "bottom-left"
+                  ? "bottom-0 left-0"
+                  : overlay.logo.position === "bottom-right"
+                  ? "bottom-0 right-0"
+                  : "top-0 right-0"
+              }`}
+              style={{ opacity: overlay.logo.opacity ?? 1 }}
+            >
+              <img
+                src={overlay.logo.url}
+                alt="Brand Logo"
+                className={`object-contain drop-shadow-md ${
+                  overlay.logo.size === "sm"
+                    ? "h-6 max-w-[80px]"
+                    : overlay.logo.size === "lg"
+                    ? "h-12 max-w-[150px]"
+                    : "h-9 max-w-[110px]"
+                }`}
+              />
+            </div>
+          )}
+
+          {/* Layer 1 & 2: Interactive Transform Product Container (Controlled by showProductLayer) */}
+          {overlay.showProductLayer !== false && (
+            <div className="absolute inset-0 flex items-center justify-center p-6 pointer-events-none z-10">
+              {activeProductImage ? (
+                <div
+                  className="relative inline-block select-none pointer-events-auto cursor-grab active:cursor-grabbing transition-transform duration-75"
+                  style={{
+                    transform: `translate(${transform.x * 2.5}px, ${transform.y * 2.5}px) scale(${transform.scale}) rotate(${transform.rotation}deg)`,
+                  }}
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  title="اسحب بالماوس لتحريك المنتج في أي مكان"
+                >
+                  {/* Physical Contact Shadow */}
+                  {transform.shadowType === "contact" && (
+                    <>
+                      <div
+                        className="absolute -bottom-3 inset-x-8 h-8 rounded-[100%] bg-black/60 blur-md pointer-events-none"
+                        style={{ transform: "scaleY(0.4)" }}
+                      />
+                      <div
+                        className="absolute -bottom-1 inset-x-12 h-3 rounded-[100%] bg-black/85 blur-xs pointer-events-none"
+                        style={{ transform: "scaleY(0.3)" }}
+                      />
+                    </>
+                  )}
+
+                  {/* Directional Studio Shadow */}
+                  {transform.shadowType === "directional" && (
                     <div
-                      className="absolute -bottom-3 inset-x-8 h-8 rounded-[100%] bg-black/60 blur-md pointer-events-none"
-                      style={{ transform: "scaleY(0.4)" }}
+                      className="absolute -bottom-4 -right-4 inset-x-4 h-10 rounded-[100%] bg-black/50 blur-lg pointer-events-none"
+                      style={{ transform: "scaleY(0.4) skewX(-15deg)" }}
                     />
+                  )}
+
+                  {/* Subtle Ambient Shadow */}
+                  {transform.shadowType === "subtle" && (
                     <div
-                      className="absolute -bottom-1 inset-x-12 h-3 rounded-[100%] bg-black/85 blur-xs pointer-events-none"
+                      className="absolute -bottom-2 inset-x-6 h-6 rounded-[100%] bg-black/35 blur-md pointer-events-none"
                       style={{ transform: "scaleY(0.3)" }}
                     />
-                  </>
-                )}
+                  )}
 
-                {/* Directional Studio Shadow */}
-                {transform.shadowType === "directional" && (
-                  <div
-                    className="absolute -bottom-4 -right-4 inset-x-4 h-10 rounded-[100%] bg-black/50 blur-lg pointer-events-none"
-                    style={{ transform: "scaleY(0.4) skewX(-15deg)" }}
+                  {/* The Product Cutout Image */}
+                  <img
+                    src={activeProductImage}
+                    alt={selectedProduct?.name || "Product"}
+                    className="max-h-52 sm:max-h-64 object-contain drop-shadow-xl relative z-10 transition-transform select-none pointer-events-none"
+                    draggable={false}
                   />
-                )}
 
-                {/* Subtle Ambient Shadow */}
-                {transform.shadowType === "subtle" && (
-                  <div
-                    className="absolute -bottom-2 inset-x-6 h-6 rounded-[100%] bg-black/35 blur-md pointer-events-none"
-                    style={{ transform: "scaleY(0.3)" }}
-                  />
-                )}
-
-                {/* The Product Cutout Image */}
-                <img
-                  src={selectedProduct.mainImage}
-                  alt={selectedProduct.name}
-                  className="max-h-52 sm:max-h-64 object-contain drop-shadow-xl relative z-10 transition-transform select-none pointer-events-none"
-                  draggable={false}
-                />
-
-                {/* Interactive Drag Pill Indicator (appears on hover) */}
-                <div className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-bold text-white opacity-0 hover:opacity-100 transition-opacity flex items-center gap-1 pointer-events-none">
-                  <Move className="w-2.5 h-2.5" />
-                  <span>اسحب للتحريك</span>
+                  {/* Interactive Drag Pill Indicator */}
+                  <div className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-bold text-white opacity-0 hover:opacity-100 transition-opacity flex items-center gap-1 pointer-events-none">
+                    <Move className="w-2.5 h-2.5" />
+                    <span>اسحب للتحريك</span>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="w-48 h-48 rounded-2xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center p-4 text-center bg-black/20 backdrop-blur-xs">
-                <Package className="w-10 h-10 text-white/40 mb-2" />
-                <span className="text-xs font-bold text-white/60">اختر منتجاً لإسقاطه في الاستوديو</span>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-48 h-48 rounded-2xl border-2 border-dashed border-white/30 hover:border-indigo-400 flex flex-col items-center justify-center p-4 text-center bg-black/30 backdrop-blur-xs cursor-pointer transition"
+                >
+                  <Package className="w-10 h-10 text-white/40 mb-2" />
+                  <span className="text-xs font-bold text-white/80">
+                    اختر أو ارفع منتجاً لإسقاطه في الاستوديو
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Layer 3: Top Badges (Discount, Special Offer) */}
-          <div className="relative p-5 sm:p-6 flex items-start justify-between z-20 pointer-events-none">
+          {/* Layer 3: Top Badges (Preset Tag & High Converting Discount Pill) */}
+          <div className="relative z-20 p-4 flex items-start justify-between gap-2 pointer-events-none">
             {overlay.showBadge && overlay.discountBadge ? (
               <div
-                className="px-3 py-1 rounded-full text-xs font-black shadow-lg backdrop-blur-md border border-white/20 tracking-wide pointer-events-auto"
+                className="px-3 py-1 rounded-full text-xs font-black shadow-lg border border-black/10 flex items-center gap-1"
                 style={{
-                  backgroundColor: overlay.accentColor,
+                  backgroundColor: overlay.accentColor || "#f59e0b",
                   color: "#000000",
                 }}
               >
-                {overlay.discountBadge}
+                <span>{overlay.discountBadge}</span>
               </div>
             ) : (
               <div />
             )}
 
-            {/* Subdued Preset Pill */}
-            <div className="px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-md text-[10px] font-bold text-white/80 border border-white/10 flex items-center gap-1.5">
+            <div className="px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white/90 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-amber-400" />
               <span>{selectedPreset.labelAr}</span>
             </div>
           </div>
 
-          {/* Layer 4: Bottom Dynamic Typography and Call to Action */}
-          <div className="relative p-5 sm:p-6 z-20 pointer-events-none bg-gradient-to-t from-black/85 via-black/40 to-transparent flex flex-col gap-2.5 text-right">
-            {/* Ad Headline */}
-            {overlay.headline && (
-              <h2
-                className="text-base sm:text-lg font-black tracking-tight drop-shadow-md leading-tight"
-                style={{
-                  color: overlay.textColor,
-                  fontFamily: overlay.fontFamily,
-                }}
-              >
-                {overlay.headline}
-              </h2>
-            )}
+          {/* Layer 4: Bottom Converting Typography & Direct-Response Overlay */}
+          <div className="relative z-20 p-4 sm:p-6 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none text-right">
+            <h2
+              className="text-base sm:text-xl font-black text-white drop-shadow-md leading-tight"
+              style={{ fontFamily: overlay.fontFamily || "Cairo" }}
+            >
+              {overlay.headline}
+            </h2>
 
-            {/* Subheadline */}
             {overlay.subheadline && (
               <p
-                className="text-xs font-medium text-white/90 drop-shadow-sm line-clamp-2 leading-relaxed"
-                style={{ fontFamily: overlay.fontFamily }}
+                className="text-[11px] sm:text-xs text-white/80 mt-1 line-clamp-2 drop-shadow-xs"
+                style={{ fontFamily: overlay.fontFamily || "Cairo" }}
               >
                 {overlay.subheadline}
               </p>
             )}
 
-            {/* Price Tag & CTA Bar */}
-            <div className="flex items-center justify-between pt-1.5 gap-2 border-t border-white/15">
-              {overlay.showPrice && typeof overlay.price === "number" ? (
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-base sm:text-lg font-black text-emerald-400 drop-shadow-md tabular-nums">
-                    {overlay.price.toLocaleString("ar-EG")} {overlay.currency}
-                  </span>
-                  {overlay.originalPrice && overlay.originalPrice > overlay.price && (
-                    <span className="text-xs text-white/50 line-through tabular-nums">
-                      {overlay.originalPrice.toLocaleString("ar-EG")} {overlay.currency}
-                    </span>
-                  )}
+            {/* Price Row & Call to Action */}
+            <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between gap-2">
+              {overlay.showCta && (
+                <div
+                  className="px-4 py-1.5 rounded-xl font-black text-xs text-white shadow-lg pointer-events-auto flex items-center gap-1.5 cursor-pointer hover:opacity-95 active:scale-95 transition"
+                  style={{ backgroundColor: overlay.primaryColor || "#4f46e5" }}
+                >
+                  <span>{overlay.callToAction || "اطلب الآن"}</span>
+                  <span className="text-[10px]">←</span>
                 </div>
-              ) : (
-                <div />
               )}
 
-              {/* Call to Action Button */}
-              {overlay.showCta && overlay.callToAction && (
-                <div
-                  className="px-4 py-1.5 rounded-full text-xs font-black text-white shadow-lg pointer-events-auto cursor-pointer hover:brightness-110 active:scale-95 transition flex items-center gap-1"
-                  style={{ backgroundColor: overlay.primaryColor }}
-                >
-                  <span>{overlay.callToAction}</span>
-                  <span className="text-sm">←</span>
+              {overlay.showPrice && overlay.price != null && (
+                <div className="flex items-baseline gap-2 font-mono text-left">
+                  {overlay.originalPrice && overlay.originalPrice > overlay.price && (
+                    <span className="text-xs line-through text-white/50">
+                      {overlay.originalPrice} {overlay.currency}
+                    </span>
+                  )}
+                  <span
+                    className="text-sm sm:text-lg font-black text-emerald-400 drop-shadow-xs"
+                    style={{ color: overlay.accentColor || "#10b981" }}
+                  >
+                    {overlay.price} {overlay.currency}
+                  </span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* AI Generating Active Overlay Animation */}
+          {/* Loading Indicator Overlay */}
           {isGenerating && (
-            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center p-6 z-30 animate-in fade-in duration-200">
-              <div className="relative mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center animate-pulse">
-                  <Sparkles className="w-7 h-7 text-indigo-400 animate-spin" />
-                </div>
+            <div className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+              <div className="relative mb-3">
+                <div className="w-12 h-12 rounded-full border-3 border-indigo-500/20 border-t-indigo-500 animate-spin" />
+                <Sparkles className="w-5 h-5 text-indigo-400 absolute inset-0 m-auto" />
               </div>
-              <p className="text-xs font-bold text-white text-center">
+              <p className="text-xs font-bold text-white mb-1">
                 جاري توليد المشهد الإعلاني بالذكاء الاصطناعي...
               </p>
-              <p className="text-[11px] text-slate-400 text-center mt-1">
-                تطبيق محاكاة الإضاءة والظلال الواقعية
-              </p>
+              <span className="text-[10px] text-white/60 font-mono">
+                معالجة الإضاءة والظلال التفاعلية
+              </span>
             </div>
           )}
         </div>
+
+        {/* Multi-Variant Selector Strip (Batch Generation 1x/2x/4x) */}
+        {variantUrls && variantUrls.length > 1 && (
+          <div className="mt-3 flex items-center gap-2 p-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xl z-20">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 px-1">
+              تنويعات المشهد:
+            </span>
+            <div className="flex items-center gap-1.5">
+              {variantUrls.map((url, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => onSelectVariant?.(url)}
+                  className={`relative w-11 h-11 rounded-xl overflow-hidden border-2 transition cursor-pointer ${
+                    backgroundUrl === url
+                      ? "border-indigo-600 scale-105 shadow-md ring-2 ring-indigo-400/40"
+                      : "border-transparent opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <img src={url} alt={`Variant ${idx + 1}`} className="w-full h-full object-cover" />
+                  <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] font-bold text-white text-center py-0.5">
+                    خيار {idx + 1}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

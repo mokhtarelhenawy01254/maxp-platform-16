@@ -7,6 +7,7 @@ import { ProductOpportunityRadar } from "../marketing-studio/ProductOpportunityR
 import { CreativeStudioControlPanel } from "./CreativeStudioControlPanel";
 import { CreativeStudioInteractiveCanvas } from "./CreativeStudioInteractiveCanvas";
 import { CreativeStudioHistoryDrawer } from "./CreativeStudioHistoryDrawer";
+import { CreativeModelSelectorModal } from "./CreativeModelSelectorModal";
 import { CREATIVE_STUDIO_PRESETS } from "./CreativeStudioPresets";
 import { apiClient } from "../../../services/apiClient";
 import { toast } from "sonner";
@@ -17,6 +18,8 @@ import type {
   MarketingProduct,
   ProductTransformSettings,
   CreativeAngleSuggestion,
+  BrandKitSettings,
+  BatchCountType,
 } from "./types";
 
 const CreativeAiStudioPage: React.FC = () => {
@@ -24,7 +27,7 @@ const CreativeAiStudioPage: React.FC = () => {
   const location = useLocation();
   const companyId = user?.companyId || null;
 
-  // Selected Product from Store Catalog (support prefill from location.state)
+  // Selected Product from Store Catalog or Uploaded Externally
   const [selectedProduct, setSelectedProduct] = useState<MarketingProduct | null>(
     (location.state as any)?.prefillProduct || null
   );
@@ -33,10 +36,23 @@ const CreativeAiStudioPage: React.FC = () => {
   // Creative Presets & Settings
   const [selectedPreset, setSelectedPreset] = useState<CreativePreset>(CREATIVE_STUDIO_PRESETS[0]);
   const [selectedModel, setSelectedModel] = useState<string>("openai/gpt-image-2");
+  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<AspectRatioType>("1:1");
   const [customPrompt, setCustomPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
+
+  // 2026 Extended States: Reference, Brand Kit, Cutout, Batch Variants
+  const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
+  const [cutoutProductUrl, setCutoutProductUrl] = useState<string | null>(null);
+  const [variantUrls, setVariantUrls] = useState<string[]>([]);
+  const [batchCount, setBatchCount] = useState<BatchCountType>(1);
+  const [brandKit, setBrandKit] = useState<BrandKitSettings>({
+    isLocked: false,
+    primaryColor: "#4f46e5",
+    accentColor: "#f59e0b",
+    aestheticMood: "minimalist-luxury",
+  });
 
   // Gallery History state
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -68,12 +84,21 @@ const CreativeAiStudioPage: React.FC = () => {
       showBadge: true,
       showPrice: true,
       showCta: true,
+      showProductLayer: true,
+      isBackgroundRemoved: false,
       productTransform: {
         x: 0,
         y: 0,
         scale: 1,
         rotation: 0,
         shadowType: "contact",
+      },
+      logo: {
+        url: null,
+        position: "top-right",
+        size: "md",
+        opacity: 1,
+        show: false,
       },
     };
   });
@@ -173,20 +198,52 @@ const CreativeAiStudioPage: React.FC = () => {
     toast.info(`تم تطبيق زاوية: ${angle.titleAr}`);
   }, []);
 
+  // Upload custom external product from local device
+  const handleUploadCustomProduct = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        const customProd: MarketingProduct = {
+          id: `custom-${Date.now()}`,
+          name: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ") || "منتج خارجي",
+          price: 990,
+          stock: 10,
+          mainImage: reader.result,
+        };
+        setSelectedProduct(customProd);
+        setCutoutProductUrl(null);
+        setOverlay((prev) => ({
+          ...prev,
+          headline: customProd.name,
+          price: 990,
+          discountBadge: "عرض خاص",
+          showProductLayer: true,
+        }));
+        toast.success("تم تحميل صورة المنتج الخارجي بنجاح");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Generate Studio Scene with OpenRouter backend
-  const handleGenerate = async () => {
+  const handleGenerate = async (overridePrompt?: string) => {
     if (!selectedProduct) {
-      toast.error("يرجى اختيار منتج من الكتالوج أولاً");
+      toast.error("يرجى اختيار منتج أو رفع صورة منتج أولاً");
       return;
     }
 
     setIsGenerating(true);
     try {
-      const basePrompt = customPrompt.trim()
-        ? `${customPrompt}. Style: ${selectedPreset.promptModifier}`
+      const activeText = (overridePrompt || customPrompt).trim();
+      let basePrompt = activeText
+        ? `${activeText}. Style: ${selectedPreset.promptModifier}`
         : `${selectedPreset.promptModifier}. Professional commercial scene for product: ${selectedProduct.name}. Clean composition, realistic shadows and lighting.`;
 
-      let resolvedProductImage = selectedProduct.mainImage || undefined;
+      if (brandKit.isLocked) {
+        basePrompt += ` Aesthetic style: ${brandKit.aestheticMood}. Harmonized with brand identity colors (${brandKit.primaryColor} and ${brandKit.accentColor}).`;
+      }
+
+      let resolvedProductImage = cutoutProductUrl || selectedProduct.mainImage || undefined;
       if (
         resolvedProductImage &&
         !resolvedProductImage.startsWith("http://") &&
@@ -197,9 +254,20 @@ const CreativeAiStudioPage: React.FC = () => {
         resolvedProductImage = `${origin.replace(/\/+$/, "")}/${resolvedProductImage.replace(/^\/+/, "")}`;
       }
 
+      let resolvedReferenceImage = referenceImageUrl || undefined;
+      if (
+        resolvedReferenceImage &&
+        !resolvedReferenceImage.startsWith("http://") &&
+        !resolvedReferenceImage.startsWith("https://") &&
+        !resolvedReferenceImage.startsWith("data:")
+      ) {
+        const origin = window.location.origin;
+        resolvedReferenceImage = `${origin.replace(/\/+$/, "")}/${resolvedReferenceImage.replace(/^\/+/, "")}`;
+      }
+
       const res = await apiClient.post<{
         success?: boolean;
-        data?: { imageUrl?: string };
+        data?: { imageUrl?: string; images?: string[] };
         message?: string;
       }>(
         "/ai-image/generate",
@@ -210,16 +278,29 @@ const CreativeAiStudioPage: React.FC = () => {
           style: selectedPreset.category,
           quality: 90,
           productImage: resolvedProductImage,
+          referenceImage: resolvedReferenceImage,
+          n: batchCount,
         },
-        { timeout: 120000 }
+        { timeout: 180000 }
       );
 
-      if (res.data?.data?.imageUrl) {
-        setBackgroundUrl(res.data.data.imageUrl);
-        setDailyUsage((prev) => prev + 1);
+      const returnedImages =
+        res.data?.data?.images && res.data.data.images.length > 0
+          ? res.data.data.images
+          : res.data?.data?.imageUrl
+          ? [res.data.data.imageUrl]
+          : [];
+
+      if (returnedImages.length > 0) {
+        setVariantUrls(returnedImages);
+        setBackgroundUrl(returnedImages[0]);
+        setDailyUsage((prev) => prev + returnedImages.length);
         loadHistoryCount();
-        toast.success("تم توليد المشهد الإعلاني بنجاح");
-        // On mobile, switch view to canvas to see result immediately
+        toast.success(
+          returnedImages.length > 1
+            ? `تم توليد ${returnedImages.length} تنويعات إعلانية بنجاح`
+            : "تم توليد المشهد الإعلاني بنجاح"
+        );
         if (window.innerWidth < 1024) {
           setMobileView("CANVAS");
         }
@@ -239,7 +320,7 @@ const CreativeAiStudioPage: React.FC = () => {
       studioId="creative"
       title="استوديو التصاميم الذكي"
       icon={Palette}
-      connectionBadgeText="متصل بكتالوج المتجر"
+      connectionBadgeText={selectedProduct?.id?.startsWith("custom-") ? "منتج مخصص خارجي" : "متصل بكتالوج المتجر"}
       selectedEntity={selectedProduct}
       entitySelectorPlaceholder="اختر منتج التصميم"
       onOpenEntityPicker={() => setIsProductPickerOpen(true)}
@@ -249,14 +330,20 @@ const CreativeAiStudioPage: React.FC = () => {
       onOpenSessions={() => setIsHistoryOpen(true)}
       onNewSession={() => {
         setBackgroundUrl(null);
+        setVariantUrls([]);
         setSelectedPreset(CREATIVE_STUDIO_PRESETS[0]);
         toast.info("تم بدء تصميم جديد");
       }}
       statusBadge={
-        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400">
+        <button
+          type="button"
+          onClick={() => setIsModelModalOpen(true)}
+          className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-indigo-600 transition cursor-pointer"
+          title="انقر لفتح معرض النماذج 2026"
+        >
           <Sparkles className="w-3.5 h-3.5 text-amber-500" />
           <span className="font-mono text-[11px] text-indigo-600 dark:text-indigo-400">{selectedModel.split("/").pop()}</span>
-        </div>
+        </button>
       }
       chatTabLabel="بيئات الاستوديو والنصوص"
       canvasTabLabel="كانفاس التصميم المرئي"
@@ -279,9 +366,17 @@ const CreativeAiStudioPage: React.FC = () => {
           onChangeCustomPrompt={setCustomPrompt}
           onSelectAngle={handleSelectAngle}
           isGenerating={isGenerating}
-          onGenerate={handleGenerate}
+          onGenerate={() => handleGenerate()}
           dailyUsage={dailyUsage}
           dailyLimit={dailyLimit}
+          referenceImageUrl={referenceImageUrl}
+          onSetReferenceImageUrl={setReferenceImageUrl}
+          brandKit={brandKit}
+          onUpdateBrandKit={(updates) => setBrandKit((prev) => ({ ...prev, ...updates }))}
+          batchCount={batchCount}
+          onChangeBatchCount={setBatchCount}
+          onOpenModelModal={() => setIsModelModalOpen(true)}
+          onTriggerGenerateWithPrompt={(prompt) => handleGenerate(prompt)}
         />
       }
       canvasPanel={
@@ -291,9 +386,15 @@ const CreativeAiStudioPage: React.FC = () => {
           aspectRatio={aspectRatio}
           onChangeAspectRatio={setAspectRatio}
           overlay={overlay}
+          onUpdateOverlay={handleUpdateOverlay}
           onUpdateProductTransform={handleUpdateProductTransform}
           backgroundUrl={backgroundUrl}
           isGenerating={isGenerating}
+          onUploadCustomProduct={handleUploadCustomProduct}
+          variantUrls={variantUrls}
+          onSelectVariant={(url) => setBackgroundUrl(url)}
+          cutoutProductUrl={cutoutProductUrl}
+          onSetCutoutProductUrl={setCutoutProductUrl}
         />
       }
       extraDrawers={
@@ -309,11 +410,18 @@ const CreativeAiStudioPage: React.FC = () => {
             onClose={() => setIsHistoryOpen(false)}
             onSelectImage={(url) => {
               setBackgroundUrl(url);
+              setVariantUrls([url]);
               if (window.innerWidth < 1024) {
                 setMobileView("CANVAS");
               }
             }}
             onHistoryChange={(cnt) => setHistoryCount(cnt)}
+          />
+          <CreativeModelSelectorModal
+            isOpen={isModelModalOpen}
+            onClose={() => setIsModelModalOpen(false)}
+            selectedModel={selectedModel}
+            onSelectModel={(m) => setSelectedModel(m)}
           />
         </>
       }
