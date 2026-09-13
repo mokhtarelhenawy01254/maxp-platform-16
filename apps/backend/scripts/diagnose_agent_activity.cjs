@@ -219,10 +219,74 @@ async function runDiagnostics() {
     console.log(`   ✅ No escalations or negative friction detected.`);
   }
 
+  // 5. PM2 Runtime Log Scanner (LLM 429 Rate Limits, 502/500 errors, SSL handshake failures)
+  const fs = require('fs');
+  const { execSync } = require('child_process');
+  const pm2Issues = [];
+
+  try {
+    const logFiles = [
+      '/root/.pm2/logs/maxp-ai-service-error.log',
+      '/root/.pm2/logs/maxp-ai-service-out.log',
+      '/root/.pm2/logs/maxp-backend-error-16.log',
+      '/root/.pm2/logs/maxp-backend-out-16.log',
+    ];
+
+    // Also include today's rotated logs if they exist
+    try {
+      const globFiles = fs.readdirSync('/root/.pm2/logs');
+      for (const f of globFiles) {
+        if (f.includes(new Date().toISOString().slice(0, 10)) && !logFiles.includes(`/root/.pm2/logs/${f}`)) {
+          logFiles.push(`/root/.pm2/logs/${f}`);
+        }
+      }
+    } catch (_) {}
+
+    for (const logFile of logFiles) {
+      if (fs.existsSync(logFile)) {
+        try {
+          const content = fs.readFileSync(logFile, 'utf8');
+          const lines = content.split('\n');
+          for (let i = Math.max(0, lines.length - 300); i < lines.length; i++) {
+            const line = lines[i];
+            if (
+              line.includes('429 Too Many Requests') ||
+              line.includes('Rate Limit') ||
+              line.includes('502 Bad Gateway') ||
+              line.includes('InterfaceError') ||
+              line.includes('write EPROTO') ||
+              line.includes('Error in Facebook Ads AI') ||
+              line.includes('Failed to communicate with AI Media Buyer')
+            ) {
+              pm2Issues.push({
+                file: path.basename(logFile),
+                line: line.trim()
+              });
+            }
+          }
+        } catch (_) {}
+      }
+    }
+  } catch (err) {
+    console.warn(`[PM2Logs] Warning: Could not inspect PM2 logs: ${err.message}`);
+  }
+
+  console.log(`\n🖥️ 5. SERVER RUNTIME & PM2 LOGS:`);
+  console.log(`   - Runtime Anomalies Detected: ${pm2Issues.length}`);
+  if (pm2Issues.length > 0) {
+    // Unique issues
+    const uniqueIssues = [...new Set(pm2Issues.map(i => `[${i.file}] ${i.line}`))];
+    uniqueIssues.slice(0, 6).forEach((issue, i) => {
+      console.log(`      ⚠️ ${issue}`);
+    });
+  } else {
+    console.log(`   ✅ No rate-limit, 502, or critical runtime exceptions in PM2 logs.`);
+  }
+
   console.log(`\n======================================================`);
   const totalIssues = summary.selfReview.errors + summary.selfReview.rejected +
                       summary.telemetrySpans.errors + summary.marketingAi.failedDrafts +
-                      summary.marketingAi.publishFailures;
+                      summary.marketingAi.publishFailures + pm2Issues.length;
 
   if (totalIssues === 0) {
     console.log(`🟢 HEALTH STATUS: OPTIMAL (0 critical errors detected in last ${HOURS}h)`);
