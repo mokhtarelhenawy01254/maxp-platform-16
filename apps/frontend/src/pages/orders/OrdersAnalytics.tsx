@@ -85,10 +85,9 @@ const toISODate = (date: Date): string =>
   ).padStart(2, "0")}`;
 
 const getInitialDateRange = () => {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - 29);
-  return { start: toISODate(start), end: toISODate(end) };
+  const today = new Date();
+  const dateStr = toISODate(today);
+  return { start: dateStr, end: dateStr };
 };
 
 const getPaymentMethodLabel = (method: string, t: (k: string) => string): string => {
@@ -125,7 +124,7 @@ const OrdersAnalytics: React.FC = () => {
   const [products, setProducts] = useState<SalesProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<PeriodKey>("30");
+  const [period, setPeriod] = useState<PeriodKey>("today");
   const [dateRange, setDateRange] = useState(getInitialDateRange);
   const abortControllerRef = useRef<AbortController | null>(null);
 
