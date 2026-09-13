@@ -220,8 +220,6 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
             </div>
           </div>
         )}
-
-        <div ref={messagesEndRef} />
       </div>
 
 
