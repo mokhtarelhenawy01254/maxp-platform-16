@@ -36,7 +36,10 @@ function sanitizeClientFacingReply(text) {
     /Internal Server Error/i.test(sanitized) ||
     /502 Bad Gateway/i.test(sanitized) ||
     /SyntaxError:/i.test(sanitized) ||
-    /TypeError:/i.test(sanitized);
+    /TypeError:/i.test(sanitized) ||
+    /Invalid parameter/i.test(sanitized) ||
+    /GraphMethodException/i.test(sanitized) ||
+    /OAuthException/i.test(sanitized);
 
   if (hasTechnicalLeak) {
     console.warn('🛡️ [GUARD] Intercepted technical error leak in agent reply:', sanitized.slice(0, 160));
@@ -514,8 +517,9 @@ class FacebookAdsAiController {
       // Retrieve recent conversation messages and active working memory for Hermes continuity
       let recentMessages = [];
       let activeProductContext = incomingActiveProduct || null;
+      let sessionData = null;
       try {
-        const sessionData = await marketingCopilotSessionService.getSession(companyId, threadId);
+        sessionData = await marketingCopilotSessionService.getSession(companyId, threadId);
         if (sessionData) {
           activeProductContext = incomingActiveProduct || sessionData.context?.activeProduct || null;
           if (incomingActiveProduct) {
@@ -617,9 +621,23 @@ class FacebookAdsAiController {
       // If user confirms execution with short trigger ('نفذ', 'انشر', 'تمام') and product context exists, anchor message
       const executionTriggers = ['نفذ', 'انشر', 'تمام نفذ', 'ابدأ', 'اعتمد', 'نفذ الحملة'];
       const isExecutionTrigger = executionTriggers.includes((message || '').trim());
-      const effectiveMessage = (isExecutionTrigger && activeProductContext?.name)
+      let effectiveMessage = (isExecutionTrigger && activeProductContext?.name)
         ? `${message} واعتمد المسودات لـ "${activeProductContext.name}"`
         : message;
+
+      // 🛡️ 2026 Failure Reflection Guardrail:
+      // If the user asks why ("ليه", "ليه؟", "ايه السبب") after an immediate error or failed tool run,
+      // prevent the agent from blindly retrying the same failed action, and instruct it to explain the blocker.
+      const whyTriggers = ['ليه', 'ليه؟', 'ليه ?', 'ايه السبب', 'ليه وقفت', 'ما نشرش ليه', 'ليه منشرش', 'ليه منشرتش'];
+      const isWhyTrigger = whyTriggers.includes((message || '').trim().toLowerCase());
+      if (isWhyTrigger && Array.isArray(sessionData?.messages) && sessionData.messages.length >= 2) {
+        const prevMsg = sessionData.messages[sessionData.messages.length - 2];
+        const prevText = String(prevMsg?.text || '');
+        const wasFailure = prevText.includes('فشل') || prevText.includes('تعذر') || prevText.includes('خطأ') || prevText.includes('error') || prevText.includes('Invalid');
+        if (wasFailure) {
+          effectiveMessage = `التاجر يسأل: "${message}" مستفسراً عن سبب تعذر أو فشل الإجراء السابق (${prevText.slice(0, 140)}). المطلوب كـ Media Buyer محترف: اشرح للتاجر السبب والعائق الفني بلغة تجارية واضحة وقدم له الخطوة القادمة، ويُمنع منعاً باتاً تكرار محاولة نشر المسودة الفاشلة بنفس البيانات.`;
+        }
+      }
 
       try {
         const result = await aiServiceAdminClient.chatWithAgent({

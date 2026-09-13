@@ -444,6 +444,37 @@ class FacebookAdsService {
       };
     } catch (error) {
       console.error('❌ Error creating Facebook campaign:', error.response?.data || error.message);
+
+      const errSubcode = error.response?.data?.error?.error_subcode;
+      const errMsg = String(error.response?.data?.error?.message || '').toLowerCase();
+      if ((errSubcode === 2490487 || errMsg.includes('bid') || errMsg.includes('عرض الأسعار')) && campaignData.bid_strategy) {
+        console.warn('🔄 [Self-Healing] Detected Meta Campaign bid strategy rejection. Retrying with explicit LOWEST_COST_WITHOUT_CAP...');
+        try {
+          const healedCampaignData = {
+            ...campaignData,
+            bid_strategy: 'LOWEST_COST_WITHOUT_CAP'
+          };
+          delete healedCampaignData.bid_amount;
+          delete healedCampaignData.bid_constraints;
+          const retryRes = await axios.post(
+            `${this.baseUrl}/${accountId}/campaigns`,
+            healedCampaignData,
+            { params: { access_token: this.accessToken } }
+          );
+          if (retryRes?.data?.id) {
+            console.log('✅ [Self-Healing] Facebook campaign created successfully on auto-retry:', retryRes.data.id);
+            return {
+              success: true,
+              campaignId: retryRes.data.id,
+              data: retryRes.data,
+              selfHealed: true
+            };
+          }
+        } catch (retryErr) {
+          console.error('❌ [Self-Healing] Campaign retry failed:', retryErr.response?.data || retryErr.message);
+        }
+      }
+
       return {
         success: false,
         error: extractMetaErrorMessage(error),
@@ -909,6 +940,44 @@ class FacebookAdsService {
       };
     } catch (error) {
       console.error('❌ Error creating Facebook AdSet:', error.response?.data || error.message);
+
+      const errSubcode = error.response?.data?.error?.error_subcode;
+      const errMsg = String(error.response?.data?.error?.message || '').toLowerCase();
+
+      // 🛡️ 2026 In-Flight Self-Healing: If Meta rejects with bid strategy subcode 2490487 or bid constraint error
+      if (errSubcode === 2490487 || errMsg.includes('bid') || errMsg.includes('عرض الأسعار')) {
+        console.warn('🔄 [Self-Healing] Detected Meta AdSet bid strategy rejection. Retrying with explicit LOWEST_COST_WITHOUT_CAP...');
+        try {
+          const healedAdSetData = {
+            ...adSetData,
+            bid_strategy: 'LOWEST_COST_WITHOUT_CAP'
+          };
+          delete healedAdSetData.bid_amount;
+          delete healedAdSetData.bid_constraints;
+
+          const retryRes = await axios.post(
+            `${this.baseUrl}/${accountId}/adsets`,
+            healedAdSetData,
+            {
+              params: {
+                access_token: this.accessToken
+              }
+            }
+          );
+          if (retryRes?.data?.id) {
+            console.log('✅ [Self-Healing] Facebook AdSet created successfully on auto-retry:', retryRes.data.id);
+            return {
+              success: true,
+              adSetId: retryRes.data.id,
+              data: retryRes.data,
+              selfHealed: true
+            };
+          }
+        } catch (retryErr) {
+          console.error('❌ [Self-Healing] AdSet retry failed:', retryErr.response?.data || retryErr.message);
+        }
+      }
+
       return {
         success: false,
         error: extractMetaErrorMessage(error)

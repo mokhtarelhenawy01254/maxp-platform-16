@@ -477,6 +477,32 @@ You are continuing an existing conversation on Facebook Messenger that was previ
                 memories_xml = "\n<relevant_memories>\n" + "\n".join(memory_lines) + "\n</relevant_memories>"
                 dynamic_sections.append(("relevant_memories", memories_xml))
 
+        # 8. Pristine Elliptical Query Resolution
+        raw_msg = (ctx.message or "").strip().lower()
+        elliptical_queries = {"؟", "?", "ليه", "ليه؟", "ليه ?", "وقفت ليه", "وقفت ليه ؟", "ها", "وبعدين", "وبعدين ؟", "وبعدين؟", "كمل", "متابعة", "ايه الاخبار"}
+        is_elliptical = raw_msg in elliptical_queries or len(raw_msg) <= 3
+        if is_elliptical:
+            try:
+                history_list = await self.fetch_message_history(ctx, limit=10)
+                last_explicit_request = ""
+                for m in reversed(history_list):
+                    if m.get("role") == "user":
+                        u_txt = (m.get("content") or "").strip()
+                        if u_txt and u_txt.lower() not in elliptical_queries and len(u_txt) > 3:
+                            last_explicit_request = u_txt
+                            break
+                if last_explicit_request:
+                    resolution_xml = (
+                        f"\n<context_resolution>\n"
+                        f"التاجر يتابع ويستفسر عن طلبه السابق: \"{last_explicit_request}\" برسالة مقتضبة (\"{ctx.message}\").\n"
+                        "المطلوب: نفذ أو أجب عن هذا الطلب فوراً بالأرقام والتفاصيل وبأسلوبك البشري الودود، "
+                        "ويُمنع منعاً باتاً اعتبار الرسالة فارغة أو قول 'وصلتني رسالتك فاضية' أو طلب إعادة تحديد المنتج.\n"
+                        "</context_resolution>"
+                    )
+                    dynamic_sections.append(("context_resolution", resolution_xml))
+            except Exception as ell_err:
+                logger.warning("elliptical_resolution_failed", error=str(ell_err))
+
         # Combine base + static prefix + dynamic tail
         full_prompt = base_prompt
         for _name, xml_content in static_sections:

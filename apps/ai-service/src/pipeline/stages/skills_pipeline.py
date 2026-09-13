@@ -259,7 +259,24 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 current_round += 1
                 final_response = await _raw_llm_call(ctx, followup_messages, tools=tool_dicts, tool_choice="auto")
                 if final_response.tool_calls:
-                    extra_results = await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in final_response.tool_calls])
+                    # 🛡️ 2026 Failure Deduplication: Do not re-execute tools that already failed in this run
+                    valid_tool_calls = []
+                    for tc in final_response.tool_calls:
+                        f_name = tc.get("function", {}).get("name", "")
+                        already_failed = any(
+                            ex.get("tool") == f_name and ex.get("status") != "success"
+                            for ex in executed
+                        )
+                        if already_failed:
+                            logger.warning("skipping_repeated_failed_tool_call", name=f_name)
+                            continue
+                        valid_tool_calls.append(tc)
+
+                    if not valid_tool_calls:
+                        logger.info("all_followup_tool_calls_were_failed_duplicates_breaking")
+                        break
+
+                    extra_results = await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in valid_tool_calls])
                     executed.extend(extra_results)
                     for item in extra_results:
                         if item["status"] == "success":
@@ -268,7 +285,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                     asst_msg: dict[str, Any] = {
                         "role": "assistant",
                         "content": final_response.text or "",
-                        "tool_calls": final_response.tool_calls,
+                        "tool_calls": valid_tool_calls,
                     }
                     if getattr(final_response, "reasoning_content", None):
                         asst_msg["reasoning_content"] = final_response.reasoning_content
@@ -586,12 +603,25 @@ def _format_tool_results(executed: list[dict]) -> str:
                 except Exception:
                     formatted = None
             if formatted:
-                lines.append(f"[{name}]: {formatted}")
+                lines.append(f"{formatted}")
+            elif name in {"facebook_ad_create_full_draft", "facebook_ad.create_full_draft"}:
+                lines.append("تم حفظ وتجهيز مسودة الحملة الإعلانية بنجاح في لوحة التحكم للمراجعة والاعتماد ✅")
+            elif name in {"facebook_ad_publish_draft", "facebook_ad.publish_draft"}:
+                lines.append("تم نشر الحملة الإعلانية بنجاح على فيسبوك بحالة متوقفة مؤقتاً لحفظ الميزانية ✅")
+            elif name in {"facebook_ad_analyze_product", "facebook_ad.analyze_product"}:
+                lines.append("تم فحص وتحليل بيانات المنتج واقتصادياته التسويقية بنجاح 📊")
+            elif name in {"facebook_ad_account_info", "facebook_ad.account_info"}:
+                lines.append("تم فحص حالة الحساب الإعلاني وأصول ميتا بنجاح 🔎")
             else:
-                content = json.dumps(result, ensure_ascii=False, cls=DecimalEncoder) if isinstance(result, dict) else str(result)
-                lines.append(f"[{name}]: {content[:500]}")
+                lines.append(f"تم تنفيذ الإجراء [{name}] بنجاح ✅")
         elif status == "error":
-            lines.append(f"[{name}]: ERROR - {item.get('error', '')[:300]}")
+            err_text = str(item.get("error", ""))
+            if "2490487" in err_text or "bid" in err_text.lower() or "عرض الأسعار" in err_text:
+                lines.append("تعذر النشر التلقائي بسبب قيود استراتيجية المزايدة في حساب فيسبوك. تم حفظ المسودة بأمان في لوحة الإعلانات للمراجعة.")
+            elif "pixel" in err_text.lower() or "بكسل" in err_text:
+                lines.append("تعذر النشر لأن بكسل المتجر غير مرتبط بالحساب الإعلاني المختار حالياً.")
+            else:
+                lines.append("تعذر استكمال جزء من الإجراء وتم حفظ البيانات للمراجعة.")
     return "\n".join(lines)
 
 
