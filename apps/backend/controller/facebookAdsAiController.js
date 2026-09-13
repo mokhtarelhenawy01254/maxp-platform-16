@@ -267,7 +267,7 @@ class FacebookAdsAiController {
           // 4. Check direct Meta API via getFacebookPixels
           if (!resolvedPixelId && fullAdPayload.adAccountId) {
             try {
-              const { getCompanyAdsAccessToken } = require('../services/facebookOAuthHelper');
+              const { getCompanyAdsAccessToken } = require('./facebookAds/_shared/tokens');
               const FacebookAdsService = require('../services/facebookAdsService');
               const accessToken = await getCompanyAdsAccessToken(companyId);
               if (accessToken) {
@@ -472,6 +472,8 @@ class FacebookAdsAiController {
               'facebook_ad_create_full_draft',
               'facebook_ad_publish_draft',
               'facebook_ad_get_decision',
+              'facebook_ad_update_status',
+              'facebook_ad_update_budget',
               'facebook_ad_record_learned_rule',
               'record_learned_rule',
               'manage_agent_skill',
@@ -1094,6 +1096,148 @@ class FacebookAdsAiController {
         success: false,
         error: error.message || 'Failed to get marketing active agent',
       });
+    }
+  }
+
+  /**
+   * POST /api/v1/facebook-ads/ai/campaigns/:campaignId/status
+   * Pause or Resume a Facebook Campaign directly on Meta
+   */
+  async updateCampaignStatus(req, res) {
+    try {
+      const companyId = req.headers?.['x-company-id'] || req.user?.companyId;
+      const { campaignId } = req.params;
+      const { status } = req.body || {};
+
+      if (!companyId) {
+        return res.status(401).json({ success: false, error: 'Company ID is required' });
+      }
+      if (!campaignId) {
+        return res.status(400).json({ success: false, error: 'campaignId is required' });
+      }
+      const targetStatus = String(status || '').toUpperCase();
+      if (!['ACTIVE', 'PAUSED'].includes(targetStatus)) {
+        return res.status(400).json({ success: false, error: 'Status must be ACTIVE or PAUSED' });
+      }
+
+      const { getCompanyAdsAccessToken } = require('./facebookAds/_shared/tokens');
+      const FacebookAdsService = require('../services/facebookAdsService');
+      const accessToken = await getCompanyAdsAccessToken(companyId);
+
+      if (!accessToken) {
+        return res.status(400).json({
+          success: false,
+          error: 'لم يتم العثور على توكن اتصال نشط بفيسبوك لهذه الشركة',
+        });
+      }
+
+      const adsService = new FacebookAdsService(accessToken);
+      const updateResult = await adsService.updateCampaign(campaignId, { status: targetStatus });
+
+      if (!updateResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: updateResult.error || 'تعذر تحديث حالة الحملة على فيسبوك',
+        });
+      }
+
+      return res.json({
+        success: true,
+        campaignId,
+        status: targetStatus,
+        message: targetStatus === 'PAUSED' ? 'تم إيقاف الحملة بنجاح على فيسبوك ⏸️' : 'تم تفعيل الحملة بنجاح على فيسبوك 🚀',
+      });
+    } catch (error) {
+      console.error('❌ Error in updateCampaignStatus:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * POST /api/v1/facebook-ads/ai/campaigns/:campaignId/budget
+   * Update daily budget of a Facebook Campaign directly on Meta
+   */
+  async updateCampaignBudget(req, res) {
+    try {
+      const companyId = req.headers?.['x-company-id'] || req.user?.companyId;
+      const { campaignId } = req.params;
+      const { daily_budget, dailyBudget } = req.body || {};
+      const budget = Number(daily_budget || dailyBudget);
+
+      if (!companyId) {
+        return res.status(401).json({ success: false, error: 'Company ID is required' });
+      }
+      if (!campaignId) {
+        return res.status(400).json({ success: false, error: 'campaignId is required' });
+      }
+      if (!budget || isNaN(budget) || budget <= 0) {
+        return res.status(400).json({ success: false, error: 'مبلغ الميزانية اليومية غير صالح' });
+      }
+
+      // Hard financial safety ceiling: 10,000 EGP per day
+      if (budget > 10000) {
+        return res.status(400).json({
+          success: false,
+          error: 'الميزانية المطلوبة تتجاوز الحد الأقصى للأمان (10,000 ج.م/يوم). يُرجى تعديلها يدوياً من مدير الإعلانات إذا كنت متأكداً.',
+        });
+      }
+
+      const { getCompanyAdsAccessToken } = require('./facebookAds/_shared/tokens');
+      const FacebookAdsService = require('../services/facebookAdsService');
+      const accessToken = await getCompanyAdsAccessToken(companyId);
+
+      if (!accessToken) {
+        return res.status(400).json({
+          success: false,
+          error: 'لم يتم العثور على توكن اتصال نشط بفيسبوك لهذه الشركة',
+        });
+      }
+
+      const adsService = new FacebookAdsService(accessToken);
+      // Try CBO first (daily_budget on campaign node)
+      let updateResult = await adsService.updateCampaign(campaignId, {
+        daily_budget: Math.round(budget * 100),
+      });
+
+      // Self-healing: if campaign is ABO (budget set on AdSet), update the adset
+      if (!updateResult.success && String(updateResult.error || '').toLowerCase().includes('ad set')) {
+        try {
+          const axios = require('axios');
+          const adsetsRes = await axios.get(`${adsService.baseUrl}/${campaignId}/adsets`, {
+            params: { access_token: accessToken, fields: 'id,name,status', limit: 5 }
+          });
+          const activeAdSet = (adsetsRes.data?.data || []).find(a => a.status === 'ACTIVE') || adsetsRes.data?.data?.[0];
+          if (activeAdSet?.id) {
+            const adSetUpdate = await axios.post(`${adsService.baseUrl}/${activeAdSet.id}`, {
+              daily_budget: Math.round(budget * 100)
+            }, {
+              params: { access_token: accessToken }
+            });
+            if (adSetUpdate.data?.success || adSetUpdate.data?.id) {
+              updateResult = { success: true, adSetId: activeAdSet.id };
+            }
+          }
+        } catch (adSetErr) {
+          console.warn('⚠️ Could not fallback to adset budget update:', adSetErr.message);
+        }
+      }
+
+      if (!updateResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: updateResult.error || 'تعذر تحديث ميزانية الحملة على فيسبوك',
+        });
+      }
+
+      return res.json({
+        success: true,
+        campaignId,
+        daily_budget: budget,
+        message: `تم تعديل الميزانية اليومية بنجاح إلى ${budget} ج.م 💰`,
+      });
+    } catch (error) {
+      console.error('❌ Error in updateCampaignBudget:', error);
+      return res.status(500).json({ success: false, error: error.message });
     }
   }
 }

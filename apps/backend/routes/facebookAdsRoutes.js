@@ -84,6 +84,12 @@ router.get('/ai/drafts/:runId', facebookAdsAiController.getDraftRun);
 // POST /api/v1/facebook-ads/ai/drafts/:draftId/publish - نشر مسودة محددة بعد اعتماد التاجر
 router.post('/ai/drafts/:draftId/publish', facebookAdsAiController.publishDraft);
 
+// POST /api/v1/facebook-ads/ai/campaigns/:campaignId/status - تحديث حالة الحملة على فيسبوك (إيقاف/تفعيل)
+router.post('/ai/campaigns/:campaignId/status', facebookAdsAiController.updateCampaignStatus);
+
+// POST /api/v1/facebook-ads/ai/campaigns/:campaignId/budget - تعديل الميزانية اليومية للحملة على فيسبوك
+router.post('/ai/campaigns/:campaignId/budget', facebookAdsAiController.updateCampaignBudget);
+
 /**
  * ============================================
  * Budget Alert Routes
@@ -545,6 +551,10 @@ router.get('/ai/drafts', (req, res) => facebookAdsAiController.listDraftRuns(req
 router.get('/ai/drafts/:runId', (req, res) => facebookAdsAiController.getDraftRun(req, res));
 // POST /api/v1/facebook-ads/ai/drafts/:draftId/publish - نشر المسودة المعتمدة إلى فيسبوك
 router.post('/ai/drafts/:draftId/publish', (req, res) => facebookAdsAiController.publishDraft(req, res));
+// POST /api/v1/facebook-ads/ai/campaigns/:campaignId/status - تحديث حالة الحملة على فيسبوك
+router.post('/ai/campaigns/:campaignId/status', (req, res) => facebookAdsAiController.updateCampaignStatus(req, res));
+// POST /api/v1/facebook-ads/ai/campaigns/:campaignId/budget - تعديل ميزانية الحملة على فيسبوك
+router.post('/ai/campaigns/:campaignId/budget', (req, res) => facebookAdsAiController.updateCampaignBudget(req, res));
 
 // --- AI Copilot Sessions Management (Cloud DB Synced) ---
 // GET /api/v1/facebook-ads/ai/sessions - جلب كافة الجلسات السحابية

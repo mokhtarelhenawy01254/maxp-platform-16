@@ -63,8 +63,10 @@ const ProductLandingPages: React.FC = () => {
       customDomain || undefined,
       companyId,
     );
-  }, [liveSlug, companySlug, customDomain, companyId]);
-  const previewUrl = customerUrl ? `${customerUrl}?preview=1` : "";
+  const previewUrl = useMemo(() => {
+    if (!customerUrl) return "";
+    return selectedPage?.status === "PUBLISHED" ? customerUrl : `${customerUrl}?preview=1`;
+  }, [customerUrl, selectedPage?.status]);
 
   // Load landing pages list
   const loadPages = useCallback(async () => {

@@ -34,6 +34,8 @@
     "facebook_ad.analyze_product",
     "facebook_ad.get_decision",
     "facebook_ad.account_info",
+    "facebook_ad.update_status",
+    "facebook_ad.update_budget",
     "orders.campaign_attribution_report",
     "record_learned_rule",
     "facebook_ad.record_learned_rule",

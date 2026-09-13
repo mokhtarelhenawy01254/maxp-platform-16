@@ -787,6 +787,34 @@ class BackendClient:
             headers={"X-Company-Id": company_id},
         )
 
+    async def update_facebook_campaign_status(
+        self,
+        company_id: str,
+        campaign_id: str,
+        status: str,
+    ) -> dict[str, Any]:
+        """Pause or Activate an active Facebook campaign directly on Meta."""
+        return await self._request(
+            "POST",
+            f"/api/v1/facebook-ads/ai/campaigns/{campaign_id}/status",
+            json_body={"status": status},
+            headers={"X-Company-Id": company_id},
+        )
+
+    async def update_facebook_campaign_budget(
+        self,
+        company_id: str,
+        campaign_id: str,
+        daily_budget: float,
+    ) -> dict[str, Any]:
+        """Update daily budget of an active Facebook campaign directly on Meta."""
+        return await self._request(
+            "POST",
+            f"/api/v1/facebook-ads/ai/campaigns/{campaign_id}/budget",
+            json_body={"daily_budget": daily_budget},
+            headers={"X-Company-Id": company_id},
+        )
+
 
 _backend_client: BackendClient | None = None
 

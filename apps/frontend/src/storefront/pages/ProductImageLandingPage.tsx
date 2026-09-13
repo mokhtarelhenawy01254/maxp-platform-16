@@ -429,9 +429,18 @@ const ProductImageLandingPage: React.FC = () => {
       try {
         setIsLandingLoading(true);
         setLandingError("");
-        const response = isLandingPreview
-          ? await storefrontApi.getProductLandingPreview(landingKey)
-          : await storefrontApi.getProductLanding(landingKey);
+        let response;
+        try {
+          response = isLandingPreview
+            ? await storefrontApi.getProductLandingPreview(landingKey)
+            : await storefrontApi.getProductLanding(landingKey);
+        } catch (previewErr) {
+          if (isLandingPreview) {
+            response = await storefrontApi.getProductLanding(landingKey);
+          } else {
+            throw previewErr;
+          }
+        }
 
         if (isCancelled) {
           return;

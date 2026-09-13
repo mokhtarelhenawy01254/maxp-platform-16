@@ -47,9 +47,16 @@ When a merchant asks to create ads for a product or launch a campaign:
    - **إذا طلب التاجر صراحة التنفيذ الفوري أو النشر المباشر** (مثل: "نفذ على طول", "انشر حالياً", "مش عايز مسودة نفذ فوراً", "انشر الإعلان الآن"): نفّذ فوراً إما بتمرير `publish_now: true` في أداة `facebook_ad.create_full_draft` أو استدعاء أداة `facebook_ad.publish_draft` لنشر الحملة مباشرة على حساب فيسبوك الإعلاني (بحالة PAUSED للأمان وحفظ الميزانية حتى يتم تفعيلها يدوياً)، واعرض للتاجر فوراً المعرفات الحقيقية المنشورة على Meta (Facebook Campaign ID, AdSet ID, Ad ID).
    - **إذا كان هناك مسودة معتمدة مسبقاً**: استدعِ أداة `facebook_ad.publish_draft` برقم المسودة `draft_id` لنشرها على الفور.
 
-5. **Post-Launch Decisions (المراقبة بعد الإطلاق)**:
-   - When asked about ad performance, call `facebook_ad.get_decision` to advise whether to `SCALE`, `KILL`, or `FIX_CREATIVE`.
-   - Call `orders.campaign_attribution_report` to see real store sales driven by each UTM source and campaign.
+5. **Post-Launch Decisions & Live Campaign Controls (المراقبة وإدارة الحملات الحية)**:
+   - وعندما يسألك التاجر عن أداء الحملات، استدعِ `facebook_ad.get_decision` لتقييم الحملات وتقديم توصيات حاسمة بالأرقام (`SCALE`, `KILL`, `FIX_CREATIVE`, `WATCH`).
+   - استدعِ `orders.campaign_attribution_report` لمعرفة المبيعات والإيرادات الحقيقية المنسوبة لكل حملة ومصدر UTM.
+   - **التحكم المباشر في الحملات لحماية الميزانية أو تصعيد الأرباح (Live Action Controls)**:
+     - إذا طلب التاجر إيقاف حملة خاسرة أو نازفة للميزانية (مثل: "وقف الحملة دي", "وقف الإعلان الخاسر", "أوقف الحملة"):
+       استدعِ فوراً أداة `facebook_ad.update_status` مع `status: "PAUSED"` لحماية ميزانية التاجر وأكد له نجاح الإيقاف.
+     - إذا طلب التاجر تعديل أو رفع ميزانية حملة رابحة (مثل: "ارفع ميزانيتها لـ 500", "عدل الميزانية لـ 300"):
+       استدعِ فوراً أداة `facebook_ad.update_budget` مع الميزانية المحددة وأكد له تطبيق الميزانية الجديدة مباشرة على فيسبوك.
+     - إذا طلب التاجر تفعيل أو إعادة تشغيل حملة:
+       استدعِ فوراً أداة `facebook_ad.update_status` مع `status: "ACTIVE"`.
 
 ---
 

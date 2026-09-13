@@ -102,6 +102,18 @@ class FacebookAdGetDecisionInput(BaseModel):
     limit: int = Field(default=10, description="Max campaigns and ads to evaluate (default 10)")
 
 
+class FacebookAdUpdateStatusInput(BaseModel):
+    campaign_id: str = Field(..., description="معرف الحملة الإعلانية على فيسبوك (Meta Campaign ID) المطلوب إيقافها أو تفعيلها")
+    status: Literal["ACTIVE", "PAUSED"] = Field(..., description="الحالة المستهدفة: 'PAUSED' لإيقاف الحملة لحماية الميزانية، أو 'ACTIVE' لتفعيلها/إعادة تشغيلها")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class FacebookAdUpdateBudgetInput(BaseModel):
+    campaign_id: str = Field(..., description="معرف الحملة الإعلانية على فيسبوك (Meta Campaign ID) المطلوب تعديل ميزانيتها")
+    daily_budget: float = Field(..., description="الميزانية اليومية الجديدة بعملة المتجر (مثلاً 500 ج.م)")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
 async def facebook_ad_analyze_product(input_data: FacebookAdAnalyzeProductInput) -> dict[str, Any]:
     """Analyze a product for Meta ad campaign readiness, calculate target CPA, break-even ROAS, and margins."""
     company_id = input_data.company_id or ""
@@ -1380,6 +1392,92 @@ async def orders_campaign_attribution_report(input_data: OrdersCampaignAttributi
         }
 
 
+async def facebook_ad_update_status(input_data: FacebookAdUpdateStatusInput) -> dict[str, Any]:
+    """Pause or Resume an active Meta Facebook ad campaign directly."""
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "company_id is required"}
+
+    from src.tools.backend_client import get_backend_client
+    backend = get_backend_client()
+
+    res = await backend.update_facebook_campaign_status(
+        company_id=company_id,
+        campaign_id=input_data.campaign_id,
+        status=input_data.status,
+    )
+
+    if res.get("success"):
+        # Update local draft record in DB if matches
+        sf = _db_mod.async_session
+        if sf:
+            try:
+                async with sf() as session:
+                    await session.execute(
+                        text("""
+                            UPDATE public.facebook_ads_ai_drafts 
+                            SET "status" = :st, "updatedAt" = NOW()
+                            WHERE "facebookCampaignId" = :cid AND "companyId" = :comp_id
+                        """),
+                        {"st": input_data.status, "cid": input_data.campaign_id, "comp_id": company_id}
+                    )
+                    await session.commit()
+            except Exception:
+                pass
+
+        action_word = "إيقاف" if input_data.status == "PAUSED" else "تفعيل"
+        return {
+            "success": True,
+            "campaign_id": input_data.campaign_id,
+            "status": input_data.status,
+            "message": f"تم {action_word} الحملة الإعلانية بنجاح على فيسبوك (معرف الحملة: {input_data.campaign_id})."
+        }
+    else:
+        return {
+            "success": False,
+            "error": res.get("error") or "تعذر تحديث حالة الحملة على فيسبوك",
+            "campaign_id": input_data.campaign_id,
+        }
+
+
+async def facebook_ad_update_budget(input_data: FacebookAdUpdateBudgetInput) -> dict[str, Any]:
+    """Update daily budget of an active Meta Facebook ad campaign directly."""
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "company_id is required"}
+
+    # Hard safety ceiling: 10,000 EGP per day
+    if input_data.daily_budget > 10000:
+        return {
+            "success": False,
+            "error": "الميزانية اليومية المطلوبة تتجاوز سقف الأمان الأقصى (10,000 ج.م/يوم). يُرجى تعديلها يدوياً إذا كنت متأكداً.",
+            "campaign_id": input_data.campaign_id
+        }
+
+    from src.tools.backend_client import get_backend_client
+    backend = get_backend_client()
+
+    res = await backend.update_facebook_campaign_budget(
+        company_id=company_id,
+        campaign_id=input_data.campaign_id,
+        daily_budget=input_data.daily_budget,
+    )
+
+    if res.get("success"):
+        return {
+            "success": True,
+            "campaign_id": input_data.campaign_id,
+            "daily_budget": input_data.daily_budget,
+            "message": f"تم تعديل الميزانية اليومية للحملة {input_data.campaign_id} بنجاح إلى {input_data.daily_budget} ج.م."
+        }
+    else:
+        return {
+            "success": False,
+            "error": res.get("error") or "تعذر تعديل ميزانية الحملة على فيسبوك",
+            "campaign_id": input_data.campaign_id,
+        }
+
+
 # ── Tool Formatters ──────────────────────────────────────────────────────────
 
 def _format_facebook_ad_analyze_product(result: dict[str, Any]) -> str:
@@ -1470,6 +1568,20 @@ def _format_facebook_ad_record_learned_rule(result: dict[str, Any]) -> str:
     return f"تم تثبيت '{rule}' بنجاح كقاعدة استراتيجية دائمة في كتيب إعلانات المتجر."
 
 
+def _format_facebook_ad_update_status(result: dict[str, Any]) -> str:
+    res = result.get("result", result) if isinstance(result, dict) else {}
+    if not res.get("success"):
+        return f"تعذر تحديث حالة الحملة: {res.get('error', 'خطأ غير معروف')}"
+    return res.get("message") or f"تم تحديث حالة الحملة {res.get('campaign_id')} إلى {res.get('status')} بنجاح."
+
+
+def _format_facebook_ad_update_budget(result: dict[str, Any]) -> str:
+    res = result.get("result", result) if isinstance(result, dict) else {}
+    if not res.get("success"):
+        return f"تعذر تعديل ميزانية الحملة: {res.get('error', 'خطأ غير معروف')}"
+    return res.get("message") or f"تم تعديل ميزانية الحملة {res.get('campaign_id')} إلى {res.get('daily_budget')} ج.م بنجاح."
+
+
 # ── Tool Definitions ─────────────────────────────────────────────────────────
 
 facebook_ad_analyze_product_tool = FunctionTool(
@@ -1528,6 +1640,22 @@ orders_campaign_attribution_report_tool = FunctionTool(
     format_result=_format_orders_campaign_attribution_report,
 )
 
+facebook_ad_update_status_tool = FunctionTool(
+    name="facebook_ad_update_status",
+    description="Pause (PAUSED) or Resume (ACTIVE) an active Facebook Meta Ad campaign directly.",
+    func=facebook_ad_update_status,
+    input_model=FacebookAdUpdateStatusInput,
+    format_result=_format_facebook_ad_update_status,
+)
+
+facebook_ad_update_budget_tool = FunctionTool(
+    name="facebook_ad_update_budget",
+    description="Update the daily budget of an active Facebook Meta Ad campaign directly in EGP (hard safety cap <= 10,000 EGP/day).",
+    func=facebook_ad_update_budget,
+    input_model=FacebookAdUpdateBudgetInput,
+    format_result=_format_facebook_ad_update_budget,
+)
+
 __all_tools__ = [
     facebook_ad_analyze_product_tool,
     facebook_ad_create_full_draft_tool,
@@ -1536,5 +1664,8 @@ __all_tools__ = [
     facebook_ad_record_learned_rule_tool,
     facebook_ad_account_info_tool,
     orders_campaign_attribution_report_tool,
+    facebook_ad_update_status_tool,
+    facebook_ad_update_budget_tool,
 ]
+
 
