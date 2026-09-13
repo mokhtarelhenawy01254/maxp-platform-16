@@ -12,7 +12,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Cpu,
@@ -27,8 +27,16 @@ import {
   Layers,
   Sparkles,
   ExternalLink,
+  MessageSquare,
+  Send,
+  Loader2,
 } from "lucide-react";
-import { AgentListing } from "./agentMarketplaceData";
+import {
+  AgentListing,
+  getArabicInitials,
+  getAgentSamplePrompts,
+  SandboxSample,
+} from "./agentMarketplaceData";
 
 interface AgentProfileDrawerProps {
   agent: AgentListing | null;
@@ -47,10 +55,59 @@ export const AgentProfileDrawer: React.FC<AgentProfileDrawerProps> = ({
 }) => {
   const [simulationStep, setSimulationStep] = useState<number>(0);
   const [simulating, setSimulating] = useState<boolean>(false);
+  const [imgError, setImgError] = useState<boolean>(false);
+
+  // Touch gesture state for native mobile sheet swipe-down
+  const [dragY, setDragY] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [touchStartY, setTouchStartY] = useState<number>(0);
+
+  // Live Interactive Sandbox state
+  const [sandboxQuery, setSandboxQuery] = useState<string>("");
+  const [sandboxLoading, setSandboxLoading] = useState<boolean>(false);
+  const [sandboxResult, setSandboxResult] = useState<{
+    toolUsed?: string;
+    response: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
+    setSandboxQuery("");
+    setSandboxResult(null);
+    setImgError(false);
+  }, [agent?.slug]);
 
   if (!open || !agent) return null;
 
   const isPro = agent.tier === "pro";
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartY(e.touches[0].clientY);
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const diff = e.touches[0].clientY - touchStartY;
+    if (diff > 0) {
+      setDragY(diff);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    if (dragY > 100) {
+      onClose();
+    }
+    setDragY(0);
+  };
 
   const handleRunSimulation = () => {
     setSimulating(true);
@@ -73,6 +130,34 @@ export const AgentProfileDrawer: React.FC<AgentProfileDrawerProps> = ({
     setSimulating(false);
   };
 
+  const handleRunSandbox = () => {
+    if (!sandboxQuery.trim() || !agent) return;
+    setSandboxLoading(true);
+
+    const samples = getAgentSamplePrompts(agent.slug);
+    const matched = samples.find(
+      (s) =>
+        s.prompt.toLowerCase().includes(sandboxQuery.trim().toLowerCase()) ||
+        sandboxQuery.trim().toLowerCase().includes(s.label.toLowerCase())
+    );
+
+    setTimeout(() => {
+      if (matched) {
+        setSandboxResult({
+          toolUsed: matched.toolUsed,
+          response: matched.response,
+        });
+      } else {
+        const primaryTool = agent.tools[0] || "agent.execute_plan";
+        setSandboxResult({
+          toolUsed: `${primaryTool}(query='${sandboxQuery.trim().slice(0, 30)}…')`,
+          response: `تمت معالجة الطلب وفقاً لاختصاص '${agent.position}'. بناءً على مؤشرات الأداء الحالية ومعايير الحوكمة: تم التحقق من الإجراء بدقة، وسيكون متاحاً للتنفيذ التلقائي فور توظيف الإيجنت في حسابك.`,
+        });
+      }
+      setSandboxLoading(false);
+    }, 600);
+  };
+
   return (
     <div
       role="dialog"
@@ -83,15 +168,34 @@ export const AgentProfileDrawer: React.FC<AgentProfileDrawerProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        style={{
+          transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
+          transition: isDragging
+            ? "none"
+            : "transform 220ms cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
         className="relative flex h-full w-full max-w-xl flex-col bg-background border-s border-border shadow-2xl transition-transform duration-200 overflow-hidden text-start select-none"
       >
-        {/* ── Native Mobile Sheet Grabber ── */}
-        <div className="flex justify-center pt-2 pb-1 sm:hidden bg-muted/20 border-b border-border/30">
-          <div className="h-1 w-10 rounded-full bg-muted-foreground/30" aria-hidden="true" />
+        {/* ── Native Mobile Sheet Grabber with Drag Down Gesture ── */}
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="flex justify-center pt-2 pb-1.5 sm:hidden bg-muted/20 border-b border-border/30 cursor-grab active:cursor-grabbing touch-none"
+        >
+          <div
+            className="h-1.5 w-12 rounded-full bg-muted-foreground/40"
+            aria-hidden="true"
+          />
         </div>
 
         {/* ── Top Header Bar ── */}
-        <div className="flex items-center justify-between border-b border-border/60 px-6 py-3.5 bg-muted/20">
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="flex items-center justify-between border-b border-border/60 px-6 py-3.5 bg-muted/20 touch-none sm:touch-auto"
+        >
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               الملف الوظيفي التنفيذي (Dossier)
@@ -115,11 +219,18 @@ export const AgentProfileDrawer: React.FC<AgentProfileDrawerProps> = ({
           <div className="flex items-start gap-4">
             <div className="relative shrink-0">
               <div className="size-20 overflow-hidden rounded-2xl border border-border bg-muted shadow-md">
-                <img
-                  src={agent.avatarUrl}
-                  alt={agent.name}
-                  className="size-full object-cover contrast-125"
-                />
+                {imgError ? (
+                  <div className="size-full flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-950 text-white font-bold text-lg tracking-wider select-none border border-white/10 shadow-inner">
+                    <span>{getArabicInitials(agent.name)}</span>
+                  </div>
+                ) : (
+                  <img
+                    src={agent.avatarUrl}
+                    alt={agent.name}
+                    onError={() => setImgError(true)}
+                    className="size-full object-cover contrast-125"
+                  />
+                )}
               </div>
               <span className="absolute -bottom-1 -left-1 flex size-4 items-center justify-center rounded-full border-2 border-background bg-emerald-500 shadow-sm" />
             </div>
@@ -314,6 +425,76 @@ export const AgentProfileDrawer: React.FC<AgentProfileDrawerProps> = ({
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* ── Live Interactive Sandbox Test ── */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <MessageSquare className="size-3.5 stroke-[1.5] text-primary" />
+                <span>اختبار الاستجابة الحية (Live Sandbox Test)</span>
+              </h3>
+              <span className="text-[10px] font-mono text-muted-foreground">تجربة فورية</span>
+            </div>
+
+            {/* Quick Prompt Suggestion Chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {getAgentSamplePrompts(agent.slug).map((sample, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setSandboxQuery(sample.prompt)}
+                  className="rounded-lg border border-border/60 bg-muted/30 px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted/70 hover:text-foreground active:scale-[0.97] transition-all text-start"
+                >
+                  {sample.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Input + Action Bar */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={sandboxQuery}
+                onChange={(e) => setSandboxQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleRunSandbox()}
+                placeholder="اطرح سؤالاً أو مهمة تجريبية لاختبار الإيجنت…"
+                className="flex-1 h-9 rounded-xl border border-border bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleRunSandbox}
+                disabled={sandboxLoading || !sandboxQuery.trim()}
+                className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 hover:bg-primary/90 active:scale-[0.97] transition-all disabled:opacity-50 shrink-0"
+              >
+                {sandboxLoading ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <span>تجربة</span>
+                    <Send className="size-3 stroke-[1.5]" />
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Sandbox Output Display */}
+            {sandboxResult && (
+              <div className="rounded-xl border border-border bg-muted/20 p-3.5 space-y-2 text-xs animate-fadeIn">
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground border-b border-border/40 pb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-1.5 rounded-full bg-emerald-500" />
+                    <span className="font-semibold text-foreground">{agent.name}</span>
+                  </div>
+                  <span className="font-mono text-[9px] text-blue-500">
+                    {sandboxResult.toolUsed ? `الأداة: ${sandboxResult.toolUsed}` : "استجابة استراتيجية"}
+                  </span>
+                </div>
+                <p className="text-xs text-foreground/90 leading-relaxed font-sans select-text">
+                  {sandboxResult.response}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

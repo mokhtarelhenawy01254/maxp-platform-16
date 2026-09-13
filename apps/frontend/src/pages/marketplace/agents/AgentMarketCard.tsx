@@ -11,7 +11,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { 
   Cpu, 
   Activity, 
@@ -22,7 +22,7 @@ import {
   Layers,
   Sparkles
 } from "lucide-react";
-import { AgentListing } from "./agentMarketplaceData";
+import { AgentListing, getArabicInitials } from "./agentMarketplaceData";
 
 interface AgentMarketCardProps {
   agent: AgentListing;
@@ -37,6 +37,7 @@ export const AgentMarketCard: React.FC<AgentMarketCardProps> = ({
   onHire,
   isHired = false,
 }) => {
+  const [imgError, setImgError] = useState(false);
   const isPro = agent.tier === "pro";
 
   return (
@@ -49,11 +50,18 @@ export const AgentMarketCard: React.FC<AgentMarketCardProps> = ({
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="relative shrink-0">
             <div className="relative size-14 overflow-hidden rounded-xl border border-border/80 bg-muted/50 shadow-sm">
-              <img
-                src={agent.avatarUrl}
-                alt={agent.name}
-                className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
+              {imgError ? (
+                <div className="size-full flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-950 text-white font-bold text-sm tracking-wider select-none border border-white/10 shadow-inner">
+                  <span>{getArabicInitials(agent.name)}</span>
+                </div>
+              ) : (
+                <img
+                  src={agent.avatarUrl}
+                  alt={agent.name}
+                  onError={() => setImgError(true)}
+                  className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              )}
             </div>
             <span
               className="absolute -bottom-1 -left-1 flex size-3.5 items-center justify-center rounded-full border-2 border-card bg-emerald-500 shadow-sm"

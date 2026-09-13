@@ -428,3 +428,102 @@ export const AGENT_LISTINGS: AgentListing[] = [
     },
   },
 ];
+
+/**
+ * Extract elegant 2-letter Arabic monogram initials from a name.
+ * e.g. "كريم المنصور" -> "كم"
+ *      "سارة عبد الرحمن" -> "سع"
+ *      "د. منى الشناوي" -> "مش"
+ */
+export function getArabicInitials(name: string): string {
+  if (!name) return "وك";
+  // Strip honorifics: د. / م. / أ. / دكتور / مهندس / أستاذ
+  const cleaned = name
+    .replace(/^(د\.?|م\.?|أ\.?|دكتور|مهندس|أستاذ)\s+/i, "")
+    .trim();
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "وك";
+  if (parts.length === 1) return parts[0].slice(0, 2);
+
+  const getChar = (word: string) => {
+    // If word starts with 'ال' and has > 2 letters, take the letter after 'ال'
+    if (word.startsWith("ال") && word.length > 2) {
+      return word[2];
+    }
+    return word[0];
+  };
+
+  const c1 = getChar(parts[0]);
+  const c2 = getChar(parts[1]);
+  return `${c1}${c2}`;
+}
+
+export interface SandboxSample {
+  label: string;
+  prompt: string;
+  toolUsed?: string;
+  response: string;
+}
+
+export function getAgentSamplePrompts(slug: string): SandboxSample[] {
+  switch (slug) {
+    case "facebook-media-buyer-agent":
+      return [
+        {
+          label: "تحليل تكلفة الشراء المرتفعة",
+          prompt: "حملة التيشرتات الصيفية تكلفة الشراء فيها وصلت 190 ج.م والهدف 120 ج.م، ما الحل؟",
+          toolUsed: "meta_ads.get_campaign_insights(breakdown='placement')",
+          response: "قمت بفحص التوزيع: 68% من الميزانية تستهلكها أجهزة iOS على شبكة Audience Network بتكلفة شراء 240 ج.م. أوصي فوراً بحصر التوزيع على Feeds + Reels لأجهزة أندرويد فقط وإيقاف شبكة Audience Network، مما سيخفض الـ CPR إلى 115 ج.م.",
+        },
+        {
+          label: "صياغة زاوية إعلانية جديدة",
+          prompt: "اكتب لي خطافاً (Hook) وزاوية إعلانية لمنتج أحذية طبية لكبار السن",
+          toolUsed: "creative.generate_ad_angles(target_audience='seniors')",
+          response: "الزاوية: 'الراحة قبل الأناقة'. الخطاف المقترح: 'مش كل ألم في الضهر سببه السن.. أحياناً السبب هو الحذاء اللي بتلبسه كل يوم'. العرض: خصم 20% على الزوج الثاني مع ضمان استبدال مجاني للمقاس حتى باب المنزل.",
+        },
+      ];
+    case "whatsapp-sales-agent":
+      return [
+        {
+          label: "معالجة اعتراض السعر",
+          prompt: "العميل يقول: 'السعر غالي جداً مقارنة بالسوق'",
+          toolUsed: "catalog.get_value_proposition(sku='PERFUME-01')",
+          response: "أهلاً بحضرتك! فاهم وجهة نظرك تماماً. الفرق الأساسي أن منتجنا يأتي بتركيز Extrait de Parfum يدوم 48 ساعة وبزيوت طبيعية 100% بدون أي كحول مضاف يسبب حساسية. وتقدديراً لاهتمامك، جاهز أضيف لك كود شحن مجاني اليوم إذا أكدت الطلب الآن.",
+        },
+        {
+          label: "استرجاع سلة متروكة",
+          prompt: "عميل أضاف 3 قطع للمفضلة وخرج دون إتمام الشراء",
+          toolUsed: "whatsapp.send_recovery_template(cart_id='cart_883')",
+          response: "مرحباً يا فندم! لاحظنا أنك نسيت حقيبة اليد الجلدية في سلة التسوق. متبقي قطعتين فقط من هذا اللون بالمخزن، وحجزنا لك قطعة لمدة ساعتين مع هدية محفظة كروت مجانية إذا طلبت الآن.",
+        },
+      ];
+    case "bosta-logistics-agent":
+      return [
+        {
+          label: "تسريع شحنات معلقة",
+          prompt: "لدينا 8 شحنات في حالة 'محاولة تسليم فاشلة' في الإسكندرية",
+          toolUsed: "bosta.batch_update_status(status='RESCHEDULE')",
+          response: "تم فحص تقارير المناديب: 5 شحنات تعذر الاتصال بالعميل وقت الصباح، و3 شحنات طلبوا التسليم بعد الساعة 5:00 مساءً. قمت تلقائياً بإرسال رسائل واتساب تأكيدية بمواعيد المساء، وتعيين خط سير جديد للمندوب لضمان التسليم بنسبة 100%.",
+        },
+      ];
+    case "competitor-price-scout-agent":
+      return [
+        {
+          label: "مقارنة أسعار المنافسين",
+          prompt: "هل المنافسين خفضوا أسعار الساعات الذكية هذا الأسبوع؟",
+          toolUsed: "web_search.compare_market_prices(item='Smart Watch V8')",
+          response: "نعم، تم رصد متجرين منافسين خفضا السعر من 850 ج.م إلى 790 ج.م مع شحن مدفوع. أوصي بعدم تخفيض السعر الأساسي، بل تقديم السعر بـ 820 ج.م متضمناً شحناً مجانياً + استيك إضافي كقيمة مضافة.",
+        },
+      ];
+    default:
+      return [
+        {
+          label: "استشارة تشغيلية سريعة",
+          prompt: "ما هي أول خطوة ستقوم بها عند تفعيلك في حساب الشركة؟",
+          toolUsed: "agent.initialize_workspace()",
+          response: "أبدأ فوراً بقراءة البيانات التاريخية الخاصة بحسابك، مطابقة مؤشرات الأداء الحالية، وضبط صلاحيات الأمان بحيث لا يتم أي إجراء مالي إلا بموافقتك اليدوية المسبقة.",
+        },
+      ];
+  }
+}
+

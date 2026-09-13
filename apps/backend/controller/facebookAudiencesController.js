@@ -4,6 +4,7 @@
  * Controller للتعامل مع طلبات Facebook Audiences Management
  */
 
+const axios = require('axios');
 const FacebookAudiencesService = require('../services/facebookAudiencesService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
@@ -95,20 +96,28 @@ const createCustomAudience = async (req, res) => {
     const {
       name,
       description,
-      audienceType, // CUSTOMER_LIST, WEBSITE, ENGAGEMENT, APP_ACTIVITY, VIDEO_VIEW
+      audienceType, // CUSTOMER_LIST, WEBSITE, PAGE_ENGAGEMENT, IG_ENGAGEMENT, VIDEO_VIEWS, ENGAGEMENT
       adAccountId,
       // Customer List
       customerList,
       customerListId,
+      sourceType,
       // Website
       pixelId,
       eventType,
+      urlContains,
       retentionDays,
-      // Engagement
-      engagementType,
+      // Page Engagement
+      pageId,
+      pageEngagementType,
+      // Instagram
+      igUserId,
+      igEngagementType,
       // Video View
       videoId,
-      videoViewDuration
+      videoViewDuration,
+      // Legacy Engagement
+      engagementType
     } = req.body;
 
     // التحقق من البيانات المطلوبة
@@ -147,53 +156,172 @@ const createCustomAudience = async (req, res) => {
     // إنشاء Service
     const audiencesService = new FacebookAudiencesService(accessToken, adAccount.accountId);
 
+    // 🛡️ Auto-resolve default assets if not specified in request
+    let effectivePixelId = pixelId;
+    if (!effectivePixelId && audienceType === 'WEBSITE') {
+      try {
+        const company = await getSharedPrismaClient().company.findUnique({
+          where: { id: companyId },
+          select: { facebookPixelId: true }
+        });
+        const storefront = await getSharedPrismaClient().storefrontSettings?.findUnique?.({
+          where: { companyId },
+          select: { facebookPixelId: true }
+        });
+        effectivePixelId = company?.facebookPixelId || storefront?.facebookPixelId;
+      } catch (pixErr) {
+        console.warn('Could not auto-resolve pixel for custom audience:', pixErr.message);
+      }
+    }
+
+    let effectivePageId = pageId;
+    if (!effectivePageId && ['PAGE_ENGAGEMENT', 'ENGAGEMENT', 'VIDEO_VIEWS', 'VIDEO_VIEW', 'IG_ENGAGEMENT'].includes(audienceType)) {
+      try {
+        const pagesRes = await axios.get(`${audiencesService.baseUrl}/me/accounts`, {
+          params: { access_token: accessToken, fields: 'id,name' }
+        });
+        if (pagesRes.data?.data?.length > 0) {
+          effectivePageId = pagesRes.data.data[0].id;
+        }
+      } catch (pageErr) {
+        console.warn('Could not auto-resolve Facebook Page for audience:', pageErr.message);
+      }
+    }
+
+    let effectiveIgUserId = igUserId;
+    if (!effectiveIgUserId && audienceType === 'IG_ENGAGEMENT' && effectivePageId) {
+      try {
+        const pageIgRes = await axios.get(`${audiencesService.baseUrl}/${effectivePageId}`, {
+          params: {
+            access_token: accessToken,
+            fields: 'instagram_business_account,connected_instagram_account'
+          }
+        });
+        effectiveIgUserId =
+          pageIgRes.data?.instagram_business_account?.id ||
+          pageIgRes.data?.connected_instagram_account?.id;
+      } catch (igErr) {
+        console.warn('Could not auto-resolve Instagram Account for audience:', igErr.message);
+      }
+    }
+
+    // تجهيز قائمة العملاء
+    let effectiveCustomerList = Array.isArray(customerList) ? customerList : [];
+    if (audienceType === 'CUSTOMER_LIST' && (sourceType === 'STORE_CUSTOMERS' || effectiveCustomerList.length === 0)) {
+      try {
+        const orders = await getSharedPrismaClient().order?.findMany?.({
+          where: { companyId },
+          select: {
+            customerName: true,
+            customerPhone: true,
+            customerEmail: true,
+          },
+          take: 5000,
+        });
+        if (orders && orders.length > 0) {
+          effectiveCustomerList = orders
+            .filter((o) => o.customerEmail || o.customerPhone)
+            .map((o) => {
+              const names = (o.customerName || '').trim().split(' ');
+              return {
+                email: o.customerEmail || '',
+                phone: o.customerPhone || '',
+                firstName: names[0] || '',
+                lastName: names.slice(1).join(' ') || ''
+              };
+            });
+        }
+      } catch (orderErr) {
+        console.warn('Could not auto-fetch store customers:', orderErr.message);
+      }
+    }
+
     let facebookResult;
     
     // إنشاء Audience حسب النوع
     switch (audienceType) {
       case 'CUSTOMER_LIST':
-        if (!customerList || customerList.length === 0) {
+        if (!effectiveCustomerList || effectiveCustomerList.length === 0) {
           return res.status(400).json({
             success: false,
-            error: 'Customer list is required'
+            error: 'قائمة العملاء مطلوبة (يرجى إدخال أرقام أو إيميلات أو اختيار عملاء المتجر)'
           });
         }
         facebookResult = await audiencesService.createCustomerListAudience({
           name,
           description,
-          customerList,
+          customerList: effectiveCustomerList,
           adAccountId: adAccount.accountId
         });
         break;
 
       case 'WEBSITE':
-        if (!pixelId) {
+        if (!effectivePixelId) {
           return res.status(400).json({
             success: false,
-            error: 'Pixel ID is required for website audience'
+            error: 'Pixel ID مطلوب لإنشاء جمهور زوار الموقع'
           });
         }
         facebookResult = await audiencesService.createWebsiteAudience({
           name,
           description,
-          pixelId,
+          pixelId: effectivePixelId,
           eventType,
+          urlContains,
           retentionDays,
           adAccountId: adAccount.accountId
         });
         break;
 
+      case 'PAGE_ENGAGEMENT':
       case 'ENGAGEMENT':
-        if (!engagementType) {
+        if (!effectivePageId) {
           return res.status(400).json({
             success: false,
-            error: 'Engagement type is required'
+            error: 'صفحة فيسبوك مطلوبة لإنشاء جمهور التفاعل'
           });
         }
         facebookResult = await audiencesService.createEngagementAudience({
           name,
           description,
-          engagementType,
+          pageId: effectivePageId,
+          engagementType: pageEngagementType || engagementType || 'page_engaged',
+          retentionDays,
+          adAccountId: adAccount.accountId
+        });
+        break;
+
+      case 'IG_ENGAGEMENT':
+        if (!effectiveIgUserId) {
+          return res.status(400).json({
+            success: false,
+            error: 'حساب Instagram التجاري غير مربوط بالصفحة أو الحساب الإعلاني'
+          });
+        }
+        facebookResult = await audiencesService.createInstagramAudience({
+          name,
+          description,
+          igUserId: effectiveIgUserId,
+          engagementType: igEngagementType || 'ig_business_profile_engaged',
+          retentionDays,
+          adAccountId: adAccount.accountId
+        });
+        break;
+
+      case 'VIDEO_VIEWS':
+      case 'VIDEO_VIEW':
+        if (!effectivePageId) {
+          return res.status(400).json({
+            success: false,
+            error: 'صفحة فيسبوك مطلوبة لتحديد مشاهدي الفيديو'
+          });
+        }
+        facebookResult = await audiencesService.createVideoAudience({
+          name,
+          description,
+          pageId: effectivePageId,
+          videoViewDuration: videoViewDuration || 'video_watched_10s',
+          retentionDays,
           adAccountId: adAccount.accountId
         });
         break;
@@ -201,7 +329,7 @@ const createCustomAudience = async (req, res) => {
       default:
         return res.status(400).json({
           success: false,
-          error: 'Invalid audience type'
+          error: `نوع الجمهور (${audienceType}) غير مدعوم`
         });
     }
 

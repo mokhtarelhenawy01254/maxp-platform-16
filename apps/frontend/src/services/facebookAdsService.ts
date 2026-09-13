@@ -2017,7 +2017,13 @@ export interface FacebookLookalikeAudience {
 export interface CreateCustomAudienceData {
   name: string;
   description?: string;
-  audienceType: "CUSTOMER_LIST" | "WEBSITE" | "ENGAGEMENT";
+  audienceType:
+    | "CUSTOMER_LIST"
+    | "WEBSITE"
+    | "PAGE_ENGAGEMENT"
+    | "IG_ENGAGEMENT"
+    | "VIDEO_VIEWS"
+    | "ENGAGEMENT";
   adAccountId?: string;
   // Customer List
   customerList?: Array<{
@@ -2027,11 +2033,23 @@ export interface CreateCustomAudienceData {
     lastName?: string;
   }>;
   customerListId?: string;
+  sourceType?: "MANUAL" | "STORE_CUSTOMERS" | "CSV_IMPORT";
+  rawCustomerText?: string;
   // Website
   pixelId?: string;
   eventType?: string;
+  urlContains?: string;
   retentionDays?: number;
-  // Engagement
+  // Page Engagement
+  pageId?: string;
+  pageEngagementType?: string;
+  // Instagram
+  igUserId?: string;
+  igEngagementType?: string;
+  // Video View
+  videoId?: string;
+  videoViewDuration?: string;
+  // Legacy Engagement
   engagementType?: string;
 }
 

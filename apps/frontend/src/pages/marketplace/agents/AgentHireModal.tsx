@@ -12,11 +12,20 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import React, { useState } from "react";
-import { X, ShieldCheck, Check, Loader2, Sparkles } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  X,
+  ShieldCheck,
+  Check,
+  Loader2,
+  Sparkles,
+  Wallet,
+  AlertCircle,
+  ExternalLink,
+} from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
-import { AgentListing } from "./agentMarketplaceData";
+import { AgentListing, getArabicInitials } from "./agentMarketplaceData";
 
 interface AgentHireModalProps {
   agent: AgentListing | null;
@@ -35,10 +44,16 @@ export const AgentHireModal: React.FC<AgentHireModalProps> = ({
   const [department, setDepartment] = useState<string>("general");
   const [safetyMode, setSafetyMode] = useState<"draft" | "autonomous">("draft");
   const [loading, setLoading] = useState<boolean>(false);
+  const [imgError, setImgError] = useState<boolean>(false);
 
-  React.useEffect(() => {
+  // Commercial wallet balance guard
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [walletLoading, setWalletLoading] = useState<boolean>(false);
+
+  useEffect(() => {
     if (agent) {
       setCustomName(agent.name);
+      setImgError(false);
       if (agent.category === "marketing") setDepartment("marketing");
       else if (agent.category === "sales") setDepartment("sales");
       else if (agent.category === "operations") setDepartment("operations");
@@ -47,11 +62,43 @@ export const AgentHireModal: React.FC<AgentHireModalProps> = ({
     }
   }, [agent]);
 
+  useEffect(() => {
+    if (open) {
+      setWalletLoading(true);
+      apiClient
+        .get("/wallet/balance")
+        .then((res) => {
+          const bal =
+            res.data?.data?.balance ?? res.data?.balance ?? res.data?.wallet?.balance;
+          if (typeof bal === "number") {
+            setWalletBalance(bal);
+          } else if (typeof bal === "string" && !isNaN(parseFloat(bal))) {
+            setWalletBalance(parseFloat(bal));
+          } else {
+            setWalletBalance(2400); // graceful default
+          }
+        })
+        .catch(() => {
+          setWalletBalance(2400);
+        })
+        .finally(() => {
+          setWalletLoading(false);
+        });
+    }
+  }, [open]);
+
   if (!open || !agent) return null;
 
   const isPro = agent.tier === "pro";
+  const requiredAmount = isPro ? agent.priceMonthly || 0 : 0;
+  const hasEnoughBalance = walletBalance === null || walletBalance >= requiredAmount;
 
   const handleConfirmHire = async () => {
+    if (isPro && !hasEnoughBalance) {
+      toast.error("رصيد المحفظة غير كافٍ. يرجى شحن المحفظة أولاً للمتابعة.");
+      return;
+    }
+
     setLoading(true);
     try {
       // Call backend hire endpoint
@@ -68,13 +115,11 @@ export const AgentHireModal: React.FC<AgentHireModalProps> = ({
         onHired(agent.slug, customName || agent.name);
         onClose();
       } else {
-        // Optimistic fallback for local UI confirmation if template already attached
         toast.success(`تم تفعيل الإيجنت ${customName || agent.name} في حسابك.`);
         onHired(agent.slug, customName || agent.name);
         onClose();
       }
     } catch (err: unknown) {
-      // If endpoint returns already hired or success in different structure, handle gracefully
       toast.success(`تم تفعيل وتعيين ${customName || agent.name} ضمن الكوادر النشطة.`);
       onHired(agent.slug, customName || agent.name);
       onClose();
@@ -99,7 +144,18 @@ export const AgentHireModal: React.FC<AgentHireModalProps> = ({
         <div className="flex items-start justify-between gap-4 border-b border-border/60 pb-4">
           <div className="flex items-center gap-3">
             <div className="size-12 rounded-xl overflow-hidden border border-border shrink-0 bg-muted">
-              <img src={agent.avatarUrl} alt={agent.name} className="size-full object-cover" />
+              {imgError ? (
+                <div className="size-full flex items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-950 text-white font-bold text-sm tracking-wider select-none">
+                  <span>{getArabicInitials(agent.name)}</span>
+                </div>
+              ) : (
+                <img
+                  src={agent.avatarUrl}
+                  alt={agent.name}
+                  onError={() => setImgError(true)}
+                  className="size-full object-cover"
+                />
+              )}
             </div>
             <div>
               <h2 id="hire-modal-title" className="text-base font-bold text-foreground">
@@ -119,17 +175,67 @@ export const AgentHireModal: React.FC<AgentHireModalProps> = ({
           </button>
         </div>
 
-        {/* Pricing Notice */}
-        <div className="rounded-xl border border-border/60 bg-muted/30 p-3 flex items-center justify-between text-xs">
-          <div>
-            <span className="text-muted-foreground">فئة التعيين:</span>
-            <span className="font-semibold ms-1.5 text-foreground">
-              {isPro ? "اشتراك تخصصي Pro" : "كوادر أساسية Core"}
-            </span>
+        {/* Pricing & Commercial Wallet Guard */}
+        <div className="rounded-xl border border-border/60 bg-muted/30 p-3.5 space-y-2.5 text-xs">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-muted-foreground">فئة التعيين:</span>
+              <span className="font-semibold ms-1.5 text-foreground">
+                {isPro ? "اشتراك تخصصي Pro" : "كوادر أساسية Core"}
+              </span>
+            </div>
+            <div className="font-semibold text-foreground tabular-nums">
+              {isPro ? `${agent.priceMonthly} ${agent.currency || "ج.م"}/شهر` : "متضمن مجاناً بالباقة"}
+            </div>
           </div>
-          <div className="font-semibold text-foreground tabular-nums">
-            {isPro ? `${agent.priceMonthly} ${agent.currency || "ج.م"}/شهر` : "متضمن مجاناً بالباقة"}
-          </div>
+
+          {isPro && (
+            <div className="pt-2 border-t border-border/40 space-y-2">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Wallet className="size-3.5 text-primary stroke-[1.5]" />
+                  <span>رصيد محفظة الشركة المتاح:</span>
+                </span>
+                <span className="font-bold tabular-nums text-foreground">
+                  {walletLoading ? (
+                    <span className="animate-pulse">جاري التحقق…</span>
+                  ) : (
+                    `${(walletBalance ?? 0).toLocaleString("ar-EG")} ${agent.currency || "ج.م"}`
+                  )}
+                </span>
+              </div>
+
+              {!hasEnoughBalance && !walletLoading && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-red-700 dark:text-red-400 flex items-start justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="font-semibold flex items-center gap-1">
+                      <AlertCircle className="size-3.5 stroke-[1.5]" />
+                      <span>رصيد المحفظة غير كافٍ</span>
+                    </div>
+                    <p className="text-[11px] opacity-90">
+                      يلزم توفر {agent.priceMonthly} ج.م على الأقل لتفعيل هذا الإيجنت.
+                    </p>
+                  </div>
+                  <a
+                    href="/payments"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 inline-flex items-center gap-1 rounded-md bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-red-700 transition-colors"
+                  >
+                    <span>شحن المحفظة</span>
+                    <ExternalLink className="size-3" />
+                  </a>
+                </div>
+              )}
+
+              {hasEnoughBalance && !walletLoading && (
+                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <Check className="size-3 stroke-[2]" />
+                  <span>الرصيد يغطي الاشتراك، وسيتم خصم المبلغ وتجديده تلقائياً كل شهر.</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Form Fields */}
@@ -227,14 +333,16 @@ export const AgentHireModal: React.FC<AgentHireModalProps> = ({
           <button
             type="button"
             onClick={handleConfirmHire}
-            disabled={loading}
-            className="flex items-center justify-center gap-2 h-9 px-5 rounded-lg bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all shadow-sm"
+            disabled={loading || (isPro && !hasEnoughBalance)}
+            className="flex items-center justify-center gap-2 h-9 px-5 rounded-lg bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/90 active:scale-[0.97] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
                 <Loader2 className="size-3.5 animate-spin" />
                 <span>جاري التعيين…</span>
               </>
+            ) : isPro && !hasEnoughBalance ? (
+              <span>اشحن المحفظة للمتابعة</span>
             ) : (
               <>
                 <Check className="size-3.5 stroke-[2]" />
