@@ -1,4 +1,4 @@
-// Currency utilities for the application
+import i18n from "i18next";
 
 export interface Currency {
   code: string;
@@ -49,37 +49,78 @@ export const getCurrencyByCode = (code: string): Currency | undefined => {
   return SUPPORTED_CURRENCIES.find((currency) => currency.code === code);
 };
 
+// Helper to determine if locale or language is English
+export const isEnglishLocale = (locale?: string): boolean => {
+  if (locale) {
+    return locale.toLowerCase().startsWith("en");
+  }
+  if (typeof document !== "undefined" && document.documentElement?.lang) {
+    if (document.documentElement.lang.toLowerCase().startsWith("en")) {
+      return true;
+    }
+  }
+  if (i18n?.language) {
+    return i18n.language.toLowerCase().startsWith("en");
+  }
+  return false;
+};
+
 // Format currency amount
 export const formatCurrency = (
   amount: number | null | undefined,
   currencyCode: string = DEFAULT_CURRENCY,
-  locale: string = "ar-EG",
+  locale?: string,
 ): string => {
   // Handle null or undefined
   if (amount === null || amount === undefined || isNaN(amount)) {
     return "-";
   }
 
+  const isEn = isEnglishLocale(locale);
   const currency = getCurrencyByCode(currencyCode);
 
   if (!currency) {
-    return `${amount} ${currencyCode}`;
+    return isEn
+      ? `${Number(amount).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${currencyCode}`
+      : `${Number(amount).toLocaleString("ar-EG")} ${currencyCode}`;
   }
 
-  // Format number with Arabic locale for Egyptian Pound
+  // Format Egyptian Pound
   if (currencyCode === "EGP") {
-    return `${amount.toLocaleString("ar-EG")} ${currency.symbol}`;
+    if (isEn) {
+      const formattedNum = Number(amount).toLocaleString("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      });
+      return `${formattedNum} EGP`;
+    }
+    return `${Number(amount).toLocaleString("ar-EG")} ${currency.symbol}`;
   }
 
   // Format with appropriate locale for other currencies
+  if (isEn) {
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: currencyCode,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    } catch {
+      return `${Number(amount).toLocaleString("en-US")} ${currencyCode}`;
+    }
+  }
+
   try {
-    return new Intl.NumberFormat(locale, {
+    return new Intl.NumberFormat(locale || "ar-EG", {
       style: "currency",
       currency: currencyCode,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
     }).format(amount);
   } catch (error) {
     // Fallback formatting
-    return `${currency.symbol}${amount.toLocaleString()}`;
+    return `${currency.symbol}${Number(amount).toLocaleString("ar-EG")}`;
   }
 };
 
@@ -87,6 +128,7 @@ export const formatCurrency = (
 export const formatCurrencyInput = (
   amount: number | string | null | undefined,
   currencyCode: string = DEFAULT_CURRENCY,
+  locale?: string,
 ): string => {
   if (amount === null || amount === undefined) {
     return "";
@@ -99,7 +141,10 @@ export const formatCurrencyInput = (
     return "";
   }
 
-  return `${numAmount} ${currency.symbol}`;
+  const isEn = isEnglishLocale(locale);
+  const symbol = isEn && currencyCode === "EGP" ? "EGP" : currency.symbol;
+
+  return `${numAmount} ${symbol}`;
 };
 
 // Parse currency input
@@ -113,7 +158,12 @@ export const parseCurrencyInput = (input: string): number => {
 // Get currency symbol
 export const getCurrencySymbol = (
   currencyCode: string = DEFAULT_CURRENCY,
+  locale?: string,
 ): string => {
+  const isEn = isEnglishLocale(locale);
+  if (isEn && currencyCode === "EGP") {
+    return "EGP";
+  }
   const currency = getCurrencyByCode(currencyCode);
   return currency?.symbol || currencyCode;
 };

@@ -1,5 +1,6 @@
 // frontend/src/utils/dateFormat.ts
-// Date formatting utilities with Gregorian calendar support
+// Date formatting utilities with Gregorian calendar support and i18n localization
+import i18n from "i18next";
 
 export type DateFormatType = "gregorian";
 
@@ -12,6 +13,22 @@ export interface DateFormatOptions {
 // Default date format options
 export const DEFAULT_DATE_FORMAT: DateFormatType = "gregorian";
 
+// Helper to determine if locale or language is English
+export const isEnglishLocale = (locale?: string): boolean => {
+  if (locale) {
+    return locale.toLowerCase().startsWith("en");
+  }
+  if (typeof document !== "undefined" && document.documentElement?.lang) {
+    if (document.documentElement.lang.toLowerCase().startsWith("en")) {
+      return true;
+    }
+  }
+  if (i18n?.language) {
+    return i18n.language.toLowerCase().startsWith("en");
+  }
+  return false;
+};
+
 // Date format configurations
 export const DATE_FORMAT_CONFIGS = {
   gregorian: {
@@ -22,6 +39,12 @@ export const DATE_FORMAT_CONFIGS = {
       day: "numeric" as const,
       calendar: "gregory" as const,
     },
+    enLocale: "en-US",
+    enOptions: {
+      year: "numeric" as const,
+      month: "short" as const,
+      day: "numeric" as const,
+    },
   },
 };
 
@@ -30,17 +53,21 @@ export const formatDate = (
   date: Date | string | number,
   formatType: DateFormatType = DEFAULT_DATE_FORMAT,
   customOptions?: Intl.DateTimeFormatOptions,
+  customLocale?: string,
 ): string => {
   try {
     const dateObj = new Date(date);
+    const isEn = isEnglishLocale(customLocale);
 
     if (isNaN(dateObj.getTime())) {
-      return "تاريخ غير صحيح";
+      return isEn ? "Invalid date" : "تاريخ غير صحيح";
     }
 
     const config = DATE_FORMAT_CONFIGS[formatType];
+    const targetLocale = customLocale || (isEn ? config.enLocale : config.locale);
+    const defaultOptions = isEn ? config.enOptions : config.options;
     const options =
-      customOptions || (config.options as Intl.DateTimeFormatOptions);
+      customOptions || (defaultOptions as Intl.DateTimeFormatOptions);
 
     // Apply timezone if provided
     const finalOptions: Intl.DateTimeFormatOptions = { ...options };
@@ -48,26 +75,30 @@ export const formatDate = (
       finalOptions.timeZone = customOptions.timeZone;
     }
 
-    return dateObj.toLocaleDateString(config.locale, finalOptions);
+    return dateObj.toLocaleDateString(targetLocale, finalOptions);
   } catch (error) {
     console.error("Error formatting date:", error);
-    return "تاريخ غير صحيح";
+    const isEn = isEnglishLocale(customLocale);
+    return isEn ? "Invalid date" : "تاريخ غير صحيح";
   }
 };
 
 // Format time
 export const formatTime = (
   date: Date | string | number,
-  locale: string = "ar-EG",
+  locale?: string,
 ): string => {
   try {
     const dateObj = new Date(date);
+    const isEn = isEnglishLocale(locale);
 
     if (isNaN(dateObj.getTime())) {
-      return "وقت غير صحيح";
+      return isEn ? "Invalid time" : "وقت غير صحيح";
     }
 
-    return dateObj.toLocaleTimeString(locale, {
+    const targetLocale = locale || (isEn ? "en-US" : "ar-EG");
+
+    return dateObj.toLocaleTimeString(targetLocale, {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
@@ -80,7 +111,8 @@ export const formatTime = (
     });
   } catch (error) {
     console.error("Error formatting time:", error);
-    return "وقت غير صحيح";
+    const isEn = isEnglishLocale(locale);
+    return isEn ? "Invalid time" : "وقت غير صحيح";
   }
 };
 
@@ -88,14 +120,17 @@ export const formatTime = (
 export const formatTimeWithZone = (
   date: Date | string | number,
   timezone?: string,
-  locale: string = "ar-EG",
+  locale?: string,
 ): string => {
   try {
     const dateObj = new Date(date);
+    const isEn = isEnglishLocale(locale);
 
     if (isNaN(dateObj.getTime())) {
-      return "وقت غير صحيح";
+      return isEn ? "Invalid time" : "وقت غير صحيح";
     }
+
+    const targetLocale = locale || (isEn ? "en-US" : "ar-EG");
 
     const options: Intl.DateTimeFormatOptions = {
       hour: "2-digit",
@@ -107,10 +142,11 @@ export const formatTimeWithZone = (
       options.timeZone = timezone;
     }
 
-    return dateObj.toLocaleTimeString(locale, options);
+    return dateObj.toLocaleTimeString(targetLocale, options);
   } catch (error) {
     console.error("Error formatting time:", error);
-    return "وقت غير صحيح";
+    const isEn = isEnglishLocale(locale);
+    return isEn ? "Invalid time" : "وقت غير صحيح";
   }
 };
 
@@ -118,17 +154,19 @@ export const formatTimeWithZone = (
 export const formatDateTime = (
   date: Date | string | number,
   formatType: DateFormatType = DEFAULT_DATE_FORMAT,
+  locale?: string,
 ): string => {
-  const formattedDate = formatDate(date, formatType);
-  const formattedTime = formatTime(date);
+  const formattedDate = formatDate(date, formatType, undefined, locale);
+  const formattedTime = formatTime(date, locale);
 
   return `${formattedDate} - ${formattedTime}`;
 };
 
 // Get relative time (time ago)
-export const getTimeAgo = (date: Date | string | number): string => {
+export const getTimeAgo = (date: Date | string | number, locale?: string): string => {
   try {
     const dateObj = new Date(date);
+    const isEn = isEnglishLocale(locale);
     const now = new Date();
     const diffMs = now.getTime() - dateObj.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -136,6 +174,23 @@ export const getTimeAgo = (date: Date | string | number): string => {
     const diffDays = Math.floor(diffHours / 24);
     const diffWeeks = Math.floor(diffDays / 7);
     const diffMonths = Math.floor(diffDays / 30);
+
+    if (isEn) {
+      if (diffMins < 1) return "Just now";
+      if (diffMins === 1) return "1 minute ago";
+      if (diffMins < 60) return `${diffMins} minutes ago`;
+      if (diffHours === 1) return "1 hour ago";
+      if (diffHours < 24) return `${diffHours} hours ago`;
+      if (diffDays === 1) return "1 day ago";
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffWeeks === 1) return "1 week ago";
+      if (diffWeeks < 4) return `${diffWeeks} weeks ago`;
+      if (diffMonths === 1) return "1 month ago";
+      if (diffMonths < 12) return `${diffMonths} months ago`;
+
+      const diffYears = Math.floor(diffMonths / 12);
+      return diffYears === 1 ? "1 year ago" : `${diffYears} years ago`;
+    }
 
     if (diffMins < 1) return "الآن";
     if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
@@ -148,7 +203,8 @@ export const getTimeAgo = (date: Date | string | number): string => {
     return `منذ ${diffYears} سنة`;
   } catch (error) {
     console.error("Error calculating time ago:", error);
-    return "منذ وقت غير محدد";
+    const isEn = isEnglishLocale(locale);
+    return isEn ? "Unknown time" : "منذ وقت غير محدد";
   }
 };
 
@@ -165,8 +221,9 @@ export const isValidDateFormat = (format: string): format is DateFormatType => {
 // Get current date in specified format
 export const getCurrentDate = (
   formatType: DateFormatType = DEFAULT_DATE_FORMAT,
+  locale?: string,
 ): string => {
-  return formatDate(new Date(), formatType);
+  return formatDate(new Date(), formatType, undefined, locale);
 };
 
 // Parse date format from company settings

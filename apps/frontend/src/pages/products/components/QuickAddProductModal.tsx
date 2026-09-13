@@ -13,7 +13,7 @@ import { apiClient } from "../../../services/apiClient";
 import { uploadFiles, productApi } from "../../../utils/apiHelpers";
 import { normalizeImagePath, getImageUrl } from "../../../utils/imageUrl";
 import { useCurrency } from "../../../hooks/useCurrency";
-import { getCurrencyByCode } from "../../../utils/currency";
+import { getCurrencyByCode, getCurrencySymbol } from "../../../utils/currency";
 import {
   CategoryFormModal,
   CategoryFormModalCategory,
@@ -52,7 +52,7 @@ export const QuickAddProductModal: React.FC<QuickAddProductModalProps> = ({
 }) => {
   const navigate = useNavigate();
   const { currency } = useCurrency();
-  const displayCurrency = getCurrencyByCode(currency)?.symbol || currency || "ج.م";
+  const displayCurrency = getCurrencySymbol(currency);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const titleId = useId();
 

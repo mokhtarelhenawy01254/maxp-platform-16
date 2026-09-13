@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useDateFormat } from "../../hooks/useDateFormat";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
@@ -39,6 +40,7 @@ interface Pagination {
 }
 
 const ProductReviews: React.FC = () => {
+  const { formatDate } = useDateFormat();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -162,14 +164,6 @@ const ProductReviews: React.FC = () => {
         )}
       </div>
     );
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("ar-EG", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
   };
 
   const prepareStorefrontContext = () => {

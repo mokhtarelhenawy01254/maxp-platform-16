@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { authService } from "../services/authService";
 import { formatCurrency, DEFAULT_CURRENCY } from "../utils/currency";
 
@@ -13,6 +14,10 @@ interface UseCurrencyReturn {
 }
 
 export const useCurrency = (): UseCurrencyReturn => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+  const currentLocale = isEn ? "en-US" : "ar-EG";
+
   const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,12 +99,15 @@ export const useCurrency = (): UseCurrencyReturn => {
     };
   }, []); // Only run once on mount
 
-  const formatPrice = (
-    amount: number | null | undefined,
-    currencyCode?: string,
-  ): string => {
-    return formatCurrency(amount, currencyCode || currency);
-  };
+  const formatPrice = useCallback(
+    (
+      amount: number | null | undefined,
+      currencyCode?: string,
+    ): string => {
+      return formatCurrency(amount, currencyCode || currency, currentLocale);
+    },
+    [currency, currentLocale],
+  );
 
   return {
     currency,

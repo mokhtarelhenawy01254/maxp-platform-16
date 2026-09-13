@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import {
@@ -94,6 +95,9 @@ const Products: React.FC = () => {
     getStorefrontUrl
   } = useProducts();
 
+  const { t, i18n: i18nInstance } = useTranslation();
+  const isEn = Boolean(i18nInstance.language && i18nInstance.language.startsWith("en"));
+
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
 
@@ -107,9 +111,9 @@ const Products: React.FC = () => {
   const onBulkVisibility = async (isHidden: boolean) => {
     try {
       const count = await handleBulkVisibility(isHidden);
-      if (count) toast.success(`تم ${isHidden ? 'إخفاء' : 'إظهار'} ${count} منتج بنجاح`);
+      if (count) toast.success(isEn ? `Successfully ${isHidden ? 'hidden' : 'shown'} ${count} products` : `تم ${isHidden ? 'إخفاء' : 'إظهار'} ${count} منتج بنجاح`);
     } catch (err) {
-      toast.error(`حدث خطأ أثناء ${isHidden ? 'الإخفاء' : 'الإظهار'}`);
+      toast.error(isEn ? `Error while ${isHidden ? 'hiding' : 'showing'} products` : `حدث خطأ أثناء ${isHidden ? 'الإخفاء' : 'الإظهار'}`);
     }
   };
 
@@ -120,20 +124,20 @@ const Products: React.FC = () => {
       if (ids.length === 0) return;
       const r = await apiClient.patch("products/bulk/track-inventory", { productIds: ids, trackInventory: enabled, includeVariants: true });
       const cnt = r?.data?.data?.productsUpdated || ids.length;
-      toast.success(`تم ${enabled ? 'تفعيل' : 'إيقاف'} تتبع المخزون لـ ${cnt} منتج`);
+      toast.success(isEn ? `Successfully ${enabled ? 'enabled' : 'disabled'} inventory tracking for ${cnt} products` : `تم ${enabled ? 'تفعيل' : 'إيقاف'} تتبع المخزون لـ ${cnt} منتج`);
       clearSelection();
       await loadProducts();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "فشل تحديث تتبع المخزون");
+      toast.error(err?.response?.data?.message || (isEn ? "Failed to update inventory tracking" : "فشل تحديث تتبع المخزون"));
     }
   };
 
   const onBulkDelete = async () => {
     try {
       const count = await handleBulkDelete();
-      if (count) toast.success(`تم حذف ${count} منتج بنجاح`);
+      if (count) toast.success(isEn ? `Successfully deleted ${count} products` : `تم حذف ${count} منتج بنجاح`);
     } catch (err) {
-      toast.error("فشل حذف المنتجات المحددة");
+      toast.error(isEn ? "Failed to delete selected products" : "فشل حذف المنتجات المحددة");
     }
   };
 
@@ -543,7 +547,9 @@ const Products: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">استيراد منتجات من CSV</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                {isEn ? "Import Products from CSV" : "استيراد منتجات من CSV"}
+              </h3>
               <button onClick={() => setShowImportModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <XMarkIcon className="h-6 w-6" />
               </button>
@@ -557,7 +563,7 @@ const Products: React.FC = () => {
             />
             <div className="mt-4 flex justify-end">
               <button onClick={() => setShowImportModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200">
-                إلغاء
+                {isEn ? "Cancel" : "إلغاء"}
               </button>
             </div>
           </div>

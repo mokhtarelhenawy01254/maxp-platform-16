@@ -32,6 +32,8 @@ const sourceLabels: Record<string, string> = {
   MISSING: "غير محددة",
 };
 
+import { isEnglishLocale } from "../../../../utils/currency";
+
 const inputBaseClass =
   "mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white";
 
@@ -40,12 +42,15 @@ const metricClass =
 
 const formatMoney = (value: number | null | undefined, currency: string) => {
   if (value === null || value === undefined || Number.isNaN(value)) return "-";
-  return `${value.toLocaleString("ar-EG", { maximumFractionDigits: 2 })} ${currency}`;
+  const isEn = isEnglishLocale();
+  const formatted = value.toLocaleString(isEn ? "en-US" : "ar-EG", { maximumFractionDigits: 2 });
+  return `${formatted} ${currency}`;
 };
 
 const formatRatio = (value: number) => {
   if (!Number.isFinite(value) || value <= 0) return "-";
-  return value.toLocaleString("ar-EG", { maximumFractionDigits: 2 });
+  const isEn = isEnglishLocale();
+  return value.toLocaleString(isEn ? "en-US" : "ar-EG", { maximumFractionDigits: 2 });
 };
 
 export const AdvertisingProfitTab: React.FC<AdvertisingProfitTabProps> = ({

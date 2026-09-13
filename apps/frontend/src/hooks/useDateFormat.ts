@@ -1,7 +1,5 @@
-// frontend/src/hooks/useDateFormat.ts
-// Hook for managing date format preferences
-
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "./useAuthSimple";
 import { companyAwareApi } from "../services/companyAwareApi";
 import {
@@ -26,6 +24,10 @@ interface UseDateFormatReturn {
 }
 
 export const useDateFormat = (): UseDateFormatReturn => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+  const currentLocale = isEn ? "en-US" : "ar-EG";
+
   const { user } = useAuth();
   const [dateFormat, setDateFormatState] =
     useState<DateFormatType>(DEFAULT_DATE_FORMAT);
@@ -106,28 +108,28 @@ export const useDateFormat = (): UseDateFormatReturn => {
     fetchDateFormat();
   }, [fetchDateFormat]);
 
-  // Wrapper functions that use the current date format
+  // Wrapper functions that use the current date format and locale
   const formatDateWrapper = useCallback(
     (date: Date | string | number) => {
-      return formatDate(date, dateFormat);
+      return formatDate(date, dateFormat, undefined, currentLocale);
     },
-    [dateFormat],
+    [dateFormat, currentLocale],
   );
 
   const formatTimeWrapper = useCallback((date: Date | string | number) => {
-    return formatTime(date);
-  }, []);
+    return formatTime(date, currentLocale);
+  }, [currentLocale]);
 
   const formatDateTimeWrapper = useCallback(
     (date: Date | string | number) => {
-      return formatDateTime(date, dateFormat);
+      return formatDateTime(date, dateFormat, currentLocale);
     },
-    [dateFormat],
+    [dateFormat, currentLocale],
   );
 
   const getTimeAgoWrapper = useCallback((date: Date | string | number) => {
-    return getTimeAgo(date);
-  }, []);
+    return getTimeAgo(date, currentLocale);
+  }, [currentLocale]);
 
   return {
     dateFormat,

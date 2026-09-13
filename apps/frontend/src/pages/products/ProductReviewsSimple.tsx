@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import React, { useState, useEffect, useCallback } from "react";
+import { useDateFormat } from "../../hooks/useDateFormat";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -44,6 +45,7 @@ interface Pagination {
 
 const ProductReviewsSimple: React.FC = () => {
   const { t } = useTranslation();
+  const { formatDate } = useDateFormat();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -216,14 +218,6 @@ const ProductReviewsSimple: React.FC = () => {
       console.error("Error executing bulk action:", error);
       toast.error(error.response?.data?.error || t('productReviews.k_9'));
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("ar-EG", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
   };
 
   const prepareStorefrontContext = () => {
