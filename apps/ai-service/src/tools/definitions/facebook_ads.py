@@ -1571,14 +1571,22 @@ def _format_facebook_ad_record_learned_rule(result: dict[str, Any]) -> str:
 def _format_facebook_ad_update_status(result: dict[str, Any]) -> str:
     res = result.get("result", result) if isinstance(result, dict) else {}
     if not res.get("success"):
-        return f"تعذر تحديث حالة الحملة: {res.get('error', 'خطأ غير معروف')}"
+        err = res.get("error", "خطأ غير معروف")
+        if isinstance(err, dict):
+            inner = err.get("error", err)
+            err = inner.get("error_user_msg") or inner.get("message") or str(err)
+        return f"تعذر تحديث حالة الحملة: {err}"
     return res.get("message") or f"تم تحديث حالة الحملة {res.get('campaign_id')} إلى {res.get('status')} بنجاح."
 
 
 def _format_facebook_ad_update_budget(result: dict[str, Any]) -> str:
     res = result.get("result", result) if isinstance(result, dict) else {}
     if not res.get("success"):
-        return f"تعذر تعديل ميزانية الحملة: {res.get('error', 'خطأ غير معروف')}"
+        err = res.get("error", "خطأ غير معروف")
+        if isinstance(err, dict):
+            inner = err.get("error", err)
+            err = inner.get("error_user_msg") or inner.get("message") or str(err)
+        return f"تعذر تعديل ميزانية الحملة: {err}"
     return res.get("message") or f"تم تعديل ميزانية الحملة {res.get('campaign_id')} إلى {res.get('daily_budget')} ج.م بنجاح."
 
 

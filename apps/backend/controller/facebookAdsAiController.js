@@ -1135,9 +1135,13 @@ class FacebookAdsAiController {
       const updateResult = await adsService.updateCampaign(campaignId, { status: targetStatus });
 
       if (!updateResult.success) {
+        const rawErr = updateResult.error;
+        const cleanMsg = typeof rawErr === 'string'
+          ? rawErr
+          : (rawErr?.error?.error_user_msg || rawErr?.error?.message || rawErr?.message || 'تعذر تحديث حالة الحملة على فيسبوك');
         return res.status(400).json({
           success: false,
-          error: updateResult.error || 'تعذر تحديث حالة الحملة على فيسبوك',
+          error: cleanMsg,
         });
       }
 
@@ -1209,9 +1213,8 @@ class FacebookAdsAiController {
           const activeAdSet = (adsetsRes.data?.data || []).find(a => a.status === 'ACTIVE') || adsetsRes.data?.data?.[0];
           if (activeAdSet?.id) {
             const adSetUpdate = await axios.post(`${adsService.baseUrl}/${activeAdSet.id}`, {
-              daily_budget: Math.round(budget * 100)
-            }, {
-              params: { access_token: accessToken }
+              daily_budget: Math.round(budget * 100),
+              access_token: accessToken,
             });
             if (adSetUpdate.data?.success || adSetUpdate.data?.id) {
               updateResult = { success: true, adSetId: activeAdSet.id };
@@ -1223,9 +1226,13 @@ class FacebookAdsAiController {
       }
 
       if (!updateResult.success) {
+        const rawErr = updateResult.error;
+        const cleanMsg = typeof rawErr === 'string'
+          ? rawErr
+          : (rawErr?.error?.error_user_msg || rawErr?.error?.message || rawErr?.message || 'تعذر تحديث ميزانية الحملة على فيسبوك');
         return res.status(400).json({
           success: false,
-          error: updateResult.error || 'تعذر تحديث ميزانية الحملة على فيسبوك',
+          error: cleanMsg,
         });
       }
 
