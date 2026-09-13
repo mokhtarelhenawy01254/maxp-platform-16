@@ -1,6 +1,18 @@
 import React, { useState } from "react";
-import { Sparkles, Trash2, ExternalLink, Play, Eye, ShieldAlert, Zap } from "lucide-react";
+import {
+  Sparkles,
+  Trash2,
+  ExternalLink,
+  Play,
+  Eye,
+  ShieldAlert,
+  Zap,
+  CheckCircle2,
+  DownloadCloud,
+  Plus,
+} from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -53,8 +65,8 @@ export const SkillRowCard: React.FC<SkillRowCardProps> = ({
       className={cn(
         "group relative flex items-center justify-between gap-3 rounded-2xl border px-3.5 py-3 transition-all duration-200 cursor-pointer",
         isEquipped
-          ? "border-border/80 bg-card hover:border-primary/50 hover:bg-card/90"
-          : "border-border/50 bg-card/50 opacity-85 hover:opacity-100 hover:border-border"
+          ? "border-border/80 border-s-4 border-s-emerald-500 bg-card hover:border-emerald-500/40 shadow-xs"
+          : "border-border/50 border-s-4 border-s-muted-foreground/30 bg-card/40 opacity-85 hover:opacity-100 hover:border-border hover:bg-card/70"
       )}
     >
       {/* Left: Icon Box + Title + Truncated Single-Line Description */}
@@ -64,7 +76,7 @@ export const SkillRowCard: React.FC<SkillRowCardProps> = ({
           className={cn(
             "flex size-10 shrink-0 items-center justify-center rounded-xl border text-base shadow-2xs transition-transform group-hover:scale-105",
             isEquipped
-              ? "border-border/80 bg-muted/80 text-foreground"
+              ? "border-emerald-500/30 bg-emerald-500/10 text-foreground"
               : "border-border/50 bg-muted/40 text-muted-foreground"
           )}
         >
@@ -84,6 +96,19 @@ export const SkillRowCard: React.FC<SkillRowCardProps> = ({
             <span className="text-xs font-semibold text-muted-foreground">
               • {meta.titleAr}
             </span>
+
+            {/* Installed vs Uninstalled Status Badge */}
+            {isEquipped ? (
+              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-2 py-0.2 text-[0.65rem] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                <CheckCircle2 className="size-2.5 text-emerald-500" />
+                <span>مثبتة</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-1.5 py-0.2 text-[0.65rem] font-medium text-muted-foreground border border-border/60">
+                <DownloadCloud className="size-2.5 opacity-70" />
+                <span>متاحة للتثبيت</span>
+              </span>
+            )}
 
             <span className="rounded-md bg-muted/60 px-1.5 py-0.2 text-[0.65rem] font-semibold text-muted-foreground hidden sm:inline-block">
               {verticalCfg.labelAr}
@@ -110,9 +135,9 @@ export const SkillRowCard: React.FC<SkillRowCardProps> = ({
         </div>
       </div>
 
-      {/* Right: Quick Badges + Toggle Switch + Action Icon */}
+      {/* Right: Quick Badges + Install CTA / Toggle Switch + Action Icons */}
       <div
-        className="flex items-center gap-3 shrink-0"
+        className="flex items-center gap-2.5 shrink-0"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Tools Count Badge */}
@@ -137,10 +162,28 @@ export const SkillRowCard: React.FC<SkillRowCardProps> = ({
                 </span>
               ))}
             </div>
-            <span className="text-xs font-semibold text-muted-foreground mr-0.5">
-              {equippedAgents.length}
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mr-0.5">
+              {equippedAgents.length} {equippedAgents.length === 1 ? "وكيل" : "وكلاء"}
             </span>
           </div>
+        )}
+
+        {/* If NOT equipped, show direct 1-click Install Button */}
+        {!isEquipped && (
+          <Button
+            type="button"
+            size="sm"
+            disabled={toggling}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSwitchChange(true);
+            }}
+            className="h-7 px-2.5 text-xs font-bold gap-1 bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer rounded-lg shadow-xs"
+            title="تثبيت المهارة وتجهيزها للوكيل المناسب فوراً"
+          >
+            <Plus className="size-3" />
+            <span>تثبيت</span>
+          </Button>
         )}
 
         {/* Toggle Switch (Image 1 Style) */}
@@ -150,6 +193,7 @@ export const SkillRowCard: React.FC<SkillRowCardProps> = ({
             disabled={toggling}
             onCheckedChange={handleSwitchChange}
             aria-label={`تفعيل ${skill.id}`}
+            title={isEquipped ? "مثبتة ومجهزة للوكلاء (انقر للتعطيل)" : "غير مثبتة (انقر للتثبيت)"}
           />
         </div>
 

@@ -8,12 +8,13 @@ import { SkillVertical, VERTICAL_CONFIG } from "./types";
 interface SkillFilterBarProps {
   totalCount: number;
   equippedCount: number;
+  uninstalledCount: number;
   query: string;
   onQueryChange: (q: string) => void;
   selectedVertical: SkillVertical;
   onSelectVertical: (v: SkillVertical) => void;
-  safetyFilter: "all" | "autonomous" | "approval" | "equipped";
-  onSafetyFilterChange: (f: "all" | "autonomous" | "approval" | "equipped") => void;
+  installFilter: "all" | "installed" | "uninstalled";
+  onInstallFilterChange: (f: "all" | "installed" | "uninstalled") => void;
   verticalCounts: Record<SkillVertical, number>;
   onNewSkill: () => void;
   onRefresh: () => void;
@@ -23,12 +24,13 @@ interface SkillFilterBarProps {
 export const SkillFilterBar: React.FC<SkillFilterBarProps> = ({
   totalCount,
   equippedCount,
+  uninstalledCount,
   query,
   onQueryChange,
   selectedVertical,
   onSelectVertical,
-  safetyFilter,
-  onSafetyFilterChange,
+  installFilter,
+  onInstallFilterChange,
   verticalCounts,
   onNewSkill,
   onRefresh,
@@ -62,16 +64,68 @@ export const SkillFilterBar: React.FC<SkillFilterBarProps> = ({
         </span>
       </div>
 
-      {/* 2. Top Header Row (Installed 21 ... + New) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-        {/* Installed Count Heading */}
-        <div className="flex items-baseline gap-2.5">
+      {/* 2. Top Header Row: Title + Installed/Uninstalled Switcher + Search + New */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
+        {/* Title + Installed vs Uninstalled Segmented Pills */}
+        <div className="flex items-center gap-2.5 flex-wrap">
           <h2 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
-            المهارات المثبتة
+            مستودع المهارات
           </h2>
-          <span className="font-mono text-base font-bold text-muted-foreground">
-            {totalCount}
-          </span>
+
+          {/* Distinction Filter Pills: Installed vs Uninstalled vs All */}
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/40 border border-border/60 text-xs">
+            {/* Installed Pill */}
+            <button
+              type="button"
+              onClick={() => onInstallFilterChange("installed")}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                installFilter === "installed"
+                  ? "bg-card text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <span className="size-2 rounded-full bg-emerald-500" />
+              <span>المثبتة</span>
+              <span className="font-mono text-[0.7rem] px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                {equippedCount}
+              </span>
+            </button>
+
+            {/* Uninstalled / Available Pill */}
+            <button
+              type="button"
+              onClick={() => onInstallFilterChange("uninstalled")}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                installFilter === "uninstalled"
+                  ? "bg-card text-primary border border-primary/30 shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <span>المتاحة للتثبيت</span>
+              <span className="font-mono text-[0.7rem] px-1.5 py-0.2 rounded-md bg-primary/10 text-primary">
+                {uninstalledCount}
+              </span>
+            </button>
+
+            {/* All Pill */}
+            <button
+              type="button"
+              onClick={() => onInstallFilterChange("all")}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                installFilter === "all"
+                  ? "bg-card text-foreground border border-border/80 shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <span>الكل</span>
+              <span className="font-mono text-[0.7rem] px-1.5 py-0.2 rounded-md bg-muted text-muted-foreground">
+                {totalCount}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Right Actions: Search + Refresh + (+ New) */}

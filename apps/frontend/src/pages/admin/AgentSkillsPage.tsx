@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Search, AlertCircle } from "lucide-react";
+import { Search, AlertCircle, DownloadCloud, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -79,7 +79,7 @@ export default function AgentSkillsPage({
   // Filter & Search states
   const [query, setQuery] = useState("");
   const [selectedVertical, setSelectedVertical] = useState<SkillVertical>("all");
-  const [safetyFilter, setSafetyFilter] = useState<"all" | "autonomous" | "approval" | "equipped">("all");
+  const [installFilter, setInstallFilter] = useState<"all" | "installed" | "uninstalled">("all");
 
   // Inspection Drawer & Dialogs
   const [inspectedSkill, setInspectedSkill] = useState<SkillDefinition | null>(null);
@@ -175,6 +175,8 @@ export default function AgentSkillsPage({
     return count;
   }, [skills, skillEquippedAgentsMap]);
 
+  const uninstalledSkillsCount = Math.max(0, skills.length - equippedSkillsCount);
+
   // Filtered skills list
   const filteredSkills = useMemo(() => {
     let list = skills;
@@ -203,17 +205,26 @@ export default function AgentSkillsPage({
       list = list.filter((s) => getSkillMeta(s).vertical === selectedVertical);
     }
 
-    // 3. Safety filter
-    if (safetyFilter === "autonomous") {
-      list = list.filter((s) => !s.requiresHumanApproval && !getSkillMeta(s).isApprovalRequired);
-    } else if (safetyFilter === "approval") {
-      list = list.filter((s) => s.requiresHumanApproval || getSkillMeta(s).isApprovalRequired);
-    } else if (safetyFilter === "equipped") {
+    // 3. Installed / Uninstalled filter
+    if (installFilter === "installed") {
       list = list.filter((s) => (skillEquippedAgentsMap.get(s.id) || []).length > 0);
+    } else if (installFilter === "uninstalled") {
+      list = list.filter((s) => (skillEquippedAgentsMap.get(s.id) || []).length === 0);
     }
 
     return list;
-  }, [skills, query, selectedVertical, safetyFilter, skillEquippedAgentsMap]);
+  }, [skills, query, selectedVertical, installFilter, skillEquippedAgentsMap]);
+
+  // Sub-lists for clear visual grouping
+  const installedSkillsList = useMemo(
+    () => filteredSkills.filter((s) => (skillEquippedAgentsMap.get(s.id) || []).length > 0),
+    [filteredSkills, skillEquippedAgentsMap]
+  );
+
+  const uninstalledSkillsList = useMemo(
+    () => filteredSkills.filter((s) => (skillEquippedAgentsMap.get(s.id) || []).length === 0),
+    [filteredSkills, skillEquippedAgentsMap]
+  );
 
   // Toggle Switch Handler on Row (Enable / Disable Skill)
   const handleToggleSkill = async (skill: SkillDefinition, enabled: boolean) => {
@@ -365,12 +376,13 @@ export default function AgentSkillsPage({
       <SkillFilterBar
         totalCount={skills.length}
         equippedCount={equippedSkillsCount}
+        uninstalledCount={uninstalledSkillsCount}
         query={query}
         onQueryChange={setQuery}
         selectedVertical={selectedVertical}
         onSelectVertical={setSelectedVertical}
-        safetyFilter={safetyFilter}
-        onSafetyFilterChange={setSafetyFilter}
+        installFilter={installFilter}
+        onInstallFilterChange={setInstallFilter}
         verticalCounts={verticalCounts}
         onNewSkill={() => setCreateOpen(true)}
         onRefresh={loadAll}
@@ -385,7 +397,7 @@ export default function AgentSkillsPage({
         </Alert>
       )}
 
-      {/* 2. Main High-Density Skills List (Image 1 Style) */}
+      {/* 2. Main High-Density Skills List (Image 1 Style) with Clear Installed vs Uninstalled Sections */}
       {loading ? (
         <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-dashed bg-card/40">
           <div className="flex flex-col items-center gap-2">
@@ -404,19 +416,76 @@ export default function AgentSkillsPage({
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          {filteredSkills.map((skill) => (
-            <SkillRowCard
-              key={skill.id}
-              skill={skill}
-              equippedAgents={skillEquippedAgentsMap.get(skill.id) || []}
-              toolsMap={toolsMap}
-              onInspect={(s) => setInspectedSkill(s)}
-              onToggle={handleToggleSkill}
-              onAssign={(s) => setAssignSkill(s)}
-              onTestSandbox={handleTestSandbox}
-            />
-          ))}
+        <div className="flex flex-col gap-5">
+          {/* Section 1: Installed Skills (Show when 'all' or 'installed') */}
+          {installFilter !== "uninstalled" && installedSkillsList.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
+                <div className="flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-emerald-500 shadow-xs" />
+                  <h3 className="font-bold text-xs sm:text-sm text-foreground">
+                    المهارات المثبتة والنشطة للوكلاء
+                  </h3>
+                  <span className="font-mono text-[0.7rem] font-bold px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    {installedSkillsList.length}
+                  </span>
+                </div>
+                <span className="text-[0.7rem] text-muted-foreground hidden sm:inline">
+                  مجهزة ومفعلة للوكلاء وتستدعى تلقائياً حسب سياق المحادثة
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {installedSkillsList.map((skill) => (
+                  <SkillRowCard
+                    key={skill.id}
+                    skill={skill}
+                    equippedAgents={skillEquippedAgentsMap.get(skill.id) || []}
+                    toolsMap={toolsMap}
+                    onInspect={(s) => setInspectedSkill(s)}
+                    onToggle={handleToggleSkill}
+                    onAssign={(s) => setAssignSkill(s)}
+                    onTestSandbox={handleTestSandbox}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section 2: Uninstalled / Available Skills in Store (Show when 'all' or 'uninstalled') */}
+          {installFilter !== "installed" && uninstalledSkillsList.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
+                <div className="flex items-center gap-2">
+                  <DownloadCloud className="size-3.5 text-primary" />
+                  <h3 className="font-bold text-xs sm:text-sm text-foreground">
+                    المستودع: مهارات متاحة للتثبيت
+                  </h3>
+                  <span className="font-mono text-[0.7rem] font-bold px-1.5 py-0.2 rounded-md bg-primary/10 text-primary">
+                    {uninstalledSkillsList.length}
+                  </span>
+                </div>
+                <span className="text-[0.7rem] text-muted-foreground hidden sm:inline">
+                  معتمدة في منصة MaxP وجاهزة للتجهيز للوكلاء بنقرة واحدة
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {uninstalledSkillsList.map((skill) => (
+                  <SkillRowCard
+                    key={skill.id}
+                    skill={skill}
+                    equippedAgents={skillEquippedAgentsMap.get(skill.id) || []}
+                    toolsMap={toolsMap}
+                    onInspect={(s) => setInspectedSkill(s)}
+                    onToggle={handleToggleSkill}
+                    onAssign={(s) => setAssignSkill(s)}
+                    onTestSandbox={handleTestSandbox}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
