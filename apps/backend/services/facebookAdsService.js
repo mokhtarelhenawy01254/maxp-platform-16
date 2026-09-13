@@ -80,6 +80,18 @@ const META_WRITE_UNCERTAIN_ERROR_CODES = new Set([
   'UND_ERR_BODY_TIMEOUT'
 ]);
 
+function extractMetaErrorMessage(error) {
+  const errObj = error?.response?.data?.error || error?.response?.data;
+  if (!errObj) return error?.message || 'Unknown Meta API error';
+  if (typeof errObj === 'string') return errObj;
+  return (
+    errObj.error_user_msg ||
+    errObj.error_user_title ||
+    errObj.message ||
+    JSON.stringify(errObj)
+  );
+}
+
 function isMetaWriteUncertainError(error) {
   if (!error) return false;
   if (error.response) return false;
@@ -434,7 +446,7 @@ class FacebookAdsService {
       console.error('❌ Error creating Facebook campaign:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data?.error?.message || error.response?.data || error.message,
+        error: extractMetaErrorMessage(error),
         metaWriteUncertain: isMetaWriteUncertainError(error)
       };
     }
@@ -899,7 +911,7 @@ class FacebookAdsService {
       console.error('❌ Error creating Facebook AdSet:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data?.error?.message || error.response?.data || error.message
+        error: extractMetaErrorMessage(error)
       };
     }
   }
@@ -1255,7 +1267,7 @@ class FacebookAdsService {
       console.error('❌ Error creating Facebook Ad:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data || error.message
+        error: extractMetaErrorMessage(error)
       };
     }
   }
@@ -1549,7 +1561,7 @@ class FacebookAdsService {
       console.error('❌ Error creating Facebook Creative:', error.response?.data || error.message);
       return {
         success: false,
-        error: error.response?.data?.error?.message || error.response?.data || error.message
+        error: extractMetaErrorMessage(error)
       };
     }
   }
@@ -5228,19 +5240,17 @@ class FacebookAdsService {
     const bidData = {};
     const normalizedBidStrategy = this.normalizeBidStrategyInput(bidStrategy);
 
-    if (!normalizedBidStrategy) {
-      return bidData;
+    if (!normalizedBidStrategy || normalizedBidStrategy === 'LOWEST_COST') {
+      return { bid_strategy: 'LOWEST_COST_WITHOUT_CAP' };
     }
 
     switch (normalizedBidStrategy) {
-      case 'LOWEST_COST':
-        // Meta v20+: Lowest cost is default; sending LOWEST_COST_WITHOUT_CAP causes Meta to reject with "Invalid parameter"
-        break;
-
       case 'COST_CAP':
         if (bidValue) {
           bidData.bid_strategy = 'COST_CAP';
           bidData.bid_amount = Math.round(bidValue * 100); // Convert to cents
+        } else {
+          bidData.bid_strategy = 'LOWEST_COST_WITHOUT_CAP';
         }
         break;
 
@@ -5248,6 +5258,8 @@ class FacebookAdsService {
         if (bidValue) {
           bidData.bid_strategy = 'LOWEST_COST_WITH_BID_CAP';
           bidData.bid_amount = Math.round(bidValue * 100);
+        } else {
+          bidData.bid_strategy = 'LOWEST_COST_WITHOUT_CAP';
         }
         break;
 
@@ -5255,6 +5267,8 @@ class FacebookAdsService {
         if (bidValue) {
           bidData.bid_strategy = 'COST_CAP';
           bidData.bid_amount = Math.round(bidValue * 100);
+        } else {
+          bidData.bid_strategy = 'LOWEST_COST_WITHOUT_CAP';
         }
         break;
 
@@ -5267,10 +5281,13 @@ class FacebookAdsService {
           bidData.bid_constraints = {
             roas_average_floor: roasGoal
           };
+        } else {
+          bidData.bid_strategy = 'LOWEST_COST_WITHOUT_CAP';
         }
         break;
 
       default:
+        bidData.bid_strategy = 'LOWEST_COST_WITHOUT_CAP';
         break;
     }
 

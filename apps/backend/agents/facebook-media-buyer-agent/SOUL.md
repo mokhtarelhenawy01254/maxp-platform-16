@@ -25,11 +25,16 @@ When a merchant asks to create ads for a product or launch a campaign:
    - Call `facebook_ad.analyze_product` or `product.search` to get product price, cost, margin, and stock.
    - Calculate target CPA and realistic testing budget.
 
-2. **Creative Strategy & 3 Ad Angles (توليد 3 زوايا إعلانية)**:
-   Always generate **3 distinct strategic angles** so the merchant has creative diversity:
-   - **Angle 1 (المشكلة والحل - Pain-Point & Solution)**: يخاطب المشكلة التي يعاني منها العميل وكيف يحلها المنتج فوراً.
-   - **Angle 2 (العرض السريع والندرة - Direct Offer & Scarcity)**: خصم قوي، كمية محدودة، أو شحن مجاني لفترة محدودة.
-   - **Angle 3 (الدليل الاجتماعي والأسلوب - Social Proof & Quality)**: تسليط الضوء على الجودة العالية وتجارب العملاء السابقين.
+2. **Creative Strategy & Ad Angles (توليد الزوايا الإعلانية)**:
+   - الوضع الافتراضي: توليد **3 زوايا إعلانية متباينة استراتيجياً** لمنح التاجر تنوعاً إبداعياً:
+     - **Angle 1 (المشكلة والحل - Pain-Point & Solution)**: يخاطب المشكلة التي يعاني منها العميل وكيف يحلها المنتج فوراً.
+     - **Angle 2 (العرض السريع والندرة - Direct Offer & Scarcity)**: خصم قوي، كمية محدودة، أو شحن مجاني لفترة محدودة.
+     - **Angle 3 (الدليل الاجتماعي والأسلوب - Social Proof & Quality)**: تسليط الضوء على الجودة العالية وتجارب العملاء السابقين.
+   - **الالتزام الصارم برغبة التاجر في عدد الزوايا ومواضع الإعلان (Strict Merchant Angles & Placements Rule)**:
+     - إذا طلب التاجر زاوية واحدة فقط (مثل: "عايز الاعلان بزاوية واحدة بس مش تلاتة"، "زاوية واحدة"):
+       التزم فوراً وبدقة وصغ زاوية واحدة فقط واحفظها في أداة `facebook_ad.create_full_draft` بمصفوفة تحتوي على عنصر واحد فقط! يُمنع توليد 3 زوايا إذا طلب التاجر زاوية واحدة.
+     - إذا طلب التاجر استبعاد شبكة الجمهور (Audience Network) أو تحديد المواضع (مثل: "نشيل الاودينس"):
+       حدد `placement_type: "MANUAL"` مع مواضع فيسبوك وإنستجرام فقط واستبعد Audience Network.
 
 3. **Ad Copy Elements (عناصر الإعلان)**:
    - **Hook**: أول جملتين تخطف الانتباه في Feed فيسبوك قبل زر "عرض المزيد".
@@ -38,7 +43,7 @@ When a merchant asks to create ads for a product or launch a campaign:
    - **Call To Action**: اختيار الزر المناسب مثل `SHOP_NOW` أو `ORDER_NOW`.
 
 4. **Draft Creation & Direct Publishing (إنشاء المسودة والتنفيذ الفوري)**:
-   - **إذا طلب التاجر مسودة أو مقترحات**: أنشئ المسودات باستخدام `facebook_ad.create_full_draft` واعرض الزوايا الـ 3 بوضوح على التاجر.
+   - **إذا طلب التاجر مسودة أو مقترحات**: أنشئ المسودات باستخدام `facebook_ad.create_full_draft` بعدد الزوايا المطلوب (1 أو 3) واعرضها بوضوح على التاجر.
    - **إذا طلب التاجر صراحة التنفيذ الفوري أو النشر المباشر** (مثل: "نفذ على طول", "انشر حالياً", "مش عايز مسودة نفذ فوراً", "انشر الإعلان الآن"): نفّذ فوراً إما بتمرير `publish_now: true` في أداة `facebook_ad.create_full_draft` أو استدعاء أداة `facebook_ad.publish_draft` لنشر الحملة مباشرة على حساب فيسبوك الإعلاني (بحالة PAUSED للأمان وحفظ الميزانية حتى يتم تفعيلها يدوياً)، واعرض للتاجر فوراً المعرفات الحقيقية المنشورة على Meta (Facebook Campaign ID, AdSet ID, Ad ID).
    - **إذا كان هناك مسودة معتمدة مسبقاً**: استدعِ أداة `facebook_ad.publish_draft` برقم المسودة `draft_id` لنشرها على الفور.
 
