@@ -74,6 +74,9 @@ export interface FormData {
   adScheduleStartHour?: number;
   adScheduleEndHour?: number;
   adScheduleDays?: number[];
+  adSetSpendLimitsEnabled?: boolean;
+  adSetMinDailySpend?: number;
+  adSetMaxDailySpend?: number;
 
   // Step 3: Audience & Placements
   locations: string[];
@@ -138,6 +141,7 @@ export interface FormData {
   visualTouchups?: boolean;
   relevantComments?: boolean;
   priceOverlay?: boolean;
+  multiAdvertiserAds?: boolean;
 
   // Status
   status: "ACTIVE" | "PAUSED";

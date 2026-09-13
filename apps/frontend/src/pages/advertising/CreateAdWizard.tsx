@@ -254,6 +254,9 @@ const CreateAdWizard: React.FC = () => {
     adScheduleStartHour: 0,
     adScheduleEndHour: 24,
     adScheduleDays: [1, 2, 3, 4, 5, 6, 7],
+    adSetSpendLimitsEnabled: false,
+    adSetMinDailySpend: undefined,
+    adSetMaxDailySpend: undefined,
 
     // Step 3
     ageMin: storedLaunchPrefill?.ageMin || 18,
@@ -325,6 +328,8 @@ const CreateAdWizard: React.FC = () => {
     ],
     useLeadForm: false,
     leadFormId: undefined,
+    instagramActorId: "",
+    multiAdvertiserAds: true,
     advantageCreative: false,
     textGeneration: false,
     imageEnhancement: false,
@@ -939,6 +944,11 @@ const CreateAdWizard: React.FC = () => {
           adScheduleEndHour: formData.adScheduleEndHour,
           adScheduleDays: formData.adScheduleDays,
         }),
+        ...(formData.adSetSpendLimitsEnabled && {
+          adSetSpendLimitsEnabled: true,
+          adSetMinDailySpend: formData.adSetMinDailySpend,
+          adSetMaxDailySpend: formData.adSetMaxDailySpend,
+        }),
 
         // Targeting
         targeting,
@@ -1020,6 +1030,10 @@ const CreateAdWizard: React.FC = () => {
         relevantComments: formData.relevantComments,
         priceOverlay: formData.priceOverlay,
         existingCustomerBudgetPercentage: formData.existingCustomerBudgetPercentage,
+        ...(formData.instagramActorId && {
+          instagramActorId: formData.instagramActorId,
+        }),
+        multiAdvertiserAds: formData.multiAdvertiserAds !== false,
 
         // Status
         status: formData.status,

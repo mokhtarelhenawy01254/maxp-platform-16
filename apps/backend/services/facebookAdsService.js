@@ -853,6 +853,16 @@ class FacebookAdsService {
         adSetData.inventory_filter = barrier;
       }
 
+      // CBO Ad Set Spend Limits (Minimum / Maximum daily spend target)
+      if (data.adSetSpendLimitsEnabled || data.adSetMinDailySpend || data.adSetMaxDailySpend) {
+        if (data.adSetMinDailySpend && Number(data.adSetMinDailySpend) > 0) {
+          adSetData.daily_min_spend_target = Math.round(Number(data.adSetMinDailySpend) * 100);
+        }
+        if (data.adSetMaxDailySpend && Number(data.adSetMaxDailySpend) > 0) {
+          adSetData.daily_spend_cap = Math.round(Number(data.adSetMaxDailySpend) * 100);
+        }
+      }
+
       // ✅ v22.0: Advantage+ Placements (Automatic) or Manual Placements
       if (placementType === 'AUTOMATIC' || !placementType) {
         // Automatic placements are Meta's default when no manual placement
@@ -1219,7 +1229,10 @@ class FacebookAdsService {
         adset_id: adSetId,
         creative: {
           creative_id: creativeResult.creativeId
-        }
+        },
+        ...(creativeData.multiAdvertiserAds !== false && {
+          contextual_multi_ads: { enroll_status: "OPT_IN" }
+        })
       };
 
       const response = await axios.post(
@@ -1310,7 +1323,10 @@ class FacebookAdsService {
 
       const creativeData = {
         object_story_spec: {
-          page_id: pageId
+          page_id: pageId,
+          ...(data.instagramActorId && {
+            instagram_actor_id: data.instagramActorId
+          })
         }
       };
 
@@ -1921,7 +1937,10 @@ class FacebookAdsService {
         adSchedulingEnabled: data.adSchedulingEnabled,
         adScheduleDays: data.adScheduleDays,
         adScheduleStartHour: data.adScheduleStartHour,
-        adScheduleEndHour: data.adScheduleEndHour
+        adScheduleEndHour: data.adScheduleEndHour,
+        adSetSpendLimitsEnabled: data.adSetSpendLimitsEnabled,
+        adSetMinDailySpend: data.adSetMinDailySpend,
+        adSetMaxDailySpend: data.adSetMaxDailySpend
       };
 
       // إذا لم يكن CBO مفعل، أضف الميزانية على مستوى AdSet
@@ -1968,6 +1987,8 @@ class FacebookAdsService {
         name: adName || `${campaignName} - Ad`,
         status,
         pageId,
+        instagramActorId: data.instagramActorId,
+        multiAdvertiserAds: data.multiAdvertiserAds !== false,
         creativeType,
         primaryText,
         headline,

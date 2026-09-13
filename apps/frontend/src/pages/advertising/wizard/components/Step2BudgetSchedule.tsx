@@ -29,6 +29,7 @@ import {
   isCappedBidStrategy,
 } from "../../CreateAdWizard.helpers";
 import { AdDaypartingScheduler } from "./AdDaypartingScheduler";
+import { AdSetSpendLimitsEditor } from "./AdSetSpendLimitsEditor";
 
 interface Step2BudgetScheduleProps {
   formData: FormData;
@@ -630,6 +631,19 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
           handleChange("adScheduleDays", next);
         }}
       />
+
+      {/* Ad Set Spend Limits (When CBO is enabled) */}
+      {formData.budgetOptimization && (
+        <AdSetSpendLimitsEditor
+          enabled={Boolean(formData.adSetSpendLimitsEnabled)}
+          onToggle={(enabled) => handleChange("adSetSpendLimitsEnabled", enabled)}
+          minDailySpend={formData.adSetMinDailySpend}
+          onMinDailySpendChange={(val) => handleChange("adSetMinDailySpend", val)}
+          maxDailySpend={formData.adSetMaxDailySpend}
+          onMaxDailySpendChange={(val) => handleChange("adSetMaxDailySpend", val)}
+          campaignBudget={formData.budgetAmount}
+        />
+      )}
 
       {/* Existing Customer Budget Cap (ECBC - v26) */}
       {(formData.objective === "OUTCOME_SALES" || formData.objective === "OUTCOME_LEADS") && (

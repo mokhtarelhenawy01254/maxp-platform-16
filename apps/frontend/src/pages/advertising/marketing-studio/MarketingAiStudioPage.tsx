@@ -61,7 +61,7 @@ const MarketingAiStudioPage: React.FC = () => {
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-0 overflow-hidden">
+    <div className="marketing-studio-root h-full w-full flex flex-col bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-0 overflow-hidden">
       {/* Top Ergonomic Unified Cockpit Header */}
       <header className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 backdrop-blur-md flex-shrink-0 z-10 flex-wrap">
         {/* Brand & Live Connection Indicator */}
@@ -80,7 +80,7 @@ const MarketingAiStudioPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Central Controls: Product Picker + Sessions Switcher */}
+        {/* Central Controls: Product Picker + Sessions Switcher + New Session */}
         <div className="flex items-center gap-2">
           {/* Smart Product Selector Button */}
           <button
@@ -131,37 +131,57 @@ const MarketingAiStudioPage: React.FC = () => {
               {copilotSessions.sessions.length}
             </span>
           </button>
+
+          {/* New Session Button */}
+          <button
+            type="button"
+            onClick={() => copilotSessions.createNewSession()}
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition text-xs font-bold shadow-xs cursor-pointer"
+            title="بدء جلسة جديدة"
+          >
+            <Sparkles className="w-3 h-3" />
+            <span>جلسة جديدة</span>
+          </button>
         </div>
 
-        {/* Mobile View Switcher (2-Tab Clean Toggle) */}
-        <div className="flex lg:hidden bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1">
-          <button
-            type="button"
-            onClick={() => setMobileView("CHAT")}
-            className={`py-1 px-2.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
-              mobileView === "CHAT"
-                ? "bg-white dark:bg-slate-900 text-blue-600 shadow-sm"
-                : "text-slate-500"
-            }`}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            المحادثة
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileView("CANVAS")}
-            className={`py-1 px-2.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
-              mobileView === "CANVAS"
-                ? "bg-white dark:bg-slate-900 text-blue-600 shadow-sm"
-                : "text-slate-500"
-            }`}
-          >
-            <Rocket className="w-3.5 h-3.5" />
-            مسودة الإعلان
-            {currentDraft && (
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            )}
-          </button>
+        {/* Right side status / mobile switcher */}
+        <div className="flex items-center gap-2">
+          {/* Status badge on desktop */}
+          <div className="hidden lg:flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400">
+            <Rocket className="w-3.5 h-3.5 text-blue-500" />
+            <span>مسودة Meta Ads جاهزة</span>
+          </div>
+
+          {/* Mobile View Switcher (2-Tab Clean Toggle) */}
+          <div className="flex lg:hidden bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1">
+            <button
+              type="button"
+              onClick={() => setMobileView("CHAT")}
+              className={`py-1 px-2.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
+                mobileView === "CHAT"
+                  ? "bg-white dark:bg-slate-900 text-blue-600 shadow-sm"
+                  : "text-slate-500"
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              المحادثة
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileView("CANVAS")}
+              className={`py-1 px-2.5 text-xs font-bold rounded-lg transition flex items-center gap-1.5 ${
+                mobileView === "CANVAS"
+                  ? "bg-white dark:bg-slate-900 text-blue-600 shadow-sm"
+                  : "text-slate-500"
+              }`}
+            >
+              <Rocket className="w-3.5 h-3.5" />
+              مسودة الإعلان
+              {currentDraft && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </button>
+          </div>
         </div>
       </header>
 

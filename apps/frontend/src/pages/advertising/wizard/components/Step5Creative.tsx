@@ -29,6 +29,9 @@ import { AdPlacementPreview } from "./AdPlacementPreview";
 import { AdCopyVariationsEditor } from "./AdCopyVariationsEditor";
 import { WhatsAppGreetingEditor } from "./WhatsAppGreetingEditor";
 import { PlacementMediaCustomizer } from "./PlacementMediaCustomizer";
+import { UtmBuilderModal } from "./UtmBuilderModal";
+import { MultiAdvertiserToggle } from "./MultiAdvertiserToggle";
+import { InstagramIdentitySelector } from "./InstagramIdentitySelector";
 
 interface Step5CreativeProps {
   formData: FormData;
@@ -70,6 +73,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
   const [creativeSource, setCreativeSource] = useState<"NEW_AD" | "EXISTING_POST">(
     formData.creativeType === "EXISTING_POST" ? "EXISTING_POST" : "NEW_AD",
   );
+  const [showUtmModal, setShowUtmModal] = useState(false);
 
   const handleSelectPagePost = (post: FacebookPagePost) => {
     handleChange("postId", post.id);
@@ -204,6 +208,15 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
             ) : null}
             {getError("pageId") && (
               <p className="mt-1 text-sm text-red-500">{getError("pageId")}</p>
+            )}
+
+            {/* Instagram Account Identity */}
+            {formData.pageId && (
+              <InstagramIdentitySelector
+                pageName={selectedFacebookPage?.name}
+                instagramActorId={formData.instagramActorId || ""}
+                onInstagramActorIdChange={(val) => handleChange("instagramActorId", val)}
+              />
             )}
           </div>
 
@@ -742,18 +755,29 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
 
             {/* URL Parameters */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                معاملات URL (UTM)
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  معاملات URL (UTM)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowUtmModal(true)}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 transition-colors"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  مُنشئ الرموز الديناميكية (UTM Builder)
+                </button>
+              </div>
               <input
                 type="text"
                 value={formData.urlParameters}
                 onChange={(e) => handleChange("urlParameters", e.target.value)}
-                placeholder="مثال: utm_source=facebook&utm_campaign=winter"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="مثال: utm_source={{site_source_name}}&utm_campaign={{campaign.name}}"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                dir="ltr"
               />
               <p className="mt-1 text-xs text-gray-500">
-                لتتبع مصدر الزيارات في Google Analytics
+                لتتبع مصدر الزيارات بدقة في Google Analytics وأنظمة الـ CRM
               </p>
             </div>
           </div>
@@ -922,8 +946,24 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
               />
             </label>
           </div>
+
+          {/* Multi-Advertiser Ads */}
+          <div className="mt-4">
+            <MultiAdvertiserToggle
+              enabled={formData.multiAdvertiserAds !== false}
+              onChange={(enabled) => handleChange("multiAdvertiserAds", enabled)}
+            />
+          </div>
         </div>
       </div>
+
+      {/* UTM Dynamic Macro Builder Modal */}
+      <UtmBuilderModal
+        isOpen={showUtmModal}
+        onClose={() => setShowUtmModal(false)}
+        currentValue={formData.urlParameters}
+        onApply={(val) => handleChange("urlParameters", val)}
+      />
     </div>
   );
 };

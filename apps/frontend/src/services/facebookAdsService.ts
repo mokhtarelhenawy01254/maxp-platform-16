@@ -911,6 +911,9 @@ export interface CreateFullAdData {
   adScheduleStartHour?: number;
   adScheduleEndHour?: number;
   adScheduleDays?: number[];
+  adSetSpendLimitsEnabled?: boolean;
+  adSetMinDailySpend?: number;
+  adSetMaxDailySpend?: number;
 
   // Schedule Data
   startTime?: string;
@@ -1008,6 +1011,8 @@ export interface CreateFullAdData {
   visualTouchups?: boolean;
   relevantComments?: boolean;
   priceOverlay?: boolean;
+  instagramActorId?: string;
+  multiAdvertiserAds?: boolean;
 
   // Status
   status?: "ACTIVE" | "PAUSED";
