@@ -610,16 +610,17 @@ async function validateFullAdAssetReadiness({ companyId, pageId, pixelId, adAcco
     // verify against local trusted database configuration for this company/storefront.
     if (!selectedPixel) {
       try {
-        const company = await getSharedPrismaClient().company.findUnique({
-          where: { id: companyId },
-          select: { facebookPixelId: true },
-        });
-        const storefront = await getSharedPrismaClient().storefrontSettings?.findUnique?.({
+        const prisma = getSharedPrismaClient();
+        const storefront = await prisma.storefrontSettings?.findFirst?.({
           where: { companyId },
-          select: { facebookPixelId: true, facebookPixelConfigs: true },
+          select: {
+            facebookPixelId: true,
+            facebookPixelConfigs: {
+              select: { pixelId: true },
+            },
+          },
         });
         const hasLocalPixelMatch =
-          String(company?.facebookPixelId || "") === String(pixelId) ||
           String(storefront?.facebookPixelId || "") === String(pixelId) ||
           storefront?.facebookPixelConfigs?.some(
             (c) => String(c.pixelId) === String(pixelId),

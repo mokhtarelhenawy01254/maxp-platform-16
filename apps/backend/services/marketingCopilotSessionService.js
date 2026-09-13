@@ -324,11 +324,12 @@ class MarketingCopilotSessionService {
     await this.ensureTables();
     try {
       await this.prisma.$executeRawUnsafe(`
-        UPDATE public.facebook_ads_ai_chat_sessions
-        SET context = coalesce(context, '{}'::jsonb) || $3::jsonb,
+        INSERT INTO public.facebook_ads_ai_chat_sessions (id, "companyId", title, status, context, "updatedAt")
+        VALUES ($1, $2, 'جلسة جديدة', 'ACTIVE', $3::jsonb, CURRENT_TIMESTAMP)
+        ON CONFLICT (id) DO UPDATE
+        SET context = coalesce(public.facebook_ads_ai_chat_sessions.context, '{}'::jsonb) || EXCLUDED.context,
             "updatedAt" = CURRENT_TIMESTAMP
-        WHERE "companyId" = $1 AND id = $2
-      `, companyId, sessionId, JSON.stringify(newContext));
+      `, sessionId, companyId, JSON.stringify(newContext));
     } catch (err) {
       console.warn('⚠️ [MarketingCopilotSessionService] updateContext error:', err.message);
     }

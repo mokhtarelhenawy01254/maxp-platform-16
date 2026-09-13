@@ -160,15 +160,11 @@ const createCustomAudience = async (req, res) => {
     let effectivePixelId = pixelId;
     if (!effectivePixelId && audienceType === 'WEBSITE') {
       try {
-        const company = await getSharedPrismaClient().company.findUnique({
-          where: { id: companyId },
-          select: { facebookPixelId: true }
-        });
-        const storefront = await getSharedPrismaClient().storefrontSettings?.findUnique?.({
+        const storefront = await getSharedPrismaClient().storefrontSettings?.findFirst?.({
           where: { companyId },
           select: { facebookPixelId: true }
         });
-        effectivePixelId = company?.facebookPixelId || storefront?.facebookPixelId;
+        effectivePixelId = storefront?.facebookPixelId;
       } catch (pixErr) {
         console.warn('Could not auto-resolve pixel for custom audience:', pixErr.message);
       }

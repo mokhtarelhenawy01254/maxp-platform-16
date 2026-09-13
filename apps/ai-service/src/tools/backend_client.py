@@ -11,6 +11,25 @@ from src.config import get_settings
 logger = structlog.get_logger(__name__)
 
 
+class BackendAPIError(Exception):
+    """Structured exception for backend API errors carrying human-readable message and error code."""
+
+    def __init__(
+        self,
+        message: str,
+        status_code: int = 500,
+        error_code: str | None = None,
+        field: str | None = None,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+        self.error_code = error_code
+        self.field = field
+        self.details = details or {}
+
+
 class BackendClient:
     """HTTP client for calling Node.js backend REST APIs directly.
     
@@ -48,7 +67,7 @@ class BackendClient:
         json_body: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """Make an HTTP request with retry logic."""
+        """Make an HTTP request with error extraction and retry logic."""
         client = await self._get_client()
         last_error: Exception | None = None
         for attempt in range(3):
@@ -60,8 +79,45 @@ class BackendClient:
                     json=json_body,
                     headers=headers,
                 )
-                response.raise_for_status()
-                return response.json()  # type: ignore[no-any-return]
+                if response.is_success:
+                    return response.json()  # type: ignore[no-any-return]
+
+                # Parse error response body
+                err_data: dict[str, Any] = {}
+                try:
+                    err_data = response.json()
+                except Exception:
+                    pass
+
+                err_msg = (
+                    err_data.get("error")
+                    or err_data.get("message")
+                    or f"HTTP error {response.status_code}"
+                )
+                err_code = err_data.get("errorCode")
+                err_field = err_data.get("field")
+
+                # Client errors (4xx) should not be retried blindly
+                if 400 <= response.status_code < 500:
+                    raise BackendAPIError(
+                        message=str(err_msg),
+                        status_code=response.status_code,
+                        error_code=err_code,
+                        field=err_field,
+                        details=err_data,
+                    )
+
+                last_error = BackendAPIError(
+                    message=str(err_msg),
+                    status_code=response.status_code,
+                    error_code=err_code,
+                    field=err_field,
+                    details=err_data,
+                )
+                if attempt < 2:
+                    await asyncio.sleep(2 ** attempt)
+            except BackendAPIError:
+                raise
             except httpx.HTTPStatusError as e:
                 last_error = e
                 if attempt < 2:
@@ -70,7 +126,14 @@ class BackendClient:
                 last_error = e
                 if attempt < 2:
                     await asyncio.sleep(2 ** attempt)
-        raise RuntimeError(f"Request failed: {method} {path}") from last_error
+
+        if isinstance(last_error, BackendAPIError):
+            raise last_error
+        raise BackendAPIError(
+            message="تعذر إكمال الاتصال بالخدمة الداخلية حالياً. يرجى إعادة المحاولة.",
+            status_code=503,
+            details={"original_error": str(last_error)},
+        ) from last_error
 
     # ── Product APIs ──
 

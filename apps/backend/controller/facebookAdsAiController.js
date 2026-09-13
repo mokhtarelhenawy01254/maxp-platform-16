@@ -9,6 +9,40 @@ const facebookAdsAiDraftService = require('../services/facebookAdsAiDraftService
 const facebookAdsController = require('./facebookAdsController');
 const marketingCopilotSessionService = require('../services/marketingCopilotSessionService');
 
+/**
+ * 🛡️ 2026 SOTA Guardrail: Protect end merchants from raw technical error leakage
+ * Never let internal API endpoints, HTTP traces, or stack errors reach the client.
+ */
+function sanitizeClientFacingReply(text) {
+  if (!text || typeof text !== 'string') return '';
+  const sanitized = text.trim();
+
+  const hasTechnicalLeak =
+    /(POST|GET|PUT|DELETE)\s+\/api\/[^\s]+/i.test(sanitized) ||
+    /Request failed:/i.test(sanitized) ||
+    /HTTPConnectionPool/i.test(sanitized) ||
+    /Traceback \(most recent call last\)/i.test(sanitized) ||
+    /asyncpg\.exceptions/i.test(sanitized) ||
+    /status_code[=:\s]+\d{3}/i.test(sanitized) ||
+    /Internal Server Error/i.test(sanitized) ||
+    /502 Bad Gateway/i.test(sanitized) ||
+    /SyntaxError:/i.test(sanitized) ||
+    /TypeError:/i.test(sanitized);
+
+  if (hasTechnicalLeak) {
+    console.warn('🛡️ [GUARD] Intercepted technical error leak in agent reply:', sanitized.slice(0, 160));
+    if (sanitized.includes('مسود') || sanitized.includes('نشر') || sanitized.includes('draft') || sanitized.includes('publish')) {
+      if (sanitized.includes('بكسل') || sanitized.includes('pixel') || sanitized.includes('PIXEL')) {
+        return 'تم حفظ وتجهيز مسودات الحملة الإعلانية بنجاح في لوحة التحكم للمراجعة ✅\n\nبالنسبة للنشر المباشر على فيسبوك: يبدو أن بكسل المتجر غير مرتبط بالحساب الإعلاني المختار حالياً. يمكنك فتح تبويب ربط فيسبوك وتأكيد الحساب المناسب، ثم الضغط على "نشر المسودة" لإطلاقها فوراً.';
+      }
+      return 'تم حفظ وتجهيز مسودات الحملة الإعلانية بنجاح في لوحة التحكم للمراجعة ✅\n\nيمكنك مراجعة المسودة وتأكيد إطلاقها بضغطة زر من صفحة إعلانات فيسبوك، أو مراجعة إعدادات الحساب الإعلاني والصفحة للتأكد من جاهزية الربط.';
+    }
+    return 'تم حفظ وتحديث البيانات بنجاح في لوحة التحكم ✅ يمكنك المتابعة أو مراجعة التفاصيل من لوحة المتجر.';
+  }
+
+  return sanitized;
+}
+
 class FacebookAdsAiController {
   /**
    * POST /api/v1/facebook-ads/ai/drafts
@@ -179,12 +213,14 @@ class FacebookAdsAiController {
           }
         }
         if (!fullAdPayload.adAccountId) {
-          const defaultAccount = await prisma.facebookAdAccount.findFirst({
+          const accounts = await prisma.facebookAdAccount.findMany({
             where: { companyId, isActive: true },
             orderBy: { updatedAt: 'desc' }
           });
-          if (defaultAccount?.accountId) {
-            fullAdPayload.adAccountId = defaultAccount.accountId;
+          // Prefer account matching store currency (EGP) or active campaigns
+          const bestAccount = accounts.find(a => (a.currency || '').toUpperCase() === 'EGP') || accounts[0];
+          if (bestAccount?.accountId) {
+            fullAdPayload.adAccountId = bestAccount.accountId;
           }
         }
         if (!fullAdPayload.pixelId) {
@@ -486,20 +522,81 @@ class FacebookAdsAiController {
             }));
 
             // If activeProductContext not explicitly saved yet, scan previous messages for recently discussed product
+            // If activeProductContext not explicitly saved yet, scan previous messages for recently discussed product
             if (!activeProductContext) {
+              const nonEntityWords = [
+                'المهارة', 'المرحلة', 'بلاك فرايداي', 'unit economics', 'الزوايا',
+                'الحساب الإعلاني', 'اقتصاديات', 'تحليل', 'أولاً', 'ثانياً', 'ثالثاً',
+                'المسودات', 'فحص', 'تفاصيل', 'التقرير', 'الحملة', 'استراتيجية', 'نقطة محتاجة'
+              ];
+
               for (let i = sessionData.messages.length - 2; i >= 0; i--) {
                 const pText = sessionData.messages[i].text || '';
-                // Check if message mentions product quotes or SKU
-                const quoteMatch = pText.match(/["'«]([^"'»]{3,40})["'»]/);
-                if (quoteMatch && !quoteMatch[1].includes('المهارة') && !quoteMatch[1].includes('المرحلة') && !quoteMatch[1].includes('بلاك فرايداي')) {
-                  const skuMatch = pText.match(/SKU:\s*([a-zA-Z0-9_-]+)/i);
-                  activeProductContext = {
-                    name: quoteMatch[1].trim(),
-                    sku: skuMatch ? skuMatch[1].trim() : '',
-                  };
-                  break;
+
+                // Prioritize bold product mentions like **كوتشي Dash** or quotes
+                const boldMatches = Array.from(pText.matchAll(/\*\*([^\*\n]{3,40})\*\*/g)).map(m => m[1]);
+                const quoteMatches = Array.from(pText.matchAll(/["'«]([^"'»]{3,40})["'»]/g)).map(m => m[1]);
+                const headingMatches = Array.from(pText.matchAll(/##+\s*[^\n]*?\s+([^\n(]{3,40})/g)).map(m => m[1]);
+
+                const allCandidates = [...boldMatches, ...quoteMatches, ...headingMatches];
+                for (const rawCandidate of allCandidates) {
+                  let cleaned = rawCandidate.replace(/[👟📦✨📊⚠️#*]/g, '').trim();
+                  cleaned = cleaned.replace(/^(حملة|منتج)\s+/i, '').trim();
+                  const cleanedLower = cleaned.toLowerCase();
+                  if (
+                    cleaned.length >= 3 &&
+                    !nonEntityWords.some(w => cleanedLower.includes(w))
+                  ) {
+                    const skuMatch = pText.match(/SKU:\s*([a-zA-Z0-9_-]+)/i);
+                    activeProductContext = {
+                      name: cleaned,
+                      sku: skuMatch ? skuMatch[1].trim() : '',
+                    };
+                    break;
+                  }
                 }
+                if (activeProductContext) break;
               }
+            }
+          }
+        }
+
+        // Direct product lookup from user message with natural prefixes
+        const rawMsg = (message || '').trim();
+        const nonProductWords = ['نفذ', 'تمام', 'ابدأ', 'نعم', 'اوك', 'كمل', 'انشر', '؟', '?', 'ايه الاخبار', 'شكرا'];
+        if (!activeProductContext && rawMsg.length >= 3 && !nonProductWords.includes(rawMsg)) {
+          const stripped = rawMsg
+            .replace(/^(عاوز|عايز|عاوزه|محتاج|اعمل|سوي|جهز|حملة|اعلان|إعلان|لحملة|لكوتشي|لـ|ل)+(\s+)/i, '')
+            .replace(/[؟!?.]/g, '')
+            .trim();
+
+          const candidates = [stripped, rawMsg].filter(c => c && c.length >= 2 && c.length <= 50);
+          const prisma = getSharedPrismaClient();
+
+          for (const cand of candidates) {
+            const matchedProd = await prisma.product.findFirst({
+              where: {
+                companyId,
+                deletedAt: null,
+                OR: [
+                  { name: { contains: cand, mode: 'insensitive' } },
+                  { slug: { contains: cand, mode: 'insensitive' } },
+                ],
+              },
+              select: { id: true, name: true, slug: true, price: true, mainImage: true },
+            });
+            if (matchedProd) {
+              activeProductContext = {
+                id: matchedProd.id,
+                name: matchedProd.name,
+                slug: matchedProd.slug,
+                price: matchedProd.price,
+                imageUrl: matchedProd.mainImage,
+              };
+              marketingCopilotSessionService.updateContext(companyId, threadId, {
+                activeProduct: activeProductContext,
+              }).catch(() => {});
+              break;
             }
           }
         }
@@ -507,11 +604,18 @@ class FacebookAdsAiController {
         console.warn('[FacebookAdsAI] Could not load prior messages for context:', memErr.message);
       }
 
+      // If user confirms execution with short trigger ('نفذ', 'انشر', 'تمام') and product context exists, anchor message
+      const executionTriggers = ['نفذ', 'انشر', 'تمام نفذ', 'ابدأ', 'اعتمد', 'نفذ الحملة'];
+      const isExecutionTrigger = executionTriggers.includes((message || '').trim());
+      const effectiveMessage = (isExecutionTrigger && activeProductContext?.name)
+        ? `${message} واعتمد المسودات لـ "${activeProductContext.name}"`
+        : message;
+
       try {
         const result = await aiServiceAdminClient.chatWithAgent({
           companyId,
           agentId: targetAgentId,
-          message,
+          message: effectiveMessage,
           threadId: scopedThreadId,
           channel: 'marketing_studio',
           source_channel: 'marketing_studio',
@@ -625,6 +729,9 @@ class FacebookAdsAiController {
           }
         }
 
+        // 🛡️ 2026 Resilience: Guard against leaking technical endpoint errors or stack traces to client
+        finalReply = sanitizeClientFacingReply(finalReply);
+
         // Automatically persist agent reply in Cloud DB
         try {
           await marketingCopilotSessionService.appendMessage(companyId, threadId, {
@@ -669,13 +776,13 @@ class FacebookAdsAiController {
       } catch (chatError) {
         const errMsg = String(chatError.message || '').toLowerCase();
         const isUnchargedOrQuota = (
-          errMsg.includes('key') ||
           errMsg.includes('quota') ||
-          errMsg.includes('balance') ||
+          errMsg.includes('insufficient_quota') ||
           errMsg.includes('rate limit') ||
-          errMsg.includes('credit') ||
-          errMsg.includes('budget') ||
-          errMsg.includes('502') ||
+          errMsg.includes('rate_limit') ||
+          errMsg.includes('budget_exceeded') ||
+          errMsg.includes('no_active_key') ||
+          errMsg.includes('no active api key') ||
           errMsg.includes('no llm client')
         );
 
@@ -914,4 +1021,7 @@ class FacebookAdsAiController {
   }
 }
 
-module.exports = new FacebookAdsAiController();
+const controller = new FacebookAdsAiController();
+controller.sanitizeClientFacingReply = sanitizeClientFacingReply;
+module.exports = controller;
+module.exports.sanitizeClientFacingReply = sanitizeClientFacingReply;

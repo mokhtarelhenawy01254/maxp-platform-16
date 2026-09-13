@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import uuid
 import urllib.parse
+import re
 from typing import Any, Literal
 from datetime import datetime, timezone
 
@@ -14,6 +15,41 @@ from sqlalchemy import text
 import src.db.session as _db_mod
 
 logger = structlog.get_logger(__name__)
+
+
+def _format_meta_publish_error(error_code: str | None, error_message: str | None) -> str:
+    """Translate technical Meta or backend errors into courteous, actionable Arabic business messages."""
+    code = str(error_code or "").upper()
+    msg = str(error_message or "").strip()
+
+    if code == "FACEBOOK_PIXEL_NOT_IN_ACCOUNT" or "البكسل المختار" in msg or "pixel" in msg.lower():
+        return (
+            "تم حفظ المسودات الإعلانية بنجاح في النظام ✅ ولكن تعذر النشر التلقائي المباشر على فيسبوك لأن بكسل المتجر غير مرتبط بالحساب الإعلاني المختار حالياً. "
+            "يمكنك مراجعة المسودة وتأكيد ربط البكسل بالحساب من تبويب الربط، ثم إطلاق الإعلان بضغطة زر واحدة."
+        )
+    if code == "FACEBOOK_PAGE_NOT_CONNECTED" or "صفحة فيسبوك" in msg or "page" in msg.lower():
+        return (
+            "تم حفظ المسودات بنجاح ✅ ولكن تعذر النشر على فيسبوك لعدم توفر صلاحية النشر على الصفحة المختارة. "
+            "يرجى التأكد من اتصال الصفحة في إعدادات الربط."
+        )
+    if "token" in msg.lower() or "auth" in msg.lower() or "جلسة" in msg or "مطلوب" in msg and "تسجيل" in msg:
+        return (
+            "تم حفظ المسودات بنجاح ✅ ولكن يحتاج الربط مع فيسبوك إلى تجديد تسجيل الدخول (Access Token). "
+            "يرجى تجديد الربط من صفحة إعلانات فيسبوك ثم الضغط على زر نشر المسودة."
+        )
+    if "payment" in msg.lower() or "billing" in msg.lower() or "مدفوعات" in msg:
+        return (
+            "تم حفظ المسودات بنجاح ✅ ولكن الحساب الإعلاني في فيسبوك يتطلب إضافة وسيلة دفع صالحة قبل تفعيل الحملات."
+        )
+
+    # Clean fallback: sanitize internal endpoint names, HTTP status codes, and error traces
+    cleaned = re.sub(r"(POST|GET|PUT|DELETE)\s+/api/[^\s]+", "", msg).strip()
+    cleaned = re.sub(r"Request failed:\s*", "", cleaned).strip()
+    cleaned = re.sub(r"HTTPConnectionPool[^\)]+\)", "", cleaned).strip()
+    if not cleaned or len(cleaned) < 5 or "http" in cleaned.lower():
+        cleaned = "يرجى مراجعة إعدادات الحساب الإعلاني في لوحة التحكم وتأكيد النشر يدوياً."
+
+    return f"تم حفظ المسودات الإعلانية بنجاح في النظام ✅ ولكن لم يكتمل النشر المباشر على فيسبوك: {cleaned}"
 
 
 class FacebookAdAnalyzeProductInput(BaseModel):
@@ -192,24 +228,63 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
     async with sf() as session:
         # Auto-resolve product details if missing
         if not resolved_product_id or not resolved_product_url:
-            prod_row = await session.execute(
-                text("""
-                    SELECT p.id, p.slug, c."customDomain", c.slug as "companySlug"
-                    FROM public.products p
-                    LEFT JOIN public.companies c ON c.id = p."companyId"
-                    WHERE p."companyId" = :cid AND (p."deletedAt" IS NULL)
-                    ORDER BY p."createdAt" DESC LIMIT 1
-                """),
-                {"cid": company_id}
-            )
-            found_prod = prod_row.first()
-            if found_prod:
-                fp = dict(found_prod._mapping)
+            # First: check if an active product or search term was mentioned in angle campaign names or headlines
+            candidate_names = []
+            for a in input_data.angles:
+                if a.campaign_name:
+                    candidate_names.append(a.campaign_name)
+                if a.ad_name:
+                    candidate_names.append(a.ad_name)
+                if a.headline:
+                    candidate_names.append(a.headline)
+
+            prod_match = None
+            for cand in candidate_names:
+                words = [w for w in cand.replace("|", " ").replace("-", " ").split() if len(w) >= 3 and w not in ("Swan", "سوان", "إعلان", "حملة", "عرض", "خصم", "Pre-Order")]
+                for w in words[:4]:
+                    row = (await session.execute(
+                        text("""
+                            SELECT p.id, p.slug, c."customDomain", c.slug as "companySlug"
+                            FROM public.products p
+                            LEFT JOIN public.companies c ON c.id = p."companyId"
+                            WHERE p."companyId" = :cid AND (p."deletedAt" IS NULL)
+                              AND (p.name ILIKE :term OR p.slug ILIKE :term)
+                            ORDER BY p."createdAt" DESC LIMIT 1
+                        """),
+                        {"cid": company_id, "term": f"%{w}%"}
+                    )).first()
+                    if row:
+                        prod_match = row
+                        break
+                if prod_match:
+                    break
+
+            if prod_match:
+                fp = dict(prod_match._mapping)
                 if not resolved_product_id:
                     resolved_product_id = fp.get("id") or ""
                 if not resolved_product_url:
                     dom = fp.get("customDomain") or (f"{fp.get('companySlug')}.maxp.online" if fp.get("companySlug") else "store.maxp.online")
                     resolved_product_url = f"https://{dom}/product/{fp.get('slug') or resolved_product_id}"
+            else:
+                prod_row = await session.execute(
+                    text("""
+                        SELECT p.id, p.slug, c."customDomain", c.slug as "companySlug"
+                        FROM public.products p
+                        LEFT JOIN public.companies c ON c.id = p."companyId"
+                        WHERE p."companyId" = :cid AND (p."deletedAt" IS NULL)
+                        ORDER BY p."createdAt" DESC LIMIT 1
+                    """),
+                    {"cid": company_id}
+                )
+                found_prod = prod_row.first()
+                if found_prod:
+                    fp = dict(found_prod._mapping)
+                    if not resolved_product_id:
+                        resolved_product_id = fp.get("id") or ""
+                    if not resolved_product_url:
+                        dom = fp.get("customDomain") or (f"{fp.get('companySlug')}.maxp.online" if fp.get("companySlug") else "store.maxp.online")
+                        resolved_product_url = f"https://{dom}/product/{fp.get('slug') or resolved_product_id}"
 
         # Auto-resolve pixel if missing
         resolved_pixel_id = input_data.pixel_id
@@ -434,7 +509,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
         if input_data.publish_now and saved_drafts:
             first_draft_id = saved_drafts[0]["draft_id"]
             try:
-                from src.tools.backend_client import get_backend_client
+                from src.tools.backend_client import BackendAPIError, get_backend_client
                 backend = get_backend_client()
                 publish_res = await backend.publish_facebook_ad_draft(company_id, first_draft_id)
                 if publish_res.get("success"):
@@ -464,25 +539,31 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                         ),
                     }
                 else:
+                    err_text = publish_res.get("error") or "فشل النشر المباشر"
+                    err_code = publish_res.get("errorCode")
+                    clean_msg = _format_meta_publish_error(err_code, err_text)
                     return {
                         "success": True,
                         "run_id": run_id,
                         "published": False,
-                        "publish_error": publish_res.get("error") or "Publishing failed",
+                        "publish_error": clean_msg,
                         "drafts_count": len(saved_drafts),
                         "drafts": saved_drafts,
-                        "message": f"تم حفظ المسودات ولكن فشل النشر على فيسبوك: {publish_res.get('error')}",
+                        "message": clean_msg,
                     }
             except Exception as pub_exc:
-                logger.exception("publish_now_failed", draft_id=first_draft_id, error=str(pub_exc))
+                logger.warning("publish_now_failed", draft_id=first_draft_id, error=str(pub_exc))
+                from src.tools.backend_client import BackendAPIError
+                err_code = getattr(pub_exc, "error_code", None)
+                clean_msg = _format_meta_publish_error(err_code, str(pub_exc))
                 return {
                     "success": True,
                     "run_id": run_id,
                     "published": False,
-                    "publish_error": str(pub_exc),
+                    "publish_error": clean_msg,
                     "drafts_count": len(saved_drafts),
                     "drafts": saved_drafts,
-                    "message": f"تم حفظ المسودات ولكن حدث خطأ أثناء النشر على فيسبوك: {str(pub_exc)}",
+                    "message": clean_msg,
                 }
 
     return {
@@ -505,7 +586,7 @@ async def facebook_ad_publish_draft(input_data: FacebookAdPublishDraftInput) -> 
     if not company_id:
         return {"success": False, "error": "company_id is required"}
 
-    from src.tools.backend_client import get_backend_client
+    from src.tools.backend_client import BackendAPIError, get_backend_client
     backend = get_backend_client()
     try:
         res = await backend.publish_facebook_ad_draft(company_id, input_data.draft_id)
@@ -527,17 +608,25 @@ async def facebook_ad_publish_draft(input_data: FacebookAdPublishDraftInput) -> 
                 ),
             }
         else:
+            err_text = res.get("error") or "فشل نشر المسودة إلى فيسبوك"
+            err_code = res.get("errorCode")
+            clean_msg = _format_meta_publish_error(err_code, err_text)
             return {
                 "success": False,
                 "draft_id": input_data.draft_id,
-                "error": res.get("error") or "Failed to publish draft to Facebook",
+                "error": clean_msg,
+                "message": clean_msg,
             }
     except Exception as exc:
-        logger.exception("facebook_ad_publish_draft_failed", draft_id=input_data.draft_id, error=str(exc))
+        logger.warning("facebook_ad_publish_draft_failed", draft_id=input_data.draft_id, error=str(exc))
+        from src.tools.backend_client import BackendAPIError
+        err_code = getattr(exc, "error_code", None)
+        clean_msg = _format_meta_publish_error(err_code, str(exc))
         return {
             "success": False,
             "draft_id": input_data.draft_id,
-            "error": f"Error publishing draft: {str(exc)}",
+            "error": clean_msg,
+            "message": clean_msg,
         }
 
 
