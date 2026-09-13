@@ -133,10 +133,25 @@ async def facebook_ad_analyze_product(input_data: FacebookAdAnalyzeProductInput)
             query_sql += ' AND (p.slug ILIKE :target OR p.name ILIKE :target OR p.id = :target)'
             params["target"] = f"%{target}%"
         else:
-            query_sql += ' AND p."isActive" = true ORDER BY p."createdAt" DESC LIMIT 1'
+            return {
+                "success": False,
+                "error": "يرجى تحديد اسم المنتج أو رابطه أو معرفه لتحليله بدقة (لم يتم تمرير اسم منتج).",
+                "action": "PRODUCT_NAME_REQUIRED"
+            }
 
         result = await session.execute(text(query_sql), params)
         row = result.first()
+
+        # If full target yielded no row, attempt distinctive keyword matching
+        if not row and target:
+            words = [w for w in target.replace("-", " ").replace("_", " ").split() if len(w) >= 3 and w.lower() not in ("swan", "سوان", "كوتشي", "حذاء", "شوز", "عرض", "منتج")]
+            for w in words[:3]:
+                word_sql = query_sql.replace("p.slug ILIKE :target OR p.name ILIKE :target OR p.id = :target", "p.name ILIKE :w OR p.slug ILIKE :w")
+                word_res = await session.execute(text(word_sql), {"cid": company_id, "w": f"%{w}%"})
+                w_row = word_res.first()
+                if w_row:
+                    row = w_row
+                    break
 
         if not row:
             return {
@@ -234,63 +249,72 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
     async with sf() as session:
         # Auto-resolve product details if missing
         if not resolved_product_id or not resolved_product_url:
-            # First: check if an active product or search term was mentioned in angle campaign names or headlines
-            candidate_names = []
-            for a in input_data.angles:
-                if a.campaign_name:
-                    candidate_names.append(a.campaign_name)
-                if a.ad_name:
-                    candidate_names.append(a.ad_name)
-                if a.headline:
-                    candidate_names.append(a.headline)
-
-            prod_match = None
-            for cand in candidate_names:
-                words = [w for w in cand.replace("|", " ").replace("-", " ").split() if len(w) >= 3 and w not in ("Swan", "سوان", "إعلان", "حملة", "عرض", "خصم", "Pre-Order")]
-                for w in words[:4]:
-                    row = (await session.execute(
-                        text("""
-                            SELECT p.id, p.slug, c."customDomain", c.slug as "companySlug"
-                            FROM public.products p
-                            LEFT JOIN public.companies c ON c.id = p."companyId"
-                            WHERE p."companyId" = :cid AND (p."deletedAt" IS NULL)
-                              AND (p.name ILIKE :term OR p.slug ILIKE :term)
-                            ORDER BY p."createdAt" DESC LIMIT 1
-                        """),
-                        {"cid": company_id, "term": f"%{w}%"}
-                    )).first()
-                    if row:
-                        prod_match = row
-                        break
-                if prod_match:
-                    break
-
-            if prod_match:
-                fp = dict(prod_match._mapping)
-                if not resolved_product_id:
-                    resolved_product_id = fp.get("id") or ""
-                if not resolved_product_url:
-                    dom = fp.get("customDomain") or (f"{fp.get('companySlug')}.maxp.online" if fp.get("companySlug") else "store.maxp.online")
-                    resolved_product_url = f"https://{dom}/product/{fp.get('slug') or resolved_product_id}"
-            else:
+            # 1. If explicit product_id was provided, resolve its URL and details directly
+            if resolved_product_id:
                 prod_row = await session.execute(
                     text("""
                         SELECT p.id, p.slug, c."customDomain", c.slug as "companySlug"
                         FROM public.products p
                         LEFT JOIN public.companies c ON c.id = p."companyId"
-                        WHERE p."companyId" = :cid AND (p."deletedAt" IS NULL)
-                        ORDER BY p."createdAt" DESC LIMIT 1
+                        WHERE p."companyId" = :cid AND (p.id = :pid OR p.slug ILIKE :pid OR p.name ILIKE :pid) AND (p."deletedAt" IS NULL)
+                        LIMIT 1
                     """),
-                    {"cid": company_id}
+                    {"cid": company_id, "pid": resolved_product_id}
                 )
                 found_prod = prod_row.first()
                 if found_prod:
                     fp = dict(found_prod._mapping)
+                    resolved_product_id = fp.get("id") or resolved_product_id
+                    if not resolved_product_url:
+                        dom = fp.get("customDomain") or (f"{fp.get('companySlug')}.maxp.online" if fp.get("companySlug") else "store.maxp.online")
+                        resolved_product_url = f"https://{dom}/product/{fp.get('slug') or resolved_product_id}"
+
+            # 2. If product_id was not provided, check angle campaign names and headlines
+            if not resolved_product_id or not resolved_product_url:
+                candidate_names = []
+                for a in input_data.angles:
+                    if a.campaign_name:
+                        candidate_names.append(a.campaign_name)
+                    if a.ad_name:
+                        candidate_names.append(a.ad_name)
+                    if a.headline:
+                        candidate_names.append(a.headline)
+
+                prod_match = None
+                for cand in candidate_names:
+                    words = [w for w in cand.replace("|", " ").replace("-", " ").split() if len(w) >= 3 and w not in ("Swan", "سوان", "إعلان", "حملة", "عرض", "خصم", "Pre-Order")]
+                    for w in words[:4]:
+                        row = (await session.execute(
+                            text("""
+                                SELECT p.id, p.slug, c."customDomain", c.slug as "companySlug"
+                                FROM public.products p
+                                LEFT JOIN public.companies c ON c.id = p."companyId"
+                                WHERE p."companyId" = :cid AND (p."deletedAt" IS NULL)
+                                  AND (p.name ILIKE :term OR p.slug ILIKE :term)
+                                ORDER BY p."createdAt" DESC LIMIT 1
+                            """),
+                            {"cid": company_id, "term": f"%{w}%"}
+                        )).first()
+                        if row:
+                            prod_match = row
+                            break
+                    if prod_match:
+                        break
+
+                if prod_match:
+                    fp = dict(prod_match._mapping)
                     if not resolved_product_id:
                         resolved_product_id = fp.get("id") or ""
                     if not resolved_product_url:
                         dom = fp.get("customDomain") or (f"{fp.get('companySlug')}.maxp.online" if fp.get("companySlug") else "store.maxp.online")
                         resolved_product_url = f"https://{dom}/product/{fp.get('slug') or resolved_product_id}"
+
+        if not resolved_product_id and not resolved_product_url:
+            return {
+                "success": False,
+                "error": "لم يتم تحديد المنتج المطلوب إنشاء المسودة له. يرجى تمرير معرف أو اسم المنتج صراحة لمنع ربط الإعلان بمنتج خاطئ.",
+                "action": "PRODUCT_REQUIRED"
+            }
 
         # Auto-resolve pixel if missing
         resolved_pixel_id = input_data.pixel_id

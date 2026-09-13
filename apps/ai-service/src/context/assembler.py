@@ -395,46 +395,64 @@ You are continuing an existing conversation on Facebook Messenger that was previ
                 if desc:
                     state_lines.append(f"  Referred Product Description: {desc[:240]}")
 
-            # Hermes Working Memory: Track Active Focus Entity (Product) for Instant Pronoun Resolution
+            # SOTA 2026 Working Memory Scratchpad:
+            # Anchors active focus entity, current objective, and context resolution
             active_prod = (
                 session_state.get("activeProduct")
                 or session_state.get("active_product")
                 or session_state.get("active_product_context")
                 or session_state.get("referredProduct")
             )
+            ap_name = ""
+            ap_id = ""
+            ap_sku = ""
+            ap_stock = None
+            ap_price = None
+            ap_url = None
             if active_prod:
                 if isinstance(active_prod, dict):
-                    ap_name = active_prod.get("name") or active_prod.get("title") or active_prod.get("id") or ""
+                    ap_name = active_prod.get("name") or active_prod.get("title") or ""
+                    ap_id = str(active_prod.get("id") or "")
                     ap_sku = active_prod.get("sku") or ""
                     ap_stock = active_prod.get("stock")
                     ap_price = active_prod.get("price")
+                    ap_url = active_prod.get("url") or active_prod.get("product_url")
                 elif isinstance(active_prod, str):
                     ap_name = active_prod
-                    ap_sku = ""
-                    ap_stock = None
-                    ap_price = None
-                else:
-                    ap_name = ""
 
+            working_memory_lines = ["<session_working_memory>"]
+            if ap_name or ap_id:
+                working_memory_lines.append("  <active_focus_entity>")
                 if ap_name:
-                    state_lines.append(f"  Active Focus Product: {ap_name}")
-                    if ap_sku:
-                        state_lines.append(f"  Active Product SKU: {ap_sku}")
-                    if ap_stock is not None:
-                        state_lines.append(f"  Active Product Stock: {ap_stock}")
-                    if ap_price:
-                        state_lines.append(f"  Active Product Price: {ap_price}")
-                    state_lines.append(
-                        f"  [HERMES ENTITY RESOLUTION]: When merchant says 'المنتج ده' (this product), 'إعلانه', 'سعره', 'مخزونه', "
-                        f"or asks about product visibility (e.g. 'انت مش شايف المنتج المحدد ؟', 'شايف المنتج المحدد ؟', 'المنتج المختار', 'المنتج الحالي'), "
-                        f"they strictly refer to '{ap_name}'. "
-                        f"Immediately confirm that you see '{ap_name}' and provide its details and metrics directly without asking the merchant for the product name again! "
-                        "IMPORTANT: If the merchant asks a general, analytical, or administrative question (e.g. creating skills, recording general rules, asking about general metrics, accounts, or attribution), treat this product only as background context and do NOT forcibly restrict your answer to it."
-                    )
+                    working_memory_lines.append(f"    Name: {ap_name}")
+                if ap_id:
+                    working_memory_lines.append(f"    ID: {ap_id}")
+                if ap_sku:
+                    working_memory_lines.append(f"    SKU: {ap_sku}")
+                if ap_stock is not None:
+                    working_memory_lines.append(f"    Stock: {ap_stock}")
+                if ap_price is not None:
+                    working_memory_lines.append(f"    Price: {ap_price}")
+                if ap_url:
+                    working_memory_lines.append(f"    URL: {ap_url}")
+                working_memory_lines.append(
+                    f"    Directive: When merchant says 'المنتج ده' (this product), 'إعلانه', 'سعره', 'مخزونه', "
+                    f"or asks 'شايف المنتج المحدد ؟' / 'المنتج المختار', they strictly refer to '{ap_name or ap_id}'. "
+                    f"Confirm immediately that you see '{ap_name or ap_id}' and provide its details directly without asking for the product name again! "
+                    "IMPORTANT: If the merchant asks a general, analytical, or administrative question, treat this entity only as background context."
+                )
+                working_memory_lines.append("  </active_focus_entity>")
 
+            active_obj = session_state.get("activeObjective") or session_state.get("current_objective")
+            if active_obj:
+                working_memory_lines.append(f"  <current_objective>{active_obj}</current_objective>")
+
+            working_memory_lines.append("</session_working_memory>")
+
+            scratchpad_xml = "\n" + "\n".join(working_memory_lines)
             if state_lines:
-                state_xml = "\n<session_state>\n" + "\n".join(state_lines) + "\n</session_state>"
-                dynamic_sections.append(("session_state", state_xml))
+                scratchpad_xml += "\n<session_state>\n" + "\n".join(state_lines) + "\n</session_state>"
+            dynamic_sections.append(("session_state", scratchpad_xml))
 
         # 5. Merchant Guardrails (Dynamic rules matching current user query)
         _agent = ctx.agent
@@ -477,24 +495,44 @@ You are continuing an existing conversation on Facebook Messenger that was previ
                 memories_xml = "\n<relevant_memories>\n" + "\n".join(memory_lines) + "\n</relevant_memories>"
                 dynamic_sections.append(("relevant_memories", memories_xml))
 
-        # 8. Pristine Elliptical Query Resolution
+        # 8. Pristine Elliptical Query Resolution & Multi-Turn Blocker Reflection
         raw_msg = (ctx.message or "").strip().lower()
-        elliptical_queries = {"؟", "?", "ليه", "ليه؟", "ليه ?", "وقفت ليه", "وقفت ليه ؟", "ها", "وبعدين", "وبعدين ؟", "وبعدين؟", "كمل", "متابعة", "ايه الاخبار"}
+        elliptical_queries = {"؟", "?", "ليه", "ليه؟", "ليه ?", "وقفت ليه", "وقفت ليه ؟", "ها", "وبعدين", "وبعدين ؟", "وبعدين؟", "كمل", "متابعة", "ايه الاخبار", "نفذ", "تمام", "اوك", "ماشى", "ماشي"}
         is_elliptical = raw_msg in elliptical_queries or len(raw_msg) <= 3
         if is_elliptical:
             try:
                 history_list = await self.fetch_message_history(ctx, limit=10)
                 last_explicit_request = ""
+                last_assistant_reply = ""
+                has_assistant_blocker = False
+
                 for m in reversed(history_list):
-                    if m.get("role") == "user":
-                        u_txt = (m.get("content") or "").strip()
-                        if u_txt and u_txt.lower() not in elliptical_queries and len(u_txt) > 3:
-                            last_explicit_request = u_txt
-                            break
-                if last_explicit_request:
+                    role = m.get("role")
+                    content = (m.get("content") or "").strip()
+                    if not last_assistant_reply and role == "assistant" and content:
+                        last_assistant_reply = content
+                        blocker_keywords = ("فشل", "تعذر", "خطأ", "error", "failed", "invalid parameter", "سقف", "مطلوب مبلغ", "بانتظار", "مشكلة")
+                        if any(k in content.lower() for k in blocker_keywords):
+                            has_assistant_blocker = True
+                    if not last_explicit_request and role == "user":
+                        if content and content.lower() not in elliptical_queries and len(content) > 3:
+                            last_explicit_request = content
+
+                if has_assistant_blocker and last_assistant_reply and raw_msg in {"؟", "?", "ليه", "ليه؟", "ليه ?", "وقفت ليه", "وقفت ليه ؟", "ها", "وبعدين", "وبعدين ؟"}:
                     resolution_xml = (
                         f"\n<context_resolution>\n"
-                        f"التاجر يتابع ويستفسر عن طلبه السابق: \"{last_explicit_request}\" برسالة مقتضبة (\"{ctx.message}\").\n"
+                        f"تنبيه SOTA 2026: التاجر يستفسر عن سبب التوقف أو العائق الأخير المذكور في رسالتك السابقة برسالة مقتضبة (\"{ctx.message}\").\n"
+                        f"آخر إفادة للمساعد تضمنت عائقاً أو تعثراً: \"{last_assistant_reply[:240]}...\"\n"
+                        "المطلوب الحتمي: اشرح للتاجر سبب العائق بدقة بلغة أعمال احترافية وودودة باللغة العربية، "
+                        "وقدم له الحل المباشر والخطوة التالية لتجاوز هذا العائق فوراً.\n"
+                        "يُمنع منعاً باتاً: البدء برسالة ترحيب عامة أو القول 'وصلتني رسالتك فاضية' أو تكرار المحاولة الفاشلة بنفس الطريقة!\n"
+                        "</context_resolution>"
+                    )
+                    dynamic_sections.append(("context_resolution", resolution_xml))
+                elif last_explicit_request:
+                    resolution_xml = (
+                        f"\n<context_resolution>\n"
+                        f"التاجر يتابع ويطلب استكمال طلبه السابق: \"{last_explicit_request}\" برسالة مقتضبة (\"{ctx.message}\").\n"
                         "المطلوب: نفذ أو أجب عن هذا الطلب فوراً بالأرقام والتفاصيل وبأسلوبك البشري الودود، "
                         "ويُمنع منعاً باتاً اعتبار الرسالة فارغة أو قول 'وصلتني رسالتك فاضية' أو طلب إعادة تحديد المنتج.\n"
                         "</context_resolution>"
