@@ -81,9 +81,10 @@ async function listAgents(companyId, status) {
   return request('GET', `/admin/agents${qs}`) || [];
 }
 
-async function chatWithAgent({ companyId, agentId, message, threadId, conversationId, customerId, channel, agentConfig, memoryContext, attachments }) {
+async function chatWithAgent({ companyId, agentId, message, threadId, conversationId, customerId, channel, agentConfig, memoryContext, memory_context, attachments }) {
+  const incomingMemoryContext = memoryContext || memory_context || null;
   const { enrichMemoryContextWithPostProduct } = require('../utils/postProductMappingHelper');
-  const enrichedContext = await enrichMemoryContextWithPostProduct(companyId, threadId || conversationId, memoryContext);
+  const enrichedContext = await enrichMemoryContextWithPostProduct(companyId, threadId || conversationId, incomingMemoryContext);
 
   const body = {
     company_id: companyId,
@@ -95,7 +96,7 @@ async function chatWithAgent({ companyId, agentId, message, threadId, conversati
   if (customerId) body.customer_id = customerId;
   if (channel) body.channel = channel;
   if (agentConfig) body.agent_config = agentConfig;
-  if (enrichedContext) body.memory_context = enrichedContext;
+  if (enrichedContext && Object.keys(enrichedContext).length > 0) body.memory_context = enrichedContext;
   if (attachments) body.attachments = attachments;
   return request('POST', '/admin/agents/chat', body);
 }

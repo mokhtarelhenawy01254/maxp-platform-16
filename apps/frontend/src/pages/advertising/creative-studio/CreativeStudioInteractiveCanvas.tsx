@@ -1,4 +1,4 @@
-﻿import React, { useRef, useState } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Download,
@@ -40,6 +40,9 @@ interface CreativeStudioInteractiveCanvasProps {
   onSelectVariant?: (url: string) => void;
   cutoutProductUrl?: string | null;
   onSetCutoutProductUrl?: (url: string | null) => void;
+  activeProductAngleUrl?: string | null;
+  onSelectProductAngle?: (url: string) => void;
+  onAddProductAngle?: (file: File) => void;
 }
 
 export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractiveCanvasProps> = ({
@@ -57,13 +60,18 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
   onSelectVariant,
   cutoutProductUrl,
   onSetCutoutProductUrl,
+  activeProductAngleUrl,
+  onSelectProductAngle,
+  onAddProductAngle,
 }) => {
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const angleFileInputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isRemovingBg, setIsRemovingBg] = useState(false);
+  const [localAngles, setLocalAngles] = useState<Array<{ url: string; label: string }>>([]);
 
   // Dragging interaction state for product
   const [isDragging, setIsDragging] = useState(false);
@@ -80,6 +88,72 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
     scale: 1,
     rotation: 0,
     shadowType: "contact",
+  };
+
+  // Extract all available product angles & photos from product, variants, and local uploads
+  const productPhotos = useMemo(() => {
+    if (!selectedProduct) return [];
+    const list: Array<{ url: string; label: string }> = [];
+    const seen = new Set<string>();
+
+    const add = (url: string | null | undefined, label: string) => {
+      if (!url || typeof url !== "string") return;
+      const trimmed = url.trim();
+      if (!trimmed || seen.has(trimmed)) return;
+      seen.add(trimmed);
+      list.push({ url: trimmed, label });
+    };
+
+    add(selectedProduct.mainImage, "الرئيسية");
+
+    if (Array.isArray(selectedProduct.images)) {
+      selectedProduct.images.forEach((img, idx) => {
+        add(img, `زاوية ${idx + 1}`);
+      });
+    }
+
+    if (Array.isArray(selectedProduct.variants)) {
+      selectedProduct.variants.forEach((v, idx) => {
+        if (v.image) add(v.image, v.name || `موديل ${idx + 1}`);
+        if (Array.isArray(v.images)) {
+          v.images.forEach((img, i) => add(img, `${v.name || "موديل"} ${i + 1}`));
+        }
+      });
+    }
+
+    localAngles.forEach((la) => add(la.url, la.label));
+
+    return list;
+  }, [selectedProduct, localAngles]);
+
+  const currentAngleUrl = activeProductAngleUrl || selectedProduct?.mainImage || null;
+  const activeProductImage = cutoutProductUrl || currentAngleUrl;
+
+  const handleSelectAngle = (url: string) => {
+    onSelectProductAngle?.(url);
+    if (cutoutProductUrl) {
+      onSetCutoutProductUrl?.(null);
+    }
+    toast.info("تم اختيار زاوية العرض للمنتج");
+  };
+
+  const handleAddAngleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (onAddProductAngle) {
+      onAddProductAngle(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          const newUrl = reader.result;
+          setLocalAngles((prev) => [...prev, { url: newUrl, label: `زاوية مخصصة ${prev.length + 1}` }]);
+          onSelectProductAngle?.(newUrl);
+          toast.success("تمت إضافة زاوية جديدة للمنتج بنجاح");
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Aspect ratio sizing classes
@@ -141,6 +215,43 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleLaunchMetaWizard = () => {
+    if (!selectedProduct) {
+      toast.error("يرجى اختيار منتج أولاً");
+      return;
+    }
+
+    const launchPrefillId = `creative_${Date.now()}`;
+    const creativeImage = backgroundUrl || activeProductImage || selectedProduct.mainImage || "";
+
+    const prefillPayload = {
+      productId: selectedProduct.id,
+      productTitle: selectedProduct.name,
+      productSlug: selectedProduct.name ? selectedProduct.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : "product",
+      headline: overlay.headline || selectedProduct.name,
+      primaryText: overlay.subheadline || "اطلب الآن بأفضل سعر وجودة مضمونة مع شحن سريع ودفع عند الاستلام",
+      callToAction: overlay.callToAction || "SHOP_NOW",
+      budget: overlay.price ? Math.max(350, Math.round(overlay.price * 1.5)) : 500,
+      objective: "OUTCOME_SALES",
+      creativeType: "SINGLE_IMAGE",
+      imageUrls: [creativeImage].filter(Boolean),
+      status: "ACTIVE",
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+    };
+
+    try {
+      sessionStorage.setItem(`facebookAds.productLaunchPrefill:${launchPrefillId}`, JSON.stringify(prefillPayload));
+      if (selectedProduct.id) {
+        sessionStorage.setItem(`facebookAds.productLaunchPrefill:${selectedProduct.id}:${launchPrefillId}`, JSON.stringify(prefillPayload));
+      }
+    } catch (e) {
+      console.warn("Could not save to sessionStorage", e);
+    }
+
+    toast.success("جاري نقلك إلى معالج إعلانات فيسبوك مع تعبئة التصميم والنصوص تلقائياً...");
+    navigate(`/advertising/facebook-ads/create-ad?launchPrefillId=${launchPrefillId}${selectedProduct.id ? `&productId=${selectedProduct.id}` : ""}`);
+  };
+
   const handleSendToMarketingStudio = () => {
     if (!selectedProduct) {
       toast.error("يرجى اختيار منتج أولاً");
@@ -156,6 +267,7 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
           callToAction: overlay.callToAction,
           price: overlay.price,
           format: aspectRatio === "9:16" ? "Story / Reels" : "Feed / Square",
+          creativeImageUrl: backgroundUrl || activeProductImage,
         },
       },
     });
@@ -169,11 +281,11 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
 
     setIsExporting(true);
     try {
-      // Use cutout product image if available, else standard product image
+      // Use cutout product image if available, else current angle image
       const effectiveProduct = selectedProduct
         ? {
             ...selectedProduct,
-            mainImage: cutoutProductUrl || selectedProduct.mainImage,
+            mainImage: cutoutProductUrl || currentAngleUrl || selectedProduct.mainImage,
           }
         : null;
 
@@ -195,7 +307,7 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
 
   // Instant In-Browser Chroma Background Remover
   const handleRemoveBackground = () => {
-    const imgSrc = selectedProduct?.mainImage;
+    const imgSrc = currentAngleUrl;
     if (!imgSrc) return;
 
     setIsRemovingBg(true);
@@ -258,8 +370,6 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
     };
     img.src = imgSrc;
   };
-
-  const activeProductImage = cutoutProductUrl || selectedProduct?.mainImage;
 
   return (
     <div className="flex flex-col h-full bg-slate-100/60 dark:bg-slate-950/80 select-none overflow-hidden">
@@ -387,15 +497,84 @@ export const CreativeStudioInteractiveCanvas: React.FC<CreativeStudioInteractive
 
           <Button
             size="sm"
-            onClick={handleSendToMarketingStudio}
+            onClick={handleLaunchMetaWizard}
             className="h-8 text-xs gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs cursor-pointer"
-            title="إرسال التصميم لمركز التسويق لإطلاق الحملة"
+            title="تعبئة معالج إعلانات فيسبوك مباشرة بهذا التصميم الإعلاني والنصوص"
           >
             <Rocket className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">إطلاق كإعلان</span>
+            <span className="hidden sm:inline">إطلاق كإعلان فيسبوك</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSendToMarketingStudio}
+            className="h-8 text-xs px-2 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer hidden lg:flex"
+            title="المتابعة في استوديو كتابة الحملات التسويقية"
+          >
+            <span>استوديو الحملات</span>
           </Button>
         </div>
       </div>
+
+      {/* Product Angles & Multi-Image Gallery Strip */}
+      {selectedProduct && productPhotos.length > 0 && (
+        <div className="flex items-center justify-between px-3 sm:px-5 py-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800/70 flex-shrink-0 gap-2 overflow-x-auto">
+          <div className="flex items-center gap-1.5 text-xs font-black text-slate-800 dark:text-slate-200 flex-shrink-0">
+            <Package className="w-3.5 h-3.5 text-indigo-500" />
+            <span>زوايا المنتج ({productPhotos.length}):</span>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto py-0.5">
+            {productPhotos.map((item, idx) => {
+              const isActive = currentAngleUrl === item.url || (!activeProductAngleUrl && idx === 0);
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSelectAngle(item.url)}
+                  className={`group relative flex items-center gap-1.5 p-1 rounded-xl border transition-all cursor-pointer flex-shrink-0 ${
+                    isActive
+                      ? "bg-indigo-50/80 dark:bg-indigo-950/60 border-indigo-600 dark:border-indigo-500 shadow-xs ring-2 ring-indigo-400/30"
+                      : "bg-white/60 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 hover:border-slate-400 opacity-80 hover:opacity-100"
+                  }`}
+                  title={item.label}
+                >
+                  <img
+                    src={item.url}
+                    alt={item.label}
+                    className="w-8 h-8 rounded-lg object-contain bg-slate-100 dark:bg-slate-950/50 p-0.5"
+                  />
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 px-1 hidden md:inline">
+                    {item.label}
+                  </span>
+                  {isActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 mr-1" />
+                  )}
+                </button>
+              );
+            })}
+
+            {/* Upload Additional Product Angle */}
+            <input
+              ref={angleFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAddAngleFile}
+            />
+            <button
+              type="button"
+              onClick={() => angleFileInputRef.current?.click()}
+              className="h-8 px-2.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-400 bg-white/40 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 text-[11px] font-bold transition flex items-center gap-1 cursor-pointer flex-shrink-0"
+              title="رفع صورة زاوية جديدة لهذا المنتج من حاسوبك"
+            >
+              <Upload className="w-3 h-3 text-indigo-500" />
+              <span>+ إضافة زاوية</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Center Interactive Canvas Viewport */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 overflow-auto relative">

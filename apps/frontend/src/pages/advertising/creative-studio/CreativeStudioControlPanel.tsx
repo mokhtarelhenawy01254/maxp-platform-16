@@ -74,6 +74,7 @@ interface CreativeStudioControlPanelProps {
   onOpenModelModal: () => void;
   onTriggerGenerateWithPrompt: (prompt: string) => void;
   onSelectScenePreset?: (scene: SceneLibraryItem, autoSwapPrompt: string) => void;
+  storeLogoUrl?: string | null;
 }
 
 export const CreativeStudioControlPanel: React.FC<CreativeStudioControlPanelProps> = ({
@@ -102,6 +103,7 @@ export const CreativeStudioControlPanel: React.FC<CreativeStudioControlPanelProp
   onOpenModelModal,
   onTriggerGenerateWithPrompt,
   onSelectScenePreset,
+  storeLogoUrl,
 }) => {
   const [activeTab, setActiveTab] = useState<
     "COPILOT" | "DIRECTOR" | "LIBRARY" | "PRESETS" | "PHYSICS" | "TYPOGRAPHY" | "ADVANCED"
@@ -839,14 +841,38 @@ export const CreativeStudioControlPanel: React.FC<CreativeStudioControlPanelProp
                   </Button>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => logoFileInputRef.current?.click()}
-                  className="w-full py-1.5 px-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 hover:bg-slate-50 text-slate-600 dark:text-slate-400 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Upload className="w-3 h-3" />
-                  <span>رفع شعار المتجر (PNG مفرغ شفاف)</span>
-                </button>
+                <div className="space-y-1.5">
+                  <button
+                    type="button"
+                    onClick={() => logoFileInputRef.current?.click()}
+                    className="w-full py-1.5 px-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 hover:bg-slate-50 text-slate-600 dark:text-slate-400 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Upload className="w-3 h-3" />
+                    <span>رفع شعار المتجر (PNG مفرغ شفاف)</span>
+                  </button>
+                  {storeLogoUrl && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateOverlay({
+                          logo: {
+                            ...(overlay.logo || {
+                              position: "top-right",
+                              size: "md",
+                              opacity: 1,
+                            }),
+                            url: storeLogoUrl,
+                            show: true,
+                          },
+                        })
+                      }
+                      className="w-full py-1 px-2 rounded-lg border border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold hover:bg-indigo-100 transition flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3 text-indigo-500" />
+                      <span>استخدام لوجو المتجر الافتراضي</span>
+                    </button>
+                  )}
+                </div>
               )}
 
               {/* Logo Position & Size */}

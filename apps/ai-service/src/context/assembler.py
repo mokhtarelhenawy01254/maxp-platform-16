@@ -104,17 +104,27 @@ class ContextAssembler:
         history_messages = []
         try:
             # Check for dashboard marketing copilot sessions
-            is_dashboard_channel = getattr(ctx, "channel", None) == "dashboard" or str(lookup_id).startswith("mb_sess_")
+            clean_session_id = str(lookup_id)
+            if "mb_sess_" in clean_session_id:
+                parts = clean_session_id.split("_")
+                if len(parts) >= 4 and parts[0] == "mb" and parts[1] == "sess":
+                    clean_session_id = f"{parts[0]}_{parts[1]}_{parts[2]}_{parts[3]}"
+
+            is_dashboard_channel = (
+                getattr(ctx, "channel", None) in {"dashboard", "marketing_studio"}
+                or str(lookup_id).startswith("mb_sess_")
+                or clean_session_id.startswith("mb_sess_")
+            )
             if is_dashboard_channel:
                 try:
                     fb_query = text(
                         'SELECT content, role FROM public.facebook_ads_ai_chat_messages '
-                        'WHERE "sessionId" = :session_id '
+                        'WHERE "sessionId" = :clean_id OR "sessionId" = :raw_id '
                         'ORDER BY "createdAt" DESC LIMIT :limit'
                     )
                     fb_result = await ctx.session.execute(
                         fb_query,
-                        {"session_id": str(lookup_id), "limit": limit}
+                        {"clean_id": clean_session_id, "raw_id": str(lookup_id), "limit": limit}
                     )
                     fb_rows = fb_result.fetchall()
                     if fb_rows:
@@ -181,11 +191,44 @@ class ContextAssembler:
         if getattr(ctx, "session_state", None):
             return ctx.session_state
         external_memory = getattr(ctx, "external_memory_context", None) or {}
+        session_state = {}
         if external_memory:
-            filtered = {k: v for k, v in external_memory.items() if v}
-            if filtered:
-                ctx.session_state = filtered
-                return filtered
+            session_state = {k: v for k, v in external_memory.items() if v}
+
+        # Check if active product is present in external_memory
+        has_active_prod = (
+            session_state.get("activeProduct")
+            or session_state.get("active_product")
+            or session_state.get("active_product_context")
+            or session_state.get("referredProduct")
+        )
+
+        # Automatic DB fallback: recover activeProduct from public.facebook_ads_ai_chat_sessions if missing
+        lookup_id = ctx.conversation_id or ctx.thread_id
+        if not has_active_prod and lookup_id and ctx.session:
+            clean_session_id = str(lookup_id)
+            if "mb_sess_" in clean_session_id:
+                parts = clean_session_id.split("_")
+                if len(parts) >= 4 and parts[0] == "mb" and parts[1] == "sess":
+                    clean_session_id = f"{parts[0]}_{parts[1]}_{parts[2]}_{parts[3]}"
+                try:
+                    import json as _json
+                    sess_res = await ctx.session.execute(
+                        text('SELECT context FROM public.facebook_ads_ai_chat_sessions WHERE id = :clean_id OR id = :raw_id LIMIT 1'),
+                        {"clean_id": clean_session_id, "raw_id": str(lookup_id)}
+                    )
+                    sess_row = sess_res.fetchone()
+                    if sess_row and sess_row[0]:
+                        db_ctx = sess_row[0] if isinstance(sess_row[0], dict) else _json.loads(sess_row[0])
+                        db_prod = db_ctx.get("activeProduct") or db_ctx.get("active_product")
+                        if db_prod:
+                            session_state["activeProduct"] = db_prod
+                except Exception as sess_err:
+                    logger.warning("failed to fetch activeProduct from facebook_ads_ai_chat_sessions", error=str(sess_err))
+
+        if session_state:
+            ctx.session_state = session_state
+            return session_state
 
         if not ctx.company_id or not ctx.thread_id:
             return None
@@ -341,6 +384,7 @@ You are continuing an existing conversation on Facebook Messenger that was previ
             # Hermes Working Memory: Track Active Focus Entity (Product) for Instant Pronoun Resolution
             active_prod = (
                 session_state.get("activeProduct")
+                or session_state.get("active_product")
                 or session_state.get("active_product_context")
                 or session_state.get("referredProduct")
             )
@@ -367,8 +411,10 @@ You are continuing an existing conversation on Facebook Messenger that was previ
                     if ap_price:
                         state_lines.append(f"  Active Product Price: {ap_price}")
                     state_lines.append(
-                        f"  [HERMES ENTITY RESOLUTION]: When merchant says 'المنتج ده' (this product), 'إعلانه', 'سعره', 'مخزونه', or refers to a product without repeating its name, they strictly refer to '{ap_name}'. "
-                        "Do NOT ask the merchant for the product name again! Use this product's name and details directly. "
+                        f"  [HERMES ENTITY RESOLUTION]: When merchant says 'المنتج ده' (this product), 'إعلانه', 'سعره', 'مخزونه', "
+                        f"or asks about product visibility (e.g. 'انت مش شايف المنتج المحدد ؟', 'شايف المنتج المحدد ؟', 'المنتج المختار', 'المنتج الحالي'), "
+                        f"they strictly refer to '{ap_name}'. "
+                        f"Immediately confirm that you see '{ap_name}' and provide its details and metrics directly without asking the merchant for the product name again! "
                         "IMPORTANT: If the merchant asks a general, analytical, or administrative question (e.g. creating skills, recording general rules, asking about general metrics, accounts, or attribution), treat this product only as background context and do NOT forcibly restrict your answer to it."
                     )
 

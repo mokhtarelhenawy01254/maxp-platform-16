@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { Palette, Sparkles, Wand2, Image as ImageIcon } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuthSimple";
+import { useCompanyBranding } from "../../../hooks/useCompanyBranding";
 import { AgentStudioLayout } from "../../../components/agent-studio";
 import { ProductOpportunityRadar } from "../marketing-studio/ProductOpportunityRadar";
 import { CreativeStudioControlPanel } from "./CreativeStudioControlPanel";
@@ -26,10 +27,14 @@ const CreativeAiStudioPage: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
   const companyId = user?.companyId || null;
+  const companyBranding = useCompanyBranding(companyId);
 
   // Selected Product from Store Catalog or Uploaded Externally
   const [selectedProduct, setSelectedProduct] = useState<MarketingProduct | null>(
     (location.state as any)?.prefillProduct || null
+  );
+  const [activeProductAngleUrl, setActiveProductAngleUrl] = useState<string | null>(
+    (location.state as any)?.prefillProduct?.mainImage || null
   );
   const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
 
@@ -150,6 +155,8 @@ const CreativeAiStudioPage: React.FC = () => {
   // When a product is selected, intelligently auto-populate the ad overlay
   const handleProductSelect = useCallback((product: MarketingProduct) => {
     setSelectedProduct(product);
+    setActiveProductAngleUrl(product.mainImage || product.images?.[0] || null);
+    setCutoutProductUrl(null);
     setOverlay((prev) => {
       const price = product.price;
       const originalPrice = product.cost ? Math.round(price * 1.35) : null;
@@ -211,6 +218,7 @@ const CreativeAiStudioPage: React.FC = () => {
           mainImage: reader.result,
         };
         setSelectedProduct(customProd);
+        setActiveProductAngleUrl(reader.result);
         setCutoutProductUrl(null);
         setOverlay((prev) => ({
           ...prev,
@@ -243,7 +251,7 @@ const CreativeAiStudioPage: React.FC = () => {
         basePrompt += ` Aesthetic style: ${brandKit.aestheticMood}. Harmonized with brand identity colors (${brandKit.primaryColor} and ${brandKit.accentColor}).`;
       }
 
-      let resolvedProductImage = cutoutProductUrl || selectedProduct.mainImage || undefined;
+      let resolvedProductImage = cutoutProductUrl || activeProductAngleUrl || selectedProduct.mainImage || undefined;
       if (
         resolvedProductImage &&
         !resolvedProductImage.startsWith("http://") &&
@@ -383,6 +391,7 @@ const CreativeAiStudioPage: React.FC = () => {
             setVariantUrls([scene.previewUrl]);
             toast.success(`تم اختيار مشهد: ${scene.titleAr}`);
           }}
+          storeLogoUrl={companyBranding.logo}
         />
       }
       canvasPanel={
@@ -401,6 +410,11 @@ const CreativeAiStudioPage: React.FC = () => {
           onSelectVariant={(url) => setBackgroundUrl(url)}
           cutoutProductUrl={cutoutProductUrl}
           onSetCutoutProductUrl={setCutoutProductUrl}
+          activeProductAngleUrl={activeProductAngleUrl}
+          onSelectProductAngle={(url) => {
+            setActiveProductAngleUrl(url);
+            setCutoutProductUrl(null);
+          }}
         />
       }
       extraDrawers={

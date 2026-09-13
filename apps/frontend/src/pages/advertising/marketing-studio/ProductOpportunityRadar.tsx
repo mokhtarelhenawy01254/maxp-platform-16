@@ -41,6 +41,19 @@ export const ProductOpportunityRadar: React.FC<ProductOpportunityRadarProps> = (
           const price = Number(p.price) || 0;
           const cost = Number(p.cost || p.costPrice || 0);
           const stock = typeof p.inventory === "number" ? p.inventory : (Number(p.stock) || 25);
+          const rawImages = Array.isArray(p.images) ? p.images : [];
+          const mainImg = typeof p.mainImage === "string" ? p.mainImage : null;
+          const allImages = Array.from(new Set([mainImg, ...rawImages].filter(Boolean) as string[]));
+
+          const variants = Array.isArray(p.variants)
+            ? p.variants.map((v: any) => ({
+                id: v.id ? String(v.id) : undefined,
+                name: v.name || v.color || "متغير",
+                image: v.image || null,
+                images: Array.isArray(v.images) ? v.images : null,
+              }))
+            : [];
+
           return {
             id: String(p.id),
             name: String(p.name || "منتج بدون اسم"),
@@ -48,7 +61,9 @@ export const ProductOpportunityRadar: React.FC<ProductOpportunityRadarProps> = (
             price,
             cost,
             stock,
-            mainImage: typeof p.mainImage === "string" ? p.mainImage : null,
+            mainImage: mainImg,
+            images: allImages,
+            variants,
             category: typeof p.category?.name === "string" ? p.category.name : undefined,
           };
         });

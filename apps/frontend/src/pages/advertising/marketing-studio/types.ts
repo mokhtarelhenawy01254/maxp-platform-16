@@ -10,6 +10,8 @@ export interface MarketingProduct {
   cost?: number;
   stock?: number;
   mainImage?: string | null;
+  images?: string[];
+  variants?: Array<{ id?: string; name?: string; image?: string | null; images?: string[] | null }>;
   category?: string;
 }
 

@@ -617,8 +617,14 @@ class FacebookAdsAiController {
           agentId: targetAgentId,
           message: effectiveMessage,
           threadId: scopedThreadId,
+          conversationId: threadId,
           channel: 'marketing_studio',
           source_channel: 'marketing_studio',
+          memoryContext: {
+            recentMessages,
+            activeProduct: activeProductContext,
+            active_product_context: activeProductContext,
+          },
           memory_context: {
             recentMessages,
             activeProduct: activeProductContext,
@@ -689,11 +695,18 @@ class FacebookAdsAiController {
               agentId: targetAgentId,
               message: synthesisPrompt,
               threadId: scopedThreadId,
+              conversationId: threadId,
               channel: 'dashboard',
               source_channel: 'dashboard',
+              memoryContext: {
+                recentMessages,
+                activeProduct: activeProductContext,
+                active_product_context: activeProductContext,
+              },
               memory_context: {
                 recentMessages,
                 activeProduct: activeProductContext,
+                active_product_context: activeProductContext,
               },
             });
 
@@ -740,20 +753,27 @@ class FacebookAdsAiController {
             toolCalls: toolCallsList,
           });
 
-          // Update activeProduct in session context if any tool calls referenced or analyzed a product
+          // Update activeProduct in session context if a valid product creation/analysis tool succeeded
           if (result?.tool_calls && Array.isArray(result.tool_calls)) {
             for (const tc of result.tool_calls) {
-              const args = tc.arguments || tc.args || {};
-              const pName = args.product_name || args.product_slug || args.product_id;
-              if (pName && typeof pName === 'string' && pName.length > 2 && !pName.includes('بلاك فرايداي')) {
-                marketingCopilotSessionService.updateContext(companyId, threadId, {
-                  activeProduct: {
-                    name: pName,
-                    sku: args.product_id || args.sku || '',
-                    updatedAt: new Date().toISOString(),
-                  }
-                }).catch(() => {});
-                break;
+              const tName = tc.name || tc.tool || tc.function?.name;
+              if (tName === 'facebook_ad_analyze_product' || tName === 'facebook_ad_create_full_draft') {
+                const args = tc.arguments || tc.args || {};
+                const resProd = tc.result?.product;
+                const pName = resProd?.name || args.product_name || args.product_slug;
+                if (pName && typeof pName === 'string' && pName.length > 2 && !pName.includes('بلاك فرايداي')) {
+                  marketingCopilotSessionService.updateContext(companyId, threadId, {
+                    activeProduct: {
+                      id: resProd?.id || args.product_id,
+                      name: pName,
+                      sku: resProd?.sku || args.product_id || args.sku || '',
+                      price: resProd?.price || args.price,
+                      stock: resProd?.stock,
+                      updatedAt: new Date().toISOString(),
+                    }
+                  }).catch(() => {});
+                  break;
+                }
               }
             }
           }

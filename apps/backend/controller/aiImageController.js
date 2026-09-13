@@ -113,10 +113,10 @@ function normalizeImageUrl(imgUrl) {
 exports.generateImage = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    let { prompt, model, aspectRatio = "1:1", style, negativePrompt, size, quality, productImage, referenceImage } = req.body;
+    let { prompt, model, aspectRatio = "1:1", style, negativePrompt, size, quality, productImage, referenceImage, productImageUrl, referenceImageUrl, n } = req.body;
 
-    productImage = normalizeImageUrl(productImage);
-    referenceImage = normalizeImageUrl(referenceImage);
+    productImage = normalizeImageUrl(productImage || productImageUrl);
+    referenceImage = normalizeImageUrl(referenceImage || referenceImageUrl);
 
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({ success: false, message: "الصورة مطلوب" });
@@ -150,8 +150,8 @@ exports.generateImage = async (req, res) => {
 
     const systemPrompt = [
       "You are a professional social media image designer. Your ONLY output MUST be a valid image. NEVER return text descriptions.",
-      "Generate a high-quality social media image based on the user's brief below.",
-      productImage ? "The user has provided a reference product image. Use it as the primary visual — place the actual product from the reference image into the design. Do NOT ignore the reference or invent a different product." : "",
+      "Generate a high-quality commercial advertising scene based on the user's brief below.",
+      productImage ? "The user has provided a reference product image. It is critical that you maintain the visual identity, colors, shape, and key details of the product from this reference image. Integrate it naturally into the scene with physically realistic lighting and contact shadows." : "",
       referenceImage ? "The user has provided a style reference image. Follow its stylistic approach — colors, composition, lighting, mood, typography choices, and overall aesthetic — while incorporating the brand's product, copy, and colors specified below." : "",
       style ? `Style: ${style}.` : "",
       negativePrompt ? `Avoid: ${negativePrompt}.` : "",
@@ -182,6 +182,7 @@ exports.generateImage = async (req, res) => {
     };
 
     let result, imageUrl = "";
+    let rawImages = [];
 
     const isOpenAIModel = model.startsWith("openai/");
 
@@ -192,12 +193,14 @@ exports.generateImage = async (req, res) => {
       if (productImage) inpRefs.push({ type: "image_url", image_url: { url: productImage } });
       if (referenceImage) inpRefs.push({ type: "image_url", image_url: { url: referenceImage } });
 
+      const nCount = Math.min(4, Math.max(1, parseInt(n) || 1));
+
       const resp = await axios.post(
         `${OPENROUTER_BASE}/images`,
         {
           model,
           prompt,
-          n: 1,
+          n: nCount,
           quality: q,
           aspect_ratio: aspectRatio,
           output_format: outputFormat === "jpg" ? "jpeg" : outputFormat,
@@ -206,7 +209,12 @@ exports.generateImage = async (req, res) => {
         { headers, timeout: 180000 }
       );
       result = resp.data;
-      imageUrl = result?.data?.[0]?.b64_json ? `data:${result.data[0].media_type || "image/png"};base64,${result.data[0].b64_json}` : "";
+      if (Array.isArray(result?.data)) {
+        rawImages = result.data
+          .map((d) => (d.b64_json ? `data:${d.media_type || "image/png"};base64,${d.b64_json}` : d.url))
+          .filter(Boolean);
+      }
+      imageUrl = rawImages[0] || "";
     } else {
       const resp = await axios.post(
         `${OPENROUTER_BASE}/chat/completions`,
@@ -226,24 +234,25 @@ exports.generateImage = async (req, res) => {
       if (msg?.images) {
         const imgArr = Array.isArray(msg.images) ? msg.images : Object.values(msg.images);
         for (const img of imgArr) {
-          if (typeof img === "string") { imageUrl = img; break; }
-          if (img?.image_url?.url) { imageUrl = img.image_url.url; break; }
-          if (img?.url) { imageUrl = img.url; break; }
+          if (typeof img === "string") { rawImages.push(img); }
+          else if (img?.image_url?.url) { rawImages.push(img.image_url.url); }
+          else if (img?.url) { rawImages.push(img.url); }
         }
       }
-      if (!imageUrl && msg?.content) {
+      if (!rawImages.length && msg?.content) {
         if (typeof msg.content === "string") {
           const c = msg.content.trim();
-          if (c.startsWith("data:image/") || c.startsWith("http")) imageUrl = c;
-          else { const m = c.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/); if (m) imageUrl = m[1]; }
+          if (c.startsWith("data:image/") || c.startsWith("http")) rawImages.push(c);
+          else { const m = c.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/); if (m) rawImages.push(m[1]); }
         } else if (Array.isArray(msg.content)) {
           for (const part of msg.content) {
-            if (part.type === "image_url") { imageUrl = part.image_url?.url; break; }
+            if (part.type === "image_url") { rawImages.push(part.image_url?.url); }
           }
         }
       }
-      if (!imageUrl && msg?.image_url?.url) imageUrl = msg.image_url.url;
-      if (!imageUrl) imageUrl = result?.data?.[0]?.url || "";
+      if (!rawImages.length && msg?.image_url?.url) rawImages.push(msg.image_url.url);
+      if (!rawImages.length && result?.data?.[0]?.url) rawImages.push(result.data[0].url);
+      imageUrl = rawImages[0] || "";
     }
 
     const latencyMs = Date.now() - startTime;
@@ -257,35 +266,51 @@ exports.generateImage = async (req, res) => {
       model: usedModel,
     });
 
-    if (!imageUrl) {
-      return res.status(200).json({ success: true, data: { imageUrl: "", model: usedModel, usage: result?.usage || null } });
+    if (!imageUrl && !rawImages.length) {
+      return res.status(200).json({ success: true, data: { imageUrl: "", images: [], model: usedModel, usage: result?.usage || null } });
     }
 
-    if (imageUrl.startsWith("data:")) {
-      const ext = imageUrl.startsWith("data:image/png") ? "png" : "jpg";
-      const buffer = Buffer.from(imageUrl.split(",")[1], "base64");
-      const filename = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}.${ext}`;
-      const relativeDir = `uploads/ai-images/${companyId || "unknown"}`;
-      const absoluteDir = path.join(__dirname, "..", relativeDir);
-      if (!fs.existsSync(absoluteDir)) fs.mkdirSync(absoluteDir, { recursive: true });
-      fs.writeFileSync(path.join(absoluteDir, filename), buffer);
-      try {
-        const meta = {
-          prompt: prompt?.slice(0, 2000) || "",
-          platform: req.body.structured?.platform || "",
-          aspectRatio: req.body.structured?.aspectRatio || aspectRatio,
-          purpose: req.body.structured?.campaign?.purpose || "",
-          model: usedModel,
-        };
-        fs.writeFileSync(path.join(absoluteDir, `${filename}.meta.json`), JSON.stringify(meta));
-      } catch {}
-      imageUrl = `/${relativeDir}/${filename}`;
+    if (!rawImages.length && imageUrl) {
+      rawImages = [imageUrl];
+    }
+
+    const savedImages = [];
+    const relativeDir = `uploads/ai-images/${companyId || "unknown"}`;
+    const absoluteDir = path.join(__dirname, "..", relativeDir);
+    if (!fs.existsSync(absoluteDir)) fs.mkdirSync(absoluteDir, { recursive: true });
+
+    for (let i = 0; i < rawImages.length; i++) {
+      const img = rawImages[i];
+      if (img.startsWith("data:")) {
+        const ext = img.startsWith("data:image/png") ? "png" : "jpg";
+        const buffer = Buffer.from(img.split(",")[1], "base64");
+        const filename = `${Date.now()}-${i}-${crypto.randomBytes(4).toString("hex")}.${ext}`;
+        fs.writeFileSync(path.join(absoluteDir, filename), buffer);
+        try {
+          const meta = {
+            prompt: prompt?.slice(0, 2000) || "",
+            platform: req.body.structured?.platform || "",
+            aspectRatio: req.body.structured?.aspectRatio || aspectRatio,
+            purpose: req.body.structured?.campaign?.purpose || "",
+            model: usedModel,
+          };
+          fs.writeFileSync(path.join(absoluteDir, `${filename}.meta.json`), JSON.stringify(meta));
+        } catch {}
+        savedImages.push(`/${relativeDir}/${filename}`);
+      } else {
+        savedImages.push(img);
+      }
+    }
+
+    if (savedImages.length > 0) {
+      imageUrl = savedImages[0];
     }
 
     return res.status(200).json({
       success: true,
       data: {
         imageUrl,
+        images: savedImages,
         model: usedModel,
         usage: result.usage || null,
       },
