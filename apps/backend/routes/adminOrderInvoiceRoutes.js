@@ -266,10 +266,31 @@ router.get('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
     }
 
     if (invoice?.order?.orderItems) {
-      invoice.order.orderItems = invoice.order.orderItems.map(item => ({
-        ...item,
-        productSku: item.productSku || item.productVariant?.sku || item.product?.sku || item.product?.barcode || null
-      }));
+      invoice.order.orderItems = invoice.order.orderItems.map(item => {
+        let metaSku = null;
+        if (item.metadata) {
+          let m = item.metadata;
+          if (typeof m === 'string' && m.trim()) {
+            try { m = JSON.parse(m); } catch (e) { m = null; }
+          }
+          if (m && typeof m === 'object') {
+            metaSku = m.sku || m.variantSku || m.productSku || m.code || m.barcode || null;
+          }
+        }
+        return {
+          ...item,
+          productSku:
+            item.productSku ||
+            item.sku ||
+            item.code ||
+            item.productVariant?.sku ||
+            item.product?.sku ||
+            metaSku ||
+            item.barcode ||
+            item.product?.barcode ||
+            null
+        };
+      });
     }
 
     res.json({

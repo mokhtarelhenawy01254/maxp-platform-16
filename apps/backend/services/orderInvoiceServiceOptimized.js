@@ -5,6 +5,118 @@ const {
   getOrCreateInvoiceSettings
 } = require('./orderInvoiceDocumentUtils');
 
+// Helper لاستخراج الكود من العنصر أو الـ metadata
+function extractSkuFromOrderItem(item) {
+  if (!item) return null;
+  if (item.productSku && String(item.productSku).trim()) return String(item.productSku).trim();
+  if (item.sku && String(item.sku).trim()) return String(item.sku).trim();
+  if (item.code && String(item.code).trim()) return String(item.code).trim();
+  if (item.barcode && String(item.barcode).trim()) return String(item.barcode).trim();
+  if (item.variantSku && String(item.variantSku).trim()) return String(item.variantSku).trim();
+  if (item.productVariant?.sku && String(item.productVariant.sku).trim()) return String(item.productVariant.sku).trim();
+  if (item.product?.sku && String(item.product.sku).trim()) return String(item.product.sku).trim();
+  if (item.product?.barcode && String(item.product.barcode).trim()) return String(item.product.barcode).trim();
+
+  if (item.metadata) {
+    let m = item.metadata;
+    if (typeof m === 'string' && m.trim()) {
+      try { m = JSON.parse(m); } catch (e) { m = null; }
+    }
+    if (m && typeof m === 'object') {
+      if (m.sku && String(m.sku).trim()) return String(m.sku).trim();
+      if (m.variantSku && String(m.variantSku).trim()) return String(m.variantSku).trim();
+      if (m.productSku && String(m.productSku).trim()) return String(m.productSku).trim();
+      if (m.code && String(m.code).trim()) return String(m.code).trim();
+      if (m.barcode && String(m.barcode).trim()) return String(m.barcode).trim();
+    }
+  }
+  return null;
+}
+
+// دمج وإثراء عناصر الطلبات بالأكواد الناقصة من variants و products
+async function enrichOrdersWithSku(orders, prisma) {
+  if (!Array.isArray(orders) || orders.length === 0) return orders;
+
+  const missingVariantIds = new Set();
+  const missingProductIds = new Set();
+
+  orders.forEach(order => {
+    (order.orderItems || []).forEach(item => {
+      const directSku = extractSkuFromOrderItem(item);
+      if (directSku) {
+        item.productSku = directSku;
+      } else {
+        let m = item.metadata;
+        if (typeof m === 'string' && m.trim()) {
+          try { m = JSON.parse(m); } catch (e) { m = null; }
+        }
+        const vId = item.variantId || (m && (m.variantId || m.variant_id));
+        const pId = item.productId || (m && (m.originalProductId || m.productId || m.product_id));
+        if (vId) missingVariantIds.add(vId);
+        if (pId) missingProductIds.add(pId);
+      }
+    });
+  });
+
+  const variantMap = new Map();
+  const productMap = new Map();
+
+  if (missingVariantIds.size > 0) {
+    try {
+      const variants = await prisma.productVariant.findMany({
+        where: { id: { in: Array.from(missingVariantIds) } },
+        select: { id: true, sku: true, productId: true }
+      });
+      variants.forEach(v => {
+        if (v.sku) variantMap.set(v.id, v.sku);
+        if (v.productId) missingProductIds.add(v.productId);
+      });
+    } catch (e) {
+      console.warn('⚠️ [INVOICE-BATCH] Error fetching variants for enrichment:', e.message);
+    }
+  }
+
+  if (missingProductIds.size > 0) {
+    try {
+      const prods = await prisma.product.findMany({
+        where: { id: { in: Array.from(missingProductIds) } },
+        select: { id: true, sku: true, barcode: true }
+      });
+      prods.forEach(p => {
+        const code = p.sku || p.barcode || null;
+        if (code) productMap.set(p.id, code);
+      });
+    } catch (e) {
+      console.warn('⚠️ [INVOICE-BATCH] Error fetching products for enrichment:', e.message);
+    }
+  }
+
+  orders.forEach(order => {
+    (order.orderItems || []).forEach(item => {
+      if (!item.productSku) {
+        let m = item.metadata;
+        if (typeof m === 'string' && m.trim()) {
+          try { m = JSON.parse(m); } catch (e) { m = null; }
+        }
+        const vId = item.variantId || (m && (m.variantId || m.variant_id));
+        const pId = item.productId || (m && (m.originalProductId || m.productId || m.product_id));
+        const resolved =
+          (vId ? variantMap.get(vId) : null) ||
+          (pId ? productMap.get(pId) : null) ||
+          null;
+        if (resolved) {
+          item.productSku = resolved;
+        }
+      }
+      if (!item.productSku) {
+        item.productSku = item.code || item.barcode || null;
+      }
+    });
+  });
+
+  return orders;
+}
+
 // Batch: جلب جميع الطلبات مرة واحدة
 async function fetchOrdersBatch(orderIds) {
   const prisma = getSharedPrismaClient();
@@ -27,6 +139,9 @@ async function fetchOrdersBatch(orderIds) {
       }
     }
   });
+
+  // إثراء عناصر الطلبات بالأكواد الناقصة
+  await enrichOrdersWithSku(orders, prisma);
 
   return orders;
 }
@@ -314,7 +429,7 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
           orderNumber: order.orderNumber,
           orderItems: (order.orderItems || []).map(item => ({
             ...item,
-            productSku: item.productSku || item.productVariant?.sku || item.product?.sku || item.product?.barcode || null
+            productSku: item.productSku || extractSkuFromOrderItem(item) || null
           }))
         };
         
@@ -373,7 +488,7 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
         if (inv.order?.orderItems) {
           inv.order.orderItems = inv.order.orderItems.map(item => ({
             ...item,
-            productSku: item.productSku || item.productVariant?.sku || item.product?.sku || item.product?.barcode || null
+            productSku: item.productSku || extractSkuFromOrderItem(item) || null
           }));
         }
         newInvoiceMap.set(inv.orderId, inv);
@@ -419,7 +534,8 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
         company: true,
         orderItems: {
           include: {
-            product: true
+            product: true,
+            productVariant: true
           }
         }
       }
@@ -433,7 +549,8 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
           company: true,
           orderItems: {
             include: {
-              product: true
+              product: true,
+              productVariant: true
             }
           }
         }
@@ -444,6 +561,8 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
       throw new Error('الطلب غير موجود');
     }
 
+    await enrichOrdersWithSku([order], prisma);
+
     const invoiceSettings = await getOrCreateInvoiceSettings(prisma, order.companyId);
 
     // التحقق من وجود فاتورة سابقة
@@ -452,6 +571,13 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
     });
 
     if (existingInvoice) {
+      existingInvoice.order = {
+        orderNumber: order.orderNumber,
+        orderItems: (order.orderItems || []).map(item => ({
+          ...item,
+          productSku: item.productSku || extractSkuFromOrderItem(item) || null
+        }))
+      };
       return {
         success: true,
         invoice: existingInvoice,
@@ -482,7 +608,7 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
     if (invoice?.order?.orderItems) {
       invoice.order.orderItems = invoice.order.orderItems.map(item => ({
         ...item,
-        productSku: item.productSku || item.productVariant?.sku || item.product?.sku || item.product?.barcode || null
+        productSku: item.productSku || extractSkuFromOrderItem(item) || null
       }));
     }
 

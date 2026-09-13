@@ -71,7 +71,27 @@ function toInvoiceData(inv: Invoice): InvoiceData {
         quantity: item.quantity,
         price: item.price,
         total: item.total,
-        productSku: item.productSku || item.sku || item.productVariant?.sku || item.product?.sku || item.code || item.barcode || null,
+        productSku:
+          item.productSku ||
+          item.sku ||
+          item.code ||
+          item.productVariant?.sku ||
+          item.product?.sku ||
+          item.barcode ||
+          (() => {
+            if (typeof item.metadata === "string" && item.metadata.includes("sku")) {
+              try {
+                const parsed = JSON.parse(item.metadata);
+                return parsed?.sku || parsed?.variantSku || parsed?.productSku || null;
+              } catch {
+                return null;
+              }
+            } else if (item.metadata && typeof item.metadata === "object") {
+              return item.metadata.sku || item.metadata.variantSku || item.metadata.productSku || null;
+            }
+            return null;
+          })() ||
+          null,
         productColor: item.productColor,
         productSize: item.productSize,
       })),

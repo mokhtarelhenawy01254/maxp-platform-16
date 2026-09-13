@@ -7,11 +7,25 @@ const {
 
 function resolveItemSku(item) {
   if (!item) return item;
+  let metaSku = null;
+  if (item.metadata) {
+    let m = item.metadata;
+    if (typeof m === 'string' && m.trim()) {
+      try { m = JSON.parse(m); } catch (e) { m = null; }
+    }
+    if (m && typeof m === 'object') {
+      metaSku = m.sku || m.variantSku || m.productSku || m.code || m.barcode || null;
+    }
+  }
+
   const productSku =
     item.productSku ||
+    item.sku ||
+    item.code ||
     item.productVariant?.sku ||
     item.product?.sku ||
-    item.sku ||
+    metaSku ||
+    item.barcode ||
     item.product?.barcode ||
     null;
   return { ...item, productSku };
