@@ -466,6 +466,18 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
             content_param = urllib.parse.quote(str(angle.ad_name or angle.angle or f"angle_{index}"))
             attributed_product_url = f"{base_url}?utm_source=facebook&utm_medium=paid_social&utm_campaign={camp_param}&utm_content={content_param}"
 
+            # 🛡️ Auto-hydrate image URL from product snapshot/database if omitted by LLM
+            cand_angle_img = angle.image_url
+            if not cand_angle_img and prod_res:
+                cand_angle_img = prod_res.mainImage or (prod_res.images[0] if getattr(prod_res, "images", None) and len(prod_res.images) > 0 else None)
+
+            if cand_angle_img and isinstance(cand_angle_img, str) and cand_angle_img.startswith("/"):
+                try:
+                    parsed_purl = urllib.parse.urlparse(resolved_product_url)
+                    cand_angle_img = f"{parsed_purl.scheme}://{parsed_purl.netloc}{cand_angle_img}"
+                except Exception:
+                    pass
+
             full_ad_data = {
                 "productId": resolved_product_id,
                 "productUrl": attributed_product_url,
@@ -485,7 +497,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 "headline": angle.headline,
                 "description": angle.description or "",
                 "callToAction": angle.call_to_action or "SHOP_NOW",
-                "imageUrl": angle.image_url,
+                "imageUrl": cand_angle_img,
                 "adAccountId": resolved_ad_account_id,
                 "pageId": resolved_page_id,
                 "pixelId": resolved_pixel_id,
