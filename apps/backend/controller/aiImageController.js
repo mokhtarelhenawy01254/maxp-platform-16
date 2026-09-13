@@ -504,7 +504,7 @@ exports.generateCaption = async (req, res) => {
     const resp = await axios.post(
       `${OPENROUTER_BASE}/chat/completions`,
       {
-        model: "google/gemini-3.1-flash-lite-001",
+        model: "google/gemini-3.1-flash-lite",
         messages: [
           { role: "system", content: system },
           { role: "user", content: userPrompt },
@@ -543,7 +543,7 @@ exports.generateCaption = async (req, res) => {
       action: 'generation_success',
       status: 'success',
       latencyMs,
-      model: "google/gemini-3.1-flash-lite-001",
+      model: "google/gemini-3.1-flash-lite",
     });
 
     return res.json({ success: true, data: result });
@@ -556,7 +556,7 @@ exports.generateCaption = async (req, res) => {
       action: 'generation_failed',
       status: 'failed',
       latencyMs: elapsed,
-      model: "google/gemini-3.1-flash-lite-001",
+      model: "google/gemini-3.1-flash-lite",
       message: detail,
     });
     return res.status(status).json({ success: false, message: detail });
@@ -607,7 +607,7 @@ Guidelines:
     const resp = await axios.post(
       `${OPENROUTER_BASE}/chat/completions`,
       {
-        model: "google/gemini-3.1-flash-lite-001",
+        model: "google/gemini-3.1-flash-lite",
         messages: formattedMessages,
         response_format: { type: "json_object" },
       },
@@ -632,7 +632,7 @@ Guidelines:
       action: 'creative_chat_success',
       status: 'success',
       latencyMs,
-      model: "google/gemini-3.1-flash-lite-001",
+      model: "google/gemini-3.1-flash-lite",
     });
 
     return res.json({
