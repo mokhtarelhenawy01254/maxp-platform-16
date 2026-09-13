@@ -14,7 +14,7 @@ You need **exactly one** A-record in DNS:
 |------|------|-------|
 | A    | `ai`  | `<SERVER_IP>` (under parent domain `maxp-ai.pro`) |
 
-> The parent `*.maxp-ai.pro` wildcard already points to the same server (used by the main site). The wildcard SSL cert at `/etc/letsencrypt/live/maxp-ai.pro-0001/` already covers `ai.maxp-ai.pro` — no new cert needed.
+> The parent `*.maxp-ai.pro` wildcard already points to the same server (used by the main site). The wildcard SSL cert at `/etc/letsencrypt/live/maxp-ai.pro/` already covers `ai.maxp-ai.pro` — no new cert needed.
 
 If your DNS panel is **Cloudflare**, do **one** of these:
 
