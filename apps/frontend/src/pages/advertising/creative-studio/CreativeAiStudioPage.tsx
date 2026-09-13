@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Palette, Sparkles, Wand2, Images } from "lucide-react";
+import { Palette, Sparkles, Wand2, Image as ImageIcon } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { AgentStudioLayout } from "../../../components/agent-studio";
 import { ProductOpportunityRadar } from "../marketing-studio/ProductOpportunityRadar";
@@ -245,7 +245,7 @@ const CreativeAiStudioPage: React.FC = () => {
       onOpenEntityPicker={() => setIsProductPickerOpen(true)}
       sessionsCount={historyCount}
       sessionsButtonLabel="سجل الصور"
-      sessionsIcon={Images}
+      sessionsIcon={ImageIcon}
       onOpenSessions={() => setIsHistoryOpen(true)}
       onNewSession={() => {
         setBackgroundUrl(null);
