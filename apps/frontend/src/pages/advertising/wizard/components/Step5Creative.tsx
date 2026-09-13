@@ -28,6 +28,7 @@ import { PagePostsSelector } from "./PagePostsSelector";
 import { AdPlacementPreview } from "./AdPlacementPreview";
 import { AdCopyVariationsEditor } from "./AdCopyVariationsEditor";
 import { WhatsAppGreetingEditor } from "./WhatsAppGreetingEditor";
+import { PlacementMediaCustomizer } from "./PlacementMediaCustomizer";
 
 interface Step5CreativeProps {
   formData: FormData;
@@ -496,6 +497,20 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                   )}
               </div>
             </div>
+          )}
+
+          {/* Stories / Reels 9:16 Custom Media */}
+          {(formData.creativeType === "SINGLE_IMAGE" ||
+            formData.creativeType === "SINGLE_VIDEO") && (
+            <PlacementMediaCustomizer
+              customStoriesMedia={Boolean(formData.customStoriesMedia)}
+              onToggleCustomStories={(val) => handleChange("customStoriesMedia", val)}
+              storyImageUrl={formData.storyImageUrl || ""}
+              onStoryImageUrlChange={(val) => handleChange("storyImageUrl", val)}
+              storyVideoUrl={formData.storyVideoUrl || ""}
+              onStoryVideoUrlChange={(val) => handleChange("storyVideoUrl", val)}
+              creativeType={formData.creativeType}
+            />
           )}
 
           {/* Carousel Cards */}

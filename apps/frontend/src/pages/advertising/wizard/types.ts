@@ -56,6 +56,8 @@ export interface FormData {
   adName: string;
   objective: string;
   specialAdCategories: string[];
+  isSplitTest?: boolean;
+  splitTestVariable?: "CREATIVE" | "AUDIENCE" | "PLACEMENT";
 
   // Step 2: Ad Set Level
   budgetType: "DAILY" | "LIFETIME";
@@ -68,6 +70,10 @@ export interface FormData {
   endTime: string;
   attributionWindow: string;
   existingCustomerBudgetPercentage?: number;
+  adSchedulingEnabled?: boolean;
+  adScheduleStartHour?: number;
+  adScheduleEndHour?: number;
+  adScheduleDays?: number[];
 
   // Step 3: Audience & Placements
   locations: string[];
@@ -79,6 +85,7 @@ export interface FormData {
   genders: number[];
   languages: string[];
   interests: string[];
+  narrowInterests?: TargetingOption[];
   behaviors: string[];
   demographics: string[];
   customAudiences: string[];
@@ -93,6 +100,7 @@ export interface FormData {
   audienceNetworkPositions: string[];
   devicePlatforms: string[];
   onlyWifi?: boolean;
+  inventoryFilter?: "STANDARD" | "FULL" | "LIMITED";
 
   // Step 4: Ad Creative
   pageId: string;
@@ -110,6 +118,9 @@ export interface FormData {
   urlParameters: string;
   imageUrl: string;
   videoUrl: string;
+  customStoriesMedia?: boolean;
+  storyImageUrl?: string;
+  storyVideoUrl?: string;
   carouselCards: CarouselCard[];
   flexibleAssets: { id: string; type: "IMAGE" | "VIDEO"; url: string }[];
   textVariations: TextVariation[];

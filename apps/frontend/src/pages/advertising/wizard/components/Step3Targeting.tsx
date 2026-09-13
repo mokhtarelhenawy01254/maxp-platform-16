@@ -24,6 +24,7 @@ import type {
 } from "../../../../services/facebookAdsService";
 import MetaGeoTargetingSelector from "../../../../components/advertising/MetaGeoTargetingSelector";
 import { DetailedTargetingExclusions } from "./DetailedTargetingExclusions";
+import { NarrowAudienceSelector } from "./NarrowAudienceSelector";
 import {
   COUNTRIES,
   INTEREST_CATEGORIES,
@@ -346,6 +347,26 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                   handleChange(
                     "excludedInterests",
                     current.filter((e) => e.id !== id),
+                  );
+                }}
+              />
+            </div>
+
+            {/* Narrow Audience (AND logic) */}
+            <div className="mt-3">
+              <NarrowAudienceSelector
+                narrowInterests={formData.narrowInterests || []}
+                onAddNarrowInterest={(interest) => {
+                  const current = formData.narrowInterests || [];
+                  if (!current.some((n) => n.id === interest.id)) {
+                    handleChange("narrowInterests", [...current, interest]);
+                  }
+                }}
+                onRemoveNarrowInterest={(id) => {
+                  const current = formData.narrowInterests || [];
+                  handleChange(
+                    "narrowInterests",
+                    current.filter((n) => n.id !== id),
                   );
                 }}
               />

@@ -28,6 +28,7 @@ import {
   getFullAdMinimumBudgetAmount,
   isCappedBidStrategy,
 } from "../../CreateAdWizard.helpers";
+import { AdDaypartingScheduler } from "./AdDaypartingScheduler";
 
 interface Step2BudgetScheduleProps {
   formData: FormData;
@@ -604,6 +605,31 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Ad Dayparting Scheduler */}
+      <AdDaypartingScheduler
+        isLifetimeBudget={formData.budgetType === "LIFETIME"}
+        enabled={Boolean(formData.adSchedulingEnabled)}
+        onToggleEnabled={(enabled) =>
+          handleChange("adSchedulingEnabled", enabled)
+        }
+        startHour={formData.adScheduleStartHour ?? 0}
+        endHour={formData.adScheduleEndHour ?? 24}
+        onChangeHours={(start, end) => {
+          handleChange("adScheduleStartHour", start);
+          handleChange("adScheduleEndHour", end);
+        }}
+        selectedDays={
+          formData.adScheduleDays || [1, 2, 3, 4, 5, 6, 7]
+        }
+        onToggleDay={(day) => {
+          const current = formData.adScheduleDays || [1, 2, 3, 4, 5, 6, 7];
+          const next = current.includes(day)
+            ? current.filter((d) => d !== day)
+            : [...current, day];
+          handleChange("adScheduleDays", next);
+        }}
+      />
 
       {/* Existing Customer Budget Cap (ECBC - v26) */}
       {(formData.objective === "OUTCOME_SALES" || formData.objective === "OUTCOME_LEADS") && (

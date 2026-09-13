@@ -1,5 +1,5 @@
 import React from "react";
-import { AlertCircle, Target, Eye, Globe, MessageCircle, ShoppingBag, Smartphone, Users } from "lucide-react";
+import { AlertCircle, Target, Eye, Globe, MessageCircle, ShoppingBag, Smartphone, Users, Sparkles } from "lucide-react";
 import type { FormData } from "../types";
 import { OBJECTIVES, SPECIAL_AD_CATEGORIES } from "../constants";
 
@@ -131,6 +131,60 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
           إذا كان إعلانك يتعلق بالإسكان أو التوظيف أو الائتمان، يجب تحديد الفئة
           المناسبة
         </p>
+      </div>
+
+      {/* A/B Split Testing */}
+      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-blue-600" />
+            <div>
+              <h4 className="text-sm font-bold text-gray-900">
+                إنشاء اختبار تجزئة (A/B Test)
+              </h4>
+              <p className="text-xs text-gray-500">
+                مقارنة نسخ مختلفة إحصائياً لتحديد الاستراتيجية الأفضل أداءً
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              checked={Boolean(formData.isSplitTest)}
+              onChange={(e) => handleChange("isSplitTest", e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        {formData.isSplitTest && (
+          <div className="pt-2 border-t border-slate-200 space-y-2">
+            <label className="block text-xs font-semibold text-gray-700">
+              المتغير المراد اختباره (Test Variable)
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: "CREATIVE", label: "المحتوى الإبداعي" },
+                { value: "AUDIENCE", label: "الجمهور والاستهداف" },
+                { value: "PLACEMENT", label: "المواضع والأجهزة" },
+              ].map((v) => (
+                <button
+                  key={v.value}
+                  type="button"
+                  onClick={() => handleChange("splitTestVariable", v.value)}
+                  className={`p-2 rounded-lg border text-xs font-medium text-center transition-all ${
+                    (formData.splitTestVariable || "CREATIVE") === v.value
+                      ? "border-blue-500 bg-blue-50 text-blue-700 font-bold"
+                      : "border-gray-200 bg-white hover:border-gray-300 text-gray-600"
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Conversion Events - للأهداف التي تحتاج تتبع */}

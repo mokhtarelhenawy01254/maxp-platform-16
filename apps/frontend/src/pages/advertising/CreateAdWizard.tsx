@@ -230,6 +230,8 @@ const CreateAdWizard: React.FC = () => {
       "",
     objective: prefillObjective || "",
     specialAdCategories: [],
+    isSplitTest: false,
+    splitTestVariable: "CREATIVE",
 
     // Step 2 - Ad Set Level
     performanceGoal: "MAXIMIZE_CONVERSIONS",
@@ -248,6 +250,10 @@ const CreateAdWizard: React.FC = () => {
     endTime: "",
     frequencyCap: undefined,
     frequencyCapInterval: undefined,
+    adSchedulingEnabled: false,
+    adScheduleStartHour: 0,
+    adScheduleEndHour: 24,
+    adScheduleDays: [1, 2, 3, 4, 5, 6, 7],
 
     // Step 3
     ageMin: storedLaunchPrefill?.ageMin || 18,
@@ -259,6 +265,7 @@ const CreateAdWizard: React.FC = () => {
     locationTypes: ["home", "recent"],
     interests: [],
     excludedInterests: [],
+    narrowInterests: [],
     advantageAudience: storedLaunchPrefill?.advantageAudience || false,
 
     // Step 4
@@ -266,6 +273,7 @@ const CreateAdWizard: React.FC = () => {
     placements: [],
     devicePlatforms: [],
     onlyWifi: false,
+    inventoryFilter: "STANDARD",
 
     // Step 5
     pageId: prefillPageId,
@@ -293,6 +301,9 @@ const CreateAdWizard: React.FC = () => {
       : "",
     imageUrl: prefillImageUrls[0] || "",
     videoUrl: "",
+    customStoriesMedia: false,
+    storyImageUrl: "",
+    storyVideoUrl: "",
     carouselCards:
       prefillCreativeType === "CAROUSEL"
         ? getPrefilledCarouselCards(
@@ -869,6 +880,7 @@ const CreateAdWizard: React.FC = () => {
         selectedLookalikeAudiences,
         excludedAudiences,
         excludedInterests: formData.excludedInterests,
+        narrowInterests: formData.narrowInterests,
         selectedLanguages,
         selectedDevices,
         relationshipStatuses,
@@ -891,6 +903,10 @@ const CreateAdWizard: React.FC = () => {
         specialAdCategories: formData.specialAdCategories.filter(
           (c) => c !== "NONE",
         ),
+        ...(formData.isSplitTest && {
+          isSplitTest: true,
+          splitTestVariable: formData.splitTestVariable,
+        }),
 
         // Ad Set Level - الميزات الجديدة
         ...(formData.adSetName && { adSetName: formData.adSetName }),
@@ -914,15 +930,24 @@ const CreateAdWizard: React.FC = () => {
           frequencyCapInterval: formData.frequencyCapInterval,
         }),
 
-        // Schedule
+        // Schedule & Dayparting
         ...(formData.startTime && { startTime: formData.startTime }),
         ...(formData.endTime && { endTime: formData.endTime }),
+        ...(formData.adSchedulingEnabled && {
+          adSchedulingEnabled: true,
+          adScheduleStartHour: formData.adScheduleStartHour,
+          adScheduleEndHour: formData.adScheduleEndHour,
+          adScheduleDays: formData.adScheduleDays,
+        }),
 
         // Targeting
         targeting,
 
-        // Placements
+        // Placements & Brand Safety
         placementType: formData.placementType,
+        ...(formData.inventoryFilter && {
+          inventoryFilter: formData.inventoryFilter,
+        }),
         ...(formData.placementType === "MANUAL" && {
           ...(formData.placements.length > 0 && {
             placements: formData.placements,
@@ -953,6 +978,15 @@ const CreateAdWizard: React.FC = () => {
           formData.imageUrl && { imageUrl: formData.imageUrl }),
         ...(formData.creativeType === "SINGLE_VIDEO" &&
           formData.videoUrl && { videoUrl: formData.videoUrl }),
+        ...(formData.customStoriesMedia && {
+          customStoriesMedia: true,
+        }),
+        ...(formData.storyImageUrl && {
+          storyImageUrl: formData.storyImageUrl,
+        }),
+        ...(formData.storyVideoUrl && {
+          storyVideoUrl: formData.storyVideoUrl,
+        }),
         ...(formData.creativeType === "CAROUSEL" &&
           formData.carouselCards.length > 0 && {
             carouselCards: formData.carouselCards,

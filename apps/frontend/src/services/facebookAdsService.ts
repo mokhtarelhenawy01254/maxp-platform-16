@@ -886,6 +886,8 @@ export interface CreateFullAdData {
   objective: string;
   specialAdCategories?: string[];
   buyingType?: "AUCTION" | "RESERVED";
+  isSplitTest?: boolean;
+  splitTestVariable?: "CREATIVE" | "AUDIENCE" | "PLACEMENT";
 
   // Ad Set Level
   performanceGoal?: string;
@@ -905,6 +907,10 @@ export interface CreateFullAdData {
   frequencyCapInterval?: string;
   spendLimit?: number;
   existingCustomerBudgetPercentage?: number;
+  adSchedulingEnabled?: boolean;
+  adScheduleStartHour?: number;
+  adScheduleEndHour?: number;
+  adScheduleDays?: number[];
 
   // Schedule Data
   startTime?: string;
@@ -935,6 +941,7 @@ export interface CreateFullAdData {
     devicePlatforms?: string[];
     onlyWifi?: boolean;
     excludedInterests?: unknown[];
+    narrowInterests?: unknown[];
     customAudiences?: string[];
     lookalikeAudiences?: string[];
     excludedAudiences?: string[];
@@ -951,6 +958,7 @@ export interface CreateFullAdData {
   publisherPlatforms?: string[];
   devicePlatforms?: string[];
   onlyWifi?: boolean;
+  inventoryFilter?: "STANDARD" | "FULL" | "LIMITED";
 
   // Ad Creative Data
   adName?: string;
@@ -969,6 +977,9 @@ export interface CreateFullAdData {
   imageHash?: string;
   videoUrl?: string;
   videoId?: string;
+  customStoriesMedia?: boolean;
+  storyImageUrl?: string;
+  storyVideoUrl?: string;
   carouselCards?: Array<{
     id: string;
     imageUrl?: string;

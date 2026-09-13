@@ -12,6 +12,7 @@ import {
   Monitor,
   Wifi,
   CheckCircle2,
+  ShieldCheck,
 } from "lucide-react";
 import type { FormData } from "../types";
 import { PLACEMENTS } from "../constants";
@@ -309,6 +310,78 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
           </div>
         </div>
       )}
+
+      {/* Brand Safety / Inventory Filter */}
+      <div className="border-t border-gray-200 pt-5 mt-2 space-y-3">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <h4 className="text-sm font-bold text-gray-900">
+            سلامة العلامة التجارية وفلتر المخزون (Inventory Filter)
+          </h4>
+        </div>
+        <p className="text-xs text-gray-500">
+          تحكم في مستوى ملاءمة المحتوى وسياق الفيديوهات والصفحات التي يظهر بجوارها إعلانك لضمان عدم ارتباط علامتك بمحتوى حساس.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+          {[
+            {
+              id: "STANDARD",
+              title: "المخزون القياسي (Standard)",
+              badge: "موصى به",
+              badgeColor: "bg-emerald-100 text-emerald-800",
+              desc: "توازن معتدل بين أمان العلامة التجارية والوصول الجماهيري الواسع. يستبعد المحتوى الصريح والجدلي للغاية.",
+            },
+            {
+              id: "FULL",
+              title: "المخزون الكامل (Expanded)",
+              badge: "أقصى وصول",
+              badgeColor: "bg-blue-100 text-blue-800",
+              desc: "أعلى نسبة وصول بأقل تكلفة ممكنة، مناسب عندما لا تكون حساسية المحتوى أولوية قصوى.",
+            },
+            {
+              id: "LIMITED",
+              title: "المخزون المحدود (Limited)",
+              badge: "أقصى حماية",
+              badgeColor: "bg-amber-100 text-amber-800",
+              desc: "أعلى درجات الحماية والحذر للعلامات التجارية الكبرى. يستبعد أي محتوى يحتوي على لغة قوية أو مواضيع حساسة.",
+            },
+          ].map((tier) => {
+            const isSelected = (formData.inventoryFilter || "STANDARD") === tier.id;
+            return (
+              <button
+                key={tier.id}
+                type="button"
+                onClick={() => handleChange("inventoryFilter", tier.id)}
+                className={`p-3 rounded-xl border text-right transition-all flex flex-col justify-between ${
+                  isSelected
+                    ? "border-emerald-500 bg-emerald-50/50 shadow-xs"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-bold text-gray-900">{tier.title}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${tier.badgeColor}`}>
+                      {tier.badge}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-600 leading-relaxed">{tier.desc}</p>
+                </div>
+                <div className="mt-3 flex items-center justify-end">
+                  <div
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                      isSelected ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-300"
+                    }`}
+                  >
+                    {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };

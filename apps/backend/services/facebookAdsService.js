@@ -827,6 +827,32 @@ class FacebookAdsService {
         adSetData.attribution_spec = attributionSpec;
       }
 
+      // Dayparting / Ad Scheduling (Supported only with lifetime budget)
+      if (data.adSchedulingEnabled && Array.isArray(data.adScheduleDays) && data.adScheduleDays.length > 0 && budgetType === 'LIFETIME') {
+        const startMinute = Math.max(0, Math.min(1440, (Number(data.adScheduleStartHour) || 0) * 60));
+        const endMinute = Math.max(0, Math.min(1440, (Number(data.adScheduleEndHour) || 24) * 60));
+        adSetData.pacing_type = ['standard'];
+        adSetData.adset_schedule = [
+          {
+            days: data.adScheduleDays,
+            start_minute: startMinute,
+            end_minute: endMinute,
+            timezone_type: 'USER'
+          }
+        ];
+      }
+
+      // Brand Safety / Inventory Filter
+      if (data.inventoryFilter) {
+        const filterMap = {
+          STANDARD: 'BARRIER_MEDIUM',
+          FULL: 'BARRIER_LOW',
+          LIMITED: 'BARRIER_HIGH'
+        };
+        const barrier = filterMap[data.inventoryFilter] || data.inventoryFilter;
+        adSetData.inventory_filter = barrier;
+      }
+
       // ✅ v22.0: Advantage+ Placements (Automatic) or Manual Placements
       if (placementType === 'AUTOMATIC' || !placementType) {
         // Automatic placements are Meta's default when no manual placement
@@ -1073,13 +1099,33 @@ class FacebookAdsService {
       }
     }
 
-    // Flexible targeting (AND/OR logic)
-    if (targeting.flexibleSpec && targeting.flexibleSpec.length > 0) {
+    // Detailed Targeting: Narrow Audience (AND logic)
+    if (targeting.narrowInterests && targeting.narrowInterests.length > 0) {
+      const baseInterests = (targeting.interests || []).map(i => 
+        typeof i === 'object' ? i : { id: i, name: i }
+      );
+      const narrowInterests = targeting.narrowInterests.map(i => 
+        typeof i === 'object' ? i : { id: i, name: i }
+      );
+      spec.flexible_spec = [
+        ...(baseInterests.length > 0 ? [{ interests: baseInterests }] : []),
+        { interests: narrowInterests }
+      ];
+      // Prevent conflicting flat interests when flexible_spec is active
+      delete spec.interests;
+    } else if (targeting.flexibleSpec && targeting.flexibleSpec.length > 0) {
       spec.flexible_spec = targeting.flexibleSpec;
     }
 
-    // Exclusions
-    if (targeting.exclusions) {
+    // Detailed Targeting Exclusions
+    if (targeting.excludedInterests && targeting.excludedInterests.length > 0) {
+      spec.exclusions = {
+        ...(spec.exclusions || {}),
+        interests: targeting.excludedInterests.map(i => 
+          typeof i === 'object' ? i : { id: i, name: i }
+        )
+      };
+    } else if (targeting.exclusions) {
       spec.exclusions = targeting.exclusions;
     }
 
@@ -1756,6 +1802,31 @@ class FacebookAdsService {
         }
       }
 
+      let finalStoryImageHash = null;
+      let finalStoryVideoId = null;
+
+      if (data.customStoriesMedia) {
+        if (data.storyImageUrl) {
+          console.log('📦 Step 0d: Uploading Story/Reels Image...');
+          const uploadResult = await this.uploadImage(data.storyImageUrl);
+          if (uploadResult.success) {
+            finalStoryImageHash = uploadResult.hash;
+            console.log('✅ Story Image uploaded:', finalStoryImageHash);
+          }
+        }
+        if (data.storyVideoUrl) {
+          console.log('📦 Step 0e: Uploading Story/Reels Video...');
+          const uploadResult = await this.uploadVideo(data.storyVideoUrl, {
+            name: `${adName || campaignName} - Story/Reels 9:16`,
+            description
+          });
+          if (uploadResult.success) {
+            finalStoryVideoId = uploadResult.videoId;
+            console.log('✅ Story Video uploaded:', finalStoryVideoId);
+          }
+        }
+      }
+
       const effectiveBidStrategy =
         this.normalizeBidStrategyInput(bidStrategy) || 'LOWEST_COST';
       const normalizedObjective = this.normalizeObjective(objective);
@@ -1787,7 +1858,11 @@ class FacebookAdsService {
         specialAdCategories,
         buyingType,
         bidStrategy: effectiveBidStrategy,
-        bidValue
+        bidValue,
+        ...(data.isSplitTest && {
+          isSplitTest: true,
+          splitTestVariable: data.splitTestVariable || 'CREATIVE'
+        })
       };
 
       // إذا كان CBO مفعل، أضف الميزانية على مستوى الحملة
@@ -1841,7 +1916,12 @@ class FacebookAdsService {
         bidValue: budgetOptimization ? undefined : bidValue,
         frequencyCap,
         frequencyCapInterval,
-        existingCustomerBudgetPercentage
+        existingCustomerBudgetPercentage,
+        inventoryFilter: data.inventoryFilter,
+        adSchedulingEnabled: data.adSchedulingEnabled,
+        adScheduleDays: data.adScheduleDays,
+        adScheduleStartHour: data.adScheduleStartHour,
+        adScheduleEndHour: data.adScheduleEndHour
       };
 
       // إذا لم يكن CBO مفعل، أضف الميزانية على مستوى AdSet
@@ -1898,6 +1978,9 @@ class FacebookAdsService {
         urlParameters,
         imageHash: finalImageHash,
         videoId: finalVideoId,
+        customStoriesMedia: data.customStoriesMedia,
+        storyImageHash: finalStoryImageHash,
+        storyVideoId: finalStoryVideoId,
         carouselCards: preparedCarouselCards,
         postId,
         textVariations,
@@ -1954,6 +2037,8 @@ class FacebookAdsService {
         creativeId: adResult.creativeId,
         imageHash: finalImageHash,
         videoId: finalVideoId,
+        storyImageHash: finalStoryImageHash,
+        storyVideoId: finalStoryVideoId,
         carouselCards: preparedCarouselCards,
         results,
         message: 'Full ad created successfully!'
