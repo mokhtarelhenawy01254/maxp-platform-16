@@ -172,13 +172,13 @@ export default function AgentMarketplacePage() {
           </div>
 
           {/* Search + Tier Toggle */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0 w-full sm:w-auto">
             {/* Tier Switch */}
-            <div className="flex items-center rounded-lg border border-border/60 bg-muted/30 p-0.5 text-xs font-medium">
+            <div className="flex items-center justify-between sm:justify-start rounded-lg border border-border/60 bg-muted/30 p-0.5 text-xs font-medium">
               <button
                 type="button"
                 onClick={() => setTierFilter("all")}
-                className={`px-2.5 py-1 rounded-md transition-all ${
+                className={`flex-1 sm:flex-initial text-center px-2.5 py-1 rounded-md transition-all ${
                   tierFilter === "all"
                     ? "bg-background font-semibold text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -189,7 +189,7 @@ export default function AgentMarketplacePage() {
               <button
                 type="button"
                 onClick={() => setTierFilter("free")}
-                className={`px-2.5 py-1 rounded-md transition-all ${
+                className={`flex-1 sm:flex-initial text-center px-2.5 py-1 rounded-md transition-all ${
                   tierFilter === "free"
                     ? "bg-background font-semibold text-emerald-600 dark:text-emerald-400 shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -200,7 +200,7 @@ export default function AgentMarketplacePage() {
               <button
                 type="button"
                 onClick={() => setTierFilter("pro")}
-                className={`px-2.5 py-1 rounded-md transition-all ${
+                className={`flex-1 sm:flex-initial text-center px-2.5 py-1 rounded-md transition-all ${
                   tierFilter === "pro"
                     ? "bg-background font-semibold text-amber-600 dark:text-amber-400 shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -211,14 +211,14 @@ export default function AgentMarketplacePage() {
             </div>
 
             {/* Search Input */}
-            <div className="relative flex-1 md:w-56">
+            <div className="relative w-full sm:w-56">
               <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none stroke-[1.5]" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="بحث بالاسم أو التخصص…"
-                className="w-full h-8 ps-8 pe-7 rounded-lg border border-border/60 bg-background text-xs text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                className="w-full h-8.5 sm:h-8 ps-8 pe-7 rounded-lg border border-border/60 bg-background text-xs text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
               />
               {search && (
                 <button

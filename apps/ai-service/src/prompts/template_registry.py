@@ -212,9 +212,8 @@ class PromptTemplateRegistry:
                 loop = None
 
             if loop and loop.is_running():
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor() as pool:
-                    db_templates = pool.submit(asyncio.run, _fetch()).result()
+                # Avoid cross-thread asyncio.run on shared asyncpg engine to prevent connection pool corruption
+                return False
             else:
                 db_templates = asyncio.run(_fetch())
 

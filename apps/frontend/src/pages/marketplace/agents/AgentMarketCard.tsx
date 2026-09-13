@@ -48,12 +48,11 @@ export const AgentMarketCard: React.FC<AgentMarketCardProps> = ({
       <div>
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="relative shrink-0">
-            <div className="relative size-14 overflow-hidden rounded-xl border border-border/80 bg-muted/40 shadow-sm">
+            <div className="relative size-14 overflow-hidden rounded-xl border border-border/80 bg-muted/50 shadow-sm">
               <img
                 src={agent.avatarUrl}
                 alt={agent.name}
-                className="size-full object-cover grayscale contrast-125 transition-transform duration-300 group-hover:scale-105 group-hover:grayscale-0"
-                loading="lazy"
+                className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </div>
             <span
