@@ -31,6 +31,11 @@ const INVENTORY_WELCOME_TEXT =
 
 const INVENTORY_QUICK_PROMPTS: StudioQuickPrompt[] = [
   {
+    label: "إدراج منتج جديد متعدد المتغيرات",
+    generatePrompt: () =>
+      "أريد إضافة منتج جديد للمتجر متعدد الألوان والمقاسات. ساعدني في تحديد التصنيف وأكواد الصنف والتسعير الذكي.",
+  },
+  {
     label: "فحص الأصناف منخفضة المخزون",
     generatePrompt: () =>
       "قم بجرد وفحص المنتجات التي اقتربت كمياتها من النفاد وحدد نقاط إعادة الطلب المقترحة.",
@@ -134,6 +139,14 @@ const InventoryAiStudioPage: React.FC = () => {
       );
 
       if (res.success) {
+        if (res.agentId && (!activeAgent || activeAgent.id !== res.agentId)) {
+          setActiveAgent((prev) => ({
+            id: res.agentId!,
+            name: prev?.name || "أكرم — اختصاصي إدارة وإدراج المنتجات",
+            role: prev?.role || "PRODUCT_CREATOR",
+            isRouted: true,
+          }));
+        }
         const agentMsg = {
           id: `agent-${Date.now()}`,
           sender: "agent" as const,

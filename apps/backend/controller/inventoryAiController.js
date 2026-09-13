@@ -32,93 +32,16 @@ class InventoryAiController {
         return res.status(400).json({ success: false, error: 'message is required' });
       }
 
-      let targetAgentId = requestedAgentId;
-
-      // 1. First attempt: Discover agent via AI Service Admin Client
-      if (!targetAgentId) {
-        try {
-          const agents = await aiServiceAdminClient.listAgents(companyId);
-          if (Array.isArray(agents) && agents.length > 0) {
-            // First check for active agent routed to INVENTORY_STUDIO or INVENTORY
-            const routedAgent = agents.find(a =>
-              (a.status === 'ACTIVE' || !a.status) &&
-              (a.allowed_channels || a.allowedChannels || []).map(c => String(c).toUpperCase()).includes('INVENTORY_STUDIO')
-            );
-            if (routedAgent?.id) {
-              targetAgentId = routedAgent.id;
-            } else {
-              const inventoryAgent = agents.find(a => a.role === 'INVENTORY' && (a.status === 'ACTIVE' || !a.status))
-                || agents.find(a => a.role === 'INVENTORY')
-                || agents.find(a => a.templateSlug === 'inventory-pricing-agent');
-              if (inventoryAgent?.id) {
-                targetAgentId = inventoryAgent.id;
-              }
-            }
-          }
-        } catch (err) {
-          console.warn('[InventoryAI] Could not list agents from aiServiceAdminClient:', err.message);
-        }
+      // Resolve the real agent for this company (supports PRODUCT_CREATOR and INVENTORY)
+      const resolvedAgent = await this._resolveStudioAgent(companyId, requestedAgentId);
+      if (!resolvedAgent || !resolvedAgent.id) {
+        return res.status(503).json({
+          success: false,
+          error: 'لا يوجد وكيل ذكاء اصطناعي مفعل للمتجر حالياً. يرجى توظيف وكيل المنتجات أو المخزون.',
+        });
       }
 
-      // 2. Second attempt: Fallback query directly to PostgreSQL ai.agents
-      if (!targetAgentId) {
-        const prisma = getSharedPrismaClient();
-        try {
-          const rows = await prisma.$queryRaw`
-            SELECT id, name, role FROM ai.agents 
-            WHERE (role = 'INVENTORY' OR template_slug = 'inventory-pricing-agent')
-              AND (company_id = ${companyId} OR company_id IS NULL)
-            ORDER BY (CASE WHEN company_id = ${companyId} THEN 0 ELSE 1 END), created_at DESC
-            LIMIT 1
-          `;
-          if (rows && rows.length > 0) {
-            targetAgentId = rows[0].id;
-          }
-        } catch (err) {
-          console.warn('[InventoryAI] Could not query ai.agents table directly:', err.message);
-        }
-      }
-
-      // 3. Third attempt: Auto-provision / lazy-spawn INVENTORY agent if not yet present
-      if (!targetAgentId) {
-        try {
-          console.log(`[InventoryAI] Auto-provisioning INVENTORY agent for company ${companyId}...`);
-          const spawned = await aiServiceAdminClient.spawnAgent({
-            companyId,
-            role: 'INVENTORY',
-            name: 'وكيل إدارة المنتجات والمخزون والتسعير',
-            templateSlug: 'inventory-pricing-agent',
-            status: 'ACTIVE',
-            allowedTools: [
-              'product_search',
-              'product_low_stock',
-              'product_create',
-              'inventory_check',
-              'inventory_adjust',
-              'product_update_price',
-              'discount_create_draft',
-              'audit_read',
-            ],
-            allowedSkills: [
-              'catalog-search',
-              'low-stock-watch',
-              'pricing-review',
-              'discount-proposal',
-            ],
-          });
-          if (spawned?.id) {
-            targetAgentId = spawned.id;
-          }
-        } catch (spawnErr) {
-          console.warn('[InventoryAI] Could not auto-spawn agent:', spawnErr.message);
-        }
-      }
-
-      // Fallback agent identifier if DB records are still populating
-      if (!targetAgentId) {
-        targetAgentId = `inventory_agent_${String(companyId).slice(-6)}`;
-      }
-
+      const targetAgentId = resolvedAgent.id;
       const scopedThreadId = threadId.endsWith(`_${companyId}`) ? threadId : `${threadId}_${companyId}`;
 
       // Automatically persist incoming user message in Cloud DB
@@ -149,20 +72,30 @@ class InventoryAiController {
         console.warn('[InventoryAI] Could not load prior messages:', memErr.message);
       }
 
-      // Send to AI Service
-      const result = await aiServiceAdminClient.chatWithAgent({
-        companyId,
-        agentId: targetAgentId,
-        message,
-        threadId: scopedThreadId,
-        channel: 'inventory_studio',
-        source_channel: 'inventory_studio',
-        memory_context: {
-          recentMessages,
-          activeProduct: activeProductContext,
-          active_product_context: activeProductContext,
-        },
-      });
+      // Send to AI Service with resilient error capture
+      let result;
+      try {
+        result = await aiServiceAdminClient.chatWithAgent({
+          companyId,
+          agentId: targetAgentId,
+          message,
+          threadId: scopedThreadId,
+          channel: 'inventory_studio',
+          source_channel: 'inventory_studio',
+          memory_context: {
+            recentMessages,
+            activeProduct: activeProductContext,
+            active_product_context: activeProductContext,
+          },
+        });
+      } catch (chatErr) {
+        console.error('[InventoryAI] AI Service chatWithAgent failed:', chatErr.message);
+        const isNotFound = chatErr.message && chatErr.message.includes('404');
+        return res.status(isNotFound ? 404 : 502).json({
+          success: false,
+          error: `تعذر التواصل مع وكيل الذكاء الاصطناعي: ${chatErr.message}`,
+        });
+      }
 
       // Handle rate limits or errors
       const resErrorCode = result?.error_code || result?.errorCode;
@@ -205,6 +138,146 @@ class InventoryAiController {
   }
 
   /**
+   * Helper: Resolves or auto-provisions a real, valid AI Agent for the inventory/product studio.
+   * Multi-tenant resilient: Works for Swan and ANY OTHER company automatically.
+   */
+  async _resolveStudioAgent(companyId, requestedAgentId = null) {
+    const prisma = getSharedPrismaClient();
+
+    // 1. If a specific agentId was requested, verify if it's an actual DB agent record
+    if (requestedAgentId && typeof requestedAgentId === 'string' && !requestedAgentId.includes('-agent')) {
+      try {
+        const rows = await prisma.$queryRaw`
+          SELECT id, name, role, template_slug as "templateSlug", status, config
+          FROM ai.agents
+          WHERE id = ${requestedAgentId} AND (company_id = ${companyId} OR company_id IS NULL)
+            AND (status != 'ARCHIVED' OR status IS NULL)
+          LIMIT 1
+        `;
+        if (rows && rows.length > 0) {
+          return { ...rows[0], isRouted: true };
+        }
+      } catch (err) {
+        console.warn('[InventoryAI] Error verifying requestedAgentId:', err.message);
+      }
+    }
+
+    // 2. Query company agents supporting inventory or product creation
+    // Roles supported: PRODUCT_CREATOR, INVENTORY
+    try {
+      const rows = await prisma.$queryRaw`
+        SELECT id, name, role, template_slug as "templateSlug", status, config, channels
+        FROM ai.agents
+        WHERE (role IN ('PRODUCT_CREATOR', 'INVENTORY') 
+               OR template_slug IN ('product-creator-agent', 'inventory-pricing-agent'))
+          AND (company_id = ${companyId} OR company_id IS NULL)
+          AND (status = 'ACTIVE' OR status IS NULL)
+        ORDER BY 
+          (CASE WHEN company_id = ${companyId} THEN 0 ELSE 1 END),
+          (CASE WHEN role = 'PRODUCT_CREATOR' THEN 0 WHEN role = 'INVENTORY' THEN 1 ELSE 2 END),
+          created_at DESC
+        LIMIT 10
+      `;
+
+      if (rows && rows.length > 0) {
+        const routed = rows.find(a => {
+          const ch = Array.isArray(a.channels) ? a.channels : [];
+          return ch.map(c => String(c).toUpperCase()).includes('INVENTORY_STUDIO');
+        });
+        const selected = routed || rows[0];
+        return {
+          id: selected.id,
+          name: selected.name,
+          role: selected.role,
+          templateSlug: selected.templateSlug,
+          isRouted: !!routed,
+        };
+      }
+    } catch (dbErr) {
+      console.warn('[InventoryAI] Could not query ai.agents for studio:', dbErr.message);
+    }
+
+    // 3. Fallback discovery via AI Service Admin Client
+    try {
+      const agents = await aiServiceAdminClient.listAgents(companyId);
+      if (Array.isArray(agents) && agents.length > 0) {
+        const match = agents.find(a => 
+          (a.role === 'PRODUCT_CREATOR' || a.role === 'INVENTORY' || 
+           a.templateSlug === 'product-creator-agent' || a.templateSlug === 'inventory-pricing-agent') &&
+          (a.status === 'ACTIVE' || !a.status)
+        );
+        if (match?.id) {
+          return { id: match.id, name: match.name, role: match.role, isRouted: true };
+        }
+      }
+    } catch (clientErr) {
+      console.warn('[InventoryAI] listAgents client check failed:', clientErr.message);
+    }
+
+    // 4. If no agent exists at all for this company (e.g. brand new tenant), auto-provision product-creator-agent on the fly
+    try {
+      console.log(`[InventoryAI] Auto-provisioning product-creator-agent for company ${companyId}...`);
+      const spawned = await aiServiceAdminClient.spawnAgent({
+        companyId,
+        role: 'PRODUCT_CREATOR',
+        name: 'أكرم — اختصاصي إدارة وإدراج المنتجات',
+        templateSlug: 'product-creator-agent',
+        status: 'ACTIVE',
+        allowedTools: [
+          'product_create',
+          'product_search',
+          'category_list',
+          'product_update_price',
+          'competitor_search',
+          'competitor_price_compare',
+          'inventory_check',
+          'agent_handoff_to',
+          'record_learned_rule',
+          'manage_agent_skill',
+        ],
+        allowedSkills: [
+          'catalog-builder',
+          'seo-copywriting',
+          'pricing-strategy',
+        ],
+        allowedChannels: ['INVENTORY_STUDIO', 'CHAT'],
+        config: {
+          provider: 'DEEPSEEK',
+          keyId: 'cmqguj2zc08akjugf77y348pl',
+        },
+      });
+
+      if (spawned?.id) {
+        return {
+          id: spawned.id,
+          name: spawned.name || 'أكرم — اختصاصي إدارة وإدراج المنتجات',
+          role: spawned.role || 'PRODUCT_CREATOR',
+          isRouted: true,
+        };
+      }
+    } catch (spawnErr) {
+      console.error('[InventoryAI] Auto-provisioning failed:', spawnErr.message);
+    }
+
+    // 5. Ultimate fallback: pick any active agent for this company to avoid 404
+    try {
+      const anyAgent = await prisma.$queryRaw`
+        SELECT id, name, role FROM ai.agents
+        WHERE company_id = ${companyId} AND status = 'ACTIVE'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
+      if (anyAgent && anyAgent.length > 0) {
+        return { ...anyAgent[0], isRouted: false };
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    return null;
+  }
+
+  /**
    * GET /api/v1/inventory/ai/active-agent
    */
   async getActiveAgent(req, res) {
@@ -214,39 +287,27 @@ class InventoryAiController {
         return res.status(401).json({ success: false, error: 'Company ID is required' });
       }
 
-      let activeAgent = null;
+      const prisma = getSharedPrismaClient();
       let availableAgents = [];
 
       try {
-        const agents = await aiServiceAdminClient.listAgents(companyId);
-        if (Array.isArray(agents) && agents.length > 0) {
-          availableAgents = agents
-            .filter(a => a.role === 'INVENTORY' || a.templateSlug === 'inventory-pricing-agent')
-            .map(a => ({ id: a.id, name: a.name, role: a.role }));
-
-          const routed = agents.find(a =>
-            (a.status === 'ACTIVE' || !a.status) &&
-            (a.allowed_channels || a.allowedChannels || []).map(c => String(c).toUpperCase()).includes('INVENTORY_STUDIO')
-          );
-
-          if (routed) {
-            activeAgent = { id: routed.id, name: routed.name, role: routed.role, isRouted: true };
-          } else if (availableAgents.length > 0) {
-            activeAgent = { ...availableAgents[0], isRouted: false };
-          }
+        const rows = await prisma.$queryRaw`
+          SELECT id, name, role, template_slug as "templateSlug"
+          FROM ai.agents
+          WHERE (role IN ('PRODUCT_CREATOR', 'INVENTORY') 
+                 OR template_slug IN ('product-creator-agent', 'inventory-pricing-agent'))
+            AND (company_id = ${companyId} OR company_id IS NULL)
+            AND (status = 'ACTIVE' OR status IS NULL)
+          ORDER BY (CASE WHEN company_id = ${companyId} THEN 0 ELSE 1 END), created_at DESC
+        `;
+        if (Array.isArray(rows)) {
+          availableAgents = rows.map(r => ({ id: r.id, name: r.name, role: r.role }));
         }
-      } catch (clientErr) {
-        console.warn('[InventoryAI] listAgents failed:', clientErr.message);
+      } catch (err) {
+        console.warn('[InventoryAI] Could not query availableAgents:', err.message);
       }
 
-      if (!activeAgent) {
-        activeAgent = {
-          id: 'inventory-pricing-agent',
-          name: 'وكيل إدارة المنتجات والمخزون والتسعير',
-          role: 'INVENTORY',
-          isRouted: false,
-        };
-      }
+      const activeAgent = await this._resolveStudioAgent(companyId);
 
       return res.json({
         success: true,
