@@ -65,6 +65,13 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 - **Dedicated Route & State Isolation**: Each screen MUST maintain its own localized state, data fetching, and Error Boundary. A crash or edge-case error in one screen (e.g. reports or vouchers) must NEVER take down or degrade other independent screens (such as the technician's active case bench).
 - **Clean File Structure**: Group related domain screens under a dedicated feature folder (e.g. `pages/dental-lab/technician/` containing `DentalTechBenchTab.tsx`, `DentalTechKioskTab.tsx`, `DentalTechWageTab.tsx`, `DentalTechNotificationsTab.tsx`, `DentalTechReportsTab.tsx`).
 
+## 🤖 Rule: AI Agent Construction & Evolution (`maxp-agent-builder`)
+- **Strict Single Source of Truth:** All AI agents, contracts (`agent.json`, `SOUL.md`, `PERSONA.md`, `TOOLS.md`, `AGENTS.md`, `evals.json`), backend integrations, and agent-facing UI screens MUST be built and maintained in strict compliance with `.agents/skills/maxp-agent-builder/SKILL.md`.
+- **Cloud Database-Backed Sessions:** Agent conversation sessions must NEVER be stored solely in `localStorage`. They must be persisted in PostgreSQL (`companyId` + `userId` scoped) for seamless cross-device synchronization and data security.
+- **Rich Markdown Tables in Chat:** All agent chat interfaces must natively render Markdown tables, structured headers, and decision status chips (`SCALE`, `KILL`, `WATCH`, etc.).
+- **Asset Visibility Tools:** Agents must never be launched blind without account introspection (`_account_info`) and real order attribution (`_attribution_report`) tools.
+- **Continuous Evolutionary Updates:** Whenever any error, edge case, or enhancement is discovered regarding agents, update `.agents/skills/maxp-agent-builder/SKILL.md` immediately with the resolution and checklist item.
+
 ## 🚀 Post-Task Automatic Git Push Rule
 
 - **Mandatory Action:** After completing **ANY** task (feature, bug fix, configuration update, refactoring, or document edit), automatically commit all relevant changes and push directly to `https://github.com/mokhtar267/maxp-platform-6` (`mokhtar267` remote).
