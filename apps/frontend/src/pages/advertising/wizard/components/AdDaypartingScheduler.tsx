@@ -40,9 +40,9 @@ export const AdDaypartingScheduler: React.FC<AdDaypartingSchedulerProps> = ({
 }) => {
   if (!isLifetimeBudget) {
     return (
-      <div className="p-3 bg-amber-50/60 border border-amber-200/80 rounded-xl flex items-center justify-between text-xs text-amber-800">
+      <div className="p-3 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 rounded-xl flex items-center justify-between text-xs text-amber-800 dark:text-amber-200">
         <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+          <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <span>
             <strong>جدولة ساعات العرض (Dayparting):</strong> تتطلب اختيار &quot;ميزانية إجمالية (Lifetime Budget)&quot; لتفعيل ساعات محددة.
           </span>
@@ -52,12 +52,12 @@ export const AdDaypartingScheduler: React.FC<AdDaypartingSchedulerProps> = ({
   }
 
   return (
-    <div className="p-4 bg-purple-50/50 border border-purple-200/80 rounded-xl space-y-4">
+    <div className="p-4 bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-900/40 rounded-xl space-y-4">
       {/* Header with toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-purple-600" />
-          <h4 className="text-sm font-bold text-gray-900">
+          <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <h4 className="text-sm font-bold text-gray-900 dark:text-white">
             جدولة ساعات وأيام العرض (Ad Scheduling / Dayparting)
           </h4>
         </div>
@@ -68,11 +68,11 @@ export const AdDaypartingScheduler: React.FC<AdDaypartingSchedulerProps> = ({
             onChange={(e) => onToggleEnabled(e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+          <div className="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
         </label>
       </div>
 
-      <p className="text-xs text-gray-600">
+      <p className="text-xs text-gray-600 dark:text-gray-400">
         حدد الساعات والأيام التي يعمل فيها الإعلان لإيقاف حرق الميزانية أوقات الفجر أو خارج ساعات عمل فريق المبيعات.
       </p>
 
@@ -80,8 +80,8 @@ export const AdDaypartingScheduler: React.FC<AdDaypartingSchedulerProps> = ({
         <div className="space-y-4 pt-1">
           {/* Quick Presets */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-medium text-gray-500 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-purple-500" />
+            <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-purple-500 dark:text-purple-400" />
               قوالب شائعة:
             </span>
             {PRESETS.map((p, idx) => {
@@ -94,7 +94,7 @@ export const AdDaypartingScheduler: React.FC<AdDaypartingSchedulerProps> = ({
                   className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${
                     isActive
                       ? "bg-purple-600 text-white border-purple-600 shadow-xs"
-                      : "bg-white border-purple-200 text-purple-700 hover:bg-purple-50"
+                      : "bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/30"
                   }`}
                 >
                   {p.label}
@@ -104,15 +104,15 @@ export const AdDaypartingScheduler: React.FC<AdDaypartingSchedulerProps> = ({
           </div>
 
           {/* Time Range Pickers */}
-          <div className="grid grid-cols-2 gap-3 bg-white p-3 rounded-lg border border-purple-200">
+          <div className="grid grid-cols-2 gap-3 bg-white dark:bg-gray-800/80 p-3 rounded-lg border border-purple-200 dark:border-purple-900/40">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 بداية العرض يومياً
               </label>
               <select
                 value={startHour}
                 onChange={(e) => onChangeHours(parseInt(e.target.value), endHour)}
-                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
               >
                 {Array.from({ length: 24 }, (_, i) => (
                   <option key={i} value={i}>
@@ -123,13 +123,13 @@ export const AdDaypartingScheduler: React.FC<AdDaypartingSchedulerProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 نهاية العرض يومياً
               </label>
               <select
                 value={endHour}
                 onChange={(e) => onChangeHours(startHour, parseInt(e.target.value))}
-                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
               >
                 {Array.from({ length: 24 }, (_, i) => i + 1).map((i) => (
                   <option key={i} value={i}>
@@ -142,7 +142,7 @@ export const AdDaypartingScheduler: React.FC<AdDaypartingSchedulerProps> = ({
 
           {/* Days of Week */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-2">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
               أيام التشغيل الأسبوعية
             </label>
             <div className="grid grid-cols-7 gap-1.5">
@@ -156,7 +156,7 @@ export const AdDaypartingScheduler: React.FC<AdDaypartingSchedulerProps> = ({
                     className={`py-1.5 px-1 rounded-lg text-xs font-semibold text-center transition-all ${
                       isSelected
                         ? "bg-purple-600 text-white shadow-xs"
-                        : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
+                        : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                     }`}
                   >
                     {day.label}
@@ -166,7 +166,7 @@ export const AdDaypartingScheduler: React.FC<AdDaypartingSchedulerProps> = ({
             </div>
           </div>
 
-          <div className="text-[11px] text-purple-800 bg-purple-100/60 p-2.5 rounded-lg">
+          <div className="text-[11px] text-purple-800 dark:text-purple-200 bg-purple-100/60 dark:bg-purple-950/40 p-2.5 rounded-lg">
             ✓ سيعمل الإعلان في الأيام المحددة فقط من الساعة{" "}
             <strong>{startHour}:00</strong> حتى <strong>{endHour}:00</strong> حسب التوقيت المحلي للمشاهد.
           </div>

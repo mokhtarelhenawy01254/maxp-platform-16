@@ -16,7 +16,7 @@ export const InstagramIdentitySelector: React.FC<InstagramIdentitySelectorProps>
 
   return (
     <div className="space-y-2 pt-1">
-      <label className="block text-xs font-semibold text-gray-700">
+      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
         هوية الحساب على إنستجرام (Instagram Account Identity)
       </label>
 
@@ -26,25 +26,25 @@ export const InstagramIdentitySelector: React.FC<InstagramIdentitySelectorProps>
           onClick={() => onInstagramActorIdChange("")}
           className={`p-2.5 rounded-xl border text-right transition-all flex items-center justify-between ${
             isUsingPageIdentity
-              ? "border-pink-500 bg-pink-50/50 text-gray-900 shadow-xs"
-              : "border-gray-200 bg-white hover:border-gray-300 text-gray-600"
+              ? "border-pink-500 bg-pink-50/50 dark:bg-pink-950/30 text-gray-900 dark:text-white shadow-xs"
+              : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 text-gray-600 dark:text-gray-300"
           }`}
         >
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-pink-100 text-pink-700">
+            <div className="p-1.5 rounded-lg bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300">
               <Instagram className="w-3.5 h-3.5" />
             </div>
             <div>
-              <div className="text-xs font-bold text-gray-900">
+              <div className="text-xs font-bold text-gray-900 dark:text-white">
                 استخدام صفحة فيسبوك
               </div>
-              <div className="text-[10px] text-gray-500">
+              <div className="text-[10px] text-gray-500 dark:text-gray-400">
                 {pageName ? `@${pageName.replace(/\s+/g, "_").toLowerCase()}` : "ظهور بهوية الصفحة على IG"}
               </div>
             </div>
           </div>
           {isUsingPageIdentity && (
-            <CheckCircle2 className="w-4 h-4 text-pink-600 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-pink-600 dark:text-pink-400 shrink-0" />
           )}
         </button>
 
@@ -53,25 +53,25 @@ export const InstagramIdentitySelector: React.FC<InstagramIdentitySelectorProps>
           onClick={() => onInstagramActorIdChange(instagramActorId || "manual_ig")}
           className={`p-2.5 rounded-xl border text-right transition-all flex items-center justify-between ${
             !isUsingPageIdentity
-              ? "border-pink-500 bg-pink-50/50 text-gray-900 shadow-xs"
-              : "border-gray-200 bg-white hover:border-gray-300 text-gray-600"
+              ? "border-pink-500 bg-pink-50/50 dark:bg-pink-950/30 text-gray-900 dark:text-white shadow-xs"
+              : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 text-gray-600 dark:text-gray-300"
           }`}
         >
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-gray-100 text-gray-700">
+            <div className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
               <Globe className="w-3.5 h-3.5" />
             </div>
             <div>
-              <div className="text-xs font-bold text-gray-900">
+              <div className="text-xs font-bold text-gray-900 dark:text-white">
                 حساب إنستجرام مخصص
               </div>
-              <div className="text-[10px] text-gray-500">
+              <div className="text-[10px] text-gray-500 dark:text-gray-400">
                 إدخال معرف حساب IG مربوط
               </div>
             </div>
           </div>
           {!isUsingPageIdentity && (
-            <CheckCircle2 className="w-4 h-4 text-pink-600 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-pink-600 dark:text-pink-400 shrink-0" />
           )}
         </button>
       </div>
@@ -83,7 +83,7 @@ export const InstagramIdentitySelector: React.FC<InstagramIdentitySelectorProps>
             value={instagramActorId === "manual_ig" ? "" : instagramActorId}
             onChange={(e) => onInstagramActorIdChange(e.target.value)}
             placeholder="أدخل معرف حساب إنستجرام المربوط (Instagram Actor ID)"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-pink-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg text-xs focus:ring-2 focus:ring-pink-500"
           />
         </div>
       )}

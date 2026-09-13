@@ -103,19 +103,19 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
   return (
     <div className="space-y-6">
       {/* Advantage+ Audience (v26) */}
-      <div className="bg-gradient-to-r from-purple-50 via-indigo-50/60 to-pink-50 p-4 rounded-xl border border-purple-100">
+      <div className="bg-gradient-to-r from-purple-50 via-indigo-50/60 to-pink-50 dark:from-purple-950/30 dark:via-indigo-950/20 dark:to-pink-950/30 p-4 rounded-xl border border-purple-100 dark:border-purple-900/40">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="font-bold text-gray-900 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-600" />
+              <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 Advantage+ Audience (Meta v26)
               </h4>
-              <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+              <span className="rounded-full bg-purple-100 dark:bg-purple-950/60 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:text-purple-300">
                 الجيل الذكي
               </span>
             </div>
-            <p className="text-xs text-gray-600 mt-1 max-w-xl leading-relaxed">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 max-w-xl leading-relaxed">
               في إصدار v26، تستخدم خوارزميات الذكاء الاصطناعي اهتماماتك وجماهيرك كنقطة انطلاق أولية (Audience Suggestions)، ثم تتوسع ذاتياً لجلب أفضل المشترين بأقل تكلفة ممكنة مع احترام قيود الدولة والسن الصارمة.
             </p>
           </div>
@@ -128,16 +128,16 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
               }
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
           </label>
         </div>
 
-        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-3 border-t border-purple-100/80">
-          <div className="flex items-center gap-1.5 text-slate-700">
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-3 border-t border-purple-100/80 dark:border-purple-900/40">
+          <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
             <span><strong>قيود صارمة (Controls):</strong> الدولة، المحافظة، والحد الأدنى للعمر (تلتزم بها Meta 100%).</span>
           </div>
-          <div className="flex items-center gap-1.5 text-slate-700">
+          <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
             <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
             <span><strong>مقترحات ذكية (Suggestions):</strong> الاهتمامات والجمهور المشابه (بذور للتوسع الذكي).</span>
           </div>
@@ -146,16 +146,16 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
 
       {/* Age Range */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
           الفئة العمرية
         </label>
         <div className="flex items-center gap-4">
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 mb-1">من</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">من</label>
             <select
               value={formData.ageMin}
               onChange={(e) => handleChange("ageMin", parseInt(e.target.value))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
             >
               {Array.from({ length: 53 }, (_, i) => i + 13).map((age) => (
                 <option key={age} value={age}>
@@ -164,13 +164,13 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
               ))}
             </select>
           </div>
-          <span className="text-gray-400 mt-6">—</span>
+          <span className="text-gray-400 dark:text-gray-500 mt-6">—</span>
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 mb-1">إلى</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">إلى</label>
             <select
               value={formData.ageMax}
               onChange={(e) => handleChange("ageMax", parseInt(e.target.value))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
             >
               {Array.from({ length: 53 }, (_, i) => i + 13).map((age) => (
                 <option key={age} value={age}>
@@ -184,7 +184,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
 
       {/* Gender */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
           الجنس
         </label>
         <div className="flex gap-4">
@@ -202,8 +202,8 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
               className={`flex-1 py-3 px-4 border-2 rounded-xl font-medium transition-all ${
                 (formData.genders.length === 0 && gender.value === "") ||
                 (formData.genders.includes(gender.value) && gender.value !== "")
-                  ? "border-blue-500 bg-blue-50 text-blue-700"
-                  : "border-gray-200 hover:border-gray-300"
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300"
+                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
               }`}
             >
               {gender.label}
@@ -228,11 +228,11 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
       />
 
       {/* Advanced Targeting Toggle */}
-      <div className="border-t pt-4">
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
         <button
           type="button"
           onClick={() => setShowAdvancedTargeting(!showAdvancedTargeting)}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+          className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
         >
           <Heart className="w-4 h-4" />
           {showAdvancedTargeting
@@ -243,15 +243,15 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
 
       {/* Advanced Targeting Options */}
       {showAdvancedTargeting && (
-        <div className="space-y-6 bg-gray-50 p-4 rounded-xl">
-          <p className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-medium leading-5 text-blue-800">
+        <div className="space-y-6 bg-gray-50 dark:bg-gray-800/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+          <p className="rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-xs font-medium leading-5 text-blue-800 dark:text-blue-200">
             يتم إرسال الاهتمامات من بحث Meta، الجماهير المخصصة/المشابهة،
             الاستبعادات، اللغات، الأجهزة، والحالة الاجتماعية فقط.
           </p>
 
           {/* Interests Search */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
               <Heart className="w-4 h-4 text-pink-500" />
               الاهتمامات
             </label>
@@ -265,7 +265,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                   handleSearchInterests(e.target.value);
                 }}
                 placeholder="ابحث عن اهتمام (مثال: تسوق، موضة، تقنية...)"
-                className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pr-10 pl-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
               />
               {searchLoading && (
                 <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 animate-spin" />
@@ -274,17 +274,17 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
 
             {/* Search Results */}
             {searchResults.length > 0 && (
-              <div className="mt-2 border rounded-lg max-h-48 overflow-y-auto bg-white">
+              <div className="mt-2 border border-gray-200 dark:border-gray-700 rounded-lg max-h-48 overflow-y-auto bg-white dark:bg-gray-800">
                 {searchResults.map((result) => (
                   <button
                     key={result.id}
                     type="button"
                     onClick={() => addInterest(result)}
-                    className="w-full px-4 py-2 text-right hover:bg-gray-50 border-b last:border-b-0 flex items-center justify-between"
+                    className="w-full px-4 py-2 text-right hover:bg-gray-50 dark:hover:bg-gray-700/60 border-b border-gray-100 dark:border-gray-700 last:border-b-0 flex items-center justify-between text-gray-900 dark:text-white"
                   >
                     <span className="text-sm">{result.name}</span>
                     {result.audience_size && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {(result.audience_size / 1000000).toFixed(1)}M
                       </span>
                     )}
@@ -299,13 +299,13 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                 {selectedInterests.map((interest) => (
                   <span
                     key={interest.id}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-pink-100 text-pink-700 rounded-full text-sm"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 rounded-full text-sm"
                   >
                     {interest.name}
                     <button
                       type="button"
                       onClick={() => removeInterest(interest.id)}
-                      className="p-0.5 hover:bg-pink-200 rounded-full"
+                      className="p-0.5 hover:bg-pink-200 dark:hover:bg-pink-900/60 rounded-full"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -324,7 +324,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                     setSearchQuery(cat.query);
                     handleSearchInterests(cat.query);
                   }}
-                  className="px-3 py-1.5 bg-white border border-gray-200 hover:border-gray-300 rounded-lg text-sm flex items-center gap-1"
+                  className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1"
                 >
                   <span>{cat.icon}</span>
                   {cat.name}
@@ -375,7 +375,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
 
           {/* Relationship Status */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               الحالة الاجتماعية
             </label>
             <div className="flex flex-wrap gap-2">
@@ -387,7 +387,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                   className={`px-4 py-2 rounded-full border text-sm transition-colors ${
                     relationshipStatuses.includes(status.value)
                       ? "border-blue-500 bg-blue-500 text-white"
-                      : "border-gray-200 hover:border-gray-300 bg-white"
+                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                   }`}
                 >
                   {status.label}
@@ -398,7 +398,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
 
           {/* Languages */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
               <Globe className="w-4 h-4 text-blue-500" />
               اللغات
             </label>
@@ -410,8 +410,8 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                   onClick={() => toggleLanguage(lang.id)}
                   className={`px-4 py-2 rounded-lg border transition-colors ${
                     selectedLanguages.includes(lang.id)
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
-                      : "border-gray-200 hover:border-gray-300 bg-white"
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300"
+                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                   }`}
                 >
                   {lang.name}
@@ -422,7 +422,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
 
           {/* Devices */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
               <Smartphone className="w-4 h-4 text-green-500" />
               نظام التشغيل
             </label>
@@ -434,8 +434,8 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                   onClick={() => toggleDevice(platform.value)}
                   className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${
                     selectedDevices.includes(platform.value)
-                      ? "border-green-500 bg-green-50 text-green-700"
-                      : "border-gray-200 hover:border-gray-300 bg-white"
+                      ? "border-green-500 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300"
+                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                   }`}
                 >
                   <span className="text-xl ml-2">{platform.icon}</span>
@@ -443,7 +443,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs text-gray-500">
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
               {selectedDevices.length === 0
                 ? "الكل (افتراضي)"
                 : `محدد: ${selectedDevices.join(", ")}`}
@@ -642,8 +642,8 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
           )}
 
           {/* Custom & Lookalike Audiences */}
-          <div className="border-t pt-4 mt-4">
-            <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <Users className="w-5 h-5 text-purple-500" />
               الجماهير المخصصة والمشابهة
             </h4>
@@ -651,7 +651,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
             {loadingAudiences ? (
               <div className="text-center py-6">
                 <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" />
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                   جاري تحميل الجماهير...
                 </p>
               </div>
@@ -660,14 +660,14 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                 {/* Custom Audiences */}
                 {customAudiences.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       الجماهير المخصصة ({customAudiences.length})
                     </label>
-                    <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-white">
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800">
                       {customAudiences.map((audience) => (
                         <label
                           key={audience.id}
-                          className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                          className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded cursor-pointer"
                         >
                           <input
                             type="checkbox"
@@ -675,13 +675,13 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                               audience.id,
                             )}
                             onChange={() => toggleCustomAudience(audience.id)}
-                            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                            className="w-4 h-4 text-purple-600 border-gray-300 dark:border-gray-600 rounded focus:ring-purple-500"
                           />
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
                               {audience.name}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {audience.audienceSize?.toLocaleString() || 0} شخص
                             </p>
                           </div>
@@ -694,14 +694,14 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                 {/* Lookalike Audiences */}
                 {lookalikeAudiences.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       الجماهير المشابهة ({lookalikeAudiences.length})
                     </label>
-                    <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-white">
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800">
                       {lookalikeAudiences.map((audience) => (
                         <label
                           key={audience.id}
-                          className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                          className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded cursor-pointer"
                         >
                           <input
                             type="checkbox"
@@ -711,13 +711,13 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                             onChange={() =>
                               toggleLookalikeAudience(audience.id)
                             }
-                            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                            className="w-4 h-4 text-purple-600 border-gray-300 dark:border-gray-600 rounded focus:ring-purple-500"
                           />
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
                               {audience.name}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {audience.audienceSize?.toLocaleString() || 0} شخص
                               • {audience.ratio}% تشابه
                             </p>
@@ -730,12 +730,12 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
 
                 {customAudiences.length === 0 &&
                   lookalikeAudiences.length === 0 && (
-                    <div className="text-center py-6 bg-gray-50 rounded-lg">
-                      <Users className="w-12 h-12 mx-auto text-gray-300 mb-2" />
-                      <p className="text-sm text-gray-500">
+                    <div className="text-center py-6 bg-gray-50 dark:bg-gray-800/40 rounded-lg">
+                      <Users className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         لا توجد جماهير متاحة
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                         يمكنك إنشاء جماهير مخصصة من صفحة الجماهير
                       </p>
                     </div>
@@ -745,24 +745,24 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
           </div>
 
           {/* Exclude Audiences */}
-          <div className="border-t pt-4 mt-4">
-            <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <X className="w-5 h-5 text-red-500" />
               استبعاد جماهير
             </h4>
-            <p className="text-sm text-gray-600 mb-3">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
               استبعد أشخاصاً معينين من رؤية إعلانك (مثل: العملاء الحاليين،
               المشتركين)
             </p>
 
             {customAudiences.length > 0 || lookalikeAudiences.length > 0 ? (
               <div className="space-y-3">
-                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-white">
+                <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800">
                   {[...customAudiences, ...lookalikeAudiences].map(
                     (audience) => (
                       <label
                         key={`exclude-${audience.id}`}
-                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                        className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded cursor-pointer"
                       >
                         <input
                           type="checkbox"
@@ -774,17 +774,17 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                                 : [...prev, audience.id],
                             );
                           }}
-                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                          className="w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500"
                         />
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
                             {audience.name}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {audience.audienceSize?.toLocaleString() || 0} شخص
                           </p>
                         </div>
-                        <span className="text-xs text-red-600 font-medium">
+                        <span className="text-xs text-red-600 dark:text-red-400 font-medium">
                           استبعاد
                         </span>
                       </label>
@@ -792,8 +792,8 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                   )}
                 </div>
                 {excludedAudiences.length > 0 && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <p className="text-sm text-red-700">
+                  <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg p-3">
+                    <p className="text-sm text-red-700 dark:text-red-300">
                       ✓ سيتم استبعاد {excludedAudiences.length} جمهور من رؤية
                       هذا الإعلان
                     </p>
@@ -801,8 +801,8 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                 )}
               </div>
             ) : (
-              <div className="text-center py-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">
+              <div className="text-center py-4 bg-gray-50 dark:bg-gray-800/40 rounded-lg">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   لا توجد جماهير متاحة للاستبعاد
                 </p>
               </div>

@@ -1400,20 +1400,20 @@ const CreateAdWizard: React.FC = () => {
         <div
           ref={publishDialogRef}
           tabIndex={-1}
-          className="max-h-[90vh] w-full max-w-3xl overflow-y-auto overscroll-contain rounded-3xl bg-white shadow-2xl"
+          className="max-h-[90vh] w-full max-w-3xl overflow-y-auto overscroll-contain rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800"
         >
-          <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+          <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-800 px-6 py-5">
             <div>
-              <p className="text-sm font-semibold text-blue-600">
+              <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
                 مراجعة قبل الإرسال إلى Meta
               </p>
               <h3
                 id="publish-confirm-title"
-                className="mt-1 text-2xl font-bold text-slate-950"
+                className="mt-1 text-2xl font-bold text-slate-950 dark:text-white"
               >
                 تأكيد إنشاء الإعلان الحقيقي
               </h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 هذه الخطوة سترسل Campaign وAd Set وAd إلى Ads Manager. راجع
                 الحساب والميزانية والحالة قبل التأكيد.
               </p>
@@ -1423,7 +1423,7 @@ const CreateAdWizard: React.FC = () => {
               onClick={closePublishConfirmation}
               disabled={loading}
               aria-label="إغلاق شاشة تأكيد النشر"
-              className="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -1434,12 +1434,12 @@ const CreateAdWizard: React.FC = () => {
               {confirmationRows.map(([label, value]) => (
                 <div
                   key={label}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
+                  className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/60 px-4 py-3"
                 >
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     {label}
                   </div>
-                  <div className="mt-1 break-words text-sm font-semibold text-slate-950">
+                  <div className="mt-1 break-words text-sm font-semibold text-slate-950 dark:text-white">
                     {value}
                   </div>
                 </div>
@@ -1447,27 +1447,27 @@ const CreateAdWizard: React.FC = () => {
             </div>
 
             {formData.status === "ACTIVE" ? (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+              <div className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/60 dark:bg-red-950/40 px-4 py-3 text-sm leading-6 text-red-800 dark:text-red-200">
                 الإعلان مضبوط على ACTIVE، يعني ممكن يبدأ الصرف بعد موافقة Meta.
                 الأفضل لأول تجربة إنتاج يكون PAUSED ثم يتم تفعيله من Ads
                 Manager بعد المراجعة.
               </div>
             ) : (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-800">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/40 px-4 py-3 text-sm leading-6 text-emerald-800 dark:text-emerald-200">
                 الوضع الحالي PAUSED، وده الاختيار الآمن: سيتم إنشاء الإعلان
                 بدون تشغيل الصرف مباشرة.
               </div>
             )}
 
             {selectedRemoteAdAccount?.billingHealth?.isAccountUsable === false && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/40 px-4 py-3 text-sm leading-6 text-amber-800 dark:text-amber-200">
                 Meta يشير أن الحساب قد لا يكون جاهزا بالكامل:{" "}
                 {selectedRemoteAdAccount.billingHealth.disableReason ||
                   selectedAccountHealthLabel}
               </div>
             )}
 
-            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-700">
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-800/80 px-4 py-3 text-sm leading-6 text-slate-700 dark:text-slate-200">
               <input
                 type="checkbox"
                 name="confirmAdAccount"
@@ -1475,11 +1475,11 @@ const CreateAdWizard: React.FC = () => {
                 onChange={(event) =>
                   setPublishAccountConfirmed(event.target.checked)
                 }
-                className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus-visible:ring-blue-500"
+                className="mt-1 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus-visible:ring-blue-500"
               />
               <span>
                 أؤكد أن الحساب المختار هو الحساب المقصود لإنشاء الإعلان:
-                <strong className="mx-1 text-slate-950">
+                <strong className="mx-1 text-slate-950 dark:text-white">
                   {selectedAdAccountName}
                 </strong>
                 <span translate="no">act_{selectedAdAccountId}</span>.
@@ -1487,7 +1487,7 @@ const CreateAdWizard: React.FC = () => {
             </label>
 
             {formData.status === "ACTIVE" && (
-              <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+              <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/60 dark:bg-red-950/40 px-4 py-3 text-sm leading-6 text-red-800 dark:text-red-200">
                 <input
                   type="checkbox"
                   name="confirmActivePublish"
@@ -1495,7 +1495,7 @@ const CreateAdWizard: React.FC = () => {
                   onChange={(event) =>
                     setActivePublishConfirmed(event.target.checked)
                   }
-                  className="mt-1 h-4 w-4 rounded border-red-300 text-red-600 focus-visible:ring-red-500"
+                  className="mt-1 h-4 w-4 rounded border-red-300 dark:border-red-700 text-red-600 focus-visible:ring-red-500"
                 />
                 <span>
                   أؤكد أني أريد تشغيل الإعلان كـACTIVE وقد يبدأ الصرف بعد
@@ -1505,12 +1505,12 @@ const CreateAdWizard: React.FC = () => {
             )}
           </div>
 
-          <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 px-6 py-5 sm:flex-row sm:justify-end">
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/90 px-6 py-5 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={closePublishConfirmation}
               disabled={loading}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               رجوع للمراجعة
             </button>
@@ -1943,7 +1943,7 @@ const CreateAdWizard: React.FC = () => {
             type="button"
             onClick={handleBack}
             disabled={currentStep === 1}
-            className="flex items-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+            className="flex items-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
           >
             {isEn ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
             {isEn ? "Previous" : "السابق"}

@@ -104,16 +104,16 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
         <div className="space-y-5">
           {/* Facebook Page Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               صفحة Facebook <span className="text-red-500">*</span>
             </label>
             {facebookPagesMeta?.primaryWarning && (
-              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 p-3 text-sm text-amber-800 dark:text-amber-300">
                 {facebookPagesMeta.primaryWarning}
               </div>
             )}
             {loadingPages ? (
-              <div className="flex items-center gap-2 text-gray-500 p-3 border border-gray-300 rounded-lg">
+              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span className="text-sm">جاري تحميل الصفحات...</span>
               </div>
@@ -121,8 +121,8 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
               <select
                 value={formData.pageId}
                 onChange={(e) => handleChange("pageId", e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                  getError("pageId") ? "border-red-500" : "border-gray-300"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                  getError("pageId") ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                 }`}
               >
                 <option value="">اختر الصفحة</option>
@@ -160,8 +160,8 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                 )}
               </select>
             ) : (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-sm text-yellow-800 mb-2">
+              <div className="bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-800/60 rounded-lg p-3">
+                <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-2">
                   ⚠️ لا توجد صفحات متاحة. يمكنك إدخال معرف الصفحة يدوياً:
                 </p>
                 <input
@@ -169,20 +169,20 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                   value={formData.pageId}
                   onChange={(e) => handleChange("pageId", e.target.value)}
                   placeholder="مثال: 123456789"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg text-sm"
                 />
               </div>
             )}
             {facebookPagesMeta?.counts && (
               <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
-                <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800">
+                <div className="rounded-lg border border-green-200 dark:border-green-800/60 bg-green-50 dark:bg-green-950/40 px-3 py-2 text-xs text-green-800 dark:text-green-300">
                   صفحات الشركة الجاهزة: {facebookPagesMeta.counts.ready}
                 </div>
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <div className="rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
                   صفحات Meta غير المربوطة:{" "}
                   {facebookPagesMeta.counts.accessibleButNotConnected}
                 </div>
-                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                <div className="rounded-lg border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-xs text-red-800 dark:text-red-300">
                   صفحات الشركة غير المتاحة:{" "}
                   {facebookPagesMeta.counts.connectedButNotAccessible}
                 </div>
@@ -190,18 +190,18 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
             )}
             {selectedFacebookPage &&
               selectedFacebookPage.isConnectedToCompany === false && (
-                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 p-3 text-sm text-amber-800 dark:text-amber-300">
                   سيتم إنشاء الإعلان باسم صفحة متاحة من حساب Meta الحالي لكنها
                   غير مربوطة بهذه الشركة داخل Max P.
                 </div>
               )}
             {selectedFacebookPage?.warning && (
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 {selectedFacebookPage.warning}
               </p>
             )}
             {facebookPagesMeta?.permissions?.missingRecommended?.length ? (
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 الصلاحيات التي قد نحتاجها لإظهار الصفحات بشكل أكمل:{" "}
                 {facebookPagesMeta.permissions.missingRecommended.join(", ")}
               </p>
@@ -222,7 +222,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
 
           {/* Creative Source Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               مصدر الإعلان (Creative Source)
             </label>
             <div className="grid grid-cols-2 gap-3 mb-4">
@@ -236,8 +236,8 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                 }}
                 className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 transition-all font-medium text-sm ${
                   creativeSource === "NEW_AD"
-                    ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
-                    : "border-gray-200 hover:border-gray-300 text-gray-600 bg-white"
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-sm"
+                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800"
                 }`}
               >
                 <Plus className="w-4 h-4" />
@@ -251,8 +251,8 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                 }}
                 className={`p-3 border-2 rounded-xl flex items-center justify-center gap-2 transition-all font-medium text-sm ${
                   creativeSource === "EXISTING_POST"
-                    ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
-                    : "border-gray-200 hover:border-gray-300 text-gray-600 bg-white"
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-sm"
+                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800"
                 }`}
               >
                 <FileText className="w-4 h-4" />
@@ -262,7 +262,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
           </div>
 
           {creativeSource === "EXISTING_POST" ? (
-            <div className="p-4 bg-white border border-gray-200 rounded-xl space-y-4">
+            <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl space-y-4">
               <PagePostsSelector
                 pageId={formData.pageId}
                 selectedPostId={formData.postId}
@@ -275,7 +275,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
             <>
               {/* Creative Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   نوع المحتوى
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -284,12 +284,12 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                 onClick={() => handleChange("creativeType", "SINGLE_IMAGE")}
                 className={`p-4 border-2 rounded-xl text-center transition-all ${
                   formData.creativeType === "SINGLE_IMAGE"
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300"
+                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
                 }`}
               >
                 <Image
-                  className={`w-8 h-8 mx-auto mb-2 ${formData.creativeType === "SINGLE_IMAGE" ? "text-blue-500" : "text-gray-400"}`}
+                  className={`w-8 h-8 mx-auto mb-2 ${formData.creativeType === "SINGLE_IMAGE" ? "text-blue-500" : "text-gray-400 dark:text-gray-500"}`}
                 />
                 <div className="font-medium text-sm">صورة</div>
               </button>
@@ -298,12 +298,12 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                 onClick={() => handleChange("creativeType", "SINGLE_VIDEO")}
                 className={`p-4 border-2 rounded-xl text-center transition-all ${
                   formData.creativeType === "SINGLE_VIDEO"
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300"
+                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
                 }`}
               >
                 <Eye
-                  className={`w-8 h-8 mx-auto mb-2 ${formData.creativeType === "SINGLE_VIDEO" ? "text-blue-500" : "text-gray-400"}`}
+                  className={`w-8 h-8 mx-auto mb-2 ${formData.creativeType === "SINGLE_VIDEO" ? "text-blue-500" : "text-gray-400 dark:text-gray-500"}`}
                 />
                 <div className="font-medium text-sm">فيديو</div>
               </button>
@@ -332,28 +332,28 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                 }}
                 className={`p-4 border-2 rounded-xl text-center transition-all ${
                   formData.creativeType === "CAROUSEL"
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300"
+                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
                 }`}
               >
                 <Layout
-                  className={`w-8 h-8 mx-auto mb-2 ${formData.creativeType === "CAROUSEL" ? "text-blue-500" : "text-gray-400"}`}
+                  className={`w-8 h-8 mx-auto mb-2 ${formData.creativeType === "CAROUSEL" ? "text-blue-500" : "text-gray-400 dark:text-gray-500"}`}
                 />
                 <div className="font-medium text-sm">دوّار</div>
-                <div className="text-xs text-gray-500">2-10 بطاقات</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">2-10 بطاقات</div>
               </button>
               <button
                 type="button"
                 disabled
                 aria-disabled="true"
                 title="التنسيق المرن قيد التجهيز"
-                className="p-4 border-2 rounded-xl text-center transition-all border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
+                className="p-4 border-2 rounded-xl text-center transition-all border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40 text-gray-400 dark:text-gray-500 opacity-60 cursor-not-allowed"
               >
                 <Sparkles
-                  className="w-8 h-8 mx-auto mb-2 text-gray-400"
+                  className="w-8 h-8 mx-auto mb-2 text-gray-400 dark:text-gray-500"
                 />
                 <div className="font-medium text-sm">مرن</div>
-                <div className="text-xs text-gray-500">قريبًا</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">قريبًا</div>
               </button>
             </div>
             {getError("creativeType") && (
@@ -366,17 +366,17 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
           {/* Flexible Assets Upload */}
           {formData.creativeType === "FLEXIBLE" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 الصور والفيديوهات (حتى 10 ملفات){" "}
                 <span className="text-red-500">*</span>
               </label>
 
-              <div className="border-2 border-dashed border-green-300 rounded-xl p-6 text-center hover:border-green-400 transition-colors cursor-pointer bg-green-50">
+              <div className="border-2 border-dashed border-green-300 dark:border-green-800/60 rounded-xl p-6 text-center hover:border-green-400 transition-colors cursor-pointer bg-green-50 dark:bg-green-950/30">
                 <Sparkles className="w-12 h-12 mx-auto text-green-500 mb-3" />
-                <p className="text-sm text-gray-700 mb-1 font-medium">
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-1 font-medium">
                   ارفع حتى 10 صور أو فيديوهات
                 </p>
-                <p className="text-xs text-gray-500 mb-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
                   سيختار Facebook تلقائياً أفضل تنسيق لكل مستخدم
                 </p>
                 <button
@@ -390,13 +390,13 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
               {/* Uploaded Assets List */}
               {formData.flexibleAssets.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium text-gray-700">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     الملفات المرفوعة ({formData.flexibleAssets.length}/10)
                   </p>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {formData.flexibleAssets.map((asset, index) => (
                       <div key={asset.id} className="relative group">
-                        <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200">
+                        <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700">
                           {asset.type === "IMAGE" ? (
                             <img
                               src={asset.url}
@@ -436,7 +436,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
           {(formData.creativeType === "SINGLE_IMAGE" ||
             formData.creativeType === "SINGLE_VIDEO") && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {formData.creativeType === "SINGLE_IMAGE"
                   ? "الصورة"
                   : "الفيديو"}{" "}
@@ -444,7 +444,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
               </label>
 
               {/* Upload Area */}
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center bg-gray-50">
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 text-center bg-gray-50 dark:bg-gray-800/60">
                 <input
                   type="file"
                   accept={
@@ -457,15 +457,15 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                   disabled
                 />
                 <div>
-                  <Image className="w-12 h-12 mx-auto text-gray-400 mb-3" />
-                  <p className="text-sm text-gray-600 mb-1">
+                  <Image className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-3" />
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
                     رفع{" "}
                     {formData.creativeType === "SINGLE_IMAGE"
                       ? "الصورة"
                       : "الفيديو"}{" "}
                     من الجهاز قيد التجهيز
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
                     استخدم رابط مباشر حالياً لضمان إنشاء الإعلان بنجاح
                   </p>
                 </div>
@@ -474,9 +474,9 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
               {/* Or URL */}
               <div className="mt-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="flex-1 h-px bg-gray-200"></div>
-                  <span className="text-xs text-gray-400">أو أدخل رابط</span>
-                  <div className="flex-1 h-px bg-gray-200"></div>
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700"></div>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">أو أدخل رابط</span>
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700"></div>
                 </div>
                 <input
                   type="url"
@@ -494,7 +494,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                     )
                   }
                   placeholder="https://..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                 />
                 {formData.creativeType === "SINGLE_IMAGE" &&
                   getError("imageUrl") && (
@@ -530,7 +530,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
           {formData.creativeType === "CAROUSEL" && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   بطاقات الدوّار ({formData.carouselCards.length}/10)
                 </label>
                 <button
@@ -565,10 +565,10 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                 {formData.carouselCards.map((card, index) => (
                   <div
                     key={card.id}
-                    className="border border-gray-200 rounded-lg p-4 bg-white"
+                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800"
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <h5 className="font-medium text-sm">بطاقة {index + 1}</h5>
+                      <h5 className="font-medium text-sm text-gray-900 dark:text-white">بطاقة {index + 1}</h5>
                       {formData.carouselCards.length > 2 && (
                         <button
                           type="button"
@@ -590,7 +590,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                     <div className="space-y-3">
                       {/* Image URL */}
                       <div>
-                        <label className="block text-xs text-gray-600 mb-1">
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
                           رابط الصورة *
                         </label>
                         <input
@@ -605,13 +605,13 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                             handleChange("carouselCards", updated);
                           }}
                           placeholder="https://..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
 
                       {/* Headline */}
                       <div>
-                        <label className="block text-xs text-gray-600 mb-1">
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
                           العنوان *
                         </label>
                         <input
@@ -627,13 +627,13 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                           }}
                           placeholder="عنوان البطاقة"
                           maxLength={40}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
 
                       {/* Description */}
                       <div>
-                        <label className="block text-xs text-gray-600 mb-1">
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
                           الوصف
                         </label>
                         <input
@@ -649,13 +649,13 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                           }}
                           placeholder="وصف البطاقة"
                           maxLength={20}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
 
                       {/* Link URL */}
                       <div>
-                        <label className="block text-xs text-gray-600 mb-1">
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
                           رابط الوجهة *
                         </label>
                         <input
@@ -670,7 +670,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                             handleChange("carouselCards", updated);
                           }}
                           placeholder="https://..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
@@ -699,7 +699,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               الوصف
             </label>
             <input
@@ -708,16 +708,16 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
               onChange={(e) => handleChange("description", e.target.value)}
               placeholder="وصف مختصر يظهر أسفل العنوان"
               maxLength={30}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
-            <p className="text-xs text-gray-400 mt-1 text-left">
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 text-left">
               {formData.description.length}/30
             </p>
           </div>
 
           {/* Link URL */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               رابط الوجهة <span className="text-red-500">*</span>
             </label>
             <input
@@ -725,8 +725,8 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
               value={formData.linkUrl}
               onChange={(e) => handleChange("linkUrl", e.target.value)}
               placeholder="https://yourwebsite.com"
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                getError("linkUrl") ? "border-red-500" : "border-gray-300"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 ${
+                getError("linkUrl") ? "border-red-500" : "border-gray-300 dark:border-gray-600"
               }`}
             />
             {getError("linkUrl") && (
@@ -738,7 +738,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Display Link */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 رابط العرض (اختياري)
               </label>
               <input
@@ -746,9 +746,9 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                 value={formData.displayLink}
                 onChange={(e) => handleChange("displayLink", e.target.value)}
                 placeholder="مثال: yoursite.com/sale"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 النص الذي يظهر بدلاً من الرابط الكامل
               </p>
             </div>
@@ -756,13 +756,13 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
             {/* URL Parameters */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   معاملات URL (UTM)
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowUtmModal(true)}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 transition-colors"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold flex items-center gap-1 transition-colors"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   مُنشئ الرموز الديناميكية (UTM Builder)
@@ -773,10 +773,10 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                 value={formData.urlParameters}
                 onChange={(e) => handleChange("urlParameters", e.target.value)}
                 placeholder="مثال: utm_source={{site_source_name}}&utm_campaign={{campaign.name}}"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-xs"
                 dir="ltr"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 لتتبع مصدر الزيارات بدقة في Google Analytics وأنظمة الـ CRM
               </p>
             </div>
@@ -786,7 +786,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
 
           {/* Call to Action */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               زر الإجراء
             </label>
             <div className="grid grid-cols-4 gap-2">
@@ -797,8 +797,8 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                   onClick={() => handleChange("callToAction", cta.value)}
                   className={`py-2 px-3 text-xs rounded-lg border transition-all ${
                     formData.callToAction === cta.value
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
-                      : "border-gray-200 hover:border-gray-300"
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300"
+                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
                   }`}
                 >
                   {cta.label}
@@ -821,14 +821,14 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
           )}
 
           {/* Advantage+ Creative Enhancements */}
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-200">
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800/60">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-indigo-600" />
+                <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                   تحسينات Advantage+ Creative الإبداعية (Meta AI)
                 </h4>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                   دع خوارزميات Meta تحسن إضاءة الصور، قصها تلقائياً للمواضع المختلفة، وتوليد تركيبات للعناوين لرفع نسبة النقر والتحويل.
                 </p>
               </div>
@@ -844,7 +844,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                   }}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
               </label>
             </div>
           </div>
@@ -859,19 +859,19 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
           />
 
           {/* Advantage+ Creative */}
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl space-y-3 mt-4">
-            <h4 className="font-medium text-gray-900 flex items-center gap-2">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 p-4 rounded-xl border border-green-200 dark:border-green-800/50 space-y-3 mt-4">
+            <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-green-500" />
               Advantage+ Creative
             </h4>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-gray-600 dark:text-gray-400">
               دع Facebook يحسن إعلانك تلقائياً للحصول على أفضل أداء
             </p>
 
-            <label className="flex items-center justify-between p-3 bg-white rounded-lg">
+            <label className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
               <div>
-                <span className="text-sm font-medium">تحسين النص</span>
-                <p className="text-xs text-gray-500">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">تحسين النص</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   إنشاء نسخ متعددة من النص
                 </p>
               </div>
@@ -886,10 +886,10 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
               />
             </label>
 
-            <label className="flex items-center justify-between p-3 bg-white rounded-lg">
+            <label className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
               <div>
-                <span className="text-sm font-medium">تحسين الصورة والتباين</span>
-                <p className="text-xs text-gray-500">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">تحسين الصورة والتباين</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   تعديل السطوع والتباين تلقائياً
                 </p>
               </div>
@@ -904,13 +904,13 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
               />
             </label>
 
-            <label className="flex items-center justify-between p-3 bg-white rounded-lg">
+            <label className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
               <div>
                 <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium">المد الذكي للريلز (9:16)</span>
-                  <span className="rounded bg-green-100 px-1 py-0.5 text-[9px] font-bold text-green-700">v26</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">المد الذكي للريلز (9:16)</span>
+                  <span className="rounded bg-green-100 dark:bg-green-950/60 px-1 py-0.5 text-[9px] font-bold text-green-700 dark:text-green-300">v26</span>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   تمديد أبعاد الصور لتملأ شاشة Stories و Reels تلقائياً
                 </p>
               </div>
@@ -925,13 +925,13 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
               />
             </label>
 
-            <label className="flex items-center justify-between p-3 bg-white rounded-lg">
+            <label className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
               <div>
                 <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium">إبراز التعليقات الإيجابية</span>
-                  <span className="rounded bg-green-100 px-1 py-0.5 text-[9px] font-bold text-green-700">v26</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">إبراز التعليقات الإيجابية</span>
+                  <span className="rounded bg-green-100 dark:bg-green-950/60 px-1 py-0.5 text-[9px] font-bold text-green-700 dark:text-green-300">v26</span>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   تثبيت آراء العملاء الممتازة أسفل الإعلان كإثبات اجتماعي
                 </p>
               </div>

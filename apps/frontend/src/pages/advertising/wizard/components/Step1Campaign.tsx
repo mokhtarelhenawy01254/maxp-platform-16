@@ -1,5 +1,9 @@
 import React from "react";
-import { AlertCircle, Target, Eye, Globe, MessageCircle, ShoppingBag, Smartphone, Users, Sparkles, ShieldAlert } from "lucide-react";
+import {
+  AlertCircle,
+  Sparkles,
+  ShieldAlert,
+} from "lucide-react";
 import type { FormData } from "../types";
 import { OBJECTIVES, SPECIAL_AD_CATEGORIES } from "../constants";
 
@@ -108,7 +112,7 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
 
       {/* Special Ad Categories */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           فئة الإعلان الخاصة
         </label>
         <select
@@ -119,7 +123,7 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
               e.target.value === "NONE" ? [] : [e.target.value],
             )
           }
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         >
           {SPECIAL_AD_CATEGORIES.map((cat) => (
             <option key={cat.value} value={cat.value}>
@@ -127,22 +131,22 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
             </option>
           ))}
         </select>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           إذا كان إعلانك يتعلق بالإسكان أو التوظيف أو الائتمان، يجب تحديد الفئة
           المناسبة
         </p>
       </div>
 
       {/* A/B Split Testing */}
-      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+      <div className="p-4 bg-slate-50 dark:bg-gray-900/50 border border-slate-200 dark:border-gray-700/80 rounded-xl space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-blue-600" />
+            <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <div>
-              <h4 className="text-sm font-bold text-gray-900">
+              <h4 className="text-sm font-bold text-gray-900 dark:text-white">
                 إنشاء اختبار تجزئة (A/B Test)
               </h4>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 مقارنة نسخ مختلفة إحصائياً لتحديد الاستراتيجية الأفضل أداءً
               </p>
             </div>
@@ -154,13 +158,13 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
               onChange={(e) => handleChange("isSplitTest", e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+            <div className="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
           </label>
         </div>
 
         {formData.isSplitTest && (
-          <div className="pt-2 border-t border-slate-200 space-y-2">
-            <label className="block text-xs font-semibold text-gray-700">
+          <div className="pt-2 border-t border-slate-200 dark:border-gray-700 space-y-2">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
               المتغير المراد اختباره (Test Variable)
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -175,8 +179,8 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
                   onClick={() => handleChange("splitTestVariable", v.value)}
                   className={`p-2 rounded-lg border text-xs font-medium text-center transition-all ${
                     (formData.splitTestVariable || "CREATIVE") === v.value
-                      ? "border-blue-500 bg-blue-50 text-blue-700 font-bold"
-                      : "border-gray-200 bg-white hover:border-gray-300 text-gray-600"
+                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 font-bold"
+                      : "border-gray-200 bg-white hover:border-gray-300 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600 dark:text-gray-300"
                   }`}
                 >
                   {v.label}
@@ -188,17 +192,17 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
       </div>
 
       {/* Campaign Spending Limit */}
-      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+      <div className="p-4 bg-slate-50 dark:bg-gray-900/50 border border-slate-200 dark:border-gray-700/80 rounded-xl space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+            <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
               <ShieldAlert className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-gray-900">
+              <h4 className="text-xs font-bold text-gray-900 dark:text-white">
                 حد إنفاق الحملة الإجمالي (Campaign Spending Limit)
               </h4>
-              <p className="text-[11px] text-gray-500">
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
                 سقف مالي اختياري لإيقاف الحملة كلياً عند الوصول إليه لحماية الميزانية
               </p>
             </div>
@@ -216,13 +220,13 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
               }}
               className="sr-only peer"
             />
-            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+            <div className="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
           </label>
         </div>
 
         {Boolean(formData.spendLimit && formData.spendLimit > 0) && (
-          <div className="pt-2 border-t border-slate-200">
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
+          <div className="pt-2 border-t border-slate-200 dark:border-gray-700">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
               الحد الأقصى للإنفاق التراكمي للحملة
             </label>
             <div className="relative">
@@ -237,54 +241,18 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
                   )
                 }
                 placeholder="مثال: 20000"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
               />
-              <span className="absolute left-3 top-2 text-xs text-gray-400 font-bold">
+              <span className="absolute left-3 top-2 text-xs text-gray-400 dark:text-gray-500 font-bold">
                 EGP
               </span>
             </div>
-            <p className="text-[10px] text-gray-500 mt-1">
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
               ستتوقف جميع الإعلانات والمجموعات داخل هذه الحملة فور وصول إجمالي الصرف لهذا الرقم.
             </p>
           </div>
         )}
       </div>
-
-      {/* Conversion Events - للأهداف التي تحتاج تتبع */}
-      {(formData.objective === "OUTCOME_SALES" ||
-        formData.objective === "OUTCOME_LEADS") && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-          <h4 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
-            <Target className="w-5 h-5 text-green-600" />
-            حدث التحويل
-          </h4>
-          <p className="text-sm text-gray-600 mb-3">
-            اختر الحدث الذي تريد تتبعه وتحسين الإعلان من أجله
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { value: "PURCHASE", label: "شراء", icon: "🛒" },
-              { value: "ADD_TO_CART", label: "إضافة للسلة", icon: "🛍️" },
-              { value: "LEAD", label: "عميل محتمل", icon: "📝" },
-              { value: "COMPLETE_REGISTRATION", label: "تسجيل", icon: "✅" },
-              { value: "CONTACT", label: "تواصل", icon: "📞" },
-              { value: "SUBSCRIBE", label: "اشتراك", icon: "📧" },
-            ].map((event) => (
-              <button
-                key={event.value}
-                type="button"
-                className="p-3 bg-white border-2 border-green-300 rounded-lg hover:border-green-500 transition-colors text-right"
-              >
-                <span className="text-xl ml-2">{event.icon}</span>
-                <span className="text-sm font-medium">{event.label}</span>
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-gray-500 mt-3">
-            💡 تأكد من تثبيت Facebook Pixel على موقعك لتتبع هذه الأحداث
-          </p>
-        </div>
-      )}
     </div>
   );
 };

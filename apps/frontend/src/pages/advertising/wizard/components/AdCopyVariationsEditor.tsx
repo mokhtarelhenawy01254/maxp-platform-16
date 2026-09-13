@@ -83,10 +83,10 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
       {/* Primary Text Section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="block text-sm font-semibold text-gray-800">
+          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
             النص الأساسي (Primary Text) <span className="text-red-500">*</span>
           </label>
-          <span className="text-xs text-blue-600 font-medium">
+          <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
             {textVariations.length + 1} من 5 نصوص
           </span>
         </div>
@@ -94,8 +94,8 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
         {/* Base Primary Text */}
         <div className="relative">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-500 font-medium">النص 1 (الرئيسي)</span>
-            <span className="text-xs text-gray-400">{primaryText.length}/125</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">النص 1 (الرئيسي)</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{primaryText.length}/125</span>
           </div>
           <textarea
             value={primaryText}
@@ -103,8 +103,8 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
             placeholder="اكتب النص الرئيسي الجذاب لإعلانك..."
             rows={3}
             maxLength={160}
-            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 transition-colors text-sm ${
-              primaryTextError ? "border-red-500" : "border-gray-300"
+            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 transition-colors text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 ${
+              primaryTextError ? "border-red-500" : "border-gray-300 dark:border-gray-600"
             }`}
           />
           {primaryTextError && (
@@ -114,7 +114,7 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
 
         {/* Quick Hook Suggestions */}
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
-          <span className="text-[11px] text-gray-500 flex items-center gap-1">
+          <span className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-amber-500" />
             زوايا سريعة:
           </span>
@@ -129,7 +129,7 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
                   handleAddTextVariation(s.text);
                 }
               }}
-              className="text-[11px] px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
+              className="text-[11px] px-2.5 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg transition-colors"
             >
               + {s.label}
             </button>
@@ -140,20 +140,20 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
         {textVariations.map((variation, index) => (
           <div
             key={variation.id}
-            className="p-3 bg-blue-50/50 border border-blue-200/70 rounded-xl space-y-2 relative group"
+            className="p-3 bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-800/60 rounded-xl space-y-2 relative group"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-blue-800">
+              <span className="text-xs font-semibold text-blue-800 dark:text-blue-300">
                 النص {index + 2} (اختبار زاوية بديلة)
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-400 dark:text-gray-500">
                   {variation.text.length}/125
                 </span>
                 <button
                   type="button"
                   onClick={() => handleRemoveTextVariation(variation.id)}
-                  className="p-1 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                  className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-lg transition-colors"
                   title="حذف هذا النص"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -168,7 +168,7 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
               placeholder="اكتب زاوية نص إضافية (مثال: التركيز على السعر، التوصيل، أو آراء العملاء)..."
               rows={2}
               maxLength={160}
-              className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-blue-200 dark:border-blue-800 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
             />
           </div>
         ))}
@@ -177,7 +177,7 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
           <button
             type="button"
             onClick={() => handleAddTextVariation()}
-            className="w-full py-2.5 border border-dashed border-blue-300 hover:border-blue-500 bg-blue-50/30 hover:bg-blue-50 rounded-xl text-blue-700 text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
+            className="w-full py-2.5 border border-dashed border-blue-300 dark:border-blue-700 hover:border-blue-500 bg-blue-50/30 dark:bg-blue-950/20 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-xl text-blue-700 dark:text-blue-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
           >
             <Plus className="w-4 h-4" />
             إضافة خيار نص أساسي آخر (حتى 5 نصوص لتجربة زوايا متعددة)
@@ -186,12 +186,12 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
       </div>
 
       {/* Headline Section */}
-      <div className="space-y-3 border-t border-gray-100 pt-4">
+      <div className="space-y-3 border-t border-gray-100 dark:border-gray-700 pt-4">
         <div className="flex items-center justify-between">
-          <label className="block text-sm font-semibold text-gray-800">
+          <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
             العنوان الرئيسي (Headline)
           </label>
-          <span className="text-xs text-purple-600 font-medium">
+          <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
             {headlineVariations.length + 1} من 5 عناوين
           </span>
         </div>
@@ -199,8 +199,8 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
         {/* Base Headline */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-500 font-medium">العنوان 1 (الرئيسي)</span>
-            <span className="text-xs text-gray-400">{headline.length}/40</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">العنوان 1 (الرئيسي)</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{headline.length}/40</span>
           </div>
           <input
             type="text"
@@ -208,13 +208,13 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
             onChange={(e) => onHeadlineChange(e.target.value)}
             placeholder="عنوان جذاب يظهر بجانب زر الإجراء..."
             maxLength={50}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         {/* Headline Suggestions */}
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-          <span className="text-[11px] text-gray-500 flex items-center gap-1">
+          <span className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-purple-500" />
             عناوين مقترحة:
           </span>
@@ -229,7 +229,7 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
                   handleAddHeadlineVariation(h);
                 }
               }}
-              className="text-[11px] px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition-colors"
+              className="text-[11px] px-2.5 py-1 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-300 rounded-lg transition-colors"
             >
               + {h}
             </button>
@@ -240,20 +240,20 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
         {headlineVariations.map((variation, index) => (
           <div
             key={variation.id}
-            className="p-3 bg-purple-50/40 border border-purple-200/70 rounded-xl space-y-1.5"
+            className="p-3 bg-purple-50/40 dark:bg-purple-950/30 border border-purple-200/70 dark:border-purple-800/60 rounded-xl space-y-1.5"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-purple-800">
+              <span className="text-xs font-semibold text-purple-800 dark:text-purple-300">
                 العنوان {index + 2}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-400 dark:text-gray-500">
                   {variation.text.length}/40
                 </span>
                 <button
                   type="button"
                   onClick={() => handleRemoveHeadlineVariation(variation.id)}
-                  className="p-1 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                  className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-lg transition-colors"
                   title="حذف هذا العنوان"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -268,7 +268,7 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
               }
               placeholder="اكتب خيار عنوان بديل..."
               maxLength={50}
-              className="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 border border-purple-200 dark:border-purple-800 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-purple-500"
             />
           </div>
         ))}
@@ -277,7 +277,7 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
           <button
             type="button"
             onClick={() => handleAddHeadlineVariation()}
-            className="w-full py-2.5 border border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/30 hover:bg-purple-50 rounded-xl text-purple-700 text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
+            className="w-full py-2.5 border border-dashed border-purple-300 dark:border-purple-700 hover:border-purple-500 bg-purple-50/30 dark:bg-purple-950/20 hover:bg-purple-50 dark:hover:bg-purple-950/40 rounded-xl text-purple-700 dark:text-purple-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
           >
             <Plus className="w-4 h-4" />
             إضافة خيار عنوان آخر (حتى 5 عناوين لاختبار تفاعل الجمهور)
@@ -285,8 +285,8 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
         )}
       </div>
 
-      <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-2 text-[11px] text-slate-600">
-        <HelpCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+      <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-400">
+        <HelpCircle className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0 mt-0.5" />
         <span>
           <strong>كيف تعمل تنويعات النصوص والعناوين؟</strong> يقوم Facebook بتدوير النصوص والعناوين تلقائياً بين مستخدمي الإعلان لاكتشاف التركيبة التي تحقق أعلى معدل نقر ومبيعات بأقل تكلفة.
         </span>

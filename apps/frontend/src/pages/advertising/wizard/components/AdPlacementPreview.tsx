@@ -72,15 +72,15 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
     (formData.carouselCards?.[0]?.imageUrl ? formData.carouselCards[0].imageUrl : null);
 
   return (
-    <div className="bg-gray-100 rounded-2xl p-4 space-y-3">
+    <div className="bg-gray-100 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/60 rounded-2xl p-4 space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-          <Eye className="w-4 h-4 text-blue-600" />
+        <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+          <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           معاينة الموضع التفاعلية
         </h4>
         {isExistingPost && (
-          <span className="text-[11px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md font-medium">
+          <span className="text-[11px] bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 px-2 py-0.5 rounded-md font-medium">
             منشور صفحة حالي
           </span>
         )}
@@ -88,8 +88,8 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
 
       {/* Variation Switcher if multiple texts exist */}
       {allTexts.length > 1 && (
-        <div className="flex items-center gap-1.5 p-1.5 bg-blue-50/80 border border-blue-200/70 rounded-xl overflow-x-auto">
-          <span className="text-[10px] text-blue-700 font-bold shrink-0">معاينة النص:</span>
+        <div className="flex items-center gap-1.5 p-1.5 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/70 dark:border-blue-800/60 rounded-xl overflow-x-auto">
+          <span className="text-[10px] text-blue-700 dark:text-blue-300 font-bold shrink-0">معاينة النص:</span>
           {allTexts.map((_, i) => (
             <button
               key={i}
@@ -98,7 +98,7 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
               className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
                 selectedVariationIndex === i
                   ? "bg-blue-600 text-white shadow-xs"
-                  : "bg-white text-blue-800 hover:bg-blue-100"
+                  : "bg-white dark:bg-gray-800 text-blue-800 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40"
               }`}
             >
               نص {i + 1}
@@ -108,14 +108,14 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
       )}
 
       {/* Placement Switcher Tabs */}
-      <div className="grid grid-cols-4 gap-1 bg-white p-1 rounded-xl border border-gray-200">
+      <div className="grid grid-cols-4 gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
         <button
           type="button"
           onClick={() => setMode("FACEBOOK_FEED")}
           className={`py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all ${
             mode === "FACEBOOK_FEED"
               ? "bg-blue-600 text-white shadow-sm"
-              : "text-gray-600 hover:bg-gray-50"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
           }`}
           title="آخر الأخبار فيسبوك"
         >
@@ -128,7 +128,7 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
           className={`py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all ${
             mode === "INSTAGRAM_FEED"
               ? "bg-pink-600 text-white shadow-sm"
-              : "text-gray-600 hover:bg-gray-50"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
           }`}
           title="آخر الأخبار إنستجرام"
         >
@@ -141,7 +141,7 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
           className={`py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all ${
             mode === "STORIES_REELS"
               ? "bg-purple-600 text-white shadow-sm"
-              : "text-gray-600 hover:bg-gray-50"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
           }`}
           title="القصص والريلز (9:16)"
         >
@@ -153,8 +153,8 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
           onClick={() => setMode("RIGHT_COLUMN")}
           className={`py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all ${
             mode === "RIGHT_COLUMN"
-              ? "bg-gray-800 text-white shadow-sm"
-              : "text-gray-600 hover:bg-gray-50"
+              ? "bg-gray-800 dark:bg-gray-700 text-white shadow-sm"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
           }`}
           title="العمود الجانبي للكمبيوتر"
         >
@@ -165,15 +165,15 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
 
       {/* 1. Facebook Feed Preview */}
       {mode === "FACEBOOK_FEED" && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden text-right">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden text-right">
           {/* Header */}
           <div className="p-3 flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
               <Facebook className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-xs text-gray-900 truncate">{pageName}</p>
-              <div className="flex items-center gap-1 text-[11px] text-gray-500">
+              <p className="font-semibold text-xs text-gray-900 dark:text-white truncate">{pageName}</p>
+              <div className="flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
                 <span>ممول</span>
                 <span>•</span>
                 <span>عام</span>
@@ -183,13 +183,13 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
 
           {/* Primary Text */}
           <div className="px-3 pb-2.5">
-            <p className="text-xs text-gray-800 whitespace-pre-wrap leading-relaxed line-clamp-4">
+            <p className="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed line-clamp-4">
               {displayPrimaryText}
             </p>
           </div>
 
           {/* Media */}
-          <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden border-y border-gray-100 relative">
+          <div className="aspect-square bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden border-y border-gray-100 dark:border-gray-700 relative">
             {displayMediaUrl ? (
               <img
                 src={displayMediaUrl}
@@ -197,7 +197,7 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="text-center text-gray-400 p-4">
+              <div className="text-center text-gray-400 dark:text-gray-500 p-4">
                 <ImageIcon className="w-12 h-12 mx-auto mb-1.5 opacity-50" />
                 <p className="text-xs">معاينة الصورة</p>
               </div>
@@ -211,17 +211,17 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
           </div>
 
           {/* Link / CTA Bar */}
-          <div className="p-3 bg-gray-50 flex items-center justify-between gap-2 border-t border-gray-100">
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/90 flex items-center justify-between gap-2 border-t border-gray-100 dark:border-gray-700">
             <div className="flex-1 min-w-0 text-right">
-              <p className="text-[10px] text-gray-500 uppercase truncate">{displayUrl}</p>
-              <p className="font-semibold text-xs text-gray-900 truncate mt-0.5">{displayHeadline}</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase truncate">{displayUrl}</p>
+              <p className="font-semibold text-xs text-gray-900 dark:text-white truncate mt-0.5">{displayHeadline}</p>
               {formData.description && (
-                <p className="text-[11px] text-gray-500 truncate">{formData.description}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{formData.description}</p>
               )}
             </div>
             <button
               type="button"
-              className="px-3.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors"
+              className="px-3.5 py-1.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors"
             >
               {ctaLabel}
             </button>
@@ -231,27 +231,27 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
 
       {/* 2. Instagram Feed Preview */}
       {mode === "INSTAGRAM_FEED" && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden text-right">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden text-right">
           {/* Header */}
-          <div className="p-2.5 flex items-center justify-between border-b border-gray-50">
+          <div className="p-2.5 flex items-center justify-between border-b border-gray-50 dark:border-gray-700/60">
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-fuchsia-600 p-[1.5px] flex-shrink-0">
-                <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
+                <div className="w-full h-full bg-white dark:bg-gray-800 rounded-full flex items-center justify-center">
                   <Instagram className="w-3.5 h-3.5 text-pink-600" />
                 </div>
               </div>
               <div className="min-w-0">
-                <p className="font-semibold text-xs text-gray-900 truncate">
+                <p className="font-semibold text-xs text-gray-900 dark:text-white truncate">
                   {pageName.toLowerCase().replace(/\s+/g, "_")}
                 </p>
-                <p className="text-[10px] text-gray-400">Sponsored</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">Sponsored</p>
               </div>
             </div>
-            <span className="text-gray-400 text-sm font-bold">•••</span>
+            <span className="text-gray-400 dark:text-gray-500 text-sm font-bold">•••</span>
           </div>
 
           {/* Media 1:1 */}
-          <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden relative">
+          <div className="aspect-square bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden relative">
             {displayMediaUrl ? (
               <img
                 src={displayMediaUrl}
@@ -259,7 +259,7 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="text-center text-gray-400 p-4">
+              <div className="text-center text-gray-400 dark:text-gray-500 p-4">
                 <ImageIcon className="w-12 h-12 mx-auto mb-1.5 opacity-50" />
                 <p className="text-xs">معاينة إنستجرام</p>
               </div>
@@ -267,8 +267,8 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
           </div>
 
           {/* Action Row */}
-          <div className="p-2.5 bg-white space-y-2">
-            <div className="flex items-center justify-between text-gray-700">
+          <div className="p-2.5 bg-white dark:bg-gray-800 space-y-2">
+            <div className="flex items-center justify-between text-gray-700 dark:text-gray-300">
               <div className="flex items-center gap-3">
                 <Heart className="w-4 h-4 hover:text-red-500 cursor-pointer" />
                 <MessageCircle className="w-4 h-4 cursor-pointer" />
@@ -278,13 +278,13 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
             </div>
 
             {/* CTA action bar */}
-            <div className="py-1 px-2.5 bg-blue-50/70 border border-blue-100 rounded-lg flex items-center justify-between">
-              <span className="text-xs font-semibold text-blue-700">{ctaLabel}</span>
-              <ExternalLink className="w-3 h-3 text-blue-600" />
+            <div className="py-1 px-2.5 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800/50 rounded-lg flex items-center justify-between">
+              <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">{ctaLabel}</span>
+              <ExternalLink className="w-3 h-3 text-blue-600 dark:text-blue-400" />
             </div>
 
             {/* Caption */}
-            <p className="text-xs text-gray-800 line-clamp-3 leading-relaxed">
+            <p className="text-xs text-gray-800 dark:text-gray-200 line-clamp-3 leading-relaxed">
               <span className="font-semibold ml-1">
                 {pageName.toLowerCase().replace(/\s+/g, "_")}
               </span>
@@ -348,10 +348,10 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
 
       {/* 4. Desktop Right Column Preview */}
       {mode === "RIGHT_COLUMN" && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 text-right">
-          <p className="text-[10px] text-gray-400 font-medium mb-2">ممول • Facebook Right Column</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 text-right">
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium mb-2">ممول • Facebook Right Column</p>
           <div className="flex gap-3 items-center">
-            <div className="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200">
+            <div className="w-20 h-20 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex-shrink-0 border border-gray-200 dark:border-gray-600">
               {displayMediaUrl ? (
                 <img
                   src={displayMediaUrl}
@@ -359,19 +359,19 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
                   <ImageIcon className="w-6 h-6" />
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-xs text-gray-900 line-clamp-2 leading-snug">
+              <p className="font-bold text-xs text-gray-900 dark:text-white line-clamp-2 leading-snug">
                 {displayHeadline}
               </p>
-              <p className="text-[11px] text-gray-500 truncate mt-1">
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-1">
                 {displayUrl}
               </p>
-              <p className="text-[10px] text-gray-400 line-clamp-2 mt-0.5">
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 line-clamp-2 mt-0.5">
                 {displayPrimaryText}
               </p>
             </div>
