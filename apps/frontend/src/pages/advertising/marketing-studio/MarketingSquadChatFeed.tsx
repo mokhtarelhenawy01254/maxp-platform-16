@@ -119,32 +119,6 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
     }
   };
 
-  // Dynamic quick prompts adapted to current product
-  const quickActions = [
-    {
-      label: "🎯 3 زوايا إعلانية للمنتج",
-      prompt: selectedProduct
-        ? `عايزك تقترح لي 3 زوايا إعلانية مختلفة لمنتج "${selectedProduct.name}" مع هوكس قوية ونوع المحتوى المقترح.`
-        : "اقترح لي 3 زوايا إعلانية رابحة لمنتجات المتجر.",
-    },
-    {
-      label: "📦 اقتراح باقة Upsell وعرض",
-      prompt: selectedProduct
-        ? `اقترح لي فكرة باقة ترويجية (Bundle / Upsell) لمنتج "${selectedProduct.name}" لرفع متوسط قيمة السلة، مع حساب هامش الربح بسعر بيع ${selectedProduct.price} ج.م.`
-        : "اقترح لي باقة ترويجية لرفع متوسط قيمة السلة (AOV).",
-    },
-    {
-      label: "📊 حساب سقف CPA ونقطة التعادل",
-      prompt: selectedProduct
-        ? `احسب لي سقف تكلفة الشراء (Target CPA) والـ Break-even ROAS لمنتج "${selectedProduct.name}" بسعر ${selectedProduct.price} ج.م وتكلفة ${selectedProduct.cost || 0} ج.م.`
-        : "كيف نحسب نقطة التعادل والـ Target CPA للحملات الجديدة؟",
-    },
-    {
-      label: "🛡️ مراجعة الحملات والإرهاق الإعلاني",
-      prompt:
-        "افحص الحملات الإعلانية الحالية للمتجر وقلي هل في أي إعلان بيعاني من إرهاق (Ad Fatigue) أو محتاج إيقاف؟",
-    },
-  ];
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -280,20 +254,6 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Action Pills */}
-      <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 flex gap-1.5 overflow-x-auto no-scrollbar">
-        {quickActions.map((qa, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => handleSend(qa.prompt)}
-            disabled={loading}
-            className="flex-shrink-0 px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/60 transition font-medium"
-          >
-            {qa.label}
-          </button>
-        ))}
-      </div>
 
       {/* Input Bar */}
       <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900">

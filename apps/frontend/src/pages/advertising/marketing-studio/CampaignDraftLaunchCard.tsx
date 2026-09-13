@@ -1,23 +1,13 @@
 import React, { useState } from "react";
 import {
   Rocket,
-  ShieldCheck,
-  ToggleLeft,
-  ToggleRight,
   Sparkles,
-  CheckCircle2,
-  Edit3,
-  Globe,
-  MoreHorizontal,
-  ThumbsUp,
-  MessageCircle,
-  Share2,
   Package,
-  TrendingUp,
   Target,
-  Zap,
-  Coins,
+  Plus,
   Check,
+  Tag,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { publishAiDraft } from "../../../services/facebookAdsService";
@@ -29,76 +19,19 @@ interface CampaignDraftLaunchCardProps {
   onDraftPublished?: (draftId: string) => void;
 }
 
+interface MarketingAngleSuggestion {
+  id: string;
+  name: string;
+  generateText: (productName: string) => { primaryText: string; headline: string };
+}
+
 export const CampaignDraftLaunchCard: React.FC<CampaignDraftLaunchCardProps> = ({
   draft,
   selectedProduct,
   onDraftPublished,
 }) => {
   const [publishing, setPublishing] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [selectedAngleId, setSelectedAngleId] = useState("safety");
-
-  // Media Buyer Strategic Angles for this product
-  const marketingAngles = [
-    {
-      id: "safety",
-      title: "الأمان والمعاينة",
-      badge: "الأعلى تحويلاً",
-      icon: ShieldCheck,
-      primaryText: `خايف تطلب كوتشي أونلاين وميطلعش مقاسك أو خامته مش قد التوقع؟ مع متجرنا الرسمي عاين وقيس براحتك مع المندوب قبل ما تدفع قرش واحد! خامات ممتازة ومعاينة مجانية والدفع عند الاستلام. اطلب الآن قبل نفاد الكمية!`,
-      headline: "عاين وقيس مع المندوب قبل ما تدفع مليم ⚡",
-    },
-    {
-      id: "comfort",
-      title: "الراحة والدوام",
-      badge: "للشغل والجامعة",
-      icon: Zap,
-      primaryText: `لو يومك طويل وبتقف ساعات طويلة في الشغل أو كليتك... نعل طبي ميموري فوم هيريح ضهرك ورجلك طول اليوم بدون أي إرهاق. خفة ومرونة وأناقة تناسب لبسك اليومي!`,
-      headline: "خفة وراحة طبية تدوم طول يومك 👟",
-    },
-    {
-      id: "bundle",
-      title: "باقة التوفير (اطلب 2)",
-      badge: "رفع الـ AOV",
-      icon: Package,
-      primaryText: `عرض خاص لفترة محدودة! اطلب كوتشي ${selectedProduct?.name || "Dash"}، أو اطلب قطعتين واحصل على خصم إضافي مع شحن مجاني تماماً لجميع المحافظات والدفع عند الباب. الكمية محدودة بالمخزون!`,
-      headline: "اطلب 2 واحصل على شحن مجاني فوري 🎁",
-    },
-  ];
-
-  const activeAngle =
-    marketingAngles.find((a) => a.id === selectedAngleId) || marketingAngles[0];
-
-  // Editable local fields (initialized with active angle)
-  const [primaryText, setPrimaryText] = useState("");
-  const [headline, setHeadline] = useState("");
-  const [dailyBudget, setDailyBudget] = useState(350);
-
-  // Hermes learned rules
-  const [activeRules, setActiveRules] = useState([
-    {
-      id: "scale_rule_1",
-      title: "رفع الميزانية 20% كل 48 ساعة عند تحقيق ROAS >= 2.2",
-      enabled: true,
-    },
-    {
-      id: "kill_rule_2",
-      title: "إيقاف الحملة تلقائياً إذا أنفقت ضعف سعر الشراء المستهدف دون مبيعات",
-      enabled: true,
-    },
-    {
-      id: "fatigue_rule_3",
-      title: "استبدال الهوك الإعلاني إذا تخطى معدل التكرار 2.5",
-      enabled: true,
-    },
-  ]);
-
-  const toggleRule = (id: string) => {
-    setActiveRules((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r))
-    );
-    toast.success("تم تحديث قاعدة الأمان");
-  };
+  const productName = selectedProduct?.name || "المنتج المحدد";
 
   // Financial Unit Economics
   const sellingPrice = selectedProduct?.price || 620;
@@ -107,22 +40,105 @@ export const CampaignDraftLaunchCard: React.FC<CampaignDraftLaunchCardProps> = (
   const targetCpa = Math.round(sellingPrice * 0.25);
   const availableStock = selectedProduct?.stock ?? 42;
 
-  // Sync edits or active angle defaults
-  const currentPrimaryText =
-    primaryText || draft?.primaryText || activeAngle.primaryText;
-  const currentHeadline = headline || draft?.headline || activeAngle.headline;
-  const currentBudget = dailyBudget || draft?.budgetAmount || 350;
+  // General Marketing Angles applicable to ANY e-commerce product
+  const [angles, setAngles] = useState<MarketingAngleSuggestion[]>([
+    {
+      id: "safety",
+      name: "الأمان والمعاينة قبل الدفع",
+      generateText: (name) => ({
+        primaryText: `خايف تطلب أونلاين وميطلعش بنفس الجودة أو المواصفات؟ مع متجرنا الرسمي عاين وافحص ${name} براحتك تماماً مع المندوب قبل ما تدفع قرش واحد! جودة مضمونة ومعاينة مجانية والدفع عند الاستلام. اطلب الآن قبل نفاد الكمية!`,
+        headline: `عاين ${name} مع المندوب قبل ما تدفع مليم ⚡`,
+      }),
+    },
+    {
+      id: "comfort_quality",
+      name: "الجودة والاعتمادية اليومية",
+      generateText: (name) => ({
+        primaryText: `دورك على الجودة اللي تعيش معاك وتتحمل الاستخدام اليومي؟ ${name} مصنوع بأعلى معايير الدقة والراحة عشان يديك أفضل تجربة بأفضل سعر. جربه واستمتع بفرق الجودة الحقيقي!`,
+        headline: `خامات ممتازة وتجربة تدوم كل يوم ✨`,
+      }),
+    },
+    {
+      id: "bundle_offer",
+      name: "باقة التوفير 2+1 (عرض خاص)",
+      generateText: (name) => ({
+        primaryText: `عرض خاص ومحدود جداً! اطلب ${name} اليوم، أو اطلب قطعتين واحصل على خصم إضافي مع شحن مجاني تماماً لجميع المحافظات والدفع عند الباب بعد الفحص والمعاينة!`,
+        headline: `اطلب 2 واحصل على شحن مجاني وخصم فوري 🎁`,
+      }),
+    },
+    {
+      id: "problem_solver",
+      name: "حل مشكلة واضحة وتوفير الوقت",
+      generateText: (name) => ({
+        primaryText: `لو بتعاني من ضياع الوقت وتدوير على حل عملي وموثوق... ${name} هو الحل السريع والذكي اللي هيسهل عليك يومك ويوفر طاقتك بنتائج فورية مضمونة.`,
+        headline: `الحل الأذكى والعملي لراحتك اليومية 🚀`,
+      }),
+    },
+    {
+      id: "urgency_stock",
+      name: "العرض الموسمي / كمية محدودة",
+      generateText: (name) => ({
+        primaryText: `تصفية الموسم وأقوى خصم لهذا الشهر على ${name}! باقي قطع معدودة في المخزن بسعر العرض. الشحن سريع ومتاح الدفع عند الاستلام بعد المعاينة التامة.`,
+        headline: `خصم محدود والكمية قاربت على النفاد ⏳`,
+      }),
+    },
+    {
+      id: "social_proof",
+      name: "تجارب وتقييمات العملاء (Social Proof)",
+      generateText: (name) => ({
+        primaryText: `أكثر من 1,500 عميل اختاروا ${name} ونال إعجاب وتقييم 4.9 نجوم. انضم لأكبر مجتمع عملاء راضين عن منتجاتنا وتمتع بضمان الاستبدال والاسترجاع السريع!`,
+        headline: `المنتج الأكثر طلباً وتقييماً من عملائنا ⭐`,
+      }),
+    },
+  ]);
 
-  const handleSelectAngle = (angleId: string) => {
-    setSelectedAngleId(angleId);
-    const chosen = marketingAngles.find((a) => a.id === angleId);
-    if (chosen) {
-      setPrimaryText(chosen.primaryText);
-      setHeadline(chosen.headline);
-      toast.success(`تم تطبيق زاوية: ${chosen.title}`);
-    }
+  const [selectedAngleId, setSelectedAngleId] = useState<string>("safety");
+  const [newAngleInput, setNewAngleInput] = useState("");
+  const [showAddAngleInput, setShowAddAngleInput] = useState(false);
+
+  // Editable ad fields
+  const [primaryText, setPrimaryText] = useState(
+    draft?.primaryText ||
+      angles[0].generateText(productName).primaryText
+  );
+  const [headline, setHeadline] = useState(
+    draft?.headline || angles[0].generateText(productName).headline
+  );
+  const [dailyBudget, setDailyBudget] = useState(draft?.budgetAmount || 350);
+
+  // Handle angle selection
+  const handleSelectAngle = (angle: MarketingAngleSuggestion) => {
+    setSelectedAngleId(angle.id);
+    const content = angle.generateText(productName);
+    setPrimaryText(content.primaryText);
+    setHeadline(content.headline);
+    toast.success(`تم تطبيق زاوية: ${angle.name}`);
   };
 
+  // Handle adding custom angle
+  const handleAddCustomAngle = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newAngleInput.trim();
+    if (!trimmed) return;
+
+    const newId = `custom-${Date.now()}`;
+    const newAngle: MarketingAngleSuggestion = {
+      id: newId,
+      name: trimmed,
+      generateText: (name) => ({
+        primaryText: `عرض خاص على ${name} بزاوية (${trimmed})! خامات عالية الجودة، شحن سريع لجميع المحافظات، ومعاينة كاملة قبل الدفع. اطلب الآن واستفد من العرض.`,
+        headline: `${name} | ${trimmed} ⚡`,
+      }),
+    };
+
+    setAngles((prev) => [...prev, newAngle]);
+    handleSelectAngle(newAngle);
+    setNewAngleInput("");
+    setShowAddAngleInput(false);
+    toast.success(`تمت إضافة وتطبيق زاوية: ${trimmed}`);
+  };
+
+  // Launch campaign
   const handleLaunch = async () => {
     setPublishing(true);
     try {
@@ -154,231 +170,199 @@ export const CampaignDraftLaunchCard: React.FC<CampaignDraftLaunchCardProps> = (
               غرفة إطلاق الحملة (Meta Ad Studio)
             </h3>
             <p className="text-[10px] text-slate-400">
-              معاينة حية وإعدادات ميديا باير متكاملة
+              مسودة الإعلان، الزوايا التسويقية، والميزانية
             </p>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsEditing(!isEditing)}
-          className={`px-2.5 py-1 text-xs rounded-lg font-semibold flex items-center gap-1 transition ${
-            isEditing
-              ? "bg-blue-600 text-white shadow-sm"
-              : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50"
-          }`}
-        >
-          <Edit3 className="w-3.5 h-3.5" />
-          {isEditing ? "حفظ التعديل" : "تعديل النص"}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold">
+            جاهز للإطلاق
+          </span>
+        </div>
       </div>
 
       {/* Body: Scrollable Workspace */}
       <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 min-h-0">
-        {/* 1. Unit Economics Bar (بوصلة الميديا باير المالية) */}
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-              <Coins className="w-3.5 h-3.5 text-amber-500" />
-              اقتصاديات المنتج المستهدف
-            </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold">
-              جاهز للإعلان
-            </span>
+        {/* 1. Compact Product Card with Thumbnail & Unit Economics */}
+        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
+          <div className="flex items-center gap-3">
+            {selectedProduct?.mainImage ? (
+              <img
+                src={selectedProduct.mainImage}
+                alt={productName}
+                className="w-14 h-14 rounded-xl object-cover border border-slate-200 dark:border-slate-700 flex-shrink-0 shadow-xs"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 text-slate-400">
+                <Package className="w-6 h-6" />
+              </div>
+            )}
+
+            <div className="flex-1 min-w-0">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                {productName}
+              </h4>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                المخزون المتوفر:{" "}
+                <span className="font-bold text-slate-700 dark:text-slate-200">
+                  {availableStock} قطعة
+                </span>
+              </p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-            <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+          {/* Economics Strip */}
+          <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-slate-200/80 dark:border-slate-700/60 text-center">
+            <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
               <span className="block text-[10px] text-slate-400">سعر البيع</span>
               <span className="text-xs font-black text-slate-900 dark:text-white">
                 {sellingPrice} ج.م
               </span>
             </div>
-            <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
               <span className="block text-[10px] text-slate-400">سقف تكلفة الطلب (Max CPA)</span>
               <span className="text-xs font-black text-blue-600 dark:text-blue-400">
                 ~{targetCpa} ج.م
               </span>
             </div>
-            <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-              <span className="block text-[10px] text-slate-400">هامش الربح المتوقع</span>
+            <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+              <span className="block text-[10px] text-slate-400">هامش الربح</span>
               <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
                 {profitMargin}%
-              </span>
-            </div>
-            <div className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-              <span className="block text-[10px] text-slate-400">المخزون المتاح</span>
-              <span className="text-xs font-black text-slate-800 dark:text-slate-200">
-                {availableStock} قطعة
               </span>
             </div>
           </div>
         </div>
 
-        {/* 2. Strategic Angles Selector (زوايا البيع الـ 3) */}
-        <div className="space-y-1.5">
+        {/* 2. Marketing Angle Suggestion Tags (مسميات كاقتراحات) */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
               <Target className="w-3.5 h-3.5 text-indigo-500" />
-              اختر زاوية البيع والهوك (Marketing Angle)
+              اقتراحات زوايا البيع والهوك (Marketing Angles)
             </span>
-            <span className="text-[10px] text-slate-400">تحديث فوري للمعاينة</span>
+            <button
+              type="button"
+              onClick={() => setShowAddAngleInput(!showAddAngleInput)}
+              className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5"
+            >
+              <Plus className="w-3 h-3" />
+              إضافة زاوية
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {marketingAngles.map((angle) => {
+          {/* Add custom angle row */}
+          {showAddAngleInput && (
+            <form
+              onSubmit={handleAddCustomAngle}
+              className="flex items-center gap-1.5 p-2 rounded-xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800"
+            >
+              <input
+                type="text"
+                value={newAngleInput}
+                onChange={(e) => setNewAngleInput(e.target.value)}
+                placeholder="اكتب اسم الزاوية (مثال: شحن فوري في نفس اليوم)..."
+                className="flex-1 px-2.5 py-1 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={!newAngleInput.trim()}
+                className="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition disabled:opacity-50"
+              >
+                إضافة
+              </button>
+            </form>
+          )}
+
+          {/* Suggestion Chips */}
+          <div className="flex flex-wrap gap-1.5">
+            {angles.map((angle) => {
               const isSelected = selectedAngleId === angle.id;
-              const IconComp = angle.icon;
               return (
                 <button
                   key={angle.id}
                   type="button"
-                  onClick={() => handleSelectAngle(angle.id)}
-                  className={`p-2.5 rounded-xl text-right transition border flex flex-col justify-between gap-1.5 cursor-pointer ${
+                  onClick={() => handleSelectAngle(angle)}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 cursor-pointer border ${
                     isSelected
-                      ? "bg-blue-50/80 dark:bg-blue-950/50 border-blue-500 text-blue-900 dark:text-blue-200 shadow-xs"
-                      : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300"
+                      ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                      : "bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                   }`}
                 >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="flex items-center gap-1.5 font-bold text-xs">
-                      <IconComp className="w-3.5 h-3.5 text-blue-600" />
-                      {angle.title}
-                    </span>
-                    {isSelected && (
-                      <Check className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-                    )}
-                  </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium w-fit">
-                    {angle.badge}
-                  </span>
+                  <Tag className={`w-3 h-3 ${isSelected ? "text-white" : "text-slate-400"}`} />
+                  <span>{angle.name}</span>
+                  {isSelected && <Check className="w-3 h-3 text-white" />}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* 3. Realistic Meta Ad Mockup (المعاينة الحقيقية) */}
-        <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md overflow-hidden text-right">
-          {/* Post Header */}
-          <div className="p-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/60">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
-                MaxP
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
-                  متجر المتجر الرسمي
-                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 fill-blue-500/20" />
-                </h4>
-                <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                  إعلان ممول • Sponsored <Globe className="w-2.5 h-2.5" />
-                </p>
-              </div>
-            </div>
-            <MoreHorizontal className="w-4 h-4 text-slate-400" />
+        {/* 3. Direct Ad Copy Editor (Primary Text & Headline) */}
+        <div className="space-y-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60">
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+              نص الإعلان الرئيسي (Primary Text):
+            </label>
+            <textarea
+              value={primaryText}
+              onChange={(e) => setPrimaryText(e.target.value)}
+              rows={4}
+              placeholder="اكتب النص الإعلاني أو اختر زاوية من الأعلى لتطبيقه تلقائياً..."
+              className="w-full p-2.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 leading-relaxed resize-y"
+            />
           </div>
 
-          {/* Primary Text */}
-          <div className="p-3 text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-normal">
-            {isEditing ? (
-              <textarea
-                value={currentPrimaryText}
-                onChange={(e) => setPrimaryText(e.target.value)}
-                className="w-full p-2 text-xs rounded-lg border border-blue-400 dark:border-blue-600 bg-blue-50/20 dark:bg-blue-950/30 focus:outline-none"
-                rows={3}
-              />
-            ) : (
-              <p className="whitespace-pre-line">{currentPrimaryText}</p>
-            )}
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+              عنوان الإعلان (Headline):
+            </label>
+            <input
+              type="text"
+              value={headline}
+              onChange={(e) => setHeadline(e.target.value)}
+              placeholder="عنوان الإعلان الرئيسي..."
+              className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
-          {/* Creative Media Canvas */}
-          <div className="relative aspect-[4/3] bg-slate-100 dark:bg-slate-900 overflow-hidden flex items-center justify-center border-y border-slate-100 dark:border-slate-800">
-            {selectedProduct?.mainImage ? (
-              <img
-                src={selectedProduct.mainImage}
-                alt={selectedProduct.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="text-center p-4">
-                <Package className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-                <span className="text-xs text-slate-400 font-medium">
-                  {selectedProduct?.name || "صورة المنتج الإعلانية"}
-                </span>
-              </div>
-            )}
-
-            {/* Live Angle Badge on Image */}
-            <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1 shadow-sm">
-              <span>🎯 زاوية: {activeAngle.title}</span>
-            </div>
-          </div>
-
-          {/* Ad Footer Bar (Destination + Headline + CTA) */}
-          <div className="p-3 bg-slate-50 dark:bg-slate-900/90 flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800">
-            <div className="min-w-0 flex-1">
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider block truncate">
+          {/* Link & CTA Preview */}
+          <div className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-mono">
                 {selectedProduct?.slug
-                  ? `SWAN.MAXP.ONLINE/PRODUCT/${selectedProduct.slug.toUpperCase()}`
-                  : "SWAN.MAXP.ONLINE"}
+                  ? `swan.maxp.online/p/${selectedProduct.slug}`
+                  : "swan.maxp.online"}
               </span>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={currentHeadline}
-                  onChange={(e) => setHeadline(e.target.value)}
-                  className="w-full p-1 text-xs font-bold rounded border border-blue-400 bg-white dark:bg-slate-950 mt-1"
-                />
-              ) : (
-                <h5 className="text-xs font-bold text-slate-900 dark:text-white truncate mt-0.5">
-                  {currentHeadline}
-                </h5>
-              )}
             </div>
-
-            <button
-              type="button"
-              className="px-3.5 py-2 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold whitespace-nowrap transition flex-shrink-0"
-            >
-              تسوق الآن
-            </button>
-          </div>
-
-          {/* Social Reactions Bar */}
-          <div className="px-3 py-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-slate-400 text-[11px]">
-            <span className="flex items-center gap-1">
-              <ThumbsUp className="w-3.5 h-3.5 text-blue-500" /> أعجبني
-            </span>
-            <span className="flex items-center gap-1">
-              <MessageCircle className="w-3.5 h-3.5" /> تعليق
-            </span>
-            <span className="flex items-center gap-1">
-              <Share2 className="w-3.5 h-3.5" /> مشاركة
+            <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300">
+              زر الإعلان: تسوق الآن
             </span>
           </div>
         </div>
 
         {/* 4. Campaign Parameters & Budget Bar */}
-        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 space-y-2.5">
+        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
               إعدادات الحملة في Meta
             </span>
             <span className="text-[11px] text-slate-500 font-medium">
-              مصر • رجال 20 - 45 • تسوق أونلاين
+              مصر • جميع المحافظات • تسوق أونلاين
             </span>
           </div>
 
-          <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
             <span className="text-xs text-slate-600 dark:text-slate-400">
               الميزانية اليومية الموصى بها:
             </span>
             <div className="flex items-center gap-1.5">
               <input
                 type="number"
-                value={currentBudget}
+                value={dailyBudget}
                 onChange={(e) => setDailyBudget(Number(e.target.value))}
                 className="w-20 py-1 px-2 text-xs font-black text-center rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 focus:outline-none"
               />
@@ -388,51 +372,9 @@ export const CampaignDraftLaunchCard: React.FC<CampaignDraftLaunchCardProps> = (
             </div>
           </div>
         </div>
-
-        {/* 5. Hermes Safety Rules (حماية الميزانية من الهدر) */}
-        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              قواعد أمان هرمز (حماية الميزانية)
-            </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold">
-              نشطة تلقائياً
-            </span>
-          </div>
-
-          <div className="space-y-1.5">
-            {activeRules.map((rule) => (
-              <div
-                key={rule.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => toggleRule(rule.id)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    toggleRule(rule.id);
-                  }
-                }}
-                className="p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 cursor-pointer hover:border-slate-300 transition"
-              >
-                <span className="text-[11px] text-slate-600 dark:text-slate-300">
-                  {rule.title}
-                </span>
-                <span className="flex-shrink-0">
-                  {rule.enabled ? (
-                    <ToggleRight className="w-4 h-4 text-emerald-600" />
-                  ) : (
-                    <ToggleLeft className="w-4 h-4 text-slate-400" />
-                  )}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* 6. Action Footer: One-Click Launch */}
+      {/* 5. Action Footer: Launch to Meta Ads */}
       <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0">
         <button
           type="button"

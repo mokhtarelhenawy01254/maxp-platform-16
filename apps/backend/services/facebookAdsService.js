@@ -62,7 +62,8 @@ const OBJECTIVE_MAPPING = {
 const SUPPORTED_FULL_AD_CREATIVE_TYPES = new Set([
   'SINGLE_IMAGE',
   'SINGLE_VIDEO',
-  'CAROUSEL'
+  'CAROUSEL',
+  'EXISTING_POST'
 ]);
 
 const MAX_REMOTE_AD_IMAGE_BYTES = 12 * 1024 * 1024;
@@ -1214,7 +1215,8 @@ class FacebookAdsService {
         expandImage = false,
         visualTouchups = false,
         relevantComments = false,
-        priceOverlay = false
+        priceOverlay = false,
+        postId
       } = data;
 
       if (!pageId) {
@@ -1224,14 +1226,14 @@ class FacebookAdsService {
         };
       }
 
-      if (!linkUrl) {
+      const normalizedCreativeType = creativeType || 'SINGLE_IMAGE';
+
+      if (normalizedCreativeType !== 'EXISTING_POST' && !linkUrl) {
         return {
           success: false,
           error: 'Destination URL is required for the ad creative'
         };
       }
-
-      const normalizedCreativeType = creativeType || 'SINGLE_IMAGE';
       const callToActionPayload = {
         type: callToAction || 'LEARN_MORE',
         value: { link: linkUrl }
@@ -1312,6 +1314,18 @@ class FacebookAdsService {
         if (headline) creativeData.object_story_spec.link_data.name = headline;
         if (description) creativeData.object_story_spec.link_data.description = description;
         if (displayLink) creativeData.object_story_spec.link_data.caption = displayLink;
+      } else if (normalizedCreativeType === 'EXISTING_POST') {
+        if (!postId) {
+          return {
+            success: false,
+            error: 'Post ID is required when promoting an existing page post'
+          };
+        }
+        // In Meta Marketing API, existing post creative uses object_story_id
+        // Format: {page_id}_{post_id} or direct post id
+        const formattedStoryId = String(postId).includes('_') ? String(postId) : `${pageId}_${postId}`;
+        delete creativeData.object_story_spec;
+        creativeData.object_story_id = formattedStoryId;
       } else {
         return {
           success: false,
@@ -1430,6 +1444,49 @@ class FacebookAdsService {
   }
 
   /**
+   * 📄 جلب منشورات الصفحة لاستخدامها كإعلان (Use Existing Post)
+   */
+  async getPagePublishedPosts(pageId, limit = 25) {
+    try {
+      if (!pageId) {
+        throw new Error('Page ID is required');
+      }
+
+      const response = await axios.get(
+        `${this.baseUrl}/${pageId}/published_posts`,
+        {
+          params: {
+            access_token: this.accessToken,
+            fields: 'id,message,story,created_time,full_picture,permalink_url,shares,attachments{media,type,unshimmed_url}',
+            limit
+          }
+        }
+      );
+
+      const posts = (response.data?.data || []).map(post => ({
+        id: post.id,
+        message: post.message || post.story || 'بدون نص',
+        createdTime: post.created_time,
+        pictureUrl: post.full_picture || post.attachments?.data?.[0]?.media?.image?.src || null,
+        permalinkUrl: post.permalink_url,
+        sharesCount: post.shares?.count || 0
+      }));
+
+      return {
+        success: true,
+        posts
+      };
+    } catch (error) {
+      console.error('❌ Error fetching page published posts:', error.response?.data || error.message);
+      return {
+        success: false,
+        error: error.response?.data?.error?.message || error.message,
+        posts: []
+      };
+    }
+  }
+
+  /**
    * ============================================
    * 🚀 CREATE FULL AD (Campaign + AdSet + Ad)
    * ============================================
@@ -1501,6 +1558,7 @@ class FacebookAdsService {
         textVariations = [],
         headlineVariations = [],
         leadFormId,
+        postId,
         
         // Advantage+ Creative Enhancements (v26.0)
         advantageCreative = false,
@@ -1531,16 +1589,34 @@ class FacebookAdsService {
         return {
           success: false,
           step: 'validation',
-          error: `Creative type ${creativeType} is not supported yet. Please use image, video, or carousel.`,
+          error: `Creative type ${creativeType} is not supported yet. Please use image, video, carousel, or existing post.`,
           results
         };
       }
 
-      if (!pageId || !primaryText || !linkUrl) {
+      if (!pageId) {
         return {
           success: false,
           step: 'validation',
-          error: 'Page ID, primary text, and destination URL are required',
+          error: 'Facebook Page ID is required',
+          results
+        };
+      }
+
+      if (creativeType === 'EXISTING_POST') {
+        if (!postId) {
+          return {
+            success: false,
+            step: 'validation',
+            error: 'Post ID is required when selecting an existing page post',
+            results
+          };
+        }
+      } else if (!primaryText || !linkUrl) {
+        return {
+          success: false,
+          step: 'validation',
+          error: 'Primary text and destination URL are required for new ads',
           results
         };
       }
@@ -1791,6 +1867,7 @@ class FacebookAdsService {
         imageHash: finalImageHash,
         videoId: finalVideoId,
         carouselCards: preparedCarouselCards,
+        postId,
         // Advantage+ Creative (v26.0)
         advantageCreative,
         textGeneration,
