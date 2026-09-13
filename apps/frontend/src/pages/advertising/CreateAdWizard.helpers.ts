@@ -59,9 +59,113 @@ export const normalizeWizardBidStrategy = (strategy?: string) => {
 export const isCappedBidStrategy = (strategy?: string) =>
   normalizeWizardBidStrategy(strategy) !== "LOWEST_COST";
 
+export const normalizeCurrencyCode = (currency?: string | null): string => {
+  if (!currency) return "EGP";
+  const trimmed = String(currency).trim().toUpperCase();
+  if (
+    trimmed === "LE" ||
+    trimmed === "L.E" ||
+    trimmed === "ج.م" ||
+    trimmed === "جنيه" ||
+    trimmed === "EGP"
+  ) {
+    return "EGP";
+  }
+  if (/^[A-Z]{3}$/.test(trimmed)) {
+    return trimmed;
+  }
+  return "EGP";
+};
+
+export const formatAdAccountCurrency = (
+  value: number | string | undefined | null,
+  currency: string | undefined | null,
+  isEn = false,
+): string => {
+  const normalizedCurrency = normalizeCurrencyCode(currency);
+  const amount = Number(value) || 0;
+  try {
+    return new Intl.NumberFormat(isEn ? "en-US" : "ar-EG", {
+      style: "currency",
+      currency: normalizedCurrency,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${amount.toLocaleString(isEn ? "en-US" : "ar-EG")} ${normalizedCurrency}`;
+  }
+};
+
 export const getFullAdMinimumBudgetAmount = (currency?: string) => {
-  const normalizedCurrency = String(currency || "").trim().toUpperCase();
+  const normalizedCurrency = normalizeCurrencyCode(currency);
   return normalizedCurrency === "EGP" ? 200 : 1;
+};
+
+export const buildWizardGeoSummary = (
+  formData: {
+    regions?: Array<{ name?: string } | string | null | undefined> | null;
+    cities?: Array<{ name?: string } | string | null | undefined> | null;
+    locations?: string[] | null;
+  },
+  isEn: boolean,
+  countries: Array<{ code: string; name: string }>,
+): string => {
+  const regions = Array.isArray(formData.regions) ? formData.regions : [];
+  const cities = Array.isArray(formData.cities) ? formData.cities : [];
+  const locations = Array.isArray(formData.locations) ? formData.locations : [];
+
+  if (regions.length > 0 || cities.length > 0) {
+    const regionNames = regions
+      .map((r) => {
+        if (!r) return "";
+        const name = typeof r === "string" ? r : r.name;
+        return name ? (isEn ? `${name} Governorate` : `محافظة ${name}`) : "";
+      })
+      .filter(Boolean);
+
+    const cityNames = cities
+      .map((c) => {
+        if (!c) return "";
+        const name = typeof c === "string" ? c : c.name;
+        return name ? (isEn ? `${name} City` : `مدينة ${name}`) : "";
+      })
+      .filter(Boolean);
+
+    return [...regionNames, ...cityNames].join(", ");
+  }
+
+  return locations
+    .map((loc) => countries.find((c) => c.code === loc)?.name || loc)
+    .filter(Boolean)
+    .join(", ");
+};
+
+export const buildWizardCreativeSummary = (
+  formData: {
+    creativeType?: string | null;
+    carouselCards?: any[] | null;
+    flexibleAssets?: any[] | null;
+  },
+  isEn: boolean,
+): string => {
+  const creativeType = formData.creativeType || "SINGLE_IMAGE";
+  if (creativeType === "CAROUSEL") {
+    const count = formData.carouselCards?.length || 0;
+    return isEn ? `Carousel - ${count} cards` : `دوّار - ${count} كارت`;
+  }
+  if (creativeType === "SINGLE_IMAGE") {
+    return isEn ? "Single Image" : "صورة واحدة";
+  }
+  if (creativeType === "SINGLE_VIDEO") {
+    return isEn ? "Single Video" : "فيديو واحد";
+  }
+  if (creativeType === "EXISTING_POST") {
+    return isEn ? "Existing Page Post" : "منشور من الصفحة";
+  }
+  if (creativeType === "FLEXIBLE") {
+    const count = formData.flexibleAssets?.length || 0;
+    return isEn ? `Flexible - ${count} files` : `مرن - ${count} ملف`;
+  }
+  return isEn ? "Single Image" : "صورة واحدة";
 };
 
 export const normalizeAttributionWindowForObjective = (

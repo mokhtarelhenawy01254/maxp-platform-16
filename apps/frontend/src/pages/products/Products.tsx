@@ -579,7 +579,6 @@ const Products: React.FC = () => {
           open={showQuickAddModal}
           onClose={() => setShowQuickAddModal(false)}
           onSuccess={() => loadProducts()}
-          initialCategories={categories}
         />
       )}
     </div>

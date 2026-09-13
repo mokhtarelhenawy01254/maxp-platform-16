@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   FileText,
   RefreshCw,
@@ -31,6 +32,9 @@ export const PagePostsSelector: React.FC<PagePostsSelectorProps> = ({
   onManualPostIdChange,
   error,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
   const [posts, setPosts] = useState<FacebookPagePost[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -47,14 +51,14 @@ export const PagePostsSelector: React.FC<PagePostsSelectorProps> = ({
       if (res.success && Array.isArray(res.posts)) {
         setPosts(res.posts);
       } else {
-        setFetchError(res.error || "تعذر جلب منشورات الصفحة");
+        setFetchError(res.error || (isEn ? "Failed to fetch page posts" : "تعذر جلب منشورات الصفحة"));
       }
     } catch (err: any) {
-      setFetchError(err.message || "حدث خطأ أثناء تحميل المنشورات من فيسبوك");
+      setFetchError(err.message || (isEn ? "An error occurred while loading posts from Facebook" : "حدث خطأ أثناء تحميل المنشورات من فيسبوك"));
     } finally {
       setLoading(false);
     }
-  }, [pageId]);
+  }, [pageId, isEn]);
 
   useEffect(() => {
     fetchPosts();
@@ -72,7 +76,7 @@ export const PagePostsSelector: React.FC<PagePostsSelectorProps> = ({
   const formatDate = (isoString?: string) => {
     if (!isoString) return "";
     try {
-      return new Date(isoString).toLocaleDateString("ar-EG", {
+      return new Date(isoString).toLocaleDateString(isEn ? "en-US" : "ar-EG", {
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -89,11 +93,11 @@ export const PagePostsSelector: React.FC<PagePostsSelectorProps> = ({
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            منشورات الصفحة المتاحة للترويج
+            {isEn ? "Available Page Posts for Promotion" : "منشورات الصفحة المتاحة للترويج"}
           </span>
           {posts.length > 0 && (
             <span className="text-xs bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
-              {posts.length} منشور
+              {posts.length} {isEn ? (posts.length === 1 ? "post" : "posts") : "منشور"}
             </span>
           )}
         </div>
@@ -104,17 +108,19 @@ export const PagePostsSelector: React.FC<PagePostsSelectorProps> = ({
             onClick={fetchPosts}
             disabled={loading}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors disabled:opacity-50"
-            title="تحديث قائمة المنشورات"
+            title={isEn ? "Refresh posts list" : "تحديث قائمة المنشورات"}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-blue-600" : ""}`} />
-            تحديث
+            {isEn ? "Refresh" : "تحديث"}
           </button>
           <button
             type="button"
             onClick={() => setShowManualInput(!showManualInput)}
             className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline font-medium"
           >
-            {showManualInput ? "إخفاء الإدخال اليدوي" : "إدخال معرف يدويًا"}
+            {showManualInput
+              ? (isEn ? "Hide manual input" : "إخفاء الإدخال اليدوي")
+              : (isEn ? "Enter ID manually" : "إدخال معرف يدويًا")}
           </button>
         </div>
       </div>
@@ -123,17 +129,19 @@ export const PagePostsSelector: React.FC<PagePostsSelectorProps> = ({
       {showManualInput && (
         <div className="p-3 bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 rounded-xl space-y-2">
           <label className="block text-xs font-medium text-blue-900 dark:text-blue-300">
-            معرّف المنشور (Post ID) يدويًا
+            {isEn ? "Page Post ID manually" : "معرّف المنشور (Post ID) يدويًا"}
           </label>
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Hash className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" />
+              <Hash className={`w-4 h-4 text-gray-400 absolute top-2.5 ${isEn ? "left-3" : "right-3"}`} />
               <input
                 type="text"
                 value={manualId}
                 onChange={(e) => setManualId(e.target.value)}
-                placeholder="مثال: 123456789012345"
-                className="w-full pr-9 pl-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                placeholder={isEn ? "e.g. 123456789012345" : "مثال: 123456789012345"}
+                className={`w-full py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 ${
+                  isEn ? "pl-9 pr-3" : "pr-9 pl-3"
+                }`}
               />
             </div>
             <button
@@ -142,11 +150,13 @@ export const PagePostsSelector: React.FC<PagePostsSelectorProps> = ({
               disabled={!manualId.trim()}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg disabled:opacity-50 transition-colors"
             >
-              تأكيد
+              {isEn ? "Confirm" : "تأكيد"}
             </button>
           </div>
           <p className="text-[11px] text-gray-500 dark:text-gray-400">
-            يمكنك استخدام هذا الخيار إذا كان المنشور مخفياً (Dark Post) أو غير ظاهر في القائمة التلقائية.
+            {isEn
+              ? "You can use this option if the post is dark/unpublished or does not appear in the automated list."
+              : "يمكنك استخدام هذا الخيار إذا كان المنشور مخفياً (Dark Post) أو غير ظاهر في القائمة التلقائية."}
           </p>
         </div>
       )}
@@ -154,13 +164,15 @@ export const PagePostsSelector: React.FC<PagePostsSelectorProps> = ({
       {/* Search Input */}
       {posts.length > 5 && (
         <div className="relative">
-          <Search className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" />
+          <Search className={`w-4 h-4 text-gray-400 absolute top-2.5 ${isEn ? "left-3" : "right-3"}`} />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="بحث في نصوص المنشورات أو المعرف..."
-            className="w-full pr-9 pl-3 py-2 text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder={isEn ? "Search in post text or ID..." : "بحث في نصوص المنشورات أو المعرف..."}
+            className={`w-full py-2 text-xs border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 ${
+              isEn ? "pl-9 pr-3" : "pr-9 pl-3"
+            }`}
           />
         </div>
       )}
@@ -177,14 +189,16 @@ export const PagePostsSelector: React.FC<PagePostsSelectorProps> = ({
       {loading ? (
         <div className="py-12 flex flex-col items-center justify-center gap-2 text-gray-500 dark:text-gray-400">
           <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-          <span className="text-xs">جاري جلب المنشورات من صفحة فيسبوك...</span>
+          <span className="text-xs">{isEn ? "Fetching posts from Facebook Page..." : "جاري جلب المنشورات من صفحة فيسبوك..."}</span>
         </div>
       ) : filteredPosts.length === 0 ? (
         <div className="py-8 text-center text-gray-500 dark:text-gray-400 border border-dashed border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/40">
           <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400 dark:text-gray-500" />
-          <p className="text-xs font-medium">لم يتم العثور على منشورات منشورة</p>
+          <p className="text-xs font-medium">{isEn ? "No published posts found" : "لم يتم العثور على منشورات منشورة"}</p>
           <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
-            تأكد من نشر منشورات على الصفحة أو استخدم خيار الإدخال اليدوي أعلاه
+            {isEn
+              ? "Make sure there are published posts on the page, or enter an ID manually above"
+              : "تأكد من نشر منشورات على الصفحة أو استخدم خيار الإدخال اليدوي أعلاه"}
           </p>
         </div>
       ) : (
@@ -219,7 +233,7 @@ export const PagePostsSelector: React.FC<PagePostsSelectorProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-xs font-medium text-gray-900 dark:text-gray-100 line-clamp-2 leading-relaxed">
-                      {post.message || "منشور بدون نص (صورة أو وسائط)"}
+                      {post.message || (isEn ? "Post without text (image or media)" : "منشور بدون نص (صورة أو وسائط)")}
                     </p>
                     {isSelected ? (
                       <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -243,7 +257,7 @@ export const PagePostsSelector: React.FC<PagePostsSelectorProps> = ({
                     {post.sharesCount ? (
                       <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 px-1.5 py-0.5 rounded">
                         <Share2 className="w-3 h-3" />
-                        {post.sharesCount} مشاركة
+                        {post.sharesCount} {isEn ? (post.sharesCount === 1 ? "share" : "shares") : "مشاركة"}
                       </span>
                     ) : null}
                     {post.permalinkUrl && (
@@ -252,9 +266,11 @@ export const PagePostsSelector: React.FC<PagePostsSelectorProps> = ({
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mr-auto"
+                        className={`inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 ${
+                          isEn ? "ml-auto" : "mr-auto"
+                        }`}
                       >
-                        عرض المنشور
+                        {isEn ? "View post" : "عرض المنشور"}
                         <ExternalLink className="w-2.5 h-2.5" />
                       </a>
                     )}

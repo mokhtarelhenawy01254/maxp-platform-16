@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Facebook,
   Instagram,
@@ -16,7 +17,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import type { FormData } from "../types";
-import { CALL_TO_ACTIONS } from "../constants";
+import { getCallToActions } from "../constants";
 
 type PlacementPreviewMode =
   | "FACEBOOK_FEED"
@@ -32,15 +33,21 @@ interface AdPlacementPreviewProps {
 
 export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
   formData,
-  pageName = "اسم صفحتك",
+  pageName,
   isExistingPost = false,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+  const defaultPageName = isEn ? "Your Page Name" : "اسم صفحتك";
+  const effectivePageName = pageName || defaultPageName;
+
   const [mode, setMode] = useState<PlacementPreviewMode>("FACEBOOK_FEED");
   const [selectedVariationIndex, setSelectedVariationIndex] = useState<number>(0);
 
+  const callToActions = getCallToActions(isEn);
   const ctaLabel =
-    CALL_TO_ACTIONS.find((c) => c.value === formData.callToAction)?.label ||
-    "معرفة المزيد";
+    callToActions.find((c) => c.value === formData.callToAction)?.label ||
+    (isEn ? "Learn More" : "معرفة المزيد");
 
   const allTexts = [
     formData.primaryText,
@@ -51,8 +58,8 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
     allTexts[selectedVariationIndex] ||
     formData.primaryText ||
     (isExistingPost
-      ? "نص المنشور الحالي المختار..."
-      : "النص الأساسي لإعلانك سيظهر هنا...");
+      ? (isEn ? "Selected post text..." : "نص المنشور الحالي المختار...")
+      : (isEn ? "Your primary ad text will appear here..." : "النص الأساسي لإعلانك سيظهر هنا..."));
 
   const allHeadlines = [
     formData.headline,
@@ -62,12 +69,14 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
   const activeHeadline =
     allHeadlines[selectedVariationIndex] ||
     formData.headline ||
-    (isExistingPost ? pageName : "العنوان الرئيسي للإعلان");
+    (isExistingPost ? effectivePageName : (isEn ? "Ad Headline" : "العنوان الرئيسي للإعلان"));
 
   const displayPrimaryText = activeText;
   const displayHeadline = activeHeadline;
   const displayUrl = formData.displayLink || formData.linkUrl || "yoursite.com";
+  const isVideoCreative = formData.creativeType === "SINGLE_VIDEO";
   const displayMediaUrl =
+    (isVideoCreative ? formData.videoUrl : formData.imageUrl) ||
     formData.imageUrl ||
     (formData.carouselCards?.[0]?.imageUrl ? formData.carouselCards[0].imageUrl : null);
 
@@ -190,7 +199,14 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
 
           {/* Media */}
           <div className="aspect-square bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden border-y border-gray-100 dark:border-gray-700 relative">
-            {displayMediaUrl ? (
+            {isVideoCreative && formData.videoUrl ? (
+              <video
+                src={formData.videoUrl}
+                controls
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            ) : displayMediaUrl ? (
               <img
                 src={displayMediaUrl}
                 alt="Ad Preview"
@@ -199,7 +215,11 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
             ) : (
               <div className="text-center text-gray-400 dark:text-gray-500 p-4">
                 <ImageIcon className="w-12 h-12 mx-auto mb-1.5 opacity-50" />
-                <p className="text-xs">معاينة الصورة</p>
+                <p className="text-xs">
+                  {isVideoCreative
+                    ? (isEn ? "Video preview" : "معاينة الفيديو")
+                    : (isEn ? "Image preview" : "معاينة الصورة")}
+                </p>
               </div>
             )}
             {formData.creativeType === "CAROUSEL" && (
@@ -252,7 +272,14 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
 
           {/* Media 1:1 */}
           <div className="aspect-square bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden relative">
-            {displayMediaUrl ? (
+            {isVideoCreative && formData.videoUrl ? (
+              <video
+                src={formData.videoUrl}
+                controls
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            ) : displayMediaUrl ? (
               <img
                 src={displayMediaUrl}
                 alt="Ad Preview"
@@ -261,7 +288,11 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
             ) : (
               <div className="text-center text-gray-400 dark:text-gray-500 p-4">
                 <ImageIcon className="w-12 h-12 mx-auto mb-1.5 opacity-50" />
-                <p className="text-xs">معاينة إنستجرام</p>
+                <p className="text-xs">
+                  {isVideoCreative
+                    ? (isEn ? "Instagram video preview" : "معاينة فيديو إنستجرام")
+                    : (isEn ? "Instagram image preview" : "معاينة إنستجرام")}
+                </p>
               </div>
             )}
           </div>
@@ -304,9 +335,27 @@ export const AdPlacementPreview: React.FC<AdPlacementPreviewProps> = ({
 
           <div className="relative rounded-2xl overflow-hidden aspect-[9/16] bg-gray-900 flex flex-col justify-between p-3">
             {/* Background media */}
-            {displayMediaUrl ? (
+            {formData.customStoriesMedia && formData.storyVideoUrl ? (
+              <video
+                src={formData.storyVideoUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover z-0"
+              />
+            ) : isVideoCreative && formData.videoUrl ? (
+              <video
+                src={formData.videoUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover z-0"
+              />
+            ) : (formData.customStoriesMedia && formData.storyImageUrl) || displayMediaUrl ? (
               <img
-                src={displayMediaUrl}
+                src={(formData.customStoriesMedia && formData.storyImageUrl) || displayMediaUrl || ""}
                 alt="Story"
                 className="absolute inset-0 w-full h-full object-cover z-0 opacity-90"
               />

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link2, Sparkles, Check, X } from "lucide-react";
 
 interface UtmBuilderModalProps {
@@ -8,32 +9,38 @@ interface UtmBuilderModalProps {
   onApply: (val: string) => void;
 }
 
-const META_MACROS = [
-  { macro: "{{site_source_name}}", label: "مصدر الموقع (fb / ig)" },
-  { macro: "{{placement}}", label: "موضع الظهور (Placement)" },
-  { macro: "{{campaign.name}}", label: "اسم الحملة" },
-  { macro: "{{campaign.id}}", label: "معرف الحملة (ID)" },
-  { macro: "{{adset.name}}", label: "اسم المجموعة الإعلانية" },
-  { macro: "{{adset.id}}", label: "معرف المجموعة (ID)" },
-  { macro: "{{ad.name}}", label: "اسم الإعلان" },
-  { macro: "{{ad.id}}", label: "معرف الإعلان (ID)" },
+const getMetaMacros = (isEn: boolean) => [
+  { macro: "{{site_source_name}}", label: isEn ? "Site source (fb / ig)" : "مصدر الموقع (fb / ig)" },
+  { macro: "{{placement}}", label: isEn ? "Placement" : "موضع الظهور (Placement)" },
+  { macro: "{{campaign.name}}", label: isEn ? "Campaign Name" : "اسم الحملة" },
+  { macro: "{{campaign.id}}", label: isEn ? "Campaign ID" : "معرف الحملة (ID)" },
+  { macro: "{{adset.name}}", label: isEn ? "Ad Set Name" : "اسم المجموعة الإعلانية" },
+  { macro: "{{adset.id}}", label: isEn ? "Ad Set ID" : "معرف المجموعة (ID)" },
+  { macro: "{{ad.name}}", label: isEn ? "Ad Name" : "اسم الإعلان" },
+  { macro: "{{ad.id}}", label: isEn ? "Ad ID" : "معرف الإعلان (ID)" },
 ];
 
-const PRESETS = [
+const getPresets = (isEn: boolean) => [
   {
-    name: "Google Analytics 4 (موصى به)",
+    name: isEn ? "Google Analytics 4 (Recommended)" : "Google Analytics 4 (موصى به)",
     value: "utm_source={{site_source_name}}&utm_medium={{placement}}&utm_campaign={{campaign.name}}&utm_content={{ad.name}}",
-    desc: "تتبع كامل للقناة، الموضع، واسم الحملة والإعلان تلقائياً.",
+    desc: isEn
+      ? "Full tracking for channel, placement, campaign, and ad name automatically."
+      : "تتبع كامل للقناة، الموضع، واسم الحملة والإعلان تلقائياً.",
   },
   {
-    name: "تتبع سريع وبسيط",
+    name: isEn ? "Simple & Quick Tracking" : "تتبع سريع وبسيط",
     value: "utm_source=facebook&utm_medium=paid_social&utm_campaign={{campaign.name}}",
-    desc: "للحملات المباشرة لمعرفة الزيارات العامة من فيسبوك.",
+    desc: isEn
+      ? "For direct campaigns to monitor overall traffic from Facebook."
+      : "للحملات المباشرة لمعرفة الزيارات العامة من فيسبوك.",
   },
   {
-    name: "تتبع دقيق بالمعرفات (ID-based)",
+    name: isEn ? "Precise ID-based Tracking" : "تتبع دقيق بالمعرفات (ID-based)",
     value: "utm_source={{site_source_name}}&utm_medium={{placement}}&utm_campaign={{campaign.id}}&utm_content={{ad.id}}",
-    desc: "مثالي للأنظمة البرمجية التي تربط الطلبات بمعرفات الإعلانات الرقمية.",
+    desc: isEn
+      ? "Ideal for backend systems matching orders to numeric ad IDs."
+      : "مثالي للأنظمة البرمجية التي تربط الطلبات بمعرفات الإعلانات الرقمية.",
   },
 ];
 
@@ -43,6 +50,12 @@ export const UtmBuilderModal: React.FC<UtmBuilderModalProps> = ({
   currentValue,
   onApply,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
+  const metaMacros = React.useMemo(() => getMetaMacros(isEn), [isEn]);
+  const presets = React.useMemo(() => getPresets(isEn), [isEn]);
+
   const [params, setParams] = useState(currentValue || "");
 
   if (!isOpen) return null;
@@ -58,7 +71,10 @@ export const UtmBuilderModal: React.FC<UtmBuilderModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-      <div className="bg-white dark:bg-gray-800 w-full max-w-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div
+        dir={isEn ? "ltr" : "rtl"}
+        className="bg-white dark:bg-gray-800 w-full max-w-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700 bg-slate-50/50 dark:bg-slate-900/40">
           <div className="flex items-center gap-2">
@@ -67,10 +83,14 @@ export const UtmBuilderModal: React.FC<UtmBuilderModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                مُنشئ معلمات التتبع الديناميكية (UTM Builder)
+                {isEn
+                  ? "Dynamic URL Parameter Builder (UTM Builder)"
+                  : "مُنشئ معلمات التتبع الديناميكية (UTM Builder)"}
               </h3>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                استخدم رموز فيسبوك التلقائية (Dynamic Macros) لتحليل مسار الزيارات بدقة
+                {isEn
+                  ? "Use Meta dynamic macros to accurately analyze traffic acquisition paths"
+                  : "استخدم رموز فيسبوك التلقائية (Dynamic Macros) لتحليل مسار الزيارات بدقة"}
               </p>
             </div>
           </div>
@@ -83,19 +103,19 @@ export const UtmBuilderModal: React.FC<UtmBuilderModalProps> = ({
           </button>
         </div>
 
-        <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto text-right">
+        <div className={`p-5 space-y-4 max-h-[75vh] overflow-y-auto ${isEn ? "text-left" : "text-right"}`}>
           {/* Quick Presets */}
           <div>
             <label className="block text-xs font-bold text-gray-800 dark:text-gray-200 mb-2">
-              قوالب جاهزة سريعة (Presets)
+              {isEn ? "Quick Presets" : "قوالب جاهزة سريعة (Presets)"}
             </label>
             <div className="space-y-2">
-              {PRESETS.map((preset, idx) => (
+              {presets.map((preset, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => setParams(preset.value)}
-                  className="w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/40 dark:hover:bg-blue-950/30 text-right transition-all flex items-start justify-between group"
+                  className={`w-full p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/40 dark:hover:bg-blue-950/30 ${isEn ? "text-left" : "text-right"} transition-all flex items-start justify-between group`}
                 >
                   <div>
                     <div className="text-xs font-semibold text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-400">
@@ -117,10 +137,12 @@ export const UtmBuilderModal: React.FC<UtmBuilderModalProps> = ({
           {/* Dynamic Macro Chips */}
           <div>
             <label className="block text-xs font-bold text-gray-800 dark:text-gray-200 mb-2">
-              رموز Meta الديناميكية (انقر للإدراج)
+              {isEn
+                ? "Meta Dynamic Macros (Click to insert)"
+                : "رموز Meta الديناميكية (انقر للإدراج)"}
             </label>
             <div className="flex flex-wrap gap-1.5">
-              {META_MACROS.map((item) => (
+              {metaMacros.map((item) => (
                 <button
                   key={item.macro}
                   type="button"
@@ -137,7 +159,9 @@ export const UtmBuilderModal: React.FC<UtmBuilderModalProps> = ({
           {/* Value Input */}
           <div>
             <label className="block text-xs font-bold text-gray-800 dark:text-gray-200 mb-1.5">
-              قيمة المعلمات الحالية (URL Parameters)
+              {isEn
+                ? "Current URL Parameters"
+                : "قيمة المعلمات الحالية (URL Parameters)"}
             </label>
             <textarea
               rows={3}
@@ -157,7 +181,7 @@ export const UtmBuilderModal: React.FC<UtmBuilderModalProps> = ({
             onClick={() => setParams("")}
             className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 font-medium"
           >
-            مسح
+            {isEn ? "Clear" : "مسح"}
           </button>
           <div className="flex items-center gap-2">
             <button
@@ -165,7 +189,7 @@ export const UtmBuilderModal: React.FC<UtmBuilderModalProps> = ({
               onClick={onClose}
               className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200/70 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
-              إلغاء
+              {isEn ? "Cancel" : "إلغاء"}
             </button>
             <button
               type="button"
@@ -173,7 +197,7 @@ export const UtmBuilderModal: React.FC<UtmBuilderModalProps> = ({
               className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-1.5"
             >
               <Check className="w-3.5 h-3.5" />
-              تطبيق المعلمات
+              {isEn ? "Apply Parameters" : "تطبيق المعلمات"}
             </button>
           </div>
         </div>

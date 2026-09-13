@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Search, Loader2, X, Filter, Sparkles, HelpCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Search, Loader2, X, Filter, Sparkles } from "lucide-react";
 import type { TargetingOption } from "../types";
 import { facebookAdsService } from "../../../../services/facebookAdsService";
 
@@ -9,11 +10,23 @@ interface NarrowAudienceSelectorProps {
   onRemoveNarrowInterest: (id: string) => void;
 }
 
-const COMMON_NARROW_SUGGESTIONS: TargetingOption[] = [
-  { id: "6003107870611", name: "Engaged Shoppers (متسوقون متفاعلون)" },
-  { id: "6003294871231", name: "Online shopping (التسوق عبر الإنترنت)" },
-  { id: "6003419082341", name: "Luxury lifestyle (أسلوب حياة راقٍ)" },
-  { id: "6003502918231", name: "Discount and coupons (خصومات وعروض)" },
+const getCommonNarrowSuggestions = (isEn: boolean): TargetingOption[] => [
+  {
+    id: "6003107870611",
+    name: isEn ? "Engaged Shoppers" : "Engaged Shoppers (متسوقون متفاعلون)",
+  },
+  {
+    id: "6003294871231",
+    name: isEn ? "Online shopping" : "Online shopping (التسوق عبر الإنترنت)",
+  },
+  {
+    id: "6003419082341",
+    name: isEn ? "Luxury lifestyle" : "Luxury lifestyle (أسلوب حياة راقٍ)",
+  },
+  {
+    id: "6003502918231",
+    name: isEn ? "Discount and coupons" : "Discount and coupons (خصومات وعروض)",
+  },
 ];
 
 export const NarrowAudienceSelector: React.FC<NarrowAudienceSelectorProps> = ({
@@ -21,6 +34,13 @@ export const NarrowAudienceSelector: React.FC<NarrowAudienceSelectorProps> = ({
   onAddNarrowInterest,
   onRemoveNarrowInterest,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+  const commonNarrowSuggestions = React.useMemo(
+    () => getCommonNarrowSuggestions(isEn),
+    [isEn],
+  );
+
   const [isOpen, setIsOpen] = useState(narrowInterests.length > 0);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TargetingOption[]>([]);
@@ -60,7 +80,9 @@ export const NarrowAudienceSelector: React.FC<NarrowAudienceSelectorProps> = ({
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-            تضييق نطاق الجمهور (Narrow Audience - منطق AND)
+            {isEn
+              ? "Narrow Audience (AND Logic)"
+              : "تضييق نطاق الجمهور (Narrow Audience - منطق AND)"}
           </h4>
         </div>
         <button
@@ -68,12 +90,32 @@ export const NarrowAudienceSelector: React.FC<NarrowAudienceSelectorProps> = ({
           onClick={() => setIsOpen(!isOpen)}
           className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
         >
-          {isOpen ? "إخفاء التضييق" : "+ تضييق الجمهور بشرط إضافي"}
+          {isOpen
+            ? isEn
+              ? "Hide narrowing"
+              : "إخفاء التضييق"
+            : isEn
+              ? "+ Narrow audience with additional criteria"
+              : "+ تضييق الجمهور بشرط إضافي"}
         </button>
       </div>
 
       <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-        <strong>شرط &quot;يجب أن يتطابق أيضاً مع...&quot;:</strong> يضمن ظهور الإعلان فقط للأشخاص الذين ينطبق عليهم اهتمام من اهتماماتك السابقة <strong>بالإضافة إلى</strong> أحد هذه الاهتمامات المشروطة، مما يرفع دقة الاستهداف ومعدل التحويل.
+        {isEn ? (
+          <span>
+            <strong>&quot;Must also match...&quot; condition:</strong> Ensures
+            your ad is shown only to people matching your initial interests{" "}
+            <strong>AND</strong> at least one of these narrowed interests,
+            substantially increasing targeting accuracy and ROAS.
+          </span>
+        ) : (
+          <span>
+            <strong>شرط &quot;يجب أن يتطابق أيضاً مع...&quot;:</strong> يضمن
+            ظهور الإعلان فقط للأشخاص الذين ينطبق عليهم اهتمام من اهتماماتك
+            السابقة <strong>بالإضافة إلى</strong> أحد هذه الاهتمامات المشروطة،
+            مما يرفع دقة الاستهداف ومعدل التحويل.
+          </span>
+        )}
       </p>
 
       {isOpen && (
@@ -82,9 +124,9 @@ export const NarrowAudienceSelector: React.FC<NarrowAudienceSelectorProps> = ({
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />
-              فلاتر تضييق شائعة:
+              {isEn ? "Common narrowing filters:" : "فلاتر تضييق شائعة:"}
             </span>
-            {COMMON_NARROW_SUGGESTIONS.map((preset) => {
+            {commonNarrowSuggestions.map((preset) => {
               const isSelected = narrowInterests.some((e) => e.id === preset.id);
               return (
                 <button
@@ -106,16 +148,24 @@ export const NarrowAudienceSelector: React.FC<NarrowAudienceSelectorProps> = ({
 
           {/* Search Input */}
           <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search
+              className={`absolute ${isEn ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400`}
+            />
             <input
               type="text"
               value={query}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="ابحث عن اهتمام للتضييق (مثال: متسوقون متفاعلون، عطور، أسلوب حياة...)"
-              className="w-full pr-9 pl-4 py-2 border border-indigo-200 dark:border-indigo-900/50 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-400"
+              placeholder={
+                isEn
+                  ? "Search interest to narrow (e.g. Engaged shoppers, luxury lifestyle...)"
+                  : "ابحث عن اهتمام للتضييق (مثال: متسوقون متفاعلون، عطور، أسلوب حياة...)"
+              }
+              className={`w-full ${isEn ? "pl-9 pr-4 text-left" : "pr-9 pl-4 text-right"} py-2 border border-indigo-200 dark:border-indigo-900/50 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-400`}
             />
             {loading && (
-              <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+              <Loader2
+                className={`absolute ${isEn ? "right-3" : "left-3"} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin`}
+              />
             )}
           </div>
 
@@ -127,7 +177,7 @@ export const NarrowAudienceSelector: React.FC<NarrowAudienceSelectorProps> = ({
                   key={result.id}
                   type="button"
                   onClick={() => handleSelect(result)}
-                  className="w-full px-3 py-2 text-right hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 border-b border-gray-100 dark:border-gray-700 last:border-b-0 flex items-center justify-between text-xs"
+                  className={`w-full px-3 py-2 ${isEn ? "text-left" : "text-right"} hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 border-b border-gray-100 dark:border-gray-700 last:border-b-0 flex items-center justify-between text-xs`}
                 >
                   <span className="font-medium text-gray-800 dark:text-gray-200">{result.name}</span>
                   {result.audience_size && (
@@ -153,7 +203,7 @@ export const NarrowAudienceSelector: React.FC<NarrowAudienceSelectorProps> = ({
                     type="button"
                     onClick={() => onRemoveNarrowInterest(interest.id)}
                     className="p-0.5 hover:bg-indigo-200 dark:hover:bg-indigo-900/60 rounded-full transition-colors"
-                    title="حذف هذا الشرط"
+                    title={isEn ? "Remove this condition" : "حذف هذا الشرط"}
                   >
                     <X className="w-3 h-3" />
                   </button>

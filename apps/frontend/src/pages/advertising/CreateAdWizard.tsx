@@ -37,12 +37,16 @@ import {
 } from "../../services/facebookAdsService";
 import {
   buildCreateAdWizardTargetingPayload,
+  buildWizardCreativeSummary,
+  buildWizardGeoSummary,
+  formatAdAccountCurrency,
   getCompatibleAttributionWindows,
   getFullAdMinimumBudgetAmount,
   isCappedBidStrategy,
   normalizeAttributionWindowForObjective,
   normalizeWizardBidStrategy,
 } from "./CreateAdWizard.helpers";
+import ErrorBoundary from "../../components/ErrorBoundary";
 import type {
   WizardStep,
   CarouselCard,
@@ -55,6 +59,7 @@ import {
   WIZARD_STEPS,
   getWizardSteps,
   getObjectives,
+  getCountries,
   OBJECTIVES,
   SPECIAL_AD_CATEGORIES,
   BID_STRATEGIES,
@@ -106,7 +111,7 @@ const CreateAdWizard: React.FC = () => {
     storedLaunchPrefill?.productTitle ||
     searchParams.get("productTitle") ||
     humanizeProductSlug(prefillProductSlug) ||
-    "المنتج";
+    (isEn ? "Product" : "المنتج");
   const isStorefrontProductLaunch = Boolean(
     isAiDraftPrefill ||
       prefillProductUrl ||
@@ -285,14 +290,20 @@ const CreateAdWizard: React.FC = () => {
     primaryText:
       storedLaunchPrefill?.primaryText ||
       (prefillProductUrl
-        ? `اختاري ${prefillProductTitle} بإطلالة مريحة وسهلة التنسيق. شوفي الصور والتفاصيل واطلبي أونلاين الآن.`
+        ? (isEn
+            ? `Choose ${prefillProductTitle} for a comfortable and stylish look. See photos and details, and order online now.`
+            : `اختاري ${prefillProductTitle} بإطلالة مريحة وسهلة التنسيق. شوفي الصور والتفاصيل واطلبي أونلاين الآن.`)
         : ""),
     headline:
       storedLaunchPrefill?.headline ||
       (prefillProductUrl ? `${prefillProductTitle}` : ""),
     description:
       storedLaunchPrefill?.description ||
-      (prefillProductUrl ? "شاهدي تفاصيل المنتج والصور قبل الطلب." : ""),
+      (prefillProductUrl
+        ? (isEn
+            ? "Check product details and images before ordering."
+            : "شاهدي تفاصيل المنتج والصور قبل الطلب.")
+        : ""),
     callToAction:
       storedLaunchPrefill?.callToAction ||
       storedLaunchPrefill?.createFullAdData?.callToAction ||
@@ -320,13 +331,20 @@ const CreateAdWizard: React.FC = () => {
     flexibleAssets: [],
     textVariations: [],
     headlineVariations: [],
-    whatsappGreeting:
-      "أهلاً بك! رأيت إعلانك على فيسبوك وأرغب بالاستفسار عن تفاصيل المنتج والطلب.",
-    whatsappQuickFaqs: [
-      "أرغب بطلب هذا المنتج، ما هي خطوات التأكيد؟",
-      "ما هي مدة وتكلفة الشحن لمحافظتي؟",
-      "هل متاح المعاينة قبل الاستلام والدفع؟",
-    ],
+    whatsappGreeting: isEn
+      ? "Hello! I saw your ad on Facebook and would like to inquire about product details and ordering."
+      : "أهلاً بك! رأيت إعلانك على فيسبوك وأرغب بالاستفسار عن تفاصيل المنتج والطلب.",
+    whatsappQuickFaqs: isEn
+      ? [
+          "I want to order this product, what are the confirmation steps?",
+          "What is the delivery time and shipping cost to my area?",
+          "Can I inspect the order before receiving and paying?",
+        ]
+      : [
+          "أرغب بطلب هذا المنتج، ما هي خطوات التأكيد؟",
+          "ما هي مدة وتكلفة الشحن لمحافظتي؟",
+          "هل متاح المعاينة قبل الاستلام والدفع؟",
+        ],
     useLeadForm: false,
     leadFormId: undefined,
     instagramActorId: "",
@@ -365,38 +383,41 @@ const CreateAdWizard: React.FC = () => {
       switch (stepToValidate) {
       case 1:
         if (!formData.campaignName.trim()) {
-          newErrors["campaignName"] = "اسم الحملة مطلوب";
+          newErrors["campaignName"] = isEn ? "Campaign name is required" : "اسم الحملة مطلوب";
         }
         if (!formData.objective) {
-          newErrors["objective"] = "هدف الحملة مطلوب";
+          newErrors["objective"] = isEn ? "Campaign objective is required" : "هدف الحملة مطلوب";
         }
         break;
 
       case 2:
         if (!selectedAdAccountId.trim()) {
-          newErrors["adAccountId"] = "يجب اختيار حساب Facebook Ads";
+          newErrors["adAccountId"] = isEn ? "A Facebook Ads account must be selected" : "يجب اختيار حساب Facebook Ads";
         }
         if (
           !formData.budgetAmount ||
           formData.budgetAmount < minimumWizardBudget
         ) {
-          newErrors["budgetAmount"] = `الميزانية لا تقل عن ${formatSelectedAdAccountCurrency(
-            minimumWizardBudget,
-          )}`;
+          newErrors["budgetAmount"] = isEn
+            ? `Budget cannot be less than ${formatSelectedAdAccountCurrency(minimumWizardBudget)}`
+            : `الميزانية لا تقل عن ${formatSelectedAdAccountCurrency(
+                minimumWizardBudget,
+              )}`;
         }
         if (
           isCappedBidStrategy(formData.bidStrategy) &&
           (!formData.bidValue || formData.bidValue <= 0)
         ) {
-          newErrors["bidValue"] = "أدخل قيمة المزايدة أو التكلفة";
+          newErrors["bidValue"] = isEn ? "Enter a bid or cost cap value" : "أدخل قيمة المزايدة أو التكلفة";
         }
         if (
           (formData.objective === "OUTCOME_SALES" ||
             formData.objective === "OUTCOME_LEADS") &&
           !formData.pixelId.trim()
         ) {
-          newErrors["pixelId"] =
-            "اختر Facebook Pixel مناسبًا أو فعّل الحساب الإعلاني أولًا";
+          newErrors["pixelId"] = isEn
+            ? "Choose a suitable Facebook Pixel or activate the ad account first"
+            : "اختر Facebook Pixel مناسبًا أو فعّل الحساب الإعلاني أولًا";
         }
         break;
 
@@ -406,10 +427,10 @@ const CreateAdWizard: React.FC = () => {
           formData.regions.length === 0 &&
           formData.cities.length === 0
         ) {
-          newErrors["locations"] = "يجب اختيار موقع واحد على الأقل";
+          newErrors["locations"] = isEn ? "At least one location must be selected" : "يجب اختيار موقع واحد على الأقل";
         }
         if (formData.ageMin < 13 || formData.ageMax > 65) {
-          newErrors["age"] = "العمر يجب أن يكون بين 13 و 65";
+          newErrors["age"] = isEn ? "Age must be between 13 and 65" : "العمر يجب أن يكون بين 13 و 65";
         }
         break;
 
@@ -418,52 +439,56 @@ const CreateAdWizard: React.FC = () => {
           formData.placementType === "MANUAL" &&
           formData.placements.length === 0
         ) {
-          newErrors["placements"] = "يجب اختيار موضع واحد على الأقل";
+          newErrors["placements"] = isEn ? "At least one placement must be selected" : "يجب اختيار موضع واحد على الأقل";
         }
         break;
 
       case 5:
         if (!formData.pageId.trim()) {
-          newErrors["pageId"] = "معرف الصفحة مطلوب";
+          newErrors["pageId"] = isEn ? "Page ID is required" : "معرف الصفحة مطلوب";
         }
         if (
           formData.pageId.trim() &&
           selectedFacebookPage?.status &&
           selectedFacebookPage.status !== "READY"
         ) {
-          newErrors["pageId"] =
-            "اختار صفحة مربوطة بالشركة وجاهزة للنشر داخل MaxP.";
+          newErrors["pageId"] = isEn
+            ? "Choose a page connected to your company and ready for publishing in MaxP."
+            : "اختار صفحة مربوطة بالشركة وجاهزة للنشر داخل MaxP.";
         }
         if (formData.creativeType === "EXISTING_POST") {
           if (!formData.postId?.trim()) {
-            newErrors["postId"] = "يجب اختيار أو إدخال معرف المنشور الحالي من الصفحة";
+            newErrors["postId"] = isEn
+              ? "An existing page post ID must be selected or entered"
+              : "يجب اختيار أو إدخال معرف المنشور الحالي من الصفحة";
           }
         } else {
           if (!formData.primaryText.trim()) {
-            newErrors["primaryText"] = "النص الأساسي مطلوب";
+            newErrors["primaryText"] = isEn ? "Primary text is required" : "النص الأساسي مطلوب";
           }
           if (!formData.linkUrl.trim()) {
-            newErrors["linkUrl"] = "رابط الوجهة مطلوب";
+            newErrors["linkUrl"] = isEn ? "Destination link is required" : "رابط الوجهة مطلوب";
           }
           if (formData.creativeType === "FLEXIBLE") {
-            newErrors["creativeType"] =
-              "التنسيق المرن قيد التجهيز. استخدم صورة أو فيديو أو دوّار حالياً.";
+            newErrors["creativeType"] = isEn
+              ? "Flexible format is being prepared. Use single image, video, or carousel for now."
+              : "التنسيق المرن قيد التجهيز. استخدم صورة أو فيديو أو دوّار حالياً.";
           }
           if (
             formData.creativeType === "SINGLE_IMAGE" &&
             !formData.imageUrl.trim()
           ) {
-            newErrors["imageUrl"] = "رابط الصورة مطلوب حالياً قبل الإرسال";
+            newErrors["imageUrl"] = isEn ? "Image URL is required before publishing" : "رابط الصورة مطلوب حالياً قبل الإرسال";
           }
           if (
             formData.creativeType === "SINGLE_VIDEO" &&
             !formData.videoUrl.trim()
           ) {
-            newErrors["videoUrl"] = "رابط الفيديو مطلوب حالياً قبل الإرسال";
+            newErrors["videoUrl"] = isEn ? "Video URL is required before publishing" : "رابط الفيديو مطلوب حالياً قبل الإرسال";
           }
           if (formData.creativeType === "CAROUSEL") {
             if (formData.carouselCards.length < 2) {
-              newErrors["carouselCards"] = "الدوّار يحتاج بطاقتين على الأقل";
+              newErrors["carouselCards"] = isEn ? "Carousel requires at least 2 cards" : "الدوّار يحتاج بطاقتين على الأقل";
             } else {
               const invalidCardIndex = formData.carouselCards.findIndex(
                 (card) =>
@@ -472,8 +497,9 @@ const CreateAdWizard: React.FC = () => {
                   !card.linkUrl.trim(),
               );
               if (invalidCardIndex >= 0) {
-                newErrors["carouselCards"] =
-                  `بطاقة الدوّار رقم ${invalidCardIndex + 1} تحتاج صورة وعنوان ورابط`;
+                newErrors["carouselCards"] = isEn
+                  ? `Carousel card #${invalidCardIndex + 1} requires an image, headline, and link`
+                  : `بطاقة الدوّار رقم ${invalidCardIndex + 1} تحتاج صورة وعنوان ورابط`;
               }
             }
           }
@@ -674,7 +700,9 @@ const CreateAdWizard: React.FC = () => {
 
   const activateSelectedAdAccount = useCallback(async () => {
     if (!selectedAdAccountId) {
-      throw new Error("اختر حساب Facebook Ads أولاً");
+      throw new Error(
+        isEn ? "Select a Facebook Ads account first" : "اختر حساب Facebook Ads أولاً",
+      );
     }
 
     const activeSavedAccount = savedAdAccounts.find(
@@ -691,7 +719,11 @@ const CreateAdWizard: React.FC = () => {
     );
 
     if (!selectedAccount) {
-      throw new Error("الحساب الإعلاني المحدد غير متاح");
+      throw new Error(
+        isEn
+          ? "The selected ad account is not available"
+          : "الحساب الإعلاني المحدد غير متاح",
+      );
     }
 
     setSyncingAdAccount(true);
@@ -704,6 +736,7 @@ const CreateAdWizard: React.FC = () => {
     }
   }, [
     adAccounts,
+    isEn,
     refreshSavedAdAccounts,
     resolveAdAccountId,
     savedAdAccounts,
@@ -713,7 +746,9 @@ const CreateAdWizard: React.FC = () => {
 
   const ensureSelectedAdAccountReady = useCallback(async () => {
     if (!selectedAdAccountId) {
-      throw new Error("اختر حساب Facebook Ads أولاً");
+      throw new Error(
+        isEn ? "Select a Facebook Ads account first" : "اختر حساب Facebook Ads أولاً",
+      );
     }
 
     const activeSavedAccount = savedAdAccounts.find(
@@ -723,12 +758,14 @@ const CreateAdWizard: React.FC = () => {
 
     if (!activeSavedAccount) {
       throw new Error(
-        "فعّل الحساب الإعلاني المختار قبل إنشاء الإعلان حتى لا يتم الإرسال لحساب غير مقصود",
+        isEn
+          ? "Activate the selected ad account before creating the ad to prevent publishing to the wrong account"
+          : "فعّل الحساب الإعلاني المختار قبل إنشاء الإعلان حتى لا يتم الإرسال لحساب غير مقصود",
       );
     }
 
     return selectedAdAccountId;
-  }, [savedAdAccounts, selectedAdAccountId]);
+  }, [isEn, savedAdAccounts, selectedAdAccountId]);
 
   const handleActivateSelectedAdAccount = useCallback(async () => {
     try {
@@ -739,10 +776,12 @@ const CreateAdWizard: React.FC = () => {
       toast.error(
         error instanceof Error
           ? error.message
-          : "تعذر تفعيل الحساب الإعلاني",
+          : isEn
+            ? "Failed to activate ad account"
+            : "تعذر تفعيل الحساب الإعلاني",
       );
     }
-  }, [activateSelectedAdAccount, loadPagesAndPixels]);
+  }, [activateSelectedAdAccount, isEn, loadPagesAndPixels]);
 
   // Load audiences, ad accounts, pages, and pixels on mount
   React.useEffect(() => {
@@ -1063,8 +1102,12 @@ const CreateAdWizard: React.FC = () => {
 
         toast.success(
           result.partialSuccess
-            ? `تم إنشاء الإعلان على Meta مع تحذير حفظ محلي. ${idSummary}`
-            : `تم إنشاء الإعلان بنجاح. ${idSummary}`,
+            ? (isEn
+                ? `Ad created on Meta with local save warning. ${idSummary}`
+                : `تم إنشاء الإعلان على Meta مع تحذير حفظ محلي. ${idSummary}`)
+            : (isEn
+                ? `Ad created successfully. ${idSummary}`
+                : `تم إنشاء الإعلان بنجاح. ${idSummary}`),
           { duration: 8000 },
         );
         setCreatedFullAd({
@@ -1080,7 +1123,7 @@ const CreateAdWizard: React.FC = () => {
         });
         setCurrentStep(6);
       } else {
-        toast.error(result.error || "فشل في إنشاء الإعلان");
+        toast.error(result.error || (isEn ? "Failed to create ad" : "فشل في إنشاء الإعلان"));
       }
     } catch (error: unknown) {
       console.error("Error creating ad:", error);
@@ -1115,7 +1158,7 @@ const CreateAdWizard: React.FC = () => {
       if (shouldRotatePublishRequest) {
         setPublishRequestId(createClientRequestId("fb-full-ad"));
       }
-      toast.error(responseData?.error || "حدث خطأ أثناء إنشاء الإعلان");
+      toast.error(responseData?.error || (isEn ? "An error occurred while creating the ad" : "حدث خطأ أثناء إنشاء الإعلان"));
     } finally {
       setLoading(false);
     }
@@ -1156,7 +1199,7 @@ const CreateAdWizard: React.FC = () => {
   const getAdAccountBusinessName = (account: FacebookAdAccount) =>
     account.business?.name ||
     account.billingHealth?.business?.name ||
-    "حسابات بدون Business واضح";
+    (isEn ? "Accounts without distinct Business" : "حسابات بدون Business واضح");
   const adAccountBusinessGroups = adAccounts.reduce<
     Array<{
       businessKey: string;
@@ -1181,27 +1224,22 @@ const CreateAdWizard: React.FC = () => {
   }, []);
   const selectedBusinessName = selectedRemoteAdAccount
     ? getAdAccountBusinessName(selectedRemoteAdAccount)
-    : "غير محدد";
+    : (isEn ? "Unspecified" : "غير محدد");
   const selectedAdAccountName =
     selectedSavedAdAccount?.name ||
     selectedRemoteAdAccount?.name ||
     selectedAdAccountId ||
-    "غير محدد";
+    (isEn ? "Unspecified" : "غير محدد");
   const selectedAccountHealthLabel =
     selectedRemoteAdAccount?.billingHealth?.accountStatusLabel ||
-    (selectedAdAccountIsActive ? "مفعل داخل MaxP" : "يحتاج تفعيل");
+    (selectedAdAccountIsActive
+      ? (isEn ? "Active in MaxP" : "مفعل داخل MaxP")
+      : (isEn ? "Needs Activation" : "يحتاج تفعيل"));
   const selectedObjectiveLabel =
     objectives.find((objective) => objective.value === formData.objective)?.label ||
     formData.objective ||
     (isEn ? "Unspecified" : "غير محدد");
-  const selectedCreativeSummary =
-    formData.creativeType === "CAROUSEL"
-      ? `Carousel - ${formData.carouselCards.length} ${isEn ? "cards" : "كارت"}`
-      : formData.creativeType === "SINGLE_IMAGE"
-        ? (isEn ? "Single Image" : "صورة واحدة")
-        : formData.creativeType === "SINGLE_VIDEO"
-          ? (isEn ? "Single Video" : "فيديو واحد")
-          : `Flexible - ${formData.flexibleAssets.length} ${isEn ? "files" : "ملف"}`;
+  const selectedCreativeSummary = buildWizardCreativeSummary(formData, isEn);
   const publishConfirmDisabled =
     loading ||
     !publishAccountConfirmed ||
@@ -1209,21 +1247,12 @@ const CreateAdWizard: React.FC = () => {
   const currentWizardStep =
     wizardSteps.find((step) => step.id === currentStep) ?? wizardSteps[0]!;
   const formatSelectedAdAccountCurrency = (value?: number) =>
-    new Intl.NumberFormat(isEn ? "en-US" : "ar-EG", {
-      style: "currency",
-      currency: selectedAdAccountCurrency,
-      maximumFractionDigits: 2,
-    }).format(value || 0);
-  const selectedGeoSummary =
-    formData.regions.length > 0 || formData.cities.length > 0
-      ? [
-          ...formData.regions.map((region) => `محافظة ${region.name}`),
-          ...formData.cities.map((city) => `مدينة ${city.name}`),
-        ].join(", ")
-      : formData.locations
-          .map((location) => COUNTRIES.find((country) => country.code === location)?.name)
-          .filter(Boolean)
-          .join(", ");
+    formatAdAccountCurrency(value, selectedAdAccountCurrency, isEn);
+  const selectedGeoSummary = buildWizardGeoSummary(
+    formData,
+    isEn,
+    isEn ? getCountries(true) : COUNTRIES,
+  );
   const compatibleAttributionWindows = getCompatibleAttributionWindows(
     formData.objective,
     ATTRIBUTION_WINDOWS,
@@ -1239,14 +1268,14 @@ const CreateAdWizard: React.FC = () => {
       formData.attributionWindow,
     );
   const selectedTargetingSignalCount =
-    selectedInterests.length +
-    selectedCustomAudiences.length +
-    selectedLookalikeAudiences.length +
-    excludedAudiences.length +
-    selectedLanguages.length +
-    selectedDevices.length +
-    relationshipStatuses.length +
-    selectedEducation.length;
+    (selectedInterests?.length || 0) +
+    (selectedCustomAudiences?.length || 0) +
+    (selectedLookalikeAudiences?.length || 0) +
+    (excludedAudiences?.length || 0) +
+    (selectedLanguages?.length || 0) +
+    (selectedDevices?.length || 0) +
+    (relationshipStatuses?.length || 0) +
+    (selectedEducation?.length || 0);
 
   const handleRequestPublishConfirmation = () => {
     if (!validateStep(6)) {
@@ -1262,8 +1291,9 @@ const CreateAdWizard: React.FC = () => {
       setCurrentStep(2);
       setErrors((prev) => ({
         ...prev,
-        adAccountId:
-          "فعّل الحساب الإعلاني المختار قبل إنشاء الإعلان حتى نثبت الحساب المقصود.",
+        adAccountId: isEn
+          ? "Activate the selected ad account before creating the ad to confirm the intended account."
+          : "فعّل الحساب الإعلاني المختار قبل إنشاء الإعلان حتى نثبت الحساب المقصود.",
       }));
       tToast.error("CreateAdWizard.msg_93bd");
       return;
@@ -1367,27 +1397,27 @@ const CreateAdWizard: React.FC = () => {
 
     const confirmationRows = [
       ["Business", selectedBusinessName],
-      ["Ad Account", `${selectedAdAccountName} / act_${selectedAdAccountId}`],
-      ["Page", selectedFacebookPage?.name || "غير محددة"],
+      [isEn ? "Ad Account" : "الحساب الإعلاني", `${selectedAdAccountName} / act_${selectedAdAccountId}`],
+      [isEn ? "Page" : "الصفحة", selectedFacebookPage?.name || (isEn ? "Unspecified" : "غير محددة")],
       [
         "Pixel",
         selectedFacebookPixel
           ? `${selectedFacebookPixel.name} / ${selectedFacebookPixel.id}`
-          : "غير محدد",
+          : (isEn ? "Unspecified" : "غير محدد"),
       ],
-      ["Campaign", formData.campaignName],
-      ["Objective", selectedObjectiveLabel],
+      [isEn ? "Campaign" : "الحملة", formData.campaignName],
+      [isEn ? "Objective" : "الهدف", selectedObjectiveLabel],
       [
-        "Budget",
+        isEn ? "Budget" : "الميزانية",
         `${formatSelectedAdAccountCurrency(formData.budgetAmount)} / ${
-          formData.budgetType === "DAILY" ? "يوميا" : "إجمالي"
+          formData.budgetType === "DAILY" ? (isEn ? "Daily" : "يوميا") : (isEn ? "Lifetime" : "إجمالي")
         }`,
       ],
-      ["Attribution", selectedAttributionWindowLabel],
-      ["Audience", selectedGeoSummary || "لم يتم تحديد نطاق جغرافي واضح"],
-      ["Targeting signals", `${selectedTargetingSignalCount} اختيار`],
-      ["Creative", selectedCreativeSummary],
-      ["Status", formData.status === "PAUSED" ? "PAUSED - آمن" : "ACTIVE - يبدأ فورا"],
+      [isEn ? "Attribution" : "نافذة الإسناد", selectedAttributionWindowLabel],
+      [isEn ? "Audience" : "الجمهور", selectedGeoSummary || (isEn ? "No geographic scope specified" : "لم يتم تحديد نطاق جغرافي واضح")],
+      [isEn ? "Targeting signals" : "إشارات الاستهداف", `${selectedTargetingSignalCount} ${isEn ? "selected" : "اختيار"}`],
+      [isEn ? "Creative" : "الكرياتيف", selectedCreativeSummary],
+      [isEn ? "Status" : "الحالة", formData.status === "PAUSED" ? (isEn ? "PAUSED - Safe" : "PAUSED - آمن") : (isEn ? "ACTIVE - Starts immediately" : "ACTIVE - يبدأ فورا")],
     ];
 
     return (
@@ -1396,6 +1426,7 @@ const CreateAdWizard: React.FC = () => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="publish-confirm-title"
+        dir={isEn ? "ltr" : "rtl"}
       >
         <div
           ref={publishDialogRef}
@@ -1405,24 +1436,25 @@ const CreateAdWizard: React.FC = () => {
           <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-800 px-6 py-5">
             <div>
               <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                مراجعة قبل الإرسال إلى Meta
+                {isEn ? "Pre-Publish Meta Review" : "مراجعة قبل الإرسال إلى Meta"}
               </p>
               <h3
                 id="publish-confirm-title"
                 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white"
               >
-                تأكيد إنشاء الإعلان الحقيقي
+                {isEn ? "Confirm Real Ad Publishing" : "تأكيد إنشاء الإعلان الحقيقي"}
               </h3>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                هذه الخطوة سترسل Campaign وAd Set وAd إلى Ads Manager. راجع
-                الحساب والميزانية والحالة قبل التأكيد.
+                {isEn
+                  ? "This step will create and send the Campaign, Ad Set, and Ad directly to Meta Ads Manager. Review the account, budget, and status before confirming."
+                  : "هذه الخطوة سترسل Campaign وAd Set وAd إلى Ads Manager. راجع الحساب والميزانية والحالة قبل التأكيد."}
               </p>
             </div>
             <button
               type="button"
               onClick={closePublishConfirmation}
               disabled={loading}
-              aria-label="إغلاق شاشة تأكيد النشر"
+              aria-label={isEn ? "Close publish confirmation" : "إغلاق شاشة تأكيد النشر"}
               className="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <X className="h-5 w-5" aria-hidden="true" />
@@ -1448,20 +1480,23 @@ const CreateAdWizard: React.FC = () => {
 
             {formData.status === "ACTIVE" ? (
               <div className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/60 dark:bg-red-950/40 px-4 py-3 text-sm leading-6 text-red-800 dark:text-red-200">
-                الإعلان مضبوط على ACTIVE، يعني ممكن يبدأ الصرف بعد موافقة Meta.
-                الأفضل لأول تجربة إنتاج يكون PAUSED ثم يتم تفعيله من Ads
-                Manager بعد المراجعة.
+                {isEn
+                  ? "Ad status is set to ACTIVE, which means spending may start immediately upon Meta approval. For a new test, PAUSED is recommended so you can review in Ads Manager first."
+                  : "الإعلان مضبوط على ACTIVE، يعني ممكن يبدأ الصرف بعد موافقة Meta. الأفضل لأول تجربة إنتاج يكون PAUSED ثم يتم تفعيله من Ads Manager بعد المراجعة."}
               </div>
             ) : (
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/40 px-4 py-3 text-sm leading-6 text-emerald-800 dark:text-emerald-200">
-                الوضع الحالي PAUSED، وده الاختيار الآمن: سيتم إنشاء الإعلان
-                بدون تشغيل الصرف مباشرة.
+                {isEn
+                  ? "Current status is PAUSED (recommended safe mode): The ad will be created without spending immediately."
+                  : "الوضع الحالي PAUSED، وده الاختيار الآمن: سيتم إنشاء الإعلان بدون تشغيل الصرف مباشرة."}
               </div>
             )}
 
             {selectedRemoteAdAccount?.billingHealth?.isAccountUsable === false && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/40 px-4 py-3 text-sm leading-6 text-amber-800 dark:text-amber-200">
-                Meta يشير أن الحساب قد لا يكون جاهزا بالكامل:{" "}
+                {isEn
+                  ? "Meta indicates that the account might not be fully usable: "
+                  : "Meta يشير أن الحساب قد لا يكون جاهزا بالكامل: "}
                 {selectedRemoteAdAccount.billingHealth.disableReason ||
                   selectedAccountHealthLabel}
               </div>
@@ -1478,7 +1513,9 @@ const CreateAdWizard: React.FC = () => {
                 className="mt-1 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus-visible:ring-blue-500"
               />
               <span>
-                أؤكد أن الحساب المختار هو الحساب المقصود لإنشاء الإعلان:
+                {isEn
+                  ? "I confirm that the selected ad account is the intended account for this ad: "
+                  : "أؤكد أن الحساب المختار هو الحساب المقصود لإنشاء الإعلان: "}
                 <strong className="mx-1 text-slate-950 dark:text-white">
                   {selectedAdAccountName}
                 </strong>
@@ -1498,8 +1535,9 @@ const CreateAdWizard: React.FC = () => {
                   className="mt-1 h-4 w-4 rounded border-red-300 dark:border-red-700 text-red-600 focus-visible:ring-red-500"
                 />
                 <span>
-                  أؤكد أني أريد تشغيل الإعلان كـACTIVE وقد يبدأ الصرف بعد
-                  موافقة Meta.
+                  {isEn
+                    ? "I confirm that I want to run the ad as ACTIVE, and spending may start once approved by Meta."
+                    : "أؤكد أني أريد تشغيل الإعلان كـACTIVE وقد يبدأ الصرف بعد موافقة Meta."}
                 </span>
               </label>
             )}
@@ -1512,7 +1550,7 @@ const CreateAdWizard: React.FC = () => {
               disabled={loading}
               className="rounded-xl border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              رجوع للمراجعة
+              {isEn ? "Back to Review" : "رجوع للمراجعة"}
             </button>
             <button
               type="button"
@@ -1523,12 +1561,12 @@ const CreateAdWizard: React.FC = () => {
               {loading ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-                  جاري الإرسال إلى Meta...
+                  {isEn ? "Submitting to Meta..." : "جاري الإرسال إلى Meta..."}
                 </>
               ) : (
                 <>
                   <CheckCircle className="h-5 w-5" aria-hidden="true" />
-                  تأكيد وإنشاء الإعلان
+                  {isEn ? "Confirm & Create Ad" : "تأكيد وإنشاء الإعلان"}
                 </>
               )}
             </button>
@@ -1540,24 +1578,24 @@ const CreateAdWizard: React.FC = () => {
 
   const renderAiDraftReview = () => {
     const compactRows = [
-      ["الحساب", `${selectedAdAccountName} / act_${selectedAdAccountId || requestedAdAccountId}`],
-      ["الصفحة", selectedFacebookPage?.name || formData.pageId || "غير محددة"],
+      [isEn ? "Account" : "الحساب", `${selectedAdAccountName} / act_${selectedAdAccountId || requestedAdAccountId}`],
+      [isEn ? "Page" : "الصفحة", selectedFacebookPage?.name || formData.pageId || (isEn ? "Unspecified" : "غير محددة")],
       [
         "Pixel",
         selectedFacebookPixel
           ? `${selectedFacebookPixel.name} / ${selectedFacebookPixel.id}`
-          : formData.pixelId || "غير محدد",
+          : formData.pixelId || (isEn ? "Unspecified" : "غير محدد"),
       ],
-      ["الهدف", selectedObjectiveLabel],
+      [isEn ? "Objective" : "الهدف", selectedObjectiveLabel],
       [
-        "الميزانية",
+        isEn ? "Budget" : "الميزانية",
         `${formatSelectedAdAccountCurrency(formData.budgetAmount)} / ${
-          formData.budgetType === "DAILY" ? "يوميا" : "إجمالي"
+          formData.budgetType === "DAILY" ? (isEn ? "Daily" : "يوميا") : (isEn ? "Lifetime" : "إجمالي")
         }`,
       ],
-      ["الجمهور", selectedGeoSummary || "غير محدد"],
-      ["السن", `${formData.ageMin} - ${formData.ageMax}`],
-      ["الكرياتيف", selectedCreativeSummary],
+      [isEn ? "Audience" : "الجمهور", selectedGeoSummary || (isEn ? "Unspecified" : "غير محدد")],
+      [isEn ? "Age" : "السن", `${formData.ageMin} - ${formData.ageMax}`],
+      [isEn ? "Creative" : "الكرياتيف", selectedCreativeSummary],
     ];
 
     const returnParams = new URLSearchParams();
@@ -1567,12 +1605,12 @@ const CreateAdWizard: React.FC = () => {
     }
 
     return (
-      <div className="min-h-screen bg-slate-50 px-3 py-3 text-slate-950 dark:bg-slate-950 dark:text-white sm:px-4 lg:px-5">
+      <div className="min-h-screen bg-slate-50 px-3 py-3 text-slate-950 dark:bg-slate-950 dark:text-white sm:px-4 lg:px-5" dir={isEn ? "ltr" : "rtl"}>
         <div className="mx-auto flex max-w-6xl flex-col gap-3">
           <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <div className="text-xs font-bold text-blue-600">
-                مراجعة المسودة
+                {isEn ? "Draft Review" : "مراجعة المسودة"}
               </div>
               <h1 className="mt-1 truncate text-lg font-black text-slate-950 dark:text-white">
                 {formData.campaignName || prefillProductTitle}
@@ -1592,7 +1630,7 @@ const CreateAdWizard: React.FC = () => {
                 }}
                 className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
               >
-                تعديل كامل
+                {isEn ? "Full Edit" : "تعديل كامل"}
               </button>
               <button
                 type="button"
@@ -1605,7 +1643,7 @@ const CreateAdWizard: React.FC = () => {
                 }
                 className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
               >
-                رجوع لمركز الإعلانات
+                {isEn ? "Back to Ads Center" : "رجوع لمركز الإعلانات"}
               </button>
             </div>
           </div>
@@ -1637,21 +1675,21 @@ const CreateAdWizard: React.FC = () => {
               <div className="mt-3 grid gap-3 lg:grid-cols-2">
                 <div className="rounded-md border border-slate-200 p-3 dark:border-slate-800">
                   <div className="text-xs font-bold text-slate-500">
-                    النص الأساسي
+                    {isEn ? "Primary Text" : "النص الأساسي"}
                   </div>
                   <p className="mt-2 max-h-28 overflow-y-auto text-sm leading-6 text-slate-800 dark:text-slate-200">
-                    {formData.primaryText || "غير محدد"}
+                    {formData.primaryText || (isEn ? "Unspecified" : "غير محدد")}
                   </p>
                 </div>
                 <div className="rounded-md border border-slate-200 p-3 dark:border-slate-800">
                   <div className="text-xs font-bold text-slate-500">
-                    العنوان والرابط
+                    {isEn ? "Headline & Link" : "العنوان والرابط"}
                   </div>
                   <div className="mt-2 text-sm font-bold text-slate-950 dark:text-white">
-                    {formData.headline || "بدون عنوان"}
+                    {formData.headline || (isEn ? "No headline" : "بدون عنوان")}
                   </div>
                   <div className="mt-1 truncate text-xs font-semibold text-blue-600">
-                    {formData.linkUrl || "بدون رابط"}
+                    {formData.linkUrl || (isEn ? "No link" : "بدون رابط")}
                   </div>
                 </div>
               </div>
@@ -1659,7 +1697,7 @@ const CreateAdWizard: React.FC = () => {
 
             <aside className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <div className="text-sm font-black text-slate-950 dark:text-white">
-                حالة النشر
+                {isEn ? "Publish Status" : "حالة النشر"}
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button
@@ -1694,17 +1732,19 @@ const CreateAdWizard: React.FC = () => {
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    جاري الإنشاء...
+                    {isEn ? "Creating..." : "جاري الإنشاء..."}
                   </>
                 ) : (
                   <>
                     <CheckCircle className="h-4 w-4" />
-                    مراجعة الإرسال
+                    {isEn ? "Review & Publish" : "مراجعة الإرسال"}
                   </>
                 )}
               </button>
               <div className="mt-3 rounded-md bg-slate-50 p-2 text-xs font-semibold leading-5 text-slate-600 dark:bg-slate-950 dark:text-slate-300">
-                سيتم استخدام نفس قفل الدرفت وطلب نشر جديد آمن من التكرار.
+                {isEn
+                  ? "The same draft lock and an idempotent publish request will be used."
+                  : "سيتم استخدام نفس قفل الدرفت وطلب نشر جديد آمن من التكرار."}
               </div>
             </aside>
           </div>
@@ -1723,7 +1763,7 @@ const CreateAdWizard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8" dir={isEn ? "ltr" : "rtl"}>
       <div className="w-full px-4">
         {/* Header */}
         <div className="text-center mb-8">
@@ -1743,10 +1783,10 @@ const CreateAdWizard: React.FC = () => {
               <div>
                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/80 dark:text-blue-300">
                   <Sparkles className="h-3.5 w-3.5" />
-                  سيناريو منتج المتجر
+                  {isEn ? "Storefront Product Scenario" : "سيناريو منتج المتجر"}
                 </span>
                 <p className="mt-1 font-medium">
-                  تم ملء بيانات الإعلان تلقائياً لمنتج:{" "}
+                  {isEn ? "Ad data was auto-filled for product: " : "تم ملء بيانات الإعلان تلقائياً لمنتج: "}
                   <span className="font-bold">{launchPrefillProductTitle}</span>
                 </p>
               </div>
@@ -1758,7 +1798,7 @@ const CreateAdWizard: React.FC = () => {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 font-semibold text-blue-700 underline hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
                   >
-                    فتح رابط المنتج
+                    {isEn ? "Open Product URL" : "فتح رابط المنتج"}
                     <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 )}
@@ -1768,7 +1808,7 @@ const CreateAdWizard: React.FC = () => {
                     onClick={() => setShowFullWizard(true)}
                     className="font-semibold text-blue-700 underline hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100"
                   >
-                    تعديل متقدم في المعالج الكامل
+                    {isEn ? "Advanced Edit in Full Wizard" : "تعديل متقدم في المعالج الكامل"}
                   </button>
                 )}
               </div>
@@ -1918,22 +1958,38 @@ const CreateAdWizard: React.FC = () => {
           )}
 
           {currentStep === 6 && (
-            <Step6Review
-              createdFullAd={createdFullAd}
-              formData={formData}
-              handleChange={handleChange}
-              selectedBusinessName={selectedBusinessName}
-              selectedAdAccountName={selectedAdAccountName}
-              selectedAdAccountId={selectedAdAccountId}
-              selectedFacebookPage={selectedFacebookPage}
-              selectedFacebookPixel={selectedFacebookPixel}
-              selectedAdAccountCurrency={selectedAdAccountCurrency}
-              selectedInterests={selectedInterests}
-              selectedCustomAudiences={selectedCustomAudiences}
-              customAudiences={customAudiences}
-              selectedLookalikeAudiences={selectedLookalikeAudiences}
-              lookalikeAudiences={lookalikeAudiences}
-            />
+            <ErrorBoundary
+              fallback={
+                <div className="p-6 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 text-center space-y-3">
+                  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                    {isEn ? "Unable to render ad review details" : "تعذر عرض بعض تفاصيل مراجعة الإعلان"}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {isEn
+                      ? "You can still publish the campaign directly or return to previous steps to edit."
+                      : "يمكنك متابعة نشر الحملة مباشرة أو الرجوع للخطوات السابقة لتعديل البيانات."}
+                  </p>
+                </div>
+              }
+            >
+              <Step6Review
+                createdFullAd={createdFullAd}
+                formData={formData}
+                handleChange={handleChange}
+                selectedBusinessName={selectedBusinessName}
+                selectedAdAccountName={selectedAdAccountName}
+                selectedAdAccountId={selectedAdAccountId}
+                selectedFacebookPage={selectedFacebookPage}
+                selectedFacebookPixel={selectedFacebookPixel}
+                selectedAdAccountCurrency={selectedAdAccountCurrency}
+                selectedInterests={selectedInterests}
+                selectedCustomAudiences={selectedCustomAudiences}
+                customAudiences={customAudiences}
+                selectedLookalikeAudiences={selectedLookalikeAudiences}
+                lookalikeAudiences={lookalikeAudiences}
+              />
+            </ErrorBoundary>
           )}
         </div>
 

@@ -354,10 +354,10 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-900/40 rounded-xl p-5">
           <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
             <Target className="w-5 h-5 text-green-600 dark:text-green-400" />
-            هدف الأداء (Performance Goal)
+            {isEn ? "Performance Goal" : "هدف الأداء (Performance Goal)"}
           </h4>
           <div className="space-y-3">
-            {PERFORMANCE_GOALS.map((goal) => (
+            {performanceGoals.map((goal) => (
               <label
                 key={goal.value}
                 className={`flex items-start p-4 border-2 rounded-xl cursor-pointer transition-all ${
@@ -376,7 +376,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
                   }
                   className="mt-1 text-green-600"
                 />
-                <div className="mr-3">
+                <div className={isEn ? "ml-3" : "mr-3"}>
                   <div className="font-medium text-gray-900 dark:text-white">{goal.label}</div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">
                     {goal.description}
@@ -394,15 +394,17 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
         <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/20 dark:to-blue-950/20 border border-indigo-200 dark:border-indigo-900/40 rounded-xl p-5">
           <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
             <Target className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            Facebook Pixel <span className="text-red-500">*</span>
+            {isEn ? "Facebook Pixel" : "Facebook Pixel"} <span className="text-red-500">*</span>
           </h4>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-            اختر البكسل لتتبع التحويلات على موقعك
+            {isEn
+              ? "Select pixel to track conversions on your website"
+              : "اختر البكسل لتتبع التحويلات على موقعك"}
           </p>
           {loadingPixels ? (
             <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">جاري تحميل البكسلات...</span>
+              <span className="text-sm">{isEn ? "Loading pixels..." : "جاري تحميل البكسلات..."}</span>
             </div>
           ) : facebookPixels.length > 0 ? (
             <select
@@ -410,7 +412,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
               onChange={(e) => handleChange("pixelId", e.target.value)}
               className="w-full px-4 py-3 border border-indigo-300 dark:border-indigo-800 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
-              <option value="">اختر البكسل</option>
+              <option value="">{isEn ? "Select Pixel" : "اختر البكسل"}</option>
               {facebookPixels.map((pixel) => (
                 <option key={pixel.id} value={pixel.id}>
                   {pixel.name} (ID: {pixel.id})
@@ -421,8 +423,12 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
             <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-900/50 rounded-lg p-3">
               <p className="text-sm text-yellow-800 dark:text-yellow-300">
                 {!selectedAdAccountId || !selectedAdAccountIsActive
-                  ? "⚠️ اختر وفعّل الحساب الإعلاني أولًا حتى نحمل البكسلات المرتبطة به."
-                  : "⚠️ لا توجد بكسلات متاحة لهذا الحساب. يرجى إنشاء بكسل من إعدادات Facebook Business Manager."}
+                  ? isEn
+                    ? "⚠️ Select and activate the ad account first to load associated pixels."
+                    : "⚠️ اختر وفعّل الحساب الإعلاني أولًا حتى نحمل البكسلات المرتبطة به."
+                  : isEn
+                    ? "⚠️ No pixels available for this account. Please create a pixel in Facebook Business Manager settings."
+                    : "⚠️ لا توجد بكسلات متاحة لهذا الحساب. يرجى إنشاء بكسل من إعدادات Facebook Business Manager."}
               </p>
             </div>
           )}
@@ -440,14 +446,14 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
           <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded-xl p-4">
             <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              حدث التحويل
+              {isEn ? "Conversion Event" : "حدث التحويل"}
             </h4>
             <select
               value={formData.conversionEvent}
               onChange={(e) => handleChange("conversionEvent", e.target.value)}
               className="w-full px-4 py-3 border border-blue-300 dark:border-blue-800 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
-              {CONVERSION_EVENTS.map((event) => (
+              {conversionEvents.map((event) => (
                 <option key={event.value} value={event.value}>
                   {event.icon} {event.label}
                 </option>
@@ -455,7 +461,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
             </select>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
               {
-                CONVERSION_EVENTS.find(
+                conversionEvents.find(
                   (e) => e.value === formData.conversionEvent,
                 )?.description
               }
@@ -466,7 +472,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
           <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/40 rounded-xl p-4">
             <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <Globe className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              موقع التحويل
+              {isEn ? "Conversion Location" : "موقع التحويل"}
             </h4>
             <select
               value={formData.conversionLocation}
@@ -475,7 +481,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
               }
               className="w-full px-4 py-3 border border-purple-300 dark:border-purple-800 rounded-lg focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
-              {CONVERSION_LOCATIONS.map((location) => (
+              {conversionLocations.map((location) => (
                 <option key={location.value} value={location.value}>
                   {location.icon} {location.label}
                 </option>
@@ -490,10 +496,12 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
         <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/40 rounded-xl p-4">
           <h4 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            نافذة الإحالة (Attribution Window)
+            {isEn ? "Attribution Window" : "نافذة الإحالة (Attribution Window)"}
           </h4>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-            المدة الزمنية التي يُنسب فيها التحويل إلى إعلانك
+            {isEn
+              ? "The time frame during which a conversion is attributed to your ad"
+              : "المدة الزمنية التي يُنسب فيها التحويل إلى إعلانك"}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {compatibleAttributionWindows.map((window) => (
@@ -515,7 +523,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
                   }
                   className="mt-1 text-orange-600"
                 />
-                <div className="mr-3">
+                <div className={isEn ? "ml-3" : "mr-3"}>
                   <div className="font-medium text-sm text-gray-900 dark:text-white">
                     {window.label}
                   </div>
@@ -535,10 +543,12 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
           <div>
             <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-pink-500 dark:text-pink-400" />
-              المحتوى الديناميكي (Dynamic Creative)
+              {isEn ? "Dynamic Creative" : "المحتوى الديناميكي (Dynamic Creative)"}
             </h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              اختبار تلقائي لتركيبات مختلفة من الصور والنصوص والعناوين
+              {isEn
+                ? "Automatically test different combinations of images, texts, and headlines"
+                : "اختبار تلقائي لتركيبات مختلفة من الصور والنصوص والعناوين"}
             </p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -561,11 +571,12 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
           <div>
             <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-              تحسين ميزانية الحملة (CBO)
+              {isEn ? "Advantage Campaign Budget (CBO)" : "تحسين ميزانية الحملة (CBO)"}
             </h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              دع Facebook يوزع الميزانية تلقائياً على المجموعات الإعلانية الأفضل
-              أداءً
+              {isEn
+                ? "Let Facebook automatically distribute budget to top-performing ad sets"
+                : "دع Facebook يوزع الميزانية تلقائياً على المجموعات الإعلانية الأفضل أداءً"}
             </p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -586,20 +597,20 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            نوع الميزانية
+            {isEn ? "Budget Type" : "نوع الميزانية"}
           </label>
           <select
             value={formData.budgetType}
             onChange={(e) => handleChange("budgetType", e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
           >
-            <option value="DAILY">يومية</option>
-            <option value="LIFETIME">إجمالية</option>
+            <option value="DAILY">{isEn ? "Daily" : "يومية"}</option>
+            <option value="LIFETIME">{isEn ? "Lifetime" : "إجمالية"}</option>
           </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            المبلغ ({selectedAdAccountCurrency}){" "}
+            {isEn ? `Amount (${selectedAdAccountCurrency})` : `المبلغ (${selectedAdAccountCurrency})`}{" "}
             <span className="text-red-500">*</span>
           </label>
           <input
@@ -618,10 +629,14 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
           )}
           <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-              الحد الأدنى لميتا: {formatSelectedAdAccountCurrency(minimumWizardBudget)}
+              {isEn
+                ? `Meta Minimum: ${formatSelectedAdAccountCurrency(minimumWizardBudget)}`
+                : `الحد الأدنى لميتا: ${formatSelectedAdAccountCurrency(minimumWizardBudget)}`}
             </span>
             <span>
-              (عملة الحساب الإعلاني: {selectedAdAccountCurrency} - يجب ألا تقل الميزانية اليومية عن هذا الحد لضمان قبول الحملة على فيسبوك)
+              {isEn
+                ? `(Ad account currency: ${selectedAdAccountCurrency} - Daily budget must meet this minimum to be accepted by Meta)`
+                : `(عملة الحساب الإعلاني: ${selectedAdAccountCurrency} - يجب ألا تقل الميزانية اليومية عن هذا الحد لضمان قبول الحملة على فيسبوك)`}
             </span>
           </div>
         </div>
@@ -671,18 +686,22 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-                سقف ميزانية العملاء السابقين (Meta v26 ECBC)
+                {isEn
+                  ? "Existing Customer Budget Cap (Meta v26 ECBC)"
+                  : "سقف ميزانية العملاء السابقين (Meta v26 ECBC)"}
               </h4>
               <span className="rounded bg-emerald-100 dark:bg-emerald-950/60 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300">
-                حماية الميزانية
+                {isEn ? "Budget Protection" : "حماية الميزانية"}
               </span>
             </div>
             <span className="text-sm font-extrabold text-emerald-700 dark:text-emerald-400">
-              {formData.existingCustomerBudgetPercentage || 0}% كحد أقصى للعملاء الحاليين
+              {formData.existingCustomerBudgetPercentage || 0}% {isEn ? "max for existing customers" : "كحد أقصى للعملاء الحاليين"}
             </span>
           </div>
           <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-            يمنع خوارزميات Meta من حرق ميزانيتك الإعلانية على عملاء اشتروا منك مسبقاً، ويوجه ما لا يقل عن {100 - (formData.existingCustomerBudgetPercentage || 0)}% لجلب مشترين جدد بالكامل.
+            {isEn
+              ? `Prevents Meta algorithms from spending your budget on existing buyers, directing at least ${100 - (formData.existingCustomerBudgetPercentage || 0)}% towards acquiring brand-new customers.`
+              : `يمنع خوارزميات Meta من حرق ميزانيتك الإعلانية على عملاء اشتروا منك مسبقاً، ويوجه ما لا يقل عن ${100 - (formData.existingCustomerBudgetPercentage || 0)}% لجلب مشترين جدد بالكامل.`}
           </p>
           <div className="flex items-center gap-3">
             <input
@@ -698,9 +717,9 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
             />
           </div>
           <div className="flex justify-between text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-medium">
-            <span>0% (100% عملاء جدد حصرياً)</span>
-            <span>20% متوازن</span>
-            <span>50% كحد أقصى</span>
+            <span>0% {isEn ? "(100% Exclusively New Customers)" : "(100% عملاء جدد حصرياً)"}</span>
+            <span>{isEn ? "20% Balanced" : "20% متوازن"}</span>
+            <span>{isEn ? "50% Max Cap" : "50% كحد أقصى"}</span>
           </div>
         </div>
       )}
@@ -708,10 +727,10 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
       {/* Bid Strategy */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-          استراتيجية المزايدة
+          {isEn ? "Bid Strategy" : "استراتيجية المزايدة"}
         </label>
         <div className="space-y-3">
-          {BID_STRATEGIES.map((strategy) => (
+          {bidStrategies.map((strategy) => (
             <label
               key={strategy.value}
               className={`flex items-start p-4 border-2 rounded-xl cursor-pointer transition-all ${
@@ -728,7 +747,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
                 onChange={(e) => handleChange("bidStrategy", e.target.value)}
                 className="mt-1 text-blue-600"
               />
-              <div className="mr-3">
+              <div className={isEn ? "ml-3" : "mr-3"}>
                 <div className="font-medium text-gray-900 dark:text-white">{strategy.label}</div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">
                   {strategy.description}
@@ -740,7 +759,9 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
         {isCappedBidStrategy(formData.bidStrategy) && (
           <div className="mt-3">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              قيمة المزايدة / التكلفة ({selectedAdAccountCurrency})
+              {isEn
+                ? `Bid Value / Target Cost (${selectedAdAccountCurrency})`
+                : `قيمة المزايدة / التكلفة (${selectedAdAccountCurrency})`}
             </label>
             <input
               type="number"
@@ -764,12 +785,12 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
           <Calendar className="w-4 h-4" />
-          الجدولة (اختياري)
+          {isEn ? "Schedule (Optional)" : "الجدولة (اختياري)"}
         </label>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              تاريخ البدء
+              {isEn ? "Start Date" : "تاريخ البدء"}
             </label>
             <input
               type="datetime-local"
@@ -780,7 +801,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
           </div>
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              تاريخ الانتهاء
+              {isEn ? "End Date" : "تاريخ الانتهاء"}
             </label>
             <input
               type="datetime-local"

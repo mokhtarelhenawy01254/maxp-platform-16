@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Sparkles,
   Layout,
@@ -37,6 +38,9 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
   toggleArrayValue,
   getError,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
   const currentDeviceMode =
     !formData.devicePlatforms || formData.devicePlatforms.length === 0 || formData.devicePlatforms.length === 2
       ? "all"
@@ -82,7 +86,7 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
       {/* Placement Type (Advantage+ vs Manual) */}
       <div>
         <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">
-          نوع المواضع وتوزيع الإعلان
+          {isEn ? "Placement Type & Ad Delivery" : "نوع المواضع وتوزيع الإعلان"}
         </label>
         <div className="grid grid-cols-2 gap-4">
           <button
@@ -98,10 +102,14 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
               className={`w-8 h-8 mx-auto mb-2 ${formData.placementType === "AUTOMATIC" ? "text-blue-500 dark:text-blue-400" : "text-gray-400"}`}
             />
             <div className="font-bold text-gray-900 dark:text-white text-sm">
-              مواضع Advantage+ (تلقائية - موصى بها)
+              {isEn
+                ? "Advantage+ Placements (Automatic - Recommended)"
+                : "مواضع Advantage+ (تلقائية - موصى بها)"}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              خوارزميات Meta توزع الميزانية بذكاء على أفضل المواضع لتحقيق أعلى عائد
+              {isEn
+                ? "Meta algorithms intelligently distribute budget across top placements to maximize ROAS"
+                : "خوارزميات Meta توزع الميزانية بذكاء على أفضل المواضع لتحقيق أعلى عائد"}
             </div>
           </button>
 
@@ -130,9 +138,13 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
             <Layout
               className={`w-8 h-8 mx-auto mb-2 ${formData.placementType === "MANUAL" ? "text-blue-500 dark:text-blue-400" : "text-gray-400"}`}
             />
-            <div className="font-bold text-gray-900 dark:text-white text-sm">مواضع يدوية مخصصة</div>
+            <div className="font-bold text-gray-900 dark:text-white text-sm">
+              {isEn ? "Manual Placements" : "مواضع يدوية مخصصة"}
+            </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              تحكم يدوي كامل بالأجهزة، المنصات، والمواضع المحددة
+              {isEn
+                ? "Full manual control over devices, platforms, and specific placements"
+                : "تحكم يدوي كامل بالأجهزة، المنصات، والمواضع المحددة"}
             </div>
           </button>
         </div>
@@ -143,7 +155,7 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
           {/* Devices Filter */}
           <div className="p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
             <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
-              الأجهزة المستهدفة (Devices)
+              {isEn ? "Target Devices" : "الأجهزة المستهدفة (Devices)"}
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button
@@ -156,7 +168,7 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
                 }`}
               >
                 <Monitor className="w-3.5 h-3.5" />
-                الكل (موصى به)
+                {isEn ? "All (Recommended)" : "الكل (موصى به)"}
               </button>
               <button
                 type="button"
@@ -168,7 +180,7 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
                 }`}
               >
                 <Smartphone className="w-3.5 h-3.5" />
-                الهواتف فقط
+                {isEn ? "Mobile only" : "الهواتف فقط"}
               </button>
               <button
                 type="button"
@@ -180,7 +192,7 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
                 }`}
               >
                 <Laptop className="w-3.5 h-3.5" />
-                الكمبيوتر فقط
+                {isEn ? "Desktop only" : "الكمبيوتر فقط"}
               </button>
             </div>
           </div>
@@ -188,7 +200,7 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
           {/* Platforms Filter */}
           <div className="p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
             <label className="block text-xs font-bold text-gray-800 dark:text-gray-200">
-              المنصات (Platforms)
+              {isEn ? "Platforms" : "المنصات (Platforms)"}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {PLATFORMS.map((platform) => {
@@ -219,7 +231,7 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
           <div>
             <div className="flex items-center justify-between mb-3">
               <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-                المواضع المحددة <span className="text-red-500">*</span>
+                {isEn ? "Specific Placements" : "المواضع المحددة"} <span className="text-red-500">*</span>
               </label>
               <div className="flex items-center gap-2">
                 <button
@@ -227,7 +239,7 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
                   onClick={() => handleChange("placements", PLACEMENTS.map((p) => p.id))}
                   className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                 >
-                  تحديد الكل
+                  {isEn ? "Select All" : "تحديد الكل"}
                 </button>
                 <span className="text-gray-300 dark:text-gray-600">|</span>
                 <button
@@ -235,7 +247,7 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
                   onClick={() => handleChange("placements", [])}
                   className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 >
-                  إلغاء التحديد
+                  {isEn ? "Deselect All" : "إلغاء التحديد"}
                 </button>
               </div>
             </div>
@@ -248,7 +260,7 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
                     key={placement.id}
                     type="button"
                     onClick={() => toggleArrayValue("placements", placement.id)}
-                    className={`flex items-center justify-between p-3 border rounded-xl transition-all text-right ${
+                    className={`flex items-center justify-between p-3 border rounded-xl transition-all ${isEn ? "text-left" : "text-right"} ${
                       isSelected
                         ? "border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 shadow-xs"
                         : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800"
@@ -290,10 +302,14 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
               </div>
               <div>
                 <h5 className="text-xs font-bold text-gray-900 dark:text-white">
-                  عرض الإعلان عند الاتصال بـ Wi-Fi فقط
+                  {isEn
+                    ? "Show ad only when connected to Wi-Fi"
+                    : "عرض الإعلان عند الاتصال بـ Wi-Fi فقط"}
                 </h5>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                  مفيد لحملات الفيديو عالية الدقة لتوفير باقات الإنترنت وضمان سرعة المشاهدة
+                  {isEn
+                    ? "Useful for high-definition video campaigns to save mobile data and ensure fast loading"
+                    : "مفيد لحملات الفيديو عالية الدقة لتوفير باقات الإنترنت وضمان سرعة المشاهدة"}
                 </p>
               </div>
             </div>
@@ -315,35 +331,45 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-            سلامة العلامة التجارية وفلتر المخزون (Inventory Filter)
+            {isEn
+              ? "Brand Safety & Inventory Filter"
+              : "سلامة العلامة التجارية وفلتر المخزون (Inventory Filter)"}
           </h4>
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          تحكم في مستوى ملاءمة المحتوى وسياق الفيديوهات والصفحات التي يظهر بجوارها إعلانك لضمان عدم ارتباط علامتك بمحتوى حساس.
+          {isEn
+            ? "Control the content suitability and context of videos/pages where your ads appear, ensuring your brand stays protected."
+            : "تحكم في مستوى ملاءمة المحتوى وسياق الفيديوهات والصفحات التي يظهر بجوارها إعلانك لضمان عدم ارتباط علامتك بمحتوى حساس."}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
           {[
             {
               id: "STANDARD",
-              title: "المخزون القياسي (Standard)",
-              badge: "موصى به",
+              title: isEn ? "Standard Inventory" : "المخزون القياسي (Standard)",
+              badge: isEn ? "Recommended" : "موصى به",
               badgeColor: "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300",
-              desc: "توازن معتدل بين أمان العلامة التجارية والوصول الجماهيري الواسع. يستبعد المحتوى الصريح والجدلي للغاية.",
+              desc: isEn
+                ? "Moderate balance between brand safety and broad reach. Excludes excessively explicit or controversial content."
+                : "توازن معتدل بين أمان العلامة التجارية والوصول الجماهيري الواسع. يستبعد المحتوى الصريح والجدلي للغاية.",
             },
             {
               id: "FULL",
-              title: "المخزون الكامل (Expanded)",
-              badge: "أقصى وصول",
+              title: isEn ? "Expanded Inventory" : "المخزون الكامل (Expanded)",
+              badge: isEn ? "Max Reach" : "أقصى وصول",
               badgeColor: "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300",
-              desc: "أعلى نسبة وصول بأقل تكلفة ممكنة، مناسب عندما لا تكون حساسية المحتوى أولوية قصوى.",
+              desc: isEn
+                ? "Maximum reach at the lowest possible cost. Suitable when content sensitivity is not a top concern."
+                : "أعلى نسبة وصول بأقل تكلفة ممكنة، مناسب عندما لا تكون حساسية المحتوى أولوية قصوى.",
             },
             {
               id: "LIMITED",
-              title: "المخزون المحدود (Limited)",
-              badge: "أقصى حماية",
+              title: isEn ? "Limited Inventory" : "المخزون المحدود (Limited)",
+              badge: isEn ? "Max Protection" : "أقصى حماية",
               badgeColor: "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300",
-              desc: "أعلى درجات الحماية والحذر للعلامات التجارية الكبرى. يستبعد أي محتوى يحتوي على لغة قوية أو مواضيع حساسة.",
+              desc: isEn
+                ? "Highest level of protection for sensitive corporate brands. Excludes any content with strong language or sensitive topics."
+                : "أعلى درجات الحماية والحذر للعلامات التجارية الكبرى. يستبعد أي محتوى يحتوي على لغة قوية أو مواضيع حساسة.",
             },
           ].map((tier) => {
             const isSelected = (formData.inventoryFilter || "STANDARD") === tier.id;
@@ -352,7 +378,7 @@ export const Step4Placements: React.FC<Step4PlacementsProps> = ({
                 key={tier.id}
                 type="button"
                 onClick={() => handleChange("inventoryFilter", tier.id)}
-                className={`p-3 rounded-xl border text-right transition-all flex flex-col justify-between ${
+                className={`p-3 rounded-xl border ${isEn ? "text-left" : "text-right"} transition-all flex flex-col justify-between ${
                   isSelected
                     ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-xs"
                     : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"

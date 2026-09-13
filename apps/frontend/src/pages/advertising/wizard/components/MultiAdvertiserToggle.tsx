@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Sparkles, ShoppingBag } from "lucide-react";
 
 interface MultiAdvertiserToggleProps {
@@ -10,6 +11,9 @@ export const MultiAdvertiserToggle: React.FC<MultiAdvertiserToggleProps> = ({
   enabled,
   onChange,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
   return (
     <div className="p-3.5 bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/70 dark:border-purple-900/40 rounded-xl flex items-center justify-between">
       <div className="flex items-center gap-2.5">
@@ -19,14 +23,16 @@ export const MultiAdvertiserToggle: React.FC<MultiAdvertiserToggleProps> = ({
         <div>
           <div className="flex items-center gap-1.5">
             <h5 className="text-xs font-bold text-gray-900 dark:text-white">
-              إعلانات المعلنين المتعددين (Multi-advertiser ads)
+              {isEn ? "Multi-advertiser ads" : "إعلانات المعلنين المتعددين (Multi-advertiser ads)"}
             </h5>
             <span className="text-[10px] bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-semibold px-1.5 py-0.5 rounded">
-              موصى به
+              {isEn ? "Recommended" : "موصى به"}
             </span>
           </div>
           <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">
-            تمكين إعلانك من الظهور بجانب إعلانات أخرى في سياق تسوق مشترك للمستخدمين ذوي النية الشرائية العالية.
+            {isEn
+              ? "Enable your ad to appear alongside other ads in a shared shopping context for users with high purchase intent."
+              : "تمكين إعلانك من الظهور بجانب إعلانات أخرى في سياق تسوق مشترك للمستخدمين ذوي النية الشرائية العالية."}
           </p>
         </div>
       </div>

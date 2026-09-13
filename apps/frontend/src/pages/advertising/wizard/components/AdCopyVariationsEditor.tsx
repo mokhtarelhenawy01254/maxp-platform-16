@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Sparkles, HelpCircle } from "lucide-react";
 import type { TextVariation, HeadlineVariation } from "../types";
 
@@ -14,18 +15,51 @@ interface AdCopyVariationsEditorProps {
   primaryTextError?: string;
 }
 
-const PRIMARY_TEXT_HOOK_SUGGESTIONS = [
-  { label: "خصم حصري لفترة محدودة", text: "🔥 خصم خاص لفترة محدودة! اطلب الآن واستفد من العرض قبل نفاد الكمية." },
-  { label: "حل المشكلة مباشرة", text: "هل تبحث عن أفضل جودة وسعر منافس؟ وفرنا لك الحل الأمثل بضمان كامل." },
-  { label: "شحن سريع ودفع عند الاستلام", text: "🚚 التوصيل لجميع المحافظات مع إمكانية المعاينة والدفع عند الاستلام!" },
-];
+const getPrimaryTextHookSuggestions = (isEn: boolean) =>
+  isEn
+    ? [
+        {
+          label: "Exclusive limited-time discount",
+          text: "🔥 Special limited-time discount! Order now and take advantage of the offer before stocks run out.",
+        },
+        {
+          label: "Solve the problem directly",
+          text: "Looking for top quality and competitive pricing? We've got the ideal solution with full warranty.",
+        },
+        {
+          label: "Fast shipping & cash on delivery",
+          text: "🚚 Fast delivery to all regions with cash on delivery & inspection upon receipt!",
+        },
+      ]
+    : [
+        {
+          label: "خصم حصري لفترة محدودة",
+          text: "🔥 خصم خاص لفترة محدودة! اطلب الآن واستفد من العرض قبل نفاد الكمية.",
+        },
+        {
+          label: "حل المشكلة مباشرة",
+          text: "هل تبحث عن أفضل جودة وسعر منافس؟ وفرنا لك الحل الأمثل بضمان كامل.",
+        },
+        {
+          label: "شحن سريع ودفع عند الاستلام",
+          text: "🚚 التوصيل لجميع المحافظات مع إمكانية المعاينة والدفع عند الاستلام!",
+        },
+      ];
 
-const HEADLINE_SUGGESTIONS = [
-  "خصم 30% اليوم فقط ⚡",
-  "الدفع عند الاستلام والمعاينة مجاناً",
-  "الأكثر مبيعاً - اطلب الآن 🛒",
-  "جودة أصلية مضمونة 100%",
-];
+const getHeadlineSuggestions = (isEn: boolean) =>
+  isEn
+    ? [
+        "30% Off Today Only ⚡",
+        "Free Inspection & Cash on Delivery",
+        "Best Seller - Order Now 🛒",
+        "100% Guaranteed Original Quality",
+      ]
+    : [
+        "خصم 30% اليوم فقط ⚡",
+        "الدفع عند الاستلام والمعاينة مجاناً",
+        "الأكثر مبيعاً - اطلب الآن 🛒",
+        "جودة أصلية مضمونة 100%",
+      ];
 
 export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
   primaryText,
@@ -38,6 +72,18 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
   onHeadlineVariationsChange,
   primaryTextError,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
+  const primaryTextHookSuggestions = React.useMemo(
+    () => getPrimaryTextHookSuggestions(isEn),
+    [isEn],
+  );
+  const headlineSuggestions = React.useMemo(
+    () => getHeadlineSuggestions(isEn),
+    [isEn],
+  );
+
   const MAX_VARIATIONS = 4; // 1 base + 4 variations = 5 total (Meta standard)
 
   const handleAddTextVariation = (prefill = "") => {
@@ -84,23 +130,29 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-            النص الأساسي (Primary Text) <span className="text-red-500">*</span>
+            {isEn ? "Primary Text" : "النص الأساسي (Primary Text)"} <span className="text-red-500">*</span>
           </label>
           <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-            {textVariations.length + 1} من 5 نصوص
+            {textVariations.length + 1} {isEn ? "of 5 texts" : "من 5 نصوص"}
           </span>
         </div>
 
         {/* Base Primary Text */}
         <div className="relative">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">النص 1 (الرئيسي)</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+              {isEn ? "Text 1 (Primary)" : "النص 1 (الرئيسي)"}
+            </span>
             <span className="text-xs text-gray-400 dark:text-gray-500">{primaryText.length}/125</span>
           </div>
           <textarea
             value={primaryText}
             onChange={(e) => onPrimaryTextChange(e.target.value)}
-            placeholder="اكتب النص الرئيسي الجذاب لإعلانك..."
+            placeholder={
+              isEn
+                ? "Write an engaging primary text for your ad..."
+                : "اكتب النص الرئيسي الجذاب لإعلانك..."
+            }
             rows={3}
             maxLength={160}
             className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 transition-colors text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 ${
@@ -116,9 +168,9 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
           <span className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-amber-500" />
-            زوايا سريعة:
+            {isEn ? "Quick angles:" : "زوايا سريعة:"}
           </span>
-          {PRIMARY_TEXT_HOOK_SUGGESTIONS.map((s, idx) => (
+          {primaryTextHookSuggestions.map((s, idx) => (
             <button
               key={idx}
               type="button"
@@ -144,7 +196,9 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-blue-800 dark:text-blue-300">
-                النص {index + 2} (اختبار زاوية بديلة)
+                {isEn
+                  ? `Text ${index + 2} (Alternative angle test)`
+                  : `النص ${index + 2} (اختبار زاوية بديلة)`}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 dark:text-gray-500">
@@ -154,7 +208,7 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
                   type="button"
                   onClick={() => handleRemoveTextVariation(variation.id)}
                   className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-lg transition-colors"
-                  title="حذف هذا النص"
+                  title={isEn ? "Delete this text" : "حذف هذا النص"}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -165,7 +219,11 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
               onChange={(e) =>
                 handleUpdateTextVariation(variation.id, e.target.value)
               }
-              placeholder="اكتب زاوية نص إضافية (مثال: التركيز على السعر، التوصيل، أو آراء العملاء)..."
+              placeholder={
+                isEn
+                  ? "Write an additional text angle (e.g., focus on price, shipping, or customer reviews)..."
+                  : "اكتب زاوية نص إضافية (مثال: التركيز على السعر، التوصيل، أو آراء العملاء)..."
+              }
               rows={2}
               maxLength={160}
               className="w-full px-3 py-2 border border-blue-200 dark:border-blue-800 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
@@ -180,7 +238,9 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
             className="w-full py-2.5 border border-dashed border-blue-300 dark:border-blue-700 hover:border-blue-500 bg-blue-50/30 dark:bg-blue-950/20 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-xl text-blue-700 dark:text-blue-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
           >
             <Plus className="w-4 h-4" />
-            إضافة خيار نص أساسي آخر (حتى 5 نصوص لتجربة زوايا متعددة)
+            {isEn
+              ? "+ Add another primary text option (up to 5 texts to test multiple angles)"
+              : "+ إضافة خيار نص أساسي آخر (حتى 5 نصوص لتجربة زوايا متعددة)"}
           </button>
         )}
       </div>
@@ -189,24 +249,30 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
       <div className="space-y-3 border-t border-gray-100 dark:border-gray-700 pt-4">
         <div className="flex items-center justify-between">
           <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-            العنوان الرئيسي (Headline)
+            {isEn ? "Headline" : "العنوان الرئيسي (Headline)"}
           </label>
           <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-            {headlineVariations.length + 1} من 5 عناوين
+            {headlineVariations.length + 1} {isEn ? "of 5 headlines" : "من 5 عناوين"}
           </span>
         </div>
 
         {/* Base Headline */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">العنوان 1 (الرئيسي)</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+              {isEn ? "Headline 1 (Primary)" : "العنوان 1 (الرئيسي)"}
+            </span>
             <span className="text-xs text-gray-400 dark:text-gray-500">{headline.length}/40</span>
           </div>
           <input
             type="text"
             value={headline}
             onChange={(e) => onHeadlineChange(e.target.value)}
-            placeholder="عنوان جذاب يظهر بجانب زر الإجراء..."
+            placeholder={
+              isEn
+                ? "Catchy headline displayed next to call-to-action button..."
+                : "عنوان جذاب يظهر بجانب زر الإجراء..."
+            }
             maxLength={50}
             className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
           />
@@ -216,9 +282,9 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           <span className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-purple-500" />
-            عناوين مقترحة:
+            {isEn ? "Suggested headlines:" : "عناوين مقترحة:"}
           </span>
-          {HEADLINE_SUGGESTIONS.map((h, idx) => (
+          {headlineSuggestions.map((h, idx) => (
             <button
               key={idx}
               type="button"
@@ -244,7 +310,7 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-purple-800 dark:text-purple-300">
-                العنوان {index + 2}
+                {isEn ? `Headline ${index + 2}` : `العنوان ${index + 2}`}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 dark:text-gray-500">
@@ -254,7 +320,7 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
                   type="button"
                   onClick={() => handleRemoveHeadlineVariation(variation.id)}
                   className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-950/40 rounded-lg transition-colors"
-                  title="حذف هذا العنوان"
+                  title={isEn ? "Delete this headline" : "حذف هذا العنوان"}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -266,7 +332,11 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
               onChange={(e) =>
                 handleUpdateHeadlineVariation(variation.id, e.target.value)
               }
-              placeholder="اكتب خيار عنوان بديل..."
+              placeholder={
+                isEn
+                  ? "Write an alternative headline..."
+                  : "اكتب خيار عنوان بديل..."
+              }
               maxLength={50}
               className="w-full px-3 py-2 border border-purple-200 dark:border-purple-800 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-purple-500"
             />
@@ -280,7 +350,9 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
             className="w-full py-2.5 border border-dashed border-purple-300 dark:border-purple-700 hover:border-purple-500 bg-purple-50/30 dark:bg-purple-950/20 hover:bg-purple-50 dark:hover:bg-purple-950/40 rounded-xl text-purple-700 dark:text-purple-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
           >
             <Plus className="w-4 h-4" />
-            إضافة خيار عنوان آخر (حتى 5 عناوين لاختبار تفاعل الجمهور)
+            {isEn
+              ? "+ Add another headline option (up to 5 headlines to test audience engagement)"
+              : "+ إضافة خيار عنوان آخر (حتى 5 عناوين لاختبار تفاعل الجمهور)"}
           </button>
         )}
       </div>
@@ -288,7 +360,11 @@ export const AdCopyVariationsEditor: React.FC<AdCopyVariationsEditorProps> = ({
       <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-400">
         <HelpCircle className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0 mt-0.5" />
         <span>
-          <strong>كيف تعمل تنويعات النصوص والعناوين؟</strong> يقوم Facebook بتدوير النصوص والعناوين تلقائياً بين مستخدمي الإعلان لاكتشاف التركيبة التي تحقق أعلى معدل نقر ومبيعات بأقل تكلفة.
+          {isEn ? (
+            <><strong>How do copy variations work?</strong> Facebook automatically rotates texts and headlines among ad viewers to discover the combination that delivers the highest CTR and ROAS at the lowest cost.</>
+          ) : (
+            <><strong>كيف تعمل تنويعات النصوص والعناوين؟</strong> يقوم Facebook بتدوير النصوص والعناوين تلقائياً بين مستخدمي الإعلان لاكتشاف التركيبة التي تحقق أعلى معدل نقر ومبيعات بأقل تكلفة.</>
+          )}
         </span>
       </div>
     </div>

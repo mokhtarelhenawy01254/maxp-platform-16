@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Search, Loader2, X, ShieldAlert, Sparkles } from "lucide-react";
 import type { TargetingOption } from "../types";
 import { facebookAdsService } from "../../../../services/facebookAdsService";
@@ -9,11 +10,23 @@ interface DetailedTargetingExclusionsProps {
   onRemoveExcludedInterest: (id: string) => void;
 }
 
-const COMMON_EXCLUSION_PRESETS: TargetingOption[] = [
-  { id: "6003139266461", name: "Facebook Page Admins (مسؤولو الصفحات)" },
-  { id: "6003012947811", name: "Dropshipping (دروب شيبينج)" },
-  { id: "6003180486011", name: "AliExpress (علي إكسبريس)" },
-  { id: "6003264412211", name: "Shopify (متاجر شوبيفاي)" },
+const getCommonExclusionPresets = (isEn: boolean): TargetingOption[] => [
+  {
+    id: "6003139266461",
+    name: isEn ? "Facebook Page Admins" : "Facebook Page Admins (مسؤولو الصفحات)",
+  },
+  {
+    id: "6003012947811",
+    name: isEn ? "Dropshipping" : "Dropshipping (دروب شيبينج)",
+  },
+  {
+    id: "6003180486011",
+    name: isEn ? "AliExpress" : "AliExpress (علي إكسبريس)",
+  },
+  {
+    id: "6003264412211",
+    name: isEn ? "Shopify stores" : "Shopify (متاجر شوبيفاي)",
+  },
 ];
 
 export const DetailedTargetingExclusions: React.FC<
@@ -23,6 +36,13 @@ export const DetailedTargetingExclusions: React.FC<
   onAddExcludedInterest,
   onRemoveExcludedInterest,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+  const commonExclusionPresets = React.useMemo(
+    () => getCommonExclusionPresets(isEn),
+    [isEn],
+  );
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TargetingOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,25 +81,29 @@ export const DetailedTargetingExclusions: React.FC<
         <div className="flex items-center gap-2">
           <ShieldAlert className="w-4 h-4 text-red-600 dark:text-red-400" />
           <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-            استبعاد اهتمامات محددة (Detailed Targeting Exclusions)
+            {isEn
+              ? "Detailed Targeting Exclusions"
+              : "استبعاد اهتمامات محددة (Detailed Targeting Exclusions)"}
           </h4>
         </div>
         <span className="text-[11px] font-medium text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-950/60 px-2 py-0.5 rounded-full">
-          {excludedInterests.length} مستبعد
+          {excludedInterests.length} {isEn ? "excluded" : "مستبعد"}
         </span>
       </div>
 
       <p className="text-xs text-gray-600 dark:text-gray-400">
-        استبعد فئات واهتمامات معينة لمنع ظهور الإعلان للمنافسين أو البائعين الآخرين وتوفير الميزانية للمشترين الحقيقيين فقط.
+        {isEn
+          ? "Exclude specific categories and interests to prevent ads from showing to competitors or other sellers, reserving budget exclusively for genuine buyers."
+          : "استبعد فئات واهتمامات معينة لمنع ظهور الإعلان للمنافسين أو البائعين الآخرين وتوفير الميزانية للمشترين الحقيقيين فقط."}
       </p>
 
       {/* Quick Presets */}
       <div className="flex flex-wrap items-center gap-1.5 pt-1">
         <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
           <Sparkles className="w-3 h-3 text-red-500 dark:text-red-400" />
-          استبعادات شائعة للتجارة:
+          {isEn ? "Common e-commerce exclusions:" : "استبعادات شائعة للتجارة:"}
         </span>
-        {COMMON_EXCLUSION_PRESETS.map((preset) => {
+        {commonExclusionPresets.map((preset) => {
           const isSelected = excludedInterests.some((e) => e.id === preset.id);
           return (
             <button
@@ -101,16 +125,24 @@ export const DetailedTargetingExclusions: React.FC<
 
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search
+          className={`absolute ${isEn ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400`}
+        />
         <input
           type="text"
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
-          placeholder="ابحث عن اهتمام لاستبعاده (مثال: دروبشيبينج، تجارة إلكترونية...)"
-          className="w-full pr-9 pl-4 py-2 border border-red-200 dark:border-red-900/50 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-red-400"
+          placeholder={
+            isEn
+              ? "Search interest to exclude (e.g. Dropshipping, E-commerce...)"
+              : "ابحث عن اهتمام لاستبعاده (مثال: دروبشيبينج، تجارة إلكترونية...)"
+          }
+          className={`w-full ${isEn ? "pl-9 pr-4 text-left" : "pr-9 pl-4 text-right"} py-2 border border-red-200 dark:border-red-900/50 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-red-400`}
         />
         {loading && (
-          <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+          <Loader2
+            className={`absolute ${isEn ? "right-3" : "left-3"} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin`}
+          />
         )}
       </div>
 
@@ -122,7 +154,7 @@ export const DetailedTargetingExclusions: React.FC<
               key={result.id}
               type="button"
               onClick={() => handleSelect(result)}
-              className="w-full px-3 py-2 text-right hover:bg-red-50/50 dark:hover:bg-red-950/30 border-b border-gray-100 dark:border-gray-700 last:border-b-0 flex items-center justify-between text-xs"
+              className={`w-full px-3 py-2 ${isEn ? "text-left" : "text-right"} hover:bg-red-50/50 dark:hover:bg-red-950/30 border-b border-gray-100 dark:border-gray-700 last:border-b-0 flex items-center justify-between text-xs`}
             >
               <span className="font-medium text-gray-800 dark:text-gray-200">{result.name}</span>
               {result.audience_size && (
@@ -148,7 +180,7 @@ export const DetailedTargetingExclusions: React.FC<
                 type="button"
                 onClick={() => onRemoveExcludedInterest(interest.id)}
                 className="p-0.5 hover:bg-red-200 dark:hover:bg-red-900/60 rounded-full transition-colors"
-                title="إلغاء الاستبعاد"
+                title={isEn ? "Remove exclusion" : "إلغاء الاستبعاد"}
               >
                 <X className="w-3 h-3" />
               </button>

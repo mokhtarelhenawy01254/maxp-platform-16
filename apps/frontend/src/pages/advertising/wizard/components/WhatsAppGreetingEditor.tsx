@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { MessageCircle, Plus, Trash2 } from "lucide-react";
 
 interface WhatsAppGreetingEditorProps {
@@ -8,12 +9,20 @@ interface WhatsAppGreetingEditorProps {
   onQuickFaqsChange: (faqs: string[]) => void;
 }
 
-const DEFAULT_FAQ_SUGGESTIONS = [
-  "أرغب بطلب هذا المنتج، ما هي خطوات التأكيد؟",
-  "ما هي مدة وتكلفة الشحن لمحافظتي؟",
-  "هل يمكنني معاينة المنتج قبل الدفع عند الاستلام؟",
-  "هل يوجد ألوان أو مقاسات أخرى متوفرة؟",
-];
+const getDefaultFaqSuggestions = (isEn: boolean): string[] =>
+  isEn
+    ? [
+        "I want to order this product, what are the confirmation steps?",
+        "What is the delivery time and shipping cost?",
+        "Can I inspect the product before paying on delivery?",
+        "Are there other colors or sizes available?",
+      ]
+    : [
+        "أرغب بطلب هذا المنتج، ما هي خطوات التأكيد؟",
+        "ما هي مدة وتكلفة الشحن لمحافظتي؟",
+        "هل يمكنني معاينة المنتج قبل الدفع عند الاستلام؟",
+        "هل يوجد ألوان أو مقاسات أخرى متوفرة؟",
+      ];
 
 export const WhatsAppGreetingEditor: React.FC<WhatsAppGreetingEditorProps> = ({
   greeting,
@@ -21,6 +30,13 @@ export const WhatsAppGreetingEditor: React.FC<WhatsAppGreetingEditorProps> = ({
   quickFaqs,
   onQuickFaqsChange,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+  const defaultFaqSuggestions = React.useMemo(
+    () => getDefaultFaqSuggestions(isEn),
+    [isEn],
+  );
+
   const handleAddFaq = (text = "") => {
     if (quickFaqs.length >= 3) return;
     onQuickFaqsChange([...quickFaqs, text]);
@@ -46,10 +62,14 @@ export const WhatsAppGreetingEditor: React.FC<WhatsAppGreetingEditorProps> = ({
           </div>
           <div>
             <h4 className="text-sm font-bold text-emerald-950 dark:text-emerald-100">
-              قالب بدء المحادثة على WhatsApp
+              {isEn
+                ? "WhatsApp Conversation Starter Template"
+                : "قالب بدء المحادثة على WhatsApp"}
             </h4>
             <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
-              الرسالة التلقائية والأسئلة السريعة التي تظهر للعميل عند النقر على الإعلان
+              {isEn
+                ? "Automated greeting message and quick questions shown to the customer when clicking the ad"
+                : "الرسالة التلقائية والأسئلة السريعة التي تظهر للعميل عند النقر على الإعلان"}
             </p>
           </div>
         </div>
@@ -61,17 +81,23 @@ export const WhatsAppGreetingEditor: React.FC<WhatsAppGreetingEditorProps> = ({
       {/* Greeting Message */}
       <div>
         <label className="block text-xs font-semibold text-emerald-900 dark:text-emerald-200 mb-1.5">
-          رسالة الترحيب التلقائية (Greeting Message)
+          {isEn
+            ? "Automated Greeting Message"
+            : "رسالة الترحيب التلقائية (Greeting Message)"}
         </label>
         <textarea
           value={greeting}
           onChange={(e) => onGreetingChange(e.target.value)}
-          placeholder="أهلاً بك! يسعدنا تواصلك معنا بخصوص هذا المنتج. كيف يمكننا مساعدتك اليوم؟"
+          placeholder={
+            isEn
+              ? "Hello! Thank you for reaching out about this product. How can we help you today?"
+              : "أهلاً بك! يسعدنا تواصلك معنا بخصوص هذا المنتج. كيف يمكننا مساعدتك اليوم؟"
+          }
           rows={2}
           maxLength={140}
           className="w-full px-3 py-2 border border-emerald-300 dark:border-emerald-800 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-emerald-500"
         />
-        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 text-left">
+        <p className={`text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 ${isEn ? "text-right" : "text-left"}`}>
           {greeting.length}/140
         </p>
       </div>
@@ -80,23 +106,29 @@ export const WhatsAppGreetingEditor: React.FC<WhatsAppGreetingEditorProps> = ({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="block text-xs font-semibold text-emerald-900 dark:text-emerald-200">
-            الأسئلة السريعة المقترحة للعميل (Quick Questions)
+            {isEn
+              ? "Suggested Quick Questions for Customer"
+              : "الأسئلة السريعة المقترحة للعميل (Quick Questions)"}
           </label>
           <span className="text-[11px] text-emerald-700 dark:text-emerald-400">
-            {quickFaqs.length} من 3 أسئلة
+            {quickFaqs.length} {isEn ? "of 3 questions" : "من 3 أسئلة"}
           </span>
         </div>
 
         {quickFaqs.map((faq, index) => (
           <div key={index} className="flex items-center gap-2">
             <span className="text-xs text-emerald-800 dark:text-emerald-300 font-bold shrink-0">
-              س {index + 1}:
+              {isEn ? `Q ${index + 1}:` : `س ${index + 1}:`}
             </span>
             <input
               type="text"
               value={faq}
               onChange={(e) => handleUpdateFaq(index, e.target.value)}
-              placeholder="اكتب سؤالاً يظهر كزر سريع للعميل..."
+              placeholder={
+                isEn
+                  ? "Type a quick question button for the customer..."
+                  : "اكتب سؤالاً يظهر كزر سريع للعميل..."
+              }
               maxLength={80}
               className="flex-1 px-3 py-1.5 border border-emerald-300 dark:border-emerald-800 rounded-lg text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-emerald-500"
             />
@@ -104,7 +136,7 @@ export const WhatsAppGreetingEditor: React.FC<WhatsAppGreetingEditorProps> = ({
               type="button"
               onClick={() => handleRemoveFaq(index)}
               className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
-              title="حذف هذا السؤال"
+              title={isEn ? "Remove this question" : "حذف هذا السؤال"}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -119,13 +151,15 @@ export const WhatsAppGreetingEditor: React.FC<WhatsAppGreetingEditorProps> = ({
               className="w-full py-2 border border-dashed border-emerald-400 dark:border-emerald-700 hover:border-emerald-600 dark:hover:border-emerald-500 bg-emerald-100/40 dark:bg-emerald-950/30 hover:bg-emerald-100/70 dark:hover:bg-emerald-950/50 rounded-lg text-emerald-800 dark:text-emerald-300 text-xs font-medium flex items-center justify-center gap-1 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              إضافة سؤال مقترح بنقرة واحدة
+              {isEn ? "+ Add one-click suggested question" : "+ إضافة سؤال مقترح بنقرة واحدة"}
             </button>
 
             {/* Suggestions */}
             <div className="flex flex-wrap items-center gap-1">
-              <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-medium">مقترحات شائعة:</span>
-              {DEFAULT_FAQ_SUGGESTIONS.filter((s) => !quickFaqs.includes(s)).map((s, idx) => (
+              <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-medium">
+                {isEn ? "Common suggestions:" : "مقترحات شائعة:"}
+              </span>
+              {defaultFaqSuggestions.filter((s) => !quickFaqs.includes(s)).map((s, idx) => (
                 <button
                   key={idx}
                   type="button"
@@ -143,20 +177,28 @@ export const WhatsAppGreetingEditor: React.FC<WhatsAppGreetingEditorProps> = ({
       {/* Mini Preview Box */}
       <div className="p-3 bg-white/80 dark:bg-gray-800/80 border border-emerald-200 dark:border-emerald-900/40 rounded-lg space-y-2">
         <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 block">
-          معاينة تجربة العميل عند فتح المحادثة:
+          {isEn
+            ? "Customer WhatsApp conversation preview:"
+            : "معاينة تجربة العميل عند فتح المحادثة:"}
         </span>
-        <div className="bg-[#EFEAE2] dark:bg-[#111b21] p-3 rounded-lg text-right space-y-2">
+        <div className={`bg-[#EFEAE2] dark:bg-[#111b21] p-3 rounded-lg ${isEn ? "text-left" : "text-right"} space-y-2`}>
           <div className="bg-white dark:bg-[#202c33] p-2 rounded-lg shadow-sm max-w-[85%] inline-block text-xs text-gray-800 dark:text-gray-100">
-            {greeting || "أهلاً بك! يسعدنا تواصلك معنا..."}
-            <span className="text-[9px] text-gray-400 dark:text-gray-400 block text-left mt-0.5">الآن ✓✓</span>
+            {greeting || (isEn ? "Hello! Thank you for contacting us..." : "أهلاً بك! يسعدنا تواصلك معنا...")}
+            <span className={`text-[9px] text-gray-400 dark:text-gray-400 block ${isEn ? "text-right" : "text-left"} mt-0.5`}>
+              {isEn ? "Just now ✓✓" : "الآن ✓✓"}
+            </span>
           </div>
           {quickFaqs.length > 0 && (
             <div className="space-y-1 pt-1">
-              <span className="text-[9px] text-gray-500 dark:text-gray-400 block">أسئلة يمكن للعميل إرسالها بنقرة واحدة:</span>
+              <span className="text-[9px] text-gray-500 dark:text-gray-400 block">
+                {isEn
+                  ? "One-click questions customer can send:"
+                  : "أسئلة يمكن للعميل إرسالها بنقرة واحدة:"}
+              </span>
               {quickFaqs.filter(Boolean).map((faq, i) => (
                 <div
                   key={i}
-                  className="px-2.5 py-1 bg-white dark:bg-[#202c33] border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-full text-[11px] inline-block shadow-xs ml-1 mb-1"
+                  className="px-2.5 py-1 bg-white dark:bg-[#202c33] border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-full text-[11px] inline-block shadow-xs mr-1 mb-1"
                 >
                   {faq}
                 </div>

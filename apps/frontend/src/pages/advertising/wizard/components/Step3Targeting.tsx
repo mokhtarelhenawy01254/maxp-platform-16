@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Sparkles,
   Users,
@@ -26,10 +27,10 @@ import MetaGeoTargetingSelector from "../../../../components/advertising/MetaGeo
 import { DetailedTargetingExclusions } from "./DetailedTargetingExclusions";
 import { NarrowAudienceSelector } from "./NarrowAudienceSelector";
 import {
-  COUNTRIES,
-  INTEREST_CATEGORIES,
-  RELATIONSHIP_OPTIONS,
-  LANGUAGES,
+  getCountries,
+  getInterestCategories,
+  getRelationshipOptions,
+  getLanguages,
   DEVICE_PLATFORMS,
   EDUCATION_STATUS_OPTIONS,
 } from "../constants";
@@ -100,6 +101,20 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
   excludedAudiences,
   setExcludedAudiences,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
+  const countries = React.useMemo(() => getCountries(isEn), [isEn]);
+  const interestCategories = React.useMemo(
+    () => getInterestCategories(isEn),
+    [isEn],
+  );
+  const relationshipOptions = React.useMemo(
+    () => getRelationshipOptions(isEn),
+    [isEn],
+  );
+  const languages = React.useMemo(() => getLanguages(isEn), [isEn]);
+
   return (
     <div className="space-y-6">
       {/* Advantage+ Audience (v26) */}
@@ -112,11 +127,13 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                 Advantage+ Audience (Meta v26)
               </h4>
               <span className="rounded-full bg-purple-100 dark:bg-purple-950/60 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:text-purple-300">
-                الجيل الذكي
+                {isEn ? "Smart Gen" : "الجيل الذكي"}
               </span>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 max-w-xl leading-relaxed">
-              في إصدار v26، تستخدم خوارزميات الذكاء الاصطناعي اهتماماتك وجماهيرك كنقطة انطلاق أولية (Audience Suggestions)، ثم تتوسع ذاتياً لجلب أفضل المشترين بأقل تكلفة ممكنة مع احترام قيود الدولة والسن الصارمة.
+              {isEn
+                ? "In v26, Meta AI algorithms use your selected interests and lookalikes as initial seeds (Audience Suggestions), automatically expanding to find buyers at the lowest cost while strictly adhering to country, region, and age controls."
+                : "في إصدار v26، تستخدم خوارزميات الذكاء الاصطناعي اهتماماتك وجماهيرك كنقطة انطلاق أولية (Audience Suggestions)، ثم تتوسع ذاتياً لجلب أفضل المشترين بأقل تكلفة ممكنة مع احترام قيود الدولة والسن الصارمة."}
             </p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer shrink-0">
@@ -135,11 +152,23 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
         <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-3 border-t border-purple-100/80 dark:border-purple-900/40">
           <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-            <span><strong>قيود صارمة (Controls):</strong> الدولة، المحافظة، والحد الأدنى للعمر (تلتزم بها Meta 100%).</span>
+            <span>
+              {isEn ? (
+                <><strong>Strict Controls:</strong> Country, Region, and Minimum Age (Meta adheres 100%).</>
+              ) : (
+                <><strong>قيود صارمة (Controls):</strong> الدولة، المحافظة، والحد الأدنى للعمر (تلتزم بها Meta 100%).</>
+              )}
+            </span>
           </div>
           <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
             <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
-            <span><strong>مقترحات ذكية (Suggestions):</strong> الاهتمامات والجمهور المشابه (بذور للتوسع الذكي).</span>
+            <span>
+              {isEn ? (
+                <><strong>Smart Suggestions:</strong> Interests and Lookalikes (expansion seeds).</>
+              ) : (
+                <><strong>مقترحات ذكية (Suggestions):</strong> الاهتمامات والجمهور المشابه (بذور للتوسع الذكي).</>
+              )}
+            </span>
           </div>
         </div>
       </div>
@@ -147,11 +176,13 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
       {/* Age Range */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-          الفئة العمرية
+          {isEn ? "Age Range" : "الفئة العمرية"}
         </label>
         <div className="flex items-center gap-4">
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">من</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              {isEn ? "From" : "من"}
+            </label>
             <select
               value={formData.ageMin}
               onChange={(e) => handleChange("ageMin", parseInt(e.target.value))}
@@ -166,7 +197,9 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
           </div>
           <span className="text-gray-400 dark:text-gray-500 mt-6">—</span>
           <div className="flex-1">
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">إلى</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              {isEn ? "To" : "إلى"}
+            </label>
             <select
               value={formData.ageMax}
               onChange={(e) => handleChange("ageMax", parseInt(e.target.value))}
@@ -185,13 +218,13 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
       {/* Gender */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-          الجنس
+          {isEn ? "Gender" : "الجنس"}
         </label>
         <div className="flex gap-4">
           {[
-            { value: "", label: "الكل" },
-            { value: "1", label: "ذكور" },
-            { value: "2", label: "إناث" },
+            { value: "", label: isEn ? "All" : "الكل" },
+            { value: "1", label: isEn ? "Men" : "ذكور" },
+            { value: "2", label: isEn ? "Women" : "إناث" },
           ].map((gender) => (
             <button
               key={gender.value}
@@ -213,7 +246,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
       </div>
 
       <MetaGeoTargetingSelector
-        countries={COUNTRIES}
+        countries={countries}
         selectedCountries={formData.locations}
         selectedRegions={formData.regions}
         selectedCities={formData.cities}
@@ -236,8 +269,12 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
         >
           <Heart className="w-4 h-4" />
           {showAdvancedTargeting
-            ? "إخفاء الاستهداف المتقدم"
-            : "إظهار الاستهداف المتقدم (الاهتمامات، اللغات، الأجهزة...)"}
+            ? isEn
+              ? "Hide Advanced Targeting"
+              : "إخفاء الاستهداف المتقدم"
+            : isEn
+              ? "Show Advanced Targeting (Interests, Languages, Devices...)"
+              : "إظهار الاستهداف المتقدم (الاهتمامات، اللغات، الأجهزة...)"}
         </button>
       </div>
 
@@ -245,18 +282,21 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
       {showAdvancedTargeting && (
         <div className="space-y-6 bg-gray-50 dark:bg-gray-800/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
           <p className="rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-xs font-medium leading-5 text-blue-800 dark:text-blue-200">
-            يتم إرسال الاهتمامات من بحث Meta، الجماهير المخصصة/المشابهة،
-            الاستبعادات، اللغات، الأجهزة، والحالة الاجتماعية فقط.
+            {isEn
+              ? "Interests from Meta search, custom/lookalike audiences, exclusions, languages, devices, and relationship status are sent."
+              : "يتم إرسال الاهتمامات من بحث Meta، الجماهير المخصصة/المشابهة، الاستبعادات، اللغات، الأجهزة، والحالة الاجتماعية فقط."}
           </p>
 
           {/* Interests Search */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
               <Heart className="w-4 h-4 text-pink-500" />
-              الاهتمامات
+              {isEn ? "Interests" : "الاهتمامات"}
             </label>
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search
+                className={`absolute ${isEn ? "left-3" : "right-3"} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400`}
+              />
               <input
                 type="text"
                 value={searchQuery}
@@ -264,11 +304,17 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                   setSearchQuery(e.target.value);
                   handleSearchInterests(e.target.value);
                 }}
-                placeholder="ابحث عن اهتمام (مثال: تسوق، موضة، تقنية...)"
-                className="w-full pr-10 pl-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
+                placeholder={
+                  isEn
+                    ? "Search for an interest (e.g. Shopping, Fashion, Tech...)"
+                    : "ابحث عن اهتمام (مثال: تسوق، موضة، تقنية...)"
+                }
+                className={`w-full ${isEn ? "pl-10 pr-4 text-left" : "pr-10 pl-4 text-right"} py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500`}
               />
               {searchLoading && (
-                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 animate-spin" />
+                <Loader2
+                  className={`absolute ${isEn ? "right-3" : "left-3"} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 animate-spin`}
+                />
               )}
             </div>
 
@@ -280,7 +326,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                     key={result.id}
                     type="button"
                     onClick={() => addInterest(result)}
-                    className="w-full px-4 py-2 text-right hover:bg-gray-50 dark:hover:bg-gray-700/60 border-b border-gray-100 dark:border-gray-700 last:border-b-0 flex items-center justify-between text-gray-900 dark:text-white"
+                    className={`w-full px-4 py-2 ${isEn ? "text-left" : "text-right"} hover:bg-gray-50 dark:hover:bg-gray-700/60 border-b border-gray-100 dark:border-gray-700 last:border-b-0 flex items-center justify-between text-gray-900 dark:text-white`}
                   >
                     <span className="text-sm">{result.name}</span>
                     {result.audience_size && (
@@ -316,7 +362,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
 
             {/* Quick Categories */}
             <div className="mt-3 flex flex-wrap gap-2">
-              {INTEREST_CATEGORIES.map((cat) => (
+              {interestCategories.map((cat) => (
                 <button
                   key={cat.query}
                   type="button"
@@ -376,10 +422,10 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
           {/* Relationship Status */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              الحالة الاجتماعية
+              {isEn ? "Relationship Status" : "الحالة الاجتماعية"}
             </label>
             <div className="flex flex-wrap gap-2">
-              {RELATIONSHIP_OPTIONS.map((status) => (
+              {relationshipOptions.map((status) => (
                 <button
                   key={status.value}
                   type="button"
@@ -400,10 +446,10 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
               <Globe className="w-4 h-4 text-blue-500" />
-              اللغات
+              {isEn ? "Languages" : "اللغات"}
             </label>
             <div className="flex flex-wrap gap-2">
-              {LANGUAGES.map((lang) => (
+              {languages.map((lang) => (
                 <button
                   key={lang.id}
                   type="button"
@@ -424,7 +470,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
               <Smartphone className="w-4 h-4 text-green-500" />
-              نظام التشغيل
+              {isEn ? "Operating System" : "نظام التشغيل"}
             </label>
             <div className="flex gap-3">
               {DEVICE_PLATFORMS.map((platform) => (
@@ -438,221 +484,30 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                       : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                   }`}
                 >
-                  <span className="text-xl ml-2">{platform.icon}</span>
+                  <span className={`text-xl ${isEn ? "mr-2" : "ml-2"}`}>{platform.icon}</span>
                   {platform.label}
                 </button>
               ))}
             </div>
             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
               {selectedDevices.length === 0
-                ? "الكل (افتراضي)"
-                : `محدد: ${selectedDevices.join(", ")}`}
+                ? isEn ? "All (Default)" : "الكل (افتراضي)"
+                : isEn ? `Selected: ${selectedDevices.join(", ")}` : `محدد: ${selectedDevices.join(", ")}`}
             </p>
           </div>
-
-          {/* Detailed Demographics */}
-          {SHOW_EXPERIMENTAL_TARGETING_CONTROLS && (
-          <div className="border-t pt-4 mt-4">
-            <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-              <Target className="w-5 h-5 text-orange-500" />
-              الديموغرافيا التفصيلية
-            </h4>
-
-            <div className="space-y-4">
-              {/* Education */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  المستوى التعليمي
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {EDUCATION_LEVELS.map((edu) => (
-                    <button
-                      key={edu.value}
-                      type="button"
-                      onClick={() => {
-                        setSelectedEducation((prev) =>
-                          prev.includes(edu.value)
-                            ? prev.filter((e) => e !== edu.value)
-                            : [...prev, edu.value],
-                        );
-                      }}
-                      className={`px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        selectedEducation.includes(edu.value)
-                          ? "border-orange-500 bg-orange-50 text-orange-700"
-                          : "border-gray-200 hover:border-gray-300 bg-white"
-                      }`}
-                    >
-                      {edu.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Job Titles */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  المسمى الوظيفي
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {JOB_TITLES.map((job) => (
-                    <button
-                      key={job.value}
-                      type="button"
-                      onClick={() => {
-                        setSelectedJobs((prev) =>
-                          prev.includes(job.value)
-                            ? prev.filter((j) => j !== job.value)
-                            : [...prev, job.value],
-                        );
-                      }}
-                      className={`px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        selectedJobs.includes(job.value)
-                          ? "border-orange-500 bg-orange-50 text-orange-700"
-                          : "border-gray-200 hover:border-gray-300 bg-white"
-                      }`}
-                    >
-                      {job.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Income */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  مستوى الدخل
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {INCOME_LEVELS.map((income) => (
-                    <button
-                      key={income.value}
-                      type="button"
-                      onClick={() => {
-                        setSelectedIncome((prev) =>
-                          prev.includes(income.value)
-                            ? prev.filter((i) => i !== income.value)
-                            : [...prev, income.value],
-                        );
-                      }}
-                      className={`px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        selectedIncome.includes(income.value)
-                          ? "border-orange-500 bg-orange-50 text-orange-700"
-                          : "border-gray-200 hover:border-gray-300 bg-white"
-                      }`}
-                    >
-                      {income.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Behaviors */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  السلوكيات
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {BEHAVIORS.map((behavior) => (
-                    <button
-                      key={behavior.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedBehaviors((prev) =>
-                          prev.includes(behavior.id)
-                            ? prev.filter((b) => b !== behavior.id)
-                            : [...prev, behavior.id],
-                        );
-                      }}
-                      className={`p-3 rounded-lg border text-right transition-colors ${
-                        selectedBehaviors.includes(behavior.id)
-                          ? "border-orange-500 bg-orange-50"
-                          : "border-gray-200 hover:border-gray-300 bg-white"
-                      }`}
-                    >
-                      <p className="text-sm font-medium">{behavior.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {behavior.category}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Life Events */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  أحداث الحياة
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {LIFE_EVENTS.map((event) => (
-                    <button
-                      key={event.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedLifeEvents((prev) =>
-                          prev.includes(event.id)
-                            ? prev.filter((e) => e !== event.id)
-                            : [...prev, event.id],
-                        );
-                      }}
-                      className={`p-3 rounded-lg border text-right transition-colors ${
-                        selectedLifeEvents.includes(event.id)
-                          ? "border-pink-500 bg-pink-50"
-                          : "border-gray-200 hover:border-gray-300 bg-white"
-                      }`}
-                    >
-                      <p className="text-sm font-medium">{event.name}</p>
-                      <p className="text-xs text-gray-500">{event.category}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Parents */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  الآباء
-                </label>
-                <div className="space-y-2">
-                  {PARENTS_OPTIONS.map((parent) => (
-                    <button
-                      key={parent.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedParents((prev) =>
-                          prev.includes(parent.id)
-                            ? prev.filter((p) => p !== parent.id)
-                            : [...prev, parent.id],
-                        );
-                      }}
-                      className={`w-full p-3 rounded-lg border text-right transition-colors ${
-                        selectedParents.includes(parent.id)
-                          ? "border-teal-500 bg-teal-50"
-                          : "border-gray-200 hover:border-gray-300 bg-white"
-                      }`}
-                    >
-                      <p className="text-sm font-medium">{parent.name}</p>
-                      <p className="text-xs text-gray-500">{parent.age}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-          )}
 
           {/* Custom & Lookalike Audiences */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
             <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <Users className="w-5 h-5 text-purple-500" />
-              الجماهير المخصصة والمشابهة
+              {isEn ? "Custom & Lookalike Audiences" : "الجماهير المخصصة والمشابهة"}
             </h4>
 
             {loadingAudiences ? (
               <div className="text-center py-6">
                 <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" />
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                  جاري تحميل الجماهير...
+                  {isEn ? "Loading audiences..." : "جاري تحميل الجماهير..."}
                 </p>
               </div>
             ) : (
@@ -661,7 +516,9 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                 {customAudiences.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      الجماهير المخصصة ({customAudiences.length})
+                      {isEn
+                        ? `Custom Audiences (${customAudiences.length})`
+                        : `الجماهير المخصصة (${customAudiences.length})`}
                     </label>
                     <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800">
                       {customAudiences.map((audience) => (
@@ -682,7 +539,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                               {audience.name}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {audience.audienceSize?.toLocaleString() || 0} شخص
+                              {audience.audienceSize?.toLocaleString() || 0} {isEn ? "people" : "شخص"}
                             </p>
                           </div>
                         </label>
@@ -695,7 +552,9 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                 {lookalikeAudiences.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      الجماهير المشابهة ({lookalikeAudiences.length})
+                      {isEn
+                        ? `Lookalike Audiences (${lookalikeAudiences.length})`
+                        : `الجماهير المشابهة (${lookalikeAudiences.length})`}
                     </label>
                     <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800">
                       {lookalikeAudiences.map((audience) => (
@@ -718,8 +577,8 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                               {audience.name}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {audience.audienceSize?.toLocaleString() || 0} شخص
-                              • {audience.ratio}% تشابه
+                              {audience.audienceSize?.toLocaleString() || 0} {isEn ? "people" : "شخص"}
+                              {" "}• {audience.ratio}% {isEn ? "similarity" : "تشابه"}
                             </p>
                           </div>
                         </label>
@@ -733,10 +592,10 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                     <div className="text-center py-6 bg-gray-50 dark:bg-gray-800/40 rounded-lg">
                       <Users className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        لا توجد جماهير متاحة
+                        {isEn ? "No audiences available" : "لا توجد جماهير متاحة"}
                       </p>
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                        يمكنك إنشاء جماهير مخصصة من صفحة الجماهير
+                        {isEn ? "You can create custom audiences from the Audiences page" : "يمكنك إنشاء جماهير مخصصة من صفحة الجماهير"}
                       </p>
                     </div>
                   )}
@@ -748,11 +607,12 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
             <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <X className="w-5 h-5 text-red-500" />
-              استبعاد جماهير
+              {isEn ? "Exclude Audiences" : "استبعاد جماهير"}
             </h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              استبعد أشخاصاً معينين من رؤية إعلانك (مثل: العملاء الحاليين،
-              المشتركين)
+              {isEn
+                ? "Exclude specific people from seeing your ad (e.g. existing customers, subscribers)"
+                : "استبعد أشخاصاً معينين من رؤية إعلانك (مثل: العملاء الحاليين، المشتركين)"}
             </p>
 
             {customAudiences.length > 0 || lookalikeAudiences.length > 0 ? (
@@ -781,11 +641,11 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                             {audience.name}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {audience.audienceSize?.toLocaleString() || 0} شخص
+                            {audience.audienceSize?.toLocaleString() || 0} {isEn ? "people" : "شخص"}
                           </p>
                         </div>
                         <span className="text-xs text-red-600 dark:text-red-400 font-medium">
-                          استبعاد
+                          {isEn ? "Exclude" : "استبعاد"}
                         </span>
                       </label>
                     ),
@@ -794,8 +654,9 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
                 {excludedAudiences.length > 0 && (
                   <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-lg p-3">
                     <p className="text-sm text-red-700 dark:text-red-300">
-                      ✓ سيتم استبعاد {excludedAudiences.length} جمهور من رؤية
-                      هذا الإعلان
+                      {isEn
+                        ? `✓ ${excludedAudiences.length} audience(s) will be excluded from this ad`
+                        : `✓ سيتم استبعاد ${excludedAudiences.length} جمهور من رؤية هذا الإعلان`}
                     </p>
                   </div>
                 )}
@@ -803,7 +664,7 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
             ) : (
               <div className="text-center py-4 bg-gray-50 dark:bg-gray-800/40 rounded-lg">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  لا توجد جماهير متاحة للاستبعاد
+                  {isEn ? "No audiences available for exclusion" : "لا توجد جماهير متاحة للاستبعاد"}
                 </p>
               </div>
             )}

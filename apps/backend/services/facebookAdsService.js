@@ -2320,17 +2320,59 @@ class FacebookAdsService {
    */
   async uploadVideo(videoUrl, videoData = {}) {
     try {
-      // أولاً: تحميل الفيديو من URL
-      const videoResponse = await fetchSafeRemoteMedia(videoUrl, {
-        label: 'Video',
-        responseType: 'stream',
-        maxBytes: MAX_REMOTE_AD_VIDEO_BYTES
-      });
+      let videoStream = null;
+      let videoFileName = videoData.filename || `${videoData.name || "video"}.mp4`;
+      let videoContentType = videoData.contentType || "video/mp4";
+
+      // 1. If video is in local uploads folder, stream directly from disk
+      if (typeof videoUrl === "string") {
+        try {
+          const urlObj = videoUrl.startsWith("http") ? new URL(videoUrl) : null;
+          const relativePath = urlObj ? urlObj.pathname : videoUrl;
+          if (relativePath.includes("/uploads/")) {
+            const diskSubPath = relativePath.slice(
+              relativePath.indexOf("/uploads/") + 1,
+            );
+            const possibleDiskPaths = [
+              path.resolve(process.cwd(), diskSubPath),
+              path.resolve(__dirname, "..", diskSubPath),
+              path.resolve(__dirname, "../..", diskSubPath),
+              path.resolve("/var/www/backend2", diskSubPath),
+            ];
+            for (const p of possibleDiskPaths) {
+              if (fs.existsSync(p)) {
+                videoStream = fs.createReadStream(p);
+                videoFileName = path.basename(p);
+                const ext = path.extname(p).toLowerCase();
+                if (ext === ".mov") videoContentType = "video/quicktime";
+                else if (ext === ".webm") videoContentType = "video/webm";
+                else videoContentType = "video/mp4";
+                break;
+              }
+            }
+          }
+        } catch (localReadErr) {
+          // ignore and fall back to network fetch
+        }
+      }
+
+      // 2. Otherwise download over network
+      if (!videoStream) {
+        const videoResponse = await fetchSafeRemoteMedia(videoUrl, {
+          label: "Video",
+          responseType: "stream",
+          maxBytes: MAX_REMOTE_AD_VIDEO_BYTES,
+        });
+        videoStream = videoResponse.data;
+      }
 
       const formData = new FormData();
-      formData.append('name', videoData.name || 'Video Ad');
-      formData.append('video_file_chunk', videoResponse.data);
-      formData.append('access_token', this.accessToken);
+      formData.append("name", videoData.name || "Video Ad");
+      formData.append("video_file_chunk", videoStream, {
+        filename: videoFileName,
+        contentType: videoContentType,
+      });
+      formData.append("access_token", this.accessToken);
 
       if (videoData.description) {
         formData.append('description', videoData.description);

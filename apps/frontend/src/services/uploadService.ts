@@ -133,7 +133,10 @@ class UploadService {
   /**
    * Upload a general media file (image or video)
    */
-  async uploadMedia(file: File): Promise<UploadResponse> {
+  async uploadMedia(
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<UploadResponse> {
     const formData = new FormData();
     // Use 'media' field name for the new media endpoint that supports both images and videos
     formData.append("media", file);
@@ -143,7 +146,15 @@ class UploadService {
         headers: {
           // boundary set by browser
         },
-        timeout: 60000, // 60 seconds for larger video files
+        timeout: 180000, // 3 minutes for larger video files
+        onUploadProgress: (progressEvent) => {
+          if (onProgress && progressEvent.total) {
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total,
+            );
+            onProgress(percent);
+          }
+        },
       });
 
       return response.data;
