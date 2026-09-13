@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { getSidebarConfig } from "../sidebar";
 
 const createOwnerSidebar = (activeApps: string[]) =>
@@ -11,7 +11,7 @@ const createOwnerSidebar = (activeApps: string[]) =>
   });
 
 describe("Meta Ads connection sidebar links", () => {
-  it("includes Meta Ads connection in the facebook section when facebook tools are active", () => {
+  it("keeps facebook section focused on pages/messages without ads connection duplicate", () => {
     const config = createOwnerSidebar(["facebook-pages-connect"]);
     const fbSection = config.find((section) => section.id === "facebook");
     const visibleItems = fbSection?.items?.filter((item) => !item.hidden) || [];
@@ -20,11 +20,10 @@ describe("Meta Ads connection sidebar links", () => {
     );
 
     expect(fbSection?.hidden).toBe(false);
-    expect(metaAdsLink).toBeDefined();
-    expect(metaAdsLink?.to).toBe("/advertising/facebook-ads/connection");
+    expect(metaAdsLink).toBeUndefined();
   });
 
-  it("includes Meta Ads connection as a standalone item in marketing section", () => {
+  it("includes Meta Ads connection as an independent standalone item in marketing section", () => {
     const config = createOwnerSidebar(["facebook-ads-pro"]);
     const marketingSection = config.find((section) => section.id === "marketing");
     const standaloneLink = marketingSection?.items?.find(
@@ -36,16 +35,14 @@ describe("Meta Ads connection sidebar links", () => {
     expect(standaloneLink?.to).toBe("/advertising/facebook-ads/connection");
   });
 
-  it("places Meta Ads connection near the top in facebook-ads children", () => {
+  it("keeps all marketing items independent without nested children", () => {
     const config = createOwnerSidebar(["facebook-ads-pro"]);
     const marketingSection = config.find((section) => section.id === "marketing");
     const fbAdsItem = marketingSection?.items?.find(
       (item) => item.to === "/advertising/facebook-ads",
     );
 
-    expect(fbAdsItem?.children).toBeDefined();
-    const children = fbAdsItem?.children || [];
-    expect(children[0].to).toBe("/advertising/facebook-ads");
-    expect(children[1].to).toBe("/advertising/facebook-ads/connection");
+    expect(fbAdsItem).toBeDefined();
+    expect(fbAdsItem?.children).toBeUndefined();
   });
 });

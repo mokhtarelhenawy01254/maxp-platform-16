@@ -3170,7 +3170,7 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
             if (facebookPage?.instagramAccountId && facebookPage?.pageAccessToken) {
               try {
                 const axios = require('axios');
-                const IG_GRAPH_API = `https://graph.facebook.com/v22.0/${facebookPage.instagramAccountId}/messages`;
+                const IG_GRAPH_API = `https://graph.facebook.com/${getMetaGraphApiVersion()}/${facebookPage.instagramAccountId}/messages`;
                 const igRes = await axios.post(IG_GRAPH_API, {
                   recipient: { id: senderId },
                   message: { text: replyText },
@@ -3220,7 +3220,7 @@ async function sendInstagramMessage({ recipientId, messageText, igAccountId, pag
     }
 
     const axios = require('axios');
-    const IG_GRAPH_API = `https://graph.facebook.com/v22.0/${igAccountId}/messages`;
+    const IG_GRAPH_API = `https://graph.facebook.com/${getMetaGraphApiVersion()}/${igAccountId}/messages`;
 
     const response = await axios.post(IG_GRAPH_API, {
       recipient: { id: recipientId },

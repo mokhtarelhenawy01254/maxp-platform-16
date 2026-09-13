@@ -23,6 +23,7 @@ const {
 const { clearConversationAudienceCache } = require('./whatsappRealtimeAudienceService');
 const { sendText, sendImage } = require('./whatsapp/WhatsAppMessageHandler');
 const { computeWindowStatus } = require('./whatsapp/WhatsAppWindowService');
+const { getMetaGraphApiVersion } = require('../config/metaApi');
 
 const SUPERVISOR_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'];
 const STATUS_OPTIONS = ['NEW', 'QUEUED', 'ASSIGNED', 'ACTIVE', 'PENDING', 'WAITING_CUSTOMER', 'ESCALATED', 'CLOSED', 'ARCHIVED'];
@@ -508,7 +509,7 @@ class WhatsAppInboxService {
         });
         if (igPage?.pageAccessToken && igPage?.instagramAccountId && conversation.customer?.instagramId) {
           const axios = require('axios');
-          const IG_API = `https://graph.facebook.com/v22.0/${igPage.instagramAccountId}/messages`;
+          const IG_API = `https://graph.facebook.com/${getMetaGraphApiVersion()}/${igPage.instagramAccountId}/messages`;
           await axios.post(IG_API, {
             recipient: { id: conversation.customer.instagramId },
             message: { text: correction }
