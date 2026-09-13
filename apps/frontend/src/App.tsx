@@ -3678,7 +3678,7 @@ const AppContent = () => {
                 <Route
                   path="/advertising/marketing-studio"
                   element={
-                    <Layout>
+                    <Layout fullWidth>
                       <MarketingAiStudioPage />
                     </Layout>
                   }
@@ -5792,7 +5792,7 @@ const AppContent = () => {
                 <Route
                   path="/advertising/marketing-studio"
                   element={
-                    <Layout>
+                    <Layout fullWidth>
                       <MarketingAiStudioPage />
                     </Layout>
                   }
