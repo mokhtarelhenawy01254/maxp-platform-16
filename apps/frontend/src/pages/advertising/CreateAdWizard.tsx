@@ -1862,101 +1862,161 @@ const CreateAdWizard: React.FC = () => {
         {/* Step Content */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 md:p-8 mb-8">
           {currentStep === 1 && (
-            <Step1Campaign
-              formData={formData}
-              handleChange={handleChange}
-              toggleArrayValue={toggleArrayValue}
-              getError={getError}
-            />
+            <ErrorBoundary
+              fallback={
+                <div className="p-6 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 text-center space-y-3">
+                  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                    {isEn ? "Unable to load campaign details" : "تعذر عرض بيانات الحملة"}
+                  </h3>
+                </div>
+              }
+            >
+              <Step1Campaign
+                formData={formData}
+                handleChange={handleChange}
+                toggleArrayValue={toggleArrayValue}
+                getError={getError}
+              />
+            </ErrorBoundary>
           )}
 
           {currentStep === 2 && (
-            <Step2BudgetSchedule
-              formData={formData}
-              setFormData={setFormData}
-              handleChange={handleChange}
-              getError={getError}
-              selectedAdAccountIsActive={selectedAdAccountIsActive}
-              loadingAdAccounts={loadingAdAccounts}
-              adAccounts={adAccounts}
-              selectedAdAccountId={selectedAdAccountId}
-              setSelectedAdAccountId={setSelectedAdAccountId}
-              setPublishAccountConfirmed={setPublishAccountConfirmed}
-              setFacebookPixels={setFacebookPixels}
-              loadPagesAndPixels={loadPagesAndPixels}
-              selectedAdAccount={selectedAdAccount}
-              savedAdAccounts={savedAdAccounts}
-              syncingAdAccount={syncingAdAccount}
-              handleActivateSelectedAdAccount={handleActivateSelectedAdAccount}
-              loadingPixels={loadingPixels}
-              facebookPixels={facebookPixels}
-              selectedAdAccountCurrency={selectedAdAccountCurrency}
-              compatibleAttributionWindows={compatibleAttributionWindows}
-            />
+            <ErrorBoundary
+              fallback={
+                <div className="p-6 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 text-center space-y-3">
+                  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                    {isEn ? "Unable to load budget & schedule settings" : "تعذر عرض إعدادات الميزانية والجدول الزمني"}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {isEn
+                      ? "Please verify your Facebook Ad account connection or return to previous steps."
+                      : "يرجى التأكد من ربط حساب إعلانات فيسبوك أو الرجوع للخطوة السابقة."}
+                  </p>
+                </div>
+              }
+            >
+              <Step2BudgetSchedule
+                formData={formData}
+                setFormData={setFormData}
+                handleChange={handleChange}
+                getError={getError}
+                selectedAdAccountIsActive={selectedAdAccountIsActive}
+                loadingAdAccounts={loadingAdAccounts}
+                adAccounts={adAccounts}
+                selectedAdAccountId={selectedAdAccountId}
+                setSelectedAdAccountId={setSelectedAdAccountId}
+                setPublishAccountConfirmed={setPublishAccountConfirmed}
+                setFacebookPixels={setFacebookPixels}
+                loadPagesAndPixels={loadPagesAndPixels}
+                selectedAdAccount={selectedAdAccount}
+                savedAdAccounts={savedAdAccounts}
+                syncingAdAccount={syncingAdAccount}
+                handleActivateSelectedAdAccount={handleActivateSelectedAdAccount}
+                loadingPixels={loadingPixels}
+                facebookPixels={facebookPixels}
+                selectedAdAccountCurrency={selectedAdAccountCurrency}
+                compatibleAttributionWindows={compatibleAttributionWindows}
+              />
+            </ErrorBoundary>
           )}
 
           {currentStep === 3 && (
-            <Step3Targeting
-              formData={formData}
-              handleChange={handleChange}
-              toggleArrayValue={toggleArrayValue}
-              getError={getError}
-              showAdvancedTargeting={showAdvancedTargeting}
-              setShowAdvancedTargeting={setShowAdvancedTargeting}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              searchResults={searchResults}
-              searchLoading={searchLoading}
-              handleSearchInterests={handleSearchInterests}
-              selectedInterests={selectedInterests}
-              addInterest={addInterest}
-              removeInterest={removeInterest}
-              relationshipStatuses={relationshipStatuses}
-              toggleRelationshipStatus={toggleRelationshipStatus}
-              selectedLanguages={selectedLanguages}
-              toggleLanguage={toggleLanguage}
-              selectedDevices={selectedDevices}
-              toggleDevice={toggleDevice}
-              loadingAudiences={loadingAudiences}
-              customAudiences={customAudiences}
-              selectedCustomAudiences={selectedCustomAudiences}
-              toggleCustomAudience={toggleCustomAudience}
-              lookalikeAudiences={lookalikeAudiences}
-              selectedLookalikeAudiences={selectedLookalikeAudiences}
-              toggleLookalikeAudience={toggleLookalikeAudience}
-              excludedAudiences={excludedAudiences}
-              setExcludedAudiences={setExcludedAudiences}
-            />
+            <ErrorBoundary
+              fallback={
+                <div className="p-6 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 text-center space-y-3">
+                  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                    {isEn ? "Unable to load targeting options" : "تعذر عرض خيارات الاستهداف"}
+                  </h3>
+                </div>
+              }
+            >
+              <Step3Targeting
+                formData={formData}
+                handleChange={handleChange}
+                toggleArrayValue={toggleArrayValue}
+                getError={getError}
+                showAdvancedTargeting={showAdvancedTargeting}
+                setShowAdvancedTargeting={setShowAdvancedTargeting}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                searchResults={searchResults}
+                searchLoading={searchLoading}
+                handleSearchInterests={handleSearchInterests}
+                selectedInterests={selectedInterests}
+                addInterest={addInterest}
+                removeInterest={removeInterest}
+                relationshipStatuses={relationshipStatuses}
+                toggleRelationshipStatus={toggleRelationshipStatus}
+                selectedLanguages={selectedLanguages}
+                toggleLanguage={toggleLanguage}
+                selectedDevices={selectedDevices}
+                toggleDevice={toggleDevice}
+                loadingAudiences={loadingAudiences}
+                customAudiences={customAudiences}
+                selectedCustomAudiences={selectedCustomAudiences}
+                toggleCustomAudience={toggleCustomAudience}
+                lookalikeAudiences={lookalikeAudiences}
+                selectedLookalikeAudiences={selectedLookalikeAudiences}
+                toggleLookalikeAudience={toggleLookalikeAudience}
+                excludedAudiences={excludedAudiences}
+                setExcludedAudiences={setExcludedAudiences}
+              />
+            </ErrorBoundary>
           )}
 
           {currentStep === 4 && (
-            <Step4Placements
-              formData={formData}
-              handleChange={handleChange}
-              toggleArrayValue={toggleArrayValue}
-              getError={getError}
-            />
+            <ErrorBoundary
+              fallback={
+                <div className="p-6 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 text-center space-y-3">
+                  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                    {isEn ? "Unable to load ad placements" : "تعذر عرض مواضع الإعلان"}
+                  </h3>
+                </div>
+              }
+            >
+              <Step4Placements
+                formData={formData}
+                handleChange={handleChange}
+                toggleArrayValue={toggleArrayValue}
+                getError={getError}
+              />
+            </ErrorBoundary>
           )}
 
           {currentStep === 5 && (
-            <Step5Creative
-              formData={formData}
-              setFormData={setFormData}
-              handleChange={handleChange}
-              getError={getError}
-              facebookPages={facebookPages}
-              facebookPagesMeta={facebookPagesMeta}
-              loadingPages={loadingPages}
-              selectedFacebookPage={selectedFacebookPage}
-              selectedAdAccount={selectedAdAccount}
-              selectedAdAccountId={selectedAdAccountId}
-              selectedAdAccountIsActive={selectedAdAccountIsActive}
-              syncingAdAccount={syncingAdAccount}
-              handleActivateSelectedAdAccount={handleActivateSelectedAdAccount}
-              isStorefrontProductLaunch={isStorefrontProductLaunch}
-              isAiDraftPrefill={isAiDraftPrefill}
-              launchPrefillProductTitle={launchPrefillProductTitle}
-            />
+            <ErrorBoundary
+              fallback={
+                <div className="p-6 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 text-center space-y-3">
+                  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                    {isEn ? "Unable to load creative options" : "تعذر عرض خيارات وتصميم الكرياتيف"}
+                  </h3>
+                </div>
+              }
+            >
+              <Step5Creative
+                formData={formData}
+                setFormData={setFormData}
+                handleChange={handleChange}
+                getError={getError}
+                facebookPages={facebookPages}
+                facebookPagesMeta={facebookPagesMeta}
+                loadingPages={loadingPages}
+                selectedFacebookPage={selectedFacebookPage}
+                selectedAdAccount={selectedAdAccount}
+                selectedAdAccountId={selectedAdAccountId}
+                selectedAdAccountIsActive={selectedAdAccountIsActive}
+                syncingAdAccount={syncingAdAccount}
+                handleActivateSelectedAdAccount={handleActivateSelectedAdAccount}
+                isStorefrontProductLaunch={isStorefrontProductLaunch}
+                isAiDraftPrefill={isAiDraftPrefill}
+                launchPrefillProductTitle={launchPrefillProductTitle}
+              />
+            </ErrorBoundary>
           )}
 
           {currentStep === 6 && (
