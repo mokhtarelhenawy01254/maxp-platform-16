@@ -109,19 +109,43 @@ async def consolidate_conversations(body: DreamerRequest) -> DreamerResponse:
 
     prompt = _build_prompt(body.conversations, consolidation_type)
 
-    try:
-        client = await build_provider_client_async(
-            provider_type=body.provider or "GOOGLE",
-            model=body.model or "gemini-2.5-flash",
-            company_id=body.company_id,
-        )
-        response = await client.get_response(
-            [{"role": "user", "content": prompt}],
-            {"temperature": 0.2, "max_tokens": 4096, "tools_enabled": False},
-        )
-    except Exception as exc:
-        logger.error("dreamer_consolidation_llm_failed", error=str(exc), company_id=body.company_id)
-        raise HTTPException(status_code=502, detail=f"LLM request failed: {exc}")
+    providers_to_try: list[tuple[str, str]] = []
+    if body.provider and body.model:
+        providers_to_try.append((body.provider, body.model))
+    
+    defaults = [
+        ("DEEPSEEK", "deepseek-flash"),
+        ("GOOGLE", "gemini-2.5-flash"),
+        ("OLLAMA", "gemma4:31b-cloud"),
+    ]
+    for p, m in defaults:
+        if (p, m) not in providers_to_try:
+            providers_to_try.append((p, m))
+
+    response = None
+    last_error = None
+    for prov, mdl in providers_to_try:
+        try:
+            client = await build_provider_client_async(
+                provider_type=prov,
+                model=mdl,
+                company_id=body.company_id,
+            )
+            response = await client.get_response(
+                [{"role": "user", "content": prompt}],
+                {"temperature": 0.2, "max_tokens": 4096, "tools_enabled": False},
+            )
+            if response and getattr(response, "text", None):
+                break
+        except Exception as exc:
+            last_error = exc
+            logger.warning("dreamer_provider_failed_trying_fallback", provider=prov, model=mdl, error=str(exc))
+            continue
+
+    if not response or not getattr(response, "text", None):
+        logger.error("dreamer_consolidation_all_providers_failed", error=str(last_error), company_id=body.company_id)
+        raise HTTPException(status_code=502, detail=f"LLM request failed across all providers: {last_error}")
+
 
     text = str(getattr(response, "text", "") or "")
     parsed = _extract_json(text)

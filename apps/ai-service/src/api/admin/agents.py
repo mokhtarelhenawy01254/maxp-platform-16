@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import case, func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload
 
 from src.agents.base import BaseAgent
 from src.agents.loader import get_template, list_templates, seed_templates
@@ -759,7 +759,7 @@ async def list_agents(
     limit: int = Query(default=100, ge=1, le=500),
 ) -> list[AgentRead]:
     """List agents from Agent table."""
-    stmt = select(AgentModel).options(selectinload(AgentModel.department)).order_by(AgentModel.created_at.desc())
+    stmt = select(AgentModel).options(joinedload(AgentModel.department)).order_by(AgentModel.created_at.desc())
     if company_id:
         stmt = stmt.where(AgentModel.company_id == company_id)
     if status:
