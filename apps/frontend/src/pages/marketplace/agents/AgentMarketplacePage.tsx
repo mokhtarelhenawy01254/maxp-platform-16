@@ -160,7 +160,7 @@ export default function AgentMarketplacePage() {
                 key={cat.id}
                 type="button"
                 onClick={() => setActiveCategory(cat.id)}
-                className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-medium active:scale-[0.97] transition-all duration-160 ${
+                className={`whitespace-nowrap px-3.5 py-2 min-h-[36px] rounded-lg text-xs font-medium active:scale-[0.97] transition-all duration-160 flex items-center justify-center ${
                   activeCategory === cat.id
                     ? "bg-foreground text-background font-semibold shadow-sm dark:bg-white dark:text-black"
                     : "border border-border/60 bg-card/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
@@ -236,7 +236,7 @@ export default function AgentMarketplacePage() {
       </header>
 
       {/* ── Main Asymmetrical Bento Grid ── */}
-      <main className="flex-1 p-4 sm:p-6">
+      <main className="flex-1 p-4 sm:p-6 pb-28 sm:pb-8">
         {filteredListings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
             <div className="size-12 rounded-2xl border border-border/60 bg-muted/30 flex items-center justify-center text-muted-foreground">

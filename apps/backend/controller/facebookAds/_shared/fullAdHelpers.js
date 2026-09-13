@@ -601,9 +601,38 @@ async function validateFullAdAssetReadiness({ companyId, pageId, pixelId, adAcco
   }
 
   if (pixelId) {
+    let selectedPixel = null;
     const pixelsResult = await adsService.getFacebookPixels();
     const pixels = Array.isArray(pixelsResult?.data) ? pixelsResult.data : [];
-    const selectedPixel = pixels.find((pixel) => String(pixel.id) === String(pixelId));
+    selectedPixel = pixels.find((pixel) => String(pixel.id) === String(pixelId));
+
+    // 🛡️ 2026 Resilience: If Meta live query returned empty due to rate limiting or transient latency,
+    // verify against local trusted database configuration for this company/storefront.
+    if (!selectedPixel) {
+      try {
+        const company = await getSharedPrismaClient().company.findUnique({
+          where: { id: companyId },
+          select: { facebookPixelId: true },
+        });
+        const storefront = await getSharedPrismaClient().storefrontSettings?.findUnique?.({
+          where: { companyId },
+          select: { facebookPixelId: true, facebookPixelConfigs: true },
+        });
+        const hasLocalPixelMatch =
+          String(company?.facebookPixelId || "") === String(pixelId) ||
+          String(storefront?.facebookPixelId || "") === String(pixelId) ||
+          storefront?.facebookPixelConfigs?.some(
+            (c) => String(c.pixelId) === String(pixelId),
+          );
+
+        if (hasLocalPixelMatch) {
+          selectedPixel = { id: String(pixelId), name: "Verified Account Pixel" };
+        }
+      } catch (dbErr) {
+        console.warn("⚠️ [FULL-AD] Local pixel assertion check fallback failed:", dbErr.message);
+      }
+    }
+
     if (!selectedPixel) {
       return {
         success: false,

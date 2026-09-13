@@ -6,7 +6,12 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowLeftIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ArrowTopRightOnSquareIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import {
@@ -34,6 +39,8 @@ const CreateCustomAudience: React.FC = () => {
     retentionDays: 30,
     engagementType: "PAGE_LIKES",
   });
+
+  const [tosErrorUrl, setTosErrorUrl] = useState<string | null>(null);
 
   const totalSteps = 3;
 
@@ -115,12 +122,22 @@ const CreateCustomAudience: React.FC = () => {
 
     try {
       setLoading(true);
+      setTosErrorUrl(null);
       await facebookAdsService.createCustomAudience(formData);
       tToast.success("CreateCustomAudience.success_create_d55e");
       navigate("/advertising/facebook-ads/audiences");
     } catch (error: any) {
       console.error("Error creating custom audience:", error);
-      toast.error(error?.response?.data?.error || "فشل في إنشاء الجمهور");
+      const resp = error?.response?.data;
+      if (resp?.errorCode === "FACEBOOK_CUSTOM_AUDIENCE_TOS_REQUIRED" || resp?.tosUrl) {
+        setTosErrorUrl(
+          resp.tosUrl ||
+            `https://business.facebook.com/ads/manage/customaudiences/tos/?act=${formData.adAccountId}`,
+        );
+        toast.error("مطلوب قبول شروط الجماهير المخصصة لهذا الحساب لدى Meta أولاً.");
+      } else {
+        toast.error(resp?.error || "فشل في إنشاء الجمهور");
+      }
     } finally {
       setLoading(false);
     }
@@ -208,6 +225,42 @@ const CreateCustomAudience: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Meta Custom Audience TOS Required Banner */}
+      {tosErrorUrl && (
+        <div className="rounded-xl border border-amber-300/80 bg-amber-50/90 p-4 text-amber-900 shadow-sm">
+          <div className="flex items-start gap-3">
+            <ExclamationTriangleIcon className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 text-sm">
+              <h3 className="font-semibold text-amber-950">
+                مطلوب قبول شروط الجماهير المخصصة (Meta TOS) لهذا الحساب
+              </h3>
+              <p className="mt-1 text-amber-800 leading-relaxed">
+                تفرض سياسة Meta على مدير الحساب الإعلاني قبول اتفاقية شروط خدمة الجماهير المخصصة
+                (Custom Audiences Terms of Service) مرة واحدة قبل السماح بإنشاء أو رفع قوائم العملاء عبر واجهة البرمجة (API).
+              </p>
+              <div className="mt-3 flex items-center gap-3">
+                <a
+                  href={tosErrorUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shadow-sm transition-colors"
+                >
+                  <span>قبول الشروط في مدير إعلانات Meta</span>
+                  <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setTosErrorUrl(null)}
+                  className="text-xs text-amber-700 hover:text-amber-900 underline"
+                >
+                  إخفاء التنبيه
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Form Content */}
       <div className="bg-white rounded-lg shadow p-6">

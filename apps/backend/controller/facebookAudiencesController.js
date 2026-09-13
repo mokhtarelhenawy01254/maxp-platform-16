@@ -206,9 +206,26 @@ const createCustomAudience = async (req, res) => {
     }
 
     if (!facebookResult.success) {
+      const fbErr = facebookResult.error?.error || facebookResult.error;
+      const isTosError =
+        fbErr?.code === 200 &&
+        (fbErr?.error_subcode === 1870090 ||
+          String(fbErr?.error_user_title || '').includes('شروط') ||
+          String(fbErr?.message || '').toLowerCase().includes('custom audience'));
+
+      const accountNumericId = String(adAccount.accountId || '').replace(/^act_/, '');
+      const tosUrl = `https://business.facebook.com/ads/manage/customaudiences/tos/?act=${accountNumericId}`;
+
       return res.status(400).json({
         success: false,
-        error: facebookResult.error
+        error: isTosError
+          ? `مطلوب تفعيل شروط الجماهير المخصصة لهذا الحساب لدى Meta أولاً عبر الرابط: ${tosUrl}`
+          : (fbErr?.error_user_msg || fbErr?.message || facebookResult.error),
+        errorCode: isTosError
+          ? 'FACEBOOK_CUSTOM_AUDIENCE_TOS_REQUIRED'
+          : 'FACEBOOK_AUDIENCE_CREATE_FAILED',
+        tosUrl: isTosError ? tosUrl : undefined,
+        rawError: facebookResult.error
       });
     }
 

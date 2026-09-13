@@ -1425,9 +1425,15 @@ class FacebookAdsService {
         creativeData.url_tags = urlParameters;
       }
 
-      // ✅ v22.0: Individual Advantage+ Creative Enhancements
-      // في v22.0، كل Enhancement منفصل (بدلاً من standard_enhancements كحزمة واحدة)
-      if (advantageCreative) {
+      // ✅ v26.0: Individual Advantage+ Creative Enhancements
+      const hasReelsWithImage = Boolean(
+        imageHash &&
+        Array.isArray(data?.placements) &&
+        data.placements.some((p) => String(p).toUpperCase().includes('REELS'))
+      );
+      const shouldEnableEnhancements = advantageCreative || hasReelsWithImage || expandImage || imageEnhancement;
+
+      if (shouldEnableEnhancements) {
         creativeData.degrees_of_freedom_spec = {
           creative_features_spec: {}
         };
@@ -1475,8 +1481,11 @@ class FacebookAdsService {
         }
 
         // ✅ v26.0: Generative Expand (Auto-uncrop/expand for Reels & Stories 9:16)
-        if (expandImage && imageHash) {
+        if ((expandImage || hasReelsWithImage) && imageHash) {
           creativeData.degrees_of_freedom_spec.creative_features_spec.expand_image = {
+            enroll_status: 'OPT_IN'
+          };
+          creativeData.degrees_of_freedom_spec.creative_features_spec.image_templates = {
             enroll_status: 'OPT_IN'
           };
         }

@@ -313,7 +313,7 @@ export const AgentProfileDrawer: React.FC<AgentProfileDrawerProps> = ({
         </div>
 
         {/* ── Sticky Bottom Action Bar ── */}
-        <div className="border-t border-border/60 bg-background px-6 py-4 flex items-center justify-between gap-4 shadow-lg">
+        <div className="border-t border-border/60 bg-background px-6 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] flex items-center justify-between gap-4 shadow-lg">
           <div>
             <div className="text-[11px] text-muted-foreground">حالة التعيين بالشركة</div>
             <div className="text-xs font-semibold text-foreground">
