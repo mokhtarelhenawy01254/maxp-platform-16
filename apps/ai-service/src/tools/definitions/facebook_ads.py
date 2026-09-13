@@ -210,6 +210,24 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                     dom = fp.get("customDomain") or (f"{fp.get('companySlug')}.maxp.online" if fp.get("companySlug") else "store.maxp.online")
                     resolved_product_url = f"https://{dom}/product/{fp.get('slug') or resolved_product_id}"
 
+        # Auto-resolve pixel if missing
+        resolved_pixel_id = input_data.pixel_id
+        if not resolved_pixel_id:
+            pix_res = await session.execute(
+                text("""
+                    SELECT "pixelId" FROM public.facebook_campaigns WHERE "companyId" = :cid AND "pixelId" IS NOT NULL AND "pixelId" != ''
+                    UNION
+                    SELECT "facebookPixelId" AS "pixelId" FROM public.storefront_settings WHERE "companyId" = :cid AND "facebookPixelId" IS NOT NULL AND "facebookPixelId" != ''
+                    UNION
+                    SELECT "pixelId" FROM public.platform_site_meta_pixel_settings WHERE "companyId" = :cid AND "pixelId" IS NOT NULL AND "pixelId" != ''
+                    LIMIT 1
+                """),
+                {"cid": company_id}
+            )
+            pix_row = pix_res.first()
+            if pix_row and pix_row.pixelId:
+                resolved_pixel_id = str(pix_row.pixelId)
+
         resolved_product_url = resolved_product_url or "https://store.maxp.online"
 
         # 1. Insert Draft Run
@@ -235,7 +253,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
             "productUrl": resolved_product_url,
             "adAccountId": input_data.ad_account_id,
             "pageId": input_data.page_id,
-            "pixelId": input_data.pixel_id,
+            "pixelId": resolved_pixel_id,
             "requestedCampaignCount": len(input_data.angles),
             "budgetAmount": first_angle.budget_amount,
             "targetCountry": first_angle.target_country,
@@ -267,6 +285,11 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 "description": angle.description or "",
                 "callToAction": angle.call_to_action or "SHOP_NOW",
                 "imageUrl": angle.image_url,
+                "pixelId": resolved_pixel_id,
+                "conversionEvent": "PURCHASE",
+                "conversionLocation": "WEBSITE",
+                "performanceGoal": "MAXIMIZE_CONVERSIONS",
+                "optimizationGoal": "OFFSITE_CONVERSIONS",
                 "advantagePlusPlacements": True,
                 "advantagePlusAudience": True,
             }
@@ -947,9 +970,16 @@ async def facebook_ad_account_info(input_data: FacebookAdAccountInfoInput) -> di
             for p in page_rows
         ]
 
-        # 3. Check pixel from recent campaigns
+        # 3. Check pixel from recent campaigns, storefront settings, or pixel configs
         pixel_res = await session.execute(
-            text('SELECT "pixelId" FROM public.facebook_campaigns WHERE "companyId" = :cid AND "pixelId" IS NOT NULL AND "pixelId" != \'\' LIMIT 1'),
+            text("""
+                SELECT "pixelId" FROM public.facebook_campaigns WHERE "companyId" = :cid AND "pixelId" IS NOT NULL AND "pixelId" != ''
+                UNION
+                SELECT "facebookPixelId" AS "pixelId" FROM public.storefront_settings WHERE "companyId" = :cid AND "facebookPixelId" IS NOT NULL AND "facebookPixelId" != ''
+                UNION
+                SELECT "pixelId" FROM public.platform_site_meta_pixel_settings WHERE "companyId" = :cid AND "pixelId" IS NOT NULL AND "pixelId" != ''
+                LIMIT 1
+            """),
             {"cid": company_id}
         )
         pixel_row = pixel_res.first()

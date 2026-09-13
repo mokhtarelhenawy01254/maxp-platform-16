@@ -188,20 +188,79 @@ class FacebookAdsAiController {
           }
         }
         if (!fullAdPayload.pixelId) {
+          // 1. Check StorefrontSettings
           const sfSettings = await prisma.storefrontSettings?.findFirst({
             where: { companyId }
           });
-          const pixelId = sfSettings?.facebookPixelId || sfSettings?.pixelId;
-          if (pixelId) {
-            fullAdPayload.pixelId = pixelId;
+          let resolvedPixelId = sfSettings?.facebookPixelId || sfSettings?.pixelId;
+
+          // 2. Check FacebookPixelConfig
+          if (!resolvedPixelId) {
+            const pixelConfig = await prisma.facebookPixelConfig?.findFirst({
+              where: { storefrontSettings: { companyId } },
+              orderBy: { createdAt: 'desc' }
+            });
+            resolvedPixelId = pixelConfig?.pixelId;
+          }
+
+          // 3. Check PlatformSiteMetaPixelSetting
+          if (!resolvedPixelId) {
+            const sitePixel = await prisma.platformSiteMetaPixelSetting?.findFirst({
+              where: { companyId }
+            });
+            resolvedPixelId = sitePixel?.pixelId;
+          }
+
+          // 4. Check direct Meta API via getFacebookPixels
+          if (!resolvedPixelId && fullAdPayload.adAccountId) {
+            try {
+              const { getCompanyAdsAccessToken } = require('../services/facebookOAuthHelper');
+              const FacebookAdsService = require('../services/facebookAdsService');
+              const accessToken = await getCompanyAdsAccessToken(companyId);
+              if (accessToken) {
+                const adsService = new FacebookAdsService(accessToken, fullAdPayload.adAccountId);
+                const fbPixels = await adsService.getFacebookPixels();
+                if (fbPixels?.data && fbPixels.data.length > 0) {
+                  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true, slug: true } });
+                  const cName = (company?.name || '').toLowerCase();
+                  const cSlug = (company?.slug || '').toLowerCase();
+                  const matched = fbPixels.data.find(p => {
+                    const pName = (p.name || '').toLowerCase();
+                    return (cName && pName.includes(cName)) || (cSlug && pName.includes(cSlug));
+                  });
+                  resolvedPixelId = matched?.id || fbPixels.data[0].id;
+
+                  // Cache into storefrontSettings for future lookups
+                  if (resolvedPixelId && sfSettings?.id) {
+                    await prisma.storefrontSettings.update({
+                      where: { id: sfSettings.id },
+                      data: { facebookPixelId: String(resolvedPixelId), facebookPixelEnabled: true }
+                    }).catch(() => {});
+                  }
+                }
+              }
+            } catch (apiErr) {
+              console.warn('⚠️ Could not fetch pixels from Meta API:', apiErr.message);
+            }
+          }
+
+          if (resolvedPixelId) {
+            fullAdPayload.pixelId = String(resolvedPixelId);
           }
         }
       } catch (dbErr) {
         console.warn('⚠️ Could not auto-resolve FB assets:', dbErr.message);
       }
 
-      // If objective is OUTCOME_SALES but no pixel exists, change to OUTCOME_TRAFFIC so Meta doesn't reject it
-      if (!fullAdPayload.pixelId && fullAdPayload.objective === 'OUTCOME_SALES') {
+      // If pixel is resolved, enforce Sales conversion tracking on Website
+      if (fullAdPayload.pixelId) {
+        fullAdPayload.conversionEvent = fullAdPayload.conversionEvent || 'PURCHASE';
+        fullAdPayload.conversionLocation = fullAdPayload.conversionLocation || 'WEBSITE';
+        fullAdPayload.performanceGoal = fullAdPayload.performanceGoal || 'MAXIMIZE_CONVERSIONS';
+        fullAdPayload.optimizationGoal = fullAdPayload.optimizationGoal || 'OFFSITE_CONVERSIONS';
+        fullAdPayload.objective = 'OUTCOME_SALES';
+      } else if (fullAdPayload.objective === 'OUTCOME_SALES') {
+        // Fallback only if no pixel exists anywhere
         fullAdPayload.objective = 'OUTCOME_TRAFFIC';
       }
 
@@ -210,6 +269,9 @@ class FacebookAdsAiController {
         pageId: fullAdPayload.pageId,
         adAccountId: fullAdPayload.adAccountId,
         pixelId: fullAdPayload.pixelId,
+        conversionEvent: fullAdPayload.conversionEvent,
+        conversionLocation: fullAdPayload.conversionLocation,
+        objective: fullAdPayload.objective,
         budgetAmount: fullAdPayload.budgetAmount,
         status: fullAdPayload.status,
         linkUrl: fullAdPayload.linkUrl

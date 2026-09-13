@@ -96,6 +96,11 @@ class FacebookAdsAiDraftService {
               description: angle.description || '',
               callToAction: angle.callToAction || angle.call_to_action || 'SHOP_NOW',
               imageUrl: angle.imageUrl || angle.image_url || null,
+              pixelId: pixelId || angle.pixelId || angle.pixel_id || null,
+              conversionEvent: angle.conversionEvent || angle.conversion_event || 'PURCHASE',
+              conversionLocation: 'WEBSITE',
+              performanceGoal: 'MAXIMIZE_CONVERSIONS',
+              optimizationGoal: 'OFFSITE_CONVERSIONS',
               advantagePlusPlacements: true,
               advantagePlusAudience: true,
             };
@@ -210,6 +215,11 @@ class FacebookAdsAiDraftService {
       productUrl: destUrl,
       creativeType: overrides.creativeType || rawData.creativeType || 'SINGLE_IMAGE',
       imageUrl: imgUrl,
+      pixelId: overrides.pixelId || rawData.pixelId || draft.pixelId || null,
+      conversionEvent: overrides.conversionEvent || rawData.conversionEvent || 'PURCHASE',
+      conversionLocation: overrides.conversionLocation || rawData.conversionLocation || 'WEBSITE',
+      performanceGoal: overrides.performanceGoal || rawData.performanceGoal || 'MAXIMIZE_CONVERSIONS',
+      optimizationGoal: overrides.optimizationGoal || rawData.optimizationGoal || 'OFFSITE_CONVERSIONS',
     };
 
     return payload;
