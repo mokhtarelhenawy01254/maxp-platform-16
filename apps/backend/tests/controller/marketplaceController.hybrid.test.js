@@ -298,6 +298,8 @@ describe("Marketplace Controller Hybrid", () => {
       {
         id: "db-app-store-basic",
         slug: "store-basic",
+        name: "DB Customized Store Name",
+        description: "DB Customized Description",
         installCount: 25,
         rating: 4.7,
         reviewCount: 11
@@ -323,6 +325,8 @@ describe("Marketplace Controller Hybrid", () => {
     expect(res.payload.success).toBe(true);
     expect(res.payload.catalog.source).toBe("hybrid");
     expect(res.payload.data[0].id).toBe("db-app-store-basic");
+    expect(res.payload.data[0].name).toBe("DB Customized Store Name");
+    expect(res.payload.data[0].description).toBe("DB Customized Description");
     expect(res.payload.data[0].installCount).toBe(25);
     expect(res.payload.data[0].rating).toBe(4.7);
     expect(res.payload.data[0].reviewCount).toBe(11);

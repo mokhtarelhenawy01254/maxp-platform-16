@@ -1627,8 +1627,10 @@ async function seedMarketplace() {
 
     console.log('\n🛠️ Syncing ' + apps.length + ' Marketplace Apps...');
     for (const app of apps) {
-      // 🛡️ CRITICAL: Never overwrite pricing or admin status for existing apps in DB
+      // 🛡️ CRITICAL: Never overwrite name, description, pricing or admin status for existing apps in DB
       const {
+        name,
+        description,
         monthlyPrice,
         yearlyPrice,
         pricingModel,
@@ -1650,8 +1652,11 @@ async function seedMarketplace() {
 
     console.log('\n📦 Syncing ' + bundles.length + ' App Bundles...');
     for (const bundle of bundles) {
-      // 🛡️ CRITICAL: Never overwrite pricing or admin status for existing bundles in DB
+      // 🛡️ CRITICAL: Never overwrite name, description, pricing or admin status for existing bundles in DB
       const {
+        name,
+        nameEn,
+        description,
         monthlyPrice,
         yearlyPrice,
         discount,

@@ -96,6 +96,55 @@ describe("sync_target_marketplace_catalog_entries", () => {
     expect(hasUnresolvedMissingEntries(summary)).toBe(false);
   });
 
+  test("does not overwrite custom name or description of existing apps", async () => {
+    const catalogService = {
+      getSnapshot: jest.fn().mockResolvedValue({
+        meta: { catalogVersion: "test-version" },
+        apps: [
+          createCatalogApp({
+            slug: "existing-app",
+            name: "Original Catalog Name",
+            description: "Original Catalog Description",
+            mainRoute: "/new-route"
+          })
+        ],
+        bundles: []
+      })
+    };
+
+    const prisma = {
+      marketplaceApp: {
+        findMany: jest.fn().mockResolvedValue([{ id: "db-existing", slug: "existing-app" }]),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        create: jest.fn()
+      },
+      appBundle: {
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn()
+      }
+    };
+
+    await syncMissingMarketplaceCatalogEntries({
+      catalogService,
+      prisma,
+      executeDbOperation: (operation) => operation()
+    });
+
+    expect(prisma.marketplaceApp.updateMany).toHaveBeenCalledWith({
+      where: { slug: "existing-app" },
+      data: expect.not.objectContaining({
+        name: "Original Catalog Name",
+        description: "Original Catalog Description"
+      })
+    });
+    expect(prisma.marketplaceApp.updateMany).toHaveBeenCalledWith({
+      where: { slug: "existing-app" },
+      data: expect.objectContaining({
+        mainRoute: "/new-route"
+      })
+    });
+  });
+
   test("dry-run reports planned creates without writing to DB", async () => {
     const catalogService = {
       getSnapshot: jest.fn().mockResolvedValue({

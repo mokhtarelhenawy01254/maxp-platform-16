@@ -306,6 +306,7 @@ async function syncMissingMarketplaceCatalogEntries(options = {}) {
   const prisma = options.prisma || getSharedPrismaClient();
   const executeDbOperation = options.executeDbOperation || executeWithRetry;
   const dryRun = options.dryRun === true;
+  const onlyMissing = options.onlyMissing === true;
   const syncApps = options.syncApps !== false;
   const syncBundles = options.syncBundles !== false;
 
@@ -364,16 +365,14 @@ async function syncMissingMarketplaceCatalogEntries(options = {}) {
         summary.apps.existing.push(slug);
         if (!dryRun) {
           const updateData = {};
-          if (catalogApp?.name) updateData.name = catalogApp.name;
-          if (catalogApp?.description) updateData.description = catalogApp.description;
+          // 🛡️ Note: Never overwrite customized name, description, pricingModel or prices on existing apps
           if (catalogApp?.features) updateData.features = normalizeJsonObject(catalogApp.features, {});
           if (catalogApp?.mainRoute !== undefined) updateData.mainRoute = catalogApp.mainRoute || null;
           if (catalogApp?.adminRoute !== undefined) updateData.adminRoute = catalogApp.adminRoute || null;
-          // 🛡️ Note: Never overwrite pricingModel or prices on existing apps
           if (Array.isArray(catalogApp?.requiredApps)) updateData.requiredApps = catalogApp.requiredApps;
           if (catalogApp?.isFeatured !== undefined) updateData.isFeatured = catalogApp.isFeatured;
           if (catalogApp?.isPopular !== undefined) updateData.isPopular = catalogApp.isPopular;
-          if (Object.keys(updateData).length > 0) {
+          if (!onlyMissing && Object.keys(updateData).length > 0 && typeof prisma.marketplaceApp?.updateMany === "function") {
             await runDbOperation(
               () => prisma.marketplaceApp.updateMany({
                 where: { slug },

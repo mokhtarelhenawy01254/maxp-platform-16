@@ -74,6 +74,11 @@ async function enrichAppsWithDbState(apps, user) {
       select: {
         id: true,
         slug: true,
+        name: true,
+        description: true,
+        icon: true,
+        logo: true,
+        coverImage: true,
         installCount: true,
         rating: true,
         reviewCount: true,
@@ -144,7 +149,13 @@ async function enrichAppsWithDbState(apps, user) {
 
     const activePricingModel = dbApp ? (installedByAppId.get(dbApp.id) || null) : null;
 
-    // 🛡️ Live Database pricing takes absolute precedence over static file catalog:
+    // 🛡️ Live Database metadata & pricing take absolute precedence over static file catalog:
+    const name = dbApp?.name || app.name;
+    const description = dbApp?.description || app.description;
+    const icon = dbApp?.icon || app.icon;
+    const logo = dbApp?.logo || app.logo;
+    const coverImage = dbApp?.coverImage || app.coverImage;
+
     const monthlyPrice = dbApp?.monthlyPrice !== undefined && dbApp?.monthlyPrice !== null
       ? toSafeNumber(dbApp.monthlyPrice, 0)
       : app.monthlyPrice;
@@ -164,6 +175,11 @@ async function enrichAppsWithDbState(apps, user) {
     return {
       ...app,
       id: appId,
+      name,
+      description,
+      icon,
+      logo,
+      coverImage,
       monthlyPrice,
       yearlyPrice,
       pricingModel,
@@ -1069,6 +1085,9 @@ exports.getAppDetails = async (req, res) => {
           app = {
             ...app,
             id: dbApp.id,
+            name: dbApp.name || app.name,
+            description: dbApp.description || app.description,
+            icon: dbApp.icon || app.icon,
             coverImage: dbApp.coverImage || app.coverImage,
             logo: dbApp.logo || app.logo,
             installCount,

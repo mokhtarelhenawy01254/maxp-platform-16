@@ -13,7 +13,10 @@ async function seedMarketplace() {
   }
 
   const upsertAppSafely = async (app) => {
+    // 🛡️ CRITICAL: Never overwrite name, description, pricing or admin status for existing apps in DB
     const {
+      name,
+      description,
       monthlyPrice,
       yearlyPrice,
       pricingModel,
