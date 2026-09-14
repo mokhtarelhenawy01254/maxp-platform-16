@@ -71,13 +71,23 @@ class FacebookConversionsService {
   }
 
   /**
-   * تنظيف رقم الهاتف (إزالة المسافات والرموز)
+   * تنظيف رقم الهاتف وتنسيقه وفق معايير Meta CAPI (E.164 بدون + وبدون أصفار بادئة)
    * @param {string} phone - رقم الهاتف
    * @returns {string} - رقم نظيف
    */
   cleanPhone(phone) {
     if (!phone) return '';
-    return phone.replace(/\D/g, ''); // إزالة كل شيء ما عدا الأرقام
+    let digits = phone.toString().replace(/\D/g, '');
+    if (digits.startsWith('00')) {
+      digits = digits.slice(2);
+    }
+    // معالجة الأرقام المصرية: 01xxxxxxxxx -> 201xxxxxxxxx
+    if (digits.startsWith('01') && digits.length === 11) {
+      digits = '20' + digits.slice(1);
+    } else if (digits.startsWith('1') && digits.length === 10) {
+      digits = '20' + digits;
+    }
+    return digits;
   }
 
   /**
@@ -294,7 +304,7 @@ class FacebookConversionsService {
           contents: contents,
           content_type: 'product',
           value: parseFloat(order.total),
-          currency: 'EGP',
+          currency: (order.currency || 'EGP').toUpperCase(),
           num_items: order.items.length,
           order_id: order.orderNumber
         }
@@ -353,7 +363,10 @@ class FacebookConversionsService {
         console.warn('⚠️ [Facebook CAPI] Skipping invalid email format:', rawUserData.email);
       }
 
-      if (rawUserData.phone) userData.setPhone(rawUserData.phone);
+      if (rawUserData.phone) {
+        const cleanPhone = this.cleanPhone(rawUserData.phone);
+        if (cleanPhone) userData.setPhone(cleanPhone);
+      }
       if (rawUserData.firstName) userData.setFirstName(rawUserData.firstName);
       if (rawUserData.lastName) userData.setLastName(rawUserData.lastName);
       if (rawUserData.city) userData.setCity(rawUserData.city);

@@ -3519,7 +3519,8 @@ router.post("/refresh-token", verifyToken.authenticateToken, async (req, res) =>
       select: {
         id: true,
         facebookUserAccessToken: true,
-        facebookPixelAccessToken: true
+        facebookPixelAccessToken: true,
+        facebookAdsAccessToken: true
       }
     });
 
@@ -3527,7 +3528,7 @@ router.post("/refresh-token", verifyToken.authenticateToken, async (req, res) =>
       return res.status(404).json({ success: false, message: "Company not found" });
     }
 
-    const activeToken = company.facebookUserAccessToken || company.facebookPixelAccessToken;
+    const activeToken = company.facebookAdsAccessToken || company.facebookPixelAccessToken || company.facebookUserAccessToken;
     if (!activeToken) {
       return res.status(400).json({ success: false, message: "No active token found to refresh" });
     }
@@ -3539,7 +3540,8 @@ router.post("/refresh-token", verifyToken.authenticateToken, async (req, res) =>
         where: { id: companyId },
         data: {
           facebookUserAccessToken: refreshedToken,
-          ...(company.facebookPixelAccessToken ? { facebookPixelAccessToken: refreshedToken } : {})
+          ...(company.facebookPixelAccessToken ? { facebookPixelAccessToken: refreshedToken } : {}),
+          ...(company.facebookAdsAccessToken ? { facebookAdsAccessToken: refreshedToken } : {})
         }
       });
       console.log(`✅ [TOKEN-REFRESH] Successfully refreshed Facebook token for company ${companyId}`);

@@ -67,4 +67,15 @@ describe("FacebookConversionsService", () => {
     expect(service.sendEventViaHTTP).toHaveBeenCalledWith(event);
     expect(service.EventRequest).not.toHaveBeenCalled();
   });
+
+  test("cleanPhone normalizes Egyptian and international phone numbers correctly", () => {
+    const service = new FacebookConversionsService("pixel-id", "token");
+    expect(service.cleanPhone("01012345678")).toBe("201012345678");
+    expect(service.cleanPhone("+201012345678")).toBe("201012345678");
+    expect(service.cleanPhone("00201012345678")).toBe("201012345678");
+    expect(service.cleanPhone("1012345678")).toBe("201012345678");
+    expect(service.cleanPhone("+966501234567")).toBe("966501234567");
+    expect(service.cleanPhone("")).toBe("");
+    expect(service.cleanPhone(null)).toBe("");
+  });
 });
