@@ -2101,18 +2101,39 @@ router.post('/', async (req, res) => {
         where: { companyId: company.id }
       });
 
-      if (storefrontSettings &&
+      if (
+        storefrontSettings &&
         storefrontSettings.facebookConvApiEnabled &&
         storefrontSettings.facebookPixelId &&
-        storefrontSettings.facebookConvApiToken &&
-        storefrontSettings.capiTrackPurchase !== false) {
+        storefrontSettings.capiTrackPurchase !== false
+      ) {
+        let effectiveCapiToken = storefrontSettings.facebookConvApiToken
+          ? storefrontSettings.facebookConvApiToken.trim()
+          : null;
 
-        const FacebookConversionsService = require('../services/facebookConversionsService');
-        const fbService = new FacebookConversionsService(
-          storefrontSettings.facebookPixelId,
-          storefrontSettings.facebookConvApiToken,
-          storefrontSettings.facebookConvApiTestCode
-        );
+        if (!effectiveCapiToken && company?.id) {
+          const companyTokens = await prisma.company.findUnique({
+            where: { id: company.id },
+            select: {
+              facebookPixelAccessToken: true,
+              facebookAdsAccessToken: true,
+              facebookUserAccessToken: true,
+            },
+          });
+          effectiveCapiToken =
+            companyTokens?.facebookPixelAccessToken?.trim() ||
+            companyTokens?.facebookAdsAccessToken?.trim() ||
+            companyTokens?.facebookUserAccessToken?.trim() ||
+            null;
+        }
+
+        if (effectiveCapiToken) {
+          const FacebookConversionsService = require('../services/facebookConversionsService');
+          const fbService = new FacebookConversionsService(
+            storefrontSettings.facebookPixelId,
+            effectiveCapiToken,
+            storefrontSettings.facebookConvApiTestCode
+          );
 
         // Use event ID from frontend Pixel for deduplication, or generate new one
         // This ensures the same event is not counted twice (Pixel + CAPI)

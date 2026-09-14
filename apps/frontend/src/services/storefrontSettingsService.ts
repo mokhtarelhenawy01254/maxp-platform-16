@@ -360,13 +360,41 @@ export const storefrontSettingsService = {
     window.localStorage.removeItem(`storefront_settings_${companyId}`);
   },
 
-  testFacebookPixel: async () => {
-    const response = await apiClient.post("/storefront-settings/test-facebook-pixel", {});
+  testFacebookPixel: async (pixelId?: string) => {
+    const response = await apiClient.post("/storefront-settings/test-facebook-pixel", {
+      ...(pixelId ? { pixelId } : {}),
+    });
     return response.data;
   },
 
-  testFacebookCapi: async () => {
-    const response = await apiClient.post("/storefront-settings/test-facebook-capi", {});
+  testPixel: async (pixelId?: string) => {
+    const response = await apiClient.post("/storefront-settings/test-facebook-pixel", {
+      ...(pixelId ? { pixelId } : {}),
+    });
+    return response.data;
+  },
+
+  testFacebookCapi: async (data?: {
+    pixelId?: string;
+    accessToken?: string;
+    testEventCode?: string;
+  }) => {
+    const response = await apiClient.post(
+      "/storefront-settings/test-facebook-capi",
+      data || {},
+    );
+    return response.data;
+  },
+
+  testCapi: async (data?: {
+    pixelId?: string;
+    accessToken?: string;
+    testEventCode?: string;
+  }) => {
+    const response = await apiClient.post(
+      "/storefront-settings/test-facebook-capi",
+      data || {},
+    );
     return response.data;
   },
 

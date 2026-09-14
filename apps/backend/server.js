@@ -910,6 +910,8 @@ app.use("/api/agency", agencyRoutes);
 app.use("/api/v1/facebook/oauth", facebookOAuthRoutes);
 app.use("/api/v1/facebook-oauth", facebookOAuthRoutes);
 app.use("/api/v1/admin/facebook-oauth", facebookOAuthRoutes);
+app.use("/api/v1/facebook-pixel", facebookOAuthRoutes);
+app.use("/api/facebook-pixel", facebookOAuthRoutes);
 app.use("/api/v1/overlay-campaigns", overlayCampaignRoutes);
 app.use("/api/v1/google-sheets", googleSheetsRoutes);
 app.use("/api/v1/easy-orders", easyOrdersRoutes);

@@ -2691,10 +2691,10 @@ router.get("/debug", verifyToken.authenticateToken, async (req, res) => {
  * GET /api/v1/facebook-oauth/pixel-authorize
  * ✅ REQUIRES AUTHENTICATION
  */
-router.get("/pixel-authorize", verifyToken.authenticateToken, async (req, res) => {
+router.get(["/pixel-authorize", "/auth"], verifyToken.authenticateToken, async (req, res) => {
   try {
     const { appId } = getFacebookOAuthConfig();
-    const { companyId } = req.query;
+    const companyId = req.query?.companyId || req.user?.companyId;
     const returnOrigin = getRequestedFrontendOrigin(req);
 
     if (!companyId) {
@@ -2706,7 +2706,7 @@ router.get("/pixel-authorize", verifyToken.authenticateToken, async (req, res) =
     }
 
     // Verify user has access to this company
-    if (req.user.companyId !== companyId) {
+    if (req.user?.companyId && req.user.companyId !== companyId) {
       return res.status(403).json({
         success: false,
         error: "Unauthorized access to company",
@@ -2971,7 +2971,7 @@ const handlePixelTokenError = async (error, companyId) => {
  */
 router.get("/pixels", verifyToken.authenticateToken, async (req, res) => {
   try {
-    const { companyId } = req.query;
+    const companyId = req.query?.companyId || req.user?.companyId;
 
     if (!companyId) {
       return res.status(400).json({
@@ -2982,7 +2982,7 @@ router.get("/pixels", verifyToken.authenticateToken, async (req, res) => {
     }
 
     // Verify user has access to this company
-    if (req.user.companyId !== companyId) {
+    if (req.user?.companyId && req.user.companyId !== companyId) {
       return res.status(403).json({
         success: false,
         error: "Unauthorized access to company",
@@ -3384,9 +3384,9 @@ router.get("/pixels", verifyToken.authenticateToken, async (req, res) => {
  * POST /api/v1/facebook-oauth/generate-pixel-token
  * ✅ REQUIRES AUTHENTICATION
  */
-router.post("/generate-pixel-token", verifyToken.authenticateToken, async (req, res) => {
+router.post(["/generate-pixel-token", "/token"], verifyToken.authenticateToken, async (req, res) => {
   try {
-    const { companyId } = req.query;
+    const companyId = req.query?.companyId || req.user?.companyId || req.body?.companyId;
     const { pixelId, businessId } = req.body;
 
     if (!companyId || !pixelId) {
@@ -3398,7 +3398,7 @@ router.post("/generate-pixel-token", verifyToken.authenticateToken, async (req, 
     }
 
     // Verify user has access to this company
-    if (req.user.companyId !== companyId) {
+    if (req.user?.companyId && req.user.companyId !== companyId) {
       return res.status(403).json({
         success: false,
         error: "Unauthorized access to company",
@@ -3408,26 +3408,45 @@ router.post("/generate-pixel-token", verifyToken.authenticateToken, async (req, 
 
     console.log("🔑 [TOKEN] Generating access token for pixel:", pixelId);
 
-    // Get Facebook page access token
-    const pages = await getSharedPrismaClient().facebookPage.findMany({
-      where: {
-        companyId: companyId,
-        status: "connected",
-      },
+    // Prioritize real Meta User / Ads tokens that have Pixel management & CAPI permissions
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
       select: {
-        pageAccessToken: true,
+        facebookPixelAccessToken: true,
+        facebookAdsAccessToken: true,
+        facebookUserAccessToken: true,
       },
-      take: 1,
     });
 
-    if (!pages || pages.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "لم يتم العثور على صفحات Facebook مربوطة",
+    let userAccessToken =
+      company?.facebookPixelAccessToken ||
+      company?.facebookAdsAccessToken ||
+      company?.facebookUserAccessToken;
+
+    // If no direct account token, fall back to connected page token
+    if (!userAccessToken) {
+      const pages = await getSharedPrismaClient().facebookPage.findMany({
+        where: {
+          companyId: companyId,
+          status: "connected",
+        },
+        select: {
+          pageAccessToken: true,
+        },
+        take: 1,
       });
+
+      if (pages && pages.length > 0) {
+        userAccessToken = pages[0].pageAccessToken;
+      }
     }
 
-    const userAccessToken = pages[0].pageAccessToken;
+    if (!userAccessToken) {
+      return res.status(404).json({
+        success: false,
+        message: "لم يتم العثور على حساب Facebook أو صفحات مربوطة",
+      });
+    }
 
     // Try to get a long-lived token for the pixel
     // Note: This requires business_management permission

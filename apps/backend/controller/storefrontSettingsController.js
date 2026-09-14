@@ -317,12 +317,17 @@ const buildCapiEventsList = (settings) =>
     .filter(([field]) => Boolean(settings?.[field]))
     .map(([, eventName]) => eventName);
 
-const buildDiagnosticsData = (settings, pixelConfigs = []) => {
+const buildDiagnosticsData = (settings, pixelConfigs = [], company = null) => {
   const pixelConfigured =
     Boolean(settings?.facebookPixelEnabled) && Boolean(trimToNull(settings?.facebookPixelId));
+  const effectiveCapiToken =
+    trimToNull(settings?.facebookConvApiToken) ||
+    trimToNull(company?.facebookPixelAccessToken) ||
+    trimToNull(company?.facebookAdsAccessToken) ||
+    trimToNull(company?.facebookUserAccessToken);
   const capiConfigured =
     Boolean(settings?.facebookConvApiEnabled) &&
-    Boolean(trimToNull(settings?.facebookConvApiToken));
+    Boolean(effectiveCapiToken);
 
   const pixelIssues = [];
   const capiIssues = [];
@@ -395,8 +400,8 @@ const buildDiagnosticsData = (settings, pixelConfigs = []) => {
     capi: {
       configured: capiConfigured,
       status: settings?.capiStatus || (capiConfigured ? 'configured' : 'not_configured'),
-      hasToken: Boolean(trimToNull(settings?.facebookConvApiToken)),
-      tokenStatus: trimToNull(settings?.facebookConvApiToken) ? 'available' : 'missing',
+      hasToken: Boolean(effectiveCapiToken),
+      tokenStatus: effectiveCapiToken ? 'available' : 'missing',
       lastTest: settings?.lastCapiTest || null,
       issues: capiIssues,
     },
@@ -489,12 +494,16 @@ const updateStorefrontSettingsStatus = async (companyId, data) =>
 const getPrimaryManagementToken = ({ company, settings, pixelConfig = null }) =>
   trimToNull(pixelConfig?.accessToken) ||
   trimToNull(company?.facebookPixelAccessToken) ||
+  trimToNull(company?.facebookAdsAccessToken) ||
+  trimToNull(company?.facebookUserAccessToken) ||
   trimToNull(settings?.facebookConvApiToken);
 
 const getPrimaryConversionsToken = ({ company, settings, pixelConfig = null }) =>
   trimToNull(settings?.facebookConvApiToken) ||
   trimToNull(pixelConfig?.accessToken) ||
-  trimToNull(company?.facebookPixelAccessToken);
+  trimToNull(company?.facebookPixelAccessToken) ||
+  trimToNull(company?.facebookAdsAccessToken) ||
+  trimToNull(company?.facebookUserAccessToken);
 
 const verifyPixelWithFacebook = async (pixelId, accessToken) => {
   const response = await axios.get(getFacebookGraphUrl(pixelId), {
@@ -545,6 +554,8 @@ const getCompanyContext = async (companyId) => {
         currency: true,
         settings: true,
         facebookPixelAccessToken: true,
+        facebookAdsAccessToken: true,
+        facebookUserAccessToken: true,
       },
     })
   );
@@ -902,7 +913,9 @@ const testFacebookCapi = async (req, res) => {
     }
 
     const { company, settings } = context;
-    const pixelId = trimToNull(settings.facebookPixelId);
+    const pixelId =
+      trimToNull(req.body?.pixelId) ||
+      trimToNull(settings.facebookPixelId);
 
     if (!pixelId) {
       return res.json({
@@ -911,18 +924,27 @@ const testFacebookCapi = async (req, res) => {
       });
     }
 
-    const accessToken = getPrimaryConversionsToken({ company, settings });
+    const rawBodyToken = trimToNull(req.body?.accessToken);
+    const accessToken =
+      rawBodyToken && !isMaskedToken(rawBodyToken)
+        ? rawBodyToken
+        : getPrimaryConversionsToken({ company, settings });
+
     if (!accessToken) {
       return res.json({
         success: false,
-        message: 'يرجى إضافة Access Token أو استخدام الربط السهل مع Facebook أولاً',
+        message: 'يرجى ربط حساب فيسبوك أو إضافة Access Token أولاً',
       });
     }
+
+    const testEventCode =
+      trimToNull(req.body?.testEventCode) ||
+      trimToNull(settings.facebookConvApiTestCode);
 
     const service = new FacebookConversionsService(
       pixelId,
       accessToken,
-      trimToNull(settings.facebookConvApiTestCode)
+      testEventCode
     );
 
     const result = await service.testConnection();
@@ -1078,7 +1100,8 @@ const getPixelDiagnostics = async (req, res) => {
       success: true,
       data: buildDiagnosticsData(
         context.settings,
-        context.settings.facebookPixelConfigs || []
+        context.settings.facebookPixelConfigs || [],
+        context.company
       ),
     });
   } catch (error) {
@@ -1122,10 +1145,20 @@ const checkTokenPermissions = async (req, res) => {
     }
 
     const { company, settings } = context;
-    const companyToken = trimToNull(company.facebookPixelAccessToken);
     const capiToken = trimToNull(settings.facebookConvApiToken);
-    const accessToken = companyToken || capiToken;
-    const tokenSource = companyToken ? 'facebook_oauth' : capiToken ? 'capi_token' : null;
+    const pixelToken = trimToNull(company.facebookPixelAccessToken);
+    const adsToken = trimToNull(company.facebookAdsAccessToken);
+    const userToken = trimToNull(company.facebookUserAccessToken);
+    const accessToken = capiToken || pixelToken || adsToken || userToken;
+    const tokenSource = capiToken
+      ? 'capi_token'
+      : pixelToken
+      ? 'pixel_oauth'
+      : adsToken
+      ? 'ads_oauth'
+      : userToken
+      ? 'user_oauth'
+      : null;
 
     if (!accessToken) {
       return res.json({

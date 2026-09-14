@@ -451,8 +451,12 @@ const FacebookPixelSettings: React.FC = () => {
         return;
       }
 
-      if (settings.facebookConvApiEnabled && !settings.facebookConvApiToken) {
-        tToast.error("facebookPixel.required_enter_3a76");
+      if (
+        settings.facebookConvApiEnabled &&
+        !settings.facebookConvApiToken &&
+        !diagnostics?.capi?.hasToken
+      ) {
+        toast.error("يرجى ربط حساب فيسبوك أو إدخال Access Token لتفعيل Conversions API");
         setSaving(false);
         return;
       }
@@ -510,8 +514,8 @@ const FacebookPixelSettings: React.FC = () => {
   };
 
   const handleTestCapi = async () => {
-    if (!settings.facebookPixelId || !settings.facebookConvApiToken) {
-      tToast.error("facebookPixel.required_enter_both_4177");
+    if (!settings.facebookPixelId) {
+      tToast.error("facebookPixel.required_enter_9b40");
       return;
     }
 
@@ -519,8 +523,8 @@ const FacebookPixelSettings: React.FC = () => {
       setTesting(true);
       const response = await storefrontSettingsService.testCapi({
         pixelId: settings.facebookPixelId,
-        accessToken: settings.facebookConvApiToken,
-        testEventCode: settings.facebookConvApiTestCode,
+        accessToken: settings.facebookConvApiToken || undefined,
+        testEventCode: settings.facebookConvApiTestCode || undefined,
       });
 
       if (response.success && response.data.success) {
@@ -555,7 +559,7 @@ const FacebookPixelSettings: React.FC = () => {
     try {
       setFetchingPixels(true);
       const response =
-        await apiClient.get<PixelAuthorizeResponse>("/facebook-pixel/auth");
+        await apiClient.get<PixelAuthorizeResponse>("/facebook-oauth/pixel-authorize");
 
       if (response.data?.authUrl) {
         window.location.href = response.data.authUrl;
@@ -574,7 +578,7 @@ const FacebookPixelSettings: React.FC = () => {
     try {
       setFetchingPixels(true);
       const response =
-        await apiClient.get<FacebookOAuthPixelsResponse>("/facebook-pixel/pixels");
+        await apiClient.get<FacebookOAuthPixelsResponse>("/facebook-oauth/pixels");
 
       if (response.data.success) {
         const fetchedPixels = response.data.pixels || [];
@@ -608,7 +612,7 @@ const FacebookPixelSettings: React.FC = () => {
     try {
       setFetchingPixels(true);
       const tokenResponse = await apiClient.post<PixelTokenResponse>(
-        "/facebook-pixel/token",
+        "/facebook-oauth/generate-pixel-token",
         {
           pixelId: pixel.pixelId,
         },
@@ -1415,9 +1419,22 @@ const FacebookPixelSettings: React.FC = () => {
             {settings.facebookConvApiEnabled && (
               <>
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Access Token <span className="text-red-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Access Token{" "}
+                      {diagnostics?.capi?.hasToken ? (
+                        <span className="text-gray-400 font-normal text-xs">(اختياري - متصل تلقائياً)</span>
+                      ) : (
+                        <span className="text-red-500">*</span>
+                      )}
+                    </label>
+                    {diagnostics?.capi?.hasToken && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 font-medium">
+                        <CheckCircleIcon className="w-3.5 h-3.5" />
+                        حساب فيسبوك متصل تلقائياً
+                      </span>
+                    )}
+                  </div>
                   <div className="relative">
                     <input
                       type={showToken ? "text" : "password"}
@@ -1521,7 +1538,7 @@ const FacebookPixelSettings: React.FC = () => {
                     disabled={
                       testing ||
                       !settings.facebookPixelId ||
-                      !settings.facebookConvApiToken
+                      (!settings.facebookConvApiToken && !diagnostics?.capi?.hasToken)
                     }
                     className="w-full sm:w-auto px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors min-h-[44px] font-medium"
                   >
@@ -1540,7 +1557,7 @@ const FacebookPixelSettings: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleCheckTokenPermissions}
-                    disabled={checkingToken || !settings.facebookConvApiToken}
+                    disabled={checkingToken || (!settings.facebookConvApiToken && !diagnostics?.capi?.hasToken)}
                     className="w-full sm:w-auto px-5 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px] font-medium"
                   >
                     {checkingToken ? (
@@ -1733,7 +1750,11 @@ const FacebookPixelSettings: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSendSimulatorEvent}
-                disabled={simulatorSending || !settings.facebookPixelId || !settings.facebookConvApiToken}
+                disabled={
+                  simulatorSending ||
+                  !settings.facebookPixelId ||
+                  (!settings.facebookConvApiToken && !diagnostics?.capi?.hasToken)
+                }
                 className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold text-sm transition-all min-h-[44px] shadow-sm"
               >
                 {simulatorSending ? (
