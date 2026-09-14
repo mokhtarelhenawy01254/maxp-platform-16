@@ -1582,14 +1582,21 @@ def _format_facebook_ad_create_full_draft(result: dict[str, Any]) -> str:
     res = result.get("result", result) if isinstance(result, dict) else {}
     if not res.get("success"):
         return f"تعذر تجهيز مسودات الإعلان: {res.get('error', 'خطأ غير معروف')}"
+    
+    if res.get("published"):
+        camp_id = res.get("facebook_campaign_id") or ""
+        ad_id = res.get("facebook_ad_id") or ""
+        return f"تم نشر الحملة الإعلانية بنجاح وبشكل فوري على منصة Meta Ads (معرف الحملة: {camp_id}، معرف الإعلان: {ad_id}) بحالة PAUSED للأمان."
+
     count = res.get("drafts_count", 0)
     drafts = res.get("drafts", [])
     angles = [d.get("angle", "") for d in drafts if isinstance(d, dict)]
     angles_str = "، ".join(filter(None, angles))
-    msg = res.get("message") or "تم حفظ وتجهيز مسودات الحملات الإعلانية بنجاح في لوحة التحكم للمراجعة والاعتماد"
-    if angles_str:
-        return f"{msg} (تم تجهيز {count} مسودات بالزوايا: {angles_str})."
-    return f"{msg} (تم تجهيز {count} مسودات إعلانية)."
+    first_draft_id = drafts[0].get("draft_id", "") if drafts else ""
+    draft_id_str = f" [رقم المسودة: {first_draft_id}]" if first_draft_id else ""
+    angles_info = f" (الزوايا: {angles_str})" if angles_str else ""
+    return f"تم حفظ وتجهيز المسودات بنجاح في لوحة التحكم{draft_id_str}{angles_info}. [تنبيه هام: حالة الإعلان الحالية هي DRAFT فقط، لم يتم إرساله أو نشره على فيسبوك بعد. لنشر الإعلان يجب استدعاء أداة facebook_ad_publish_draft]."
+
 
 
 def _format_facebook_ad_publish_draft(result: dict[str, Any]) -> str:

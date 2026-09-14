@@ -638,8 +638,13 @@ def _format_tool_results(executed: list[dict]) -> str:
                 lines.append("تم فحص وتحليل بيانات المنتج واقتصادياته التسويقية بنجاح 📊")
             elif name in {"facebook_ad_account_info", "facebook_ad.account_info"}:
                 lines.append("تم فحص حالة الحساب الإعلاني وأصول ميتا بنجاح 🔎")
+            elif name in {"facebook_ad_inspect_targeting", "facebook_ad.inspect_targeting"}:
+                lines.append("تم فحص وتأكيد الاستهداف الجغرافي والديموغرافي من سيرفرات Meta بنجاح 🎯")
+            elif name in {"facebook_ad_get_decision", "facebook_ad.get_decision"}:
+                lines.append("تم فحص مؤشرات الأداء والقرارات الاستثمارية للحملات بنجاح 📈")
             else:
-                lines.append(f"تم تنفيذ الإجراء [{name}] بنجاح ✅")
+                lines.append("تم تحديث ومراجعة البيانات بنجاح ✅")
+
         elif status == "error":
             err_text = str(item.get("error", ""))
             if "2490487" in err_text or "bid" in err_text.lower() or "عرض الأسعار" in err_text:
