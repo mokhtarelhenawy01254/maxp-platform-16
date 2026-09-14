@@ -521,4 +521,86 @@ describe("ProductImageLandingPage", () => {
     expect(screen.getByRole("region", { name: "شريط الشراء السريع" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "تواصل عبر واتساب للمساعدة السريعة" })).toBeInTheDocument();
   });
+
+  it("renders 2026 CRO additions: COUNTDOWN clock, multi-item bundle customizer, notes field, and 1-click WhatsApp order", async () => {
+    storefrontApiMocks.getProductLandingPreview.mockResolvedValueOnce({
+      data: {
+        landing: {
+          id: "landing-cro-2026",
+          companyId: "company-1",
+          productId: "prod-1",
+          slug: "swan-cro-2026",
+          title: "Swan CRO 2026",
+          status: "DRAFT",
+          generationMode: "IMAGE_STACK",
+          generationStatus: "READY_TO_REVIEW",
+          slices: [],
+          sections: [
+            {
+              id: "sec-cd-1",
+              type: "COUNTDOWN",
+              title: "العد التنازلي",
+              enabled: true,
+              content: {
+                text: "عرض خاص لفترة محدودة — اطلب قبل انتهاء الكمية",
+                lowStockCount: 5,
+              },
+            },
+            {
+              id: "sec-form-cro-2026",
+              type: "FORM",
+              title: "نموذج الطلب",
+              enabled: true,
+              content: {
+                orderTitle: "اطلب Swan Sneaker 2026",
+                buttonLabel: "تأكيد الطلب الآن",
+                whatsappSupportPhone: "01096781290",
+                bundles: [
+                  { qty: 1, label: "قطعة واحدة", discountPercent: 0, badge: "", freeGift: "" },
+                  { qty: 2, label: "قطعتين (وفر 20%)", discountPercent: 20, badge: "الأكثر مبيعاً", freeGift: "شراب قطني" },
+                ],
+              },
+            },
+          ],
+          formConfig: {
+            orderTitle: "اطلب Swan Sneaker 2026",
+            buttonLabel: "تأكيد الطلب الآن",
+          },
+        },
+        product: baseProduct,
+        company: {
+          id: "company-1",
+          name: "Swan",
+          currency: "EGP",
+          phone: "01096781290",
+        },
+      },
+    });
+
+    renderLanding("/store/lp/swan-cro-2026?companyId=company-1&preview=1");
+
+    // 1. Countdown Section
+    expect((await screen.findAllByText("عرض خاص لفترة محدودة — اطلب قبل انتهاء الكمية"))[0]).toBeInTheDocument();
+    expect(screen.getByText("متبقي 5 قطع فقط بهذا السعر")).toBeInTheDocument();
+    expect(screen.getByLabelText("الوقت المتبقي لانتهاء العرض")).toBeInTheDocument();
+
+    // 2. Delivery notes field
+    expect(screen.getByLabelText("ملاحظات إضافية للتوصيل (اختياري)")).toBeInTheDocument();
+
+    // 3. 1-Click WhatsApp Quick Order button
+    const waQuickBtn = screen.getByLabelText("الطلب السريع عبر واتساب");
+    expect(waQuickBtn).toBeInTheDocument();
+    expect(waQuickBtn.getAttribute("href")).toContain("https://wa.me/201096781290");
+
+    // 4. Multi-item bundle selection
+    const bundle2Btn = screen.getByText("قطعتين (وفر 20%)");
+    bundle2Btn.click();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("تحديد تفاصيل كل قطعة في الباقة")).toBeInTheDocument();
+      expect(screen.getByText("القطعة 1")).toBeInTheDocument();
+      expect(screen.getByText("القطعة 2")).toBeInTheDocument();
+    });
+  });
 });
+

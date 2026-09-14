@@ -2101,3 +2101,313 @@
 .pil-color-swatch-dot {
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.15);
 }
+
+/* ──────────────────────────────────────────────────────────── */
+/* 2026 CRO UPGRADES: GALLERY, COUNTDOWN, BUNDLE CUSTOMIZER, WA */
+/* ──────────────────────────────────────────────────────────── */
+
+/* 1. Hero Thumbs Strip */
+.pil-hero-thumbs-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px auto 0;
+  padding: 4px 8px;
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pil-hero-thumb {
+  width: 52px;
+  height: 52px;
+  padding: 2px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.pil-hero-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.pil-hero-thumb:hover {
+  border-color: #94a3b8;
+}
+
+.pil-hero-thumb.is-active {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 1px #0f172a;
+  transform: scale(1.05);
+}
+
+/* 2. Live Countdown Clock Card */
+.pil-countdown-card {
+  max-width: 760px;
+  margin: 20px auto;
+  background: #ffffff;
+  border: 1px solid #fee2e2;
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.06);
+}
+
+.pil-countdown-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pil-countdown-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pil-countdown-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #dc2626;
+  background: #fef2f2;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid #fecaca;
+  width: fit-content;
+}
+
+.pil-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #dc2626;
+  animation: pilPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pilPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.pil-countdown-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.pil-live-clock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+}
+
+.pil-clock-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #0f172a;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  min-width: 44px;
+}
+
+.pil-clock-digit {
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.pil-clock-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.pil-clock-sep {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+/* 3. Bundle Items Customizer */
+.pil-bundle-items-customizer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 8px;
+}
+
+.pil-bundle-customizer-header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 4px;
+}
+
+.pil-bundle-customizer-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pil-bundle-customizer-hint {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.pil-bundle-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pil-bundle-item-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.pil-bundle-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 8px;
+}
+
+.pil-bundle-item-tag {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #1e293b;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.pil-bundle-item-summary {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #2563eb;
+  direction: rtl;
+}
+
+.pil-bundle-item-field {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pil-bundle-item-field-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  min-width: 48px;
+}
+
+.pil-chips-group-compact {
+  gap: 6px;
+}
+
+.pil-chip-compact {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+}
+
+/* 4. WhatsApp Direct Quick Checkout */
+.pil-direct-wa-wrap {
+  margin-top: 12px;
+}
+
+.pil-direct-wa-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 18px;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.pil-direct-wa-btn:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  transform: translateY(-1px);
+}
+
+.pil-direct-wa-btn:active {
+  transform: scale(0.98);
+}
+
+.pil-wa-icon {
+  font-size: 1.1rem;
+}
+
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  .pil-countdown-card {
+    padding: 14px;
+    margin: 14px 8px;
+  }
+
+  .pil-countdown-inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .pil-countdown-header {
+    align-items: center;
+  }
+
+  .pil-bundle-items-customizer {
+    padding: 12px 10px;
+  }
+
+  .pil-bundle-item-card {
+    padding: 10px 12px;
+  }
+
+  .pil-hero-thumb {
+    width: 46px;
+    height: 46px;
+  }
+}

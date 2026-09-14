@@ -614,11 +614,28 @@ const ProductImageLandingPage: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedBundleQty, setSelectedBundleQty] = useState<number>(1);
+  const [bundleItems, setBundleItems] = useState<BundleItemSelection[]>([
+    { color: "", size: "" },
+    { color: "", size: "" },
+    { color: "", size: "" },
+  ]);
+  const [activeHeroImageIndex, setActiveHeroImageIndex] = useState<number>(0);
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isStickyReady, setIsStickyReady] = useState(false);
   const [isFormInView, setIsFormInView] = useState(false);
   const [visibleCampaignSlices, setVisibleCampaignSlices] = useState<LandingSlice[]>([]);
+
+  const updateBundleItem = (index: number, field: "color" | "size", value: string) => {
+    setBundleItems((prev) => {
+      const next = [...prev];
+      while (next.length <= index) {
+        next.push({ color: "", size: "" });
+      }
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
 
   useEffect(() => {
     let isCancelled = false;
@@ -815,7 +832,7 @@ const ProductImageLandingPage: React.FC = () => {
       formSection?.content?.whatsappSupportPhone ||
       (activeLanding?.formConfig as any)?.whatsappSupportPhone ||
       landingData?.company?.phone ||
-      ""
+      "01096781290"
     );
   }, [formSection, activeLanding, landingData]);
 
@@ -858,6 +875,19 @@ const ProductImageLandingPage: React.FC = () => {
     [campaignSlices],
   );
   const heroImage = productImage || visibleCampaignSlices[0]?.src || campaignSlices[0]?.src || "";
+  const allProductImages = useMemo(() => {
+    const list: string[] = [];
+    if (activeProduct?.mainImage) list.push(activeProduct.mainImage);
+    if (Array.isArray(activeProduct?.images)) {
+      activeProduct.images.forEach((img) => {
+        if (img && typeof img === "string" && !list.includes(img)) list.push(img);
+      });
+    }
+    if (heroImage && !list.includes(heroImage)) list.push(heroImage);
+    return list;
+  }, [activeProduct, heroImage]);
+
+  const currentHeroImage = allProductImages[activeHeroImageIndex] || heroImage;
   const productDescription = cleanProductDescription(activeProduct?.description, 118);
   const customFeatures = useMemo(() => {
     if (
@@ -923,13 +953,26 @@ const ProductImageLandingPage: React.FC = () => {
   }, [visibleCampaignSliceKey]);
 
   useEffect(() => {
+    const firstColor = colorOptions[0] || "";
+    const firstSize = sizeOptions[0] || "";
+
     if (colorOptions.length > 0 && (!selectedColor || !colorOptions.includes(selectedColor))) {
-      setSelectedColor(colorOptions[0]);
+      setSelectedColor(firstColor);
     }
 
     if (sizeOptions.length > 0 && (!selectedSize || !sizeOptions.includes(selectedSize))) {
-      setSelectedSize(sizeOptions[0]);
+      setSelectedSize(firstSize);
     }
+
+    setBundleItems((prev) => {
+      const defColor = selectedColor || firstColor;
+      const defSize = selectedSize || firstSize;
+      return [
+        { color: prev[0]?.color || defColor, size: prev[0]?.size || defSize },
+        { color: prev[1]?.color || defColor, size: prev[1]?.size || defSize },
+        { color: prev[2]?.color || defColor, size: prev[2]?.size || defSize },
+      ];
+    });
   }, [colorOptions, selectedColor, selectedSize, sizeOptions]);
 
   useEffect(() => {
@@ -987,35 +1030,45 @@ const ProductImageLandingPage: React.FC = () => {
     }
 
     if (!formState.customerName.trim()) {
-      return "اكتبي الاسم.";
+      return "يرجى كتابة الاسم بالكامل.";
     }
 
     if (!isValidEgyptianPhone(formState.phone)) {
-      return "اكتبي رقم موبايل مصري صحيح.";
+      return "يرجى كتابة رقم موبايل مصري صحيح (01xxxxxxxxx).";
     }
 
-    if (colorOptions.length > 0 && !selectedColor) {
-      return "اختاري اللون.";
-    }
-
-    if (sizeOptions.length > 0 && !selectedSize) {
-      return "اختاري المقاس.";
-    }
-
-    if (variants.length > 0 && !selectedVariant) {
-      return "الاختيارات المحددة غير متاحة مع بعض.";
+    if (activeBundle.qty > 1) {
+      for (let i = 0; i < activeBundle.qty; i++) {
+        const item = bundleItems[i];
+        if (colorOptions.length > 0 && (!item || !item.color)) {
+          return `يرجى تحديد لون القطعة رقم ${i + 1}.`;
+        }
+        if (sizeOptions.length > 0 && (!item || !item.size)) {
+          return `يرجى تحديد مقاس القطعة رقم ${i + 1}.`;
+        }
+      }
+    } else {
+      if (colorOptions.length > 0 && !selectedColor) {
+        return "يرجى اختيار اللون.";
+      }
+      if (sizeOptions.length > 0 && !selectedSize) {
+        return "يرجى اختيار المقاس.";
+      }
+      if (variants.length > 0 && !selectedVariant) {
+        return "المقاس واللون المحددان غير متاحين معاً حالياً.";
+      }
     }
 
     if (!formState.governorate.trim()) {
-      return "اختاري المحافظة.";
+      return "يرجى اختيار المحافظة.";
     }
 
     if (!formState.area.trim()) {
-      return "اكتبي المنطقة.";
+      return "يرجى كتابة المنطقة أو المركز.";
     }
 
     if (!formState.address.trim()) {
-      return "اكتبي العنوان بالتفصيل.";
+      return "يرجى كتابة العنوان بالتفصيل.";
     }
 
     return null;
@@ -1038,29 +1091,82 @@ const ProductImageLandingPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const attributes = {
-        ...(selectedColor ? { Color: selectedColor } : {}),
-        ...(selectedSize ? { Size: selectedSize } : {}),
-      };
       const landingAttribution = {
         source: "image_stack_landing",
         landingPageId: activeLanding?.id || null,
         landingPageSlug: activeLanding?.slug || landingKey,
         generationMode: activeLanding?.generationMode || "IMAGE_STACK",
       };
-      const item: CartItem = {
-        id: selectedVariant?.id
-          ? `${activeProduct.id}-${selectedVariant.id}`
-          : `${activeProduct.id}-landing`,
-        productId: activeProduct.id,
-        variantId: selectedVariant?.id || undefined,
-        name: activeProduct.name,
-        price: discountedUnitPrice,
-        basePrice: Number(activeProduct.price || activePrice),
-        quantity: activeBundle.qty,
-        imageUrl: productImage,
-        attributes,
-      };
+
+      let itemsToOrder: CartItem[] = [];
+      let itemsSummaryNotes = "";
+
+      if (activeBundle.qty > 1) {
+        const activePieces = bundleItems.slice(0, activeBundle.qty).map((b, i) => ({
+          color: b.color || selectedColor || colorOptions[0] || "",
+          size: b.size || selectedSize || sizeOptions[0] || "",
+        }));
+
+        itemsSummaryNotes = activePieces
+          .map(
+            (p, i) =>
+              `• القطعة ${i + 1}: ${p.color ? `لون ${p.color}` : ""}${p.size ? ` / مقاس ${p.size}` : ""}`.trim(),
+          )
+          .join("\n");
+
+        itemsToOrder = activePieces.map((piece, pIdx) => {
+          const matchedVariant = variants.find((v) => {
+            const attrs = (v.attributes || v.attributeValues || {}) as Record<string, string>;
+            const cMatch = !piece.color || Object.values(attrs).includes(piece.color);
+            const sMatch = !piece.size || Object.values(attrs).includes(piece.size);
+            return cMatch && sMatch;
+          });
+          return {
+            id: matchedVariant?.id
+              ? `${activeProduct.id}-${matchedVariant.id}-${pIdx}`
+              : `${activeProduct.id}-landing-${pIdx}`,
+            productId: activeProduct.id,
+            variantId: matchedVariant?.id || undefined,
+            name: `${activeProduct.name} (قطعة ${pIdx + 1})`,
+            price: discountedUnitPrice,
+            basePrice: Number(activeProduct.price || activePrice),
+            quantity: 1,
+            imageUrl: productImage,
+            attributes: {
+              ...(piece.color ? { Color: piece.color } : {}),
+              ...(piece.size ? { Size: piece.size } : {}),
+            },
+          };
+        });
+      } else {
+        const attributes = {
+          ...(selectedColor ? { Color: selectedColor } : {}),
+          ...(selectedSize ? { Size: selectedSize } : {}),
+        };
+        itemsSummaryNotes = [
+          selectedColor ? `اللون: ${selectedColor}` : "",
+          selectedSize ? `المقاس: ${selectedSize}` : "",
+        ]
+          .filter(Boolean)
+          .join(" | ");
+
+        itemsToOrder = [
+          {
+            id: selectedVariant?.id
+              ? `${activeProduct.id}-${selectedVariant.id}`
+              : `${activeProduct.id}-landing`,
+            productId: activeProduct.id,
+            variantId: selectedVariant?.id || undefined,
+            name: activeProduct.name,
+            price: discountedUnitPrice,
+            basePrice: Number(activeProduct.price || activePrice),
+            quantity: 1,
+            imageUrl: productImage,
+            attributes,
+          },
+        ];
+      }
+
       const pixelEventId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       const payload = buildCheckoutOrderPayload(
         {
@@ -1071,23 +1177,20 @@ const ProductImageLandingPage: React.FC = () => {
           city: formState.area.trim(),
           governorate: formState.governorate.trim(),
           notes: [
-            "Image-stack landing page",
-            activeBundle.qty > 1
-              ? `عرض الباقة: ${activeBundle.label} (${activeBundle.qty} قطع)`
-              : "",
+            formState.notes?.trim() ? `ملاحظات العميل: ${formState.notes.trim()}` : "",
+            activeBundle.qty > 1 ? `عرض الباقة: ${activeBundle.label} (${activeBundle.qty} قطع)` : "",
+            itemsSummaryNotes ? `تفاصيل ومواصفات القطع:\n${itemsSummaryNotes}` : "",
             activeLanding?.id ? `Landing Page ID: ${activeLanding.id}` : "",
             activeLanding?.slug ? `Landing Slug: ${activeLanding.slug}` : "",
-            selectedColor ? `اللون: ${selectedColor}` : "",
-            selectedSize ? `المقاس: ${selectedSize}` : "",
           ]
             .filter(Boolean)
-            .join("\n"),
+            .join("\n\n"),
           paymentMethod: "cod",
           shippingCost: 0,
           subtotal: orderFinalTotal,
           total: orderFinalTotal,
         },
-        [item],
+        itemsToOrder,
         orderFinalTotal,
         companyId,
         pixelEventId,
@@ -1151,18 +1254,16 @@ const ProductImageLandingPage: React.FC = () => {
         phone: formState.phone,
         customerName: formState.customerName,
         paymentMethod: "cod",
-        items: [
-          {
-            id: item.id,
-            productId: item.productId,
-            variantId: item.variantId || undefined,
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            imageUrl: item.imageUrl,
-            attributes: item.attributes || {},
-          },
-        ],
+        items: itemsToOrder.map((it) => ({
+          id: it.id,
+          productId: it.productId,
+          variantId: it.variantId || undefined,
+          name: it.name,
+          quantity: it.quantity,
+          price: it.price,
+          imageUrl: it.imageUrl,
+          attributes: it.attributes || {},
+        })),
       };
       persistPurchaseTracking(purchaseTracking);
 
@@ -1245,8 +1346,8 @@ const ProductImageLandingPage: React.FC = () => {
         <React.Fragment key={section.id || idx}>
           <section className="pil-hero" aria-labelledby="pil-hero-title">
             <div className="pil-hero-media" aria-hidden="true">
-              {heroImage ? (
-                <img src={heroImage} alt="" loading="eager" />
+              {currentHeroImage ? (
+                <img src={currentHeroImage} alt={activeProduct.name} loading="eager" />
               ) : null}
             </div>
             <div className="pil-hero-shade" />
@@ -1272,6 +1373,21 @@ const ProductImageLandingPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            {allProductImages.length > 1 ? (
+              <div className="pil-hero-thumbs-strip" role="tablist" aria-label="معرض صور المنتج">
+                {allProductImages.map((img, tIdx) => (
+                  <button
+                    key={tIdx}
+                    type="button"
+                    className={`pil-hero-thumb ${activeHeroImageIndex === tIdx ? "is-active" : ""}`}
+                    onClick={() => setActiveHeroImageIndex(tIdx)}
+                    aria-label={`عرض الصورة ${tIdx + 1}`}
+                  >
+                    <img src={img} alt="" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <div className="pil-hero-bottom" aria-label="مميزات الطلب">
               <span>دفع عند الاستلام</span>
               <span>تأكيد هاتفي</span>
@@ -1710,48 +1826,27 @@ const ProductImageLandingPage: React.FC = () => {
         content.text ||
         content.bannerText ||
         countdownSection?.content?.text ||
-        "عرض لفترة محدودة — اطلب الآن قبل انتهاء الكمية!";
+        "عرض خاص لفترة محدودة — اطلب الآن قبل انتهاء الكمية المخصصة لهذا العرض";
       const lowStock =
-        content.lowStockCount || countdownSection?.content?.lowStockCount;
+        content.lowStockCount || countdownSection?.content?.lowStockCount || 7;
 
       return (
-        <div
+        <section
           key={section.id || idx}
-          className="pil-countdown-banner"
-          style={{
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            borderRadius: 12,
-            padding: "12px 16px",
-            margin: "20px auto",
-            maxWidth: 760,
-            textAlign: "center",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexWrap: "wrap",
-            gap: 8,
-            color: "#dc2626",
-            fontWeight: 700,
-            fontSize: "0.95rem",
-          }}
+          className="pil-countdown-card"
+          aria-label="العد التنازلي للعرض المتبقي"
         >
-          <span>⏳</span>
-          <span>{text}</span>
-          {lowStock ? (
-            <span
-              style={{
-                background: "#dc2626",
-                color: "#ffffff",
-                padding: "2px 8px",
-                borderRadius: 999,
-                fontSize: "0.8rem",
-              }}
-            >
-              متبقي {lowStock} قطع فقط!
-            </span>
-          ) : null}
-        </div>
+          <div className="pil-countdown-inner">
+            <div className="pil-countdown-header">
+              <span className="pil-countdown-badge">
+                <span className="pil-live-dot" />
+                متبقي {lowStock} قطع فقط بهذا السعر
+              </span>
+              <p className="pil-countdown-title">{text}</p>
+            </div>
+            <LiveCountdownClock />
+          </div>
+        </section>
       );
     }
 
@@ -1865,7 +1960,99 @@ const ProductImageLandingPage: React.FC = () => {
                 />
               </div>
 
-              {sizeOptions.length > 0 || colorOptions.length > 0 ? (
+              {activeBundle.qty > 1 && (sizeOptions.length > 0 || colorOptions.length > 0) ? (
+                <div className="pil-bundle-items-customizer" aria-label="تحديد تفاصيل كل قطعة في الباقة">
+                  <div className="pil-bundle-customizer-header">
+                    <span className="pil-bundle-customizer-title">
+                      تحديد المقاس واللون لكل قطعة في الباقة ({activeBundle.qty} قطع):
+                    </span>
+                    <span className="pil-bundle-customizer-hint">اختر المواصفات لكل قطعة على حدة</span>
+                  </div>
+                  <div className="pil-bundle-items-list">
+                    {bundleItems.slice(0, activeBundle.qty).map((item, bIdx) => {
+                      const curColor = item.color || (bIdx === 0 ? selectedColor : colorOptions[bIdx % colorOptions.length] || colorOptions[0] || "");
+                      const curSize = item.size || (bIdx === 0 ? selectedSize : sizeOptions[0] || "");
+
+                      return (
+                        <div key={bIdx} className="pil-bundle-item-card">
+                          <div className="pil-bundle-item-header">
+                            <span className="pil-bundle-item-tag">القطعة {bIdx + 1}</span>
+                            <span className="pil-bundle-item-summary">
+                              {curColor ? `اللون: ${curColor}` : ""}
+                              {curColor && curSize ? " | " : ""}
+                              {curSize ? `المقاس: ${curSize}` : ""}
+                            </span>
+                          </div>
+
+                          {colorOptions.length > 0 ? (
+                            <div className="pil-bundle-item-field">
+                              <label className="pil-bundle-item-field-label">اللون:</label>
+                              <div className="pil-chips-group pil-chips-group-compact" role="radiogroup" aria-label={`لون القطعة ${bIdx + 1}`}>
+                                {colorOptions.map((color) => {
+                                  const swatch = getColorSwatch(color);
+                                  const isSelected = curColor === color;
+                                  return (
+                                    <button
+                                      key={color}
+                                      type="button"
+                                      className={`pil-chip pil-chip-compact ${isSelected ? "is-selected" : ""}`}
+                                      onClick={() => {
+                                        updateBundleItem(bIdx, "color", color);
+                                        if (bIdx === 0) setSelectedColor(color);
+                                      }}
+                                    >
+                                      {swatch ? (
+                                        <span
+                                          className="pil-color-swatch-dot"
+                                          style={{
+                                            display: "inline-block",
+                                            width: 10,
+                                            height: 10,
+                                            borderRadius: "50%",
+                                            backgroundColor: swatch,
+                                            border: swatch === "#ffffff" ? "1px solid #cbd5e1" : "1px solid rgba(0,0,0,0.15)",
+                                            marginInlineEnd: 4,
+                                            verticalAlign: "middle",
+                                          }}
+                                        />
+                                      ) : null}
+                                      {color}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {sizeOptions.length > 0 ? (
+                            <div className="pil-bundle-item-field">
+                              <label className="pil-bundle-item-field-label">المقاس:</label>
+                              <div className="pil-chips-group pil-chips-group-compact" role="radiogroup" aria-label={`مقاس القطعة ${bIdx + 1}`}>
+                                {sizeOptions.map((size) => {
+                                  const isSelected = curSize === size;
+                                  return (
+                                    <button
+                                      key={size}
+                                      type="button"
+                                      className={`pil-chip pil-chip-compact ${isSelected ? "is-selected" : ""}`}
+                                      onClick={() => {
+                                        updateBundleItem(bIdx, "size", size);
+                                        if (bIdx === 0) setSelectedSize(size);
+                                      }}
+                                    >
+                                      {size}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : sizeOptions.length > 0 || colorOptions.length > 0 ? (
                 <div className="pil-variants-block">
                   {colorOptions.length > 0 ? (
                     <div className="pil-field">
@@ -1882,7 +2069,10 @@ const ProductImageLandingPage: React.FC = () => {
                               key={color}
                               type="button"
                               className={`pil-chip ${selectedColor === color ? "is-selected" : ""}`}
-                              onClick={() => setSelectedColor(color)}
+                              onClick={() => {
+                                setSelectedColor(color);
+                                updateBundleItem(0, "color", color);
+                              }}
                             >
                               {swatch ? (
                                 <span
@@ -1908,7 +2098,10 @@ const ProductImageLandingPage: React.FC = () => {
                         id="pil-color"
                         name="color"
                         value={selectedColor}
-                        onChange={(event) => setSelectedColor(event.target.value)}
+                        onChange={(event) => {
+                          setSelectedColor(event.target.value);
+                          updateBundleItem(0, "color", event.target.value);
+                        }}
                         required
                         className="pil-native-select"
                       >
@@ -1935,7 +2128,10 @@ const ProductImageLandingPage: React.FC = () => {
                             key={size}
                             type="button"
                             className={`pil-chip ${selectedSize === size ? "is-selected" : ""}`}
-                            onClick={() => setSelectedSize(size)}
+                            onClick={() => {
+                              setSelectedSize(size);
+                              updateBundleItem(0, "size", size);
+                            }}
                           >
                             {size}
                           </button>
@@ -1945,7 +2141,10 @@ const ProductImageLandingPage: React.FC = () => {
                         id="pil-size"
                         name="size"
                         value={selectedSize}
-                        onChange={(event) => setSelectedSize(event.target.value)}
+                        onChange={(event) => {
+                          setSelectedSize(event.target.value);
+                          updateBundleItem(0, "size", event.target.value);
+                        }}
                         required
                         className="pil-native-select"
                       >
@@ -2007,6 +2206,17 @@ const ProductImageLandingPage: React.FC = () => {
                 />
               </div>
 
+              <div className="pil-field">
+                <label htmlFor="pil-notes">ملاحظات إضافية للتوصيل (اختياري)</label>
+                <input
+                  id="pil-notes"
+                  name="notes"
+                  value={formState.notes || ""}
+                  onChange={updateFormField("notes")}
+                  placeholder="مثال: موعد مفضل للتسليم، أو الاتصال قبل الوصول"
+                />
+              </div>
+
               {formError ? (
                 <div className="pil-error" role="alert">
                   {formError}
@@ -2046,6 +2256,48 @@ const ProductImageLandingPage: React.FC = () => {
                   ? "جاري إرسال الطلب..."
                   : `${activeConfig.buttonLabel} — ${formatPrice(orderFinalTotal, currency)} 🚚`}
               </button>
+
+              {whatsappPhone ? (
+                <div className="pil-direct-wa-wrap">
+                  <a
+                    href={(() => {
+                      const cleanPhone = whatsappPhone.replace(/\D/g, "");
+                      const targetPhone = cleanPhone.startsWith("0")
+                        ? `2${cleanPhone}`
+                        : cleanPhone.startsWith("2")
+                          ? cleanPhone
+                          : `20${cleanPhone}`;
+                      const msgLines = [
+                        `مرحباً، أريد طلب: ${activeProduct.name}`,
+                        `الباقة: ${activeBundle.label} (${activeBundle.qty} قطع)`,
+                        `الإجمالي: ${formatPrice(orderFinalTotal, currency)} (شحن مجاني + معاينة قبل الدفع)`,
+                      ];
+                      if (activeBundle.qty > 1) {
+                        bundleItems.slice(0, activeBundle.qty).forEach((p, idx) => {
+                          const c = p.color || (idx === 0 ? selectedColor : "") || colorOptions[0] || "";
+                          const s = p.size || (idx === 0 ? selectedSize : "") || sizeOptions[0] || "";
+                          msgLines.push(`- قطعة ${idx + 1}: ${c ? `لون ${c}` : ""}${s ? ` / مقاس ${s}` : ""}`);
+                        });
+                      } else {
+                        if (selectedColor) msgLines.push(`اللون: ${selectedColor}`);
+                        if (selectedSize) msgLines.push(`المقاس: ${selectedSize}`);
+                      }
+                      if (formState.customerName) msgLines.push(`الاسم: ${formState.customerName}`);
+                      if (formState.phone) msgLines.push(`الموبايل: ${formState.phone}`);
+                      if (formState.governorate) msgLines.push(`المحافظة: ${formState.governorate}`);
+                      if (formState.area) msgLines.push(`المنطقة: ${formState.area}`);
+                      return `https://wa.me/${targetPhone}?text=${encodeURIComponent(msgLines.join("\n"))}`;
+                    })()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="pil-direct-wa-btn"
+                    aria-label="الطلب السريع عبر واتساب"
+                  >
+                    <span className="pil-wa-icon" aria-hidden="true">💬</span>
+                    <span>أو اطلب فوراً عبر واتساب بنقرة واحدة</span>
+                  </a>
+                </div>
+              ) : null}
             </form>
 
             {/* Trust Badges Strip */}
