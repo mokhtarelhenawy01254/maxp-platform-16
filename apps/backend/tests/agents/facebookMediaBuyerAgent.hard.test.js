@@ -392,6 +392,7 @@ describe('Facebook Media Buyer Agent - Hard / Stress Testing Suite', () => {
           objective: 'OUTCOME_SALES',
           budget: 200,
           campaignName: 'AI Test Traffic Fallback',
+          adAccountId: 'act_123456789',
         }),
       });
 
