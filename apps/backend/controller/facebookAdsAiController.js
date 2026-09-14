@@ -1587,37 +1587,36 @@ class FacebookAdsAiController {
 
       let adSets = [];
       if (adSetId) {
-        const setRec = await prisma.facebookAdSet.findFirst({
-          where: {
-            OR: [
-              { id: adSetId },
-              { facebookAdSetId: adSetId }
-            ]
-          },
-          include: { campaign: true }
-        });
-        if (setRec) {
-          adSets.push(setRec);
-        } else if (service && /^\d+$/.test(adSetId)) {
+        try {
+          const sets = await prisma.$queryRaw`
+            SELECT id, "facebookAdSetId", name, status, "campaignId", targeting
+            FROM public.facebook_adsets
+            WHERE id = ${adSetId} OR "facebookAdSetId" = ${adSetId}
+            LIMIT 10
+          `;
+          if (sets && sets.length > 0) adSets = sets;
+        } catch (dbErr) {
+          console.warn('DB query for adset failed:', dbErr.message);
+        }
+        if (adSets.length === 0 && service && /^\d+$/.test(adSetId)) {
           // Direct Meta AdSet ID lookup
           adSets.push({ id: adSetId, facebookAdSetId: adSetId, name: 'Meta AdSet', status: 'UNKNOWN' });
         }
       } else if (campaignId) {
-        const campRec = await prisma.facebookCampaign.findFirst({
-          where: {
-            companyId,
-            OR: [
-              { id: campaignId },
-              { facebookCampaignId: campaignId }
-            ]
-          },
-          include: {
-            adSets: true
-          }
-        });
-        if (campRec?.adSets && campRec.adSets.length > 0) {
-          adSets = campRec.adSets;
-        } else if (service && /^\d+$/.test(campaignId)) {
+        try {
+          const sets = await prisma.$queryRaw`
+            SELECT s.id, s."facebookAdSetId", s.name, s.status, s."campaignId", s.targeting
+            FROM public.facebook_adsets s
+            JOIN public.facebook_campaigns c ON c.id = s."campaignId"
+            WHERE c."companyId" = ${companyId}
+              AND (c.id = ${campaignId} OR c."facebookCampaignId" = ${campaignId})
+            LIMIT 20
+          `;
+          if (sets && sets.length > 0) adSets = sets;
+        } catch (dbErr) {
+          console.warn('DB query for campaign adsets failed:', dbErr.message);
+        }
+        if (adSets.length === 0 && service && /^\d+$/.test(campaignId)) {
           // Direct Meta Campaign lookup: get child adsets from Meta
           try {
             const campSetsRes = await axios.get(`${service.baseUrl}/${campaignId}/adsets`, {
