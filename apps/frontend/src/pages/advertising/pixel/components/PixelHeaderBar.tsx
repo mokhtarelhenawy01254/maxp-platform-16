@@ -40,7 +40,7 @@ export const PixelHeaderBar: React.FC<PixelHeaderBarProps> = ({
                 Facebook Pixel & Conversions API
               </h1>
               <p className="text-[11px] text-gray-500 dark:text-gray-400 font-mono hidden sm:block">
-                Meta Graph API v21 • Client & Server Hybrid Attribution
+                Meta Graph API v26.0 • Client & Server Hybrid Attribution
               </p>
             </div>
           </div>

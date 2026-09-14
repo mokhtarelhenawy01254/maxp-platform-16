@@ -5,6 +5,8 @@ import {
   CheckCircleIcon,
   PaperAirplaneIcon,
   ArrowTopRightOnSquareIcon,
+  ClipboardDocumentIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 import { SimulatorEventType, SimulatorResult } from "../types";
 
@@ -19,6 +21,7 @@ interface RealtimeSimulatorTerminalProps {
     contentName: string;
   }) => Promise<SimulatorResult | null>;
   isSending: boolean;
+  recentEvents: SimulatorResult[];
 }
 
 export const RealtimeSimulatorTerminal: React.FC<RealtimeSimulatorTerminalProps> = ({
@@ -28,11 +31,13 @@ export const RealtimeSimulatorTerminal: React.FC<RealtimeSimulatorTerminalProps>
   onUpdateTestCode,
   onSendEvent,
   isSending,
+  recentEvents,
 }) => {
   const [selectedEvent, setSelectedEvent] = useState<SimulatorEventType>("Purchase");
   const [value, setValue] = useState(150);
   const [contentName, setContentName] = useState("قميص كلاسيكي تجريبي للتأكد من الربط");
   const [result, setResult] = useState<SimulatorResult | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +51,12 @@ export const RealtimeSimulatorTerminal: React.FC<RealtimeSimulatorTerminalProps>
     }
   };
 
+  const handleCopy = (id: string) => {
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   const isReady = Boolean(pixelId) && hasCapiToken;
 
   return (
@@ -55,7 +66,7 @@ export const RealtimeSimulatorTerminal: React.FC<RealtimeSimulatorTerminalProps>
         <div className="flex items-center gap-2">
           <CommandLineIcon className="w-4 h-4 text-indigo-500" />
           <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
-            طرفية اختبار الأحداث اللحظية (Live Event Console)
+            طرفية اختبار الأحداث اللحظية (Meta v26.0 Event Console)
           </h2>
         </div>
 
@@ -165,7 +176,7 @@ export const RealtimeSimulatorTerminal: React.FC<RealtimeSimulatorTerminalProps>
             <div className="flex items-center justify-between border-b border-gray-800 pb-2 text-[11px] text-gray-400">
               <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
                 <CheckCircleIcon className="w-3.5 h-3.5" />
-                <span>200 OK — تم استلام الحدث بنجاح في السيرفر</span>
+                <span>200 OK — تم استلام الحدث بنجاح في Meta Conversions API</span>
               </span>
               <span className="tabular-nums">{result.timestamp}</span>
             </div>
@@ -175,9 +186,21 @@ export const RealtimeSimulatorTerminal: React.FC<RealtimeSimulatorTerminalProps>
                 <span className="text-gray-500">Event: </span>
                 <span className="text-white font-bold">{result.eventName}</span>
               </div>
-              <div className="truncate">
+              <div className="truncate flex items-center gap-1">
                 <span className="text-gray-500">Event ID: </span>
                 <span className="text-amber-300 tabular-nums">{result.eventId}</span>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(result.eventId)}
+                  className="p-0.5 text-gray-400 hover:text-white"
+                  title="نسخ"
+                >
+                  {copiedId === result.eventId ? (
+                    <CheckIcon className="w-3 h-3 text-emerald-400" />
+                  ) : (
+                    <ClipboardDocumentIcon className="w-3 h-3" />
+                  )}
+                </button>
               </div>
               {result.testEventCode && (
                 <div>
@@ -185,6 +208,53 @@ export const RealtimeSimulatorTerminal: React.FC<RealtimeSimulatorTerminalProps>
                   <span className="text-cyan-300">{result.testEventCode}</span>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Events Stream Table */}
+        {recentEvents.length > 1 && (
+          <div className="pt-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                سجل تدفق الأحداث الأخيرة في الجلسة (Session Event Log)
+              </span>
+              <span className="text-[10px] text-gray-400 font-mono">
+                {recentEvents.length} أحداث
+              </span>
+            </div>
+
+            <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+              <table className="w-full text-right text-xs">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-800 text-[11px] text-gray-500">
+                    <th className="px-3 py-2">الحدث</th>
+                    <th className="px-3 py-2">معرف الحدث (Event ID)</th>
+                    <th className="px-3 py-2 text-center">الوقت</th>
+                    <th className="px-3 py-2 text-center">الحالة</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-mono text-[11px]">
+                  {recentEvents.map((ev, idx) => (
+                    <tr key={ev.eventId + idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                      <td className="px-3 py-2 font-bold text-gray-900 dark:text-white">
+                        {ev.eventName}
+                      </td>
+                      <td className="px-3 py-2 text-amber-600 dark:text-amber-400">
+                        {ev.eventId}
+                      </td>
+                      <td className="px-3 py-2 text-center tabular-nums text-gray-500">
+                        {ev.timestamp}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 font-sans font-semibold">
+                          Processed
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

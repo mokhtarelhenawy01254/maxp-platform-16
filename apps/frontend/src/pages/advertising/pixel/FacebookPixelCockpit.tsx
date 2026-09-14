@@ -12,6 +12,7 @@ import {
   TokenPermissionsData,
   SimulatorEventType,
   SimulatorResult,
+  FacebookOAuthPixel,
 } from "./types";
 import { PixelHeaderBar } from "./components/PixelHeaderBar";
 import { ConnectionCredentialsPanel } from "./components/ConnectionCredentialsPanel";
@@ -21,7 +22,20 @@ import { RealtimeSimulatorTerminal } from "./components/RealtimeSimulatorTermina
 import { AdvancedPrivacyDrawer } from "./components/AdvancedPrivacyDrawer";
 import { DiagnosticsTelemetryCard } from "./components/DiagnosticsTelemetryCard";
 import { PixelSlideOver } from "./components/PixelSlideOver";
+import { OAuthPixelSelectorSlideOver } from "./components/OAuthPixelSelectorSlideOver";
 import { StickySaveBar } from "./components/StickySaveBar";
+
+interface FacebookOAuthPixelsResponse {
+  success: boolean;
+  pixels: FacebookOAuthPixel[];
+  needsAuth?: boolean;
+  message?: string;
+}
+
+interface PixelTokenResponse {
+  success: boolean;
+  accessToken?: string;
+}
 
 const DEFAULT_SETTINGS: FacebookPixelSettings = {
   facebookPixelEnabled: false,
@@ -65,13 +79,14 @@ export const FacebookPixelCockpit: React.FC = () => {
   const [isRefreshingDiagnostics, setIsRefreshingDiagnostics] = useState(false);
   const [isSendingSimulatorEvent, setIsSendingSimulatorEvent] = useState(false);
 
-  // Diagnostics & Multiple Pixels
+  // Diagnostics, Telemetry & Multiple Pixels
   const [diagnostics, setDiagnostics] = useState<DiagnosticsData | null>(null);
   const [tokenPermissions, setTokenPermissions] = useState<TokenPermissionsData | null>(null);
   const [multiplePixels, setMultiplePixels] = useState<PixelConfig[]>([]);
   const [testingPixelId, setTestingPixelId] = useState<string | null>(null);
+  const [recentEvents, setRecentEvents] = useState<SimulatorResult[]>([]);
 
-  // Slide-over Drawer
+  // Slide-over Drawers
   const [slideOverState, setSlideOverState] = useState<{
     isOpen: boolean;
     mode: "add" | "create";
@@ -79,6 +94,12 @@ export const FacebookPixelCockpit: React.FC = () => {
   const [businessAccounts, setBusinessAccounts] = useState<Array<{ id: string; name: string }>>([]);
   const [isLoadingBusinesses, setIsLoadingBusinesses] = useState(false);
   const [isSubmittingDrawer, setIsSubmittingDrawer] = useState(false);
+
+  // OAuth Pixel Selector Drawer
+  const [oauthPixels, setOauthPixels] = useState<FacebookOAuthPixel[]>([]);
+  const [isOAuthSelectorOpen, setIsOAuthSelectorOpen] = useState(false);
+  const [isFetchingOAuthPixels, setIsFetchingOAuthPixels] = useState(false);
+  const [isSelectingOAuthPixel, setIsSelectingOAuthPixel] = useState(false);
 
   const hasLoaded = useRef(false);
 
@@ -143,12 +164,75 @@ export const FacebookPixelCockpit: React.FC = () => {
     const error = urlParams.get("error");
 
     if (success === "pixel_connected") {
-      toast.success("تم ربط حساب فيسبوك بنجاح");
+      toast.success("تم ربط حساب Facebook بنجاح!");
       window.history.replaceState({}, document.title, window.location.pathname);
       loadAllData();
+      setTimeout(() => {
+        fetchFacebookOAuthPixels(true);
+      }, 800);
     } else if (error) {
-      toast.error("فشل في الربط مع فيسبوك. يرجى المحاولة مرة أخرى.");
+      toast.error("فشل في استكمال الربط مع Facebook. يرجى المحاولة مجدداً.");
       window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  };
+
+  const fetchFacebookOAuthPixels = async (autoOpen = true) => {
+    try {
+      setIsFetchingOAuthPixels(true);
+      const response = await apiClient.get<FacebookOAuthPixelsResponse>("/facebook-oauth/pixels");
+      if (response.data.success) {
+        const list = response.data.pixels || [];
+        setOauthPixels(list);
+
+        if (list.length === 1) {
+          await handleSelectOAuthPixel(list[0]);
+        } else if (list.length > 1) {
+          if (autoOpen) setIsOAuthSelectorOpen(true);
+        } else {
+          toast.info("لم يتم العثور على أية Pixels في حساب Business Manager المرتبط");
+        }
+      } else if (response.data.needsAuth) {
+        toast.error("يرجى ربط حسابك مع Facebook أولاً");
+      } else {
+        toast.error(response.data.message || "فشل جلب البيكسلات من فيسبوك");
+      }
+    } catch (err) {
+      console.error("Error fetching OAuth pixels:", err);
+      toast.error("تعذر جلب بيكسلات الحساب من Meta");
+    } finally {
+      setIsFetchingOAuthPixels(false);
+    }
+  };
+
+  const handleSelectOAuthPixel = async (pixel: FacebookOAuthPixel) => {
+    try {
+      setIsSelectingOAuthPixel(true);
+      const tokenRes = await apiClient.post<PixelTokenResponse>(
+        "/facebook-oauth/generate-pixel-token",
+        { pixelId: pixel.pixelId }
+      );
+      const accessToken = tokenRes.data.accessToken;
+
+      const newSettings: FacebookPixelSettings = {
+        ...settings,
+        facebookPixelEnabled: true,
+        facebookPixelId: pixel.pixelId,
+        facebookConvApiEnabled: Boolean(accessToken),
+        facebookConvApiToken: accessToken || settings.facebookConvApiToken,
+      };
+
+      setSettings(newSettings);
+      setOriginalSettings(newSettings);
+      setIsOAuthSelectorOpen(false);
+
+      await storefrontSettingsService.updateSettings(newSettings);
+      toast.success(`تم ربط البيكسل ${pixel.pixelName} وتوليد CAPI Token بنجاح!`);
+      loadDiagnosticsSilently();
+    } catch (err) {
+      console.error("Error selecting OAuth pixel:", err);
+      toast.error("فشل تعيين وتفويض البيكسل المختار");
+    } finally {
+      setIsSelectingOAuthPixel(false);
     }
   };
 
@@ -236,7 +320,7 @@ export const FacebookPixelCockpit: React.FC = () => {
       if (response?.success) {
         setTokenPermissions(response.data);
         if (response.data.valid) {
-          toast.success("صلاحيات الـ Access Token ممتازة وصالحة");
+          toast.success("صلاحيات الـ Access Token ممتازة وصالحة لـ Meta v26.0");
         } else {
           toast.error("الـ Access Token يفتقر لصلاحيات Ads Management المطلوبة");
         }
@@ -279,14 +363,16 @@ export const FacebookPixelCockpit: React.FC = () => {
       });
 
       if (response?.success) {
-        toast.success(`تم استلام حدث ${params.eventName} في Meta CAPI بنجاح!`);
-        return {
+        const newResult: SimulatorResult = {
           eventId: response.data?.eventId || `evt_${Date.now()}`,
           eventName: params.eventName,
           timestamp: new Date().toLocaleTimeString("ar-EG"),
           testEventCode: response.data?.testEventCode || settings.facebookConvApiTestCode,
           status: "success",
         };
+        toast.success(`تم استلام حدث ${params.eventName} في Meta CAPI بنجاح!`);
+        setRecentEvents((prev) => [newResult, ...prev.slice(0, 4)]);
+        return newResult;
       } else {
         toast.error(response?.message || "فشل إرسال الحدث التجريبي");
         return null;
@@ -407,7 +493,7 @@ export const FacebookPixelCockpit: React.FC = () => {
         <div className="text-center space-y-3">
           <ArrowPathIcon className="w-8 h-8 animate-spin text-indigo-600 mx-auto" />
           <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-            جاري مزامنة بيانات وقمرة Facebook Pixel & CAPI…
+            جاري مزامنة بيانات وقمرة Facebook Pixel & CAPI v26.0…
           </p>
         </div>
       </div>
@@ -443,10 +529,12 @@ export const FacebookPixelCockpit: React.FC = () => {
           onTestCapi={handleTestCapi}
           onEasyConnect={handleEasyConnect}
           onCheckPermissions={handleCheckPermissions}
+          onFetchOAuthPixels={() => fetchFacebookOAuthPixels(true)}
           isTestingPixel={isTestingPixel}
           isTestingCapi={isTestingCapi}
           isConnectingOAuth={isConnectingOAuth}
           isCheckingPermissions={isCheckingPermissions}
+          isFetchingOAuthPixels={isFetchingOAuthPixels}
           hasCapiTokenFromOAuth={Boolean(diagnostics?.capi?.hasToken)}
         />
 
@@ -464,6 +552,7 @@ export const FacebookPixelCockpit: React.FC = () => {
           onUpdateTestCode={(code) => updateSettingsPartial({ facebookConvApiTestCode: code })}
           onSendEvent={handleSendSimulatorEvent}
           isSending={isSendingSimulatorEvent}
+          recentEvents={recentEvents}
         />
 
         {/* Multiple Pixels Section */}
@@ -502,6 +591,17 @@ export const FacebookPixelCockpit: React.FC = () => {
         businessAccounts={businessAccounts}
         isLoadingBusinesses={isLoadingBusinesses}
         isSubmitting={isSubmittingDrawer}
+      />
+
+      {/* Slide-over Drawer for Selecting from Facebook OAuth Pixels */}
+      <OAuthPixelSelectorSlideOver
+        isOpen={isOAuthSelectorOpen}
+        onClose={() => setIsOAuthSelectorOpen(false)}
+        pixels={oauthPixels}
+        isLoading={isFetchingOAuthPixels}
+        onSelectPixel={handleSelectOAuthPixel}
+        isSelecting={isSelectingOAuthPixel}
+        selectedPixelId={settings.facebookPixelId}
       />
 
       {/* Floating Sticky Save Bar on Mobile/Desktop when isDirty */}
