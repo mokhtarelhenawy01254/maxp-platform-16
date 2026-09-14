@@ -332,7 +332,6 @@ const BeforeAfterSlider: React.FC<{
       <div className="pil-ba-stage">
         {/* After / Our Product image (Base) */}
         {afterImage && <img src={afterImage} alt={afterLabel} className="pil-ba-img pil-ba-after" />}
-        <span className="pil-ba-badge pil-ba-badge-after">{afterLabel}</span>
 
         {/* Before / Competitor image (Clipped) */}
         <div
@@ -340,8 +339,11 @@ const BeforeAfterSlider: React.FC<{
           style={{ clipPath: `polygon(0 0, ${sliderPos}% 0, ${sliderPos}% 100%, 0 100%)` }}
         >
           {beforeImage && <img src={beforeImage} alt={beforeLabel} className="pil-ba-img pil-ba-before" />}
-          <span className="pil-ba-badge pil-ba-badge-before">{beforeLabel}</span>
         </div>
+
+        {/* Corner Badges: permanently visible on opposite corners, never clipped */}
+        <span className="pil-ba-badge pil-ba-badge-before">{beforeLabel}</span>
+        <span className="pil-ba-badge pil-ba-badge-after">{afterLabel}</span>
 
         {/* Divider Line & Handle */}
         <div className="pil-ba-divider" style={{ left: `${sliderPos}%` }}>
@@ -772,8 +774,8 @@ const ProductImageLandingPage: React.FC = () => {
     [variants],
   );
   const sizeOptions = useMemo(
-    () =>
-      sortVariantValues(
+    () => {
+      const parsed = sortVariantValues(
         uniqueValues(
           variants.map((variant) =>
             readVariantAttribute(variant, [
@@ -784,8 +786,16 @@ const ProductImageLandingPage: React.FC = () => {
             ]),
           ),
         ),
-      ),
-    [variants],
+      );
+      if (parsed.length > 0) return parsed;
+      const isFootwear = /كوتشي|حذاء|سنيكر|شوز|جزمة|أحذية|boot|sneaker|shoe/i.test(activeProduct?.name || "") ||
+        /كوتشي|حذاء|سنيكر|شوز/i.test(activeProduct?.description || "");
+      if (isFootwear) {
+        return ["37", "38", "39", "40", "41"];
+      }
+      return [];
+    },
+    [variants, activeProduct],
   );
   const selectedVariant = useMemo(() => {
     if (!variants.length) {
@@ -804,9 +814,15 @@ const ProductImageLandingPage: React.FC = () => {
 
         return (
           (!selectedColor || color === selectedColor) &&
-          (!selectedSize || size === selectedSize)
+          (!size || !selectedSize || size === selectedSize)
         );
-      }) || null
+      }) ||
+      variants.find((variant) => {
+        const color = readVariantAttribute(variant, ["Color", "Colour", "اللون"]);
+        return !selectedColor || color === selectedColor;
+      }) ||
+      variants[0] ||
+      null
     );
   }, [selectedColor, selectedSize, variants]);
   const currency = landingData?.company?.currency || "EGP";
@@ -1880,11 +1896,29 @@ const ProductImageLandingPage: React.FC = () => {
                 <b>
                   {sizeOptions.length
                     ? `${sizeOptions[0]}-${sizeOptions[sizeOptions.length - 1]}`
-                    : "متاح"}
+                    : "معاينة قبل الدفع"}
                 </b>
-                <span>{sizeOptions.length ? "المقاسات" : "التوفر"}</span>
+                <span>{sizeOptions.length ? "المقاسات المتاحة" : "شحن مجاني اليوم"}</span>
               </div>
             </div>
+
+            {/* Auto Urgency Countdown Card if no standalone COUNTDOWN section */}
+            {!activeSections.some((s) => s?.type === "COUNTDOWN") && (
+              <div className="pil-countdown-card" aria-label="العد التنازلي للعرض">
+                <div className="pil-countdown-inner">
+                  <div className="pil-countdown-header">
+                    <span className="pil-countdown-badge">
+                      <span className="pil-live-dot" />
+                      متبقي 7 قطع فقط بهذا السعر
+                    </span>
+                    <p className="pil-countdown-title">
+                      عرض خاص لفترة محدودة — اطلب الآن واستفد من الشحن المجاني والمعاينة قبل الدفع
+                    </p>
+                  </div>
+                  <LiveCountdownClock />
+                </div>
+              </div>
+            )}
 
             <p className="pil-sr-copy">
               {cleanProductDescription(activeProduct.description, 600) || activeProduct.name}
@@ -2586,7 +2620,7 @@ const ProductImageLandingPage: React.FC = () => {
       </div>
 
       {/* Floating Instant WhatsApp Help Button */}
-      {whatsappPhone && (
+      {whatsappPhone && !isFormInView && (
         <a
           href={`https://wa.me/${whatsappPhone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
             `السلام عليكم، بستفسر عن تفاصيل ومقاسات ${activeProduct.name} المتاح في العرض`,

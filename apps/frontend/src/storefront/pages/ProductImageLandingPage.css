@@ -735,7 +735,11 @@
 }
 
 .pil-chip {
+  min-height: 44px;
   padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1.5px solid oklch(84% 0.022 235);
   border-radius: 8px;
   background: #ffffff;
@@ -1796,20 +1800,27 @@
   bottom: 12px;
   font-size: 0.75rem;
   font-weight: 800;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
-  z-index: 5;
-}
-
-.pil-ba-badge-after {
-  left: 12px;
-  background: rgba(16, 185, 129, 0.9);
-  color: #ffffff;
+  z-index: 15;
+  pointer-events: none;
+  max-width: 44%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .pil-ba-badge-before {
-  right: 12px;
-  background: rgba(239, 68, 68, 0.9);
+  left: 10px;
+  background: rgba(220, 38, 38, 0.95);
+  color: #ffffff;
+}
+
+.pil-ba-badge-after {
+  right: 10px;
+  background: rgba(16, 185, 129, 0.95);
   color: #ffffff;
 }
 
@@ -2346,9 +2357,15 @@
 }
 
 .pil-chip-compact {
-  padding: 5px 10px;
-  font-size: 0.8rem;
-  border-radius: 6px;
+  min-height: 42px;
+  min-width: 42px;
+  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  border-radius: 8px;
+  box-sizing: border-box;
 }
 
 /* 4. WhatsApp Direct Quick Checkout */
@@ -2417,5 +2434,22 @@
   .pil-hero-thumb {
     width: 46px;
     height: 46px;
+  }
+
+  .pil-floating-whatsapp {
+    bottom: 88px;
+    left: 14px;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(37, 211, 102, 0.45);
+  }
+
+  .pil-floating-whatsapp .pil-wa-fab-text {
+    display: none;
   }
 }
