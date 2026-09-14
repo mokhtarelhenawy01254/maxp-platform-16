@@ -1373,8 +1373,16 @@ const ProductImageLandingPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            {allProductImages.length > 1 ? (
-              <div className="pil-hero-thumbs-strip" role="tablist" aria-label="معرض صور المنتج">
+            <div className="pil-hero-bottom" aria-label="مميزات الطلب">
+              <span>دفع عند الاستلام</span>
+              <span>تأكيد هاتفي</span>
+              <span>اختيار المقاس واللون</span>
+            </div>
+          </section>
+
+          {allProductImages.length > 1 ? (
+            <div className="pil-hero-gallery-bar" role="region" aria-label="معرض زوايا وصور المنتج">
+              <div className="pil-hero-thumbs-strip" role="tablist">
                 {allProductImages.map((img, tIdx) => (
                   <button
                     key={tIdx}
@@ -1387,13 +1395,8 @@ const ProductImageLandingPage: React.FC = () => {
                   </button>
                 ))}
               </div>
-            ) : null}
-            <div className="pil-hero-bottom" aria-label="مميزات الطلب">
-              <span>دفع عند الاستلام</span>
-              <span>تأكيد هاتفي</span>
-              <span>اختيار المقاس واللون</span>
             </div>
-          </section>
+          ) : null}
 
           {visibleCampaignSlices.length > 0 ? (
             <section className="pil-campaign" aria-label="صور الحملة">
