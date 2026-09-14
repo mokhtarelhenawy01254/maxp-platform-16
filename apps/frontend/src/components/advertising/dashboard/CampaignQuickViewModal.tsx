@@ -28,6 +28,7 @@ import {
   Users,
   SlidersHorizontal,
   Edit3,
+  RotateCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -183,6 +184,8 @@ export const CampaignQuickViewModal: React.FC<CampaignQuickViewModalProps> = ({
   const [adSetGenders, setAdSetGenders] = useState<string[]>(["1", "2"]);
   const [adSetLocations, setAdSetLocations] = useState<string[]>([]);
   const [savingAdSet, setSavingAdSet] = useState(false);
+  const [togglingAdSetId, setTogglingAdSetId] = useState<string | null>(null);
+  const [togglingAdId, setTogglingAdId] = useState<string | null>(null);
 
   // Sync initial campaign data
   useEffect(() => {
@@ -475,6 +478,79 @@ export const CampaignQuickViewModal: React.FC<CampaignQuickViewModalProps> = ({
     }
   };
 
+  const handleToggleAdSetStatus = async (adSet: any) => {
+    const isCurrentlyActive = adSet.status === "ACTIVE";
+    const nextStatus = isCurrentlyActive ? "PAUSED" : "ACTIVE";
+    try {
+      setTogglingAdSetId(adSet.id);
+      if (isCurrentlyActive) {
+        await facebookAdsService.pauseAdSet(adSet.id);
+      } else {
+        await facebookAdsService.resumeAdSet(adSet.id);
+      }
+      setFullCampaign((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          adSets: prev.adSets?.map((s: any) =>
+            s.id === adSet.id ? { ...s, status: nextStatus } : s
+          ),
+        };
+      });
+      toast.success(
+        isCurrentlyActive
+          ? isEn ? "Ad set paused" : `تم إيقاف المجموعة الإعلانية "${adSet.name}"`
+          : isEn ? "Ad set activated" : `تم تنشيط المجموعة الإعلانية "${adSet.name}"`
+      );
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.error ||
+          (isEn ? "Failed to update ad set status" : "فشل تغيير حالة المجموعة الإعلانية")
+      );
+    } finally {
+      setTogglingAdSetId(null);
+    }
+  };
+
+  const handleToggleAdStatus = async (ad: any, adSetId: string) => {
+    const isCurrentlyActive = ad.status === "ACTIVE";
+    const nextStatus = isCurrentlyActive ? "PAUSED" : "ACTIVE";
+    try {
+      setTogglingAdId(ad.id);
+      if (isCurrentlyActive) {
+        await facebookAdsService.pauseAd(ad.id);
+      } else {
+        await facebookAdsService.resumeAd(ad.id);
+      }
+      setFullCampaign((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          adSets: prev.adSets?.map((s: any) =>
+            s.id === adSetId
+              ? {
+                  ...s,
+                  ads: s.ads?.map((a: any) => (a.id === ad.id ? { ...a, status: nextStatus } : a)),
+                }
+              : s
+          ),
+        };
+      });
+      toast.success(
+        isCurrentlyActive
+          ? isEn ? "Ad creative paused" : `تم إيقاف الإعلان "${ad.name}"`
+          : isEn ? "Ad creative activated" : `تم تنشيط الإعلان "${ad.name}"`
+      );
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.error ||
+          (isEn ? "Failed to update ad status" : "فشل تغيير حالة الإعلان")
+      );
+    } finally {
+      setTogglingAdId(null);
+    }
+  };
+
   // ─────────────────────────────────────────────────────────────
   // Diagnostic Engine: Comprehensive Weakness Analysis ("نقاط الضعف")
   // ─────────────────────────────────────────────────────────────
@@ -727,6 +803,15 @@ export const CampaignQuickViewModal: React.FC<CampaignQuickViewModalProps> = ({
 
           {/* Close & Meta Actions */}
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={fetchDeepDetails}
+              disabled={loadingDetails}
+              title={isEn ? "Refresh live telemetry from Meta" : "تحديث الإحصائيات اللحظية من Meta"}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-blue-400 disabled:opacity-50 transition-all active:scale-[0.97]"
+            >
+              <RotateCw className={`h-4 w-4 ${loadingDetails ? "animate-spin text-blue-600" : ""}`} />
+            </button>
             {activeCampaign.facebookCampaignId && (
               <a
                 href={`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${activeCampaign.metaAccountId || selectedAdAccountId}&selected_campaign_ids=${activeCampaign.facebookCampaignId}`}
@@ -1222,6 +1307,27 @@ export const CampaignQuickViewModal: React.FC<CampaignQuickViewModalProps> = ({
                             <div className="flex flex-wrap items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    disabled={togglingAdSetId === adSet.id}
+                                    onClick={() => handleToggleAdSetStatus(adSet)}
+                                    title={
+                                      adSet.status === "ACTIVE"
+                                        ? isEn ? "Pause ad set" : "إيقاف المجموعة الإعلانية"
+                                        : isEn ? "Activate ad set" : "تفعيل المجموعة الإعلانية"
+                                    }
+                                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-1 focus:ring-blue-500/20 active:scale-[0.97] disabled:opacity-50 ${
+                                      adSet.status === "ACTIVE" ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                        adSet.status === "ACTIVE"
+                                          ? isEn ? "translate-x-4" : "-translate-x-4"
+                                          : "translate-x-0"
+                                      }`}
+                                    />
+                                  </button>
                                   <span className="text-xs font-black text-slate-900 dark:text-white">
                                     {adSet.name}
                                   </span>
@@ -1334,11 +1440,27 @@ export const CampaignQuickViewModal: React.FC<CampaignQuickViewModalProps> = ({
                                       className="flex items-center justify-between gap-2 rounded-lg border border-slate-200/60 bg-slate-50/50 p-2 text-xs dark:border-slate-800 dark:bg-slate-900/50"
                                     >
                                       <div className="flex items-center gap-2 min-w-0">
-                                        <span
-                                          className={`h-2 w-2 rounded-full shrink-0 ${
-                                            ad.status === "ACTIVE" ? "bg-emerald-500" : "bg-slate-400"
+                                        <button
+                                          type="button"
+                                          disabled={togglingAdId === ad.id}
+                                          onClick={() => handleToggleAdStatus(ad, adSet.id)}
+                                          title={
+                                            ad.status === "ACTIVE"
+                                              ? isEn ? "Pause ad creative" : "إيقاف الإعلان"
+                                              : isEn ? "Activate ad creative" : "تفعيل الإعلان"
+                                          }
+                                          className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none active:scale-[0.96] disabled:opacity-50 ${
+                                            ad.status === "ACTIVE" ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
                                           }`}
-                                        />
+                                        >
+                                          <span
+                                            className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                              ad.status === "ACTIVE"
+                                                ? isEn ? "translate-x-3" : "-translate-x-3"
+                                                : "translate-x-0"
+                                            }`}
+                                          />
+                                        </button>
                                         <span className="font-bold text-slate-900 dark:text-white truncate">
                                           {ad.name}
                                         </span>
