@@ -124,6 +124,8 @@ roles:
     - facebook_ad_update_status
     - facebook_ad_update_budget
     - facebook_ad_search_targeting
+    - facebook_ad_inspect_targeting
+
 
   FACEBOOK_SALES_SUPPORT:
     - product_search
@@ -287,6 +289,8 @@ roles:
     - facebook_ad_update_status
     - facebook_ad_update_budget
     - facebook_ad_search_targeting
+    - facebook_ad_inspect_targeting
+
 
   CEO:
     - delegate_task

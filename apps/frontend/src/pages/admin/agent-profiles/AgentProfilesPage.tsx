@@ -53,10 +53,17 @@ const FILES_EQUAL = (a: Record<string, string>, b: Record<string, string>) => {
 
 async function tryApiFetch<T>(path: string, init?: RequestInit): Promise<T | null> {
   try {
+    let companyId = "";
+    try {
+      const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+      if (userStr) companyId = JSON.parse(userStr).companyId || "";
+    } catch {
+      // ignore JSON parse error
+    }
     const res = await fetch(buildApiUrl(path), {
       ...init,
       headers: {
-        ...tokenManager.createAuthHeaders(),
+        ...tokenManager.createAuthHeaders(companyId ? { "X-Company-Id": companyId } : {}),
         "Content-Type": "application/json",
         ...(init?.headers || {}),
       },
@@ -172,7 +179,7 @@ export default function AgentProfilesPage() {
           setSelectedId(null);
         }
       } else {
-        const res = await sandboxApi.getAgents();
+        const res = await sandboxApi.getAgents(agentIdFromUrl || undefined);
         const list = (res.agents || []) as AgentItem[];
         setAgents(list);
 
@@ -188,7 +195,9 @@ export default function AgentProfilesPage() {
           }
         }
 
-        if (list.length > 0) {
+        if (agentIdFromUrl && list.some((a) => a.id === agentIdFromUrl)) {
+          setSelectedId(agentIdFromUrl);
+        } else if (list.length > 0) {
           setSelectedId((prev) => (list.some((a) => a.id === prev) ? prev : list[0].id));
         }
       }

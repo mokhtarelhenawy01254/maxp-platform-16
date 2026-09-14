@@ -72,6 +72,12 @@ type LandingFormState = {
   governorate: string;
   area: string;
   address: string;
+  notes?: string;
+};
+
+type BundleItemSelection = {
+  color: string;
+  size: string;
 };
 
 type AttributeMap = Record<string, string>;
@@ -88,6 +94,47 @@ const getColorSwatch = (name: string): string | null => {
   if (n.includes("زيتي") || n.includes("أخضر") || n.includes("اخضر") || n === "green") return "#15803d";
   if (n.includes("هافان") || n.includes("بني") || n === "brown") return "#78350f";
   return null;
+};
+
+const LiveCountdownClock: React.FC<{ initialHours?: number }> = ({ initialHours = 4 }) => {
+  const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number }>({
+    hours: initialHours,
+    minutes: 42,
+    seconds: 18,
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
+        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
+        if (prev.hours > 0) return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
+        return { hours: 0, minutes: 0, seconds: 0 };
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return (
+    <div className="pil-live-clock" aria-label="الوقت المتبقي لانتهاء العرض">
+      <div className="pil-clock-box">
+        <span className="pil-clock-num">{pad(timeLeft.hours)}</span>
+        <span className="pil-clock-unit">ساعة</span>
+      </div>
+      <span className="pil-clock-colon">:</span>
+      <div className="pil-clock-box">
+        <span className="pil-clock-num">{pad(timeLeft.minutes)}</span>
+        <span className="pil-clock-unit">دقيقة</span>
+      </div>
+      <span className="pil-clock-colon">:</span>
+      <div className="pil-clock-box">
+        <span className="pil-clock-num">{pad(timeLeft.seconds)}</span>
+        <span className="pil-clock-unit">ثانية</span>
+      </div>
+    </div>
+  );
 };
 
 const PRODUCT_IMAGE_LANDING_CONFIGS: Record<string, ProductLandingConfig> = {
@@ -166,6 +213,7 @@ const DEFAULT_FORM_STATE: LandingFormState = {
   governorate: "",
   area: "",
   address: "",
+  notes: "",
 };
 
 const normalizeLandingKey = (value?: string | null): string => {

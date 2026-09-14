@@ -2,7 +2,18 @@ import { buildApiUrl } from "../../../../utils/urlHelper";
 import { tokenManager } from "../../../../utils/tokenManager";
 import type { ChatMessage, MessageAttachment, ToolCall, StreamEvent } from "../types/sandbox.types";
 
-const getAuthHeaders = () => tokenManager.createAuthHeaders();
+const getAuthHeaders = () => {
+  let companyId = "";
+  try {
+    const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
+    if (userStr) {
+      companyId = JSON.parse(userStr).companyId || "";
+    }
+  } catch {
+    // ignore JSON parse error
+  }
+  return tokenManager.createAuthHeaders(companyId ? { "X-Company-Id": companyId } : {});
+};
 
 export interface SessionSummary {
   id: string;
@@ -278,8 +289,9 @@ export const sandboxApi = {
     }
   },
 
-  async getAgents(): Promise<AgentListResponse> {
-    const response = await fetch(buildApiUrl("ai-sandbox/agents"), {
+  async getAgents(agentParam?: string): Promise<AgentListResponse> {
+    const query = agentParam ? `?agent=${encodeURIComponent(agentParam)}` : "";
+    const response = await fetch(buildApiUrl(`ai-sandbox/agents${query}`), {
       headers: getAuthHeaders(),
     });
 

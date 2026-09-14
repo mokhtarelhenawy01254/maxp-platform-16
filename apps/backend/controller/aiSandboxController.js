@@ -970,7 +970,21 @@ async function resolveSandboxModelSelection(companyId, { provider, model, keyId,
 
 async function listAgents(req, res) {
   try {
-    const companyId = req.user?.companyId || req.companyId;
+    let companyId = req.user?.companyId || req.companyId || req.query?.companyId || req.headers['x-company-id'];
+    if (!companyId && req.user?.role === 'SUPER_ADMIN') {
+      const targetAgent = req.query?.agent || req.query?.agentId;
+      if (targetAgent) {
+        try {
+          const prisma = getSharedPrismaClient();
+          const rows = await prisma.$queryRawUnsafe(`SELECT company_id FROM ai.agents WHERE id = $1 LIMIT 1`, targetAgent);
+          if (rows && rows[0]?.company_id) {
+            companyId = rows[0].company_id;
+          }
+        } catch (dbErr) {
+          console.warn('[AI-SANDBOX] Could not resolve company from agent:', dbErr.message);
+        }
+      }
+    }
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
 
     // 2026: All agent data from ai-service API — no more Prisma companyAgent reads
@@ -1006,10 +1020,21 @@ async function listAgents(req, res) {
 
 async function getAgentProfile(req, res) {
   try {
-    const companyId = req.user?.companyId || req.companyId;
+    let companyId = req.user?.companyId || req.companyId || req.query?.companyId || req.headers['x-company-id'];
     const { agentId } = req.params;
-    if (!companyId) return res.status(400).json({ success: false, error: 'companyId required' });
     if (!agentId) return res.status(400).json({ success: false, error: 'agentId required' });
+    if (!companyId) {
+      try {
+        const prisma = getSharedPrismaClient();
+        const rows = await prisma.$queryRawUnsafe(`SELECT company_id FROM ai.agents WHERE id = $1 LIMIT 1`, agentId);
+        if (rows && rows[0]?.company_id) {
+          companyId = rows[0].company_id;
+        }
+      } catch (dbErr) {
+        console.warn('[AI-SANDBOX] Could not resolve company from agent:', dbErr.message);
+      }
+    }
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId required' });
 
     // 2026: Agent data from ai-service API — no more Prisma companyAgent reads
     const agentData = await aiServiceAdminClient.getAgent(companyId, agentId);
@@ -1057,6 +1082,21 @@ async function getAgentProfile(req, res) {
     const prisma = getSharedPrismaClient();
     let skillDetails = [];
     if (skillIds.length) {
+      const dbSkillsById = new Map();
+      try {
+        const aiSkills = await prisma.$queryRawUnsafe(
+          `SELECT id, name, description, instructions, allowed_tools, enabled, requires_human_approval, version
+           FROM ai.skills
+           WHERE (company_id = $1 OR company_id IS NULL)`,
+          companyId
+        );
+        for (const s of (aiSkills || [])) {
+          dbSkillsById.set(s.id, s);
+        }
+      } catch (err) {
+        console.warn('[AI-SANDBOX] Could not query ai.skills:', err.message);
+      }
+
       let dbSkillsByName = new Map();
       try {
         const rows = await prisma.companySkill.findMany({ where: { companyId, name: { in: skillIds } } });
@@ -1064,17 +1104,20 @@ async function getAgentProfile(req, res) {
       } catch {}
 
       skillDetails = skillIds.map(id => {
+        const aiSkill = dbSkillsById.get(id);
         const db = dbSkillsByName.get(id);
         const sf = loadSkillJson(id);
         return {
           id,
-          displayName: sf?.displayName || db?.name || id,
-          description: sf?.description || db?.description || '',
-          instructions: db?.instructions || '',
-          allowedTools: sf?.allowedTools || (db ? (() => { try { return JSON.parse(db.tools || '[]'); } catch { return []; } })() : []),
-          enabled: db ? db.enabled : true,
-          version: sf?.version || null,
-          requiresHumanApproval: sf?.requiresHumanApproval ?? false,
+          displayName: aiSkill?.name || sf?.displayName || db?.name || id,
+          description: aiSkill?.description || sf?.description || db?.description || '',
+          instructions: aiSkill?.instructions || db?.instructions || '',
+          allowedTools: (aiSkill?.allowed_tools && Array.isArray(aiSkill.allowed_tools))
+            ? aiSkill.allowed_tools
+            : (sf?.allowedTools || (db ? (() => { try { return JSON.parse(db.tools || '[]'); } catch { return []; } })() : [])),
+          enabled: aiSkill ? (aiSkill.enabled !== false) : (db ? db.enabled : true),
+          version: aiSkill?.version || sf?.version || null,
+          requiresHumanApproval: aiSkill?.requires_human_approval ?? (sf?.requiresHumanApproval ?? false),
         };
       });
     }

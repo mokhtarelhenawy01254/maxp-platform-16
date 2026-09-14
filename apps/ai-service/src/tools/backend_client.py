@@ -836,6 +836,26 @@ class BackendClient:
             headers={"X-Company-Id": company_id},
         )
 
+    async def inspect_facebook_targeting(
+        self,
+        company_id: str,
+        campaign_id: str | None = None,
+        adset_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Inspect live Meta targeting parameters (regions, ages, genders, custom locations) for an AdSet or Campaign."""
+        params: dict[str, Any] = {}
+        if campaign_id:
+            params["campaignId"] = campaign_id
+        if adset_id:
+            params["adSetId"] = adset_id
+        return await self._request(
+            "GET",
+            "/api/v1/facebook-ads/ai/targeting/inspect",
+            params=params,
+            headers={"X-Company-Id": company_id},
+        )
+
+
 
 _backend_client: BackendClient | None = None
 

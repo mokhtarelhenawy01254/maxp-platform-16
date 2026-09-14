@@ -564,6 +564,7 @@ class FacebookAdsAiController {
               'audit_read',
               'generate_social_image',
               'facebook_ad_search_targeting',
+              'facebook_ad_inspect_targeting',
             ],
             allowedSkills: [
               'facebook-ad-draft',
@@ -1554,7 +1555,194 @@ class FacebookAdsAiController {
       });
     } catch (error) {
       console.error('❌ Error in searchTargeting:', error);
-      return res.status(500).json({ success: false, error: error.message || 'Failed to search targeting' });
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * GET/POST /api/v1/facebook-ads/ai/targeting/inspect
+   * Inspect live Meta targeting specs (regions, age, gender, placements, interests) for any Campaign or AdSet
+   */
+  async inspectTargeting(req, res) {
+    try {
+      const companyId = req.user?.companyId || req.headers['x-company-id'];
+      if (!companyId) {
+        return res.status(401).json({ success: false, error: 'Company ID is required' });
+      }
+
+      const campaignId = req.query.campaignId || req.body?.campaign_id || req.body?.campaignId;
+      const adSetId = req.query.adSetId || req.body?.adset_id || req.body?.adSetId;
+
+      if (!campaignId && !adSetId) {
+        return res.status(400).json({ success: false, error: 'campaignId or adSetId is required' });
+      }
+
+      const axios = require('axios');
+      const { getCompanyAdsAccessToken } = require('./facebookAds/_shared/tokens');
+      const accessToken = await getCompanyAdsAccessToken(companyId);
+
+      const FacebookAdsService = require('../services/facebookAdsService');
+      const service = accessToken ? new FacebookAdsService(accessToken) : null;
+      const prisma = require('../services/sharedDatabase').getSharedPrismaClient();
+
+      let adSets = [];
+      if (adSetId) {
+        const setRec = await prisma.facebookAdSet.findFirst({
+          where: {
+            OR: [
+              { id: adSetId },
+              { facebookAdSetId: adSetId }
+            ]
+          },
+          include: { campaign: true }
+        });
+        if (setRec) {
+          adSets.push(setRec);
+        } else if (service && /^\d+$/.test(adSetId)) {
+          // Direct Meta AdSet ID lookup
+          adSets.push({ id: adSetId, facebookAdSetId: adSetId, name: 'Meta AdSet', status: 'UNKNOWN' });
+        }
+      } else if (campaignId) {
+        const campRec = await prisma.facebookCampaign.findFirst({
+          where: {
+            companyId,
+            OR: [
+              { id: campaignId },
+              { facebookCampaignId: campaignId }
+            ]
+          },
+          include: {
+            adSets: true
+          }
+        });
+        if (campRec?.adSets && campRec.adSets.length > 0) {
+          adSets = campRec.adSets;
+        } else if (service && /^\d+$/.test(campaignId)) {
+          // Direct Meta Campaign lookup: get child adsets from Meta
+          try {
+            const campSetsRes = await axios.get(`${service.baseUrl}/${campaignId}/adsets`, {
+              params: {
+                fields: 'id,name,status,targeting,daily_budget,lifetime_budget,optimization_goal,billing_event',
+                access_token: accessToken,
+              },
+              timeout: 10000,
+            });
+            if (campSetsRes?.data?.data) {
+              adSets = campSetsRes.data.data.map(s => ({
+                id: s.id,
+                facebookAdSetId: s.id,
+                name: s.name,
+                status: s.status,
+                _liveData: s,
+              }));
+            }
+          } catch (e) {
+            console.warn('Could not fetch adsets for campaign from Meta:', e.message);
+          }
+        }
+      }
+
+      const GOV_NAMES = {
+        '1001': 'القاهرة',
+        '998': 'الجيزة',
+        '996': 'الإسكندرية',
+        '991': 'الدقهلية',
+        '1004': 'الشرقية',
+        '995': 'الغربية',
+        '999': 'المنوفية',
+        '1011': 'كفر الشيخ',
+        '993': 'البحيرة',
+        '1010': 'دمياط',
+        '1009': 'بورسعيد',
+        '997': 'الإسماعيلية',
+        '1002': 'القليوبية',
+        '1005': 'السويس',
+        '1007': 'أسيوط',
+        '1014': 'سوهاج',
+        '1013': 'قنا',
+        '1006': 'أسوان',
+        '4194': 'الأقصر',
+        '992': 'البحر الأحمر',
+        '1012': 'مطروح',
+        '1008': 'بني سويف',
+        '1000': 'المنيا',
+        '994': 'الفيوم',
+        '1003': 'الوادي الجديد',
+        '1016': 'شمال سيناء',
+        '1015': 'جنوب سيناء',
+      };
+
+      const liveResults = [];
+      for (const set of adSets) {
+        const metaSetId = set.facebookAdSetId || (/^\d+$/.test(set.id) ? set.id : null);
+        let liveMeta = set._liveData || null;
+
+        if (!liveMeta && service && metaSetId) {
+          try {
+            const resp = await axios.get(`${service.baseUrl}/${metaSetId}`, {
+              params: {
+                fields: 'id,name,status,targeting,daily_budget,lifetime_budget,optimization_goal,billing_event',
+                access_token: accessToken,
+              },
+              timeout: 10000,
+            });
+            liveMeta = resp.data;
+          } catch (e) {
+            console.warn(`Could not fetch live Meta targeting for adset ${metaSetId}:`, e.message);
+          }
+        }
+
+        let targetingObj = liveMeta?.targeting;
+        if (!targetingObj && set.targeting) {
+          targetingObj = typeof set.targeting === 'object' ? set.targeting : JSON.parse(set.targeting || '{}');
+        }
+        targetingObj = targetingObj || {};
+
+        const geo = targetingObj.geo_locations || {};
+        const regions = (geo.regions || []).map(r => GOV_NAMES[String(r.key)] || r.name || String(r.key));
+        const countries = geo.countries || [];
+        const cities = (geo.cities || []).map(c => c.name || String(c.key));
+        const customLocs = (geo.custom_locations || []).map(l => `دبوس (${l.latitude}, ${l.longitude} - قطر ${l.radius}${l.distance_unit || 'km'})`);
+
+        const excGeo = targetingObj.excluded_geo_locations || {};
+        const excludedRegions = (excGeo.regions || []).map(r => GOV_NAMES[String(r.key)] || r.name || String(r.key));
+        const excludedCities = (excGeo.cities || []).map(c => c.name || String(c.key));
+
+        let genderText = 'الجميع (رجال ونساء)';
+        if (targetingObj.genders?.includes(2) && !targetingObj.genders?.includes(1)) genderText = 'نساء فقط';
+        if (targetingObj.genders?.includes(1) && !targetingObj.genders?.includes(2)) genderText = 'رجال فقط';
+
+        const interests = (targetingObj.flexible_spec?.[0]?.interests || []).map(i => i.name);
+
+        liveResults.push({
+          adSetId: set.id,
+          facebookAdSetId: metaSetId,
+          adSetName: liveMeta?.name || set.name,
+          status: liveMeta?.status || set.status,
+          isLiveFromMeta: Boolean(liveMeta),
+          targeting: targetingObj,
+          summary: {
+            countries,
+            regions,
+            cities,
+            customLocations: customLocs,
+            excludedRegions,
+            excludedCities,
+            ageRange: `${targetingObj.age_min || 18} - ${targetingObj.age_max || 65}+`,
+            genders: genderText,
+            interests,
+          },
+        });
+      }
+
+      return res.json({
+        success: true,
+        count: liveResults.length,
+        data: liveResults,
+      });
+    } catch (error) {
+      console.error('❌ Error in inspectTargeting:', error);
+      return res.status(500).json({ success: false, error: error.message || 'Failed to inspect targeting' });
     }
   }
 }

@@ -1,4 +1,4 @@
-﻿const FacebookAdsService = require('../../services/facebookAdsService');
+const FacebookAdsService = require('../../services/facebookAdsService');
 const facebookAdsAiDraftService = require('../../services/facebookAdsAiDraftService');
 
 describe('Facebook Ads Advanced Targeting: GPS Pin-Drop, Negative Geo-Exclusions, & Dynamic Search', () => {
@@ -72,9 +72,9 @@ describe('Facebook Ads Advanced Targeting: GPS Pin-Drop, Negative Geo-Exclusions
       expect(spec.excluded_geo_locations.regions).toHaveLength(3);
 
       const excludedKeys = spec.excluded_geo_locations.regions.map(r => r.key);
-      expect(excludedKeys).toContain('1169');
-      expect(excludedKeys).toContain('1186');
-      expect(excludedKeys).toContain('1187');
+      expect(excludedKeys).toContain('1007');
+      expect(excludedKeys).toContain('1014');
+      expect(excludedKeys).toContain('1013');
 
       expect(spec.excluded_geo_locations.cities).toBeDefined();
       expect(spec.excluded_geo_locations.cities[0].key).toBe('2420605');
@@ -122,7 +122,7 @@ describe('Facebook Ads Advanced Targeting: GPS Pin-Drop, Negative Geo-Exclusions
       const spec = service.buildTargetingSpec(payload.targeting);
       expect(spec.geo_locations.custom_locations).toHaveLength(1);
       expect(spec.excluded_geo_locations.regions).toHaveLength(2);
-      expect(spec.excluded_geo_locations.regions.map(r => r.key)).toEqual(['1169', '1186']);
+      expect(spec.excluded_geo_locations.regions.map(r => r.key)).toEqual(['1007', '1014']);
     });
   });
 });

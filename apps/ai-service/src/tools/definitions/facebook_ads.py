@@ -1790,6 +1790,93 @@ facebook_ad_search_targeting_tool = FunctionTool(
     format_result=_format_facebook_ad_search_targeting,
 )
 
+
+class FacebookAdInspectTargetingInput(BaseModel):
+    campaign_id: str | None = Field(default=None, description="معرف الحملة الإعلانية (Meta Campaign ID) لفحص إعدادات استهداف مجموعاتها الإعلانية")
+    adset_id: str | None = Field(default=None, description="معرف المجموعة الإعلانية (Meta AdSet ID) لفحص الاستهداف الجغرافي والديموغرافي اللحظي")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+async def facebook_ad_inspect_targeting(input_data: FacebookAdInspectTargetingInput) -> dict[str, Any]:
+    """Inspect live Meta targeting parameters (geolocations, ages, genders, placements, interests) for any campaign or adset."""
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "company_id is required"}
+
+    from src.tools.backend_client import get_backend_client
+    backend = get_backend_client()
+    try:
+        res = await backend.inspect_facebook_targeting(
+            company_id=company_id,
+            campaign_id=input_data.campaign_id,
+            adset_id=input_data.adset_id,
+        )
+        return res
+    except Exception as exc:
+        logger.warning("facebook_ad_inspect_targeting_failed", error=str(exc))
+        return {"success": False, "error": str(exc), "data": []}
+
+
+def _format_facebook_ad_inspect_targeting(result: dict[str, Any]) -> str:
+    data = result.get("data") or []
+    if not data:
+        return "لم يتم العثور على مجموعات إعلانية أو استهداف مسجل لهذه الحملة/المجموعة."
+
+    lines = []
+    for item in data:
+        name = item.get("adSetName") or "المجموعة الإعلانية"
+        status = item.get("status") or "UNKNOWN"
+        summary = item.get("summary") or {}
+        regions = summary.get("regions") or []
+        countries = summary.get("countries") or []
+        cities = summary.get("cities") or []
+        custom_locs = summary.get("customLocations") or []
+        exc_regions = summary.get("excludedRegions") or []
+        exc_cities = summary.get("excludedCities") or []
+        age = summary.get("ageRange") or "الكل"
+        genders = summary.get("genders") or "الجميع"
+        interests = summary.get("interests") or []
+        is_live = "مباشر من خوادم Meta 🟢" if item.get("isLiveFromMeta") else "من قاعدة البيانات المحلية 🟡"
+
+        loc_parts = []
+        if regions:
+            loc_parts.append("المحافظات: " + "، ".join(regions))
+        if cities:
+            loc_parts.append("المدن: " + "، ".join(cities))
+        if custom_locs:
+            loc_parts.append("نقاط الخريطة: " + "، ".join(custom_locs))
+        if countries and not (regions or cities or custom_locs):
+            loc_parts.append("الدول: " + "، ".join(countries))
+
+        loc_text = " | ".join(loc_parts) if loc_parts else "الكل"
+
+        exc_parts = []
+        if exc_regions:
+            exc_parts.append("محافظات مستبعدة: " + "، ".join(exc_regions))
+        if exc_cities:
+            exc_parts.append("مدن مستبعدة: " + "، ".join(exc_cities))
+        exc_text = f" ({' | '.join(exc_parts)})" if exc_parts else ""
+
+        interest_text = f" | الاهتمامات: {', '.join(interests)}" if interests else ""
+
+        lines.append(
+            f"🎯 **{name}** (الحالة: {status}) [{is_live}]:\n"
+            f"- الاستهداف الجغرافي: {loc_text}{exc_text}\n"
+            f"- الفئة العمرية: {age} | الجنس: {genders}{interest_text}"
+        )
+
+    return "\n\n".join(lines)
+
+
+facebook_ad_inspect_targeting_tool = FunctionTool(
+    name="facebook_ad_inspect_targeting",
+    description="Inspect live Meta targeting parameters (regions, governorates, cities, GPS pin-drops, age, gender, exclusions, interests) directly from Meta Marketing API or database for any Campaign or AdSet ID.",
+    func=facebook_ad_inspect_targeting,
+    input_model=FacebookAdInspectTargetingInput,
+    format_result=_format_facebook_ad_inspect_targeting,
+)
+
+
 __all_tools__ = [
     facebook_ad_analyze_product_tool,
     facebook_ad_create_full_draft_tool,
@@ -1801,6 +1888,8 @@ __all_tools__ = [
     facebook_ad_update_status_tool,
     facebook_ad_update_budget_tool,
     facebook_ad_search_targeting_tool,
+    facebook_ad_inspect_targeting_tool,
 ]
+
 
 

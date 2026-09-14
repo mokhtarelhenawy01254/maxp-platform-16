@@ -165,6 +165,27 @@ async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any
 
         await session.commit()
 
+        # Also ensure skill is attached to MEDIA_BUYER agent in ai.agents if present
+        if target_id:
+            try:
+                from src.db.models.agent import Agent as AgentModel
+                stmt_agent = select(AgentModel).where(
+                    AgentModel.company_id == company_id,
+                    AgentModel.role == "MEDIA_BUYER",
+                    AgentModel.status != "ARCHIVED",
+                )
+                agent_res = await session.execute(stmt_agent)
+                mb_agent = agent_res.scalars().first()
+                if mb_agent:
+                    current_skills = list(mb_agent.allowed_skills or [])
+                    if target_id not in current_skills:
+                        current_skills.append(target_id)
+                        mb_agent.allowed_skills = current_skills
+                        session.add(mb_agent)
+                        await session.commit()
+            except Exception:
+                pass
+
         # Update Hermes in-memory cache
         register_tenant_skill_in_cache(company_id, {
             "id": skill.id,

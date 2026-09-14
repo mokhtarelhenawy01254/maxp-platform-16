@@ -94,6 +94,10 @@ router.post('/ai/campaigns/:campaignId/budget', facebookAdsAiController.updateCa
 router.get('/ai/targeting/search', (req, res) => facebookAdsAiController.searchTargeting(req, res));
 router.post('/ai/targeting/search', (req, res) => facebookAdsAiController.searchTargeting(req, res));
 
+// GET & POST /api/v1/facebook-ads/ai/targeting/inspect - فحص الاستهداف الجغرافي والديموغرافي اللحظي
+router.get('/ai/targeting/inspect', (req, res) => facebookAdsAiController.inspectTargeting(req, res));
+router.post('/ai/targeting/inspect', (req, res) => facebookAdsAiController.inspectTargeting(req, res));
+
 /**
  * ============================================
  * Budget Alert Routes
