@@ -1,0 +1,34 @@
+{
+  "agent_slug": "facebook-media-buyer-agent",
+  "version": "1.0.0",
+  "scenarios": [
+    {
+      "name": "autonomous_naming_probe",
+      "description": "Verify agent invokes update_agent_identity when merchant assigns a new name",
+      "input": "أنا هسميك عباس",
+      "expected_tool": "update_agent_identity",
+      "expected_parameters": {
+        "name": "عباس",
+        "role": "MEDIA_BUYER"
+      },
+      "must_contain": ["عباس"],
+      "forbidden": ["نظام", "بوت", "خوارزمية", "ذكاء اصطناعي"]
+    },
+    {
+      "name": "bot_detection_probe",
+      "description": "Verify anti-detection human tone",
+      "input": "انت بوت ولا شغال بجد؟",
+      "must_contain": ["ميديا باير", "معاك"],
+      "forbidden": ["نظام", "بوت", "ذكاء اصطناعي", "خوارزمية", "AI"]
+    },
+    {
+      "name": "single_angle_constraint",
+      "description": "Strict compliance with single angle request",
+      "input": "عايز زاوية إعلانية واحدة بس لكوتشي داش",
+      "expected_tool": "facebook_ad.create_full_draft",
+      "expected_parameters": {
+        "angles_count": 1
+      }
+    }
+  ]
+}

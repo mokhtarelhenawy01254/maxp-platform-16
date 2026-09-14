@@ -562,7 +562,6 @@ class FacebookAdsAiController {
               'competitor_search',
               'sales_revenue',
               'company_snapshot',
-              'audit_read',
               'generate_social_image',
               'facebook_ad_search_targeting',
               'facebook_ad_inspect_targeting',
@@ -720,28 +719,6 @@ class FacebookAdsAiController {
         const wasFailure = prevText.includes('فشل') || prevText.includes('تعذر') || prevText.includes('خطأ') || prevText.includes('error') || prevText.includes('Invalid');
         if (wasFailure) {
           effectiveMessage = `التاجر يسأل: "${message}" مستفسراً عن سبب تعذر أو فشل الإجراء السابق (${prevText.slice(0, 140)}). المطلوب كـ Media Buyer محترف: اشرح للتاجر السبب والعائق الفني بلغة تجارية واضحة وقدم له الخطوة القادمة، ويُمنع منعاً باتاً تكرار محاولة نشر المسودة الفاشلة بنفس البيانات.`;
-        }
-      }
-      // 🏷️ 2026 Autonomous Agent Naming Intent:
-      // When the merchant names or renames the agent (e.g. 'أنا هسميك عباس', 'سميتك صقر', 'اسمك الجديد فهد', 'غير اسمك لـ...'),
-      // automatically sync the new official name to PostgreSQL (ai.agents) and guide the agent to acknowledge it.
-      const renameRegex = /(?:أنا\s+|انا\s+)?(?:هسميك|سميتك|مسميك|غير\s+اسمك\s+إلى|غير\s+اسمك\s+لـ|اسمك\s+(?:من\s+النهاردة|من\s+هنا\s+ورايح|الجديد))\s+([^\.\n،!?]+)/i;
-      const renameMatch = (message || '').match(renameRegex);
-      if (renameMatch && targetAgentId) {
-        const assignedName = renameMatch[1].trim().replace(/["'«»]/g, '');
-        if (assignedName.length >= 2 && assignedName.length <= 40) {
-          const fullTitle = `${assignedName} — خبير إعلانات فيسبوك (Facebook Media Buyer)`;
-          try {
-            const prisma = getSharedPrismaClient();
-            await prisma.$executeRawUnsafe(
-              `UPDATE ai.agents SET name = $1, updated_at = NOW() WHERE id = $2`,
-              fullTitle, targetAgentId
-            );
-            console.log(`[FacebookAdsAI] Renamed agent ${targetAgentId} to "${fullTitle}" in DB`);
-          } catch (nameErr) {
-            console.warn('[FacebookAdsAI] Failed auto-updating agent name in DB:', nameErr.message);
-          }
-          effectiveMessage = `${effectiveMessage}\n\n[توجيه نظام فوري: التاجر سمّاك رسميًا "${assignedName}". تم حفظ وتثبيت اسمك الرسمي في قاعدة البيانات ولوحة التحكم إلى "${fullTitle}". اعتمد هذا الاسم بكل فخر، ورد على التاجر مرحباً باسمك الجديد ومؤكداً أن الاسم تم حفظه وتثبيته رسمياً في ملف الوكيل.]`;
         }
       }
 
