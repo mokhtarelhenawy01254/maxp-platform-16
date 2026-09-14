@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowDown, ArrowUp, ChevronDown, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, Copy, Eye, EyeOff, Trash2 } from "lucide-react";
 import { LandingSection, ProductLandingProduct, SECTION_VARIANTS_MAP } from "./types";
 import { SectionItemEditor } from "./SectionItemEditor";
 
@@ -9,6 +9,8 @@ interface SectionsStackEditorProps {
   onToggleActiveSection: (id: string) => void;
   onMoveSection: (index: number, direction: -1 | 1) => void;
   onRemoveSection: (id: string) => void;
+  onDuplicateSection?: (id: string) => void;
+  onToggleEnabled?: (id: string) => void;
   onUpdateSectionContent: (
     id: string,
     updatedContent: LandingSection["content"],
@@ -23,6 +25,8 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
   onToggleActiveSection,
   onMoveSection,
   onRemoveSection,
+  onDuplicateSection,
+  onToggleEnabled,
   onUpdateSectionContent,
   onUpdateSectionVariant,
   product,
@@ -36,12 +40,13 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
       ) : (
         sections.map((section, idx) => {
           const isActive = activeSectionId === section.id;
+          const isEnabled = section.enabled !== false;
           const variants = SECTION_VARIANTS_MAP[section.type];
 
           return (
             <div
               key={section.id}
-              className={`eo-section-block ${isActive ? "is-active" : ""}`}
+              className={`eo-section-block ${isActive ? "is-active" : ""} ${!isEnabled ? "is-disabled" : ""}`}
             >
               <div
                 className="eo-section-header"
@@ -51,6 +56,9 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
                   <span className="eo-sec-num">#{idx + 1}</span>
                   <strong>{section.title}</strong>
                   <span className="eo-sec-type">{section.type}</span>
+                  {!isEnabled && (
+                    <span className="eo-disabled-tag">مخفي 👁️‍🗨️</span>
+                  )}
                 </div>
 
                 {variants && variants.length > 1 && onUpdateSectionVariant && (
@@ -82,13 +90,34 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
                   className="eo-sec-controls"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {onToggleEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => onToggleEnabled(section.id)}
+                      className={isEnabled ? "eo-btn-ctrl-active" : "eo-btn-ctrl-muted"}
+                      title={isEnabled ? "إخفاء القسم من العرض" : "إظهار القسم"}
+                    >
+                      {isEnabled ? <Eye size={14} /> : <EyeOff size={14} />}
+                    </button>
+                  )}
+
+                  {onDuplicateSection && (
+                    <button
+                      type="button"
+                      onClick={() => onDuplicateSection(section.id)}
+                      title="نسخ وتكرار هذا القسم (Duplicate)"
+                    >
+                      <Copy size={14} />
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => onMoveSection(idx, -1)}
                     disabled={idx === 0}
                     title="تحريك لأعلى"
                   >
-                    <ArrowUp size={15} />
+                    <ArrowUp size={14} />
                   </button>
                   <button
                     type="button"
@@ -96,7 +125,7 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
                     disabled={idx === sections.length - 1}
                     title="تحريك لأسفل"
                   >
-                    <ArrowDown size={15} />
+                    <ArrowDown size={14} />
                   </button>
                   <button
                     type="button"
@@ -108,7 +137,7 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
                     className="eo-btn-del"
                     title="حذف القسم"
                   >
-                    <Trash2 size={15} />
+                    <Trash2 size={14} />
                   </button>
                   <ChevronDown
                     size={18}

@@ -26,6 +26,13 @@ export interface ProductLandingProduct {
 export type SectionType =
   | "MEDIA"
   | "TEXT"
+  | "HEADING"
+  | "IMAGE_ONLY"
+  | "CAROUSEL"
+  | "HOW_IT_WORKS"
+  | "FEATURED_PRODUCT"
+  | "YOUTUBE_VIDEO"
+  | "BUY_BUTTON"
   | "HTML"
   | "FORM"
   | "FAQ"
@@ -49,9 +56,22 @@ export interface LandingSection {
   content: {
     images?: string[];
     mainImage?: string;
+    mobileImage?: string;
+    isFullWidth?: boolean;
+    isCircle?: boolean;
+    borderRadius?: number;
+    bgColor?: string;
+    bgImage?: string;
+    reversed?: boolean;
+    customCss?: string;
     heading?: string;
     subheading?: string;
     bodyText?: string;
+    textColor?: string;
+    titleColor?: string;
+    descriptionColor?: string;
+    titleAlign?: "right" | "center" | "left";
+    descriptionAlign?: "right" | "center" | "left";
     htmlCode?: string;
     orderKicker?: string;
     orderTitle?: string;
@@ -59,12 +79,14 @@ export interface LandingSection {
     buttonLabel?: string;
     faqs?: Array<{ question: string; answer: string }>;
     features?: Array<{ title: string; desc: string; icon: string }>;
-    reviews?: Array<{ name: string; text: string; rating: number; avatar?: string }>;
+    reviews?: Array<{ name: string; text: string; rating: number; avatar?: string; heading?: string; dateOrSource?: string }>;
     bannerText?: string;
     bannerBg?: string;
     text?: string;
     timerEndsMinutes?: number;
     lowStockCount?: number;
+    counterHours?: number;
+    counterBgColor?: string;
     comparisonTitle?: string;
     comparisonUsLabel?: string;
     comparisonThemLabel?: string;
@@ -79,12 +101,23 @@ export interface LandingSection {
     videoUrl?: string;
     videoThumbnail?: string;
     videoCaption?: string;
+    youtubeUrl?: string;
     beforeImage?: string;
     afterImage?: string;
     beforeLabel?: string;
     afterLabel?: string;
     whatsappSupportPhone?: string;
     whatsappSupportMessage?: string;
+    carouselImages?: Array<{ image: string; mobileImage?: string; destType?: string; destSlug?: string; title?: string }>;
+    steps?: Array<{ stepNumber?: number; title: string; desc: string; icon?: string; image?: string }>;
+    featuredPrice?: number | string;
+    featuredBadge?: string;
+    featuredButtonText?: string;
+    buyButtonText?: string;
+    buyButtonBg?: string;
+    buyButtonTextColor?: string;
+    buyButtonAction?: "order" | "whatsapp" | "link";
+    buyButtonLink?: string;
   };
 }
 

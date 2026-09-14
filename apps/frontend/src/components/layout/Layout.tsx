@@ -225,7 +225,8 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     location.pathname.startsWith("/advertising/creative-studio") ||
     location.pathname.startsWith("/advertising/facebook-pixel") ||
     location.pathname.startsWith("/inventory/studio") ||
-    location.pathname.startsWith("/products/studio");
+    location.pathname.startsWith("/products/studio") ||
+    location.pathname.startsWith("/tickets");
   const resolvedUserLayout = userLayout || (user?.company?.sidebarLayout as SidebarLayoutType);
   const currentLayout = resolvedUserLayout || "three-tier";
   const companyScopeKey = user?.companyId || user?.company?.id || "no-company";

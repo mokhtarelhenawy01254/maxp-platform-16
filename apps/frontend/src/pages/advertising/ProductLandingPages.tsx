@@ -12,8 +12,11 @@ import {
   DEFAULT_EDITOR,
   EditorState,
   LandingSection,
+  LandingTemplate,
   SIDEBAR_ITEMS,
   buildDefaultSectionsForProduct,
+  exportLandingPageToJson,
+  importLandingPageFromJson,
 } from "./product-landing/types";
 import { ProductLandingHeader } from "./product-landing/ProductLandingHeader";
 import { ProductSummaryCard } from "./product-landing/ProductSummaryCard";
@@ -21,6 +24,7 @@ import { SectionsStackEditor } from "./product-landing/SectionsStackEditor";
 import { ElementsSidebarDrawer } from "./product-landing/ElementsSidebarDrawer";
 import { PhoneMockupPreview } from "./product-landing/PhoneMockupPreview";
 import { CreateLandingModal } from "./product-landing/CreateLandingModal";
+import { TemplatesLibraryModal } from "./product-landing/TemplatesLibraryModal";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { buildStoreUrl } from "../../utils/storeUrl";
 import "./ProductLandingPages.css";
@@ -41,6 +45,7 @@ const ProductLandingPages: React.FC = () => {
   const [generatingAi, setGeneratingAi] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [showPhonePreview, setShowPhonePreview] = useState(true);
 
   const { user } = useAuth();
@@ -283,6 +288,104 @@ const ProductLandingPages: React.FC = () => {
           type === "BEFORE_AFTER"
             ? `${selectedProduct?.name || "المنتج الأصلي"} (راحة وامتصاص صدمات)`
             : undefined,
+        // EasyOrders additional section types defaults:
+        mainImage:
+          type === "IMAGE_ONLY"
+            ? selectedProduct?.mainImage || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200&q=80"
+            : undefined,
+        imageUrl:
+          type === "IMAGE_ONLY" || type === "FEATURED_PRODUCT"
+            ? selectedProduct?.mainImage || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200&q=80"
+            : undefined,
+        isFullWidth: type === "IMAGE_ONLY" ? true : undefined,
+        variant: type === "IMAGE_ONLY" ? "rounded" : undefined,
+        carouselImages:
+          type === "CAROUSEL"
+            ? [
+                { id: "c-1", url: selectedProduct?.mainImage || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80", caption: "اللقطة الأولى" },
+                { id: "c-2", url: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=800&q=80", caption: "اللقطة الثانية" },
+              ]
+            : undefined,
+        autoplay: type === "CAROUSEL" ? true : undefined,
+        slideInterval: type === "CAROUSEL" ? 3 : undefined,
+        heading:
+          type === "HOW_IT_WORKS"
+            ? "طريقة الاستخدام السهلة في 3 خطوات"
+            : type === "HEADING"
+            ? "اكتشف القوة والأناقة في منتج واحد"
+            : type === "YOUTUBE_VIDEO"
+            ? "شاهد تجربة واستعراض المنتج على الطبيعة"
+            : undefined,
+        title:
+          type === "HOW_IT_WORKS"
+            ? "طريقة الاستخدام السهلة في 3 خطوات"
+            : type === "HEADING"
+            ? "اكتشف القوة والأناقة في منتج واحد"
+            : type === "YOUTUBE_VIDEO"
+            ? "شاهد تجربة واستعراض المنتج على الطبيعة"
+            : undefined,
+        subheading:
+          type === "HOW_IT_WORKS"
+            ? "خطوات بسيطة تضمن لك أقصى استفادة من أول يوم"
+            : type === "HEADING"
+            ? "صُمم خصيصاً ليلبي أعلى معايير الجودة والراحة اليومية"
+            : undefined,
+        subtitle:
+          type === "HOW_IT_WORKS"
+            ? "خطوات بسيطة تضمن لك أقصى استفادة من أول يوم"
+            : type === "HEADING"
+            ? "صُمم خصيصاً ليلبي أعلى معايير الجودة والراحة اليومية"
+            : undefined,
+        steps:
+          type === "HOW_IT_WORKS"
+            ? [
+                { stepNumber: 1, number: 1, title: "الطلب وتأكيد الشحن", desc: "املأ نموذج الطلب وسيتواصل معك فريق خدمة العملاء فوراً لتأكيد العنوان.", icon: "📦" },
+                { stepNumber: 2, number: 2, title: "المعاينة قبل الدفع", desc: "استلم شحنتك وافتحها وافحص جودة المنتج والمقاس بنفسك قبل دفع أي جنيه للمندوب.", icon: "🔍" },
+                { stepNumber: 3, number: 3, title: "تجربة واستخدام مريح", desc: "استمتع بالراحة والأداء العالي مع ضمان استبدال واسترجاع مجاني لمدة 14 يوماً.", icon: "✨" },
+              ]
+            : undefined,
+        productName:
+          type === "FEATURED_PRODUCT" ? selectedProduct?.name || "المنتج المميز" : undefined,
+        featuredBadge:
+          type === "FEATURED_PRODUCT" ? "الأكثر طلباً وتوفيراً 🔥" : undefined,
+        badge:
+          type === "FEATURED_PRODUCT" ? "الأكثر طلباً وتوفيراً 🔥" : type === "HEADING" ? "ميزة حصرية ✨" : undefined,
+        price:
+          type === "FEATURED_PRODUCT" ? selectedProduct?.price || 499 : undefined,
+        oldPrice:
+          type === "FEATURED_PRODUCT" ? (selectedProduct?.price || 499) + 200 : undefined,
+        currency:
+          type === "FEATURED_PRODUCT" ? "ج.م" : undefined,
+        rating:
+          type === "FEATURED_PRODUCT" ? 4.9 : undefined,
+        ctaText:
+          type === "FEATURED_PRODUCT" ? "اطلب الآن واستفد من العرض" : undefined,
+        featuredBullets:
+          type === "FEATURED_PRODUCT"
+            ? [
+                "خامات أصلية عالية الجودة تدوم لسنوات",
+                "تصميم مريح يدعم الاستخدام اليومي المكثف",
+                "شحن سريع لجميع المحافظات مع معاينة قبل الدفع",
+              ]
+            : undefined,
+        youtubeUrl:
+          type === "YOUTUBE_VIDEO" ? "https://www.youtube.com/watch?v=dQw4w9WgXcQ" : undefined,
+        buyButtonText:
+          type === "BUY_BUTTON" ? "اضغط هنا لطلب المنتج الآن — الدفع عند الاستلام 🚚" : undefined,
+        text:
+          type === "BUY_BUTTON" ? "اضغط هنا لطلب المنتج الآن — الدفع عند الاستلام 🚚" : undefined,
+        targetAction:
+          type === "BUY_BUTTON" ? "scroll_to_form" : undefined,
+        btnColor:
+          type === "BUY_BUTTON" ? "#16a34a" : undefined,
+        btnTextColor:
+          type === "BUY_BUTTON" ? "#ffffff" : undefined,
+        animation:
+          type === "BUY_BUTTON" ? "pulse" : undefined,
+        alignment:
+          type === "HEADING" ? "center" : undefined,
+        headingLevel:
+          type === "HEADING" ? "h2" : undefined,
       },
     };
 
@@ -309,6 +412,34 @@ const ProductLandingPages: React.FC = () => {
     setIsDirty(true);
   };
 
+  const handleDuplicateSection = (id: string) => {
+    const sec = editor.sections.find((s) => s.id === id);
+    if (!sec) return;
+    const duplicated: LandingSection = {
+      ...sec,
+      id: `sec-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      title: `${sec.title} (نسخة)`,
+      content: JSON.parse(JSON.stringify(sec.content || {})),
+    };
+    const index = editor.sections.findIndex((s) => s.id === id);
+    const next = [...editor.sections];
+    next.splice(index + 1, 0, duplicated);
+    setEditor((current) => ({ ...current, sections: next }));
+    setActiveSectionId(duplicated.id);
+    setIsDirty(true);
+    toast.success(`تم تكرار قسم: ${sec.title}`);
+  };
+
+  const handleToggleSectionEnabled = (id: string) => {
+    setEditor((current) => ({
+      ...current,
+      sections: current.sections.map((sec) =>
+        sec.id === id ? { ...sec, enabled: sec.enabled === false ? true : false } : sec,
+      ),
+    }));
+    setIsDirty(true);
+  };
+
   const handleRemoveSection = (id: string) => {
     setEditor((current) => ({
       ...current,
@@ -317,6 +448,68 @@ const ProductLandingPages: React.FC = () => {
     if (activeSectionId === id) setActiveSectionId(null);
     setIsDirty(true);
     toast.info("تم حذف القسم");
+  };
+
+  const handleExportJson = () => {
+    if (!selectedPage) return;
+    const jsonStr = exportLandingPageToJson(
+      editor.title || selectedPage.title,
+      editor.slug || selectedPage.slug,
+      editor.sections,
+      editor.formConfig,
+    );
+    const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `landing-${editor.slug || "page"}-${Date.now()}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("تم تصدير تصميم الصفحة كملف JSON بنجاح! 📥");
+  };
+
+  const handleImportJson = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const imported = importLandingPageFromJson(text);
+        if (!imported.sections || imported.sections.length === 0) {
+          toast.error("الملف لا يحتوي على أي أقسام صالحة");
+          return;
+        }
+        setEditor((current) => ({
+          ...current,
+          title: imported.title || current.title,
+          slug: imported.slug || current.slug,
+          sections: imported.sections,
+          formConfig: imported.formConfig || current.formConfig,
+        }));
+        if (imported.sections.length > 0) {
+          setActiveSectionId(imported.sections[0].id);
+        }
+        setIsDirty(true);
+        toast.success(`تم استيراد ${imported.sections.length} أقسام من ملف JSON بنجاح! 🚀`);
+      } catch (err) {
+        toast.error("فشل قراءة ملف JSON — تأكد من صحة الملف");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleApplyTemplate = (template: LandingTemplate) => {
+    const newSections = template.buildSections(selectedProduct);
+    setEditor((current) => ({
+      ...current,
+      sections: newSections,
+    }));
+    if (newSections.length > 0) {
+      setActiveSectionId(newSections[0].id);
+    }
+    setIsDirty(true);
+    toast.success(`تم تطبيق قالب "${template.name}" بنجاح! ✨`);
   };
 
   const handleUpdateSectionContent = (
@@ -504,6 +697,9 @@ const ProductLandingPages: React.FC = () => {
         onSave={handleSave}
         saving={saving}
         onOpenCreateModal={() => setIsCreateModalOpen(true)}
+        onOpenTemplatesModal={() => setIsTemplatesModalOpen(true)}
+        onExportJson={handleExportJson}
+        onImportJson={handleImportJson}
         onGenerateAi={handleGenerateAi}
         generatingAi={generatingAi}
         previewUrl={previewUrl}
@@ -570,6 +766,8 @@ const ProductLandingPages: React.FC = () => {
                 setActiveSectionId((current) => (current === id ? null : id))
               }
               onMoveSection={handleMoveSection}
+              onDuplicateSection={handleDuplicateSection}
+              onToggleEnabled={handleToggleSectionEnabled}
               onRemoveSection={handleRemoveSection}
               onUpdateSectionContent={handleUpdateSectionContent}
               onUpdateSectionVariant={handleUpdateSectionVariant}
@@ -602,6 +800,15 @@ const ProductLandingPages: React.FC = () => {
         onSearchProducts={loadProducts}
         onCreate={handleCreatePage}
         creating={creating}
+      />
+
+      {/* Templates Library Modal */}
+      <TemplatesLibraryModal
+        isOpen={isTemplatesModalOpen}
+        onClose={() => setIsTemplatesModalOpen(false)}
+        onApplyTemplate={handleApplyTemplate}
+        product={selectedProduct}
+        currentSectionsCount={editor.sections.length}
       />
     </main>
   );

@@ -10,6 +10,9 @@ import {
   Search,
   Smartphone,
   Sparkles,
+  LayoutTemplate,
+  Download,
+  Upload,
 } from "lucide-react";
 import { ProductLandingPage } from "../../../services/productLandingPagesService";
 
@@ -21,6 +24,9 @@ interface ProductLandingHeaderProps {
   onSave: () => void;
   saving: boolean;
   onOpenCreateModal: () => void;
+  onOpenTemplatesModal?: () => void;
+  onExportJson?: () => void;
+  onImportJson?: (file: File) => void;
   onGenerateAi: () => void;
   generatingAi: boolean;
   previewUrl: string;
@@ -120,6 +126,54 @@ export const ProductLandingHeader: React.FC<ProductLandingHeaderProps> = ({
           <Plus size={16} />
           <span>+ صفحة جديدة</span>
         </button>
+
+        {onOpenTemplatesModal && (
+          <button
+            className="eo-btn eo-btn-templates"
+            type="button"
+            onClick={onOpenTemplatesModal}
+            title="تطبيق قوالب صفحات هبوط جاهزة ومجرّبة"
+          >
+            <LayoutTemplate size={16} />
+            <span>نماذج وقوالب</span>
+          </button>
+        )}
+
+        {onExportJson && (
+          <button
+            className="eo-btn eo-btn-export-json"
+            type="button"
+            onClick={onExportJson}
+            disabled={!selectedId}
+            title="تصدير تصميم الصفحة بصيغة JSON"
+          >
+            <Download size={15} />
+            <span>تصدير JSON</span>
+          </button>
+        )}
+
+        {onImportJson && (
+          <label
+            className="eo-btn eo-btn-import-json eo-file-upload-label"
+            title="استيراد تصميم صفحة هبوط من ملف JSON"
+            style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, margin: 0 }}
+          >
+            <Upload size={15} />
+            <span>استيراد JSON</span>
+            <input
+              type="file"
+              accept=".json,application/json"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  onImportJson(file);
+                  e.target.value = "";
+                }
+              }}
+            />
+          </label>
+        )}
       </div>
 
       {/* Selector and Utility Actions (Left side in RTL) */}

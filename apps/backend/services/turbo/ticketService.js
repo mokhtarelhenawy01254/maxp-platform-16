@@ -37,12 +37,19 @@ class TicketService {
     }
   }
 
-  async getTickets(page = 1, perPage = 10) {
+  async getTickets(page = 1, perPage = 10, options = {}) {
     try {
       const apiKey = await this._client.getApiKey();
       const headers = await this._client.getHeaders();
       const mainClientCode = await this._client.getMainClientCode();
-      const response = await axios.get(`${this._client.baseUrl}/tickets?authentication_key=${encodeURIComponent(apiKey)}&main_client_code=${mainClientCode || 37321}&per_page=${perPage}&page=${page}`, { headers, timeout: this._client.timeout });
+      let url = `${this._client.baseUrl}/tickets?authentication_key=${encodeURIComponent(apiKey)}&main_client_code=${mainClientCode || 37321}&per_page=${perPage}&page=${page}`;
+      if (options.status !== undefined && options.status !== null && options.status !== '' && options.status !== 'all') {
+        url += `&status=${encodeURIComponent(options.status)}`;
+      }
+      if (options.search) {
+        url += `&search=${encodeURIComponent(options.search)}`;
+      }
+      const response = await axios.get(url, { headers, timeout: this._client.timeout });
       const result = response.data;
       const isSuccess = result.success === 1 || result.success === true;
       if (!isSuccess && result.success !== undefined) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);

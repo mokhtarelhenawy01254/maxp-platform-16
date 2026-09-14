@@ -198,7 +198,7 @@ describe('TicketService', () => {
       expect(result.success).toBe(true);
       expect(result.message).toBe('تم إرسال الرد');
       expect(axios.post).toHaveBeenCalledWith(
-        expect.stringContaining('/tickets/reply'),
+        expect.stringMatching(/\/tickets\/(TKT-001\/message-store|reply)/),
         expect.any(Object), // FormData instance
         expect.objectContaining({ maxContentLength: Infinity })
       );

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Trash2, Star, ImagePlus } from "lucide-react";
+import { Plus, Trash2, Star, ImagePlus, Palette } from "lucide-react";
 import { LandingSection, ProductLandingProduct } from "./types";
 
 interface SectionItemEditorProps {
@@ -7,6 +7,99 @@ interface SectionItemEditorProps {
   onUpdateContent: (updatedContent: LandingSection["content"]) => void;
   product?: ProductLandingProduct | null;
 }
+
+const CommonSectionStylingFields: React.FC<{
+  content: LandingSection["content"];
+  update: (partial: Partial<LandingSection["content"]>) => void;
+}> = ({ content, update }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="eo-common-style-box" style={{ marginTop: 14, borderTop: "1px dashed #e2e8f0", paddingTop: 10 }}>
+      <button
+        type="button"
+        className="eo-style-toggle-btn"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: "#475569",
+          fontSize: "0.82rem",
+          fontWeight: 600,
+          padding: "4px 0",
+          width: "100%",
+        }}
+      >
+        <Palette size={14} style={{ color: "#3b82f6" }} />
+        <span>خيارات التصميم المتقدمة للقسم (ألوان الخلفية، كود CSS، تبديل مكان الصورة)</span>
+        <span style={{ marginInlineStart: "auto", fontSize: "0.75rem", color: "#64748b" }}>
+          {isOpen ? "▲ إخفاء" : "▼ إظهار"}
+        </span>
+      </button>
+      {isOpen && (
+        <div className="eo-style-fields-grid" style={{ marginTop: 8, padding: 10, background: "#f8fafc", borderRadius: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <label>
+              <span style={{ fontSize: "0.78rem", color: "#64748b" }}>لون خلفية القسم:</span>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
+                <input
+                  type="color"
+                  value={content.bgColor || "#ffffff"}
+                  onChange={(e) => update({ bgColor: e.target.value })}
+                  style={{ width: 34, height: 32, padding: 0, border: "none", cursor: "pointer", borderRadius: 6 }}
+                />
+                <input
+                  type="text"
+                  value={content.bgColor || ""}
+                  onChange={(e) => update({ bgColor: e.target.value })}
+                  placeholder="#ffffff أو transparent"
+                  dir="ltr"
+                  style={{ flex: 1 }}
+                />
+              </div>
+            </label>
+            <label>
+              <span style={{ fontSize: "0.78rem", color: "#64748b" }}>رابط صورة خلفية للقسم:</span>
+              <input
+                type="text"
+                value={content.bgImage || ""}
+                onChange={(e) => update({ bgImage: e.target.value })}
+                placeholder="https://.../bg.jpg"
+                dir="ltr"
+                style={{ marginTop: 2 }}
+              />
+            </label>
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <label style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer", fontSize: "0.82rem" }}>
+              <input
+                type="checkbox"
+                checked={Boolean(content.reversed)}
+                onChange={(e) => update({ reversed: e.target.checked })}
+              />
+              <span>تبديل مكان الصورة مع النص (عكس الترتيب أفقياً / رأسياً)</span>
+            </label>
+          </div>
+          <label style={{ marginTop: 8, display: "block" }}>
+            <span style={{ fontSize: "0.78rem", color: "#64748b" }}>كود CSS مخصص لهذا القسم:</span>
+            <textarea
+              rows={2}
+              value={content.customCss || ""}
+              onChange={(e) => update({ customCss: e.target.value })}
+              placeholder="/* أضف كود CSS إضافي خاص بهذا القسم فقط */"
+              className="eo-code-textarea"
+              dir="ltr"
+              style={{ marginTop: 2, fontSize: "0.75rem", fontFamily: "monospace" }}
+            />
+          </label>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const SectionItemEditor: React.FC<SectionItemEditorProps> = ({
   section,
@@ -963,6 +1056,662 @@ export const SectionItemEditor: React.FC<SectionItemEditorProps> = ({
           <p className="eo-hint" style={{ fontSize: "0.85rem", color: "#64748b", marginTop: 8 }}>
             سلايدر قبل وبعد يتيح للعميل سحب المقبض التفاعلي يميناً ويساراً لمقارنة النتائج بصرياً بشكل فوري.
           </p>
+          <CommonSectionStylingFields content={content} update={update} />
+        </div>
+      </div>
+    );
+  }
+
+  // 16. IMAGE_ONLY EDITOR (EasyOrders "img_only")
+  if (type === "IMAGE_ONLY") {
+    return (
+      <div className="eo-section-editor-body">
+        <div className="eo-fields">
+          <label>
+            <span>رابط الصورة:</span>
+            <input
+              type="text"
+              value={content.imageUrl || ""}
+              onChange={(e) => update({ imageUrl: e.target.value })}
+              placeholder="https://.../banner.jpg"
+              dir="ltr"
+            />
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+            <label>
+              <span>نمط العرض (العرض والحواف):</span>
+              <select
+                value={content.variant || "rounded"}
+                onChange={(e) => update({ variant: e.target.value })}
+              >
+                <option value="full">عرض كامل بدون هوامش (Full Width)</option>
+                <option value="rounded">حواف دائرية أنيقة (Rounded Box)</option>
+                <option value="contained">داخل إطار محدد (Contained Card)</option>
+              </select>
+            </label>
+            <label>
+              <span>النص البديل (Alt text لمحركات البحث):</span>
+              <input
+                type="text"
+                value={content.altText || ""}
+                onChange={(e) => update({ altText: e.target.value })}
+                placeholder="صورة توضيحية للمنتج"
+              />
+            </label>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+            <label>
+              <span>رابط التحويل عند النقر (Link URL):</span>
+              <input
+                type="text"
+                value={content.linkUrl || ""}
+                onChange={(e) => update({ linkUrl: e.target.value })}
+                placeholder="#checkout-form أو رابط خارجي"
+                dir="ltr"
+              />
+            </label>
+            <label>
+              <span>تسمية / وصف أسفل الصورة (اختياري):</span>
+              <input
+                type="text"
+                value={content.caption || ""}
+                onChange={(e) => update({ caption: e.target.value })}
+                placeholder="تفاصيل دقيقة وخامة ممتازة..."
+              />
+            </label>
+          </div>
+          {content.imageUrl && (
+            <div style={{ marginTop: 10, textAlign: "center", background: "#f8fafc", padding: 8, borderRadius: 8 }}>
+              <img
+                src={content.imageUrl}
+                alt={content.altText || "Preview"}
+                style={{ maxHeight: 160, maxWidth: "100%", borderRadius: 6, objectFit: "contain" }}
+              />
+            </div>
+          )}
+          <CommonSectionStylingFields content={content} update={update} />
+        </div>
+      </div>
+    );
+  }
+
+  // 17. CAROUSEL EDITOR (EasyOrders "carousel")
+  if (type === "CAROUSEL") {
+    const images = content.carouselImages || (content.images ? content.images.map((url, i) => ({ id: `c-${i}`, url })) : []) || [];
+
+    const addCarouselImage = () => {
+      update({
+        carouselImages: [
+          ...images,
+          { id: `c-${Date.now()}`, url: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80", caption: "" },
+        ],
+      });
+    };
+
+    const updateCarouselImage = (index: number, key: string, val: string) => {
+      const next = images.map((item, idx) => (idx === index ? { ...item, [key]: val } : item));
+      update({ carouselImages: next });
+    };
+
+    const removeCarouselImage = (index: number) => {
+      update({ carouselImages: images.filter((_, idx) => idx !== index) });
+    };
+
+    return (
+      <div className="eo-section-editor-body">
+        <div className="eo-items-list-editor">
+          <div className="eo-list-head">
+            <strong>شرائح السلايدر (Carousel Images):</strong>
+            <button type="button" className="eo-btn eo-btn-xs" onClick={addCarouselImage}>
+              <Plus size={14} /> إضافة صورة للسلايدر
+            </button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <label>
+              <span>التقليب التلقائي (Autoplay):</span>
+              <select
+                value={content.autoplay !== false ? "true" : "false"}
+                onChange={(e) => update({ autoplay: e.target.value === "true" })}
+              >
+                <option value="true">مفعل تلقائياً</option>
+                <option value="false">معطل (التحريك يدوي)</option>
+              </select>
+            </label>
+            <label>
+              <span>مدة التبديل بين الشرائح (بالثواني):</span>
+              <input
+                type="number"
+                min={1}
+                max={15}
+                value={content.slideInterval || 3}
+                onChange={(e) => update({ slideInterval: Number(e.target.value) })}
+              />
+            </label>
+          </div>
+          {images.map((imgItem, i) => (
+            <div key={imgItem.id || i} className="eo-sub-card">
+              <div className="eo-sub-card-row">
+                <input
+                  type="text"
+                  value={imgItem.url}
+                  onChange={(e) => updateCarouselImage(i, "url", e.target.value)}
+                  placeholder="رابط الصورة (URL)"
+                  dir="ltr"
+                  style={{ flex: 2 }}
+                />
+                <input
+                  type="text"
+                  value={imgItem.caption || ""}
+                  onChange={(e) => updateCarouselImage(i, "caption", e.target.value)}
+                  placeholder="تسمية الشريحة (اختياري)"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  className="eo-sub-del-btn"
+                  onClick={() => removeCarouselImage(i)}
+                  title="حذف الشريحة"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              {imgItem.url && (
+                <div style={{ marginTop: 6 }}>
+                  <img src={imgItem.url} alt="" style={{ height: 48, borderRadius: 4, objectFit: "cover" }} />
+                </div>
+              )}
+            </div>
+          ))}
+          <CommonSectionStylingFields content={content} update={update} />
+        </div>
+      </div>
+    );
+  }
+
+  // 18. HOW_IT_WORKS EDITOR (EasyOrders "how-to-work")
+  if (type === "HOW_IT_WORKS") {
+    const steps = content.steps || [];
+    const addStep = () => {
+      update({
+        steps: [
+          ...steps,
+          {
+            number: steps.length + 1,
+            title: `الخطوة ${steps.length + 1}`,
+            desc: "اشرح للعميل كيفية استخدام المنتج أو خطوات الاستلام والتجربة.",
+          },
+        ],
+      });
+    };
+
+    const updateStep = (index: number, key: string, val: any) => {
+      const next = steps.map((s, idx) => (idx === index ? { ...s, [key]: val } : s));
+      update({ steps: next });
+    };
+
+    const removeStep = (index: number) => {
+      update({ steps: steps.filter((_, idx) => idx !== index) });
+    };
+
+    return (
+      <div className="eo-section-editor-body">
+        <div className="eo-fields">
+          <label>
+            <span>عنوان القسم الرئيسي:</span>
+            <input
+              type="text"
+              value={content.title || ""}
+              onChange={(e) => update({ title: e.target.value })}
+              placeholder="طريقة الاستخدام السهلة في 3 خطوات"
+            />
+          </label>
+          <label style={{ marginTop: 8 }}>
+            <span>وصف تمهيدي:</span>
+            <input
+              type="text"
+              value={content.subtitle || ""}
+              onChange={(e) => update({ subtitle: e.target.value })}
+              placeholder="خطوات بسيطة تضمن لك أقصى استفادة من أول يوم"
+            />
+          </label>
+        </div>
+        <div className="eo-items-list-editor" style={{ marginTop: 12 }}>
+          <div className="eo-list-head">
+            <strong>الخطوات والمراحل:</strong>
+            <button type="button" className="eo-btn eo-btn-xs" onClick={addStep}>
+              <Plus size={14} /> إضافة خطوة
+            </button>
+          </div>
+          {steps.map((step, i) => (
+            <div key={i} className="eo-sub-card">
+              <div className="eo-sub-card-row">
+                <span style={{ fontWeight: 700, color: "#3b82f6", width: 24, textAlign: "center" }}>
+                  #{i + 1}
+                </span>
+                <input
+                  type="text"
+                  className="eo-title-input"
+                  value={step.title}
+                  onChange={(e) => updateStep(i, "title", e.target.value)}
+                  placeholder="عنوان الخطوة"
+                />
+                <button
+                  type="button"
+                  className="eo-sub-del-btn"
+                  onClick={() => removeStep(i)}
+                  title="حذف الخطوة"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <textarea
+                rows={2}
+                value={step.desc}
+                onChange={(e) => updateStep(i, "desc", e.target.value)}
+                placeholder="شرح وتفاصيل الخطوة..."
+              />
+              <div style={{ marginTop: 6 }}>
+                <input
+                  type="text"
+                  value={step.image || ""}
+                  onChange={(e) => updateStep(i, "image", e.target.value)}
+                  placeholder="رابط صورة توضيحية للخطوة (اختياري)"
+                  dir="ltr"
+                  style={{ fontSize: "0.8rem" }}
+                />
+              </div>
+            </div>
+          ))}
+          <CommonSectionStylingFields content={content} update={update} />
+        </div>
+      </div>
+    );
+  }
+
+  // 19. FEATURED_PRODUCT EDITOR (EasyOrders "featured-product")
+  if (type === "FEATURED_PRODUCT") {
+    const bullets = content.featuredBullets || [
+      "خامات أصلية عالية الجودة ومقاومة للاهتراء",
+      "تصميم مريح يدعم الاستخدام اليومي المكثف",
+      "ضمان ذهبي للاستبدال والاسترجاع مجاناً",
+    ];
+
+    const addBullet = () => {
+      update({ featuredBullets: [...bullets, "ميزة إضافية تبرز قوة المنتج"] });
+    };
+
+    const updateBullet = (index: number, val: string) => {
+      const next = bullets.map((b, idx) => (idx === index ? val : b));
+      update({ featuredBullets: next });
+    };
+
+    const removeBullet = (index: number) => {
+      update({ featuredBullets: bullets.filter((_, idx) => idx !== index) });
+    };
+
+    return (
+      <div className="eo-section-editor-body">
+        <div className="eo-fields">
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+            <label>
+              <span>اسم المنتج البارز:</span>
+              <input
+                type="text"
+                value={content.productName || product?.title || ""}
+                onChange={(e) => update({ productName: e.target.value })}
+                placeholder="اسم المنتج المميز"
+              />
+            </label>
+            <label>
+              <span>شارة بارزة (Badge):</span>
+              <input
+                type="text"
+                value={content.featuredBadge || ""}
+                onChange={(e) => update({ featuredBadge: e.target.value })}
+                placeholder="الأكثر مبيعاً ⭐"
+              />
+            </label>
+          </div>
+          <label style={{ marginTop: 8 }}>
+            <span>رابط صورة المنتج الرئيسية:</span>
+            <input
+              type="text"
+              value={content.imageUrl || product?.image_url || ""}
+              onChange={(e) => update({ imageUrl: e.target.value })}
+              placeholder="https://.../product.jpg"
+              dir="ltr"
+            />
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 8 }}>
+            <label>
+              <span>السعر الحالي:</span>
+              <input
+                type="number"
+                value={content.price ?? product?.price ?? ""}
+                onChange={(e) => update({ price: Number(e.target.value) })}
+                placeholder="499"
+              />
+            </label>
+            <label>
+              <span>السعر القديم المشطوب:</span>
+              <input
+                type="number"
+                value={content.oldPrice ?? product?.compare_at_price ?? ""}
+                onChange={(e) => update({ oldPrice: Number(e.target.value) })}
+                placeholder="750"
+              />
+            </label>
+            <label>
+              <span>العملة:</span>
+              <input
+                type="text"
+                value={content.currency || "ج.م"}
+                onChange={(e) => update({ currency: e.target.value })}
+                placeholder="ج.م"
+              />
+            </label>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+            <label>
+              <span>نص زر الشراء (CTA):</span>
+              <input
+                type="text"
+                value={content.ctaText || ""}
+                onChange={(e) => update({ ctaText: e.target.value })}
+                placeholder="اطلب الآن واستفد من العرض"
+              />
+            </label>
+            <label>
+              <span>التقييم (من 5):</span>
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                max="5"
+                value={content.rating || 4.9}
+                onChange={(e) => update({ rating: Number(e.target.value) })}
+              />
+            </label>
+          </div>
+          <div className="eo-items-list-editor" style={{ marginTop: 12 }}>
+            <div className="eo-list-head">
+              <strong>نقاط ومميزات المنتج البارزة:</strong>
+              <button type="button" className="eo-btn eo-btn-xs" onClick={addBullet}>
+                <Plus size={14} /> إضافة نقطة
+              </button>
+            </div>
+            {bullets.map((bullet, i) => (
+              <div key={i} className="eo-sub-card" style={{ padding: "6px 10px" }}>
+                <div className="eo-sub-card-row">
+                  <span style={{ color: "#10b981", fontWeight: 700 }}>✓</span>
+                  <input
+                    type="text"
+                    value={bullet}
+                    onChange={(e) => updateBullet(i, e.target.value)}
+                    placeholder="ميزة المنتج..."
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    className="eo-sub-del-btn"
+                    onClick={() => removeBullet(i)}
+                    title="حذف"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <CommonSectionStylingFields content={content} update={update} />
+        </div>
+      </div>
+    );
+  }
+
+  // 20. YOUTUBE_VIDEO EDITOR (EasyOrders "youtube-video")
+  if (type === "YOUTUBE_VIDEO") {
+    return (
+      <div className="eo-section-editor-body">
+        <div className="eo-fields">
+          <label>
+            <span>عنوان الفيديو (اختياري):</span>
+            <input
+              type="text"
+              value={content.title || ""}
+              onChange={(e) => update({ title: e.target.value })}
+              placeholder="شاهد تجربة واستعراض المنتج على يوتيوب"
+            />
+          </label>
+          <label style={{ marginTop: 8 }}>
+            <span>رابط أو معرف فيديو يوتيوب (URL or Video ID):</span>
+            <input
+              type="text"
+              value={content.videoUrl || content.videoId || ""}
+              onChange={(e) => update({ videoUrl: e.target.value })}
+              placeholder="https://www.youtube.com/watch?v=... أو معرف الفيديو"
+              dir="ltr"
+            />
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+            <label>
+              <span>نسبة الأبعاد (Aspect Ratio):</span>
+              <select
+                value={content.aspectRatio || "16/9"}
+                onChange={(e) => update({ aspectRatio: e.target.value })}
+              >
+                <option value="16/9">عرض أفقي قياسي (16:9)</option>
+                <option value="9/16">عمودي شورتس / ريلز (9:16 Shorts)</option>
+                <option value="4/3">مربع / كلاسيكي (4:3)</option>
+              </select>
+            </label>
+            <label>
+              <span>التشغيل التلقائي:</span>
+              <select
+                value={content.autoplay ? "true" : "false"}
+                onChange={(e) => update({ autoplay: e.target.value === "true" })}
+              >
+                <option value="false">معطل (يبدأ بالنقر)</option>
+                <option value="true">مفعل (بدون صوت Autoplay Muted)</option>
+              </select>
+            </label>
+          </div>
+          <label style={{ marginTop: 8 }}>
+            <span>وصف أو تعليق أسفل الفيديو:</span>
+            <input
+              type="text"
+              value={content.videoCaption || ""}
+              onChange={(e) => update({ videoCaption: e.target.value })}
+              placeholder="فيديو استعراض واقعي بدون فلاتر"
+            />
+          </label>
+          <CommonSectionStylingFields content={content} update={update} />
+        </div>
+      </div>
+    );
+  }
+
+  // 21. BUY_BUTTON EDITOR (EasyOrders "buy_button")
+  if (type === "BUY_BUTTON") {
+    return (
+      <div className="eo-section-editor-body">
+        <div className="eo-fields">
+          <label>
+            <span>نص الزر الرئيسي:</span>
+            <input
+              type="text"
+              value={content.text || content.title || ""}
+              onChange={(e) => update({ text: e.target.value, title: e.target.value })}
+              placeholder="اضغط هنا لطلب المنتج الآن — الدفع عند الاستلام"
+            />
+          </label>
+          <label style={{ marginTop: 8 }}>
+            <span>نص فرعي محفز أسفل الزر (Subtext):</span>
+            <input
+              type="text"
+              value={content.subtitle || content.subtext || ""}
+              onChange={(e) => update({ subtitle: e.target.value, subtext: e.target.value })}
+              placeholder="شحن سريع لجميع المحافظات + معاينة قبل الدفع وضمان 14 يوم"
+            />
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+            <label>
+              <span>الإجراء عند النقر (Click Action):</span>
+              <select
+                value={content.targetAction || "scroll_to_form"}
+                onChange={(e) => update({ targetAction: e.target.value })}
+              >
+                <option value="scroll_to_form">الانتقال السلس لنموذج الطلب (Scroll to Form)</option>
+                <option value="open_whatsapp">مراسلة واتساب فوراً (WhatsApp Direct)</option>
+                <option value="custom_url">فتح رابط مخصص (Custom URL)</option>
+              </select>
+            </label>
+            <label>
+              <span>تأثير الحركة (Animation Effect):</span>
+              <select
+                value={content.animation || "pulse"}
+                onChange={(e) => update({ animation: e.target.value })}
+              >
+                <option value="pulse">نبض مستمر (Pulse Attention)</option>
+                <option value="bounce">قفز لطيف (Bounce)</option>
+                <option value="glow">إضاءة متوهجة (Glow)</option>
+                <option value="none">بدون تأثير حركي (Static)</option>
+              </select>
+            </label>
+          </div>
+          {content.targetAction === "custom_url" && (
+            <label style={{ marginTop: 8 }}>
+              <span>الرابط المستهدف:</span>
+              <input
+                type="text"
+                value={content.targetUrl || ""}
+                onChange={(e) => update({ targetUrl: e.target.value })}
+                placeholder="https://... أو رابط صفحة"
+                dir="ltr"
+              />
+            </label>
+          )}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+            <label>
+              <span>لون الزر (Button Color):</span>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
+                <input
+                  type="color"
+                  value={content.btnColor || "#16a34a"}
+                  onChange={(e) => update({ btnColor: e.target.value })}
+                  style={{ width: 34, height: 32, padding: 0, border: "none", cursor: "pointer", borderRadius: 6 }}
+                />
+                <input
+                  type="text"
+                  value={content.btnColor || "#16a34a"}
+                  onChange={(e) => update({ btnColor: e.target.value })}
+                  dir="ltr"
+                  style={{ flex: 1 }}
+                />
+              </div>
+            </label>
+            <label>
+              <span>لون النص:</span>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
+                <input
+                  type="color"
+                  value={content.btnTextColor || "#ffffff"}
+                  onChange={(e) => update({ btnTextColor: e.target.value })}
+                  style={{ width: 34, height: 32, padding: 0, border: "none", cursor: "pointer", borderRadius: 6 }}
+                />
+                <input
+                  type="text"
+                  value={content.btnTextColor || "#ffffff"}
+                  onChange={(e) => update({ btnTextColor: e.target.value })}
+                  dir="ltr"
+                  style={{ flex: 1 }}
+                />
+              </div>
+            </label>
+          </div>
+          <CommonSectionStylingFields content={content} update={update} />
+        </div>
+      </div>
+    );
+  }
+
+  // 22. HEADING EDITOR (EasyOrders "heading")
+  if (type === "HEADING") {
+    return (
+      <div className="eo-section-editor-body">
+        <div className="eo-fields">
+          <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr", gap: 12 }}>
+            <label>
+              <span>نص العنوان الرئيسي:</span>
+              <input
+                type="text"
+                value={content.title || ""}
+                onChange={(e) => update({ title: e.target.value })}
+                placeholder="عنوان جذاب يلفت انتباه العميل"
+              />
+            </label>
+            <label>
+              <span>حجم العنوان:</span>
+              <select
+                value={content.headingLevel || "h2"}
+                onChange={(e) => update({ headingLevel: e.target.value })}
+              >
+                <option value="h1">كبير جداً (H1)</option>
+                <option value="h2">كبير رئيسي (H2)</option>
+                <option value="h3">متوسط فرعي (H3)</option>
+              </select>
+            </label>
+          </div>
+          <label style={{ marginTop: 8 }}>
+            <span>نص فرعي / توضيحي تحت العنوان:</span>
+            <input
+              type="text"
+              value={content.subtitle || ""}
+              onChange={(e) => update({ subtitle: e.target.value })}
+              placeholder="نص توضيحي مكمل للعنوان يوضح القيمة المضافة..."
+            />
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 8 }}>
+            <label>
+              <span>محاذاة النص:</span>
+              <select
+                value={content.alignment || "center"}
+                onChange={(e) => update({ alignment: e.target.value })}
+              >
+                <option value="center">في المنتصف (Center)</option>
+                <option value="right">يمين (Right / RTL)</option>
+                <option value="left">يسار (Left)</option>
+              </select>
+            </label>
+            <label>
+              <span>شارة أو تاج علوي (Badge):</span>
+              <input
+                type="text"
+                value={content.badge || ""}
+                onChange={(e) => update({ badge: e.target.value })}
+                placeholder="ميزة حصرية ✨"
+              />
+            </label>
+            <label>
+              <span>لون خط العنوان:</span>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
+                <input
+                  type="color"
+                  value={content.textColor || "#0f172a"}
+                  onChange={(e) => update({ textColor: e.target.value })}
+                  style={{ width: 34, height: 32, padding: 0, border: "none", cursor: "pointer", borderRadius: 6 }}
+                />
+                <input
+                  type="text"
+                  value={content.textColor || "#0f172a"}
+                  onChange={(e) => update({ textColor: e.target.value })}
+                  dir="ltr"
+                  style={{ flex: 1 }}
+                />
+              </div>
+            </label>
+          </div>
+          <CommonSectionStylingFields content={content} update={update} />
         </div>
       </div>
     );

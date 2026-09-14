@@ -462,6 +462,76 @@ const VideoReelPlayer: React.FC<{
   );
 };
 
+const LandingCarousel: React.FC<{
+  images: Array<{ url: string; caption?: string; linkUrl?: string }>;
+  autoplay?: boolean;
+  interval?: number;
+}> = ({ images, autoplay = true, interval = 3 }) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (!autoplay || images.length <= 1) return;
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % images.length);
+    }, Math.max(1500, interval * 1000));
+    return () => clearInterval(timer);
+  }, [autoplay, interval, images.length]);
+
+  if (!images || images.length === 0) return null;
+
+  const current = images[activeIndex] || images[0];
+
+  return (
+    <div className="pil-carousel-container" dir="rtl">
+      <div className="pil-carousel-stage">
+        <img
+          src={current.url}
+          alt={current.caption || `شريحة ${activeIndex + 1}`}
+          className="pil-carousel-img"
+        />
+        {current.caption && (
+          <div className="pil-carousel-caption">
+            <span>{current.caption}</span>
+          </div>
+        )}
+        {images.length > 1 && (
+          <>
+            <button
+              type="button"
+              className="pil-carousel-arrow pil-carousel-prev"
+              onClick={() => setActiveIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+              aria-label="السابق"
+            >
+              ›
+            </button>
+            <button
+              type="button"
+              className="pil-carousel-arrow pil-carousel-next"
+              onClick={() => setActiveIndex((prev) => (prev + 1) % images.length)}
+              aria-label="التالي"
+            >
+              ‹
+            </button>
+          </>
+        )}
+      </div>
+      {images.length > 1 && (
+        <div className="pil-carousel-dots">
+          {images.map((_, idx) => (
+            <button
+              key={idx}
+              type="button"
+              className={`pil-carousel-dot ${idx === activeIndex ? "is-active" : ""}`}
+              onClick={() => setActiveIndex(idx)}
+              aria-label={`انتقال للشريحة ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const isVisuallyBlankCampaignSlice = (src: string): Promise<boolean> => {
   if (typeof window === "undefined" || !src.trim()) {
     return Promise.resolve(false);
@@ -2574,14 +2644,472 @@ const ProductImageLandingPage: React.FC = () => {
     }
 
     if (type === "HTML") {
-      if (!content.htmlCode) return null;
+      const code = content.htmlCode || content.htmlContent;
+      if (!code) return null;
       return (
         <section
           key={section.id || idx}
           className="pil-html-block"
           style={{ maxWidth: 760, margin: "24px auto", padding: "0 16px" }}
-          dangerouslySetInnerHTML={{ __html: content.htmlCode }}
+          dangerouslySetInnerHTML={{ __html: code }}
         />
+      );
+    }
+
+    if (type === "IMAGE_ONLY") {
+      const imgUrl = content.imageUrl || content.mainImage || getPrimaryProductImage(activeProduct);
+      if (!imgUrl) return null;
+      const isFull = content.variant === "full" || content.isFullWidth;
+      const borderRadius = isFull ? 0 : content.borderRadius ?? 12;
+      const link = content.linkUrl;
+
+      const imgEl = (
+        <img
+          src={imgUrl}
+          alt={content.altText || content.caption || activeProduct.name}
+          className="pil-img-only-el"
+          style={{
+            width: "100%",
+            display: "block",
+            borderRadius,
+            objectFit: "cover",
+            maxHeight: content.maxHeight || "none",
+          }}
+          loading="lazy"
+        />
+      );
+
+      return (
+        <section
+          key={section.id || idx}
+          className={`pil-image-only-section ${isFull ? "is-fullwidth" : "is-contained"}`}
+          style={{
+            backgroundColor: content.bgColor || "transparent",
+            backgroundImage: content.bgImage ? `url(${content.bgImage})` : undefined,
+            padding: isFull ? "0" : "16px",
+            maxWidth: isFull ? "100%" : 760,
+            margin: "0 auto",
+          }}
+        >
+          {link ? (
+            <a
+              href={link}
+              onClick={(e) => {
+                if (link.startsWith("#")) {
+                  e.preventDefault();
+                  const target = document.querySelector(link);
+                  if (target) target.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+              style={{ display: "block" }}
+            >
+              {imgEl}
+            </a>
+          ) : (
+            imgEl
+          )}
+          {content.caption && (
+            <p className="pil-img-only-caption" style={{ textAlign: "center", color: "#64748b", fontSize: "0.85rem", marginTop: 8 }}>
+              {content.caption}
+            </p>
+          )}
+        </section>
+      );
+    }
+
+    if (type === "CAROUSEL") {
+      const carouselImages = content.carouselImages || (content.images ? content.images.map((u: string) => ({ url: u })) : []) || [];
+      if (!carouselImages.length && !activeProduct.mainImage) return null;
+      const list = carouselImages.length > 0 ? carouselImages : [{ url: activeProduct.mainImage }];
+
+      return (
+        <section
+          key={section.id || idx}
+          className="pil-carousel-section"
+          style={{
+            backgroundColor: content.bgColor || "transparent",
+            backgroundImage: content.bgImage ? `url(${content.bgImage})` : undefined,
+            padding: "16px",
+            maxWidth: 760,
+            margin: "0 auto",
+          }}
+        >
+          <LandingCarousel
+            images={list}
+            autoplay={content.autoplay !== false}
+            interval={content.slideInterval || 3}
+          />
+        </section>
+      );
+    }
+
+    if (type === "HOW_IT_WORKS") {
+      const steps = content.steps || [];
+      if (!steps.length) return null;
+      const title = content.title || content.heading || "طريقة الاستخدام وخطوات العمل";
+      const subtitle = content.subtitle || content.subheading || "خطوات بسيطة تضمن لك أقصى استفادة وسهولة من أول يوم";
+
+      return (
+        <section
+          key={section.id || idx}
+          className="pil-how-it-works-section"
+          style={{
+            backgroundColor: content.bgColor || "#ffffff",
+            backgroundImage: content.bgImage ? `url(${content.bgImage})` : undefined,
+            padding: "32px 16px",
+            maxWidth: 760,
+            margin: "0 auto",
+          }}
+        >
+          <div className="pil-section-heading">
+            <span>خطوات سهلة وواضحة</span>
+            <h2>{title}</h2>
+            {subtitle && <p style={{ color: "#64748b", fontSize: "0.9rem", marginTop: 4 }}>{subtitle}</p>}
+          </div>
+
+          <div className="pil-steps-list" style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+            {steps.map((st: any, sIdx: number) => (
+              <div
+                key={sIdx}
+                className="pil-step-card"
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 16,
+                  padding: "16px",
+                  background: "#f8fafc",
+                  borderRadius: 14,
+                  border: "1px solid #e2e8f0",
+                }}
+              >
+                <div
+                  className="pil-step-number"
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: "50%",
+                    background: "#0f172a",
+                    color: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 800,
+                    fontSize: "1rem",
+                    flexShrink: 0,
+                  }}
+                >
+                  {st.stepNumber || st.number || sIdx + 1}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ margin: "0 0 6px", fontSize: "1.05rem", fontWeight: 700, color: "#0f172a" }}>
+                    {st.title}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: "0.9rem", color: "#475569", lineHeight: 1.5 }}>
+                    {st.desc}
+                  </p>
+                  {st.image && (
+                    <img
+                      src={st.image}
+                      alt={st.title}
+                      style={{ marginTop: 10, maxHeight: 180, borderRadius: 8, maxWidth: "100%", objectFit: "cover" }}
+                    />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    if (type === "FEATURED_PRODUCT") {
+      const featImg = content.imageUrl || content.mainImage || getPrimaryProductImage(activeProduct);
+      const featTitle = content.productName || activeProduct.name;
+      const featPrice = content.price != null ? Number(content.price) : activePrice;
+      const featOldPrice = content.oldPrice != null ? Number(content.oldPrice) : (activeProduct.comparePrice ? Number(activeProduct.comparePrice) : Math.round(featPrice * 1.35));
+      const featBadge = content.featuredBadge || content.badge || "عرض خاص ومميز 🔥";
+      const bullets = content.featuredBullets || content.bullets || [
+        "خامات أصلية عالية الجودة تدوم لسنوات",
+        "تصميم عصري وأداء فائق الراحة طوال اليوم",
+        "معاينة كاملة للشحنة قبل دفع أي مبلغ للمندوب",
+      ];
+      const cta = content.ctaText || "اطلب الآن واستفد من الخصم 🚚";
+
+      return (
+        <section
+          key={section.id || idx}
+          className="pil-featured-product-section"
+          style={{
+            backgroundColor: content.bgColor || "#ffffff",
+            backgroundImage: content.bgImage ? `url(${content.bgImage})` : undefined,
+            padding: "24px 16px",
+            maxWidth: 760,
+            margin: "16px auto",
+          }}
+        >
+          <div
+            className="pil-featured-card"
+            style={{
+              background: "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)",
+              border: "2px solid #86efac",
+              borderRadius: 18,
+              padding: "24px 20px",
+              boxShadow: "0 10px 25px -5px rgba(22, 163, 74, 0.12)",
+              position: "relative",
+            }}
+          >
+            {featBadge && (
+              <span
+                style={{
+                  position: "absolute",
+                  top: -12,
+                  right: 20,
+                  background: "#16a34a",
+                  color: "#ffffff",
+                  fontSize: "0.82rem",
+                  fontWeight: 800,
+                  padding: "4px 14px",
+                  borderRadius: 20,
+                  boxShadow: "0 4px 10px rgba(22, 163, 74, 0.3)",
+                }}
+              >
+                {featBadge}
+              </span>
+            )}
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: 20, alignItems: "center" }}>
+              {featImg && (
+                <img
+                  src={featImg}
+                  alt={featTitle}
+                  style={{ width: "100%", maxHeight: 220, objectFit: "contain", borderRadius: 12 }}
+                />
+              )}
+              <div>
+                <h3 style={{ margin: "0 0 10px", fontSize: "1.2rem", fontWeight: 800, color: "#0f172a" }}>
+                  {featTitle}
+                </h3>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
+                  <strong style={{ fontSize: "1.4rem", color: "#16a34a", fontWeight: 800 }}>
+                    {formatPrice(featPrice, currency)}
+                  </strong>
+                  {featOldPrice > featPrice && (
+                    <del style={{ fontSize: "0.95rem", color: "#94a3b8" }}>
+                      {formatPrice(featOldPrice, currency)}
+                    </del>
+                  )}
+                  {featOldPrice > featPrice && (
+                    <span style={{ fontSize: "0.78rem", background: "#fee2e2", color: "#ef4444", fontWeight: 700, padding: "2px 8px", borderRadius: 6 }}>
+                      وفر {Math.round(((featOldPrice - featPrice) / featOldPrice) * 100)}%
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {bullets.map((b: string, bIdx: number) => (
+                    <div key={bIdx} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.88rem", color: "#334155" }}>
+                      <span style={{ color: "#16a34a", fontWeight: 800 }}>✓</span>
+                      <span>{b}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById("order");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+              style={{
+                width: "100%",
+                marginTop: 20,
+                padding: "14px 20px",
+                background: "#16a34a",
+                color: "#ffffff",
+                fontSize: "1.05rem",
+                fontWeight: 800,
+                border: "none",
+                borderRadius: 12,
+                cursor: "pointer",
+                boxShadow: "0 6px 16px rgba(22, 163, 74, 0.35)",
+              }}
+            >
+              {cta}
+            </button>
+          </div>
+        </section>
+      );
+    }
+
+    if (type === "YOUTUBE_VIDEO") {
+      const rawUrl = content.videoUrl || content.youtubeUrl || "";
+      let ytId = content.videoId || "";
+      if (!ytId && rawUrl) {
+        const match = rawUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+        ytId = match ? match[1] : "";
+      }
+      if (!ytId) return null;
+
+      const title = content.title || content.heading;
+      const isShorts = content.aspectRatio === "9/16";
+
+      return (
+        <section
+          key={section.id || idx}
+          className="pil-youtube-section"
+          style={{
+            backgroundColor: content.bgColor || "transparent",
+            padding: "24px 16px",
+            maxWidth: isShorts ? 400 : 760,
+            margin: "0 auto",
+          }}
+        >
+          {title && (
+            <div className="pil-section-heading" style={{ marginBottom: 14 }}>
+              <h2>{title}</h2>
+            </div>
+          )}
+          <div
+            style={{
+              position: "relative",
+              paddingBottom: isShorts ? "177.77%" : "56.25%",
+              height: 0,
+              overflow: "hidden",
+              borderRadius: 14,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+              background: "#000",
+            }}
+          >
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`}
+              title={title || "فيديو توضيحي"}
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+          {content.videoCaption && (
+            <p style={{ textAlign: "center", color: "#64748b", fontSize: "0.85rem", marginTop: 8 }}>
+              {content.videoCaption}
+            </p>
+          )}
+        </section>
+      );
+    }
+
+    if (type === "BUY_BUTTON") {
+      const text = content.text || content.buyButtonText || content.title || "اطلب الآن واستلم خلال 48 ساعة — الدفع عند الاستلام 🚚";
+      const sub = content.subtitle || content.subtext || "معاينة مجانية للشحنة قبل الدفع + ضمان 14 يوماً للاسترجاع";
+      const btnBg = content.btnColor || content.buyButtonBg || "#16a34a";
+      const btnColor = content.btnTextColor || content.buyButtonTextColor || "#ffffff";
+      const isScroll = !content.targetAction || content.targetAction === "scroll_to_form";
+
+      return (
+        <section
+          key={section.id || idx}
+          className="pil-buy-button-section"
+          style={{
+            backgroundColor: content.bgColor || "transparent",
+            padding: "20px 16px",
+            maxWidth: 760,
+            margin: "0 auto",
+            textAlign: "center",
+          }}
+        >
+          <button
+            type="button"
+            className={`pil-standalone-buy-btn ${content.animation === "bounce" ? "pil-anim-bounce" : "pil-anim-pulse"}`}
+            style={{
+              width: "100%",
+              maxWidth: 580,
+              padding: "16px 24px",
+              background: btnBg,
+              color: btnColor,
+              fontSize: "1.12rem",
+              fontWeight: 800,
+              borderRadius: 14,
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 8px 24px rgba(22, 163, 74, 0.35)",
+              display: "inline-block",
+            }}
+            onClick={() => {
+              if (isScroll) {
+                const el = document.getElementById("order");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              } else if (content.targetAction === "open_whatsapp" && whatsappPhone) {
+                const cleanPhone = whatsappPhone.replace(/\D/g, "");
+                window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`مرحباً، أريد طلب: ${activeProduct.name}`)}`, "_blank");
+              } else if (content.targetUrl) {
+                window.location.href = content.targetUrl;
+              }
+            }}
+          >
+            {text}
+          </button>
+          {sub && (
+            <p style={{ margin: "8px 0 0", fontSize: "0.82rem", color: "#64748b", fontWeight: 500 }}>
+              {sub}
+            </p>
+          )}
+        </section>
+      );
+    }
+
+    if (type === "HEADING") {
+      const title = content.title || content.heading || activeProduct.name;
+      const subtitle = content.subtitle || content.subheading;
+      const align = content.alignment || content.titleAlign || "center";
+      const HeadingTag = content.headingLevel === "h1" ? "h1" : content.headingLevel === "h3" ? "h3" : "h2";
+
+      return (
+        <section
+          key={section.id || idx}
+          className="pil-heading-section"
+          style={{
+            backgroundColor: content.bgColor || "transparent",
+            backgroundImage: content.bgImage ? `url(${content.bgImage})` : undefined,
+            padding: "24px 16px 12px",
+            maxWidth: 760,
+            margin: "0 auto",
+            textAlign: align as any,
+          }}
+        >
+          {content.badge && (
+            <span
+              style={{
+                display: "inline-block",
+                background: "#eff6ff",
+                color: "#2563eb",
+                border: "1px solid #bfdbfe",
+                padding: "3px 12px",
+                borderRadius: 20,
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                marginBottom: 8,
+              }}
+            >
+              {content.badge}
+            </span>
+          )}
+          <HeadingTag
+            style={{
+              margin: 0,
+              fontSize: HeadingTag === "h1" ? "1.65rem" : HeadingTag === "h3" ? "1.2rem" : "1.45rem",
+              fontWeight: 800,
+              color: content.textColor || "#0f172a",
+              lineHeight: 1.35,
+            }}
+          >
+            {title}
+          </HeadingTag>
+          {subtitle && (
+            <p style={{ margin: "8px 0 0", fontSize: "0.95rem", color: "#475569", lineHeight: 1.5 }}>
+              {subtitle}
+            </p>
+          )}
+        </section>
       );
     }
 

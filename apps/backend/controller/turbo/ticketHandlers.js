@@ -41,10 +41,10 @@ const getInquiriesTypes = async (req, res) => {
 const getTickets = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
-    const { page = 1, per_page = 10 } = req.query;
+    const { page = 1, per_page = 10, status, search } = req.query;
     if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
     const turboService = new TurboService(null, companyId);
-    const result = await turboService.getTickets(parseInt(page), parseInt(per_page));
+    const result = await turboService.getTickets(parseInt(page), parseInt(per_page), { status, search });
     res.json({ success: true, data: result });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error getting tickets:', error);

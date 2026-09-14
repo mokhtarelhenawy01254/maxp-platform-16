@@ -85,7 +85,7 @@ class TurboService {
   // ── Tickets ──────────────────────────────────────────
   async addTicket(...a) { return this._ticket.addTicket(...a); }
   async getInquiriesTypes() { return this._ticket.getInquiriesTypes(); }
-  async getTickets(p, pp) { return this._ticket.getTickets(p, pp); }
+  async getTickets(...a) { return this._ticket.getTickets(...a); }
   async getTicket(i) { return this._ticket.getTicket(i); }
   async getTicketLog(i) { return this._ticket.getTicketLog(i); }
   async replyToTicket(...a) { return this._ticket.replyToTicket(...a); }
