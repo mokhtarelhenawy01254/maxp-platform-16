@@ -90,6 +90,10 @@ router.post('/ai/campaigns/:campaignId/status', facebookAdsAiController.updateCa
 // POST /api/v1/facebook-ads/ai/campaigns/:campaignId/budget - تعديل الميزانية اليومية للحملة على فيسبوك
 router.post('/ai/campaigns/:campaignId/budget', facebookAdsAiController.updateCampaignBudget);
 
+// GET & POST /api/v1/facebook-ads/ai/targeting/search - محرك البحث الجغرافي والاهتمامات اللحظي (2026 SOTA)
+router.get('/ai/targeting/search', (req, res) => facebookAdsAiController.searchTargeting(req, res));
+router.post('/ai/targeting/search', (req, res) => facebookAdsAiController.searchTargeting(req, res));
+
 /**
  * ============================================
  * Budget Alert Routes

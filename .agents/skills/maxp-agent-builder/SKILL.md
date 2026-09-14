@@ -646,6 +646,7 @@ python -m scripts.seed_agent_templates
 - [ ] هل الوكيل يدعم تنظيم المهام المركبة في شكل قائمة مهام حية ديناميكية (`manage_todo`) مع احتساب نسب الإنجاز التلقائية؟
 - [ ] هل الجلسات تدعم التراجع الحواري واستعادة الحالة السابقة (`Session State Rewind` عبر زر `Undo2` المادي والأمر اللفظي "تراجع")؟
 - [ ] هل واجهة ومخرجات الوكيل تدعم مؤشرات القياس الحقيقية (`Live Telemetry HUD: model, latency, tokens, SLA`) طبقاً لمعيار Telemetry over Buzzwords لعام 2026؟
+- [ ] هل استهداف إعلانات Meta يدعم الاستعلام الديناميكي اللحظي من سيرفرات Meta (Geo & Interest Search API) بدون جداول يدوية، ويدعم استهداف نقاط الـ GPS بنصف القطر (Custom Locations / Pin-Drop) والاستبعاد الجغرافي (Excluded Geo Locations / COD Logistics Guard) لحماية ميزانية التاجر من محافظات المرتجعات؟
 - [ ] هل تم تشغيل سكربت `seed_agent_templates.py` لترحيل القالب لقاعدة البيانات؟
 - [ ] الالتزام بقاعدة النشر التلقائي للـ Git مع رسالة توضيحية.
 

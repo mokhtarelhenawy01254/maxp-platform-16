@@ -815,6 +815,27 @@ class BackendClient:
             headers={"X-Company-Id": company_id},
         )
 
+    async def search_facebook_targeting(
+        self,
+        company_id: str,
+        query: str,
+        search_type: str = "adgeolocation",
+        country_code: str | None = "EG",
+        limit: int = 10,
+    ) -> dict[str, Any]:
+        """Dynamically search Meta geolocations (regions/cities/zip) or interests via Node.js backend."""
+        return await self._request(
+            "GET",
+            "/api/v1/facebook-ads/ai/targeting/search",
+            params={
+                "q": query,
+                "type": search_type,
+                "countryCode": country_code or "EG",
+                "limit": limit,
+            },
+            headers={"X-Company-Id": company_id},
+        )
+
 
 _backend_client: BackendClient | None = None
 

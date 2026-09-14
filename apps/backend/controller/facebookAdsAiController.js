@@ -1506,6 +1506,56 @@ class FacebookAdsAiController {
       return res.status(500).json({ success: false, error: error.message });
     }
   }
+
+  /**
+   * GET/POST /api/v1/facebook-ads/ai/targeting/search
+   * Dynamic real-time Meta Geolocation & Interests Search Engine (2026 SOTA)
+   */
+  async searchTargeting(req, res) {
+    try {
+      const companyId = req.user?.companyId || req.headers['x-company-id'];
+      if (!companyId) {
+        return res.status(401).json({ success: false, error: 'Company ID is required' });
+      }
+
+      const query = req.query.q || req.body?.query || req.body?.q || '';
+      const type = req.query.type || req.body?.search_type || req.body?.type || 'adgeolocation';
+      const countryCode = req.query.countryCode || req.body?.country_code || req.body?.countryCode || 'EG';
+      const limit = Number(req.query.limit || req.body?.limit) || 10;
+
+      if (!query || !String(query).trim()) {
+        return res.json({ success: true, data: [] });
+      }
+
+      const { getCompanyAdsAccessToken } = require('./facebookAds/_shared/tokens');
+      const accessToken = await getCompanyAdsAccessToken(companyId);
+      if (!accessToken) {
+        return res.status(400).json({ success: false, error: 'Facebook Ads access token not found for company' });
+      }
+
+      const FacebookAdsService = require('../services/facebookAdsService');
+      const service = new FacebookAdsService(accessToken);
+
+      let results = [];
+      if (type === 'adinterest') {
+        results = await service.searchInterests({ query, limit });
+      } else {
+        results = await service.searchGeoLocations({ query, countryCode, limit });
+      }
+
+      return res.json({
+        success: true,
+        type,
+        query,
+        countryCode,
+        count: results.length,
+        data: results,
+      });
+    } catch (error) {
+      console.error('❌ Error in searchTargeting:', error);
+      return res.status(500).json({ success: false, error: error.message || 'Failed to search targeting' });
+    }
+  }
 }
 
 const controller = new FacebookAdsAiController();

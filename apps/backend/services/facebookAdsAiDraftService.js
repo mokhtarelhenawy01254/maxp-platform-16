@@ -234,6 +234,10 @@ class FacebookAdsAiDraftService {
     const resolvedCities = overrides.cities || rawData.targetCities || rawData.targeting?.cities || [];
     const resolvedRegions = overrides.regions || rawData.targetRegions || rawData.targeting?.regions || [];
     const resolvedInterests = overrides.interests || rawData.targetInterests || rawData.targeting?.interests || [];
+    const resolvedCustomLocations = overrides.customLocations || rawData.targetCustomLocations || rawData.customLocations || rawData.targeting?.customLocations || [];
+    const resolvedExcludedCities = overrides.excludedCities || rawData.targetExcludedCities || rawData.excludedCities || rawData.targeting?.excludedCities || [];
+    const resolvedExcludedRegions = overrides.excludedRegions || rawData.targetExcludedRegions || rawData.excludedRegions || rawData.targeting?.excludedRegions || [];
+    const resolvedExcludedCustomLocations = overrides.excludedCustomLocations || rawData.targetExcludedCustomLocations || rawData.excludedCustomLocations || rawData.targeting?.excludedCustomLocations || [];
 
     const targeting = {
       ...(rawData.targeting || {}),
@@ -244,6 +248,10 @@ class FacebookAdsAiDraftService {
       cities: resolvedCities,
       regions: resolvedRegions,
       interests: resolvedInterests,
+      customLocations: resolvedCustomLocations,
+      excludedCities: resolvedExcludedCities,
+      excludedRegions: resolvedExcludedRegions,
+      excludedCustomLocations: resolvedExcludedCustomLocations,
       countries: [resolvedCountry],
     };
 
@@ -267,6 +275,10 @@ class FacebookAdsAiDraftService {
       cities: resolvedCities,
       regions: resolvedRegions,
       interests: resolvedInterests,
+      customLocations: resolvedCustomLocations,
+      excludedCities: resolvedExcludedCities,
+      excludedRegions: resolvedExcludedRegions,
+      excludedCustomLocations: resolvedExcludedCustomLocations,
       targeting,
       callToAction: overrides.callToAction || draft.callToAction || rawData.callToAction || 'SHOP_NOW',
       status: overrides.status || 'PAUSED', // default PAUSED for safety

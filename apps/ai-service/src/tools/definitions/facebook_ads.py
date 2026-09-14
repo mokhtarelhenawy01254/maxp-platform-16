@@ -81,9 +81,21 @@ class AdAngleDraft(BaseModel):
     notes: str | None = Field(default=None, description="Strategy rationale or key selling points")
     placement_type: str | None = Field(default="AUTOMATIC", description="AUTOMATIC or MANUAL placements")
     placements: list[str] | None = Field(default=None, description="List of placements if MANUAL (e.g. ['FACEBOOK_FEED', 'INSTAGRAM_FEED', 'FACEBOOK_REELS', 'INSTAGRAM_REELS'])")
-    target_cities: list[str] | None = Field(default=None, description="List of target city names (e.g. ['Cairo', 'Alexandria', 'Giza'])")
+    target_cities: list[str] | None = Field(default=None, description="List of target city names (e.g. ['Cairo', 'Alexandria', 'Giza', 'الرياض'])")
     target_regions: list[str] | None = Field(default=None, description="List of target governorates / regions in Egypt or country (e.g. ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدلتا'])")
     target_interests: list[str] | None = Field(default=None, description="List of detailed targeting interests if specified")
+    target_custom_locations: list[dict[str, Any]] | None = Field(default=None, description="GPS locations with latitude, longitude, radius (km), and distance_unit for map pin-drop targeting")
+    excluded_regions: list[str] | None = Field(default=None, description="List of governorates/regions to EXCLUDE (e.g. high cancellation or return areas like أسيوط، سوهاج)")
+    excluded_cities: list[str] | None = Field(default=None, description="List of city names to EXCLUDE")
+    excluded_custom_locations: list[dict[str, Any]] | None = Field(default=None, description="GPS locations to EXCLUDE")
+
+
+class FacebookAdSearchTargetingInput(BaseModel):
+    query: str = Field(description="Search keyword (e.g. city name like 'الرياض', 'جدة', 'الشيخ زايد', 'مدينة نصر', or interest like 'أحذية', 'عناية بالبشرة')")
+    search_type: Literal["adgeolocation", "adinterest"] = Field(default="adgeolocation", description="'adgeolocation' to search cities/regions/locations worldwide, or 'adinterest' to search official Meta interest categories")
+    country_code: str | None = Field(default="EG", description="Target 2-letter country code (EG, SA, AE, US, etc.)")
+    limit: int = Field(default=10, description="Max results to return")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
 class FacebookAdCreateFullDraftInput(BaseModel):
@@ -498,6 +510,13 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 "targetCities": getattr(angle, "target_cities", None) or [],
                 "targetRegions": getattr(angle, "target_regions", None) or [],
                 "targetInterests": getattr(angle, "target_interests", None) or [],
+                "targetCustomLocations": getattr(angle, "target_custom_locations", None) or [],
+                "customLocations": getattr(angle, "target_custom_locations", None) or [],
+                "targetExcludedCities": getattr(angle, "excluded_cities", None) or [],
+                "excludedCities": getattr(angle, "excluded_cities", None) or [],
+                "targetExcludedRegions": getattr(angle, "excluded_regions", None) or [],
+                "excludedRegions": getattr(angle, "excluded_regions", None) or [],
+                "excludedCustomLocations": getattr(angle, "excluded_custom_locations", None) or [],
                 "targeting": {
                     "ageMin": angle.age_min,
                     "ageMax": angle.age_max,
@@ -505,6 +524,10 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                     "cities": getattr(angle, "target_cities", None) or [],
                     "regions": getattr(angle, "target_regions", None) or [],
                     "interests": getattr(angle, "target_interests", None) or [],
+                    "customLocations": getattr(angle, "target_custom_locations", None) or [],
+                    "excludedCities": getattr(angle, "excluded_cities", None) or [],
+                    "excludedRegions": getattr(angle, "excluded_regions", None) or [],
+                    "excludedCustomLocations": getattr(angle, "excluded_custom_locations", None) or [],
                     "countries": [angle.target_country] if angle.target_country else ["EG"],
                 },
                 "adName": angle.ad_name,
@@ -1722,6 +1745,51 @@ facebook_ad_update_budget_tool = FunctionTool(
     format_result=_format_facebook_ad_update_budget,
 )
 
+async def facebook_ad_search_targeting(input_data: FacebookAdSearchTargetingInput) -> dict[str, Any]:
+    """Search Meta Graph API for official geolocation keys (regions, cities) or interests dynamically worldwide."""
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "company_id is required"}
+
+    from src.tools.backend_client import get_backend_client
+    backend = get_backend_client()
+    try:
+        res = await backend.search_facebook_targeting(
+            company_id=company_id,
+            query=input_data.query,
+            search_type=input_data.search_type,
+            country_code=input_data.country_code or "EG",
+            limit=input_data.limit,
+        )
+        return res
+    except Exception as exc:
+        logger.warning("facebook_ad_search_targeting_failed", error=str(exc))
+        return {"success": False, "error": str(exc), "data": []}
+
+
+def _format_facebook_ad_search_targeting(result: dict[str, Any]) -> str:
+    data = result.get("data") or []
+    if not data:
+        return "لم يتم العثور على نتائج مطابقة في قاعدة بيانات Meta."
+    
+    lines = [f"نتائج البحث في Meta ({len(data)} نتيجة):"]
+    for item in data[:8]:
+        name = item.get("name")
+        key = item.get("key") or item.get("id")
+        type_ = item.get("type") or "interest"
+        country = item.get("country_name") or item.get("country_code") or ""
+        lines.append(f"- {name} (Key: {key}, Type: {type_}, {country})")
+    return "\n".join(lines)
+
+
+facebook_ad_search_targeting_tool = FunctionTool(
+    name="facebook_ad_search_targeting",
+    description="Dynamically search Meta Ads Graph API for official geolocation keys (cities, regions, provinces) or interest categories for any country worldwide (EG, SA, AE, US, etc.).",
+    func=facebook_ad_search_targeting,
+    input_model=FacebookAdSearchTargetingInput,
+    format_result=_format_facebook_ad_search_targeting,
+)
+
 __all_tools__ = [
     facebook_ad_analyze_product_tool,
     facebook_ad_create_full_draft_tool,
@@ -1732,6 +1800,7 @@ __all_tools__ = [
     orders_campaign_attribution_report_tool,
     facebook_ad_update_status_tool,
     facebook_ad_update_budget_tool,
+    facebook_ad_search_targeting_tool,
 ]
 
 

@@ -1140,6 +1140,74 @@ class FacebookAdsService {
     };
   }
 
+  normalizeCustomLocation(loc) {
+    if (!loc || typeof loc !== 'object') return null;
+    const lat = Number(loc.latitude ?? loc.lat);
+    const lng = Number(loc.longitude ?? loc.lng ?? loc.long);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) return null;
+    if (!Number.isFinite(lng) || lng < -180 || lng > 180) return null;
+
+    const radius = Number.isFinite(Number(loc.radius)) ? Math.max(1, Number(loc.radius)) : 5;
+    const distance_unit = loc.distance_unit === 'mile' ? 'mile' : 'kilometer';
+
+    const res = {
+      latitude: lat,
+      longitude: lng,
+      radius,
+      distance_unit
+    };
+    if (loc.name) res.name = String(loc.name);
+    return res;
+  }
+
+  /**
+   * Search Meta Geo Locations (Cities, Regions, Zip Codes, Countries) dynamically
+   * Uses GET /v25.0/search?type=adgeolocation
+   */
+  async searchGeoLocations({ query, countryCode = 'EG', locationTypes = ['region', 'city'], limit = 10 } = {}) {
+    if (!query || !String(query).trim()) return [];
+    try {
+      const params = {
+        type: 'adgeolocation',
+        q: String(query).trim(),
+        limit: Math.min(Number(limit) || 10, 50),
+        access_token: this.accessToken
+      };
+      if (countryCode) {
+        params.country_code = String(countryCode).trim().toUpperCase();
+      }
+      if (Array.isArray(locationTypes) && locationTypes.length > 0) {
+        params.location_types = JSON.stringify(locationTypes);
+      }
+      const response = await axios.get(`${this.baseUrl}/search`, { params, timeout: 10000 });
+      return response.data?.data || [];
+    } catch (err) {
+      console.warn('⚠️ Failed to search Meta geo locations:', extractMetaErrorMessage(err));
+      return [];
+    }
+  }
+
+  /**
+   * Search Meta Interests dynamically
+   * Uses GET /v25.0/search?type=adinterest
+   */
+  async searchInterests({ query, limit = 10 } = {}) {
+    if (!query || !String(query).trim()) return [];
+    try {
+      const params = {
+        type: 'adinterest',
+        q: String(query).trim(),
+        limit: Math.min(Number(limit) || 10, 50),
+        access_token: this.accessToken
+      };
+      const response = await axios.get(`${this.baseUrl}/search`, { params, timeout: 10000 });
+      return response.data?.data || [];
+    } catch (err) {
+      console.warn('⚠️ Failed to search Meta interests:', extractMetaErrorMessage(err));
+      return [];
+    }
+  }
+
   /**
    * بناء Targeting Spec (v22.0 Enhanced)
    */
@@ -1177,7 +1245,14 @@ class FacebookAdsService {
         regions.push(r);
       }
     }
-    const hasLocalGeoTargets = cities.length > 0 || regions.length > 0;
+
+    const customLocations = Array.isArray(targeting.customLocations || targeting.custom_locations || targeting.geo_locations?.custom_locations)
+      ? (targeting.customLocations || targeting.custom_locations || targeting.geo_locations?.custom_locations)
+          .map((loc) => this.normalizeCustomLocation(loc))
+          .filter(Boolean)
+      : [];
+
+    const hasLocalGeoTargets = cities.length > 0 || regions.length > 0 || customLocations.length > 0;
 
     // Meta rejects overlapping geo targets, so countries are only sent when
     // the ad set is not already scoped to child regions/cities.
@@ -1198,12 +1273,48 @@ class FacebookAdsService {
     if (cities.length > 0) {
       geoLocations.cities = cities;
     }
+    if (customLocations.length > 0) {
+      geoLocations.custom_locations = customLocations;
+    }
     if (Object.keys(geoLocations).length > 0) {
       geoLocations.location_types = this.normalizeLocationTypes(
         targeting.locationTypes || targeting.location_types || targeting.geo_locations?.location_types,
         hasLocalGeoTargets ? ['home'] : ['home', 'recent']
       );
       spec.geo_locations = geoLocations;
+    }
+
+    // 🛡️ 2026 COD Logistics & Excluded Geo Locations
+    const rawExcludedRegions = Array.isArray(targeting.excludedRegions || targeting.excluded_regions || targeting.excluded_geo_locations?.regions)
+      ? (targeting.excludedRegions || targeting.excluded_regions || targeting.excluded_geo_locations?.regions).flatMap((r) => this.normalizeGeoRegion(r)).filter(Boolean)
+      : [];
+    const seenExcludedRegionKeys = new Set();
+    const excludedRegions = [];
+    for (const r of rawExcludedRegions) {
+      if (r && r.key && !seenExcludedRegionKeys.has(r.key)) {
+        seenExcludedRegionKeys.add(r.key);
+        excludedRegions.push(r);
+      }
+    }
+
+    const excludedCities = Array.isArray(targeting.excludedCities || targeting.excluded_cities || targeting.excluded_geo_locations?.cities)
+      ? (targeting.excludedCities || targeting.excluded_cities || targeting.excluded_geo_locations?.cities).map((c) => this.normalizeGeoCity(c)).filter(Boolean)
+      : [];
+
+    const excludedCustomLocations = Array.isArray(targeting.excludedCustomLocations || targeting.excluded_custom_locations || targeting.excluded_geo_locations?.custom_locations)
+      ? (targeting.excludedCustomLocations || targeting.excluded_custom_locations || targeting.excluded_geo_locations?.custom_locations)
+          .map((loc) => this.normalizeCustomLocation(loc))
+          .filter(Boolean)
+      : [];
+
+    const excludedGeoLocations = {};
+    if (excludedRegions.length > 0) excludedGeoLocations.regions = excludedRegions;
+    if (excludedCities.length > 0) excludedGeoLocations.cities = excludedCities;
+    if (excludedCustomLocations.length > 0) excludedGeoLocations.custom_locations = excludedCustomLocations;
+
+    if (Object.keys(excludedGeoLocations).length > 0) {
+      excludedGeoLocations.location_types = ['home'];
+      spec.excluded_geo_locations = excludedGeoLocations;
     }
 
     // Interest targeting
@@ -1866,6 +1977,10 @@ class FacebookAdsService {
         regions: (targeting && targeting.regions && targeting.regions.length > 0) ? targeting.regions : (data.regions || data.targetRegions || []),
         interests: (targeting && targeting.interests && targeting.interests.length > 0) ? targeting.interests : (data.interests || data.targetInterests || []),
         countries: (targeting && (targeting.countries || targeting.locations)) || (data.country ? [data.country] : (data.targetCountry ? [data.targetCountry] : ['EG'])),
+        customLocations: (targeting && targeting.customLocations && targeting.customLocations.length > 0) ? targeting.customLocations : (data.customLocations || data.targetCustomLocations || []),
+        excludedCities: (targeting && targeting.excludedCities && targeting.excludedCities.length > 0) ? targeting.excludedCities : (data.excludedCities || data.targetExcludedCities || []),
+        excludedRegions: (targeting && targeting.excludedRegions && targeting.excludedRegions.length > 0) ? targeting.excludedRegions : (data.excludedRegions || data.targetExcludedRegions || []),
+        excludedCustomLocations: (targeting && targeting.excludedCustomLocations && targeting.excludedCustomLocations.length > 0) ? targeting.excludedCustomLocations : (data.excludedCustomLocations || []),
       };
 
       const results = {
