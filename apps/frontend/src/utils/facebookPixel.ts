@@ -51,14 +51,13 @@ const console = {
 };
 
 // Based on Meta's current browser validator inside `fbevents.js`.
-// Some real store currencies, including EGP, are rejected by the browser
-// validator for standard Purchase monetary payloads. Keep those purchases on
-// trackCustom so the browser request still carries value/currency; CAPI should
-// provide the canonical server-side Purchase once configured.
+// Standard ISO currencies (including EGP, SAR, AED, KWD, USD, EUR) use standard Purchase `track`.
+// Any truly unsupported/custom currency will use `trackCustom` fallback.
 const META_STANDARD_PURCHASE_SUPPORTED_CURRENCIES = new Set([
   "AED",
   "ARS",
   "AUD",
+  "BHD",
   "BOB",
   "BRL",
   "CAD",
@@ -69,6 +68,8 @@ const META_STANDARD_PURCHASE_SUPPORTED_CURRENCIES = new Set([
   "CRC",
   "CZK",
   "DKK",
+  "DZD",
+  "EGP",
   "EUR",
   "GBP",
   "GTQ",
@@ -78,15 +79,21 @@ const META_STANDARD_PURCHASE_SUPPORTED_CURRENCIES = new Set([
   "IDR",
   "ILS",
   "INR",
+  "IQD",
   "ISK",
+  "JOD",
   "JPY",
   "KRW",
+  "KWD",
+  "LYD",
+  "MAD",
   "MOP",
   "MXN",
   "MYR",
   "NIO",
   "NOK",
   "NZD",
+  "OMR",
   "PEN",
   "PHP",
   "PLN",
@@ -98,6 +105,7 @@ const META_STANDARD_PURCHASE_SUPPORTED_CURRENCIES = new Set([
   "SEK",
   "SGD",
   "THB",
+  "TND",
   "TRY",
   "TWD",
   "USD",

@@ -10,10 +10,10 @@ const purchaseEventData = {
 };
 
 describe("createFacebookPurchaseDispatchPlan", () => {
-  it("preserves Purchase value for unsupported browser currencies", () => {
+  it("preserves Purchase value and uses trackCustom for truly unsupported currencies", () => {
     const prepared = createFacebookPurchaseDispatchPlan(
-      purchaseEventData,
-      "EGP",
+      { ...purchaseEventData, currency: "XYZ" },
+      "XYZ",
     );
 
     expect(prepared.trackingMethod).toBe("trackCustom");
@@ -25,8 +25,22 @@ describe("createFacebookPurchaseDispatchPlan", () => {
       contents: [{ id: "product-1", quantity: 2, item_price: 100 }],
       content_type: "product",
       value: 200,
-      currency: "EGP",
+      currency: "XYZ",
       num_items: 1,
+    });
+  });
+
+  it("uses standard Purchase track for EGP", () => {
+    const prepared = createFacebookPurchaseDispatchPlan(
+      purchaseEventData,
+      "EGP",
+    );
+
+    expect(prepared.trackingMethod).toBe("track");
+    expect(prepared.monetaryFieldsMode).toBe("included");
+    expect(prepared.eventData).toMatchObject({
+      value: 200,
+      currency: "EGP",
     });
   });
 
