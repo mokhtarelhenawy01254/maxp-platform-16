@@ -54,6 +54,17 @@ exports.createShipment = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
+    // 🛡️ منع شحن الطلبات المكررة، الملغاة، أو المرتجعة
+    const invalidShippingStatuses = ['DUPLICATE_ORDER', 'CANCELLED', 'RETURNED', 'REFUNDED', 'TRASH', 'LOST'];
+    if (invalidShippingStatuses.includes(String(order.status || '').toUpperCase())) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_ORDER_STATUS_FOR_SHIPPING',
+        error: `لا يمكن شحن هذا الطلب لـ QP Express لأن حالته هي: ${order.status}`,
+        orderStatus: order.status
+      });
+    }
+
     // 2. Prepare order payload for QP Express
     const customerName = order.customerName || order.customer?.name || order.customer?.fullName || 'عميل';
     const customerPhone = order.customerPhone || order.customer?.phone || order.phone || '';
@@ -287,6 +298,8 @@ exports.bulkCreateShipments = async (req, res) => {
       return res.status(400).json({ success: false, error: 'يرجى تحديد طلب واحد على الأقل للشحن' });
     }
 
+    const invalidShippingStatuses = ['DUPLICATE_ORDER', 'CANCELLED', 'RETURNED', 'REFUNDED', 'TRASH', 'LOST'];
+
     const orders = await safeQuery(() =>
       prisma.order.findMany({
         where: {
@@ -294,6 +307,7 @@ exports.bulkCreateShipments = async (req, res) => {
             { id: { in: orderIds } },
             { orderNumber: { in: orderIds } },
           ],
+          status: { notIn: invalidShippingStatuses },
           ...(companyId ? { companyId } : {}),
         },
         include: {
@@ -310,13 +324,23 @@ exports.bulkCreateShipments = async (req, res) => {
     , 2);
 
     if (!orders || orders.length === 0) {
-      return res.status(404).json({ success: false, error: 'لم يتم العثور على أي من الطلبات المحددة' });
+      return res.status(404).json({ success: false, error: 'لم يتم العثور على أي طلبات مؤهلة للشحن من بين الطلبات المحددة' });
     }
 
     const results = { success: [], failed: [], skipped: [] };
+    const processedPhonesInBatch = new Set();
 
     for (const order of orders) {
       try {
+        if (invalidShippingStatuses.includes(String(order.status || '').toUpperCase())) {
+          results.skipped.push({
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            reason: `حالة الطلب غير مؤهلة للشحن (${order.status})`,
+          });
+          continue;
+        }
+
         const existingShipment = order.shipments?.[0];
         if (existingShipment?.trackingNumber && existingShipment.carrierType === 'QP_EXPRESS') {
           results.skipped.push({
@@ -327,8 +351,25 @@ exports.bulkCreateShipments = async (req, res) => {
           continue;
         }
 
-        const customerName = order.customerName || (order.customer ? `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim() : null) || 'عميل';
         const customerPhone = order.customerPhone || order.customer?.phone || order.phone || '';
+        const cleanPhone = String(customerPhone)
+          .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
+          .replace(/\D/g, '')
+          .slice(-10);
+
+        if (cleanPhone && cleanPhone.length >= 8) {
+          if (processedPhonesInBatch.has(cleanPhone)) {
+            results.skipped.push({
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+              reason: 'طلب مكرر لنفس العميل داخل نفس دفعة الشحن',
+            });
+            continue;
+          }
+          processedPhonesInBatch.add(cleanPhone);
+        }
+
+        const customerName = order.customerName || (order.customer ? `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim() : null) || 'عميل';
         const shippingAddress = order.shippingAddress || '';
         const customerAddress = order.customerAddress || order.address || order.customer?.address || '';
         const city = order.city || order.governorate || order.shippingCity || '';

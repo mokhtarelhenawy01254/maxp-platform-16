@@ -2485,6 +2485,51 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
       return res.status(400).json({ success: false, message: 'رقم الهاتف مطلوب لتحويل الطلب' });
     }
 
+    // 🛡️ فحص ما إذا كان العميل لديه طلب مسجل بالفعل خلال آخر 48 ساعة لمنع تكرار الأوردرات والشحنات
+    const forceConvert = req.body?.force === true || req.body?.force === 'true' || req.query?.force === 'true';
+    if (!forceConvert && guestPhone) {
+      const cleanPhone = String(guestPhone)
+        .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
+        .replace(/\D/g, '')
+        .slice(-10);
+
+      if (cleanPhone && cleanPhone.length >= 8) {
+        const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
+        const existingOrder = await getSharedPrismaClient().order.findFirst({
+          where: {
+            companyId,
+            customerPhone: { contains: cleanPhone },
+            createdAt: { gte: since48h },
+            status: { notIn: ['CANCELLED', 'RETURNED', 'REFUNDED', 'TRASH', 'LOST'] }
+          },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            total: true,
+            createdAt: true,
+            customerName: true
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+
+        if (existingOrder) {
+          return res.status(409).json({
+            success: false,
+            code: 'EXISTING_CUSTOMER_ORDER',
+            message: `تنبيه: هذا العميل لديه طلب مسجل بالفعل برقم (${existingOrder.orderNumber}) بحالة [${existingOrder.status}] بتاريخ ${new Date(existingOrder.createdAt).toLocaleDateString('ar-EG')}. هل تريد المتابعة وإنشاء طلب مكرر؟`,
+            existingOrder: {
+              id: existingOrder.id,
+              orderNumber: existingOrder.orderNumber,
+              status: existingOrder.status,
+              total: existingOrder.total,
+              createdAt: existingOrder.createdAt
+            }
+          });
+        }
+      }
+    }
+
     const total = typeof cart.total === 'string' ? parseFloat(cart.total) || 0 : Number(cart.total || 0);
 
     const cartAttribution = extractAttributionFromCheckoutData(checkoutData);

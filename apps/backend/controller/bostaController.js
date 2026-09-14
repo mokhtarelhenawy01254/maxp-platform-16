@@ -35,6 +35,17 @@ exports.createShipment = async (req, res) => {
 
     if (!order) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
 
+    // 🛡️ منع شحن الطلبات المكررة، الملغاة، أو المرتجعة
+    const invalidShippingStatuses = ['DUPLICATE_ORDER', 'CANCELLED', 'RETURNED', 'REFUNDED', 'TRASH', 'LOST'];
+    if (invalidShippingStatuses.includes(String(order.status || '').toUpperCase())) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_ORDER_STATUS_FOR_SHIPPING',
+        error: `لا يمكن شحن هذا الطلب لبوسطة لأن حالته هي: ${order.status}`,
+        orderStatus: order.status
+      });
+    }
+
     const payload = service.formatOrderForBosta(order, order.customer);
     const result = await service.createDelivery(payload);
 
@@ -136,6 +147,8 @@ exports.bulkCreateShipments = async (req, res) => {
       return res.status(400).json({ success: false, error: 'يرجى تحديد الطلبات المراد شحنها' });
     }
 
+    const invalidShippingStatuses = ['DUPLICATE_ORDER', 'CANCELLED', 'RETURNED', 'REFUNDED', 'TRASH', 'LOST'];
+
     const orders = await safeQuery(() =>
       prisma.order.findMany({
         where: {
@@ -143,6 +156,7 @@ exports.bulkCreateShipments = async (req, res) => {
             { id: { in: orderIds } },
             { orderNumber: { in: orderIds } },
           ],
+          status: { notIn: invalidShippingStatuses },
           companyId: req.user.companyId,
         },
         include: {
@@ -161,13 +175,35 @@ exports.bulkCreateShipments = async (req, res) => {
     let failedCount = 0;
     let skippedCount = 0;
     const results = [];
+    const processedPhonesInBatch = new Set();
 
     for (const order of orders) {
+      if (invalidShippingStatuses.includes(String(order.status || '').toUpperCase())) {
+        skippedCount++;
+        results.push({ orderId: order.id, orderNumber: order.orderNumber, success: false, skipped: true, reason: `حالة الطلب غير مؤهلة للشحن (${order.status})` });
+        continue;
+      }
+
       const existingBostaShipment = order.shipments?.[0];
       if (existingBostaShipment?.trackingNumber && existingBostaShipment.carrierType === 'BOSTA') {
         skippedCount++;
         results.push({ orderId: order.id, orderNumber: order.orderNumber, success: true, skipped: true, trackingNumber: existingBostaShipment.trackingNumber });
         continue;
+      }
+
+      const customerPhone = order.customerPhone || order.customer?.phone || order.phone || '';
+      const cleanPhone = String(customerPhone)
+        .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
+        .replace(/\D/g, '')
+        .slice(-10);
+
+      if (cleanPhone && cleanPhone.length >= 8) {
+        if (processedPhonesInBatch.has(cleanPhone)) {
+          skippedCount++;
+          results.push({ orderId: order.id, orderNumber: order.orderNumber, success: false, skipped: true, reason: 'طلب مكرر لنفس العميل داخل نفس دفعة الشحن' });
+          continue;
+        }
+        processedPhonesInBatch.add(cleanPhone);
       }
 
       try {

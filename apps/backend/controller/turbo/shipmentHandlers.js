@@ -33,6 +33,32 @@ const createShipment = async (req, res) => {
     }
 
     if (!turboEnabled || !turboApiKey) return res.status(400).json({ success: false, error: 'Turbo is not enabled or API key is not configured' });
+
+    // 🛡️ منع شحن الطلبات المكررة، الملغاة، أو المرتجعة
+    const invalidStatuses = ['DUPLICATE_ORDER', 'CANCELLED', 'RETURNED', 'REFUNDED', 'TRASH', 'LOST'];
+    if (invalidStatuses.includes(String(order.status || '').toUpperCase())) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_ORDER_STATUS_FOR_SHIPPING',
+        error: `لا يمكن شحن هذا الطلب لتربو لأن حالته هي: ${order.status}`,
+        orderStatus: order.status
+      });
+    }
+
+    // 🛡️ التحقق من وجود شحنة نشطة سابقة لنفس العميل خلال آخر 48 ساعة
+    const forceDuplicate = req.body?.forceDuplicateShipping === true || req.body?.forceDuplicateShipping === 'true';
+    if (!forceDuplicate) {
+      const activeExisting = await orderService.checkDuplicateActiveTurboShipment(companyId, order);
+      if (activeExisting) {
+        return res.status(409).json({
+          success: false,
+          code: 'DUPLICATE_ACTIVE_SHIPMENT',
+          error: `تنبيه: العميل لديه بالفعل شحنة نشطة لتربو (بوليصة #${activeExisting.turboShipmentId} - أوردر #${activeExisting.orderNumber}) تم إنشاؤها بتاريخ ${new Date(activeExisting.createdAt).toLocaleDateString('ar-EG')}. لتأكيد الشحن على أي حال أرسل forceDuplicateShipping.`,
+          existingShipment: activeExisting
+        });
+      }
+    }
+
     const existingTurboShipment = Boolean(order.turboShipmentId || order.turboTrackingNumber || order.turboShipmentStatus || order.turboLabelUrl);
     const normalizedTurboStatus = String(order.turboShipmentStatus || '').toLowerCase();
     const isDeliveredTurboShipment = ['delivered', 'completed', '7', '8'].includes(normalizedTurboStatus);
@@ -142,11 +168,14 @@ const bulkCreateShipments = async (req, res) => {
       } catch (_) {}
     }
 
+    const invalidShippingStatuses = ['DUPLICATE_ORDER', 'CANCELLED', 'RETURNED', 'REFUNDED', 'TRASH', 'LOST'];
+
     const regularOrders = await safeQuery(() => prisma.order.findMany({
       where: {
         OR: [{ orderNumber: { in: orderIds } }, { id: { in: orderIds } }],
         companyId,
-        turboShipmentId: null
+        turboShipmentId: null,
+        status: { notIn: invalidShippingStatuses }
       },
       include: {
         customer: true,
@@ -165,18 +194,20 @@ const bulkCreateShipments = async (req, res) => {
         where: {
           OR: [{ orderNumber: { in: remainingIds } }, { id: { in: remainingIds } }],
           companyId,
-          turboShipmentId: null
+          turboShipmentId: null,
+          status: { notIn: invalidShippingStatuses }
         },
         take: 100
       }), 3);
     }
 
     const totalCandidateOrders = regularOrders.length + guestOrders.length;
-    if (totalCandidateOrders === 0) return res.status(404).json({ success: false, error: 'لم يتم العثور على أي طلبات غير مشحونة بحاجة للإرسال لتربو' });
+    if (totalCandidateOrders === 0) return res.status(404).json({ success: false, error: 'لم يتم العثور على أي طلبات مؤهلة للشحن غير مشحونة بحاجة للإرسال لتربو' });
 
     const turboService = new TurboService(turboApiKey, companyId);
     const { normalizeGuestShippingAddress } = require('../../utils/turbo/addressParser');
     const results = { success: [], failed: [], skipped: [] };
+    const processedPhonesInBatch = new Set();
 
     // 1. Process regular orders
     for (const order of regularOrders) {
@@ -185,6 +216,39 @@ const bulkCreateShipments = async (req, res) => {
           results.skipped.push({ orderNumber: order.orderNumber, reason: 'يوجد شحنة تربو مسجلة بالفعل' });
           continue;
         }
+
+        if (invalidShippingStatuses.includes(String(order.status || '').toUpperCase())) {
+          results.skipped.push({ orderNumber: order.orderNumber, reason: `حالة الطلب غير مؤهلة للشحن (${order.status})` });
+          continue;
+        }
+
+        const rawPhone = order.customerPhone || order.customer?.phone || '';
+        const cleanPhone = String(rawPhone)
+          .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
+          .replace(/\D/g, '')
+          .slice(-10);
+
+        if (cleanPhone && cleanPhone.length >= 8) {
+          if (processedPhonesInBatch.has(cleanPhone)) {
+            results.skipped.push({
+              orderNumber: order.orderNumber,
+              reason: 'طلب مكرر لنفس العميل داخل نفس دفعة الشحن'
+            });
+            continue;
+          }
+
+          const activeExisting = await orderService.checkDuplicateActiveTurboShipment(companyId, order);
+          if (activeExisting) {
+            results.skipped.push({
+              orderNumber: order.orderNumber,
+              reason: `يوجد شحنة نشطة سابقة للعميل (بوليصة #${activeExisting.turboShipmentId})`
+            });
+            continue;
+          }
+
+          processedPhonesInBatch.add(cleanPhone);
+        }
+
         const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
         const result = await turboService.createShipment(orderData);
         const updateData = {
@@ -262,6 +326,44 @@ const bulkCreateShipments = async (req, res) => {
           results.skipped.push({ orderNumber: guest.orderNumber, reason: 'يوجد شحنة تربو مسجلة بالفعل' });
           continue;
         }
+
+        if (invalidShippingStatuses.includes(String(guest.status || '').toUpperCase())) {
+          results.skipped.push({ orderNumber: guest.orderNumber, reason: `حالة الطلب غير مؤهلة للشحن (${guest.status})`, isGuest: true });
+          continue;
+        }
+
+        const rawGuestPhone = guest.guestPhone || '';
+        const cleanGuestPhone = String(rawGuestPhone)
+          .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
+          .replace(/\D/g, '')
+          .slice(-10);
+
+        if (cleanGuestPhone && cleanGuestPhone.length >= 8) {
+          if (processedPhonesInBatch.has(cleanGuestPhone)) {
+            results.skipped.push({
+              orderNumber: guest.orderNumber,
+              reason: 'طلب مكرر لنفس العميل داخل نفس دفعة الشحن',
+              isGuest: true
+            });
+            continue;
+          }
+
+          const activeExisting = await orderService.checkDuplicateActiveTurboShipment(companyId, {
+            id: guest.id,
+            customerPhone: guest.guestPhone
+          });
+          if (activeExisting) {
+            results.skipped.push({
+              orderNumber: guest.orderNumber,
+              reason: `يوجد شحنة نشطة سابقة للعميل (بوليصة #${activeExisting.turboShipmentId})`,
+              isGuest: true
+            });
+            continue;
+          }
+
+          processedPhonesInBatch.add(cleanGuestPhone);
+        }
+
         let items = guest.items || [];
         if (typeof items === 'string') {
           try { items = JSON.parse(items); } catch (_) { items = []; }

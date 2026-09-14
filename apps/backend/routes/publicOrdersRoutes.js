@@ -188,6 +188,37 @@ router.post('/checkout-draft', async (req, res) => {
       });
     }
 
+    // 🛡️ تجنب توليد سلة متروكة وهمية إذا كان العميل قد أتم طلباً بالفعل خلال آخر 20 دقيقة
+    if (checkoutData.phone) {
+      const cleanPhone = String(checkoutData.phone)
+        .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
+        .replace(/\D/g, '')
+        .slice(-10);
+
+      if (cleanPhone && cleanPhone.length >= 8) {
+        const recentOrder = await prisma.order.findFirst({
+          where: {
+            companyId,
+            customerPhone: { contains: cleanPhone },
+            createdAt: { gte: new Date(Date.now() - 20 * 60 * 1000) }
+          },
+          select: { id: true, orderNumber: true }
+        });
+
+        if (recentOrder) {
+          return res.json({
+            success: true,
+            data: {
+              cartId: resolvedCartId,
+              skipped: true,
+              reason: 'RECENT_ORDER_COMPLETED',
+              orderNumber: recentOrder.orderNumber
+            }
+          });
+        }
+      }
+    }
+
     const now = new Date();
     const expiresAt = new Date(now.getTime() + CHECKOUT_DRAFT_TTL_MS);
     const total = calculateCheckoutDraftTotal(

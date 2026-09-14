@@ -291,7 +291,32 @@ const IncompleteOrders: React.FC = () => {
       } else {
         toast.error(data?.message || t("orders.incompleteConvertFailed"));
       }
-    } catch (err) {
+    } catch (err: any) {
+      const respData = err?.response?.data;
+      if (respData?.code === 'EXISTING_CUSTOMER_ORDER') {
+        const proceed = window.confirm(
+          `${respData.message}\n\nهل تريد بالتأكيد إنشاء طلب إضافي لهذا العميل؟`
+        );
+        if (proceed) {
+          try {
+            const forceRes = await apiClient.post<IncompleteConvertResponse>(
+              `/orders-new/incomplete/${encodeURIComponent(cartId)}/convert`,
+              { force: true },
+            );
+            if (forceRes.data?.success) {
+              toast.success(t("orders.incompleteConvertSuccess"));
+              setConfirmConvertCartId(null);
+              handleRetry();
+              return;
+            }
+          } catch (forceErr: any) {
+            toast.error(forceErr?.response?.data?.message || forceErr?.message || t("orders.incompleteConvertFailed"));
+            return;
+          }
+        } else {
+          return;
+        }
+      }
       const apiError = err as { response?: { data?: { message?: string } }; message?: string };
       toast.error(apiError.response?.data?.message || apiError.message || t("orders.incompleteConvertFailed"));
     } finally {
