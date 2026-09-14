@@ -902,10 +902,11 @@ class WalletController {
       );
 
       if (!session.success) {
+        console.error(`[KASHIER-RECHARGE] Failed to create session for order ${orderNumber}:`, session.error);
         await prisma.transaction.deleteMany({
           where: { referenceId: orderNumber, status: 'PENDING' },
         }).catch(() => {});
-        return res.status(502).json({ success: false, message: 'فشل إنشاء جلسة الدفع' });
+        return res.status(502).json({ success: false, message: 'فشل إنشاء جلسة الدفع', error: session.error });
       }
 
       res.json({

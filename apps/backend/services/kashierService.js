@@ -115,10 +115,7 @@ class KashierService {
     let apiKey = process.env.KASHIER_API_KEY;
     let secretKey = process.env.KASHIER_SECRET_KEY;
 
-    if (overrideConfig) {
-      apiKey = overrideConfig.apiKey;
-      secretKey = overrideConfig.secretKey;
-    } else if (companyId) {
+    if (companyId) {
       const { config, hasConfig } = await getCompanyKashierConfig(companyId);
       if (hasConfig && config?.apiKey && config?.secretKey) {
         apiKey = config.apiKey;
@@ -134,6 +131,11 @@ class KashierService {
       secretKey = platformConfig.secretKey || secretKey;
     }
 
+    if (overrideConfig) {
+      if (overrideConfig.apiKey) apiKey = overrideConfig.apiKey;
+      if (overrideConfig.secretKey) secretKey = overrideConfig.secretKey;
+    }
+
     return {
       Authorization: secretKey,
       'api-key': apiKey,
@@ -144,12 +146,7 @@ class KashierService {
   static async createPaymentSession({ amount, currency, orderId, customer, redirectUrl, webhookUrl, description }, companyId = null, overrideConfig = null) {
     let merchantId, apiKey, secretKey, mode;
 
-    if (overrideConfig) {
-      merchantId = overrideConfig.merchantId;
-      apiKey = overrideConfig.apiKey;
-      secretKey = overrideConfig.secretKey;
-      mode = overrideConfig.mode;
-    } else if (companyId) {
+    if (companyId) {
       const { config, hasConfig } = await getCompanyKashierConfig(companyId);
       if (hasConfig && config?.merchantId && config?.apiKey && config?.secretKey) {
         merchantId = config.merchantId;
@@ -169,6 +166,13 @@ class KashierService {
       apiKey = platformConfig.apiKey || process.env.KASHIER_API_KEY;
       secretKey = platformConfig.secretKey || process.env.KASHIER_SECRET_KEY;
       mode = platformConfig.mode || KASHIER_MODE();
+    }
+
+    if (overrideConfig) {
+      if (overrideConfig.merchantId) merchantId = overrideConfig.merchantId;
+      if (overrideConfig.apiKey) apiKey = overrideConfig.apiKey;
+      if (overrideConfig.secretKey) secretKey = overrideConfig.secretKey;
+      if (overrideConfig.mode) mode = overrideConfig.mode;
     }
 
     if (!merchantId || !apiKey || !secretKey) {
