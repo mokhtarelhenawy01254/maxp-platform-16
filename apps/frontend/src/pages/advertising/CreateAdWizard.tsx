@@ -49,6 +49,7 @@ import {
   normalizeWizardBidStrategy,
 } from "./CreateAdWizard.helpers";
 import ErrorBoundary from "../../components/ErrorBoundary";
+import { getResultEntityId } from "./wizard/types";
 import type {
   WizardStep,
   CarouselCard,
@@ -80,6 +81,7 @@ import {
   formatLaunchPrefillPrice,
   getProductLaunchPrefillPayload,
   buildStoredPrefillCarouselCards,
+  getPrefilledCarouselCards,
   getSafePrefillImageUrls,
   createClientRequestId,
 } from "./wizard/utils/prefillStorage";

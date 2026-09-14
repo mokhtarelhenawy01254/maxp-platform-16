@@ -160,6 +160,7 @@ export {
   buildDefaultUrlParameters,
   formatLaunchPrefillPrice,
   buildPrefilledCarouselCards,
+  getPrefilledCarouselCards,
   getProductLaunchPrefillPayload,
   buildStoredPrefillCarouselCards,
   getSafePrefillImageUrls,
