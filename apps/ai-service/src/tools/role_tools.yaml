@@ -125,6 +125,8 @@ roles:
     - facebook_ad_update_budget
     - facebook_ad_search_targeting
     - facebook_ad_inspect_targeting
+    - manage_agent_skill
+    - update_agent_identity
 
 
   FACEBOOK_SALES_SUPPORT:

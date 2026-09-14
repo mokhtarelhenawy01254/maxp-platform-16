@@ -79,6 +79,14 @@ class ManageAgentSkillInput(BaseModel):
         default=None,
         description="List of tool names permitted for this skill",
     )
+    agent_id: str | None = Field(
+        default=None,
+        description="Optional agent ID to attach this skill to. If omitted, attaches to the active agent for this role/company.",
+    )
+    role: str | None = Field(
+        default=None,
+        description="Optional agent role (e.g. 'MEDIA_BUYER', 'CUSTOMER_SUPPORT') to locate the target agent.",
+    )
 
 
 async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any]:
@@ -165,23 +173,31 @@ async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any
 
         await session.commit()
 
-        # Also ensure skill is attached to MEDIA_BUYER agent in ai.agents if present
+        # Also ensure skill is attached to the active agent in ai.agents if present
         if target_id:
             try:
                 from src.db.models.agent import Agent as AgentModel
                 stmt_agent = select(AgentModel).where(
                     AgentModel.company_id == company_id,
-                    AgentModel.role == "MEDIA_BUYER",
                     AgentModel.status != "ARCHIVED",
                 )
+                if input_data.agent_id:
+                    stmt_agent = stmt_agent.where(AgentModel.id == input_data.agent_id)
+                elif input_data.role:
+                    stmt_agent = stmt_agent.where(AgentModel.role == input_data.role.strip().upper())
+                else:
+                    stmt_agent = stmt_agent.order_by(
+                        (AgentModel.role == "MEDIA_BUYER").desc(),
+                        AgentModel.created_at.desc()
+                    )
                 agent_res = await session.execute(stmt_agent)
-                mb_agent = agent_res.scalars().first()
-                if mb_agent:
-                    current_skills = list(mb_agent.allowed_skills or [])
+                target_agent = agent_res.scalars().first()
+                if target_agent:
+                    current_skills = list(target_agent.allowed_skills or [])
                     if target_id not in current_skills:
                         current_skills.append(target_id)
-                        mb_agent.allowed_skills = current_skills
-                        session.add(mb_agent)
+                        target_agent.allowed_skills = current_skills
+                        session.add(target_agent)
                         await session.commit()
             except Exception:
                 pass
@@ -230,8 +246,106 @@ manage_agent_skill_tool = FunctionTool(
 )
 
 
+class UpdateAgentIdentityInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    name: str = Field(description="New official name or display name for the agent (e.g. 'عباس', 'صقر', 'سارة')")
+    agent_id: str | None = Field(default=None, description="Optional specific agent ID to update")
+    role: str | None = Field(default=None, description="Agent role (e.g. 'MEDIA_BUYER', 'CUSTOMER_SUPPORT'). If agent_id is omitted, updates the active agent for this role.")
+    title: str | None = Field(default=None, description="Optional professional title (e.g. 'خبير إعلانات فيسبوك', 'مدير خدمة العملاء')")
+    description: str | None = Field(default=None, description="Optional updated description for the agent profile")
+
+
+async def update_agent_identity(input_data: UpdateAgentIdentityInput) -> dict[str, Any]:
+    """Update an agent's official name, title, or identity in PostgreSQL (ai.agents) across all platform stores."""
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "company_id is required"}
+
+    from src.db.session import async_session
+    from src.db.models.agent import Agent as AgentModel
+    from sqlalchemy import select
+
+    new_name = input_data.name.strip()
+    if not new_name:
+        return {"success": False, "error": "name cannot be empty"}
+
+    full_display_name = new_name
+    if input_data.title and input_data.title.strip() and "—" not in new_name and "-" not in new_name:
+        full_display_name = f"{new_name} — {input_data.title.strip()}"
+
+    async with async_session() as session:
+        target_agent = None
+        if input_data.agent_id:
+            stmt = select(AgentModel).where(AgentModel.id == input_data.agent_id, AgentModel.company_id == company_id)
+            res = await session.execute(stmt)
+            target_agent = res.scalar_one_or_none()
+
+        if not target_agent and input_data.role:
+            stmt = select(AgentModel).where(
+                AgentModel.company_id == company_id,
+                AgentModel.role == input_data.role.strip().upper(),
+                AgentModel.status != "ARCHIVED"
+            ).order_by(AgentModel.created_at.desc())
+            res = await session.execute(stmt)
+            target_agent = res.scalars().first()
+
+        if not target_agent:
+            stmt = select(AgentModel).where(
+                AgentModel.company_id == company_id,
+                AgentModel.status != "ARCHIVED"
+            ).order_by(
+                (AgentModel.role == "MEDIA_BUYER").desc(),
+                AgentModel.created_at.desc()
+            )
+            res = await session.execute(stmt)
+            target_agent = res.scalars().first()
+
+        if not target_agent:
+            return {"success": False, "error": f"No active agent found for company '{company_id}' to update"}
+
+        old_name = target_agent.name
+        target_agent.name = full_display_name
+        if input_data.description:
+            target_agent.description = input_data.description.strip()
+
+        persona_meta = dict(target_agent.persona_meta or {})
+        persona_meta["agent_name"] = new_name
+        persona_meta["display_name"] = full_display_name
+        target_agent.persona_meta = persona_meta
+
+        session.add(target_agent)
+        await session.commit()
+
+        logger.info("agent_identity_updated", company_id=company_id, agent_id=target_agent.id, old_name=old_name, new_name=full_display_name)
+
+        return {
+            "success": True,
+            "agent_id": target_agent.id,
+            "old_name": old_name,
+            "name": full_display_name,
+            "role": target_agent.role,
+            "message": f"تم تحديث اسم الوكيل بنجاح إلى '{full_display_name}' في قاعدة البيانات والملف التعريفي.",
+        }
+
+
+def _format_update_agent_identity(result: dict) -> str:
+    if not result.get("success"):
+        return f"تعذر تحديث اسم الوكيل: {result.get('error', 'خطأ غير معروف')}"
+    return f"تم تحديث وتثبيت اسمي الرسمي في النظام وقاعدة البيانات إلى '{result.get('name', '')}' بنجاح."
+
+
+update_agent_identity_tool = FunctionTool(
+    name="update_agent_identity",
+    description="Update the agent's official name, title, or identity in the database and company profile when the merchant assigns a new name or renames the agent (e.g. when merchant says 'أنا هسميك عباس' or 'سميتك صقر').",
+    func=update_agent_identity,
+    input_model=UpdateAgentIdentityInput,
+    format_result=_format_update_agent_identity,
+)
+
+
 __all_tools__ = [
     record_learned_rule_tool,
     manage_agent_skill_tool,
+    update_agent_identity_tool,
 ]
 
