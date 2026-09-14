@@ -563,6 +563,7 @@ class FacebookAdsAiController {
               'company_snapshot',
               'audit_read',
               'generate_social_image',
+              'facebook_ad_search_targeting',
             ],
             allowedSkills: [
               'facebook-ad-draft',

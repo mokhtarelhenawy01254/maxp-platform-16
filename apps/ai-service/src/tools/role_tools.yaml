@@ -121,6 +121,9 @@ roles:
     - session_search
     - delegate_task
     - manage_todo
+    - facebook_ad_update_status
+    - facebook_ad_update_budget
+    - facebook_ad_search_targeting
 
   FACEBOOK_SALES_SUPPORT:
     - product_search
@@ -281,6 +284,9 @@ roles:
     - session_search
     - delegate_task
     - agent_handoff_to
+    - facebook_ad_update_status
+    - facebook_ad_update_budget
+    - facebook_ad_search_targeting
 
   CEO:
     - delegate_task
