@@ -117,6 +117,9 @@ class FacebookConversionsService {
     if (userData.city) {
       user.ct = this.hashData(userData.city);
     }
+    if (userData.state || userData.governorate) {
+      user.st = this.hashData(userData.state || userData.governorate);
+    }
     if (userData.country) {
       user.country = this.hashData(userData.country || 'eg');
     }
@@ -370,6 +373,7 @@ class FacebookConversionsService {
       if (rawUserData.firstName) userData.setFirstName(rawUserData.firstName);
       if (rawUserData.lastName) userData.setLastName(rawUserData.lastName);
       if (rawUserData.city) userData.setCity(rawUserData.city);
+      if (rawUserData.state || rawUserData.governorate) userData.setState(rawUserData.state || rawUserData.governorate);
       if (rawUserData.country) userData.setCountry(rawUserData.country); // Corrected from setCountryCode
       if (rawUserData.zip) userData.setZip(rawUserData.zip); // Corrected from setZipCode
       if (rawUserData.ip) userData.setClientIpAddress(rawUserData.ip);

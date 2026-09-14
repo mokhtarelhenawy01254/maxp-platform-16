@@ -766,8 +766,19 @@ router.post('/', async (req, res) => {
     const fbpFromCookie =
       req.cookies?._fbp ||
       extractCookieValue(req.headers?.cookie, '_fbp');
-    const resolvedFbc = fbc || fbcFromHeader || fbcFromCookie || null;
-    const resolvedFbp = fbp || fbpFromHeader || fbpFromCookie || null;
+    const resolvedFbc =
+      fbc ||
+      attribution?.fbc ||
+      (attribution?.fbclid ? `fb.1.${Date.now()}.${attribution.fbclid}` : null) ||
+      fbcFromHeader ||
+      fbcFromCookie ||
+      null;
+    const resolvedFbp =
+      fbp ||
+      attribution?.fbp ||
+      fbpFromHeader ||
+      fbpFromCookie ||
+      null;
     const sanitizedAttribution = sanitizeOrderAttribution(attribution, {
       fbc: resolvedFbc,
       fbp: resolvedFbp,
@@ -2142,15 +2153,21 @@ router.post('/', async (req, res) => {
         console.log('🔄 [Facebook CAPI] Using event ID for deduplication:', eventId);
 
         // Extract user data from request
+        const rawForwardedIp = req.headers['x-forwarded-for'];
+        const cleanClientIp = rawForwardedIp
+          ? String(rawForwardedIp).split(',')[0].trim()
+          : (req.ip || req.connection?.remoteAddress || null);
+
         const userData = {
           email: guestEmail,
           phone: guestPhone,
           firstName: guestName?.split(' ')[0] || null,
           lastName: guestName?.split(' ').slice(1).join(' ') || null,
           city: shippingAddress?.city || shippingAddress?.governorate || null,
-          country: 'eg',
+          state: shippingAddress?.governorate || null,
+          country: (shippingAddress?.country || 'eg').toLowerCase(),
           zip: shippingAddress?.zipCode || null,
-          ip: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+          ip: cleanClientIp,
           userAgent: req.headers['user-agent'],
           pageUrl: req.headers['referer'] || `${req.protocol}://${req.get('host')}${req.originalUrl}`,
           fbc: resolvedFbc,
