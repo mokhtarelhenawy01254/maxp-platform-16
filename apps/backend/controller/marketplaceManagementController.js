@@ -1,5 +1,6 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 const { getMarketplaceCatalogDbDiff } = require('../services/catalog/marketplaceCatalogDiffService');
+const { marketplaceCatalogService } = require('../services/catalog/marketplaceCatalogService');
 const { v4: uuidv4 } = require('uuid');
 const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
 
@@ -545,6 +546,8 @@ exports.createApp = async (req, res) => {
       });
     });
 
+    try { marketplaceCatalogService?.clearCache?.(); } catch (_) {}
+
     res.json({
       success: true,
       message: 'تم إنشاء الأداة بنجاح',
@@ -601,6 +604,8 @@ exports.updateApp = async (req, res) => {
       });
     });
 
+    try { marketplaceCatalogService?.clearCache?.(); } catch (_) {}
+
     res.json({
       success: true,
       message: 'تم تحديث الأداة بنجاح',
@@ -654,6 +659,8 @@ exports.deleteApp = async (req, res) => {
         where: { id }
       });
     });
+
+    try { marketplaceCatalogService?.clearCache?.(); } catch (_) {}
 
     res.json({
       success: true,

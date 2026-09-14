@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -147,10 +147,7 @@ export default function AppPricingSheet() {
       setIsDialogOpen(false);
       
       // reload the data
-      setLoading(true);
-      const response = await apiClient.get<{ success: boolean; data: MarketplaceApp[] }>("/marketplace/apps", { params: { limit: 500 } });
-      if (response.data?.success) setApps(response.data.data);
-      setLoading(false);
+      await loadAppsList();
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err) || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
     }
@@ -232,28 +229,34 @@ export default function AppPricingSheet() {
   };
 
 
-  // Fetch all apps
-  useEffect(() => {
-    const fetchApps = async () => {
-      try {
-        setLoading(true);
-        // Request limit 100 to fetch all apps
-        const response = await apiClient.get<{ success: boolean; data: MarketplaceApp[] }>(
-          "/marketplace/apps",
-          { params: { limit: 500 } }
-        );
-        if (response.data?.success) {
-          setApps(response.data.data);
-        }
-      } catch (error) {
-        console.error("Error fetching apps pricing:", error);
-        toast.error(t("subscription.appsPricingError"));
-      } finally {
-        setLoading(false);
+  // Fetch all apps directly from management endpoint for super admin (or public catalog for others)
+  const loadAppsList = useCallback(async () => {
+    try {
+      setLoading(true);
+      const isSuperAdmin = user?.role === "SUPER_ADMIN";
+      const endpoint = isSuperAdmin
+        ? "/super-admin/marketplace-management/apps"
+        : "/marketplace/apps";
+      const params = isSuperAdmin ? undefined : { limit: 500 };
+
+      const response = await apiClient.get<{ success: boolean; data: MarketplaceApp[] }>(
+        endpoint,
+        { params }
+      );
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        setApps(response.data.data);
       }
-    };
-    fetchApps();
-  }, [i18n.language, t]);
+    } catch (error) {
+      console.error("Error fetching apps pricing:", error);
+      toast.error(t("subscription.appsPricingError", "حدث خطأ أثناء تحميل تسعير التطبيقات"));
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.role, t]);
+
+  useEffect(() => {
+    void loadAppsList();
+  }, [loadAppsList]);
 
   // Extract all unique categories
   const categories = useMemo(() => {

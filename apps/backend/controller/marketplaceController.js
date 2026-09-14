@@ -76,7 +76,14 @@ async function enrichAppsWithDbState(apps, user) {
         slug: true,
         installCount: true,
         rating: true,
-        reviewCount: true
+        reviewCount: true,
+        monthlyPrice: true,
+        yearlyPrice: true,
+        pricingModel: true,
+        unitPrice: true,
+        unitName: true,
+        ppuBillingMethod: true,
+        trialDays: true
       }
     });
   });
@@ -137,9 +144,33 @@ async function enrichAppsWithDbState(apps, user) {
 
     const activePricingModel = dbApp ? (installedByAppId.get(dbApp.id) || null) : null;
 
+    // 🛡️ Live Database pricing takes absolute precedence over static file catalog:
+    const monthlyPrice = dbApp?.monthlyPrice !== undefined && dbApp?.monthlyPrice !== null
+      ? toSafeNumber(dbApp.monthlyPrice, 0)
+      : app.monthlyPrice;
+    const yearlyPrice = dbApp?.yearlyPrice !== undefined && dbApp?.yearlyPrice !== null
+      ? toSafeNumber(dbApp.yearlyPrice, 0)
+      : app.yearlyPrice;
+    const pricingModel = dbApp?.pricingModel ? dbApp.pricingModel : app.pricingModel;
+    const unitPrice = dbApp?.unitPrice !== undefined
+      ? (dbApp.unitPrice === null ? null : toSafeNumber(dbApp.unitPrice, 0))
+      : app.unitPrice;
+    const unitName = dbApp?.unitName !== undefined ? dbApp.unitName : app.unitName;
+    const ppuBillingMethod = dbApp?.ppuBillingMethod || app.ppuBillingMethod;
+    const trialDays = dbApp?.trialDays !== undefined && dbApp?.trialDays !== null
+      ? toSafeNumber(dbApp.trialDays, 0)
+      : app.trialDays;
+
     return {
       ...app,
       id: appId,
+      monthlyPrice,
+      yearlyPrice,
+      pricingModel,
+      unitPrice,
+      unitName,
+      ppuBillingMethod,
+      trialDays,
       installCount,
       rating,
       reviewCount,
@@ -509,24 +540,14 @@ async function ensureDbAppBySlug(slug, options = {}) {
   }
 
   const createPayload = buildDbAppPayloadFromCatalog(catalogApp);
+  // 🛡️ Note: Never overwrite pricing or trial days for existing DB apps
   const updatePayload = {
     name: createPayload.name,
     description: createPayload.description,
     logo: createPayload.logo,
-    monthlyPrice: createPayload.monthlyPrice,
-    yearlyPrice: createPayload.yearlyPrice,
-    pricingModel: createPayload.pricingModel,
-    unitPrice: createPayload.unitPrice,
-    unitName: createPayload.unitName,
-    ppuBillingMethod: createPayload.ppuBillingMethod,
     features: createPayload.features,
-    isActive: createPayload.isActive,
-    isPublic: createPayload.isPublic,
-    isFeatured: createPayload.isFeatured,
     requiredApps: createPayload.requiredApps,
-    trialDays: createPayload.trialDays,
     category: createPayload.category,
-    isPopular: createPayload.isPopular,
     engineCompatibility: createPayload.engineCompatibility,
     icon: createPayload.icon,
     updatedAt: new Date()

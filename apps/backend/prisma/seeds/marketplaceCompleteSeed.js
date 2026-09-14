@@ -12,6 +12,27 @@ async function seedMarketplace() {
     process.exit(1);
   }
 
+  const upsertAppSafely = async (app) => {
+    const {
+      monthlyPrice,
+      yearlyPrice,
+      pricingModel,
+      unitPrice,
+      unitName,
+      ppuBillingMethod,
+      trialDays,
+      isActive,
+      isPublic,
+      ...safeMetadataUpdate
+    } = app;
+
+    return await prisma.marketplaceApp.upsert({
+      where: { slug: app.slug },
+      update: safeMetadataUpdate,
+      create: app
+    });
+  };
+
   // ============================================
   // القسم 1: التجارة الإلكترونية (ECOMMERCE)
   // ============================================
@@ -213,11 +234,7 @@ async function seedMarketplace() {
   ];
 
   for (const app of ecommerceApps) {
-    await prisma.marketplaceApp.upsert({
-      where: { slug: app.slug },
-      update: app,
-      create: app
-    });
+    await upsertAppSafely(app);
     console.log(`  ✅ ${app.name} - ${app.monthlyPrice}ج/شهر`);
   }
 
@@ -330,11 +347,7 @@ async function seedMarketplace() {
   ];
 
   for (const app of hrApps) {
-    await prisma.marketplaceApp.upsert({
-      where: { slug: app.slug },
-      update: app,
-      create: app
-    });
+    await upsertAppSafely(app);
     console.log(`  ✅ ${app.name} - ${app.monthlyPrice === 0 ? 'مجاني' : app.monthlyPrice + 'ج/شهر'}`);
   }
 
@@ -428,11 +441,7 @@ async function seedMarketplace() {
   ];
 
   for (const app of aiApps) {
-    await prisma.marketplaceApp.upsert({
-      where: { slug: app.slug },
-      update: app,
-      create: app
-    });
+    await upsertAppSafely(app);
     console.log(`  ✅ ${app.name} - ${app.monthlyPrice}ج/شهر`);
   }
 
@@ -525,11 +534,7 @@ async function seedMarketplace() {
   ];
 
   for (const app of communicationApps) {
-    await prisma.marketplaceApp.upsert({
-      where: { slug: app.slug },
-      update: app,
-      create: app
-    });
+    await upsertAppSafely(app);
     console.log(`  ✅ ${app.name} - ${app.monthlyPrice}ج/شهر`);
   }
 
@@ -602,11 +607,7 @@ async function seedMarketplace() {
   ];
 
   for (const app of crmApps) {
-    await prisma.marketplaceApp.upsert({
-      where: { slug: app.slug },
-      update: app,
-      create: app
-    });
+    await upsertAppSafely(app);
     console.log(`  ✅ ${app.name} - ${app.monthlyPrice}ج/شهر`);
   }
 
@@ -660,11 +661,7 @@ async function seedMarketplace() {
   ];
 
   for (const app of analyticsApps) {
-    await prisma.marketplaceApp.upsert({
-      where: { slug: app.slug },
-      update: app,
-      create: app
-    });
+    await upsertAppSafely(app);
     console.log(`  ✅ ${app.name} - ${app.monthlyPrice}ج/شهر`);
   }
 
@@ -717,11 +714,7 @@ async function seedMarketplace() {
   ];
 
   for (const app of schedulingApps) {
-    await prisma.marketplaceApp.upsert({
-      where: { slug: app.slug },
-      update: app,
-      create: app
-    });
+    await upsertAppSafely(app);
     console.log(`  ✅ ${app.name} - ${app.monthlyPrice}ج/شهر`);
   }
 
@@ -774,11 +767,7 @@ async function seedMarketplace() {
   ];
 
   for (const app of integrationApps) {
-    await prisma.marketplaceApp.upsert({
-      where: { slug: app.slug },
-      update: app,
-      create: app
-    });
+    await upsertAppSafely(app);
     console.log(`  ✅ ${app.name} - ${app.monthlyPrice}ج/شهر`);
   }
 
@@ -896,11 +885,7 @@ async function seedMarketplace() {
   ];
 
   for (const app of marketingApps) {
-    await prisma.marketplaceApp.upsert({
-      where: { slug: app.slug },
-      update: app,
-      create: app
-    });
+    await upsertAppSafely(app);
     console.log(`  ✅ ${app.name} - ${app.monthlyPrice}ج/شهر`);
   }
 
@@ -953,11 +938,7 @@ async function seedMarketplace() {
   ];
 
   for (const app of financeApps) {
-    await prisma.marketplaceApp.upsert({
-      where: { slug: app.slug },
-      update: app,
-      create: app
-    });
+    await upsertAppSafely(app);
     console.log(`  ✅ ${app.name} - ${app.monthlyPrice === 0 ? 'مجاني' : app.monthlyPrice + 'ج/شهر'}`);
   }
 
@@ -1010,11 +991,7 @@ async function seedMarketplace() {
   ];
 
   for (const app of gamificationApps) {
-    await prisma.marketplaceApp.upsert({
-      where: { slug: app.slug },
-      update: app,
-      create: app
-    });
+    await upsertAppSafely(app);
     console.log(`  ✅ ${app.name} - ${app.monthlyPrice}ج/شهر`);
   }
 
@@ -1108,11 +1085,7 @@ async function seedMarketplace() {
   ];
 
   for (const app of orderApps) {
-    await prisma.marketplaceApp.upsert({
-      where: { slug: app.slug },
-      update: app,
-      create: app
-    });
+    await upsertAppSafely(app);
     console.log(`  ✅ ${app.name} - ${app.monthlyPrice === 0 ? 'مجاني' : app.monthlyPrice + 'ج/شهر'}`);
   }
 

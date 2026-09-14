@@ -369,7 +369,7 @@ async function syncMissingMarketplaceCatalogEntries(options = {}) {
           if (catalogApp?.features) updateData.features = normalizeJsonObject(catalogApp.features, {});
           if (catalogApp?.mainRoute !== undefined) updateData.mainRoute = catalogApp.mainRoute || null;
           if (catalogApp?.adminRoute !== undefined) updateData.adminRoute = catalogApp.adminRoute || null;
-          if (catalogApp?.pricingModel) updateData.pricingModel = catalogApp.pricingModel;
+          // 🛡️ Note: Never overwrite pricingModel or prices on existing apps
           if (Array.isArray(catalogApp?.requiredApps)) updateData.requiredApps = catalogApp.requiredApps;
           if (catalogApp?.isFeatured !== undefined) updateData.isFeatured = catalogApp.isFeatured;
           if (catalogApp?.isPopular !== undefined) updateData.isPopular = catalogApp.isPopular;

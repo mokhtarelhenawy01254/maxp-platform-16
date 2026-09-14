@@ -95,9 +95,22 @@ async function seedMarketplace() {
     ];
 
     for (const app of apps) {
+      const {
+        monthlyPrice,
+        yearlyPrice,
+        pricingModel,
+        unitPrice,
+        unitName,
+        ppuBillingMethod,
+        trialDays,
+        isActive,
+        isPublic,
+        ...safeMetadataUpdate
+      } = app;
+
       await prisma.marketplaceApp.upsert({
         where: { slug: app.slug },
-        update: app,
+        update: safeMetadataUpdate,
         create: app
       });
       console.log(`  ✅ Created app: ${app.name}`);
@@ -153,9 +166,17 @@ async function seedMarketplace() {
     ];
 
     for (const bundle of bundles) {
+      const {
+        monthlyPrice,
+        yearlyPrice,
+        discount,
+        isActive,
+        ...safeBundleUpdate
+      } = bundle;
+
       await prisma.appBundle.upsert({
         where: { slug: bundle.slug },
-        update: bundle,
+        update: safeBundleUpdate,
         create: bundle
       });
       console.log(`  ✅ Created bundle: ${bundle.name}`);

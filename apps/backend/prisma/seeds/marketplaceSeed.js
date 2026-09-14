@@ -1627,18 +1627,41 @@ async function seedMarketplace() {
 
     console.log('\n🛠️ Syncing ' + apps.length + ' Marketplace Apps...');
     for (const app of apps) {
+      // 🛡️ CRITICAL: Never overwrite pricing or admin status for existing apps in DB
+      const {
+        monthlyPrice,
+        yearlyPrice,
+        pricingModel,
+        unitPrice,
+        unitName,
+        ppuBillingMethod,
+        trialDays,
+        isActive,
+        isPublic,
+        ...safeMetadataUpdate
+      } = app;
+
       await prisma.marketplaceApp.upsert({
         where: { slug: app.slug },
-        update: app,
+        update: safeMetadataUpdate,
         create: app
       });
     }
 
     console.log('\n📦 Syncing ' + bundles.length + ' App Bundles...');
     for (const bundle of bundles) {
+      // 🛡️ CRITICAL: Never overwrite pricing or admin status for existing bundles in DB
+      const {
+        monthlyPrice,
+        yearlyPrice,
+        discount,
+        isActive,
+        ...safeBundleUpdate
+      } = bundle;
+
       await prisma.appBundle.upsert({
         where: { slug: bundle.slug },
-        update: bundle,
+        update: safeBundleUpdate,
         create: bundle
       });
     }
