@@ -2171,6 +2171,7 @@ router.post('/', async (req, res) => {
         // Send Purchase event
         await fbService.trackPurchase(userData, orderData, eventId);
         console.log('✅ [Facebook CAPI] Purchase event tracked for order:', order.orderNumber);
+        }
       }
     } catch (capiError) {
       // Don't fail the order creation if CAPI fails
