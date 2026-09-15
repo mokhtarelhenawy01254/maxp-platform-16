@@ -1155,6 +1155,7 @@ enum WhatsAppNotificationLogsCategory {
   HR
   SYSTEM
   GENERAL
+  OCCASION
 
   @@map("whatsapp_notification_logs_category")
 }

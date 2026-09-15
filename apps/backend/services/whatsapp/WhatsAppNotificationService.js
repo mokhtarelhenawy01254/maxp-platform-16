@@ -1447,7 +1447,7 @@ async function sendNotification(options) {
             String(b.type || b.action || '').toUpperCase() === 'LINK'
           );
           if (linkButtons.length > 0) {
-            const magicLinkService = require('../services/customerMagicLinkService');
+            const magicLinkService = require('../customerMagicLinkService');
             // لو مفيش customerId (مثل إرسال عام) نحاول نلقى العميل بالرقم في الشركة
             let linkCustomerId = customerId || null;
             if (!linkCustomerId) {
