@@ -46,40 +46,67 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
 }) => {
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
-  const getStatusBadge = (status: number) => {
-    switch (status) {
-      case 0:
-        return {
-          label: "جديدة",
-          className:
-            "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20",
-        };
-      case 1:
-        return {
-          label: "قيد المعالجة",
-          className:
-            "bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20",
-        };
-      case 2:
-        return {
-          label: "مغلقة",
-          className:
-            "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20",
-        };
-      default:
-        return {
-          label: "غير محدد",
-          className:
-            "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20",
-        };
+  const getStatusBadge = (status: any) => {
+    let val = "";
+    let label = "";
+
+    if (status && typeof status === "object") {
+      val = String(status.value || "").toLowerCase().trim();
+      label = status.label || "";
+    } else if (status !== undefined && status !== null) {
+      val = String(status).toLowerCase().trim();
     }
+
+    if (val === "0" || val === "open" || val === "new") {
+      return {
+        label: label || "جديدة",
+        className:
+          "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20",
+      };
+    }
+    if (val === "3" || val === "on_hold" || val === "hold" || val === "pending") {
+      return {
+        label: label || "معلقة",
+        className:
+          "bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20",
+      };
+    }
+    if (val === "1" || val === "in_progress" || val === "processing") {
+      return {
+        label: label || "قيد المعالجة",
+        className:
+          "bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20",
+      };
+    }
+    if (val === "2" || val === "closed" || val === "resolved" || val === "solved") {
+      return {
+        label: label || "مغلقة",
+        className:
+          "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20",
+      };
+    }
+
+    if (label) {
+      return {
+        label,
+        className:
+          "bg-zinc-500/10 text-zinc-700 dark:text-zinc-300 border border-zinc-500/20",
+      };
+    }
+
+    return {
+      label: "غير محدد",
+      className:
+        "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20",
+    };
   };
 
   const statusTabs = [
     { key: "all", label: "الكل" },
-    { key: "0", label: "جديدة" },
-    { key: "1", label: "قيد المعالجة" },
-    { key: "2", label: "مغلقة" },
+    { key: "open", label: "الجديدة" },
+    { key: "on_hold", label: "المعلقة" },
+    { key: "in_progress", label: "قيد المعالجة" },
+    { key: "closed", label: "مغلقة" },
   ];
 
   return (
@@ -139,7 +166,7 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1 p-0.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg text-[11px] font-medium">
+        <div className="flex items-center gap-1 p-0.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg text-[11px] font-medium overflow-x-auto scrollbar-none">
           {statusTabs.map((tab) => {
             const isActive = statusFilter === tab.key;
             return (
@@ -147,7 +174,7 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
                 key={tab.key}
                 type="button"
                 onClick={() => onChangeStatusFilter(tab.key)}
-                className={`flex-1 py-1 px-2 rounded-md transition text-center ${
+                className={`flex-1 min-w-max py-1 px-2 rounded-md transition text-center whitespace-nowrap shrink-0 ${
                   isActive
                     ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold"
                     : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"

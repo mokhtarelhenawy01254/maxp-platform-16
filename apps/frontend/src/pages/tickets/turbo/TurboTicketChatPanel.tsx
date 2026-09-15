@@ -15,6 +15,7 @@ import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
 import { StarIcon as StarOutline } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
+import { useAuth } from "../../../hooks/useAuthSimple";
 import { TurboTicketItem, TurboMessage } from "./types";
 
 interface TurboTicketChatPanelProps {
@@ -25,6 +26,61 @@ interface TurboTicketChatPanelProps {
   onOpenLogs: () => void;
 }
 
+const getStatusBadge = (status: any) => {
+  let val = "";
+  let label = "";
+
+  if (status && typeof status === "object") {
+    val = String(status.value || "").toLowerCase().trim();
+    label = status.label || "";
+  } else if (status !== undefined && status !== null) {
+    val = String(status).toLowerCase().trim();
+  }
+
+  if (val === "0" || val === "open" || val === "new") {
+    return {
+      label: label || "جديدة",
+      className:
+        "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20",
+    };
+  }
+  if (val === "3" || val === "on_hold" || val === "hold" || val === "pending") {
+    return {
+      label: label || "معلقة",
+      className:
+        "bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20",
+    };
+  }
+  if (val === "1" || val === "in_progress" || val === "processing") {
+    return {
+      label: label || "قيد المعالجة",
+      className:
+        "bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20",
+    };
+  }
+  if (val === "2" || val === "closed" || val === "resolved" || val === "solved") {
+    return {
+      label: label || "مغلقة",
+      className:
+        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20",
+    };
+  }
+
+  if (label) {
+    return {
+      label,
+      className:
+        "bg-zinc-500/10 text-zinc-700 dark:text-zinc-300 border border-zinc-500/20",
+    };
+  }
+
+  return {
+    label: "غير محدد",
+    className:
+      "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20",
+  };
+};
+
 export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
   ticket,
   loading,
@@ -32,6 +88,7 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
   onBackToList,
   onOpenLogs,
 }) => {
+  const { user } = useAuth();
   const [replyText, setReplyText] = useState("");
   const [replyImage, setReplyImage] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
@@ -173,6 +230,15 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
               <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 font-mono tabular-nums">
                 تذكرة #{ticket.id}
               </h2>
+              {ticket.status !== undefined && (
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                    getStatusBadge(ticket.status).className
+                  }`}
+                >
+                  {getStatusBadge(ticket.status).label}
+                </span>
+              )}
               {ticket.code && (
                 <button
                   type="button"
@@ -246,21 +312,99 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {/* Initial Ticket Card */}
-        <div className="p-3 sm:p-3.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs">
-          <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5 flex-wrap gap-1">
-            <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-              موضوع التذكرة وتفاصيل الشكوى
-            </span>
-            <span className="tabular-nums font-mono text-[11px]">
-              {ticket.created_at
-                ? new Date(ticket.created_at).toLocaleString("ar-EG")
-                : ""}
-            </span>
-          </div>
-          <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
-            {ticket.content || ticket.description || "لا يوجد وصف إضافي"}
-          </p>
-        </div>
+        {(() => {
+          const storeName = user?.company?.name?.trim() || "";
+          const ticketSenderName =
+            ticket.creator_name ||
+            ticket.user?.name ||
+            ticket.user_name ||
+            ticket.client_name ||
+            (ticket.messages && ticket.messages.length > 0
+              ? ticket.messages[0]?.user?.name || ticket.messages[0]?.sender_name
+              : "") ||
+            "";
+
+          let byText = "";
+          if (storeName && ticketSenderName) {
+            if (ticketSenderName.toLowerCase().includes(storeName.toLowerCase())) {
+              byText = ticketSenderName;
+            } else {
+              byText = `${storeName} / ${ticketSenderName}`;
+            }
+          } else if (storeName) {
+            byText = storeName;
+          } else if (ticketSenderName) {
+            byText = ticketSenderName;
+          } else {
+            const userName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+            byText = userName || "المتجر";
+          }
+
+          return (
+            <div className="p-3 sm:p-3.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs">
+              <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5 flex-wrap gap-1">
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                  تذكرة بواسطة: {byText}
+                </span>
+                <span className="tabular-nums font-mono text-[11px]">
+                  {ticket.created_at
+                    ? new Date(ticket.created_at).toLocaleString("ar-EG")
+                    : ""}
+                </span>
+              </div>
+              {ticket.category?.name && (
+                <div className="mb-2">
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
+                    الفئة: {ticket.category.name}
+                  </span>
+                </div>
+              )}
+              <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                {ticket.content || ticket.description || "لا يوجد وصف إضافي"}
+              </p>
+
+              {/* Initial Ticket Attachment if present */}
+              {(ticket.attachment || (ticket.attachments && ticket.attachments.length > 0)) && (
+                <div className="mt-2.5 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
+                  <p className="text-[11px] text-zinc-400 mb-1.5">مرفقات التذكرة:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {ticket.attachment && (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewImage(ticket.attachment!)}
+                        className="group relative rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 max-w-[160px] max-h-[120px] focus:outline-hidden"
+                      >
+                        <img
+                          src={ticket.attachment}
+                          alt="مرفق التذكرة"
+                          className="object-cover w-full h-full group-hover:scale-105 transition"
+                        />
+                      </button>
+                    )}
+                    {ticket.attachments?.map((att, attIdx) => {
+                      const url = att.file_url || att.url;
+                      if (!url || url === ticket.attachment) return null;
+                      return (
+                        <button
+                          key={att.id || attIdx}
+                          type="button"
+                          onClick={() => setPreviewImage(url)}
+                          className="group relative rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 max-w-[160px] max-h-[120px] focus:outline-hidden"
+                        >
+                          <img
+                            src={url}
+                            alt={`مرفق ${attIdx + 1}`}
+                            className="object-cover w-full h-full group-hover:scale-105 transition"
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Messages Stream */}
         {sortedMessages.length === 0 ? (

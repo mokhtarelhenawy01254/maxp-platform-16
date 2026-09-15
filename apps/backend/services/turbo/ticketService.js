@@ -44,7 +44,12 @@ class TicketService {
       const mainClientCode = await this._client.getMainClientCode();
       let url = `${this._client.baseUrl}/tickets?authentication_key=${encodeURIComponent(apiKey)}&main_client_code=${mainClientCode || 37321}&per_page=${perPage}&page=${page}`;
       if (options.status !== undefined && options.status !== null && options.status !== '' && options.status !== 'all') {
-        url += `&status=${encodeURIComponent(options.status)}`;
+        let statusVal = String(options.status).toLowerCase().trim();
+        if (statusVal === '0' || statusVal === 'new') statusVal = 'open';
+        else if (statusVal === '1' || statusVal === 'processing') statusVal = 'in_progress';
+        else if (statusVal === '3' || statusVal === 'pending' || statusVal === 'hold') statusVal = 'on_hold';
+        else if (statusVal === '2' || statusVal === 'solved' || statusVal === 'resolved') statusVal = 'closed';
+        url += `&status=${encodeURIComponent(statusVal)}`;
       }
       if (options.search) {
         url += `&search=${encodeURIComponent(options.search)}`;

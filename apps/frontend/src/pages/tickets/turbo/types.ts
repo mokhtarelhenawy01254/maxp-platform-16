@@ -45,18 +45,40 @@ export interface TurboTicketItem {
   subject?: string;
   description?: string;
   content?: string;
-  status: number; // 0: new, 1: in-progress, 2: closed
+  status: number | string | { value?: string | number; label?: string };
   rate?: number | null;
   rating?: number | null;
   created_at: string;
   updated_at?: string;
   category_id?: number | string;
   category_name?: string;
-  category?: { id: number | string; name: string };
+  category?: { id: number | string; name: string; related_to?: string };
   messages?: TurboMessage[];
   replies?: TurboMessage[];
   logs?: TurboTicketLog[];
   unread?: boolean;
+  creator_name?: string;
+  user_name?: string;
+  client_name?: string;
+  sender_name?: string;
+  user?: {
+    id?: number | string;
+    name?: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    avatar?: string;
+  };
+  agent?: {
+    id?: number | string;
+    name?: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    avatar?: string;
+  };
+  attachment?: string | null;
+  attachments?: Array<{ id?: number | string; file_url?: string; url?: string }>;
 }
 
 export interface TurboTicketCategory {
