@@ -514,6 +514,12 @@ const UnifiedShipmentsPage: React.FC = () => {
             <span>تصدير بيان الشحنات</span>
           </button>
           <Link
+            to="/tickets"
+            className="px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl hover:bg-amber-100 transition flex items-center gap-1"
+          >
+            <span>تذاكر وشات الشحن</span>
+          </Link>
+          <Link
             to="/shipping-companies"
             className="px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-750 transition"
           >
