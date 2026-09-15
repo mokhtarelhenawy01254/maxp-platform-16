@@ -451,10 +451,14 @@ export function useAgentSandbox() {
   useEffect(() => {
     if (!selectedAgentId || agents.length === 0 || models.length === 0) return;
     const agent = agents.find((a) => a.id === selectedAgentId);
-    if (!agent?.defaultModel) return;
-    const match = models.find(
-      (m) => m.model === agent.defaultModel && m.isSelectable !== false && m.keyIsActive !== false
-    );
+    const selectableModels = models.filter((m) => m.isSelectable !== false && m.keyIsActive !== false);
+    if (selectableModels.length === 0) return;
+
+    let match = null;
+    if (agent?.defaultModel) {
+      match = selectableModels.find((m) => m.model === agent.defaultModel);
+    }
+    match = match || selectableModels.find((m) => m.isPreferred) || selectableModels[0];
     if (match) {
       setSelectedModel(match.model);
       setSelectedProvider(match.provider);

@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const tenantContext = require('../services/tenantContext');
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const aiSandboxService = require('../services/aiSandboxService');
 const { calculateCost, getModelCost } = require('../config/modelCosts');
@@ -830,30 +831,32 @@ async function loadAgentOrgMetadata(companyId) {
 }
 
 async function listTenantAIKeys(companyId, includeSecret = false, options = {}) {
-  const prisma = getSharedPrismaClient();
-  const includeInactive = Boolean(options.includeInactive);
-  const select = {
-    id: true,
-    name: true,
-    provider: true,
-    keyType: true,
-    companyId: true,
-    isActive: true,
-    priority: true,
-  };
-  if (includeSecret) {
-    select.apiKey = true;
-    select.baseUrl = true;
-  }
-  const keys = await prisma.aiKey.findMany({
-    where: {
-      keyType: 'CENTRAL',
-      ...(includeInactive ? {} : { isActive: true }),
-    },
-    select,
-    orderBy: { priority: 'asc' },
+  return tenantContext.bypass(async () => {
+    const prisma = getSharedPrismaClient();
+    const includeInactive = Boolean(options.includeInactive);
+    const select = {
+      id: true,
+      name: true,
+      provider: true,
+      keyType: true,
+      companyId: true,
+      isActive: true,
+      priority: true,
+    };
+    if (includeSecret) {
+      select.apiKey = true;
+      select.baseUrl = true;
+    }
+    const keys = await prisma.aiKey.findMany({
+      where: {
+        keyType: 'CENTRAL',
+        ...(includeInactive ? {} : { isActive: true }),
+      },
+      select,
+      orderBy: { priority: 'asc' },
+    });
+    return (keys || []).filter(key => key.keyType === 'CENTRAL' && (includeInactive || key.isActive === true));
   });
-  return (keys || []).filter(key => key.keyType === 'CENTRAL' && (includeInactive || key.isActive === true));
 }
 
 function getAgentModelHints(agentConfig) {
@@ -869,103 +872,107 @@ function getAgentModelHints(agentConfig) {
 }
 
 async function resolveRequestedSandboxModelSelection(companyId, { provider, model, keyId }) {
-  const requestedProvider = String(provider || '').trim().toUpperCase();
-  const requestedModel = String(model || '').trim();
-  const requestedKeyId = typeof keyId === 'string' ? keyId.trim() : '';
+  return tenantContext.bypass(async () => {
+    const requestedProvider = String(provider || '').trim().toUpperCase();
+    const requestedModel = String(model || '').trim();
+    const requestedKeyId = typeof keyId === 'string' ? keyId.trim() : '';
 
-  if (!requestedProvider || !requestedModel) {
-    throw createHttpError('MODEL_NOT_ALLOWED', 400);
-  }
-
-  const aiKeys = await listTenantAIKeys(companyId, true);
-  const providerKeys = aiKeys.filter(key => key.provider === requestedProvider);
-  if (providerKeys.length === 0) {
-    throw createHttpError('MODEL_NOT_ALLOWED', 400);
-  }
-
-  const modelConfigs = await getSharedPrismaClient().aiModelConfig.findMany({
-    where: {
-      isEnabled: true,
-      keyId: { in: providerKeys.map(key => key.id) },
-      modelName: requestedModel,
-    },
-    orderBy: { priority: 'asc' },
-  });
-
-  if (requestedKeyId) {
-    const selectedKey = providerKeys.find(key => key.id === requestedKeyId);
-    const selectedConfig = selectedKey
-      ? modelConfigs.find(config => config.keyId === requestedKeyId && config.modelName === requestedModel)
-      : null;
-    if (!selectedKey || !selectedConfig) {
+    if (!requestedProvider || !requestedModel) {
       throw createHttpError('MODEL_NOT_ALLOWED', 400);
     }
+
+    const aiKeys = await listTenantAIKeys(companyId, true);
+    const providerKeys = aiKeys.filter(key => key.provider === requestedProvider);
+    if (providerKeys.length === 0) {
+      throw createHttpError('MODEL_NOT_ALLOWED', 400);
+    }
+
+    const modelConfigs = await getSharedPrismaClient().aiModelConfig.findMany({
+      where: {
+        isEnabled: true,
+        keyId: { in: providerKeys.map(key => key.id) },
+        modelName: requestedModel,
+      },
+      orderBy: { priority: 'asc' },
+    });
+
+    if (requestedKeyId) {
+      const selectedKey = providerKeys.find(key => key.id === requestedKeyId);
+      const selectedConfig = selectedKey
+        ? modelConfigs.find(config => config.keyId === requestedKeyId && config.modelName === requestedModel)
+        : null;
+      if (!selectedKey || !selectedConfig) {
+        throw createHttpError('MODEL_NOT_ALLOWED', 400);
+      }
+      return {
+        provider: requestedProvider,
+        model: requestedModel,
+        key: selectedKey,
+      };
+    }
+
+    const preferredKeyId = await getPreferredAiKeyIdForProvider(requestedProvider);
+    const preferredConfig = modelConfigs.find(config => (
+      preferredKeyId && config.keyId === preferredKeyId && config.modelName === requestedModel
+    ));
+    const selectedConfig = preferredConfig || modelConfigs.find(config => config.modelName === requestedModel);
+    const selectedKey = selectedConfig
+      ? providerKeys.find(key => key.id === selectedConfig.keyId)
+      : null;
+
+    if (!selectedKey) {
+      throw createHttpError('MODEL_NOT_ALLOWED', 400);
+    }
+
+    const usedFallbackKey = !preferredConfig && !!preferredKeyId;
+
     return {
       provider: requestedProvider,
       model: requestedModel,
       key: selectedKey,
+      usedFallbackKey,
     };
-  }
-
-  const preferredKeyId = await getPreferredAiKeyIdForProvider(requestedProvider);
-  const preferredConfig = modelConfigs.find(config => (
-    preferredKeyId && config.keyId === preferredKeyId && config.modelName === requestedModel
-  ));
-  const selectedConfig = preferredConfig || modelConfigs.find(config => config.modelName === requestedModel);
-  const selectedKey = selectedConfig
-    ? providerKeys.find(key => key.id === selectedConfig.keyId)
-    : null;
-
-  if (!selectedKey) {
-    throw createHttpError('MODEL_NOT_ALLOWED', 400);
-  }
-
-  const usedFallbackKey = !preferredConfig && !!preferredKeyId;
-
-  return {
-    provider: requestedProvider,
-    model: requestedModel,
-    key: selectedKey,
-    usedFallbackKey,
-  };
+  });
 }
 
 async function resolveSandboxModelSelection(companyId, { provider, model, keyId, agentId }) {
-  const requestedProvider = String(provider || '').trim().toUpperCase();
-  const requestedModel = String(model || '').trim();
-  const requestedKeyId = typeof keyId === 'string' ? keyId.trim() : '';
-  const agentConfig = agentId ? await getAgentConfig(companyId, agentId) : null;
-  const agentModel = getAgentModelHints(agentConfig);
+  return tenantContext.bypass(async () => {
+    const requestedProvider = String(provider || '').trim().toUpperCase();
+    const requestedModel = String(model || '').trim();
+    const requestedKeyId = typeof keyId === 'string' ? keyId.trim() : '';
+    const agentConfig = agentId ? await getAgentConfig(companyId, agentId) : null;
+    const agentModel = getAgentModelHints(agentConfig);
 
-  if (agentModel.model && !requestedProvider && !requestedModel) {
-      let resolveProvider = agentModel.provider || '';
-      if (!resolveProvider) {
-        const modelCfgs = await getSharedPrismaClient().aiModelConfig.findMany({
-          where: { isEnabled: true, modelName: agentModel.model },
-          select: { keyId: true },
-        });
-        if (modelCfgs.length > 0) {
-          const keys = await getSharedPrismaClient().aiKey.findMany({
-            where: { id: { in: modelCfgs.map(c => c.keyId) }, isActive: true },
-            select: { provider: true },
+    if (agentModel.model && !requestedProvider && !requestedModel) {
+        let resolveProvider = agentModel.provider || '';
+        if (!resolveProvider) {
+          const modelCfgs = await getSharedPrismaClient().aiModelConfig.findMany({
+            where: { isEnabled: true, modelName: agentModel.model },
+            select: { keyId: true },
           });
-          resolveProvider = keys[0]?.provider || '';
+          if (modelCfgs.length > 0) {
+            const keys = await getSharedPrismaClient().aiKey.findMany({
+              where: { id: { in: modelCfgs.map(c => c.keyId) }, isActive: true },
+              select: { provider: true },
+            });
+            resolveProvider = keys[0]?.provider || '';
+          }
         }
-      }
-      const selection = await resolveRequestedSandboxModelSelection(companyId, {
-        provider: resolveProvider,
-        model: agentModel.model,
-        keyId: agentModel.keyId || '',
-      });
-      return {
-        ...selection,
-        source: 'agent',
-        requestedModel: null,
-        requestedProvider: null,
-      };
-  }
+        const selection = await resolveRequestedSandboxModelSelection(companyId, {
+          provider: resolveProvider,
+          model: agentModel.model,
+          keyId: agentModel.keyId || '',
+        });
+        return {
+          ...selection,
+          source: 'agent',
+          requestedModel: null,
+          requestedProvider: null,
+        };
+    }
 
-  return resolveRequestedSandboxModelSelection(companyId, { provider, model, keyId });
+    return resolveRequestedSandboxModelSelection(companyId, { provider, model, keyId });
+  });
 }
 
 async function listAgents(req, res) {
@@ -1171,67 +1178,69 @@ async function listModels(req, res) {
   try {
     const companyId = req.user?.companyId || req.companyId;
 
-    let providersMap = {};
+    return await tenantContext.bypass(async () => {
+      let providersMap = {};
 
-    const aiKeys = await listTenantAIKeys(companyId, false, { includeInactive: true });
-    const centralKeys = aiKeys.map(key => ({
-      id: key.id,
-      name: key.name,
-      provider: key.provider,
-      keyType: 'CENTRAL',
-      scope: 'central',
-      isActive: Boolean(key.isActive),
-      priority: key.priority,
-    }));
+      const aiKeys = await listTenantAIKeys(companyId, false, { includeInactive: true });
+      const centralKeys = aiKeys.map(key => ({
+        id: key.id,
+        name: key.name,
+        provider: key.provider,
+        keyType: 'CENTRAL',
+        scope: 'central',
+        isActive: Boolean(key.isActive),
+        priority: key.priority,
+      }));
 
-    for (const key of aiKeys) {
-      if (!providersMap[key.provider]) {
-        providersMap[key.provider] = {
-          name: key.provider,
-          label: getProviderLabel(key.provider),
-          models: [],
-        };
+      for (const key of aiKeys) {
+        if (!providersMap[key.provider]) {
+          providersMap[key.provider] = {
+            name: key.provider,
+            label: getProviderLabel(key.provider),
+            models: [],
+          };
+        }
       }
-    }
 
-    const modelConfigs = await getSharedPrismaClient().aiModelConfig.findMany({
-      where: {
-        isEnabled: true,
-        keyId: { in: aiKeys.map(k => k.id) },
-      },
-      orderBy: { priority: 'asc' },
+      const modelConfigs = await getSharedPrismaClient().aiModelConfig.findMany({
+        where: {
+          isEnabled: true,
+          keyId: { in: aiKeys.map(k => k.id) },
+        },
+        orderBy: { priority: 'asc' },
+      });
+
+      const preferredByProvider = {};
+      for (const pName of Object.keys(providersMap)) {
+        preferredByProvider[pName] = await getPreferredAiKeyIdForProvider(pName);
+      }
+
+      for (const modelConfig of modelConfigs) {
+        const key = aiKeys.find(k => k.id === modelConfig.keyId);
+        if (key && providersMap[key.provider]) {
+          const preferredKeyId = preferredByProvider[key.provider];
+          providersMap[key.provider].models.push({
+            id: modelConfig.modelName,
+            label: getModelLabel(key.provider, modelConfig.modelName),
+            keyId: key.id,
+            keyName: key.name,
+            keyType: 'CENTRAL',
+            scope: 'central',
+            keyIsActive: Boolean(key.isActive),
+            isPreferred: preferredKeyId === key.id,
+            isEnabled: modelConfig.isEnabled,
+            isSelectable: Boolean(key.isActive) && Boolean(modelConfig.isEnabled),
+            priority: modelConfig.priority,
+            costPer1kInput: getModelCost(modelConfig.modelName).input,
+            costPer1kOutput: getModelCost(modelConfig.modelName).output,
+          });
+        }
+      }
+
+      const providers = Object.values(providersMap).filter(p => p.models.length > 0);
+
+      return res.json({ success: true, providers, centralKeys, count: providers.length });
     });
-
-    const preferredByProvider = {};
-    for (const pName of Object.keys(providersMap)) {
-      preferredByProvider[pName] = await getPreferredAiKeyIdForProvider(pName);
-    }
-
-    for (const modelConfig of modelConfigs) {
-      const key = aiKeys.find(k => k.id === modelConfig.keyId);
-      if (key && providersMap[key.provider]) {
-        const preferredKeyId = preferredByProvider[key.provider];
-        providersMap[key.provider].models.push({
-          id: modelConfig.modelName,
-          label: getModelLabel(key.provider, modelConfig.modelName),
-          keyId: key.id,
-          keyName: key.name,
-          keyType: 'CENTRAL',
-          scope: 'central',
-          keyIsActive: Boolean(key.isActive),
-          isPreferred: preferredKeyId === key.id,
-          isEnabled: modelConfig.isEnabled,
-          isSelectable: Boolean(key.isActive) && Boolean(modelConfig.isEnabled),
-          priority: modelConfig.priority,
-          costPer1kInput: getModelCost(modelConfig.modelName).input,
-          costPer1kOutput: getModelCost(modelConfig.modelName).output,
-        });
-      }
-    }
-
-    const providers = Object.values(providersMap).filter(p => p.models.length > 0);
-
-    return res.json({ success: true, providers, centralKeys, count: providers.length });
   } catch (error) {
     console.error('[AI-SANDBOX] listModels error:', error);
     return res.json({ success: true, providers: [], centralKeys: [], count: 0 });

@@ -715,4 +715,55 @@ describe("FacebookAdsService creative creation", () => {
       expect.any(Object),
     );
   });
+
+  test("builds existing post creative with object_story_id and without invalid Advantage+ degrees_of_freedom_spec", async () => {
+    axios.post.mockResolvedValue({ data: { id: "creative-existing-post-1" } });
+    const service = new FacebookAdsService("token", "123456789");
+
+    const result = await service.createCreative({
+      pageId: "122224596080472212",
+      creativeType: "EXISTING_POST",
+      postId: "122224596080472212_376103368924946",
+      advantageCreative: true,
+      relevantComments: true,
+      imageEnhancement: true,
+      expandImage: true,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.creativeId).toBe("creative-existing-post-1");
+    const payload = axios.post.mock.calls[0][1];
+    expect(payload.object_story_id).toBe("122224596080472212_376103368924946");
+    expect(payload.object_story_spec).toBeUndefined();
+    // Existing posts must not have degrees_of_freedom_spec with content-altering features
+    expect(payload.degrees_of_freedom_spec).toBeUndefined();
+  });
+
+  test("maps relevantComments to inline_comment and imageEnhancement to image_touchups for standard ads", async () => {
+    axios.post.mockResolvedValue({ data: { id: "creative-image-1" } });
+    const service = new FacebookAdsService("token", "123456789");
+
+    const result = await service.createCreative({
+      pageId: "122224596080472212",
+      creativeType: "SINGLE_IMAGE",
+      imageHash: "hash-test-123",
+      linkUrl: "https://swan.example/shop",
+      primaryText: "Test primary text",
+      headline: "Test headline",
+      advantageCreative: true,
+      relevantComments: true,
+      imageEnhancement: true,
+      textGeneration: true,
+    });
+
+    expect(result.success).toBe(true);
+    const payload = axios.post.mock.calls[0][1];
+    expect(payload.degrees_of_freedom_spec).toBeDefined();
+    const features = payload.degrees_of_freedom_spec.creative_features_spec;
+    expect(features.inline_comment).toEqual({ enroll_status: "OPT_IN" });
+    expect(features.relevant_comments).toBeUndefined();
+    expect(features.image_touchups).toEqual({ enroll_status: "OPT_IN" });
+    expect(features.image_enhancement).toBeUndefined();
+    expect(features.text_generation).toEqual({ enroll_status: "OPT_IN" });
+  });
 });

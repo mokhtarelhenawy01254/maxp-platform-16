@@ -300,6 +300,20 @@ const createFullAd = async (req, res) => {
     data.budgetAmount = normalizedBudgetAmount;
     Object.assign(data, normalizeFullAdDeliverySettings(data));
 
+    if (creativeType === "EXISTING_POST") {
+      data.advantageCreative = false;
+      data.textGeneration = false;
+      data.imageEnhancement = false;
+      data.expandImage = false;
+      data.visualTouchups = false;
+      data.relevantComments = false;
+      data.priceOverlay = false;
+      data.imageTemplates = false;
+      data.musicEnhancement = false;
+      data.videoHighlight = false;
+      data.textOptimizations = false;
+    }
+
     if (
       data.bidStrategy !== "LOWEST_COST" &&
       (!toFiniteNumber(data.bidValue) || toFiniteNumber(data.bidValue) <= 0)

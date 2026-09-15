@@ -1093,14 +1093,14 @@ const CreateAdWizard: React.FC = () => {
         ...(formData.useLeadForm &&
           formData.leadFormId && { leadFormId: formData.leadFormId }),
 
-        // Advantage+ Creative (v26.0)
-        advantageCreative: formData.advantageCreative,
-        textGeneration: formData.textGeneration,
-        imageEnhancement: formData.imageEnhancement,
-        expandImage: formData.expandImage,
-        visualTouchups: formData.visualTouchups,
-        relevantComments: formData.relevantComments,
-        priceOverlay: formData.priceOverlay,
+        // Advantage+ Creative (v26.0) - not applicable for existing page posts
+        advantageCreative: formData.creativeType === "EXISTING_POST" ? false : formData.advantageCreative,
+        textGeneration: formData.creativeType === "EXISTING_POST" ? false : formData.textGeneration,
+        imageEnhancement: formData.creativeType === "EXISTING_POST" ? false : formData.imageEnhancement,
+        expandImage: formData.creativeType === "EXISTING_POST" ? false : formData.expandImage,
+        visualTouchups: formData.creativeType === "EXISTING_POST" ? false : formData.visualTouchups,
+        relevantComments: formData.creativeType === "EXISTING_POST" ? false : formData.relevantComments,
+        priceOverlay: formData.creativeType === "EXISTING_POST" ? false : formData.priceOverlay,
         existingCustomerBudgetPercentage: formData.existingCustomerBudgetPercentage,
         ...(formData.instagramActorId && {
           instagramActorId: formData.instagramActorId,

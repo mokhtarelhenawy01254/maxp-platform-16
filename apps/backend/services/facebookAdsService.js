@@ -1750,88 +1750,119 @@ class FacebookAdsService {
       }
 
       // ✅ v26.0: Individual Advantage+ Creative Enhancements
+      const isExistingPost = normalizedCreativeType === 'EXISTING_POST';
       const hasReelsWithImage = Boolean(
         imageHash &&
         Array.isArray(data?.placements) &&
         data.placements.some((p) => String(p).toUpperCase().includes('REELS'))
       );
-      const shouldEnableEnhancements = advantageCreative || hasReelsWithImage || expandImage || imageEnhancement;
+      // NOTE: Existing page posts (object_story_id) cannot accept creative-altering Advantage+ specs.
+      // Meta strictly limits existing post specs to [IG_VIDEO_NATIVE_SUBTITLE, IMAGE_ANIMATION, PRODUCT_BROWSING, PRODUCT_METADATA_AUTOMATION, PROFILE_CARD, STANDARD_ENHANCEMENTS_CATALOG, TEXT_OVERLAY_TRANSLATION]
+      const shouldEnableEnhancements = !isExistingPost && (
+        advantageCreative ||
+        hasReelsWithImage ||
+        expandImage ||
+        imageEnhancement ||
+        textGeneration ||
+        textOptimizations ||
+        visualTouchups ||
+        relevantComments ||
+        priceOverlay
+      );
 
       if (shouldEnableEnhancements) {
-        creativeData.degrees_of_freedom_spec = {
-          creative_features_spec: {}
-        };
+        const creativeFeaturesSpec = {};
 
         // Text Generation (Meta-generated ad copy variations)
         if (textGeneration) {
-          creativeData.degrees_of_freedom_spec.creative_features_spec.text_generation = {
+          creativeFeaturesSpec.text_generation = {
             enroll_status: 'OPT_IN'
           };
         }
 
         // Text Optimizations (optimize existing text)
         if (textOptimizations) {
-          creativeData.degrees_of_freedom_spec.creative_features_spec.text_optimizations = {
+          creativeFeaturesSpec.text_optimizations = {
             enroll_status: 'OPT_IN'
           };
         }
 
-        // Image Enhancement (crop, filter, brightness)
+        // Image Enhancement (crop, filter, brightness) - Meta Marketing API uses image_touchups
         if (imageEnhancement && imageHash) {
-          creativeData.degrees_of_freedom_spec.creative_features_spec.image_enhancement = {
+          creativeFeaturesSpec.image_touchups = {
             enroll_status: 'OPT_IN'
           };
         }
 
         // Image Templates (add overlays, frames)
         if (imageTemplates && imageHash) {
-          creativeData.degrees_of_freedom_spec.creative_features_spec.image_templates = {
+          creativeFeaturesSpec.image_templates = {
             enroll_status: 'OPT_IN'
           };
         }
 
         // Video Highlight (auto-trim to best moments)
         if (videoHighlight && videoId) {
-          creativeData.degrees_of_freedom_spec.creative_features_spec.video_highlight = {
+          creativeFeaturesSpec.video_highlight = {
             enroll_status: 'OPT_IN'
           };
         }
 
         // Music Enhancement (add background music)
         if (musicEnhancement && videoId) {
-          creativeData.degrees_of_freedom_spec.creative_features_spec.music = {
+          creativeFeaturesSpec.music = {
             enroll_status: 'OPT_IN'
           };
         }
 
         // ✅ v26.0: Generative Expand (Auto-uncrop/expand for Reels & Stories 9:16)
         if ((expandImage || hasReelsWithImage) && imageHash) {
-          creativeData.degrees_of_freedom_spec.creative_features_spec.expand_image = {
+          creativeFeaturesSpec.expand_image = {
             enroll_status: 'OPT_IN'
           };
-          creativeData.degrees_of_freedom_spec.creative_features_spec.image_templates = {
+          creativeFeaturesSpec.image_templates = {
             enroll_status: 'OPT_IN'
           };
         }
 
         // ✅ v26.0: Adaptive Visual Touchups (per-user brightness & contrast tuning)
         if (visualTouchups && (imageHash || videoId)) {
-          creativeData.degrees_of_freedom_spec.creative_features_spec.visual_touchups = {
+          creativeFeaturesSpec.visual_touchups = {
             enroll_status: 'OPT_IN'
           };
         }
 
-        // ✅ v26.0: Social Proof & Relevant Comments amplification
+        // ✅ v26.0: Social Proof & Relevant Comments amplification (Meta official parameter is inline_comment)
         if (relevantComments) {
-          creativeData.degrees_of_freedom_spec.creative_features_spec.relevant_comments = {
+          creativeFeaturesSpec.inline_comment = {
             enroll_status: 'OPT_IN'
           };
         }
 
         // ✅ v26.0: Catalog / Product Price Overlay
         if (priceOverlay) {
-          creativeData.degrees_of_freedom_spec.creative_features_spec.catalog_carousel_overlay = {
+          creativeFeaturesSpec.catalog_carousel_overlay = {
             enroll_status: 'OPT_IN'
+          };
+        }
+
+        // If master switch advantageCreative is true, enable recommended defaults for eligible assets if none were explicitly set
+        if (advantageCreative) {
+          if (imageHash && !creativeFeaturesSpec.image_touchups) {
+            creativeFeaturesSpec.image_touchups = { enroll_status: 'OPT_IN' };
+          }
+          if (!creativeFeaturesSpec.text_optimizations) {
+            creativeFeaturesSpec.text_optimizations = { enroll_status: 'OPT_IN' };
+          }
+          if (!creativeFeaturesSpec.inline_comment) {
+            creativeFeaturesSpec.inline_comment = { enroll_status: 'OPT_IN' };
+          }
+        }
+
+        // Only attach degrees_of_freedom_spec if at least one feature is configured
+        if (Object.keys(creativeFeaturesSpec).length > 0) {
+          creativeData.degrees_of_freedom_spec = {
+            creative_features_spec: creativeFeaturesSpec
           };
         }
       }

@@ -232,7 +232,9 @@ function createStablePrismaClient() {
       'SystemLog',
       'AppSystemLog',
       'TelegramConfig',
-      'TelegramScheduledMessage'
+      'TelegramScheduledMessage',
+      'AiKey',
+      'AiModelConfig'
     ]);
 
     // Dynamic set of all models in the schema that contain a scalar companyId field

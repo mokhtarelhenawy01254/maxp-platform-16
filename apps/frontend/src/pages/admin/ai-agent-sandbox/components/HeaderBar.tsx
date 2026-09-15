@@ -115,8 +115,8 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         </select>
       </div>
  
-      {/* Model Dropdown — super admin only */}
-      {isSuper && (
+      {/* Model Dropdown */}
+      {models.length > 0 && (
       <div className="flex items-center gap-1.5 min-w-0">
         <select
           value={selectedValue}
