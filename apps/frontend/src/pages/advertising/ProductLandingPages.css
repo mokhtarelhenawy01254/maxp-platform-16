@@ -564,6 +564,33 @@
   border-color: #2563eb;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.08);
 }
+.eo-section-block.is-dragging {
+  opacity: 0.35;
+  transform: scale(0.98);
+  border: 2px dashed #2563eb;
+}
+.eo-section-block.is-drag-over {
+  border-top: 3px solid #2563eb;
+  box-shadow: 0 -6px 14px rgba(37, 99, 235, 0.15);
+}
+
+.eo-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  cursor: grab;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+.eo-drag-handle:hover {
+  color: #1e293b;
+  background: #f1f5f9;
+}
+.eo-drag-handle:active {
+  cursor: grabbing;
+}
 
 .eo-section-header {
   display: flex;
@@ -1026,6 +1053,13 @@
   height: 680px;
   border-radius: 16px;
   border-width: 4px;
+}
+
+.eo-phone-frame.is-tablet-chassis {
+  max-width: 680px;
+  height: 680px;
+  border-radius: 24px;
+  border-width: 6px;
 }
 
 .eo-phone-notch {

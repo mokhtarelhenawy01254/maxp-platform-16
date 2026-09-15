@@ -1067,16 +1067,29 @@ export const SectionItemEditor: React.FC<SectionItemEditorProps> = ({
     return (
       <div className="eo-section-editor-body">
         <div className="eo-fields">
-          <label>
-            <span>رابط الصورة:</span>
-            <input
-              type="text"
-              value={content.imageUrl || ""}
-              onChange={(e) => update({ imageUrl: e.target.value })}
-              placeholder="https://.../banner.jpg"
-              dir="ltr"
-            />
-          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <label>
+              <span>🖥️ صورة الحاسوب (Desktop Image):</span>
+              <input
+                type="text"
+                value={content.imageUrl || ""}
+                onChange={(e) => update({ imageUrl: e.target.value })}
+                placeholder="https://.../desktop-banner.jpg"
+                dir="ltr"
+              />
+            </label>
+            <label>
+              <span>📱 صورة الهاتف (Mobile Image - اختياري):</span>
+              <input
+                type="text"
+                value={content.mobileImage || ""}
+                onChange={(e) => update({ mobileImage: e.target.value })}
+                placeholder="https://.../mobile-banner.jpg"
+                dir="ltr"
+              />
+            </label>
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
             <label>
               <span>نمط العرض (العرض والحواف):</span>
@@ -1099,6 +1112,40 @@ export const SectionItemEditor: React.FC<SectionItemEditorProps> = ({
               />
             </label>
           </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 10, background: "#f8fafc", padding: 10, borderRadius: 8 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={Boolean(content.isCircle)}
+                onChange={(e) => update({ isCircle: e.target.checked })}
+              />
+              <span>صورة دائرية ⚪</span>
+            </label>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={Boolean(content.isFullWidth)}
+                onChange={(e) => update({ isFullWidth: e.target.checked })}
+              />
+              <span>ملء الشاشة على الموبايل</span>
+            </label>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem" }}>
+              <span>دوران الحواف:</span>
+              <input
+                type="number"
+                min={0}
+                max={50}
+                value={content.borderRadius ?? 12}
+                onChange={(e) => update({ borderRadius: Number(e.target.value) })}
+                style={{ width: 60, padding: "2px 6px", textAlign: "center" }}
+              />
+              <span>px</span>
+            </label>
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
             <label>
               <span>رابط التحويل عند النقر (Link URL):</span>
@@ -1120,13 +1167,38 @@ export const SectionItemEditor: React.FC<SectionItemEditorProps> = ({
               />
             </label>
           </div>
-          {content.imageUrl && (
-            <div style={{ marginTop: 10, textAlign: "center", background: "#f8fafc", padding: 8, borderRadius: 8 }}>
-              <img
-                src={content.imageUrl}
-                alt={content.altText || "Preview"}
-                style={{ maxHeight: 160, maxWidth: "100%", borderRadius: 6, objectFit: "contain" }}
-              />
+          {(content.imageUrl || content.mobileImage) && (
+            <div style={{ marginTop: 10, textAlign: "center", background: "#f8fafc", padding: 8, borderRadius: 8, display: "flex", justifyContent: "center", gap: 12 }}>
+              {content.imageUrl && (
+                <div>
+                  <small style={{ display: "block", color: "#64748b", fontSize: "0.7rem", marginBottom: 2 }}>الحاسوب 🖥️</small>
+                  <img
+                    src={content.imageUrl}
+                    alt={content.altText || "Preview"}
+                    style={{
+                      maxHeight: 120,
+                      maxWidth: 160,
+                      borderRadius: content.isCircle ? "50%" : `${content.borderRadius ?? 6}px`,
+                      objectFit: "cover",
+                    }}
+                  />
+                </div>
+              )}
+              {content.mobileImage && (
+                <div>
+                  <small style={{ display: "block", color: "#64748b", fontSize: "0.7rem", marginBottom: 2 }}>الموبايل 📱</small>
+                  <img
+                    src={content.mobileImage}
+                    alt={content.altText || "Preview Mobile"}
+                    style={{
+                      maxHeight: 120,
+                      maxWidth: 160,
+                      borderRadius: content.isCircle ? "50%" : `${content.borderRadius ?? 6}px`,
+                      objectFit: "cover",
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
           <CommonSectionStylingFields content={content} update={update} />
@@ -1190,21 +1262,22 @@ export const SectionItemEditor: React.FC<SectionItemEditorProps> = ({
           </div>
           {images.map((imgItem, i) => (
             <div key={imgItem.id || i} className="eo-sub-card">
-              <div className="eo-sub-card-row">
+              <div className="eo-sub-card-row" style={{ gap: 8 }}>
                 <input
                   type="text"
                   value={imgItem.url}
                   onChange={(e) => updateCarouselImage(i, "url", e.target.value)}
-                  placeholder="رابط الصورة (URL)"
+                  placeholder="🖥️ رابط صورة الحاسوب (URL)"
                   dir="ltr"
-                  style={{ flex: 2 }}
+                  style={{ flex: 1.5 }}
                 />
                 <input
                   type="text"
-                  value={imgItem.caption || ""}
-                  onChange={(e) => updateCarouselImage(i, "caption", e.target.value)}
-                  placeholder="تسمية الشريحة (اختياري)"
-                  style={{ flex: 1 }}
+                  value={imgItem.mobileUrl || ""}
+                  onChange={(e) => updateCarouselImage(i, "mobileUrl", e.target.value)}
+                  placeholder="📱 صورة الموبايل (اختياري)"
+                  dir="ltr"
+                  style={{ flex: 1.5 }}
                 />
                 <button
                   type="button"
@@ -1215,9 +1288,31 @@ export const SectionItemEditor: React.FC<SectionItemEditorProps> = ({
                   <Trash2 size={14} />
                 </button>
               </div>
-              {imgItem.url && (
-                <div style={{ marginTop: 6 }}>
-                  <img src={imgItem.url} alt="" style={{ height: 48, borderRadius: 4, objectFit: "cover" }} />
+              <div className="eo-sub-card-row" style={{ gap: 8, marginTop: 6 }}>
+                <input
+                  type="text"
+                  value={imgItem.caption || ""}
+                  onChange={(e) => updateCarouselImage(i, "caption", e.target.value)}
+                  placeholder="تسمية الشريحة / عنوان مختصر"
+                  style={{ flex: 1 }}
+                />
+                <input
+                  type="text"
+                  value={imgItem.linkUrl || ""}
+                  onChange={(e) => updateCarouselImage(i, "linkUrl", e.target.value)}
+                  placeholder="#checkout-form أو رابط توجيه عند النقر"
+                  dir="ltr"
+                  style={{ flex: 1 }}
+                />
+              </div>
+              {(imgItem.url || imgItem.mobileUrl) && (
+                <div style={{ marginTop: 6, display: "flex", gap: 8 }}>
+                  {imgItem.url && (
+                    <img src={imgItem.url} alt="" style={{ height: 44, borderRadius: 4, objectFit: "cover" }} title="الحاسوب" />
+                  )}
+                  {imgItem.mobileUrl && (
+                    <img src={imgItem.mobileUrl} alt="" style={{ height: 44, borderRadius: 4, objectFit: "cover" }} title="الموبايل" />
+                  )}
                 </div>
               )}
             </div>

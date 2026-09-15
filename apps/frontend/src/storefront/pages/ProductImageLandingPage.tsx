@@ -477,18 +477,31 @@ const LandingCarousel: React.FC<{
     return () => clearInterval(timer);
   }, [autoplay, interval, images.length]);
 
-  if (!images || images.length === 0) return null;
-
   const current = images[activeIndex] || images[0];
+
+  const slideImg = (
+    <picture>
+      {current.mobileUrl && (
+        <source media="(max-width: 640px)" srcSet={current.mobileUrl} />
+      )}
+      <img
+        src={current.url}
+        alt={current.caption || `شريحة ${activeIndex + 1}`}
+        className="pil-carousel-img"
+      />
+    </picture>
+  );
 
   return (
     <div className="pil-carousel-container" dir="rtl">
       <div className="pil-carousel-stage">
-        <img
-          src={current.url}
-          alt={current.caption || `شريحة ${activeIndex + 1}`}
-          className="pil-carousel-img"
-        />
+        {current.linkUrl ? (
+          <a href={current.linkUrl} style={{ display: "block" }}>
+            {slideImg}
+          </a>
+        ) : (
+          slideImg
+        )}
         {current.caption && (
           <div className="pil-carousel-caption">
             <span>{current.caption}</span>
@@ -2660,23 +2673,32 @@ const ProductImageLandingPage: React.FC = () => {
       const imgUrl = content.imageUrl || content.mainImage || getPrimaryProductImage(activeProduct);
       if (!imgUrl) return null;
       const isFull = content.variant === "full" || content.isFullWidth;
-      const borderRadius = isFull ? 0 : content.borderRadius ?? 12;
+      const isCircle = Boolean(content.isCircle);
+      const borderRadius = isCircle ? "50%" : isFull ? 0 : (content.borderRadius ?? 12);
       const link = content.linkUrl;
 
       const imgEl = (
-        <img
-          src={imgUrl}
-          alt={content.altText || content.caption || activeProduct.name}
-          className="pil-img-only-el"
-          style={{
-            width: "100%",
-            display: "block",
-            borderRadius,
-            objectFit: "cover",
-            maxHeight: content.maxHeight || "none",
-          }}
-          loading="lazy"
-        />
+        <picture>
+          {content.mobileImage && (
+            <source media="(max-width: 640px)" srcSet={content.mobileImage} />
+          )}
+          <img
+            src={imgUrl}
+            alt={content.altText || content.caption || activeProduct.name}
+            className="pil-img-only-el"
+            style={{
+              width: isCircle ? 220 : "100%",
+              height: isCircle ? 220 : "auto",
+              aspectRatio: isCircle ? "1/1" : undefined,
+              margin: isCircle ? "0 auto" : undefined,
+              display: "block",
+              borderRadius,
+              objectFit: "cover",
+              maxHeight: content.maxHeight || "none",
+            }}
+            loading="lazy"
+          />
+        </picture>
       );
 
       return (

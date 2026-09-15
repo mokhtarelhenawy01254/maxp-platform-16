@@ -1,5 +1,5 @@
-import React from "react";
-import { ArrowDown, ArrowUp, ChevronDown, Copy, Eye, EyeOff, Trash2 } from "lucide-react";
+import React, { useState } from "react";
+import { ArrowDown, ArrowUp, ChevronDown, Copy, Eye, EyeOff, GripVertical, Trash2 } from "lucide-react";
 import { LandingSection, ProductLandingProduct, SECTION_VARIANTS_MAP } from "./types";
 import { SectionItemEditor } from "./SectionItemEditor";
 
@@ -8,6 +8,7 @@ interface SectionsStackEditorProps {
   activeSectionId: string | null;
   onToggleActiveSection: (id: string) => void;
   onMoveSection: (index: number, direction: -1 | 1) => void;
+  onReorderSections?: (sourceIndex: number, targetIndex: number) => void;
   onRemoveSection: (id: string) => void;
   onDuplicateSection?: (id: string) => void;
   onToggleEnabled?: (id: string) => void;
@@ -24,6 +25,7 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
   activeSectionId,
   onToggleActiveSection,
   onMoveSection,
+  onReorderSections,
   onRemoveSection,
   onDuplicateSection,
   onToggleEnabled,
@@ -31,6 +33,9 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
   onUpdateSectionVariant,
   product,
 }) => {
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
   return (
     <div className="eo-sections-stack">
       {sections.length === 0 ? (
@@ -42,17 +47,59 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
           const isActive = activeSectionId === section.id;
           const isEnabled = section.enabled !== false;
           const variants = SECTION_VARIANTS_MAP[section.type];
+          const isDragging = draggedIdx === idx;
+          const isDragOver = dragOverIdx === idx;
 
           return (
             <div
               key={section.id}
-              className={`eo-section-block ${isActive ? "is-active" : ""} ${!isEnabled ? "is-disabled" : ""}`}
+              className={`eo-section-block ${isActive ? "is-active" : ""} ${!isEnabled ? "is-disabled" : ""} ${isDragging ? "is-dragging" : ""} ${isDragOver ? "is-drag-over" : ""}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                if (dragOverIdx !== idx) {
+                  setDragOverIdx(idx);
+                }
+              }}
+              onDragLeave={() => {
+                if (dragOverIdx === idx) {
+                  setDragOverIdx(null);
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const raw = e.dataTransfer.getData("text/plain");
+                const fromIdx = draggedIdx !== null ? draggedIdx : Number(raw);
+                if (!isNaN(fromIdx) && fromIdx !== idx && onReorderSections) {
+                  onReorderSections(fromIdx, idx);
+                }
+                setDraggedIdx(null);
+                setDragOverIdx(null);
+              }}
             >
               <div
                 className="eo-section-header"
                 onClick={() => onToggleActiveSection(section.id)}
               >
                 <div className="eo-sec-title">
+                  <div
+                    className="eo-drag-handle"
+                    draggable
+                    onDragStart={(e) => {
+                      e.stopPropagation();
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/plain", String(idx));
+                      setDraggedIdx(idx);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedIdx(null);
+                      setDragOverIdx(null);
+                    }}
+                    title="اسحب لإعادة الترتيب (Drag & Drop)"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <GripVertical size={16} />
+                  </div>
                   <span className="eo-sec-num">#{idx + 1}</span>
                   <strong>{section.title}</strong>
                   <span className="eo-sec-type">{section.type}</span>

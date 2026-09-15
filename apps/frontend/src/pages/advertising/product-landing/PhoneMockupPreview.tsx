@@ -11,6 +11,7 @@ import {
   ShoppingBag,
   Smartphone,
   Sparkles,
+  Tablet,
   Zap,
 } from "lucide-react";
 import { LandingSection, ProductLandingProduct } from "./types";
@@ -41,7 +42,7 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
   const [viewMode, setViewMode] = useState<"live" | "sync">(
     previewUrl ? "live" : "sync",
   );
-  const [device, setDevice] = useState<"mobile" | "desktop">("mobile");
+  const [device, setDevice] = useState<"mobile" | "tablet" | "desktop">("mobile");
   const [iframeKey, setIframeKey] = useState<number>(0);
   const [selectedBundleQty, setSelectedBundleQty] = useState<number>(1);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -100,15 +101,23 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
             type="button"
             className={`eo-device-btn ${device === "mobile" ? "is-active" : ""}`}
             onClick={() => setDevice("mobile")}
-            title="عرض الموبايل (390px)"
+            title="عرض الموبايل (380px)"
           >
             <Smartphone size={15} />
           </button>
           <button
             type="button"
+            className={`eo-device-btn ${device === "tablet" ? "is-active" : ""}`}
+            onClick={() => setDevice("tablet")}
+            title="عرض التابلت (680px)"
+          >
+            <Tablet size={15} />
+          </button>
+          <button
+            type="button"
             className={`eo-device-btn ${device === "desktop" ? "is-active" : ""}`}
             onClick={() => setDevice("desktop")}
-            title="عرض الشاشة الكاملة"
+            title="عرض الشاشة الكاملة (حاسوب)"
           >
             <Monitor size={15} />
           </button>
@@ -139,7 +148,15 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
       </div>
 
       {/* Frame Container */}
-      <div className={`eo-phone-frame ${device === "desktop" ? "is-desktop-chassis" : ""}`}>
+      <div
+        className={`eo-phone-frame ${
+          device === "desktop"
+            ? "is-desktop-chassis"
+            : device === "tablet"
+              ? "is-tablet-chassis"
+              : ""
+        }`}
+      >
         {device === "mobile" && (
           <div className="eo-phone-notch">
             <div className="eo-phone-speaker" />
@@ -458,24 +475,43 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                   }
 
                   if (type === "IMAGE_ONLY") {
-                    const imgUrl = content.imageUrl || content.mainImage || prodImg;
+                    const imgUrl =
+                      (device === "mobile" && content.mobileImage) ||
+                      content.imageUrl ||
+                      content.mainImage ||
+                      prodImg;
                     const isFull = content.variant === "full" || content.isFullWidth;
+                    const isCircle = Boolean(content.isCircle);
+                    const bRadius = isCircle
+                      ? "50%"
+                      : isFull
+                        ? 0
+                        : (content.borderRadius ?? 8);
+
                     return (
                       <div
                         key={id}
                         className="eo-sync-image-only"
                         style={{
                           margin: isFull ? "6px -8px" : "6px 0",
-                          borderRadius: isFull ? 0 : 8,
+                          borderRadius: bRadius,
                           overflow: "hidden",
                           background: content.bgColor || "transparent",
+                          textAlign: isCircle ? "center" : undefined,
                         }}
                       >
                         {imgUrl ? (
                           <img
                             src={imgUrl}
                             alt={content.altText || ""}
-                            style={{ width: "100%", display: "block", objectFit: "cover" }}
+                            style={{
+                              width: isCircle ? 140 : "100%",
+                              height: isCircle ? 140 : "auto",
+                              borderRadius: bRadius,
+                              display: "block",
+                              objectFit: "cover",
+                              margin: isCircle ? "0 auto" : undefined,
+                            }}
                           />
                         ) : (
                           <div style={{ height: 140, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>

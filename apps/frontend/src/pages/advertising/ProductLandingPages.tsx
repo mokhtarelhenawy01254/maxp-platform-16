@@ -158,7 +158,16 @@ const ProductLandingPages: React.FC = () => {
       title: itemConfig?.label || type,
       enabled: true,
       content: {
-        heading: type === "TEXT" ? "عنوان جديد للقسم" : undefined,
+        heading:
+          type === "TEXT"
+            ? "عنوان جديد للقسم"
+            : type === "HOW_IT_WORKS"
+            ? "طريقة الاستخدام السهلة في 3 خطوات"
+            : type === "HEADING"
+            ? "اكتشف القوة والأناقة في منتج واحد"
+            : type === "YOUTUBE_VIDEO"
+            ? "شاهد تجربة واستعراض المنتج على الطبيعة"
+            : undefined,
         bodyText:
           type === "TEXT" ? "اكتب تفاصيل ومواصفات المنتج هنا..." : undefined,
         bannerText:
@@ -308,14 +317,6 @@ const ProductLandingPages: React.FC = () => {
             : undefined,
         autoplay: type === "CAROUSEL" ? true : undefined,
         slideInterval: type === "CAROUSEL" ? 3 : undefined,
-        heading:
-          type === "HOW_IT_WORKS"
-            ? "طريقة الاستخدام السهلة في 3 خطوات"
-            : type === "HEADING"
-            ? "اكتشف القوة والأناقة في منتج واحد"
-            : type === "YOUTUBE_VIDEO"
-            ? "شاهد تجربة واستعراض المنتج على الطبيعة"
-            : undefined,
         title:
           type === "HOW_IT_WORKS"
             ? "طريقة الاستخدام السهلة في 3 خطوات"
@@ -407,6 +408,26 @@ const ProductLandingPages: React.FC = () => {
       const temp = nextSections[index];
       nextSections[index] = nextSections[targetIndex];
       nextSections[targetIndex] = temp;
+      return { ...current, sections: nextSections };
+    });
+    setIsDirty(true);
+  };
+
+  const handleReorderSections = (sourceIndex: number, targetIndex: number) => {
+    if (
+      sourceIndex < 0 ||
+      sourceIndex >= editor.sections.length ||
+      targetIndex < 0 ||
+      targetIndex >= editor.sections.length ||
+      sourceIndex === targetIndex
+    ) {
+      return;
+    }
+
+    setEditor((current) => {
+      const nextSections = [...current.sections];
+      const [moved] = nextSections.splice(sourceIndex, 1);
+      nextSections.splice(targetIndex, 0, moved);
       return { ...current, sections: nextSections };
     });
     setIsDirty(true);
@@ -766,6 +787,7 @@ const ProductLandingPages: React.FC = () => {
                 setActiveSectionId((current) => (current === id ? null : id))
               }
               onMoveSection={handleMoveSection}
+              onReorderSections={handleReorderSections}
               onDuplicateSection={handleDuplicateSection}
               onToggleEnabled={handleToggleSectionEnabled}
               onRemoveSection={handleRemoveSection}
