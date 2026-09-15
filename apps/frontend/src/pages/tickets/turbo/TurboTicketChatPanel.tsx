@@ -3,7 +3,7 @@ import {
   PaperAirplaneIcon,
   PhotoIcon,
   XMarkIcon,
-  ArrowLeftIcon,
+  ArrowRightIcon,
   ClipboardDocumentCheckIcon,
   ClipboardDocumentIcon,
   ClockIcon,
@@ -152,17 +152,19 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
   };
 
   return (
-    <main className="flex-1 flex flex-col h-full bg-zinc-50/50 dark:bg-zinc-950/40 min-w-0">
+    <main className="flex-1 flex flex-col h-full min-h-0 overflow-hidden bg-zinc-50/50 dark:bg-zinc-950/40 min-w-0 relative">
       {/* Top Header Bar */}
-      <header className="p-3 px-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between gap-3 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
+      <header className="p-2.5 sm:p-3 px-3 sm:px-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between gap-2.5 shrink-0 z-10">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {onBackToList && (
             <button
               type="button"
               onClick={onBackToList}
-              className="md:hidden p-1.5 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="md:hidden p-1.5 px-2 rounded-lg text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition active:scale-95 flex items-center gap-1 text-xs font-semibold shrink-0"
+              title="الرجوع لقائمة التذاكر"
             >
-              <ArrowLeftIcon className="h-4 w-4" />
+              <ArrowRightIcon className="h-4 w-4" />
+              <span>رجوع</span>
             </button>
           )}
 
@@ -239,14 +241,17 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
       </header>
 
       {/* Messages Thread Feed */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3.5 min-h-0">
+      <div
+        className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-3.5 min-h-0 touch-pan-y"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
         {/* Initial Ticket Card */}
-        <div className="p-3.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs">
-          <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
+        <div className="p-3 sm:p-3.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs">
+          <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5 flex-wrap gap-1">
             <span className="font-semibold text-zinc-800 dark:text-zinc-200">
               موضوع التذكرة وتفاصيل الشكوى
             </span>
-            <span className="tabular-nums">
+            <span className="tabular-nums font-mono text-[11px]">
               {ticket.created_at
                 ? new Date(ticket.created_at).toLocaleString("ar-EG")
                 : ""}
@@ -284,7 +289,7 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
                   isStore ? "items-end" : "items-start"
                 }`}
               >
-                <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 mb-1 px-1">
+                <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 mb-1 px-1 flex-wrap">
                   <UserIcon className="h-3 w-3" />
                   <span className="font-medium text-zinc-700 dark:text-zinc-300">
                     {senderTitle}
@@ -293,7 +298,7 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
                     {roleName}
                   </span>
                   {msg.created_at && (
-                    <span className="tabular-nums">
+                    <span className="tabular-nums font-mono text-[10px]">
                       •{" "}
                       {new Date(msg.created_at).toLocaleTimeString("ar-EG", {
                         hour: "2-digit",
@@ -304,13 +309,13 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
                 </div>
 
                 <div
-                  className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-3 text-xs leading-relaxed shadow-2xs ${
+                  className={`max-w-[88%] sm:max-w-[75%] rounded-2xl p-3 text-xs leading-relaxed shadow-2xs ${
                     isStore
                       ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-br-xs"
                       : "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-bl-xs"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{textContent}</p>
+                  <p className="whitespace-pre-wrap break-words">{textContent}</p>
 
                   {imageUrl && (
                     <div className="mt-2">
@@ -330,8 +335,8 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Bar */}
-      <footer className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
+      {/* Input Bar with Safe Area Bottom Padding */}
+      <footer className="p-2.5 sm:p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 z-20 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg sm:shadow-none">
         {replyImage && (
           <div className="flex items-center gap-2 mb-2 p-1.5 px-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs w-fit">
             <PhotoIcon className="h-4 w-4 text-zinc-500" />
@@ -341,16 +346,16 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
             <button
               type="button"
               onClick={() => setReplyImage(null)}
-              className="text-rose-500 hover:text-rose-600"
+              className="text-rose-500 hover:text-rose-600 p-0.5 rounded"
             >
               <XMarkIcon className="h-4 w-4" />
             </button>
           </div>
         )}
 
-        <form onSubmit={handleSendReply} className="flex items-center gap-2">
-          <label className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition">
-            <PhotoIcon className="h-4 w-4" />
+        <form onSubmit={handleSendReply} className="flex items-center gap-1.5 sm:gap-2">
+          <label className="p-2 sm:p-2.5 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition active:scale-95 shrink-0" title="إرفاق صورة">
+            <PhotoIcon className="h-5 w-5" />
             <input
               type="file"
               accept="image/*"
@@ -368,15 +373,15 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
             type="text"
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
-            placeholder="اكتب رسالتك لخدمة عملاء وعمليات تربو..."
+            placeholder="اكتب ردك لخدمة عملاء وعمليات تربو..."
             disabled={sending}
-            className="flex-1 px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:border-zinc-400 dark:focus:border-zinc-600 transition"
+            className="flex-1 min-w-0 px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:border-zinc-400 dark:focus:border-zinc-600 transition"
           />
 
           <button
             type="submit"
             disabled={sending || (!replyText.trim() && !replyImage)}
-            className="p-2 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 disabled:opacity-40 transition active:scale-97 flex items-center justify-center gap-1 text-xs font-semibold shrink-0 shadow-xs"
+            className="p-2.5 px-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 disabled:opacity-40 transition active:scale-97 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold shrink-0 shadow-xs"
           >
             <span>{sending ? "إرسال..." : "إرسال"}</span>
             <PaperAirplaneIcon className="h-3.5 w-3.5 rotate-180" />

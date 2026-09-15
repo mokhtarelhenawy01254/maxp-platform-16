@@ -29,6 +29,9 @@ const STRICT_CHAT_PATHS = new Set([
   '/apps/messenger',
   '/apps/facebook/inbox',
   '/apps/instagram/inbox',
+  '/tickets',
+  '/apps/tickets',
+  '/settings/turbo-tickets',
 ]);
 
 const CHAT_PREFIX_PATHS = [
@@ -41,6 +44,9 @@ const CHAT_PREFIX_PATHS = [
   '/tiktok-inbox/',
   '/unified-inbox/',
   '/conversations/',
+  '/tickets/',
+  '/apps/tickets/',
+  '/settings/turbo-tickets/',
 ];
 
 const NON_CHAT_SUBPATHS = [

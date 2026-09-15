@@ -83,9 +83,9 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
   ];
 
   return (
-    <aside className="w-full md:w-80 lg:w-96 flex flex-col h-full bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shrink-0">
+    <aside className="w-full h-full min-h-0 flex flex-col overflow-hidden bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shrink-0">
       {/* Top Header Bar */}
-      <div className="p-3.5 border-b border-zinc-200 dark:border-zinc-800 space-y-3">
+      <div className="p-3 sm:p-3.5 border-b border-zinc-200 dark:border-zinc-800 space-y-2.5 shrink-0 bg-white dark:bg-zinc-900 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
@@ -161,7 +161,7 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
       </div>
 
       {/* Tickets Scrollable List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/60 min-h-0">
+      <div className="flex-1 overflow-y-auto overscroll-contain divide-y divide-zinc-100 dark:divide-zinc-800/60 min-h-0 touch-pan-y" style={{ WebkitOverflowScrolling: "touch" }}>
         {loading && tickets.length === 0 ? (
           <div className="p-8 text-center text-xs text-zinc-500 dark:text-zinc-400 space-y-2">
             <div className="h-5 w-5 border-2 border-zinc-900 dark:border-zinc-100 border-t-transparent animate-spin rounded-full mx-auto" />
@@ -261,7 +261,7 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
 
       {/* Pagination Footer */}
       {total > perPage && (
-        <div className="p-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50/50 dark:bg-zinc-900/50">
+        <div className="p-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50/50 dark:bg-zinc-900/50 shrink-0">
           <button
             type="button"
             disabled={page <= 1 || loading}

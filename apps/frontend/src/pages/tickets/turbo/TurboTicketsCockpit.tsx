@@ -193,6 +193,18 @@ export const TurboTicketsCockpit: React.FC = () => {
     loadTickets(newPage, statusFilter, searchQuery);
   };
 
+  // On mobile, when viewing chat, mark body as chat-active so bottom nav is suppressed
+  useEffect(() => {
+    if (mobileView === "chat") {
+      document.body.classList.add("app-shell-chat-active");
+    } else {
+      document.body.classList.remove("app-shell-chat-active");
+    }
+    return () => {
+      document.body.classList.remove("app-shell-chat-active");
+    };
+  }, [mobileView]);
+
   // If Turbo is disabled, show prompt to enable it
   if (turboEnabled === false) {
     return (
@@ -223,14 +235,17 @@ export const TurboTicketsCockpit: React.FC = () => {
   return (
     <div
       dir="rtl"
-      className="w-full h-full flex flex-col overflow-hidden bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+      className="w-full h-full flex flex-col overflow-hidden bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 turbo-tickets-root relative"
+      data-chat-active={mobileView === "chat" ? "true" : "false"}
     >
       {/* Cockpit Chassis */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      <div className="flex-1 flex overflow-hidden min-h-0 w-full h-full">
         {/* Left/Sidebar Panel (Hidden on mobile when chat is active) */}
         <div
-          className={`h-full ${
-            mobileView === "chat" ? "hidden md:flex" : "flex w-full md:w-auto"
+          className={`h-full min-h-0 flex-col overflow-hidden shrink-0 ${
+            mobileView === "chat"
+              ? "hidden md:flex md:w-80 lg:w-96"
+              : "flex w-full md:w-80 lg:w-96"
           }`}
         >
           <TurboTicketListPanel
@@ -257,7 +272,7 @@ export const TurboTicketsCockpit: React.FC = () => {
 
         {/* Right/Chat Panel (Hidden on mobile when list is active) */}
         <div
-          className={`flex-1 h-full min-w-0 ${
+          className={`flex-1 h-full min-h-0 min-w-0 flex flex-col overflow-hidden ${
             mobileView === "list" ? "hidden md:flex" : "flex w-full"
           }`}
         >
