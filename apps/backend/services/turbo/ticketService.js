@@ -7,15 +7,40 @@ class TicketService {
     this._client = apiClient;
   }
 
-  async addTicket(content, categoryId, code = null, media = [], priority = 'low', relatedTo = 'others') {
+  async addTicket(content, categoryId, code = null, media = [], priority = 'low', relatedTo = 'others', imageFile = null) {
     try {
       const apiKey = await this._client.getApiKey();
       const headers = await this._client.getHeaders();
       const mainClientCode = await this._client.getMainClientCode();
+
+      if (imageFile?.buffer) {
+        const formData = new FormData();
+        formData.append('authentication_key', apiKey);
+        formData.append('main_client_code', String(mainClientCode || 37321));
+        formData.append('category_id', String(categoryId));
+        formData.append('content', content);
+        formData.append('priority', priority || 'low');
+        formData.append('related_to', relatedTo || 'others');
+        if (code) formData.append('code', String(code));
+        formData.append('media[0]', imageFile.buffer, {
+          filename: imageFile.originalname || 'image.jpg',
+          contentType: imageFile.mimetype || 'image/jpeg',
+        });
+        formData.append('image', imageFile.buffer, {
+          filename: imageFile.originalname || 'image.jpg',
+          contentType: imageFile.mimetype || 'image/jpeg',
+        });
+        const requestHeaders = { ...formData.getHeaders() };
+        const response = await axios.post(`${this._client.baseUrl}/tickets/create`, formData, { headers: requestHeaders, timeout: this._client.timeout, maxContentLength: Infinity, maxBodyLength: Infinity });
+        const result = response.data;
+        if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
+        return { success: true, ticketId: result.ticket_id || result.id || result.data?.id || result.code, message: result.message || 'تم إضافة التذكرة بنجاح', data: result };
+      }
+
       const response = await axios.post(`${this._client.baseUrl}/tickets/create`, { authentication_key: apiKey, main_client_code: mainClientCode || 37321, category_id: categoryId, content, media: media || [], priority: priority || 'low', related_to: relatedTo || 'others', code: code || null }, { headers, timeout: this._client.timeout });
       const result = response.data;
       if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
-      return { success: true, ticketId: result.ticket_id || result.id || result.code, message: result.message || 'تم إضافة التذكرة بنجاح', data: result };
+      return { success: true, ticketId: result.ticket_id || result.id || result.data?.id || result.code, message: result.message || 'تم إضافة التذكرة بنجاح', data: result };
     } catch (error) {
       handleError(error, 'Create Ticket');
       return { success: false, error: error.message, message: 'فشل في إضافة التذكرة' };

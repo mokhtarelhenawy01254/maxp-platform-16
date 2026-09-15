@@ -29,6 +29,19 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  function flattenCategories(list: any[], parentName = ""): TurboTicketCategory[] {
+    let result: TurboTicketCategory[] = [];
+    for (const item of list) {
+      const currentName = parentName ? `${parentName} › ${item.name || item.nameEn}` : (item.name || item.nameEn);
+      if (item.children && Array.isArray(item.children) && item.children.length > 0) {
+        result = result.concat(flattenCategories(item.children, currentName));
+      } else {
+        result.push({ id: item.id ?? item.type, name: currentName, type: item.related_to || item.type });
+      }
+    }
+    return result;
+  }
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -38,9 +51,10 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
         const res = await apiClient.get<any>("/turbo/tickets/categories");
         const list =
           res.data?.types || res.data?.categories || res.data?.data || [];
-        if (Array.isArray(list) && list.length > 0) {
-          setCategories(list);
-          setSelectedCategoryId(list[0]?.id || list[0]?.type || "");
+        const flat = Array.isArray(list) && list.length > 0 ? flattenCategories(list) : [];
+        if (flat.length > 0) {
+          setCategories(flat);
+          setSelectedCategoryId(flat[0]?.id || "");
         } else {
           const fallback: TurboTicketCategory[] = [
             { id: 1, name: "استفسار عن موعد تسليم" },

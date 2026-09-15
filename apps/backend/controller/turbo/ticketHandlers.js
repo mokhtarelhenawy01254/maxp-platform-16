@@ -15,7 +15,7 @@ const addTicket = async (req, res) => {
     }
     if (!finalCategoryId) return res.status(400).json({ success: false, error: 'Category ID is required' });
     const turboService = new TurboService(null, companyId);
-    const result = await turboService.addTicket(ticketContent.trim(), finalCategoryId, code, media, priority, relatedTo || related_to);
+    const result = await turboService.addTicket(ticketContent.trim(), finalCategoryId, code, media, priority, relatedTo || related_to, req.file);
     if (!result.success) return res.status(400).json({ success: false, error: result.error, message: result.message });
     res.json({ success: true, data: result });
   } catch (error) {

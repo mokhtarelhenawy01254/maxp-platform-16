@@ -140,7 +140,7 @@ router.put('/orders/:orderId/shipment', verifyToken.authenticateToken, checkAppA
  * POST /api/turbo/tickets
  * إضافة تذكرة دعم إلى Turbo
  */
-router.post('/tickets', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.addTicket);
+router.post('/tickets', verifyToken.authenticateToken, upload.single('image'), checkAppAccess('order-shipping-turbo'), turboController.addTicket);
 
 /**
  * GET /api/turbo/inquiries-types
