@@ -486,6 +486,7 @@ async function validateFullAdStorefrontPixelReadiness({ companyId, pixelId, data
   const storefrontSettings = await getSharedPrismaClient().storefrontSettings.findUnique({
     where: { companyId },
     select: {
+      id: true,
       facebookPixelEnabled: true,
       facebookPixelId: true,
       pixelStatus: true,
@@ -517,6 +518,64 @@ async function validateFullAdStorefrontPixelReadiness({ companyId, pixelId, data
 
   if (matchingConfig || legacyPixelReady) {
     return null;
+  }
+
+  // Auto-provision pixel config on storefrontSettings so valid ad account pixels
+  // do not block campaign launches with missing configuration warnings.
+  if (
+    storefrontSettings?.id &&
+    storefrontSettings.pixelTrackPurchase !== false &&
+    getSharedPrismaClient().facebookPixelConfig?.upsert
+  ) {
+    try {
+      await getSharedPrismaClient().facebookPixelConfig.upsert({
+        where: {
+          storefrontSettingsId_pixelId: {
+            storefrontSettingsId: storefrontSettings.id,
+            pixelId: String(pixelId),
+          },
+        },
+        create: {
+          storefrontSettingsId: storefrontSettings.id,
+          pixelId: String(pixelId),
+          pixelName: `Pixel ${pixelId}`,
+          isActive: true,
+          trackPurchase: true,
+          trackPageView: true,
+          trackAddToCart: true,
+          trackInitiateCheckout: true,
+          trackViewContent: true,
+        },
+        update: {
+          isActive: true,
+          trackPurchase: true,
+        },
+      });
+
+      if (
+        !storefrontSettings.facebookPixelEnabled ||
+        ["not_configured", "disabled", "inactive"].includes(
+          String(storefrontSettings.pixelStatus || "").toLowerCase(),
+        )
+      ) {
+        await getSharedPrismaClient().storefrontSettings.update({
+          where: { companyId },
+          data: {
+            facebookPixelEnabled: true,
+            facebookPixelId: storefrontSettings.facebookPixelId || String(pixelId),
+            pixelStatus: "configured",
+            pixelTrackPurchase: true,
+          },
+        });
+      }
+
+      return null;
+    } catch (autoProvisionErr) {
+      console.warn(
+        "Could not auto-provision storefront pixel config:",
+        autoProvisionErr?.message,
+      );
+    }
   }
 
   return {
