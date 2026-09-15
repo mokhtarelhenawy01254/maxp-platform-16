@@ -131,4 +131,38 @@ describe("Product Landing Builder - Full EasyOrders Parity Tests", () => {
   it("should throw error or handle corrupted JSON gracefully", () => {
     expect(() => importLandingPageFromJson("invalid json {}")).toThrow();
   });
+
+  it("should render ProductLandingHeader without ReferenceError on onOpenTemplatesModal", async () => {
+    const { renderToString } = await import("react-dom/server");
+    const React = await import("react");
+    const { ProductLandingHeader } = await import("../ProductLandingHeader");
+
+    const html = renderToString(
+      React.createElement(ProductLandingHeader, {
+        pages: [],
+        selectedId: "test-id",
+        onSelectPage: () => {},
+        onRefresh: () => {},
+        onSave: () => {},
+        saving: false,
+        onOpenCreateModal: () => {},
+        onOpenTemplatesModal: () => {},
+        onExportJson: () => {},
+        onImportJson: () => {},
+        onGenerateAi: () => {},
+        generatingAi: false,
+        previewUrl: "https://example.com",
+        customerUrl: "https://example.com/p",
+        onCopyUrl: () => {},
+        onTogglePhonePreview: () => {},
+        showPhonePreview: false,
+        isDirty: false,
+      })
+    );
+
+    expect(html).toContain("نماذج وقوالب");
+    expect(html).toContain("تصدير JSON");
+    expect(html).toContain("استيراد JSON");
+  });
 });
+

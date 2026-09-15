@@ -45,7 +45,7 @@ Add whatever helps you do your job. This is your cheat sheet.
 ### Mandatory Target Repository ("ارفع الابديت")
 - **URL**: `https://github.com/elhenawym124-ops/maxp-platform-10`
 - **Remote Name**: `origin`
-- **Rule**: When the user requests to push or deploy updates ("ارفع الابديت"), push **strictly** to this remote (`origin`).
+- **Rule**: When the user requests to push or deploy updates ("ارفع الابديت"), push **strictly** to this repository (`origin main`). All legacy remotes (`mokhtar267`, `platform4`, `omokhtar748`) have been removed.
 
 
 ## Related
