@@ -528,7 +528,13 @@ async function saveIncomingMessage(payload) {
             return;
           }
 
-          const replyText = result.reply;
+          const rawReplyText = result.reply;
+          const { sanitizeAiReply } = require('../../utils/aiReplySanitizer');
+          const { cleanedText: replyText, attachments } = sanitizeAiReply(
+            rawReplyText,
+            result.response_attachments || result.responseAttachments
+          );
+
           if (replyText) {
             await WhatsAppMessageHandler.sendText(first.sessionId, first.normalizedJid, replyText, {
               isAIResponse: true,
@@ -541,12 +547,15 @@ async function saveIncomingMessage(payload) {
                   content: replyText,
                   type: 'TEXT',
                   isFromCustomer: false,
-                  metadata: JSON.stringify({ platform: 'whatsapp', source: 'ai_reply' }),
+                  metadata: JSON.stringify({
+                    platform: 'whatsapp',
+                    source: 'ai_reply',
+                    attachments: attachments.map(a => ({ type: a.type, url: a.url })),
+                  }),
                 },
               }).catch(e => console.error('[WA-AI] Failed to save AI reply to DB:', e.message));
             }
           }
-          const attachments = result.response_attachments || result.responseAttachments;
           console.log(`[WA-AI-ATTACHMENTS] received ${attachments?.length || 0} attachment(s)`);
           if (Array.isArray(attachments)) {
             for (const att of attachments) {

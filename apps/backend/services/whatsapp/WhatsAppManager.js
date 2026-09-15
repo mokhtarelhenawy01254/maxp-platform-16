@@ -3332,12 +3332,17 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                                 return;
                             }
 
-                            const replyText = result?.reply;
+                            const rawReplyText = result?.reply;
+                            const { sanitizeAiReply } = require('../../utils/aiReplySanitizer');
+                            const { cleanedText: replyText, attachments } = sanitizeAiReply(
+                                rawReplyText,
+                                result?.response_attachments || result?.responseAttachments
+                            );
+
                             if (replyText) {
                                 const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
                                 await WhatsAppMessageHandler.sendText(first.sessionId, first.remoteJid, replyText, { isAIResponse: true });
                             }
-                            const attachments = result?.response_attachments || result?.responseAttachments;
                             console.log(`[BAILEYS-AI-ATTACHMENTS] received ${attachments?.length || 0} attachment(s)`);
                             if (Array.isArray(attachments)) {
                                 const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');

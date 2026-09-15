@@ -920,4 +920,11 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
     except Exception as e:
         logger.warning("context_metrics_failed", error=str(e))
 
+    # Final safety: extract any image URLs to response_attachments and strip raw links from final_reply
+    try:
+        from src.pipeline.hooks import AttachmentHook
+        AttachmentHook()._extract_and_strip_reply_images(ctx, "")
+    except Exception as hook_err:
+        logger.warning("validate_reply_final_attachment_strip_failed", error=str(hook_err))
+
     return ctx

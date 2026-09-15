@@ -48,6 +48,7 @@ class PipelineCheckpointer:
             "rounds": ctx.rounds,
             "repaired": ctx.repaired,
             "early_return": ctx.early_return,
+            "response_attachments": list(ctx.response_attachments or []),
             "timestamp": time.time(),
         }
 
@@ -98,6 +99,7 @@ class PipelineCheckpointer:
         ctx.rounds = state.get("rounds", 0)
         ctx.repaired = state.get("repaired", False)
         ctx.early_return = state.get("early_return")
+        ctx.response_attachments = list(state.get("response_attachments") or [])
 
         logger.info("checkpoint restored", stage=state.get("stage"))
         return ctx

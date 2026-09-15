@@ -350,9 +350,12 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         ctx.llm_response = ""
 
     # Agent hooks: before_reply (attachments, post-processing)
-    if ctx.agent and hasattr(ctx.agent, "hooks"):
-        for hook in ctx.agent.hooks:
-            await hook.before_reply(ctx, executed)
+    from src.pipeline.hooks import AttachmentHook
+    hooks_to_run = list(getattr(ctx.agent, "hooks", None) or [])
+    if not any(isinstance(h, AttachmentHook) for h in hooks_to_run):
+        hooks_to_run.append(AttachmentHook())
+    for hook in hooks_to_run:
+        await hook.before_reply(ctx, executed)
 
     ctx.llm_result = provider_response
     return ctx

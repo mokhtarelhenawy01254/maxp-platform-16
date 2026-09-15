@@ -179,6 +179,8 @@ class BaseAgent:
         self.output_schema = config.output_schema
 
         self.hooks: list[AgentHook] = list(config.hooks or [])
+        if not self.hooks:
+            self.hooks = _load_hooks_for_template(self.template_slug)
         self.handoffs: list[dict[str, Any]] = list(config.handoffs or [])
         self.input_guardrails: list[BaseGuardrail] = list(config.input_guardrails or [])
         self.output_guardrails: list[BaseGuardrail] = list(config.output_guardrails or [])

@@ -262,6 +262,7 @@ class PipelineStageExecutor(Executor):
             "llm_response": self._latest_ctx.llm_response,
             "executed_tools": self._latest_ctx.executed_tools,
             "early_return": self._latest_ctx.early_return,
+            "response_attachments": list(self._latest_ctx.response_attachments or []),
         }
 
     async def on_checkpoint_restore(self, state: dict) -> None:
@@ -278,6 +279,7 @@ class PipelineStageExecutor(Executor):
         self._latest_ctx.llm_response = state.get("llm_response", "")
         self._latest_ctx.executed_tools = state.get("executed_tools") or []
         self._latest_ctx.early_return = state.get("early_return")
+        self._latest_ctx.response_attachments = list(state.get("response_attachments") or [])
 
 
 async def execute_pipeline_workflow(

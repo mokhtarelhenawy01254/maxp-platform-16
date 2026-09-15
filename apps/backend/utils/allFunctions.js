@@ -2378,18 +2378,24 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 return;
               }
 
-              const replyText = result.reply;
+              const rawReplyText = result.reply;
 
-              if (replyText) {
-                console.log(`🤖 [AI-AUTOREPLY] AI generated response: "${replyText.substring(0, 50)}..."`);
+              if (rawReplyText) {
+                const { sanitizeAiReply } = require('./aiReplySanitizer');
+                const { cleanedText: replyText, attachments } = sanitizeAiReply(
+                  rawReplyText,
+                  result.response_attachments || result.responseAttachments
+                );
 
-                // 4. Save the AI reply to database
+                console.log(`🤖 [AI-AUTOREPLY] AI response cleaned: "${(replyText || '').substring(0, 50)}..." [attachments: ${attachments.length}]`);
+
+                // 4. Save the AI reply to database (cleaned text without ugly raw image links)
                 const replyId = require('crypto').randomUUID();
                 const savedReply = await safeQuery(async () => {
                   return await prisma.message.create({
                     data: {
                       id: replyId,
-                      content: replyText,
+                      content: replyText || ' ',
                       type: 'TEXT',
                       conversationId: first.conversationId,
                       isFromCustomer: false,
@@ -2401,6 +2407,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                         timestamp: new Date(),
                         instantSave: true,
                         debouncedBatchCount: entries.length,
+                        attachments: attachments.map(a => ({ type: a.type, url: a.url })),
                       }),
                       createdAt: new Date(),
                       updatedAt: new Date()
@@ -2453,22 +2460,15 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
                 // 7. Send the reply to Facebook Messenger
                 if (accessToken) {
-                  const attachments = result.response_attachments || result.responseAttachments;
-                  let textToSend = replyText;
-                  if (Array.isArray(attachments) && attachments.length > 0) {
-                    for (const att of attachments) {
-                      if (att.url) {
-                        textToSend = textToSend.split(att.url).join('').trim();
-                      }
-                    }
-                    textToSend = textToSend.replace(/https?:\/\/[^\s]+\.(?:jpe?g|png|webp|gif)/gi, '').trim();
-                    textToSend = textToSend.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+                  const textToSend = replyText.trim();
+                  let fbResult = { success: true };
+
+                  if (textToSend) {
+                    fbResult = await sendFacebookMessage(first.senderId, textToSend, 'TEXT', first.messagePageId, first.fbMessageId);
                   }
 
-                  const fbResult = await sendFacebookMessage(first.senderId, textToSend || replyText, 'TEXT', first.messagePageId, first.fbMessageId);
-
                   if (fbResult.success) {
-                    console.log(`✅ [AI-AUTOREPLY] AI reply sent successfully to Facebook.`);
+                    console.log(`✅ [AI-AUTOREPLY] AI text reply sent successfully to Facebook.`);
                     if (fbResult.messageId) {
                       await safeQuery(async () => {
                         return await prisma.message.update({
@@ -2487,19 +2487,21 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                     console.error(`❌ [AI-AUTOREPLY] Failed to send AI reply to Facebook:`, fbResult.message || fbResult.error);
                   }
 
-                  // 7b. Send image attachments from AI response
-                  console.log(`[FB-AI-ATTACHMENTS] received ${attachments?.length || 0} attachment(s)`);
+                  // 7b. Send image attachments from AI response natively as IMAGE messages
+                  console.log(`[FB-AI-ATTACHMENTS] sending ${attachments?.length || 0} native attachment(s)`);
                   if (Array.isArray(attachments)) {
                     for (const att of attachments) {
                       if (att.type === 'image' && att.url && !att.url.startsWith('data:')) {
-                        console.log(`[FB-AI-ATTACHMENT] sending image: ${att.url.substring(0, 80)}...`);
+                        console.log(`[FB-AI-ATTACHMENT] sending native image: ${att.url.substring(0, 80)}...`);
                         try {
                           const imgResult = await sendFacebookMessage(first.senderId, att.url, 'IMAGE', first.messagePageId, first.fbMessageId);
                           if (imgResult.success) {
                             console.log(`✅ [FB-AI-ATTACHMENT] AI image attachment sent to Facebook.`);
+                          } else {
+                            console.error(`❌ [FB-AI-ATTACHMENT] Failed to send image:`, imgResult.error || imgResult.message);
                           }
                         } catch (e) {
-                          console.error('[FB-AI-ATTACHMENT] Failed to send image:', e.message);
+                          console.error('[FB-AI-ATTACHMENT] Exception sending image:', e.message);
                         }
                       } else {
                         console.log(`[FB-AI-ATTACHMENT] skipping attachment type=${att.type} url=${(att.url || '').substring(0, 40)}...`);

@@ -96,6 +96,9 @@ def _build_runtime_agent_from_db(
     if not tool_names:
         tool_names = get_tool_names_for_role(db_agent.role)
 
+    from src.agents.base import _load_hooks_for_template
+    agent_hooks = _load_hooks_for_template(db_agent.template_slug or None)
+
     db_config = db_agent.config or {}
     config = BaseAgentConfig(
         id=db_agent.id,
@@ -117,6 +120,7 @@ def _build_runtime_agent_from_db(
         provider=db_config.get("provider") or None,
         key_id=db_config.get("keyId") or db_config.get("key_id") or None,
         template_slug=db_agent.template_slug or None,
+        hooks=agent_hooks,
         policies={
             "model_policy": db_agent.model_policy or {},
             "guardrails": db_agent.guardrails or {},
@@ -331,11 +335,11 @@ async def run_orchestration(
         logger.info("resuming from previous state", state_id=state_id, thread_id=thread_id)
 
     try:
-        # Restore from checkpoint if available
+        # Restore from checkpoint if exact message retry (idempotency)
         if checkpointer:
             saved = await checkpointer.get_latest_checkpoint(thread_id)
-            if saved and saved.final_reply:
-                logger.info("using cached pipeline result", thread_id=thread_id)
+            if saved and saved.final_reply and saved.message == message:
+                logger.info("using cached pipeline result for identical message retry", thread_id=thread_id)
                 return {
                     "reply": saved.final_reply,
                     "thread_id": thread_id,
