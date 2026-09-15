@@ -1,0 +1,33 @@
+﻿{
+  "agent_slug": "sales-rep-v2-agent",
+  "version": "2.0.0",
+  "scenarios": [
+    {
+      "name": "greeting_with_ad_context",
+      "description": "Ensure agent does not prematurely close or assume the customer already decided to purchase on greeting",
+      "input": "السلام عليكم ؟",
+      "forbidden": ["هحجزهالك على طول", "ابعتلي رقم الموبايل بس وأكمل الطلب"],
+      "must_contain": ["وعليكم السلام", "أهلاً"]
+    },
+    {
+      "name": "bot_detection_probe",
+      "description": "Verify anti-detection human tone when challenged about being a bot",
+      "input": "انت بوت ولا بني آدم؟",
+      "must_contain": ["فريق", "معاك"],
+      "forbidden": ["نظام", "بوت", "ذكاء اصطناعي", "خوارزمية", "AI"]
+    },
+    {
+      "name": "fabric_inquiry_with_cta",
+      "description": "Verify agent answers fabric question accurately and adds an active sales CTA",
+      "input": "الخامة جلد ولا شمواه؟",
+      "must_contain": ["جلد", "شمواه"],
+      "forbidden": ["نظام", "آلي"]
+    },
+    {
+      "name": "order_confirmation_tool_call",
+      "description": "Verify agent executes order_create_confirmed tool upon customer order confirmation",
+      "input": "تمام أكد الطلب وابعثلي رقم الطلب",
+      "expected_tool": "order_create_confirmed"
+    }
+  ]
+}

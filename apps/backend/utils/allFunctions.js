@@ -2444,7 +2444,19 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
                 // 7. Send the reply to Facebook Messenger
                 if (accessToken) {
-                  const fbResult = await sendFacebookMessage(first.senderId, replyText, 'TEXT', first.messagePageId, first.fbMessageId);
+                  const attachments = result.response_attachments || result.responseAttachments;
+                  let textToSend = replyText;
+                  if (Array.isArray(attachments) && attachments.length > 0) {
+                    for (const att of attachments) {
+                      if (att.url) {
+                        textToSend = textToSend.split(att.url).join('').trim();
+                      }
+                    }
+                    textToSend = textToSend.replace(/https?:\/\/[^\s]+\.(?:jpe?g|png|webp|gif)/gi, '').trim();
+                    textToSend = textToSend.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+                  }
+
+                  const fbResult = await sendFacebookMessage(first.senderId, textToSend || replyText, 'TEXT', first.messagePageId, first.fbMessageId);
 
                   if (fbResult.success) {
                     console.log(`✅ [AI-AUTOREPLY] AI reply sent successfully to Facebook.`);
@@ -2467,7 +2479,6 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                   }
 
                   // 7b. Send image attachments from AI response
-                  const attachments = result.response_attachments || result.responseAttachments;
                   console.log(`[FB-AI-ATTACHMENTS] received ${attachments?.length || 0} attachment(s)`);
                   if (Array.isArray(attachments)) {
                     for (const att of attachments) {

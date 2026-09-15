@@ -226,8 +226,8 @@ class OrderRepository(BaseRepository):
                 customer_id = cust.id
             else:
                 customer_id = str(uuid.uuid4())
-                name_parts = customer_name.split(" ", 1)
-                first_name = name_parts[0]
+                name_parts = (customer_name or "").strip().split(" ", 1)
+                first_name = name_parts[0] if name_parts[0] else "عميل"
                 last_name = name_parts[1] if len(name_parts) > 1 else ""
                 await self._session.execute(text("""
                     INSERT INTO customers (id, "firstName", "lastName", phone, status, "companyId", "createdAt", "updatedAt")

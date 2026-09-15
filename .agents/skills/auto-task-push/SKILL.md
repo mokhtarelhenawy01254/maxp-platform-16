@@ -1,6 +1,6 @@
 ---
 name: auto-task-push
-description: Automatically commit and push updates to https://github.com/mokhtar267/maxp-platform-6 with descriptive commit messages after completing any task.
+description: Automatically commit and push updates to https://github.com/elhenawym124-ops/maxp-platform-10 with descriptive commit messages after completing any task.
 ---
 
 # Auto Task Push Skill
@@ -13,8 +13,8 @@ Automatically triggered upon completing **ANY** task, feature implementation, bu
 
 ## Target Repository
 
-- **Repository URL:** `https://github.com/mokhtar267/maxp-platform-6`
-- **Git Remote Name:** `mokhtar267`
+- **Repository URL:** `https://github.com/elhenawym124-ops/maxp-platform-10`
+- **Git Remote Name:** `origin`
 - **Branch:** `main` (or current active branch)
 
 ## Protocol & Steps
@@ -42,10 +42,10 @@ Automatically triggered upon completing **ANY** task, feature implementation, bu
    ```
 
 4. **Push to Remote:**
-   Push commits to the `mokhtar267` remote:
+   Push commits to the `origin` remote:
    ```bash
-   git push mokhtar267 main
+   git push origin main
    ```
 
 5. **Report to User:**
-   Provide the commit message, commit hash, and confirmation that updates were pushed to `https://github.com/mokhtar267/maxp-platform-6`.
+   Provide the commit message, commit hash, and confirmation that updates were pushed to `https://github.com/elhenawym124-ops/maxp-platform-10`.

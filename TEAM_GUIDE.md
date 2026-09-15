@@ -1,4 +1,4 @@
-﻿# ┘ü╪▒┘è┘é MaxP ΓÇö ╪»┘ä┘è┘ä ╪º┘ä╪╣┘à┘ä ╪╣┘ä┘ë ╪º┘ä┘é╪º╪╣╪»╪⌐ ╪º┘ä╪¼╪»┘è╪»╪⌐
+# ┘ü╪▒┘è┘é MaxP ΓÇö ╪»┘ä┘è┘ä ╪º┘ä╪╣┘à┘ä ╪╣┘ä┘ë ╪º┘ä┘é╪º╪╣╪»╪⌐ ╪º┘ä╪¼╪»┘è╪»╪⌐
 
 ## ≡ƒÄ» ╪º┘ä┘é╪º╪╣╪»╪⌐ ╪º┘ä╪▒╪│┘à┘è╪⌐: `v2.0-stable`
 
@@ -13,8 +13,8 @@
 ## ≡ƒÜÇ ╪Ñ╪╣╪»╪º╪» ╪º┘ä┘à╪┤╪▒┘ê╪╣
 
 ```bash
-git clone https://github.com/mokhtar267/maxp-platform-6.git
-cd maxp-platform-6
+git clone https://github.com/elhenawym124-ops/maxp-platform-10.git
+cd maxp-platform-10
 
 # ╪º┘ä┘ü╪▒┘ê┘å╪¬
 cd apps/frontend

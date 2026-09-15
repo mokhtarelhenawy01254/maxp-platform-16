@@ -65,15 +65,15 @@
   "channels": [
     "dashboard",
     "whatsapp",
-    "messenger"
+    "messenger",
+    "facebook"
   ],
   "humanApproval": {
     "mode": "ON_WRITE",
     "requiredTools": [
-      "order_create_confirmed",
       "discount_create_draft"
     ],
-    "approvalCode": true,
+    "approvalCode": false,
     "merchantChannels": [
       "DASHBOARD",
       "WHATSAPP"

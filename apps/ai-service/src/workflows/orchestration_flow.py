@@ -32,7 +32,16 @@ logger = structlog.get_logger(__name__)
 
 def _agent_channels(channels: object) -> list[str]:
     if isinstance(channels, list):
-        return [str(channel).strip().lower() for channel in channels if str(channel).strip()]
+        normalized = []
+        for channel in channels:
+            c = str(channel).strip().lower()
+            if c:
+                normalized.append(c)
+                if c == "messenger":
+                    normalized.append("facebook")
+                elif c == "facebook":
+                    normalized.append("messenger")
+        return normalized
     return []
 
 

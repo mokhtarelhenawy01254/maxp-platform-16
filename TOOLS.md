@@ -43,9 +43,9 @@ Add whatever helps you do your job. This is your cheat sheet.
 ## Git & Deployment
 
 ### Mandatory Target Repository ("ارفع الابديت")
-- **URL**: `https://github.com/mokhtar267/maxp-platform-6`
-- **Remote Name**: `mokhtar267`
-- **Rule**: When the user requests to push or deploy updates ("ارفع الابديت"), push **strictly** to this remote (`mokhtar267`). Never push to `origin` or any other remotes.
+- **URL**: `https://github.com/elhenawym124-ops/maxp-platform-10`
+- **Remote Name**: `origin`
+- **Rule**: When the user requests to push or deploy updates ("ارفع الابديت"), push **strictly** to this remote (`origin`).
 
 
 ## Related

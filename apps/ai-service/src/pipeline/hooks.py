@@ -74,7 +74,7 @@ class AttachmentHook:
             if not isinstance(result, dict):
                 continue
             self._populate_landmark_images(ctx, result, evidence, _maxp_api_url)
-            self._populate_product_images(ctx, result, evidence)
+            self._populate_product_images(ctx, result, evidence, _maxp_api_url)
 
         if ctx.response_attachments:
             logger.info(
@@ -117,7 +117,9 @@ class AttachmentHook:
         ctx: PipelineContext,
         result: dict,
         evidence: dict,
+        maxp_api_url: str,
     ) -> None:
+        base_url = maxp_api_url or os.getenv("MAXP_API_URL", "https://maxp.online").rstrip("/")
         for key in ("results", "products"):
             items = result.get(key) or []
             if not isinstance(items, list):
@@ -125,15 +127,33 @@ class AttachmentHook:
             for product in items:
                 if not isinstance(product, dict):
                     continue
-                for img in (product.get("images") or []):
+                raw_images = []
+                if isinstance(product.get("images"), list):
+                    raw_images.extend(product.get("images"))
+                elif isinstance(product.get("images"), str):
+                    raw_images.append(product.get("images"))
+                if product.get("image"):
+                    raw_images.append(product.get("image"))
+                if product.get("productImage"):
+                    raw_images.append(product.get("productImage"))
+
+                for img in raw_images:
                     if not img or not isinstance(img, str):
                         continue
-                    if not ctx.final_reply or (img not in ctx.final_reply and os.path.basename(img) not in ctx.final_reply):
+                    img_clean = img.strip()
+                    img_filename = os.path.basename(img_clean)
+                    if not ctx.final_reply or (img_clean not in ctx.final_reply and img_filename not in ctx.final_reply):
                         continue
-                    if img.startswith(("http://", "https://", "data:")):
-                        ctx.response_attachments.append({
-                            "type": "image",
-                            "url": img,
-                            "source": "tool_result",
-                            "tool": evidence.get("tool", "product_search"),
-                        })
+
+                    full_url = img_clean
+                    if img_clean.startswith("/"):
+                        full_url = f"{base_url}{img_clean}"
+
+                    if full_url.startswith(("http://", "https://", "data:")):
+                        if not any(a.get("url") == full_url for a in ctx.response_attachments):
+                            ctx.response_attachments.append({
+                                "type": "image",
+                                "url": full_url,
+                                "source": "tool_result",
+                                "tool": evidence.get("tool", "product_search"),
+                            })

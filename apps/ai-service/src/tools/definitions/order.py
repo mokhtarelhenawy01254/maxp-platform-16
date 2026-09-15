@@ -58,7 +58,7 @@ class OrderCreateDraftInput(BaseModel):
 
 
 class OrderCreateConfirmedInput(BaseModel):
-    customer_name: str = Field(description="Customer name")
+    customer_name: str | None = Field(default=None, description="Customer name (optional, falls back to profile or phone)")
     customer_phone: str = Field(description="Customer phone number")
     product_name: str = Field(description="Product name or ID")
     product_price: float | None = Field(default=None, description="Confirmed product unit price")
