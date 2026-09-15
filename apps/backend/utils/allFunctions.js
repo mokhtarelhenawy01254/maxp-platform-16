@@ -2336,11 +2336,20 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 const prisma = getSharedPrismaClient();
                 const conversation = await prisma.conversation.findUnique({
                   where: { id: first.conversationId },
-                  select: { aiEnabled: true }
+                  select: { aiEnabled: true, metadata: true }
                 });
                 if (conversation && conversation.aiEnabled === false) {
                   console.log(`🤖 [AI-AUTOREPLY] AI auto-reply disabled for conversation ${first.conversationId}`);
                   return;
+                }
+                if (conversation?.metadata) {
+                  try {
+                    const convMeta = typeof conversation.metadata === 'string' ? JSON.parse(conversation.metadata) : conversation.metadata;
+                    if (convMeta?.aiPausedUntil && new Date(convMeta.aiPausedUntil) > new Date()) {
+                      console.log(`🤖 [AI-AUTOREPLY] AI agent is paused until ${convMeta.aiPausedUntil} due to human handover on conversation ${first.conversationId}`);
+                      return;
+                    }
+                  } catch (e) {}
                 }
               }
 

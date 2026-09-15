@@ -67,8 +67,9 @@ class OrderCreateConfirmedInput(BaseModel):
     quantity: int = Field(default=1, description="Quantity")
     total: float | None = Field(default=None, description="Order total")
     shipping_amount: float | None = Field(default=None, description="Confirmed shipping amount")
-    address: str | None = Field(default=None, description="Delivery address")
-    city: str | None = Field(default=None, description="City")
+    address: str | None = Field(default=None, description="Detailed street address (e.g. شارع جمال عبد الناصر، عمارة 12، شقة 4)")
+    city: str | None = Field(default=None, description="City or district (e.g. ميامي، سموحة، مدينة نصر)")
+    governorate: str | None = Field(default=None, description="Governorate / Province (e.g. الإسكندرية، القاهرة، الجيزة)")
     confirmed_by_customer: bool | None = Field(default=None, description="Whether the customer explicitly confirmed")
     notes: str | None = Field(default=None, description="Order notes")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
@@ -250,6 +251,7 @@ async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[
         "shippingAmount": input_data.shipping_amount,
         "address": input_data.address,
         "city": input_data.city,
+        "governorate": input_data.governorate,
         "confirmedByCustomer": input_data.confirmed_by_customer,
         "notes": input_data.notes,
     }

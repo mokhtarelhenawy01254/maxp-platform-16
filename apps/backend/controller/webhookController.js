@@ -1056,33 +1056,40 @@ async function handlePageReply(webhookEvent, pageId = null) {
     // 🆕 Update lastMessageIsFromCustomer (this is a page reply, so false)
     await updateConversationLastMessageStatus(conversation.id, false);
 
-    // تنظيف الـ metadata بعد حفظ الرسالة
-    if (senderUserId) {
+    // 🛡️ Human Handover Protocol: Automatically pause AI agent when human staff replies
+    try {
+      let convMetadata = {};
       try {
-        // Safely parse metadata - use empty object if parsing fails
-        let convMetadata = {};
-        try {
-          if (conversation.metadata) {
-            convMetadata = JSON.parse(conversation.metadata);
-          }
-        } catch (parseError) {
-          convMetadata = {};
+        if (conversation.metadata) {
+          convMetadata = JSON.parse(conversation.metadata);
         }
+      } catch (parseError) {
+        convMetadata = {};
+      }
 
+      if (senderUserId) {
         delete convMetadata.lastSenderId;
         delete convMetadata.lastSenderName;
-
-        await safeQuery(async () => {
-          const prisma = getPrisma();
-          return await prisma.conversation.update({
-            where: { id: conversation.id },
-            data: {
-              metadata: JSON.stringify(convMetadata)
-            }
-          });
-        }, 3);
-      } catch (e) {
       }
+
+      // Auto-pause AI agent for 2 hours on staff handover
+      const pauseDurationHours = 2;
+      convMetadata.aiPausedUntil = new Date(Date.now() + pauseDurationHours * 60 * 60 * 1000).toISOString();
+      convMetadata.lastHumanReplyAt = new Date().toISOString();
+      convMetadata.lastHumanSenderName = senderUserName || 'موظف الصفحة';
+
+      await safeQuery(async () => {
+        const prisma = getPrisma();
+        return await prisma.conversation.update({
+          where: { id: conversation.id },
+          data: {
+            metadata: JSON.stringify(convMetadata)
+          }
+        });
+      }, 3);
+      console.log(`🛡️ [HUMAN-HANDOVER] AI agent paused for ${pauseDurationHours}h on conversation ${conversation.id} due to staff reply`);
+    } catch (e) {
+      console.warn(`⚠️ [HUMAN-HANDOVER] Failed to update conversation pause metadata:`, e.message);
     }
 
     // ⚡ Emit confirmation Socket.IO event (الرسالة اتحفظت بنجاح)

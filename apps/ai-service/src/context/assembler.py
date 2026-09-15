@@ -293,7 +293,7 @@ class ContextAssembler:
         # Channel-specific: Facebook continuation instructions
         # Prevents the agent from introducing itself or changing direction when
         # the customer was already talking to a human agent before AI activation.
-        if ctx.channel == "facebook":
+        if (ctx.channel or "").lower() in ("facebook", "messenger"):
             base_prompt += """
 <continuation>
 You are continuing an existing conversation on Facebook Messenger that was previously handled by a human agent.

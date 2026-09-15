@@ -212,6 +212,14 @@ class OrderRepository(BaseRepository):
         qty = order_data.get("quantity", 1)
         customer_phone = order_data.get("customerPhone") or ""
         customer_name = order_data.get("customerName") or ""
+        address = (order_data.get("address") or "").strip()
+        city = (order_data.get("city") or "").strip()
+        governorate = (order_data.get("governorate") or "").strip()
+        shipping_amount = order_data.get("shippingAmount") or 0.0
+
+        # Construct granular full shipping address
+        address_parts = [p for p in [address, city, governorate] if p]
+        full_shipping_address = " - ".join(address_parts) if address_parts else None
 
         # Find or create customer so we can satisfy the NOT NULL customerId FK
         customer_id = None
@@ -242,9 +250,12 @@ class OrderRepository(BaseRepository):
 
         await self._session.execute(text("""
             INSERT INTO orders (id, "orderNumber", "customerId", "customerName", "customerPhone",
+                               "shippingAddress", "customerAddress", city, governorate, shipping,
                                total, subtotal, status, "paymentStatus",
                                notes, "companyId", "createdAt", "updatedAt")
-            VALUES (:id, :onum, :cust_id, :cname, :cphone, :total, :subtotal, 'PENDING', 'PENDING',
+            VALUES (:id, :onum, :cust_id, :cname, :cphone,
+                    :saddr, :caddr, :city, :gov, :shipping,
+                    :total, :subtotal, 'PENDING', 'PENDING',
                     :notes, :cid, NOW(), NOW())
         """), {
             "id": order_id,
@@ -252,6 +263,11 @@ class OrderRepository(BaseRepository):
             "cust_id": customer_id,
             "cname": customer_name,
             "cphone": customer_phone,
+            "saddr": full_shipping_address,
+            "caddr": full_shipping_address,
+            "city": city or None,
+            "gov": governorate or None,
+            "shipping": shipping_amount,
             "total": total,
             "subtotal": total,
             "notes": order_data.get("notes") or "",
@@ -276,6 +292,9 @@ class OrderRepository(BaseRepository):
             "orderNumber": str(next_num),
             "status": "PENDING",
             "customerName": order_data.get("customerName", ""),
+            "shippingAddress": full_shipping_address,
+            "shippingAmount": shipping_amount,
+            "total": total,
         }
 
     async def get_pending_count(self, company_id: str) -> int:
