@@ -1,13 +1,17 @@
 import React, { useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 import { SIDEBAR_ITEMS, SectionType, SidebarCategory } from "./types";
 
 interface ElementsSidebarDrawerProps {
   onAddSection: (type: SectionType) => void;
+  onClose?: () => void;
+  isMobileSheet?: boolean;
 }
 
 export const ElementsSidebarDrawer: React.FC<ElementsSidebarDrawerProps> = ({
   onAddSection,
+  onClose,
+  isMobileSheet = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<SidebarCategory | "all">("all");
@@ -33,10 +37,24 @@ export const ElementsSidebarDrawer: React.FC<ElementsSidebarDrawerProps> = ({
   }, [searchQuery, selectedCategory]);
 
   return (
-    <aside className="eo-builder-sidebar" dir="rtl">
+    <aside className={`eo-builder-sidebar ${isMobileSheet ? "is-mobile-sheet" : ""}`} dir="rtl">
       <div className="eo-sidebar-head">
-        <h3>مكتبة عناصر الصفحة</h3>
-        <p>اختر من بين 20+ عنصراً مخصصاً لرفع معدلات التحويل والمبيعات</p>
+        <div className="eo-sidebar-head-title-row">
+          <div>
+            <h3>مكتبة عناصر الصفحة</h3>
+            <p>اختر من بين 20+ عنصراً مخصصاً لرفع معدلات التحويل والمبيعات</p>
+          </div>
+          {onClose && (
+            <button
+              type="button"
+              className="eo-sidebar-close-btn"
+              onClick={onClose}
+              aria-label="إغلاق القائمة"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Search Input */}
@@ -86,7 +104,10 @@ export const ElementsSidebarDrawer: React.FC<ElementsSidebarDrawerProps> = ({
                 key={item.type}
                 className="eo-sidebar-item-card"
                 type="button"
-                onClick={() => onAddSection(item.type)}
+                onClick={() => {
+                  onAddSection(item.type);
+                  onClose?.();
+                }}
               >
                 <div
                   className="eo-item-icon"

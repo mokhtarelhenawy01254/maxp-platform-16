@@ -29,6 +29,7 @@ interface PhoneMockupPreviewProps {
   };
   previewUrl?: string;
   customerUrl?: string;
+  isMobileView?: boolean;
 }
 
 export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
@@ -38,6 +39,7 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
   formConfig,
   previewUrl,
   customerUrl,
+  isMobileView = false,
 }) => {
   const [viewMode, setViewMode] = useState<"live" | "sync">(
     previewUrl ? "live" : "sync",
@@ -108,7 +110,10 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
   };
 
   return (
-    <div className={`eo-phone-preview-wrapper ${device === "desktop" ? "is-desktop-mode" : ""}`} dir="rtl">
+    <div
+      className={`eo-phone-preview-wrapper ${isMobileView ? "is-mobile-view" : ""} ${device === "desktop" ? "is-desktop-mode" : ""}`}
+      dir="rtl"
+    >
       {/* Header Controls Bar */}
       <div className="eo-phone-preview-header">
         <div className="eo-preview-mode-tabs">
@@ -136,30 +141,34 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
         </div>
 
         <div className="eo-preview-device-tools">
-          <button
-            type="button"
-            className={`eo-device-btn ${device === "mobile" ? "is-active" : ""}`}
-            onClick={() => setDevice("mobile")}
-            title="عرض الموبايل (380px)"
-          >
-            <Smartphone size={15} />
-          </button>
-          <button
-            type="button"
-            className={`eo-device-btn ${device === "tablet" ? "is-active" : ""}`}
-            onClick={() => setDevice("tablet")}
-            title="عرض التابلت (680px)"
-          >
-            <Tablet size={15} />
-          </button>
-          <button
-            type="button"
-            className={`eo-device-btn ${device === "desktop" ? "is-active" : ""}`}
-            onClick={() => setDevice("desktop")}
-            title="عرض الشاشة الكاملة (حاسوب)"
-          >
-            <Monitor size={15} />
-          </button>
+          {!isMobileView && (
+            <>
+              <button
+                type="button"
+                className={`eo-device-btn ${device === "mobile" ? "is-active" : ""}`}
+                onClick={() => setDevice("mobile")}
+                title="عرض الموبايل (380px)"
+              >
+                <Smartphone size={15} />
+              </button>
+              <button
+                type="button"
+                className={`eo-device-btn ${device === "tablet" ? "is-active" : ""}`}
+                onClick={() => setDevice("tablet")}
+                title="عرض التابلت (680px)"
+              >
+                <Tablet size={15} />
+              </button>
+              <button
+                type="button"
+                className={`eo-device-btn ${device === "desktop" ? "is-active" : ""}`}
+                onClick={() => setDevice("desktop")}
+                title="عرض الشاشة الكاملة (حاسوب)"
+              >
+                <Monitor size={15} />
+              </button>
+            </>
+          )}
 
           {viewMode === "live" && previewUrl && (
             <>
@@ -189,6 +198,8 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
       {/* Frame Container */}
       <div
         className={`eo-phone-frame ${
+          isMobileView ? "is-mobile-full-bleed" : ""
+        } ${
           device === "desktop"
             ? "is-desktop-chassis"
             : device === "tablet"
@@ -196,7 +207,7 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
               : ""
         }`}
       >
-        {device === "mobile" && (
+        {device === "mobile" && !isMobileView && (
           <div className="eo-phone-notch">
             <div className="eo-phone-speaker" />
             <div className="eo-phone-camera" />

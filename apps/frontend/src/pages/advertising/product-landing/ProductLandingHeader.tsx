@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Copy,
   Eye,
@@ -13,6 +13,8 @@ import {
   LayoutTemplate,
   Download,
   Upload,
+  MoreVertical,
+  X,
 } from "lucide-react";
 import { ProductLandingPage } from "../../../services/productLandingPagesService";
 
@@ -57,12 +59,178 @@ export const ProductLandingHeader: React.FC<ProductLandingHeaderProps> = ({
   showPhonePreview,
   isDirty,
 }) => {
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const isBusy = saving || generatingAi;
 
   return (
     <header className="eo-builder-header" dir="rtl">
-      {/* Primary Actions (Right side in RTL) */}
-      <div className="eo-header-actions">
+      {/* Mobile-Only Unified Bar (< 768px) */}
+      <div className="eo-header-mobile-bar">
+        <div className="eo-product-selector">
+          <Search size={15} />
+          <select
+            value={selectedId}
+            onChange={(e) => onSelectPage(e.target.value)}
+          >
+            <option value="">اختر صفحة هبوط...</option>
+            {pages.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title} ({p.status === "PUBLISHED" ? "منشورة ✅" : "مسودة 📝"})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          className={`eo-btn eo-btn-save ${isDirty ? "is-dirty" : ""}`}
+          type="button"
+          onClick={onSave}
+          disabled={isBusy || !selectedId}
+          title={isDirty ? "توجد تغييرات غير محفوظة" : "حفظ التعديلات"}
+        >
+          {saving ? (
+            <Loader2 className="eo-spin" size={15} />
+          ) : (
+            <Save size={15} />
+          )}
+          <span>حفظ{isDirty ? " ●" : ""}</span>
+        </button>
+
+        <button
+          type="button"
+          className={`eo-icon-btn ${isMoreMenuOpen ? "is-active" : ""}`}
+          onClick={() => setIsMoreMenuOpen((prev) => !prev)}
+          title="المزيد من الخيارات والأدوات"
+          aria-label="المزيد من الخيارات"
+        >
+          {isMoreMenuOpen ? <X size={17} /> : <MoreVertical size={17} />}
+        </button>
+      </div>
+
+      {/* Mobile More Actions Menu Sheet */}
+      {isMoreMenuOpen && (
+        <div className="eo-header-mobile-menu" dir="rtl">
+          <div className="eo-mobile-menu-grid">
+            <button
+              className="eo-menu-item-btn"
+              type="button"
+              onClick={() => {
+                onOpenCreateModal();
+                setIsMoreMenuOpen(false);
+              }}
+            >
+              <Plus size={16} className="text-emerald-600" />
+              <span>+ صفحة هبوط جديدة</span>
+            </button>
+
+            <button
+              className="eo-menu-item-btn"
+              type="button"
+              onClick={() => {
+                onGenerateAi();
+                setIsMoreMenuOpen(false);
+              }}
+              disabled={isBusy || !selectedId}
+            >
+              <Sparkles size={16} className="text-blue-600" />
+              <span>كتابة بالذكاء الاصطناعي ✨</span>
+            </button>
+
+            {onOpenTemplatesModal && (
+              <button
+                className="eo-menu-item-btn"
+                type="button"
+                onClick={() => {
+                  onOpenTemplatesModal();
+                  setIsMoreMenuOpen(false);
+                }}
+              >
+                <LayoutTemplate size={16} className="text-indigo-600" />
+                <span>نماذج وقوالب جاهزة</span>
+              </button>
+            )}
+
+            {previewUrl && (
+              <a
+                href={previewUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="eo-menu-item-btn"
+                onClick={() => setIsMoreMenuOpen(false)}
+              >
+                <Eye size={16} className="text-sky-600" />
+                <span>معاينة حية في المتجر ↗</span>
+              </a>
+            )}
+
+            {customerUrl && (
+              <button
+                className="eo-menu-item-btn"
+                type="button"
+                onClick={() => {
+                  onCopyUrl();
+                  setIsMoreMenuOpen(false);
+                }}
+              >
+                <Copy size={16} className="text-slate-600" />
+                <span>نسخ رابط الصفحة</span>
+              </button>
+            )}
+
+            {onExportJson && (
+              <button
+                className="eo-menu-item-btn"
+                type="button"
+                onClick={() => {
+                  onExportJson();
+                  setIsMoreMenuOpen(false);
+                }}
+                disabled={!selectedId}
+              >
+                <Download size={16} className="text-amber-600" />
+                <span>تصدير تصميم JSON</span>
+              </button>
+            )}
+
+            {onImportJson && (
+              <label
+                className="eo-menu-item-btn cursor-pointer"
+              >
+                <Upload size={16} className="text-purple-600" />
+                <span>استيراد تصميم JSON</span>
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      onImportJson(file);
+                      e.target.value = "";
+                      setIsMoreMenuOpen(false);
+                    }
+                  }}
+                />
+              </label>
+            )}
+
+            <button
+              className="eo-menu-item-btn"
+              type="button"
+              onClick={() => {
+                onRefresh();
+                setIsMoreMenuOpen(false);
+              }}
+            >
+              <RefreshCw size={16} className="text-slate-600" />
+              <span>تحديث البيانات من السيرفر</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Actions (Right side in RTL) */}
+      <div className="eo-header-actions eo-desktop-only">
         <button
           className={`eo-btn eo-btn-save ${isDirty ? "is-dirty" : ""}`}
           type="button"
@@ -179,8 +347,8 @@ export const ProductLandingHeader: React.FC<ProductLandingHeaderProps> = ({
         )}
       </div>
 
-      {/* Selector and Utility Actions (Left side in RTL) */}
-      <div className="eo-header-utilities">
+      {/* Desktop Utilities (Left side in RTL) */}
+      <div className="eo-header-utilities eo-desktop-only">
         {onTogglePhonePreview && (
           <button
             type="button"

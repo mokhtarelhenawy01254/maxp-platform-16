@@ -365,7 +365,8 @@
 .app-shell-content:has(> .motion-safe\:animate-fade-in > .whatsapp-workspace-root),
 .app-shell-content:has(.marketing-studio-root),
 .app-shell-content:has(.agent-studio-root),
-.app-shell-content:has(.turbo-tickets-root) {
+.app-shell-content:has(.turbo-tickets-root),
+.app-shell-content:has(.eo-builder-page) {
   overflow: hidden !important;
   padding: 0 !important;
   height: 100% !important;
@@ -374,7 +375,8 @@
 
 .app-shell-content > .motion-safe\:animate-fade-in:has(.marketing-studio-root),
 .app-shell-content > .motion-safe\:animate-fade-in:has(.agent-studio-root),
-.app-shell-content > .motion-safe\:animate-fade-in:has(.turbo-tickets-root) {
+.app-shell-content > .motion-safe\:animate-fade-in:has(.turbo-tickets-root),
+.app-shell-content > .motion-safe\:animate-fade-in:has(.eo-builder-page) {
   height: 100% !important;
   min-height: 0 !important;
   overflow: hidden !important;

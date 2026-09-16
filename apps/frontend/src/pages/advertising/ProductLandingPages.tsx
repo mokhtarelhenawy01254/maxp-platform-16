@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Layers, Eye } from "lucide-react";
 import { toast } from "sonner";
 import {
   ProductLandingPage,
@@ -47,6 +47,8 @@ const ProductLandingPages: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState(false);
   const [showPhonePreview, setShowPhonePreview] = useState(true);
+  const [mobileTab, setMobileTab] = useState<"editor" | "preview">("editor");
+  const [isElementsDrawerOpen, setIsElementsDrawerOpen] = useState(false);
 
   const { user } = useAuth();
   const selectedPage = useMemo(
@@ -753,53 +755,99 @@ const ProductLandingPages: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* Main Workspace: Canvas + Elements Drawer + Phone Preview */
-        <div className="eo-builder-workspace">
-          {/* Right Drawer: Elements Palette */}
-          <ElementsSidebarDrawer onAddSection={handleAddSection} />
+        <>
+          {/* Mobile Studio Segment Switcher Bar (< 1024px) */}
+          <nav className="eo-mobile-tab-nav" aria-label="تبويبات الاستوديو على الجوال">
+            <button
+              type="button"
+              className={`eo-mobile-tab-btn ${mobileTab === "editor" ? "is-active" : ""}`}
+              onClick={() => setMobileTab("editor")}
+            >
+              <Layers size={15} />
+              <span>المحرر والأقسام ({editor.sections.length})</span>
+            </button>
 
-          {/* Center: Main Canvas Editor */}
-          <section className="eo-builder-canvas">
-            <ProductSummaryCard
-              page={selectedPage}
-              product={selectedProduct}
-              title={editor.title}
-              onChangeTitle={(val) => {
-                setEditor((c) => ({ ...c, title: val }));
-                setIsDirty(true);
-              }}
-              slug={editor.slug}
-              onChangeSlug={(val) => {
-                setEditor((c) => ({ ...c, slug: val }));
-                setIsDirty(true);
-              }}
-              status={editor.status}
-              onUpdateStatus={handleUpdateStatus}
-              updatingStatus={updatingStatus}
-              onDeletePage={handleDeletePage}
-              deleting={deleting}
-            />
+            <button
+              type="button"
+              className={`eo-mobile-tab-btn ${mobileTab === "preview" ? "is-active" : ""}`}
+              onClick={() => setMobileTab("preview")}
+            >
+              <Eye size={15} />
+              <span>المعاينة الحية</span>
+            </button>
 
-            <SectionsStackEditor
-              sections={editor.sections}
-              activeSectionId={activeSectionId}
-              onToggleActiveSection={(id) =>
-                setActiveSectionId((current) => (current === id ? null : id))
-              }
-              onMoveSection={handleMoveSection}
-              onReorderSections={handleReorderSections}
-              onDuplicateSection={handleDuplicateSection}
-              onToggleEnabled={handleToggleSectionEnabled}
-              onRemoveSection={handleRemoveSection}
-              onUpdateSectionContent={handleUpdateSectionContent}
-              onUpdateSectionVariant={handleUpdateSectionVariant}
-              product={selectedProduct}
-            />
-          </section>
+            <button
+              type="button"
+              className="eo-mobile-tab-btn eo-tab-btn-add"
+              onClick={() => setIsElementsDrawerOpen(true)}
+            >
+              <Plus size={15} />
+              <span>+ إضافة عنصر</span>
+            </button>
+          </nav>
 
-          {/* Left: Phone Live Preview Frame */}
-          {showPhonePreview && (
-            <aside className="eo-builder-preview-col">
+          {/* Main Workspace: Canvas + Elements Drawer + Phone Preview */}
+          <div className="eo-builder-workspace" data-mobile-tab={mobileTab}>
+            {/* Right Drawer: Elements Palette (Desktop Only) */}
+            <div className="eo-builder-sidebar-wrapper eo-desktop-only">
+              <ElementsSidebarDrawer onAddSection={handleAddSection} />
+            </div>
+
+            {/* Center: Main Canvas Editor */}
+            <section className={`eo-builder-canvas ${mobileTab === "preview" ? "eo-hide-on-mobile" : ""}`}>
+              <ProductSummaryCard
+                page={selectedPage}
+                product={selectedProduct}
+                title={editor.title}
+                onChangeTitle={(val) => {
+                  setEditor((c) => ({ ...c, title: val }));
+                  setIsDirty(true);
+                }}
+                slug={editor.slug}
+                onChangeSlug={(val) => {
+                  setEditor((c) => ({ ...c, slug: val }));
+                  setIsDirty(true);
+                }}
+                status={editor.status}
+                onUpdateStatus={handleUpdateStatus}
+                updatingStatus={updatingStatus}
+                onDeletePage={handleDeletePage}
+                deleting={deleting}
+              />
+
+              <SectionsStackEditor
+                sections={editor.sections}
+                activeSectionId={activeSectionId}
+                onToggleActiveSection={(id) =>
+                  setActiveSectionId((current) => (current === id ? null : id))
+                }
+                onMoveSection={handleMoveSection}
+                onReorderSections={handleReorderSections}
+                onDuplicateSection={handleDuplicateSection}
+                onToggleEnabled={handleToggleSectionEnabled}
+                onRemoveSection={handleRemoveSection}
+                onUpdateSectionContent={handleUpdateSectionContent}
+                onUpdateSectionVariant={handleUpdateSectionVariant}
+                product={selectedProduct}
+              />
+
+              {/* Mobile Quick Add Section Button */}
+              <div className="eo-mobile-bottom-add-bar">
+                <button
+                  type="button"
+                  className="eo-btn eo-btn-add-section-full"
+                  onClick={() => setIsElementsDrawerOpen(true)}
+                >
+                  <Plus size={16} />
+                  <span>+ إضافة عنصر جديد إلى هذه الصفحة</span>
+                </button>
+              </div>
+            </section>
+
+            {/* Left: Phone Live Preview Frame */}
+            <aside
+              className={`eo-builder-preview-col ${mobileTab === "editor" ? "eo-hide-on-mobile" : ""} ${!showPhonePreview ? "eo-hide-on-desktop" : ""}`}
+            >
               <PhoneMockupPreview
                 title={editor.title}
                 product={selectedProduct}
@@ -807,10 +855,34 @@ const ProductLandingPages: React.FC = () => {
                 formConfig={editor.formConfig}
                 previewUrl={previewUrl}
                 customerUrl={customerUrl}
+                isMobileView={mobileTab === "preview"}
               />
             </aside>
+          </div>
+
+          {/* Mobile Elements Slide-Over Bottom Sheet */}
+          {isElementsDrawerOpen && (
+            <div
+              className="eo-mobile-sheet-backdrop"
+              onClick={() => setIsElementsDrawerOpen(false)}
+            >
+              <div
+                className="eo-mobile-sheet-dialog"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ElementsSidebarDrawer
+                  isMobileSheet
+                  onClose={() => setIsElementsDrawerOpen(false)}
+                  onAddSection={(type) => {
+                    handleAddSection(type);
+                    setIsElementsDrawerOpen(false);
+                    setMobileTab("editor");
+                  }}
+                />
+              </div>
+            </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Create Landing Modal */}
