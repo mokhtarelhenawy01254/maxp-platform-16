@@ -183,6 +183,14 @@ const getTicket = async (req, res) => {
           }), 2).catch(() => null);
 
           if (matchedOrder) {
+            let formattedAddress = matchedOrder.shippingAddress || matchedOrder.customerAddress || matchedOrder.customer?.address || '';
+            if (typeof formattedAddress === 'string' && formattedAddress.trim().startsWith('{')) {
+              try {
+                const parsed = JSON.parse(formattedAddress);
+                formattedAddress = [parsed.address, parsed.area, parsed.city, parsed.governorate].filter(Boolean).join(' - ');
+              } catch {}
+            }
+
             ticket.matchedOrder = {
               id: matchedOrder.id,
               orderNumber: matchedOrder.orderNumber,
@@ -195,7 +203,7 @@ const getTicket = async (req, res) => {
               customer: {
                 name: matchedOrder.customerName || matchedOrder.customer?.name || `${matchedOrder.customer?.firstName || ''} ${matchedOrder.customer?.lastName || ''}`.trim(),
                 phone: matchedOrder.customerPhone || matchedOrder.customer?.phone || '',
-                address: matchedOrder.shippingAddress || matchedOrder.customerAddress || matchedOrder.customer?.address || '',
+                address: formattedAddress,
                 city: matchedOrder.city || matchedOrder.customer?.city || '',
                 governorate: matchedOrder.governorate || matchedOrder.customer?.governorate || ''
               },
@@ -208,11 +216,12 @@ const getTicket = async (req, res) => {
                 total: Number(item.total || ((item.quantity || 1) * (item.price || 0)))
               })),
               financials: {
-                subtotal: Number(matchedOrder.subtotal || 0),
+                subtotal: Number(matchedOrder.subtotal || matchedOrder.subTotal || 0),
                 shippingFee: Number(matchedOrder.shippingFee || matchedOrder.shippingCost || 0),
                 discount: Number(matchedOrder.discount || 0),
-                total: Number(matchedOrder.total || 0)
+                total: Number(matchedOrder.total || matchedOrder.totalAmount || 0)
               },
+              total: Number(matchedOrder.total || matchedOrder.totalAmount || 0),
               createdAt: matchedOrder.createdAt
             };
           }
