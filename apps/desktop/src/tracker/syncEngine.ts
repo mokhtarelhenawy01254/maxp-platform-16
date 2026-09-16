@@ -56,6 +56,7 @@ export class SyncEngine {
     // Final capture and sync before shutdown
     this.captureActivityInterval();
     this.sync();
+    localDb.saveImmediately();
   }
 
   /** Capture the current activity interval and store locally */
@@ -66,9 +67,11 @@ export class SyncEngine {
 
       // Update local daily stats
       const today = new Date().toISOString().split('T')[0];
-      const idleSeconds = interval.status === 'idle' || interval.status === 'away'
-        ? interval.activeSeconds
-        : 0;
+      const startMs = new Date(interval.intervalStart).getTime();
+      const endMs = new Date(interval.intervalEnd).getTime();
+      const intervalSec = Math.max(1, Math.floor((endMs - startMs) / 1000));
+      const idleSeconds = Math.max(0, intervalSec - interval.activeSeconds);
+
       localDb.updateDailyStats(
         today,
         interval.activeSeconds,
@@ -77,7 +80,7 @@ export class SyncEngine {
         interval.keyboardEvents
       );
 
-      console.log(`[SyncEngine] Captured interval: score=${interval.activityScore}%, status=${interval.status}`);
+      console.log(`[SyncEngine] Captured interval: active=${interval.activeSeconds}s, idle=${idleSeconds}s, score=${interval.activityScore}%`);
     } catch (err) {
       console.error('[SyncEngine] Failed to capture activity interval:', err);
     }

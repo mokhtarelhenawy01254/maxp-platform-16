@@ -2,6 +2,7 @@ import type { AppUsageRecord, WebUsageRecord, AppCategory, CategoryRule } from '
 import path from 'path';
 import fs from 'fs';
 import { execFileSync } from 'child_process';
+import { activityTracker } from './activityTracker';
 
 /** Extracts domain from a URL string */
 function extractDomain(url: string): string {
@@ -15,8 +16,6 @@ function extractDomain(url: string): string {
 
 /** Checks if a window title likely contains a URL (browser detection) */
 function extractUrlFromTitle(title: string): string | null {
-  // Common browser patterns: "Page Title - Google Chrome", "Page Title - Mozilla Firefox"
-  // Some browsers show URL in title
   const urlMatch = title.match(/https?:\/\/[^\s]+/);
   return urlMatch ? urlMatch[0] : null;
 }
@@ -29,6 +28,62 @@ const BROWSER_PROCESSES = new Set([
 
 function isBrowser(appName: string): boolean {
   return BROWSER_PROCESSES.has(appName.toLowerCase());
+}
+
+/** Top services recognition dictionary from tab titles */
+const TITLE_DOMAIN_MAP: [RegExp, string][] = [
+  // Meetings & Collaboration
+  [/Google Meet/i, 'meet.google.com'],
+  [/Zoom/i, 'zoom.us'],
+  [/Microsoft Teams/i, 'teams.microsoft.com'],
+  [/Slack/i, 'slack.com'],
+
+  // Productivity & Cloud SaaS
+  [/MaxP/i, 'maxp.online'],
+  [/GitHub/i, 'github.com'],
+  [/GitLab/i, 'gitlab.com'],
+  [/Stack Overflow/i, 'stackoverflow.com'],
+  [/Google (Docs|Sheets|Slides|Drive)/i, 'docs.google.com'],
+  [/Notion/i, 'notion.so'],
+  [/Figma/i, 'figma.com'],
+  [/Canva/i, 'canva.com'],
+  [/Linear/i, 'linear.app'],
+  [/Jira/i, 'atlassian.net'],
+  [/Trello/i, 'trello.com'],
+  [/ChatGPT|OpenAI/i, 'chatgpt.com'],
+  [/Claude|Anthropic/i, 'claude.ai'],
+  [/Vercel/i, 'vercel.com'],
+  [/AWS|Amazon Web Services/i, 'aws.amazon.com'],
+  [/DigitalOcean/i, 'digitalocean.com'],
+  [/WhatsApp/i, 'web.whatsapp.com'],
+  [/Telegram/i, 'web.telegram.org'],
+  [/LinkedIn/i, 'linkedin.com'],
+  [/Gmail/i, 'mail.google.com'],
+  [/Outlook/i, 'outlook.live.com'],
+
+  // Social & Media (Usually Unproductive during work)
+  [/YouTube/i, 'youtube.com'],
+  [/Facebook/i, 'facebook.com'],
+  [/Instagram/i, 'instagram.com'],
+  [/TikTok/i, 'tiktok.com'],
+  [/Twitter|\bX\b/i, 'x.com'],
+  [/Reddit/i, 'reddit.com'],
+  [/Netflix/i, 'netflix.com'],
+  [/Twitch/i, 'twitch.tv'],
+];
+
+function isMeeting(appName: string, title: string): boolean {
+  const lowerApp = appName.toLowerCase();
+  const lowerTitle = title.toLowerCase();
+  return (
+    lowerApp.includes('zoom') ||
+    lowerApp.includes('teams') ||
+    lowerApp.includes('webex') ||
+    lowerApp.includes('slack') ||
+    lowerTitle.includes('meet.google.com') ||
+    lowerTitle.includes('google meet') ||
+    lowerTitle.includes('zoom meeting')
+  );
 }
 
 /**
@@ -179,10 +234,20 @@ export class WindowTracker {
     setTimeout(() => this.poll(), this.pollIntervalMs);
   }
 
+  private meetingActive = false;
+
+  get isMeetingActive(): boolean {
+    return this.meetingActive;
+  }
+
   private processWindow(win: any): void {
     const appName = win.owner?.name || win.title || 'Unknown';
     const windowTitle = win.title || '';
     const now = new Date().toISOString();
+
+    // ── Meeting detection & collaboration guard ─────────────────
+    this.meetingActive = isMeeting(appName, windowTitle);
+    activityTracker.setMeetingActive(this.meetingActive);
 
     // ── App tracking ────────────────────────────────────────────
     if (!this.currentApp || this.currentApp.appName !== appName) {
@@ -193,11 +258,14 @@ export class WindowTracker {
         startedAt: now,
         endedAt: null,
         durationSeconds: 0,
-        category: this.categorize(appName, 'app'),
+        category: this.meetingActive ? 'productive' : this.categorize(appName, 'app'),
       };
     } else {
       // Same app, update title if changed
       this.currentApp.windowTitle = windowTitle;
+      if (this.meetingActive) {
+        this.currentApp.category = 'productive';
+      }
     }
 
     // ── Website tracking (if browser) ───────────────────────────
@@ -208,13 +276,13 @@ export class WindowTracker {
       if (domain && (!this.currentWeb || this.currentWeb.domain !== domain)) {
         this.finalizeCurrentWeb();
         this.currentWeb = {
-          url: url || domain,
+          url: url || `https://${domain}`,
           domain,
           pageTitle: windowTitle,
           startedAt: now,
           endedAt: null,
           durationSeconds: 0,
-          category: this.categorize(domain, 'website'),
+          category: this.meetingActive ? 'productive' : this.categorize(domain, 'website'),
         };
       }
     } else {
@@ -263,9 +331,9 @@ export class WindowTracker {
     // Productive defaults
     const productiveApps = ['code', 'visual studio', 'intellij', 'webstorm', 'terminal',
       'cmd', 'powershell', 'excel', 'word', 'powerpoint', 'figma', 'photoshop',
-      'illustrator', 'slack', 'teams', 'outlook', 'postman', 'datagrip', 'pgadmin'];
+      'illustrator', 'slack', 'teams', 'outlook', 'postman', 'datagrip', 'pgadmin', 'zoom', 'webex'];
     const productiveSites = ['github.com', 'gitlab.com', 'stackoverflow.com', 'maxp.online',
-      'docs.google.com', 'notion.so', 'linear.app', 'jira.', 'confluence.'];
+      'docs.google.com', 'notion.so', 'linear.app', 'jira.', 'confluence.', 'meet.google.com', 'zoom.us'];
 
     const unproductiveApps = ['game', 'steam', 'epic games', 'discord'];
     const unproductiveSites = ['facebook.com', 'instagram.com', 'tiktok.com', 'twitter.com',
@@ -281,12 +349,23 @@ export class WindowTracker {
   }
 
   private extractDomainFromTitle(title: string): string | null {
-    // Try to extract domain from browser tab title like "GitHub - Google Chrome"
-    // This is a fallback when URL is not in the title
+    // Match against known high-traffic web platforms and SaaS services
+    for (const [regex, domain] of TITLE_DOMAIN_MAP) {
+      if (regex.test(title)) {
+        return domain;
+      }
+    }
+
+    // Fallback: check tab format "Page Title - BrandName - Browser"
     const parts = title.split(' - ');
-    if (parts.length < 2) return null;
-    // The last part is usually the browser name
-    return null; // Can't reliably extract domain from just the title
+    if (parts.length >= 2) {
+      const candidate = parts[parts.length - 2].trim().toLowerCase().replace(/[^a-z0-9.-]/g, '');
+      if (candidate.length >= 3 && candidate.length <= 25 && !candidate.includes(' ')) {
+        return candidate.includes('.') ? candidate : `${candidate}.com`;
+      }
+    }
+
+    return null;
   }
 
   private calcDuration(start: string, end: string): number {

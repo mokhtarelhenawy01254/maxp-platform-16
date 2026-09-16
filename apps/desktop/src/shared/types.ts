@@ -8,6 +8,8 @@ export interface ActivityInterval {
   activeSeconds: number;
   activityScore: number; // 0-100
   status: 'active' | 'idle' | 'away';
+  isSynthetic?: boolean;
+  isMeeting?: boolean;
 }
 
 export interface AppUsageRecord {

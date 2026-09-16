@@ -24,6 +24,8 @@ class LocalDatabase {
   private websitesQueue: QueueItem<WebUsageRecord>[] = [];
   private dailyStatsMap: Record<string, any> = {};
 
+  private saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
   init(): void {
     if (this.initialized) return;
     this.jsonFile = path.join(app.getPath('userData'), 'monitor-cache.json');
@@ -45,6 +47,22 @@ class LocalDatabase {
     } catch (err: any) {
       console.warn('[LocalDb] Error reading cache file:', err.message);
     }
+  }
+
+  public saveImmediately(): void {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+    this.saveToDisk();
+  }
+
+  public scheduleSave(): void {
+    if (this.saveTimeout) return;
+    this.saveTimeout = setTimeout(() => {
+      this.saveTimeout = null;
+      this.saveToDisk();
+    }, 4000); // Debounce write to once every 4 seconds max
   }
 
   private saveToDisk(): void {
@@ -74,7 +92,7 @@ class LocalDatabase {
       created_at: new Date().toISOString(),
       synced: 0,
     });
-    this.saveToDisk();
+    this.scheduleSave();
   }
 
   queueAppUsage(record: AppUsageRecord): void {
@@ -84,7 +102,7 @@ class LocalDatabase {
       created_at: new Date().toISOString(),
       synced: 0,
     });
-    this.saveToDisk();
+    this.scheduleSave();
   }
 
   queueWebUsage(record: WebUsageRecord): void {
@@ -94,7 +112,7 @@ class LocalDatabase {
       created_at: new Date().toISOString(),
       synced: 0,
     });
-    this.saveToDisk();
+    this.scheduleSave();
   }
 
   // ── Get pending data for sync ─────────────────────────────────
@@ -137,7 +155,7 @@ class LocalDatabase {
         item.synced = 1;
       }
     }
-    this.saveToDisk();
+    this.scheduleSave();
   }
 
   // ── Cleanup old synced data ───────────────────────────────────
@@ -153,7 +171,7 @@ class LocalDatabase {
     this.websitesQueue = this.websitesQueue.filter(
       (item) => item.synced === 0 || new Date(item.created_at).getTime() >= cutoff
     );
-    this.saveToDisk();
+    this.scheduleSave();
   }
 
   // ── Daily stats (local summary) ───────────────────────────────

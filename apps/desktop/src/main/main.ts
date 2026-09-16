@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain, desktopCapturer } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain, desktopCapturer, screen } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -525,7 +525,23 @@ function registerIpcHandlers(): void {
         thumbnailSize: { width: 1440, height: 900 },
       });
       if (sources.length > 0) {
-        const dataUrl = sources[0].thumbnail.toDataURL();
+        let selectedSource = sources[0];
+
+        // Multi-monitor active display matching
+        try {
+          const cursorPoint = screen.getCursorScreenPoint();
+          const currentDisplay = screen.getDisplayNearestPoint(cursorPoint);
+          if (sources.length > 1) {
+            const matched = sources.find(
+              (s) => String(s.display_id) === String(currentDisplay.id)
+            );
+            if (matched) {
+              selectedSource = matched;
+            }
+          }
+        } catch {}
+
+        const dataUrl = selectedSource.thumbnail.toDataURL();
         return { success: true, dataUrl };
       }
       return { success: false, error: 'لم يتم العثور على شاشة متاحة للالتقاط' };
