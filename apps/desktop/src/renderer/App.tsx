@@ -11,6 +11,11 @@ declare global {
       pauseTracking: () => Promise<void>;
       resumeTracking: () => Promise<void>;
       getDailySummary: () => Promise<any>;
+      getAppsSummary: () => Promise<{ appName: string; durationSeconds: number; category: string }[]>;
+      getWebsitesSummary: () => Promise<{ domain: string; durationSeconds: number; category: string }[]>;
+      getSystemInfo: () => Promise<any>;
+      syncNow: () => Promise<{ success: boolean; error?: string }>;
+      getAttendanceAudit: () => Promise<any>;
       login: (data: { email: string; password: string; serverUrl: string }) => Promise<{ success: boolean; user?: any; error?: string }>;
       logout: () => Promise<boolean>;
       getAuthState: () => Promise<{ isLoggedIn: boolean; user: any; serverUrl: string }>;

@@ -14,6 +14,11 @@ const CHANNELS = {
   TRACKER_STATE_UPDATE: 'tracker:state-update',
   NOTIFICATION: 'notification',
   TASK_ASSIGNED: 'task:assigned',
+  GET_APPS_SUMMARY: 'tracker:get-apps-summary',
+  GET_WEBSITES_SUMMARY: 'tracker:get-websites-summary',
+  GET_SYSTEM_INFO: 'tracker:get-system-info',
+  SYNC_NOW: 'tracker:sync-now',
+  GET_ATTENDANCE_AUDIT: 'tracker:get-attendance-audit',
 } as const;
 
 /**
@@ -27,6 +32,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pauseTracking: () => ipcRenderer.invoke(CHANNELS.PAUSE_TRACKING),
   resumeTracking: () => ipcRenderer.invoke(CHANNELS.RESUME_TRACKING),
   getDailySummary: () => ipcRenderer.invoke(CHANNELS.GET_DAILY_SUMMARY),
+  getAppsSummary: () => ipcRenderer.invoke(CHANNELS.GET_APPS_SUMMARY),
+  getWebsitesSummary: () => ipcRenderer.invoke(CHANNELS.GET_WEBSITES_SUMMARY),
+  getSystemInfo: () => ipcRenderer.invoke(CHANNELS.GET_SYSTEM_INFO),
+  syncNow: () => ipcRenderer.invoke(CHANNELS.SYNC_NOW),
+  getAttendanceAudit: () => ipcRenderer.invoke(CHANNELS.GET_ATTENDANCE_AUDIT),
 
   // Auth
   login: (data: { email: string; password: string; serverUrl: string }) =>

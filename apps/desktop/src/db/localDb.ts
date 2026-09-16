@@ -186,6 +186,54 @@ class LocalDatabase {
     return this.dailyStatsMap[date] || null;
   }
 
+  // ── Aggregated Stats for UI ──────────────────────────────────
+
+  getTodayAppsSummary(): { appName: string; durationSeconds: number; category: string }[] {
+    const today = new Date().toISOString().split('T')[0];
+    const map: Record<string, { durationSeconds: number; category: string }> = {};
+
+    for (const item of this.appsQueue) {
+      const itemDate = item.data.startedAt ? item.data.startedAt.split('T')[0] : '';
+      if (itemDate === today || !itemDate) {
+        const name = item.data.appName || 'Unknown App';
+        const dur = item.data.durationSeconds || 0;
+        const cat = item.data.category || 'unrated';
+        if (!map[name]) {
+          map[name] = { durationSeconds: 0, category: cat };
+        }
+        map[name].durationSeconds += dur;
+        if (cat !== 'unrated') map[name].category = cat;
+      }
+    }
+
+    return Object.entries(map)
+      .map(([appName, d]) => ({ appName, durationSeconds: d.durationSeconds, category: d.category }))
+      .sort((a, b) => b.durationSeconds - a.durationSeconds);
+  }
+
+  getTodayWebsitesSummary(): { domain: string; durationSeconds: number; category: string }[] {
+    const today = new Date().toISOString().split('T')[0];
+    const map: Record<string, { durationSeconds: number; category: string }> = {};
+
+    for (const item of this.websitesQueue) {
+      const itemDate = item.data.startedAt ? item.data.startedAt.split('T')[0] : '';
+      if (itemDate === today || !itemDate) {
+        const dom = item.data.domain || 'Direct / Internal';
+        const dur = item.data.durationSeconds || 0;
+        const cat = item.data.category || 'unrated';
+        if (!map[dom]) {
+          map[dom] = { durationSeconds: 0, category: cat };
+        }
+        map[dom].durationSeconds += dur;
+        if (cat !== 'unrated') map[dom].category = cat;
+      }
+    }
+
+    return Object.entries(map)
+      .map(([domain, d]) => ({ domain, durationSeconds: d.durationSeconds, category: d.category }))
+      .sort((a, b) => b.durationSeconds - a.durationSeconds);
+  }
+
   // ── Utility ───────────────────────────────────────────────────
 
   getPendingCounts(): { activities: number; apps: number; websites: number } {

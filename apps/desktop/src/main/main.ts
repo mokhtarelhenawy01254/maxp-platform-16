@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { activityTracker } from '../tracker/activityTracker';
 import { windowTracker } from '../tracker/windowTracker';
 import { syncEngine } from '../tracker/syncEngine';
@@ -60,6 +61,16 @@ app.whenReady().then(async () => {
   // Initialize local database
   localDb.init();
 
+  // Enable auto-launch at Windows boot (enforced continuous monitoring)
+  try {
+    app.setLoginItemSettings({
+      openAtLogin: true,
+      openAsHidden: false,
+    });
+  } catch (err: any) {
+    console.warn('[Main] Could not set login item settings:', err.message);
+  }
+
   // Create system tray
   createTray();
 
@@ -100,13 +111,14 @@ function createMainWindow(): void {
 
   mainWindow = new BrowserWindow({
     title: 'MaxP Employee Monitor',
-    width: 460,
+    width: 960,
     height: 680,
-    minWidth: 380,
-    minHeight: 500,
+    minWidth: 840,
+    minHeight: 560,
     show: true,
     center: true,
     frame: true,
+    autoHideMenuBar: true,
     resizable: true,
     skipTaskbar: false,
     icon: getTrayIconPath(),
@@ -117,6 +129,8 @@ function createMainWindow(): void {
       sandbox: false,
     },
   });
+
+  mainWindow.setMenuBarVisibility(false);
 
   console.log('[Main] Window created successfully, HWND id:', mainWindow.id);
 
@@ -173,23 +187,11 @@ function updateTrayMenu(): void {
   if (!tray) return;
 
   const isLoggedIn = apiClient.isConfigured;
-  const statusLabel = !isLoggedIn ? 'Not logged in'
-    : isTracking && !isPaused ? 'Tracking'
-    : isPaused ? 'Paused'
-    : 'Stopped';
+  const statusLabel = !isLoggedIn ? 'Not logged in' : 'Enforced Tracking Active';
 
   const contextMenu = Menu.buildFromTemplate([
     { label: `MaxP Monitor — ${statusLabel}`, enabled: false },
     { type: 'separator' },
-    ...(isLoggedIn ? [
-      {
-        label: isTracking && !isPaused ? 'Pause Tracking' : 'Resume Tracking',
-        click: () => {
-          if (isPaused) resumeTracking();
-          else pauseTracking();
-        },
-      },
-    ] : []),
     {
       label: 'Open Dashboard',
       click: () => createMainWindow(),
@@ -310,6 +312,73 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.RESUME_TRACKING, async () => {
     await resumeTracking();
+  });
+
+  ipcMain.handle('tracker:get-apps-summary', () => {
+    return localDb.getTodayAppsSummary();
+  });
+
+  ipcMain.handle('tracker:get-websites-summary', () => {
+    return localDb.getTodayWebsitesSummary();
+  });
+
+  ipcMain.handle('tracker:get-system-info', () => {
+    const counts = localDb.getPendingCounts();
+    return {
+      deviceName: os.hostname(),
+      osVersion: `${os.type()} ${os.release()} (${os.arch()})`,
+      appVersion: '1.0.0',
+      serverUrl: store.get('serverUrl', 'https://maxp.online'),
+      pendingActivities: counts.activities,
+      pendingApps: counts.apps,
+      pendingWebsites: counts.websites,
+      autoStartEnabled: true,
+      heartbeatIntervalSec: 120,
+    };
+  });
+
+  ipcMain.handle('tracker:sync-now', async () => {
+    try {
+      await syncEngine.sync();
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('tracker:get-attendance-audit', async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const localDaily = localDb.getDailyStats(today);
+
+    let serverDaily: any = null;
+    try {
+      serverDaily = await apiClient.getDailySummary(today);
+    } catch {}
+
+    const clockInTime = serverDaily?.clockInTime || null;
+    const firstActivityTime = serverDaily?.firstActivityTime || localDaily?.first_activity || null;
+    const clockOutTime = serverDaily?.clockOutTime || null;
+    const lastActivityTime = serverDaily?.lastActivityTime || localDaily?.last_activity || null;
+
+    let lateStartSeconds = 0;
+    if (clockInTime && firstActivityTime) {
+      const clockInMs = new Date(clockInTime).getTime();
+      const firstActMs = new Date(firstActivityTime).getTime();
+      if (firstActMs > clockInMs) {
+        lateStartSeconds = Math.round((firstActMs - clockInMs) / 1000);
+      }
+    }
+
+    return {
+      date: today,
+      clockInTime,
+      firstActivityTime,
+      clockOutTime,
+      lastActivityTime,
+      lateStartSeconds,
+      totalActiveSeconds: serverDaily?.totalActiveSeconds ?? localDaily?.total_active_seconds ?? 0,
+      totalIdleSeconds: serverDaily?.totalIdleSeconds ?? localDaily?.total_idle_seconds ?? 0,
+    };
   });
 
   ipcMain.handle(IPC_CHANNELS.GET_DAILY_SUMMARY, () => {
