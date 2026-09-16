@@ -24,6 +24,7 @@ import type {
   FacebookLookalikeAudience,
 } from "../../../../services/facebookAdsService";
 import MetaGeoTargetingSelector from "../../../../components/advertising/MetaGeoTargetingSelector";
+import CustomerLifecycleStrategySelector from "../../../../components/advertising/CustomerLifecycleStrategySelector";
 import { DetailedTargetingExclusions } from "./DetailedTargetingExclusions";
 import { NarrowAudienceSelector } from "./NarrowAudienceSelector";
 import {
@@ -172,6 +173,12 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Customer Lifecycle Strategy (Meta v26) */}
+      <CustomerLifecycleStrategySelector
+        value={formData.customerLifecycleStrategy || "ALL_AUDIENCES"}
+        onChange={(strategy) => handleChange("customerLifecycleStrategy", strategy)}
+      />
 
       {/* Age Range */}
       <div>

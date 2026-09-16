@@ -32,6 +32,7 @@ import { AdSetBudgetStep } from "../../components/advertising/adset/AdSetBudgetS
 import { AdSetTargetingStep } from "../../components/advertising/adset/AdSetTargetingStep";
 import { AdSetPlacementsStep } from "../../components/advertising/adset/AdSetPlacementsStep";
 import { AdSetReviewStep } from "../../components/advertising/adset/AdSetReviewStep";
+import { CustomerLifecycleStrategy } from "../../components/advertising/CustomerLifecycleStrategySelector";
 
 interface TargetingInterest {
   id: string;
@@ -96,6 +97,7 @@ const CreateAdSet: React.FC = () => {
 
   // Form State: Step 3 Audience & Targeting
   const [advantageAudience, setAdvantageAudience] = useState(true);
+  const [customerLifecycleStrategy, setCustomerLifecycleStrategy] = useState<CustomerLifecycleStrategy>("ALL_AUDIENCES");
   const [selectedLocations, setSelectedLocations] = useState<string[]>(["EG"]);
   const [selectedRegions, setSelectedRegions] = useState<MetaGeoLocation[]>([]);
   const [selectedCities, setSelectedCities] = useState<MetaGeoLocation[]>([]);
@@ -307,6 +309,7 @@ const CreateAdSet: React.FC = () => {
           excludedAudiences,
           advantageAudience,
           targetingExpansion: advantageAudience,
+          customerLifecycleStrategy,
         },
       };
 
@@ -487,6 +490,8 @@ const CreateAdSet: React.FC = () => {
           <AdSetTargetingStep
             advantageAudience={advantageAudience}
             onAdvantageAudienceChange={setAdvantageAudience}
+            customerLifecycleStrategy={customerLifecycleStrategy}
+            onCustomerLifecycleStrategyChange={setCustomerLifecycleStrategy}
             selectedLocations={selectedLocations}
             onLocationsChange={setSelectedLocations}
             selectedRegions={selectedRegions}

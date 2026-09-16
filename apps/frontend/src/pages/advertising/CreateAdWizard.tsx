@@ -280,6 +280,7 @@ const CreateAdWizard: React.FC = () => {
     excludedInterests: [],
     narrowInterests: [],
     advantageAudience: storedLaunchPrefill?.advantageAudience || false,
+    customerLifecycleStrategy: "ALL_AUDIENCES",
 
     // Step 4
     placementType: "AUTOMATIC",

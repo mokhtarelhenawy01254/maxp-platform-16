@@ -20,6 +20,7 @@ export interface WizardTargetingFormData {
   cities: MetaGeoLocation[];
   locationTypes: Array<"home" | "recent">;
   advantageAudience: boolean;
+  customerLifecycleStrategy?: "ALL_AUDIENCES" | "NEW_CUSTOMERS";
 }
 
 export interface WizardTargetingSelections {
@@ -255,5 +256,6 @@ export const buildCreateAdWizardTargetingPayload = (
       education: { statuses: selections.selectedEducation },
     }),
     advantageAudience: formData.advantageAudience,
+    customerLifecycleStrategy: formData.customerLifecycleStrategy || "ALL_AUDIENCES",
   };
 };

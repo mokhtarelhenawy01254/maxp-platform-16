@@ -7,6 +7,9 @@ import {
   NoSymbolIcon,
 } from "@heroicons/react/24/outline";
 import MetaGeoTargetingSelector from "../MetaGeoTargetingSelector";
+import CustomerLifecycleStrategySelector, {
+  CustomerLifecycleStrategy,
+} from "../CustomerLifecycleStrategySelector";
 import {
   facebookAdsService,
   FacebookCustomAudience,
@@ -23,6 +26,8 @@ interface TargetingInterest {
 interface AdSetTargetingStepProps {
   advantageAudience: boolean;
   onAdvantageAudienceChange: (val: boolean) => void;
+  customerLifecycleStrategy?: CustomerLifecycleStrategy;
+  onCustomerLifecycleStrategyChange?: (val: CustomerLifecycleStrategy) => void;
   // Geotargeting
   selectedLocations: string[];
   onLocationsChange: (locs: string[]) => void;
@@ -79,6 +84,8 @@ const QUICK_INTEREST_TAGS = [
 export const AdSetTargetingStep: React.FC<AdSetTargetingStepProps> = ({
   advantageAudience,
   onAdvantageAudienceChange,
+  customerLifecycleStrategy = "ALL_AUDIENCES",
+  onCustomerLifecycleStrategyChange,
   selectedLocations,
   onLocationsChange,
   selectedRegions,
@@ -211,6 +218,14 @@ export const AdSetTargetingStep: React.FC<AdSetTargetingStepProps> = ({
           </div>
         )}
       </div>
+
+      {/* Customer Lifecycle Strategy (Meta v26) */}
+      {onCustomerLifecycleStrategyChange && (
+        <CustomerLifecycleStrategySelector
+          value={customerLifecycleStrategy}
+          onChange={onCustomerLifecycleStrategyChange}
+        />
+      )}
 
       {/* Geotargeting */}
       <div className="pt-2">

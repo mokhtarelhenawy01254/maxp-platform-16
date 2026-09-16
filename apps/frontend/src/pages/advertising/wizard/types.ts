@@ -108,6 +108,7 @@ export interface FormData {
   excludedCustomAudiences: string[];
   excludedInterests?: TargetingOption[];
   advantageAudience: boolean;
+  customerLifecycleStrategy?: "ALL_AUDIENCES" | "NEW_CUSTOMERS";
   placementType: "AUTOMATIC" | "MANUAL";
   placements?: string[];
   publisherPlatforms: string[];
