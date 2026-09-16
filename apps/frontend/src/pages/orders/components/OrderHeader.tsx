@@ -8,6 +8,7 @@ import {
   PencilIcon,
   PrinterIcon,
   TruckIcon,
+  TicketIcon,
 } from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
 import { getOrderStatusDisplay, getTurboStatusDisplay } from "../../../utils/statusRegistry";
@@ -30,6 +31,7 @@ interface OrderHeaderProps {
   onPrint: () => void;
   onPrintPreparationSlip: () => void;
   onBack: () => void;
+  onOpenTicket?: () => void;
   canEditOrder?: boolean;
   canPrintPreparationSlip?: boolean;
   canUpdateStatus?: boolean;
@@ -53,6 +55,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
   onPrint,
   onPrintPreparationSlip,
   onBack,
+  onOpenTicket,
   canEditOrder = true,
   canPrintPreparationSlip = true,
   canUpdateStatus = true,
@@ -278,10 +281,21 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
             {canPrintPreparationSlip && (
               <button
                 onClick={onPrintPreparationSlip}
-                className="inline-flex items-center px-4 py-2 border border-green-300 dark:border-green-600 text-sm font-medium rounded-lg text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30"
+                className="inline-flex items-center px-4 py-2 border border-green-300 dark:border-green-600 text-sm font-medium rounded-lg text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 transition active:scale-97"
               >
                 <PrinterIcon className="h-4 w-4 ml-2" />
                 طباعة ورقة التجهيز
+              </button>
+            )}
+            {onOpenTicket && (
+              <button
+                type="button"
+                onClick={onOpenTicket}
+                className="inline-flex items-center px-4 py-2 border border-amber-300 dark:border-amber-600 text-sm font-medium rounded-lg text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition active:scale-97 shadow-xs"
+                title="فتح تذكرة دعم للطلب"
+              >
+                <TicketIcon className="h-4 w-4 ml-2 text-amber-600 dark:text-amber-400" />
+                فتح تذكرة
               </button>
             )}
           </>

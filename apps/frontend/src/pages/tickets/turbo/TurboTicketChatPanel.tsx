@@ -10,6 +10,13 @@ import {
   UserIcon,
   ArrowPathIcon,
   DocumentTextIcon,
+  ShoppingBagIcon,
+  PhoneIcon,
+  ChatBubbleLeftRightIcon,
+  MapPinIcon,
+  TruckIcon,
+  ArrowTopRightOnSquareIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
 import { StarIcon as StarOutline } from "@heroicons/react/24/outline";

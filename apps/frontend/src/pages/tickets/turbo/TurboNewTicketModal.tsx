@@ -13,21 +13,29 @@ interface TurboNewTicketModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (createdTicketId?: any) => void;
+  initialShipmentCode?: string;
 }
 
 export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  initialShipmentCode = "",
 }) => {
   const [categories, setCategories] = useState<TurboTicketCategory[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | number>("");
-  const [shipmentCode, setShipmentCode] = useState("");
+  const [shipmentCode, setShipmentCode] = useState(initialShipmentCode);
   const [content, setContent] = useState("");
   const [priority, setPriority] = useState<"low" | "normal" | "high">("normal");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && initialShipmentCode) {
+      setShipmentCode(initialShipmentCode);
+    }
+  }, [isOpen, initialShipmentCode]);
 
   function flattenCategories(list: any[], parentName = ""): TurboTicketCategory[] {
     let result: TurboTicketCategory[] = [];

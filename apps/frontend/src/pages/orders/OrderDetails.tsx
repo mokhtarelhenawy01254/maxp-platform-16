@@ -6,7 +6,15 @@ import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
-import { ArrowPathIcon, CreditCardIcon, CalendarDaysIcon, TruckIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowPathIcon,
+  CreditCardIcon,
+  CalendarDaysIcon,
+  TruckIcon,
+  XCircleIcon,
+  TicketIcon,
+  ArrowTopRightOnSquareIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import SimplifiedProductSelectionModal from "./components/SimplifiedProductSelectionModal";
 import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOperationsCard";
@@ -25,6 +33,7 @@ import OrderAttributionCard from "./components/OrderAttributionCard";
 import ConfirmationModal from "./components/ConfirmationModal";
 import PostponeOrderModal from "./components/PostponeOrderModal";
 import PartialDeliveryModal from "./components/PartialDeliveryModal";
+import { CreateTicketModal } from "./shipments/CreateTicketModal";
 
 // Hooks
 import { useOrderDetails } from "./hooks/useOrderDetails";
@@ -166,6 +175,7 @@ const OrderDetails: React.FC = () => {
     useState(false);
   const [showPartialDeliveryModal, setShowPartialDeliveryModal] = useState(false);
   const [partialDeliveryLoading, setPartialDeliveryLoading] = useState(false);
+  const [showTicketModal, setShowTicketModal] = useState(false);
 
   // Temporary Form State for Modals
   const [newStatus, setNewStatus] = useState("");
@@ -926,6 +936,7 @@ const OrderDetails: React.FC = () => {
         onSave={saveChanges}
         onPrint={handlePrintInvoice}
         onPrintPreparationSlip={handlePrintPreparationSlip}
+        onOpenTicket={() => setShowTicketModal(true)}
         onBack={() => navigate("/orders")}
         canEditOrder={canEditOrderDetails}
         canPrintPreparationSlip={!isMerchant}
@@ -936,9 +947,34 @@ const OrderDetails: React.FC = () => {
       />
 
       {/* Quick Actions Bar (Below Header) */}
-      <div className="mt-4 flex gap-4">
+      <div className="mt-4 flex flex-wrap gap-3 sm:gap-4">
         {!isEditing && (
           <>
+            <div className="inline-flex rounded-lg shadow-xs">
+              <button
+                type="button"
+                onClick={() => setShowTicketModal(true)}
+                className="inline-flex items-center px-3.5 py-2 border border-amber-300 text-sm leading-4 font-medium rounded-r-lg text-amber-800 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-900/30 transition active:scale-97"
+                title="فتح تذكرة دعم للطلب"
+              >
+                <TicketIcon className="ml-2 -mr-0.5 h-4 w-4 text-amber-600 dark:text-amber-400" />
+                فتح تذكرة
+              </button>
+              <Link
+                to={`/tickets?search=${encodeURIComponent(
+                  order.turboTrackingNumber ||
+                    order.trackingNumber ||
+                    order.shipment?.trackingNumber ||
+                    order.orderNumber ||
+                    ""
+                )}`}
+                className="inline-flex items-center px-2.5 py-2 border-y border-l border-amber-300 text-xs font-medium rounded-l-lg text-amber-700 bg-amber-100/70 hover:bg-amber-200/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700 transition active:scale-97"
+                title="الانتقال إلى صفحة التذاكر (/tickets)"
+              >
+                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
             {canUpdatePaymentStatus && (
               <button
                 onClick={() => setShowPaymentModal(true)}
@@ -1018,6 +1054,7 @@ const OrderDetails: React.FC = () => {
             order={order}
             onOrderUpdated={fetchOrderDetails}
             canManageShipments={canManageTurboShipping}
+            onOpenTicket={() => setShowTicketModal(true)}
           />
         </div>
 
@@ -1548,6 +1585,26 @@ const OrderDetails: React.FC = () => {
         order={order}
         loading={partialDeliveryLoading}
       />
+
+      {/* Support Ticket Modal */}
+      {showTicketModal && (
+        <CreateTicketModal
+          isOpen={showTicketModal}
+          onClose={() => setShowTicketModal(false)}
+          shipmentCode={
+            order.turboTrackingNumber ||
+            order.trackingNumber ||
+            order.shipment?.trackingNumber ||
+            (order.shipments && order.shipments[0]?.trackingNumber) ||
+            ""
+          }
+          orderNumber={order.orderNumber}
+          customerName={order.customerName || order.customer?.name}
+          onSuccess={() => {
+            fetchOrderDetails();
+          }}
+        />
+      )}
 
       {/* Confirmation Modal for Cancellation */}
       <ConfirmationModal

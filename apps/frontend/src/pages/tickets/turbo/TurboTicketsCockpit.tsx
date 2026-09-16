@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
 import { TurboTicketListPanel } from "./TurboTicketListPanel";
@@ -25,6 +25,19 @@ interface TicketSnapshot {
 
 export const TurboTicketsCockpit: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const urlSearch =
+    searchParams.get("search") ||
+    searchParams.get("code") ||
+    searchParams.get("q") ||
+    "";
+  const urlShouldOpenNew =
+    searchParams.get("new") === "1" ||
+    searchParams.get("new") === "true" ||
+    searchParams.get("create") === "1";
+  const urlShipmentCode =
+    searchParams.get("code") || searchParams.get("shipmentCode") || "";
 
   // Settings & Status
   const [turboEnabled, setTurboEnabled] = useState<boolean | null>(null);
@@ -41,7 +54,7 @@ export const TurboTicketsCockpit: React.FC = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
 
   // Active Ticket state
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
@@ -49,7 +62,7 @@ export const TurboTicketsCockpit: React.FC = () => {
   const [loadingTicket, setLoadingTicket] = useState(false);
 
   // Modals state
-  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isNewModalOpen, setIsNewModalOpen] = useState(urlShouldOpenNew);
   const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
 
   // Responsive state for mobile: 'list' | 'chat'
@@ -277,7 +290,7 @@ export const TurboTicketsCockpit: React.FC = () => {
       const enabled = await checkTurboStatus();
       if (isMounted && enabled) {
         loadUnreadCount();
-        loadTickets(1);
+        loadTickets(1, statusFilter, urlSearch);
       }
     })();
     return () => {
@@ -481,6 +494,7 @@ export const TurboTicketsCockpit: React.FC = () => {
       {/* New Ticket Modal */}
       <TurboNewTicketModal
         isOpen={isNewModalOpen}
+        initialShipmentCode={urlShipmentCode}
         onClose={() => setIsNewModalOpen(false)}
         onSuccess={(newId) => {
           loadTickets(1);

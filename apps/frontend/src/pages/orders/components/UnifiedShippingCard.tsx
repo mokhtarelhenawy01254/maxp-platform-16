@@ -18,6 +18,7 @@ import {
   UserIcon,
   ChatBubbleBottomCenterTextIcon,
   BoltIcon,
+  TicketIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../../services/apiClient";
 import tokenManager from "../../../utils/tokenManager";
@@ -37,12 +38,14 @@ interface UnifiedShippingCardProps {
   order: any;
   onOrderUpdated?: () => void;
   canManageShipments?: boolean;
+  onOpenTicket?: () => void;
 }
 
 const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
   order,
   onOrderUpdated,
   canManageShipments = true,
+  onOpenTicket,
 }) => {
   const { formatPrice } = useCurrency();
 
@@ -667,6 +670,18 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
               <ArrowPathIcon className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
               <span>مزامنة الحالة اللحظية</span>
             </button>
+
+            {onOpenTicket && (
+              <button
+                type="button"
+                onClick={onOpenTicket}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 hover:bg-amber-100 transition shadow-xs active:scale-97"
+                title="فتح تذكرة دعم بخصوص هذه الشحنة في مركز التذاكر"
+              >
+                <TicketIcon className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                <span>فتح تذكرة شحن</span>
+              </button>
+            )}
 
             {isQpExpress && (
               <a

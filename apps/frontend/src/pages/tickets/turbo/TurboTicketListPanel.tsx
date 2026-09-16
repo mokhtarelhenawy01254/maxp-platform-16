@@ -11,6 +11,8 @@ import {
 import { BellAlertIcon } from "@heroicons/react/24/solid";
 import { TurboTicketItem } from "./types";
 
+export type TurboCategoryTab = "all" | "courier" | "complaint" | "support" | "unread";
+
 interface TurboTicketListPanelProps {
   tickets: TurboTicketItem[];
   selectedTicketId: number | null;
@@ -27,6 +29,8 @@ interface TurboTicketListPanelProps {
   onChangeStatusFilter: (status: string) => void;
   searchQuery: string;
   onChangeSearchQuery: (q: string) => void;
+  categoryFilter?: TurboCategoryTab;
+  onChangeCategoryFilter?: (cat: TurboCategoryTab) => void;
   desktopNotificationPermission?: NotificationPermission | "unsupported";
   onRequestNotificationPermission?: () => void;
 }
@@ -47,10 +51,23 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
   onChangeStatusFilter,
   searchQuery,
   onChangeSearchQuery,
+  categoryFilter,
+  onChangeCategoryFilter,
   desktopNotificationPermission,
   onRequestNotificationPermission,
 }) => {
+  const [internalCat, setInternalCat] = React.useState<TurboCategoryTab>("all");
+  const activeCategory = categoryFilter ?? internalCat;
+  const setCategory = (cat: TurboCategoryTab) => {
+    if (onChangeCategoryFilter) {
+      onChangeCategoryFilter(cat);
+    } else {
+      setInternalCat(cat);
+    }
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / perPage));
+
 
   const getStatusBadge = (status: any) => {
     let val = "";
@@ -107,18 +124,105 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
     };
   };
 
-  const statusTabs = [
+  const categoryTabs: { key: TurboCategoryTab; label: string; count?: number }[] = [
     { key: "all", label: "الكل" },
+    { key: "courier", label: "محادثات المناديب" },
+    { key: "complaint", label: "الشكاوى" },
+    { key: "support", label: "تذاكر الدعم" },
+    { key: "unread", label: "غير مقروءة", count: unreadCount },
+  ];
+
+  const statusTabs = [
+    { key: "all", label: "كافة الحالات" },
     { key: "open", label: "الجديدة" },
     { key: "on_hold", label: "المعلقة" },
     { key: "in_progress", label: "قيد المعالجة" },
     { key: "closed", label: "مغلقة" },
   ];
 
+  // Process and sort tickets: Filter by category & strict descending order (newest first)
+  const processedTickets = React.useMemo(() => {
+    let list = [...tickets];
+
+    if (activeCategory === "unread") {
+      list = list.filter((t) => {
+        const u = Number(
+          t.un_read_messages_count ||
+          t.unread_messages_count ||
+          (t.unread ? 1 : 0) ||
+          (t.is_seen === false ? 1 : 0) ||
+          0
+        );
+        return u > 0;
+      });
+    } else if (activeCategory === "courier") {
+      list = list.filter((t) => {
+        const catId = Number(t.category_id || t.category?.id || 0);
+        const catName = (t.category_name || t.category?.name || "").toLowerCase();
+        const rel = (t.category?.related_to || "").toLowerCase();
+        return (
+          [26, 44, 14, 16].includes(catId) ||
+          catName.includes("مندوب") ||
+          catName.includes("كابتن") ||
+          catName.includes("استلام") ||
+          catName.includes("pickup") ||
+          rel === "branches" ||
+          rel === "representatives"
+        );
+      });
+    } else if (activeCategory === "complaint") {
+      list = list.filter((t) => {
+        const catId = Number(t.category_id || t.category?.id || 0);
+        const catName = (t.category_name || t.category?.name || "").toLowerCase();
+        const subj = (t.subject || t.description || "").toLowerCase();
+        return (
+          catId === 2 ||
+          [9, 19, 20, 21, 22, 23, 24, 25, 27, 28, 63].includes(catId) ||
+          catName.includes("شكوى") ||
+          catName.includes("تأخير") ||
+          catName.includes("مفقود") ||
+          catName.includes("تلف") ||
+          subj.includes("شكوى")
+        );
+      });
+    } else if (activeCategory === "support") {
+      list = list.filter((t) => {
+        const catId = Number(t.category_id || t.category?.id || 0);
+        const catName = (t.category_name || t.category?.name || "").toLowerCase();
+        return (
+          catId === 1 ||
+          catId === 3 ||
+          catId === 4 ||
+          catName.includes("استفسار") ||
+          catName.includes("دعم") ||
+          catName.includes("مقترح") ||
+          catName.includes("شكر") ||
+          (![26, 44, 14, 16, 2].includes(catId) && !catName.includes("مندوب") && !catName.includes("شكوى"))
+        );
+      });
+    }
+
+    // Strict Descending Sorting: Newest Activity on Top!
+    list.sort((a, b) => {
+      const timeA = Math.max(
+        new Date(a.created_at || 0).getTime(),
+        new Date(a.updated_at || 0).getTime()
+      );
+      const timeB = Math.max(
+        new Date(b.created_at || 0).getTime(),
+        new Date(b.updated_at || 0).getTime()
+      );
+      if (timeB !== timeA) return timeB - timeA;
+      return (Number(b.id) || 0) - (Number(a.id) || 0);
+    });
+
+    return list;
+  }, [tickets, activeCategory]);
+
   return (
     <aside className="w-full h-full min-h-0 flex flex-col overflow-hidden bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shrink-0">
       {/* Top Header Bar */}
-      <div className="p-3 sm:p-3.5 border-b border-zinc-200 dark:border-zinc-800 space-y-2.5 shrink-0 bg-white dark:bg-zinc-900 z-10">
+      <div className="p-2.5 sm:p-3 border-b border-zinc-200 dark:border-zinc-800 space-y-2 shrink-0 bg-white dark:bg-zinc-900 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
@@ -126,9 +230,9 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                <span>تذاكر الدعم والعمليات</span>
+                <span>تذاكر وشات تربو</span>
                 {unreadCount > 0 && (
-                  <span className="tabular-nums px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-500 text-white">
+                  <span className="tabular-nums px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-500 text-white animate-pulse">
                     {unreadCount}
                   </span>
                 )}
@@ -184,6 +288,32 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
           </div>
         </div>
 
+        {/* Category Classification Tabs */}
+        <div className="flex items-center gap-1 p-0.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg text-[11px] font-medium overflow-x-auto scrollbar-none">
+          {categoryTabs.map((tab) => {
+            const isActive = activeCategory === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setCategory(tab.key)}
+                className={`flex-1 min-w-max py-1 px-2 rounded-md transition text-center whitespace-nowrap flex items-center justify-center gap-1 shrink-0 ${
+                  isActive
+                    ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-bold"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                }`}
+              >
+                <span>{tab.label}</span>
+                {tab.key === "unread" && (tab.count ?? 0) > 0 && (
+                  <span className="tabular-nums px-1 py-0.2 rounded-full text-[9px] font-bold bg-rose-500 text-white">
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Search Bar */}
         <div className="relative">
           <MagnifyingGlassIcon className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
@@ -191,13 +321,13 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => onChangeSearchQuery(e.target.value)}
-            placeholder="بحث برقم التذكرة أو كود الشحنة..."
+            placeholder="بحث برقم التذكرة، الشحنة، أو الأوردر..."
             className="w-full pr-8 pl-3 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/80 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:border-zinc-400 dark:focus:border-zinc-600 transition"
           />
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1 p-0.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg text-[11px] font-medium overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1 p-0.5 bg-zinc-100/70 dark:bg-zinc-800/50 rounded-lg text-[10.5px] font-medium overflow-x-auto scrollbar-none">
           {statusTabs.map((tab) => {
             const isActive = statusFilter === tab.key;
             return (
@@ -205,10 +335,10 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
                 key={tab.key}
                 type="button"
                 onClick={() => onChangeStatusFilter(tab.key)}
-                className={`flex-1 min-w-max py-1 px-2 rounded-md transition text-center whitespace-nowrap shrink-0 ${
+                className={`flex-1 min-w-max py-0.5 px-1.5 rounded transition text-center whitespace-nowrap shrink-0 ${
                   isActive
                     ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                    : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
                 }`}
               >
                 {tab.label}
@@ -225,18 +355,18 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
             <div className="h-5 w-5 border-2 border-zinc-900 dark:border-zinc-100 border-t-transparent animate-spin rounded-full mx-auto" />
             <p>جاري تحميل التذاكر من تربو...</p>
           </div>
-        ) : tickets.length === 0 ? (
+        ) : processedTickets.length === 0 ? (
           <div className="p-8 text-center text-xs text-zinc-500 dark:text-zinc-400 space-y-2">
             <ChatBubbleLeftEllipsisIcon className="h-8 w-8 mx-auto text-zinc-300 dark:text-zinc-700" />
             <p className="font-semibold text-zinc-700 dark:text-zinc-300">
-              لا توجد تذاكر مطابقة
+              {activeCategory === "unread" ? "لا توجد رسائل غير مقروءة حالياً" : "لا توجد تذاكر مطابقة"}
             </p>
             <p className="text-[11px] text-zinc-400">
-              يمكنك فتح تذكرة جديدة لأي استفسار أو شكوى شحن.
+              {activeCategory === "unread" ? "جميع التذاكر والمحادثات مقروءة ومحدثة." : "يمكنك فتح تذكرة جديدة لأي استفسار أو شكوى شحن."}
             </p>
           </div>
         ) : (
-          tickets.map((t) => {
+          processedTickets.map((t) => {
             const isSelected = selectedTicketId === t.id;
             const badge = getStatusBadge(t.status);
             const unreadMsgCount = Number(
@@ -263,6 +393,10 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
               t.user_name ||
               t.sender_name ||
               (t.user?.name ? t.user.name : null);
+
+            const linkedOrderNumber =
+              t.matchedOrderSummary?.orderNumber ||
+              t.matchedOrder?.orderNumber;
 
             return (
               <div
@@ -299,6 +433,14 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
                     {t.code && (
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 truncate max-w-[120px]">
                         {t.code}
+                      </span>
+                    )}
+                    {linkedOrderNumber && (
+                      <span
+                        className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-semibold truncate max-w-[130px]"
+                        title={`طلب مرتبط: #${linkedOrderNumber}`}
+                      >
+                        📦 طلب #{linkedOrderNumber}
                       </span>
                     )}
                     {unreadMsgCount > 0 && (

@@ -89,6 +89,51 @@ export interface TurboTicketItem {
   };
   attachment?: string | null;
   attachments?: Array<{ id?: number | string; file_url?: string; url?: string }>;
+  related_value?: string | number | null;
+  related_model?: {
+    id?: number | string;
+    code?: string | null;
+  };
+  matchedOrder?: TurboMatchedOrder;
+  matchedOrderSummary?: {
+    id: string;
+    orderNumber: string;
+    turboTrackingNumber?: string;
+    turboShipmentId?: string;
+    status: string;
+    turboShipmentStatus?: string;
+    total: number;
+    customerName?: string;
+  };
+}
+
+export interface TurboMatchedOrderItem {
+  id: string;
+  productName: string;
+  variantName?: string | null;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface TurboMatchedOrder {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  customerPhone?: string;
+  governorate?: string;
+  city?: string;
+  address?: string;
+  status: string;
+  turboShipmentStatus?: string;
+  turboTrackingNumber?: string;
+  subtotal: number;
+  shippingFee: number;
+  discount: number;
+  total: number;
+  notes?: string;
+  createdAt: string;
+  items: TurboMatchedOrderItem[];
 }
 
 export interface TurboTicketCategory {
