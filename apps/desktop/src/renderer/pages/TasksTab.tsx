@@ -54,6 +54,21 @@ export const TasksTab: React.FC = () => {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        setIsCreateOpen(true);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        loadData();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [loadData]);
+
   const handleToggleStatus = async (taskId: string, currentStatus: string) => {
     const isCompleted = String(currentStatus || '').toUpperCase() === 'COMPLETED';
     const nextStatus = isCompleted ? 'PENDING' : 'COMPLETED';
@@ -91,16 +106,11 @@ export const TasksTab: React.FC = () => {
       <div style={styles.headerCard}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={styles.iconBox}>
-            <CheckSquare size={18} color="#38bdf8" />
+            <CheckSquare size={16} color="#38bdf8" />
           </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={styles.headerTitle}>مركز مهام العمل والإنتاجية</span>
-              <span style={styles.cloudBadge}>سحابي مركزي</span>
-            </div>
-            <span style={styles.headerSub}>
-              مزامنة فورية مع لوحة تحكم المنصة وقاعدة بيانات الشركة
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={styles.headerTitle}>قائمة مهام العمل</span>
+            <span style={styles.cloudBadge}>مزامنة فورية</span>
           </div>
         </div>
 
@@ -108,18 +118,20 @@ export const TasksTab: React.FC = () => {
           <button
             onClick={() => setIsCreateOpen(true)}
             style={styles.addBtn}
+            title="إنشاء مهمة جديدة (Ctrl + N)"
             onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
             onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
           >
-            <Plus size={15} />
-            <span>تكليف مهمة جديدة</span>
+            <Plus size={14} />
+            <span>مهمة جديدة</span>
+            <span style={styles.kbdChip}>Ctrl+N</span>
           </button>
 
           <button
             onClick={loadData}
             disabled={loading}
             style={styles.refreshBtn}
-            title="تحديث ومزامنة المهام من السيرفر"
+            title="تحديث ومزامنة المهام (Ctrl + R)"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -282,6 +294,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'inherit',
     transition: 'all 120ms ease-out',
   },
+  kbdChip: {
+    background: 'rgba(0, 0, 0, 0.25)',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: 3,
+    padding: '1px 5px',
+    fontSize: 9,
+    fontFamily: 'monospace',
+    color: '#e0f2fe',
+    marginRight: 2,
+  },
   refreshBtn: {
     backgroundColor: '#1c1c21',
     border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -327,6 +349,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid',
     cursor: 'pointer',
     fontFamily: 'inherit',
+    fontVariantNumeric: 'tabular-nums',
     transition: 'all 120ms ease-out',
   },
   list: {

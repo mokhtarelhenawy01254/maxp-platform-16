@@ -75,7 +75,7 @@ export const SystemStatusTab: React.FC = () => {
         </div>
         <div style={styles.infoRow}>
           <span style={styles.infoLabel}>التشغيل التلقائي مع ويندوز</span>
-          <span style={{ ...styles.infoValue, color: '#22c55e' }}>مفعل تلقائياً (إلزامي)</span>
+          <span style={{ ...styles.infoValue, color: '#22c55e' }}>مفعل تلقائياً (جاهز دائماً)</span>
         </div>
       </div>
 

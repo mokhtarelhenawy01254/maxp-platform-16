@@ -30,36 +30,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   isOnline = true,
 }) => {
-  const navItems: { id: TabId; label: string; icon: React.ReactNode; desc: string }[] = [
+  const navItems: { id: TabId; label: string; icon: React.ReactNode }[] = [
     {
       id: 'cockpit',
       label: 'النشاط المباشر',
-      desc: 'المراقبة والعدادات الحية',
-      icon: <Activity size={18} />,
+      icon: <Activity size={17} />,
     },
     {
       id: 'tasks',
       label: 'المهام والإنتاجية',
-      desc: 'قائمة مهام العمل الحالية',
-      icon: <CheckSquare size={18} />,
+      icon: <CheckSquare size={17} />,
     },
     {
       id: 'apps',
-      label: 'التطبيقات والمواقع',
-      desc: 'سجل البرامج والمواقع اليوم',
-      icon: <Globe size={18} />,
+      label: 'البرامج والمواقع',
+      icon: <Globe size={17} />,
     },
     {
       id: 'attendance',
       label: 'مطابقة الحضور',
-      desc: 'تدقيق البصمة مع أول نشاط',
-      icon: <Clock size={18} />,
+      icon: <Clock size={17} />,
     },
     {
       id: 'system',
-      label: 'حالة الجهاز والسحابة',
-      desc: 'الاتصال والذاكرة المحلية',
-      icon: <Cpu size={18} />,
+      label: 'حالة السحابة والجهاز',
+      icon: <Cpu size={17} />,
     },
   ];
 
@@ -71,13 +66,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Brand Header */}
       <div style={styles.brandBox}>
         <div style={styles.brandIconWrapper}>
-          <ShieldCheck size={20} color="#22c55e" />
+          <ShieldCheck size={19} color="#22c55e" />
         </div>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={styles.brandTitle}>MaxP Monitor</div>
+          <div style={styles.brandTitle}>MaxP Workspace</div>
           <div style={styles.enforcedBadge}>
-            <Lock size={10} color="#22c55e" />
-            <span>تتبع تلقائي إلزامي</span>
+            <span style={styles.pulsingDotMini} />
+            <span>توثيق النشاط متصل</span>
           </div>
         </div>
       </div>
@@ -109,14 +104,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => onSelectTab(item.id)}
               style={{
                 ...styles.navItem,
-                background: isActive ? '#1c1c20' : 'transparent',
-                borderColor: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
+                background: isActive ? '#1e1e24' : 'transparent',
+                borderColor: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
                 color: isActive ? '#fafafa' : '#a1a1aa',
               }}
               onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)'; }}
               onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
               onMouseEnter={(e) => {
-                if (!isActive) (e.currentTarget as HTMLElement).style.background = '#141417';
+                if (!isActive) (e.currentTarget as HTMLElement).style.background = '#141418';
               }}
               onMouseLeave={(e) => {
                 if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent';
@@ -128,10 +123,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }}>
                 {item.icon}
               </span>
-              <div style={styles.navTextCol}>
-                <span style={styles.navLabel}>{item.label}</span>
-                <span style={styles.navDesc}>{item.desc}</span>
-              </div>
+              <span style={{
+                ...styles.navLabel,
+                color: isActive ? '#fafafa' : '#d4d4d8',
+                fontWeight: isActive ? 600 : 500,
+              }}>{item.label}</span>
             </button>
           );
         })}
@@ -202,11 +198,18 @@ const styles: Record<string, React.CSSProperties> = {
   enforcedBadge: {
     display: 'flex',
     alignItems: 'center',
-    gap: 4,
-    fontSize: 10,
+    gap: 6,
+    fontSize: 11,
     color: '#22c55e',
     fontWeight: 600,
     marginTop: 2,
+  },
+  pulsingDotMini: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    background: '#22c55e',
+    boxShadow: '0 0 6px rgba(34, 197, 94, 0.7)',
   },
   userBox: {
     margin: '12px 12px 6px 12px',
@@ -264,7 +267,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 10,
-    padding: '9px 10px',
+    padding: '8px 10px',
     borderRadius: 8,
     border: '1px solid transparent',
     cursor: 'pointer',
@@ -277,24 +280,9 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  navTextCol: {
-    display: 'flex',
-    flexDirection: 'column',
-    minWidth: 0,
-    flex: 1,
-  },
   navLabel: {
     fontSize: 13,
-    fontWeight: 600,
     lineHeight: 1.2,
-  },
-  navDesc: {
-    fontSize: 10,
-    color: '#71717a',
-    marginTop: 2,
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
   },
   footer: {
     padding: '10px 12px',

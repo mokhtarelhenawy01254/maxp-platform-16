@@ -1,22 +1,17 @@
 import React, { useState } from 'react';
+import { ShieldCheck, ChevronDown, ChevronUp, Server, Lock, Mail, ArrowLeft } from 'lucide-react';
 
 interface LoginPageProps {
   onLogin: (email: string, password: string, serverUrl: string) => Promise<{ success: boolean; error?: string }>;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('swan@h2m.com');
-  const [password, setPassword] = useState('0165676135');
+export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [serverUrl, setServerUrl] = useState('https://maxp.online');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const fillSwanAccount = () => {
-    setEmail('swan@h2m.com');
-    setPassword('0165676135');
-    setServerUrl('https://maxp.online');
-    setError('');
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,12 +21,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setError('');
 
     try {
-      const result = await onLogin(email.trim(), password.trim(), serverUrl.trim() || 'https://maxp.online');
+      const result = await onLogin(
+        email.trim(),
+        password.trim(),
+        serverUrl.trim() || 'https://maxp.online'
+      );
       if (!result.success) {
-        setError(result.error || 'فشل تسجيل الدخول. يرجى التأكد من البيانات.');
+        setError(result.error || 'بيانات الدخول غير صحيحة، يرجى التحقق وإعادة المحاولة.');
       }
     } catch (err: any) {
-      setError(err.message || 'خطأ في الاتصال بالسيرفر');
+      setError(err.message || 'تعذر الاتصال بالسيرفر السحابي. تحقق من اتصال الإنترنت.');
     } finally {
       setLoading(false);
     }
@@ -40,88 +39,104 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
+        {/* Brand & Header */}
         <div style={styles.header}>
-          <h1 style={styles.title}>MaxP Monitor</h1>
-          <p style={styles.subtitle}>تتبع أداء وإنتاجية الموظف</p>
+          <div style={styles.brandIconWrapper}>
+            <ShieldCheck size={28} color="#22c55e" />
+          </div>
+          <h1 style={styles.title}>MaxP Workspace</h1>
+          <p style={styles.subtitle}>منظومة إنجاز الأعمال والإنتاجية المؤسسية</p>
         </div>
 
+        {/* Login Form */}
         <form onSubmit={handleSubmit} style={styles.form}>
+          {/* Email Field */}
           <div style={styles.field}>
-            <label style={styles.label}>رابط السيرفر (Server URL)</label>
-            <input
-              type="text"
-              value={serverUrl}
-              onChange={(e) => setServerUrl(e.target.value)}
-              placeholder="https://maxp.online"
-              style={styles.input}
-              required
-            />
+            <label style={styles.label}>البريد الإلكتروني</label>
+            <div style={styles.inputWrapper}>
+              <Mail size={15} style={styles.inputIcon} />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@company.com"
+                style={styles.input}
+                required
+                autoFocus
+              />
+            </div>
           </div>
 
+          {/* Password Field */}
           <div style={styles.field}>
-            <label style={styles.label}>البريد الإلكتروني (Email)</label>
-            <input
-              type="text"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="swan@h2m.com"
-              style={styles.input}
-              required
-              autoFocus
-            />
+            <label style={styles.label}>كلمة المرور</label>
+            <div style={styles.inputWrapper}>
+              <Lock size={15} style={styles.inputIcon} />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
+                style={styles.input}
+                required
+              />
+            </div>
           </div>
 
-          <div style={styles.field}>
-            <label style={styles.label}>كلمة المرور (Password)</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              style={styles.input}
-              required
-            />
+          {/* Advanced Server Settings Toggle */}
+          <div style={styles.advancedToggleRow}>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              style={styles.advancedToggleBtn}
+            >
+              <Server size={13} color="#71717a" />
+              <span>إعدادات السيرفر السحابي</span>
+              {showAdvanced ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            </button>
           </div>
+
+          {/* Collapsible Server URL Field */}
+          {showAdvanced && (
+            <div style={styles.advancedBox}>
+              <label style={styles.label}>رابط المنصة (Endpoint)</label>
+              <input
+                type="text"
+                value={serverUrl}
+                onChange={(e) => setServerUrl(e.target.value)}
+                placeholder="https://maxp.online"
+                style={styles.inputSimple}
+              />
+            </div>
+          )}
 
           {error && <div style={styles.error}>{error}</div>}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                ...styles.button,
-                opacity: loading ? 0.6 : 1,
-                transform: 'scale(1)',
-                transition: 'transform 160ms ease-out, opacity 200ms',
-              }}
-              onMouseDown={(e) => {
-                (e.target as HTMLElement).style.transform = 'scale(0.97)';
-              }}
-              onMouseUp={(e) => {
-                (e.target as HTMLElement).style.transform = 'scale(1)';
-              }}
-            >
-              {loading ? 'جاري الاتصال…' : 'تسجيل الدخول'}
-            </button>
-
-            <button
-              type="button"
-              onClick={fillSwanAccount}
-              style={{
-                background: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#a1a1aa',
-                borderRadius: '8px',
-                padding: '8px',
-                fontSize: '12px',
-                cursor: 'pointer',
-              }}
-            >
-              استعادة بيانات تجربة حساب Swan
-            </button>
-          </div>
+          {/* Submit Action */}
+          <button
+            type="submit"
+            disabled={loading || !email || !password}
+            style={{
+              ...styles.button,
+              opacity: loading || !email || !password ? 0.6 : 1,
+              cursor: loading || !email || !password ? 'not-allowed' : 'pointer',
+            }}
+            onMouseDown={(e) => {
+              if (!loading && email && password) (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)';
+            }}
+            onMouseUp={(e) => {
+              (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
+            }}
+          >
+            <span>{loading ? 'جاري التحقق والاتصال…' : 'دخول بيئة العمل'}</span>
+            {!loading && <ArrowLeft size={16} />}
+          </button>
         </form>
+
+        {/* Footer Note */}
+        <div style={styles.footerNote}>
+          يتم مزامنة المهام وساعات العمل مع خوادم MaxP المركزية بأمان.
+        </div>
       </div>
     </div>
   );
@@ -135,22 +150,38 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     background: '#09090b',
     padding: 16,
+    direction: 'rtl',
+    fontFamily: 'inherit',
   },
   card: {
     width: '100%',
-    maxWidth: 360,
+    maxWidth: 380,
     background: '#121214',
-    borderRadius: 12,
-    border: '1px solid rgba(255,255,255,0.06)',
-    padding: 28,
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+    borderRadius: 14,
+    border: '1px solid rgba(255,255,255,0.08)',
+    padding: '32px 28px',
+    boxShadow: '0 20px 40px -15px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06)',
   },
   header: {
-    textAlign: 'center' as const,
-    marginBottom: 28,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  brandIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    background: 'rgba(34, 197, 94, 0.1)',
+    border: '1px solid rgba(34, 197, 94, 0.25)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 700,
     color: '#fafafa',
     margin: 0,
@@ -160,54 +191,117 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     color: '#71717a',
     marginTop: 6,
+    margin: 0,
   },
   form: {
     display: 'flex',
-    flexDirection: 'column' as const,
+    flexDirection: 'column',
     gap: 16,
   },
   field: {
     display: 'flex',
-    flexDirection: 'column' as const,
+    flexDirection: 'column',
     gap: 6,
   },
   label: {
     fontSize: 12,
-    fontWeight: 500,
+    fontWeight: 600,
     color: '#a1a1aa',
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.05em',
+  },
+  inputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  inputIcon: {
+    position: 'absolute',
+    right: 12,
+    color: '#71717a',
+    pointerEvents: 'none',
   },
   input: {
-    background: '#09090b',
+    width: '100%',
+    background: '#0a0a0c',
     border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: 8,
-    padding: '10px 12px',
-    fontSize: 14,
+    borderRadius: 9,
+    padding: '10px 38px 10px 14px',
+    fontSize: 13,
     color: '#fafafa',
     outline: 'none',
-    transition: 'border-color 200ms',
+    transition: 'border-color 160ms, box-shadow 160ms',
     fontFamily: 'inherit',
+    boxSizing: 'border-box',
+  },
+  inputSimple: {
+    width: '100%',
+    background: '#0a0a0c',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: 8,
+    padding: '8px 12px',
+    fontSize: 12,
+    color: '#fafafa',
+    outline: 'none',
+    fontFamily: 'inherit',
+    boxSizing: 'border-box',
+    marginTop: 4,
+  },
+  advancedToggleRow: {
+    display: 'flex',
+    justifyContent: 'flex-start',
+  },
+  advancedToggleBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#71717a',
+    fontSize: 11,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: 0,
+    fontFamily: 'inherit',
+    transition: 'color 160ms',
+  },
+  advancedBox: {
+    background: '#0e0e11',
+    border: '1px solid rgba(255,255,255,0.06)',
+    borderRadius: 8,
+    padding: '10px 12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
   },
   button: {
     background: '#fafafa',
     color: '#09090b',
     border: 'none',
-    borderRadius: 8,
-    padding: '11px 0',
-    fontSize: 14,
+    borderRadius: 9,
+    padding: '11px 16px',
+    fontSize: 13,
     fontWeight: 600,
-    cursor: 'pointer',
-    marginTop: 4,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 6,
     fontFamily: 'inherit',
+    transition: 'transform 160ms ease-out, opacity 160ms',
   },
   error: {
     background: 'rgba(239,68,68,0.1)',
-    border: '1px solid rgba(239,68,68,0.2)',
+    border: '1px solid rgba(239,68,68,0.25)',
     borderRadius: 8,
-    padding: '8px 12px',
-    fontSize: 13,
+    padding: '9px 12px',
+    fontSize: 12,
     color: '#fca5a5',
+    lineHeight: 1.4,
+  },
+  footerNote: {
+    marginTop: 20,
+    fontSize: 11,
+    color: '#52525b',
+    textAlign: 'center',
+    lineHeight: 1.5,
   },
 };
 

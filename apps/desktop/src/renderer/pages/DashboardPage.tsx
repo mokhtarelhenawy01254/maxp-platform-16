@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Coffee, Play } from 'lucide-react';
 import Sidebar, { TabId } from '../components/Sidebar';
 import CockpitTab from './CockpitTab';
 import TasksTab from './TasksTab';
@@ -31,6 +32,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
   const [trackerState, setTrackerState] = useState<any>(null);
   const [dailySummary, setDailySummary] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [breakLoading, setBreakLoading] = useState(false);
 
   const refreshState = useCallback(async () => {
     try {
@@ -42,6 +44,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
       setDailySummary(summary);
     } catch {}
   }, []);
+
+  const isPaused = trackerState?.isPaused ?? false;
+
+  const handleToggleBreak = async () => {
+    setBreakLoading(true);
+    try {
+      if (isPaused) {
+        await window.electronAPI.resumeTracking();
+      } else {
+        await window.electronAPI.pauseTracking();
+      }
+      await refreshState();
+    } catch (err) {
+      console.error('Break toggle error:', err);
+    } finally {
+      setBreakLoading(false);
+    }
+  };
 
   useEffect(() => {
     refreshState();
@@ -64,17 +84,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
   const getTabTitle = () => {
     switch (activeTab) {
       case 'cockpit':
-        return 'لوحة النشاط والمراقبة المباشرة';
+        return 'النشاط المباشر والعدادات';
       case 'tasks':
         return 'المهام اليومية ومعدل الإنجاز';
       case 'apps':
-        return 'سجل استخدام البرامج ومواقع الويب';
+        return 'سجل البرامج والمواقع';
       case 'attendance':
-        return 'مطابقة الحضور والانصراف الذكية';
+        return 'مطابقة الحضور والنشاط';
       case 'system':
-        return 'حالة الجهاز والاتصال السحابي';
+        return 'حالة السحابة والجهاز';
       default:
-        return 'النشاط المباشر';
+        return 'بيئة العمل';
     }
   };
 
@@ -92,18 +112,50 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
 
       {/* Main Surface Chassis */}
       <main style={styles.main}>
-        {/* Top Control Bar */}
+        {/* Unified Top Control Bar */}
         <header style={styles.topBar}>
-          <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <h1 style={styles.pageTitle}>{getTabTitle()}</h1>
-            <div style={styles.breadcrumb}>
-              منصة MaxP للمراقبة المؤسسية &rsaquo; {getTabTitle()}
-            </div>
           </div>
 
-          <div style={styles.enforcedChip}>
-            <span style={styles.greenDot} />
-            <span>المراقبة مفعلة تلقائياً</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {isPaused ? (
+              <div style={styles.breakStatusGroup}>
+                <div style={styles.breakActiveChip}>
+                  <Coffee size={13} color="#eab308" />
+                  <span>استراحة رسمية جارية</span>
+                </div>
+                <button
+                  onClick={handleToggleBreak}
+                  disabled={breakLoading}
+                  style={styles.resumeWorkBtn}
+                  title="استئناف توثيق العمل والإنتاجية"
+                  onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                  onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                >
+                  <Play size={13} fill="#22c55e" color="#22c55e" />
+                  <span>استئناف العمل</span>
+                </button>
+              </div>
+            ) : (
+              <div style={styles.breakStatusGroup}>
+                <div style={styles.enforcedChip}>
+                  <span style={styles.greenDot} />
+                  <span>جلسة العمل موثقة ونشطة</span>
+                </div>
+                <button
+                  onClick={handleToggleBreak}
+                  disabled={breakLoading}
+                  style={styles.startBreakBtn}
+                  title="بدء استراحة رسمية مسموحة (صلاة / غداء)"
+                  onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                  onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                >
+                  <Coffee size={13} color="#a1a1aa" />
+                  <span>استراحة رسمية</span>
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
@@ -114,6 +166,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
               trackerState={trackerState}
               dailySummary={dailySummary}
               formatTime={formatTime}
+              onToggleBreak={handleToggleBreak}
             />
           )}
 
@@ -173,28 +226,71 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#fafafa',
     letterSpacing: '-0.01em',
   },
-  breadcrumb: {
-    fontSize: 10,
-    color: '#71717a',
-    marginTop: 2,
+  breakStatusGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
   },
   enforcedChip: {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    background: 'rgba(34, 197, 94, 0.1)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
+    background: 'rgba(34, 197, 94, 0.08)',
+    border: '1px solid rgba(34, 197, 94, 0.22)',
     borderRadius: 20,
     padding: '4px 10px',
     fontSize: 11,
     color: '#22c55e',
     fontWeight: 600,
   },
+  breakActiveChip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'rgba(234, 179, 8, 0.1)',
+    border: '1px solid rgba(234, 179, 8, 0.28)',
+    borderRadius: 20,
+    padding: '4px 10px',
+    fontSize: 11,
+    color: '#eab308',
+    fontWeight: 600,
+  },
+  startBreakBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: '#18181b',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    padding: '5px 10px',
+    fontSize: 11,
+    fontWeight: 500,
+    color: '#d4d4d8',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  resumeWorkBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'rgba(34, 197, 94, 0.15)',
+    border: '1px solid rgba(34, 197, 94, 0.35)',
+    borderRadius: 8,
+    padding: '5px 11px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#22c55e',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
   greenDot: {
     width: 6,
     height: 6,
     borderRadius: '50%',
     background: '#22c55e',
+    boxShadow: '0 0 6px rgba(34, 197, 94, 0.8)',
   },
   contentArea: {
     flex: 1,

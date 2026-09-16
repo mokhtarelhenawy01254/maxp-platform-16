@@ -15,12 +15,14 @@ interface CockpitTabProps {
   trackerState: any;
   dailySummary: any;
   formatTime: (sec: number) => string;
+  onToggleBreak?: () => void;
 }
 
 export const CockpitTab: React.FC<CockpitTabProps> = ({
   trackerState,
   dailySummary,
   formatTime,
+  onToggleBreak,
 }) => {
   const activeSeconds = dailySummary?.total_active_seconds ?? 0;
   const idleSeconds = dailySummary?.total_idle_seconds ?? 0;
@@ -32,27 +34,42 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
 
   const currentApp = trackerState?.currentApp || 'سطح المكتب / مستكشف ويندوز';
   const currentUrl = trackerState?.currentUrl;
+  const isPaused = trackerState?.isPaused ?? false;
 
   return (
     <div style={styles.container}>
-      {/* Top Banner: Enforced Automatic Tracking */}
-      <div style={styles.enforcedBanner}>
-        <div style={styles.bannerIconBox}>
-          <ShieldCheck size={20} color="#22c55e" />
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={styles.bannerTitleRow}>
-            <span style={styles.bannerTitle}>المراقبة الذاتية مفعلة تلقائياً</span>
-            <span style={styles.livePulseChip}>
-              <span style={styles.pulsingDot} />
-              <span>مباشر</span>
-            </span>
+      {/* Top Banner: Active or Break Mode */}
+      {isPaused ? (
+        <div style={styles.breakBanner}>
+          <div style={styles.breakIconBox}>
+            <Coffee size={18} color="#eab308" />
           </div>
-          <div style={styles.bannerDesc}>
-            يتم تسجيل فترات النشاط وحساب معدل الإنتاجية تلقائياً وفق سياسة العمل المؤسسية للمنظمة.
+          <div style={{ flex: 1 }}>
+            <div style={styles.bannerTitleRow}>
+              <span style={styles.breakTitle}>أنت الآن في وضع الاستراحة الرسمية المعتمدة</span>
+              <span style={styles.breakChip}>عداد التوقف موقوف</span>
+            </div>
+            <div style={styles.breakSubtext}>
+              وقت الصلاة أو الغداء لا يُحتسب كخمول؛ يتم حفظ خصوصيتك حتى استئناف جلسة العمل.
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div style={styles.enforcedBanner}>
+          <div style={styles.bannerIconBox}>
+            <ShieldCheck size={18} color="#22c55e" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={styles.bannerTitleRow}>
+              <span style={styles.bannerTitle}>جلسة العمل موثقة ونشطة في السحابة المركزية</span>
+              <span style={styles.livePulseChip}>
+                <span style={styles.pulsingDot} />
+                <span>مباشر</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Grid: Live Telemetry */}
       <div style={styles.grid}>
@@ -60,14 +77,14 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         <div style={styles.metricCard}>
           <div style={styles.metricHeader}>
             <div style={{ ...styles.iconBadge, color: '#22c55e', background: 'rgba(34, 197, 94, 0.1)' }}>
-              <Clock size={16} />
+              <Clock size={15} />
             </div>
             <span style={styles.metricLabel}>وقت العمل الفعلي</span>
           </div>
           <div style={styles.metricValue}>{formatTime(activeSeconds)}</div>
           <div style={styles.metricSubtext}>
             <span>معدل النشاط المستمر</span>
-            <span style={{ color: '#22c55e', fontWeight: 600 }}>{activeRatio}%</span>
+            <span style={{ color: '#22c55e', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{activeRatio}%</span>
           </div>
         </div>
 
@@ -75,14 +92,14 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         <div style={styles.metricCard}>
           <div style={styles.metricHeader}>
             <div style={{ ...styles.iconBadge, color: '#eab308', background: 'rgba(234, 179, 8, 0.1)' }}>
-              <Coffee size={16} />
+              <Coffee size={15} />
             </div>
-            <span style={styles.metricLabel}>وقت الخمول</span>
+            <span style={styles.metricLabel}>وقت التوقف والراحة</span>
           </div>
           <div style={styles.metricValue}>{formatTime(idleSeconds)}</div>
           <div style={styles.metricSubtext}>
-            <span>فترات التوقف أو الاستراحة</span>
-            <span style={{ color: '#eab308', fontWeight: 600 }}>{100 - activeRatio}%</span>
+            <span>فترات الاستراحة أو الانتظار</span>
+            <span style={{ color: '#eab308', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{100 - activeRatio}%</span>
           </div>
         </div>
 
@@ -90,13 +107,13 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         <div style={styles.metricCard}>
           <div style={styles.metricHeader}>
             <div style={{ ...styles.iconBadge, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)' }}>
-              <MousePointer size={16} />
+              <MousePointer size={15} />
             </div>
-            <span style={styles.metricLabel}>حركات ونقرات الماوس</span>
+            <span style={styles.metricLabel}>تفاعل ونقرات الماوس</span>
           </div>
           <div style={styles.metricValue}>{mouseEvents.toLocaleString()}</div>
           <div style={styles.metricSubtext}>
-            <span>إجمالي التفاعل الفيزيائي اليوم</span>
+            <span>إجمالي الحركات والنقرات اليوم</span>
           </div>
         </div>
 
@@ -104,13 +121,13 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         <div style={styles.metricCard}>
           <div style={styles.metricHeader}>
             <div style={{ ...styles.iconBadge, color: '#a855f7', background: 'rgba(168, 85, 247, 0.1)' }}>
-              <Keyboard size={16} />
+              <Keyboard size={15} />
             </div>
             <span style={styles.metricLabel}>ضربات لوحة المفاتيح</span>
           </div>
           <div style={styles.metricValue}>{keyboardEvents.toLocaleString()}</div>
           <div style={styles.metricSubtext}>
-            <span>معدل الإدخال والطباعة</span>
+            <span>إجمالي المدخلات الموثقة</span>
           </div>
         </div>
       </div>
@@ -119,8 +136,8 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
       <div style={styles.sectionBox}>
         <div style={styles.sectionHeader}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Activity size={16} color="#38bdf8" />
-            <span style={styles.sectionTitle}>مؤشر الإنتاجية والنشاط اليومي</span>
+            <Activity size={15} color="#38bdf8" />
+            <span style={styles.sectionTitle}>مؤشر الإنتاجية التراكمي لليوم</span>
           </div>
           <span style={styles.ratioPercent}>{activeRatio}% نشط</span>
         </div>
@@ -138,8 +155,8 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
       <div style={styles.sectionBox}>
         <div style={styles.sectionHeader}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <AppWindow size={16} color="#22c55e" />
-            <span style={styles.sectionTitle}>التطبيق النشط حالياً في الواجهة</span>
+            <AppWindow size={15} color="#22c55e" />
+            <span style={styles.sectionTitle}>التطبيق النشط حالياً</span>
           </div>
           <span style={styles.activePill}>
             <CheckCircle2 size={12} />
@@ -169,18 +186,56 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: 14,
   },
+  breakBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    background: 'rgba(234, 179, 8, 0.08)',
+    border: '1px solid rgba(234, 179, 8, 0.28)',
+    borderRadius: 10,
+    padding: '12px 14px',
+  },
+  breakIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    background: 'rgba(234, 179, 8, 0.15)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  breakTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#fbbf24',
+  },
+  breakChip: {
+    background: 'rgba(234, 179, 8, 0.2)',
+    border: '1px solid rgba(234, 179, 8, 0.4)',
+    borderRadius: 20,
+    padding: '2px 8px',
+    fontSize: 10,
+    color: '#fbbf24',
+    fontWeight: 600,
+  },
+  breakSubtext: {
+    fontSize: 11,
+    color: '#d4d4d8',
+    marginTop: 4,
+    lineHeight: 1.4,
+  },
   enforcedBanner: {
     display: 'flex',
     alignItems: 'center',
     gap: 12,
     background: 'rgba(34, 197, 94, 0.05)',
-    border: '1px solid rgba(34, 197, 94, 0.2)',
+    border: '1px solid rgba(34, 197, 94, 0.18)',
     borderRadius: 10,
-    padding: '12px 14px',
+    padding: '10px 14px',
   },
   bannerIconBox: {
-    width: 36,
-    height: 36,
+    width: 32,
+    height: 32,
     borderRadius: 8,
     background: 'rgba(34, 197, 94, 0.12)',
     display: 'flex',
@@ -194,8 +249,8 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
   },
   bannerTitle: {
-    fontSize: 14,
-    fontWeight: 700,
+    fontSize: 13,
+    fontWeight: 600,
     color: '#fafafa',
   },
   livePulseChip: {
@@ -216,12 +271,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '50%',
     background: '#22c55e',
     boxShadow: '0 0 8px rgba(34, 197, 94, 0.8)',
-  },
-  bannerDesc: {
-    fontSize: 12,
-    color: '#a1a1aa',
-    marginTop: 4,
-    lineHeight: 1.4,
   },
   grid: {
     display: 'grid',

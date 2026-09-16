@@ -57,27 +57,22 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = ({ formatTi
       <div
         style={{
           ...styles.banner,
-          borderColor: hasDelay ? 'rgba(234, 179, 8, 0.3)' : 'rgba(34, 197, 94, 0.3)',
-          background: hasDelay ? 'rgba(234, 179, 8, 0.06)' : 'rgba(34, 197, 94, 0.06)',
+          borderColor: hasDelay ? 'rgba(234, 179, 8, 0.25)' : 'rgba(34, 197, 94, 0.25)',
+          background: hasDelay ? 'rgba(234, 179, 8, 0.05)' : 'rgba(34, 197, 94, 0.05)',
         }}
       >
         <div style={styles.bannerIcon}>
           {hasDelay ? (
-            <AlertTriangle size={20} color="#eab308" />
+            <AlertTriangle size={18} color="#eab308" />
           ) : (
-            <CheckCircle2 size={20} color="#22c55e" />
+            <CheckCircle2 size={18} color="#22c55e" />
           )}
         </div>
         <div style={{ flex: 1 }}>
           <div style={styles.bannerTitle}>
             {hasDelay
-              ? `يوجد فارق زمني بين الحضور وبدء النشاط (${lateMinutes} دقيقة)`
-              : 'مطابقة الحضور والنشاط الفعلي ممتازة ومطابقة للسياسة'}
-          </div>
-          <div style={styles.bannerDesc}>
-            {hasDelay
-              ? 'تم تسجيل بصمة الحضور عبر الهاتف مسبقاً، بينما بدأ أول تفاعل على جهاز الكمبيوتر بعد ذلك.'
-              : 'بدأ التفاعل والعمل على الجهاز فور تسجيل الحضور.'}
+              ? `فارق توقيت مسجل (${lateMinutes} دقيقة) بين بصمة الهاتف والنشاط الفعلي`
+              : 'مطابقة تامة بين بصمة الحضور وأول تفاعل على الحاسوب'}
           </div>
         </div>
       </div>
@@ -87,28 +82,28 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = ({ formatTi
         {/* Mobile Clock In */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <Smartphone size={16} color="#38bdf8" />
-            <span style={styles.cardTitle}>تسجيل الحضور (تطبيق الهاتف)</span>
+            <Smartphone size={15} color="#38bdf8" />
+            <span style={styles.cardTitle}>بصمة الهاتف الجغرافية</span>
           </div>
           <div style={styles.cardValue}>{formatClock(auditData?.clockInTime)}</div>
-          <div style={styles.cardDesc}>وقت البصمة الجغرافية المعتمد</div>
+          <div style={styles.cardDesc}>توقيت التسجيل المعتمد</div>
         </div>
 
         {/* First PC Activity */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <Monitor size={16} color="#22c55e" />
-            <span style={styles.cardTitle}>أول نشاط على الكمبيوتر</span>
+            <Monitor size={15} color="#22c55e" />
+            <span style={styles.cardTitle}>أول نشاط على الجهاز</span>
           </div>
           <div style={styles.cardValue}>{formatClock(auditData?.firstActivityTime)}</div>
-          <div style={styles.cardDesc}>أول حركة للماوس أو ضغطة مفتاح</div>
+          <div style={styles.cardDesc}>أول حركة ماوس أو نقرة مفاتيح</div>
         </div>
 
         {/* Gap Discrepancy */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <Clock size={16} color={hasDelay ? '#eab308' : '#22c55e'} />
-            <span style={styles.cardTitle}>فارق بدء النشاط</span>
+            <Clock size={15} color={hasDelay ? '#eab308' : '#22c55e'} />
+            <span style={styles.cardTitle}>الفارق الزمني</span>
           </div>
           <div
             style={{
@@ -116,31 +111,20 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = ({ formatTi
               color: hasDelay ? '#eab308' : '#22c55e',
             }}
           >
-            {lateMinutes > 0 ? `${lateMinutes} دقيقة` : 'متطابق تماماً'}
+            {lateMinutes > 0 ? `${lateMinutes} دقيقة` : 'متطابق بالكامل'}
           </div>
-          <div style={styles.cardDesc}>الفارق بين البصمة والحركة الفعلية</div>
+          <div style={styles.cardDesc}>بين البصمة والعمل الفعلي</div>
         </div>
 
         {/* Last Activity */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <Monitor size={16} color="#a855f7" />
+            <Monitor size={15} color="#a855f7" />
             <span style={styles.cardTitle}>آخر تفاعل مسجل</span>
           </div>
           <div style={styles.cardValue}>{formatClock(auditData?.lastActivityTime)}</div>
-          <div style={styles.cardDesc}>آخر إشارة تفاعل مسجلة بالجهاز</div>
+          <div style={styles.cardDesc}>آخر إشارة نشاط مؤكدة</div>
         </div>
-      </div>
-
-      {/* Audit Policy Notice */}
-      <div style={styles.policyBox}>
-        <div style={styles.policyHeader}>
-          <Info size={15} color="#38bdf8" />
-          <span style={styles.policyTitle}>ما هي آلية مطابقة الحضور الذكية؟</span>
-        </div>
-        <p style={styles.policyText}>
-          تقوم منظومة MaxP تلقائياً بمطابقة وقت تسجيل الحضور الجغرافي (عبر تطبيق الموبايل) مع أول نشاط فيزيائي مسجل على حاسوب الموظف. يساعد هذا التدقيق الإدارات على تقييم الانضباط الفعلي، وحساب ساعات العمل المنتجة بدقة وشفافية كاملة دون الحاجة لتقارير ورقية.
-        </p>
       </div>
     </div>
   );
