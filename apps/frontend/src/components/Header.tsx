@@ -17,8 +17,10 @@ import {
   MagnifyingGlassIcon,
   ChatBubbleLeftRightIcon,
   BuildingStorefrontIcon,
+  WalletIcon,
 } from "@heroicons/react/24/outline";
 import { buildStoreUrl } from "../utils/storeUrl";
+import QuickWalletRechargeModal from "./wallet/QuickWalletRechargeModal";
 
 import { useTimer } from "../contexts/TimerContext";
 import { PlayIcon, PauseIcon, StopIcon } from "@heroicons/react/24/solid";
@@ -182,6 +184,7 @@ const Header: React.FC = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   // Parse company settings if they are a string, otherwise use directly
   const getCompanySettings = () => {
@@ -298,6 +301,17 @@ const Header: React.FC = () => {
                 </div>
               </form>
             )}
+
+            {/* Quick Wallet Recharge Shortcut Button */}
+            <button
+              type="button"
+              onClick={() => setIsWalletModalOpen(true)}
+              className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title={t("billing.payments.rechargeWallet") || "شحن المحفظة"}
+              aria-label={t("billing.payments.rechargeWallet") || "شحن المحفظة"}
+            >
+              <WalletIcon className="h-5 w-5" />
+            </button>
 
             {/* Visit Store Button */}
             <a
@@ -489,6 +503,11 @@ const Header: React.FC = () => {
           }}
         />
       )}
+
+      <QuickWalletRechargeModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+      />
     </header>
   );
 };
