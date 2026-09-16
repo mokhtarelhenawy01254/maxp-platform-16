@@ -411,7 +411,12 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
       items: section.items.map((item) => ({
         ...item,
         icon: renderSidebarIcon(item.icon),
-        badge: item.to === "/orders" ? sidebarBadges.newOrders : item.badge,
+        badge:
+          item.to === "/orders"
+            ? sidebarBadges.newOrders
+            : item.to === "/tickets" || item.to === "/settings/turbo-tickets"
+            ? sidebarBadges.unreadTickets
+            : item.badge,
       })),
     }));
   }, [isI18nReady, renderSidebarIcon, t, useSuperAdminShell, user, sidebarSettings, userSettings, sidebarBadges, assignedApps]);

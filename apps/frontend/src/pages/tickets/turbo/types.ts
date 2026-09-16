@@ -57,6 +57,16 @@ export interface TurboTicketItem {
   replies?: TurboMessage[];
   logs?: TurboTicketLog[];
   unread?: boolean;
+  un_read_messages_count?: number;
+  unread_messages_count?: number;
+  is_seen?: boolean;
+  last_message?: {
+    id?: number | string;
+    content?: string;
+    message?: string;
+    created_at?: string;
+    file?: string | null;
+  };
   creator_name?: string;
   user_name?: string;
   client_name?: string;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
@@ -8,6 +8,20 @@ import { TurboNewTicketModal } from "./TurboNewTicketModal";
 import { TurboTicketLogsModal } from "./TurboTicketLogsModal";
 import { TurboTicketItem } from "./types";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
+import { playTicketNotificationChime } from "./ticketSoundUtils";
+import {
+  showBrowserNotification,
+  requestBrowserNotificationPermission,
+  getBrowserNotificationPermission,
+  isBrowserNotificationSupported,
+} from "../../../utils/browserNotifications";
+
+interface TicketSnapshot {
+  unreadCount: number;
+  messagesCount: number;
+  lastMsgId?: string | number;
+  lastMsgCreatedAt?: string;
+}
 
 export const TurboTicketsCockpit: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +29,11 @@ export const TurboTicketsCockpit: React.FC = () => {
   // Settings & Status
   const [turboEnabled, setTurboEnabled] = useState<boolean | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Notification Permission State
+  const [notificationPerm, setNotificationPerm] = useState<
+    NotificationPermission | "unsupported"
+  >(() => getBrowserNotificationPermission());
 
   // Tickets state
   const [tickets, setTickets] = useState<TurboTicketItem[]>([]);
@@ -35,6 +54,10 @@ export const TurboTicketsCockpit: React.FC = () => {
 
   // Responsive state for mobile: 'list' | 'chat'
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
+
+  // Notification tracker refs
+  const prevSnapshotRef = useRef<Map<number, TicketSnapshot>>(new Map());
+  const isInitialLoadRef = useRef(true);
 
   // 1. Check if Turbo is enabled
   const checkTurboStatus = useCallback(async () => {
@@ -65,11 +88,37 @@ export const TurboTicketsCockpit: React.FC = () => {
     }
   }, []);
 
+  const handleRequestNotificationPermission = async () => {
+    if (!isBrowserNotificationSupported()) {
+      toast.error("متصفحك لا يدعم إشعارات سطح المكتب");
+      return;
+    }
+    if (notificationPerm === "granted") {
+      playTicketNotificationChime();
+      toast.info("الإشعارات الصوتية وسطح المكتب مفعلة بالفعل 🔔");
+      return;
+    }
+    const perm = await requestBrowserNotificationPermission();
+    if (perm === "granted") {
+      setNotificationPerm("granted");
+      playTicketNotificationChime();
+      toast.success("تم تفعيل الإشعارات بنجاح");
+    } else if (perm === "denied") {
+      setNotificationPerm("denied");
+      toast.error("تم حظر الإشعارات من إعدادات المتصفح");
+    }
+  };
+
   // 3. Fetch Tickets List
   const loadTickets = useCallback(
-    async (currentPage = 1, currentFilter = statusFilter, currentSearch = searchQuery) => {
+    async (
+      currentPage = 1,
+      currentFilter = statusFilter,
+      currentSearch = searchQuery,
+      isSilent = false
+    ) => {
       try {
-        setLoadingList(true);
+        if (!isSilent) setLoadingList(true);
         let url = `/turbo/tickets?page=${currentPage}&per_page=15`;
         if (currentFilter && currentFilter !== "all") {
           url += `&status=${encodeURIComponent(currentFilter)}`;
@@ -94,6 +143,76 @@ export const TurboTicketsCockpit: React.FC = () => {
           setTickets(fetchedTickets);
           setTotal(pagination.total || fetchedTickets.length);
 
+          // Check for new incoming messages from Turbo operations
+          fetchedTickets.forEach((t) => {
+            const currentUnread = Number(
+              t.un_read_messages_count ??
+                t.unread_messages_count ??
+                (t.unread ? 1 : 0) ??
+                (t.is_seen === false ? 1 : 0) ??
+                0
+            );
+            const currentMsgCount = (t.messages || t.replies || []).length;
+            const prev = prevSnapshotRef.current.get(t.id);
+
+            if (!isInitialLoadRef.current && prev) {
+              const hasNewUnread = currentUnread > prev.unreadCount;
+              const hasNewMsg = currentMsgCount > prev.messagesCount;
+
+              if (hasNewUnread || hasNewMsg) {
+                const lastMsg =
+                  t.last_message ||
+                  (t.messages && t.messages[t.messages.length - 1]);
+                const isFromSupport = lastMsg
+                  ? lastMsg.is_client_message === 0 ||
+                    lastMsg.is_client_message === false
+                  : true;
+
+                if (isFromSupport) {
+                  playTicketNotificationChime();
+                  const snippet =
+                    lastMsg?.content ||
+                    lastMsg?.message ||
+                    t.subject ||
+                    "رسالة جديدة من خدمة عملاء تربو";
+                  toast.info(
+                    `رسالة جديدة بخصوص تذكرة #${t.id}${
+                      t.code ? ` (${t.code})` : ""
+                    }: ${snippet.slice(0, 60)}...`,
+                    {
+                      duration: 7000,
+                      action: {
+                        label: "عرض التذكرة",
+                        onClick: () => handleSelectTicket(t),
+                      },
+                    }
+                  );
+                  showBrowserNotification({
+                    title: `تذكرة تربو #${t.id}${t.code ? ` - ${t.code}` : ""}`,
+                    body: snippet.slice(0, 90),
+                    tag: `turbo-ticket-${t.id}-${Date.now()}`,
+                    bypassPushCheck: true,
+                    onClick: () => {
+                      window.focus();
+                      handleSelectTicket(t);
+                    },
+                  });
+                }
+              }
+            }
+
+            prevSnapshotRef.current.set(t.id, {
+              unreadCount: currentUnread,
+              messagesCount: currentMsgCount,
+              lastMsgId: t.last_message?.id,
+              lastMsgCreatedAt: t.last_message?.created_at,
+            });
+          });
+
+          if (isInitialLoadRef.current) {
+            isInitialLoadRef.current = false;
+          }
+
           // If no ticket selected yet and tickets exist, select first on desktop
           if (!selectedTicketId && fetchedTickets.length > 0 && window.innerWidth >= 768) {
             const firstTicket = fetchedTickets[0];
@@ -106,33 +225,50 @@ export const TurboTicketsCockpit: React.FC = () => {
           setTotal(0);
         }
       } catch (err: any) {
-        toast.error("تعذر جلب التذاكر من تربو");
+        if (!isSilent) toast.error("تعذر جلب التذاكر من تربو");
         setTickets([]);
         setTotal(0);
       } finally {
-        setLoadingList(false);
+        if (!isSilent) setLoadingList(false);
       }
     },
     [selectedTicketId, statusFilter, searchQuery]
   );
 
   // 4. Fetch Active Ticket Details
-  const loadActiveTicketDetails = useCallback(async (ticketId: number) => {
-    try {
-      setLoadingTicket(true);
-      const res = await apiClient.get<any>(`/turbo/tickets/${ticketId}`);
-      if (res.data?.success) {
-        const ticketData = res.data.data?.ticket || res.data.ticket || res.data.data;
-        if (ticketData) {
-          setActiveTicket(ticketData);
+  const loadActiveTicketDetails = useCallback(
+    async (ticketId: number, isSilent = false) => {
+      try {
+        if (!isSilent) setLoadingTicket(true);
+        const res = await apiClient.get<any>(`/turbo/tickets/${ticketId}`);
+        if (res.data?.success) {
+          const ticketData =
+            res.data.data?.ticket || res.data.ticket || res.data.data;
+          if (ticketData) {
+            if (isSilent && activeTicket && activeTicket.id === ticketId) {
+              const prevLen = (activeTicket.messages || activeTicket.replies || []).length;
+              const newLen = (ticketData.messages || ticketData.replies || []).length;
+              if (newLen > prevLen) {
+                const latest = (ticketData.messages || ticketData.replies || [])[newLen - 1];
+                if (
+                  latest &&
+                  (latest.is_client_message === 0 || latest.is_client_message === false)
+                ) {
+                  playTicketNotificationChime();
+                }
+              }
+            }
+            setActiveTicket(ticketData);
+          }
         }
+      } catch {
+        // If error, active ticket remains or shows fallback
+      } finally {
+        if (!isSilent) setLoadingTicket(false);
       }
-    } catch {
-      // If error, active ticket remains or shows fallback
-    } finally {
-      setLoadingTicket(false);
-    }
-  }, []);
+    },
+    [activeTicket]
+  );
 
   // Initial Load
   useEffect(() => {
@@ -158,22 +294,74 @@ export const TurboTicketsCockpit: React.FC = () => {
     }
   }, [selectedTicketId, loadActiveTicketDetails]);
 
-  // Periodic Polling (every 45s) for background updates
+  // Periodic Background Polling (every 20s) for live updates and notifications
   useEffect(() => {
     if (!turboEnabled) return;
-    const interval = setInterval(() => {
+
+    const poll = () => {
+      if (document.hidden) return;
       loadUnreadCount();
+      loadTickets(page, statusFilter, searchQuery, true);
       if (selectedTicketId) {
-        loadActiveTicketDetails(selectedTicketId);
+        loadActiveTicketDetails(selectedTicketId, true);
       }
-    }, 45000);
-    return () => clearInterval(interval);
-  }, [turboEnabled, selectedTicketId, loadUnreadCount, loadActiveTicketDetails]);
+    };
+
+    const interval = setInterval(poll, 20000);
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        poll();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [
+    turboEnabled,
+    page,
+    statusFilter,
+    searchQuery,
+    selectedTicketId,
+    loadUnreadCount,
+    loadTickets,
+    loadActiveTicketDetails,
+  ]);
 
   const handleSelectTicket = (t: TurboTicketItem) => {
     setSelectedTicketId(t.id);
     setActiveTicket(t);
     setMobileView("chat");
+
+    // Optimistically clear unread badge in local list
+    setTickets((prev) =>
+      prev.map((item) =>
+        item.id === t.id
+          ? {
+              ...item,
+              un_read_messages_count: 0,
+              unread_messages_count: 0,
+              unread: false,
+              is_seen: true,
+            }
+          : item
+      )
+    );
+
+    // Update snapshot
+    const snap = prevSnapshotRef.current.get(t.id);
+    if (snap) {
+      prevSnapshotRef.current.set(t.id, { ...snap, unreadCount: 0 });
+    }
+
+    // Refresh unread count in background to keep sidebar and header in sync
+    setTimeout(() => {
+      loadUnreadCount();
+    }, 1200);
   };
 
   const handleFilterChange = (filter: string) => {
@@ -267,6 +455,8 @@ export const TurboTicketsCockpit: React.FC = () => {
             onChangeStatusFilter={handleFilterChange}
             searchQuery={searchQuery}
             onChangeSearchQuery={handleSearchChange}
+            desktopNotificationPermission={notificationPerm}
+            onRequestNotificationPermission={handleRequestNotificationPermission}
           />
         </div>
 

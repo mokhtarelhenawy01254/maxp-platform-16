@@ -6,7 +6,9 @@ import {
   TicketIcon,
   ClockIcon,
   ChatBubbleLeftEllipsisIcon,
+  BellIcon,
 } from "@heroicons/react/24/outline";
+import { BellAlertIcon } from "@heroicons/react/24/solid";
 import { TurboTicketItem } from "./types";
 
 interface TurboTicketListPanelProps {
@@ -25,6 +27,8 @@ interface TurboTicketListPanelProps {
   onChangeStatusFilter: (status: string) => void;
   searchQuery: string;
   onChangeSearchQuery: (q: string) => void;
+  desktopNotificationPermission?: NotificationPermission | "unsupported";
+  onRequestNotificationPermission?: () => void;
 }
 
 export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
@@ -43,6 +47,8 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
   onChangeStatusFilter,
   searchQuery,
   onChangeSearchQuery,
+  desktopNotificationPermission,
+  onRequestNotificationPermission,
 }) => {
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
@@ -131,6 +137,31 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
+            {onRequestNotificationPermission && (
+              <button
+                type="button"
+                onClick={onRequestNotificationPermission}
+                title={
+                  desktopNotificationPermission === "granted"
+                    ? "الإشعارات الصوتية وسطح المكتب مفعلة (اضغط لتجربة الصوت)"
+                    : "تفعيل إشعارات سطح المكتب والصوت للتذاكر"
+                }
+                className={`p-1.5 rounded-lg transition relative ${
+                  desktopNotificationPermission === "granted"
+                    ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                    : "text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                }`}
+              >
+                {desktopNotificationPermission === "granted" ? (
+                  <BellAlertIcon className="h-4 w-4" />
+                ) : (
+                  <BellIcon className="h-4 w-4" />
+                )}
+                {unreadCount > 0 && (
+                  <span className="absolute 0.5 top-0.5 right-0.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-zinc-900" />
+                )}
+              </button>
+            )}
             <button
               type="button"
               onClick={onRefresh}
@@ -208,6 +239,13 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
           tickets.map((t) => {
             const isSelected = selectedTicketId === t.id;
             const badge = getStatusBadge(t.status);
+            const unreadMsgCount = Number(
+              t.un_read_messages_count ||
+              t.unread_messages_count ||
+              (t.unread ? 1 : 0) ||
+              (t.is_seen === false ? 1 : 0) ||
+              0
+            );
             const title =
               t.subject ||
               t.description ||
@@ -219,6 +257,12 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
                   day: "numeric",
                 })
               : "";
+            const creator =
+              t.creator_name ||
+              t.client_name ||
+              t.user_name ||
+              t.sender_name ||
+              (t.user?.name ? t.user.name : null);
 
             return (
               <div
@@ -235,22 +279,35 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
                 className={`p-3 text-right cursor-pointer transition relative group focus:outline-hidden ${
                   isSelected
                     ? "bg-zinc-100 dark:bg-zinc-800/90"
+                    : unreadMsgCount > 0
+                    ? "bg-rose-500/[0.04] dark:bg-rose-500/[0.08] hover:bg-rose-500/[0.08] dark:hover:bg-rose-500/[0.12]"
                     : "hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
                 }`}
               >
-                {/* Active Indicator Strip */}
-                {isSelected && (
+                {/* Active / Unread Indicator Strip */}
+                {isSelected ? (
                   <div className="absolute right-0 top-0 bottom-0 w-1 bg-zinc-900 dark:bg-zinc-100 rounded-l" />
-                )}
+                ) : unreadMsgCount > 0 ? (
+                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-rose-500 rounded-l" />
+                ) : null}
 
                 <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div className="flex items-center gap-1.5 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                     <span className="font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
                       #{t.id}
                     </span>
                     {t.code && (
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 truncate max-w-[120px]">
                         {t.code}
+                      </span>
+                    )}
+                    {unreadMsgCount > 0 && (
+                      <span
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white shadow-2xs tabular-nums"
+                        title={`${unreadMsgCount} رسائل غير مقروءة`}
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
+                        {unreadMsgCount}
                       </span>
                     )}
                   </div>
@@ -261,16 +318,34 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
                   </span>
                 </div>
 
-                <p className="text-xs text-zinc-600 dark:text-zinc-300 line-clamp-2 leading-relaxed mb-2">
-                  {title}
-                </p>
+                <div className="mb-2 space-y-0.5">
+                  <p
+                    className={`text-xs line-clamp-2 leading-relaxed ${
+                      unreadMsgCount > 0
+                        ? "font-bold text-zinc-900 dark:text-zinc-100"
+                        : "text-zinc-600 dark:text-zinc-300"
+                    }`}
+                  >
+                    {title}
+                  </p>
+                  {creator && (
+                    <p className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate">
+                      تذكرة بواسطة: <span className="text-zinc-600 dark:text-zinc-400 font-medium">{creator}</span>
+                    </p>
+                  )}
+                </div>
 
                 <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500">
                   <span className="flex items-center gap-1">
                     <ClockIcon className="h-3 w-3" />
                     <span className="tabular-nums">{timeStr}</span>
                   </span>
-                  {t.rate ? (
+                  {unreadMsgCount > 0 ? (
+                    <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold tabular-nums">
+                      <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                      <span>{unreadMsgCount} غير مقروء</span>
+                    </span>
+                  ) : t.rate ? (
                     <span className="text-amber-500 font-semibold tabular-nums">
                       ★ {t.rate}/5
                     </span>

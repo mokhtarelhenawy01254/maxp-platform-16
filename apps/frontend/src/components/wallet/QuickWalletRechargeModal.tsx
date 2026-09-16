@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
@@ -62,16 +63,16 @@ export const QuickWalletRechargeModal: React.FC<QuickWalletRechargeModalProps> =
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 transition-opacity"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 overflow-y-auto transition-opacity"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="wallet-recharge-title"
     >
       <div
-        className="relative w-full max-w-sm bg-white dark:bg-[#18181b] rounded-2xl p-6 shadow-2xl border border-gray-100 dark:border-white/10 text-gray-900 dark:text-gray-100"
+        className="relative w-full max-w-sm my-auto bg-white dark:bg-[#18181b] rounded-2xl p-6 shadow-2xl border border-gray-100 dark:border-white/10 text-gray-900 dark:text-gray-100"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
@@ -118,7 +119,8 @@ export const QuickWalletRechargeModal: React.FC<QuickWalletRechargeModalProps> =
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
