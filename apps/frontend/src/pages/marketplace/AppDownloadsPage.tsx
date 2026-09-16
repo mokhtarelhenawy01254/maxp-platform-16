@@ -34,24 +34,32 @@ export const AppDownloadsPage: React.FC = () => {
   const handleCopyDeploymentPack = () => {
     const text = `دليل روابط وتطبيقات MaxP لمنشأة: ${companyName}
 
-1. تطبيق الأندرويد المباشر (Android APK - 155 MB):
+1. برنامج مراقبة وإنتاجية فريق العمل لسطح المكتب (Windows Setup .exe):
+https://maxp.online/downloads/MaxP-Monitor-Setup.exe
+النسخة المحمولة بدون تثبيت (Portable .zip):
+https://maxp.online/downloads/MaxP-Monitor-Portable.zip
+
+2. تطبيق الموبايل الميداني للأندرويد (Android APK - 155 MB):
 https://maxp.online/downloads/maxp.apk
 
-2. تطبيق الويب المستقل لسطح المكتب والموبايل (PWA):
+3. تطبيق الويب والموبايل السريع (PWA):
 https://maxp.online
-(افتح الرابط ثم اختر "تثبيت التطبيق" أو "إضافة للشاشة الرئيسية")
 
-معرّف المنشأة المرجعي: ${companyToken || "تواصل مع مدير الحساب"}`;
+معرّف المنشأة المرجعي لربط الأجهزة: ${companyToken || "تواصل مع مدير الحساب"}`;
 
     navigator.clipboard.writeText(text);
     setCopiedAll(true);
-    toast.success("تم نسخ دليل الروابط المحدثة لمشاركته مع الفريق");
+    toast.success("تم نسخ دليل الروابط الكامل لمشاركته مع الفريق");
     setTimeout(() => setCopiedAll(false), 2500);
   };
 
   const handleHeroInstall = async () => {
     if (os === "android") {
       window.location.href = "https://maxp.online/downloads/maxp.apk";
+      return;
+    }
+    if (os === "windows") {
+      window.location.href = "https://maxp.online/downloads/MaxP-Monitor-Setup.exe";
       return;
     }
     if (canInstallPwa) {
@@ -85,7 +93,7 @@ https://maxp.online
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                حزم التثبيت الرسمية للموبايل وسطح المكتب مع دعم التثبيت الفوري PWA
+                برامج مراقبة الموظفين، تطبيقات الميدان، ومحطات الكاشير المهيأة لمنشأتك
               </p>
             </div>
           </div>
@@ -114,23 +122,45 @@ https://maxp.online
                 </span>
               </div>
               <h2 className="text-base sm:text-lg font-bold text-foreground">
-                {os === "android"
-                  ? "تطبيق أندرويد الرسمي جاهز للتنزيل والتثبيت الفوري"
+                {os === "windows"
+                  ? "برنامج مراقبة وإنتاجية فريق العمل لويندوز متاح للتحميل المباشر"
+                  : os === "android"
+                  ? "تطبيق أندرويد الميداني الرسمي جاهز للتنزيل والتثبيت"
                   : os === "ios"
-                  ? "تطبيق آيفون (iOS) متاح للتثبيت كـ Progressive Web App"
-                  : "تطبيق سطح المكتب المستقل متاح للتثبيت المباشر بنقرة واحدة"}
+                  ? "تطبيق آيفون (iOS) متاح للتثبيت الفوري كـ Progressive Web App"
+                  : "تطبيقات سطح المكتب والموبايل متاحة للتثبيت المباشر"}
               </h2>
               <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
-                {os === "android"
-                  ? "قم بتحميل حزمة الـ APK المباشرة (155 MB) أو قم بتثبيت نسخة الويب التقدمية للشاشة الرئيسية لربط البصمة وإشعارات العمل."
+                {os === "windows"
+                  ? "حمّل مثبت ويندوز الرسمي (.exe 84 MB) لتتبع نشاط العمل واحتساب الساعات الفعلية وربط محطات الموظفين بلوحةSwan مباشرة."
+                  : os === "android"
+                  ? "قم بتحميل حزمة الـ APK المباشرة (155 MB) أو ثبت نسخة الويب للشاشة الرئيسية لربط البصمة وإشعارات العمل."
                   : os === "ios"
-                  ? "يمكنك تثبيت المنظومة مباشرة على شاشة الآيفون الرئيسية بدون الحاجة لحساب مطور مع دعم كامل لكافة وظائف العمل."
-                  : "يعمل التطبيق كنافذة مستقلة فائقة السرعة على شريط المهام بالنظام بدون استهلاك موارد المعالج ودون الحاجة لحزم برمجية خارجية."}
+                  ? "يمكنك تثبيت المنظومة مباشرة على شاشة الآيفون الرئيسية بدون متجر تطبيقات مع دعم كامل لكافة وظائف العمل."
+                  : "اختر الحزمة المناسبة لجهازك للتحميل المباشر أو التثبيت الفوري."}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-              {os === "android" ? (
+              {os === "windows" ? (
+                <>
+                  <a
+                    href="https://maxp.online/downloads/MaxP-Monitor-Setup.exe"
+                    download="MaxP-Monitor-Setup.exe"
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
+                  >
+                    <Download className="size-4" />
+                    <span>تحميل برنامج المراقبة (Setup .exe 84 MB)</span>
+                  </a>
+                  <a
+                    href="https://maxp.online/downloads/MaxP-Monitor-Portable.zip"
+                    download="MaxP-Monitor-Portable.zip"
+                    className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted px-4 py-2.5 text-xs font-medium text-foreground transition-all active:scale-[0.98]"
+                  >
+                    <span>النسخة المحمولة (.zip)</span>
+                  </a>
+                </>
+              ) : os === "android" ? (
                 <>
                   <a
                     href="https://maxp.online/downloads/maxp.apk"
