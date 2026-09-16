@@ -45,6 +45,12 @@ const App: React.FC = () => {
   };
 
   const handleLogin = async (email: string, password: string, serverUrl: string) => {
+    if (!window.electronAPI?.login) {
+      return {
+        success: false,
+        error: 'جاري تهيئة واجهة الاتصال (Electron API Bridge)... يرجى المحاولة مرة أخرى',
+      };
+    }
     const result = await window.electronAPI.login({ email, password, serverUrl });
     if (result.success) {
       setIsLoggedIn(true);

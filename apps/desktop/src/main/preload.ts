@@ -1,5 +1,20 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS } from '../shared/types';
+
+const CHANNELS = {
+  GET_TRACKER_STATE: 'tracker:get-state',
+  TOGGLE_TRACKING: 'tracker:toggle',
+  PAUSE_TRACKING: 'tracker:pause',
+  RESUME_TRACKING: 'tracker:resume',
+  GET_DAILY_SUMMARY: 'tracker:daily-summary',
+  LOGIN: 'auth:login',
+  LOGOUT: 'auth:logout',
+  GET_AUTH_STATE: 'auth:get-state',
+  GET_SETTINGS: 'settings:get',
+  UPDATE_SETTINGS: 'settings:update',
+  TRACKER_STATE_UPDATE: 'tracker:state-update',
+  NOTIFICATION: 'notification',
+  TASK_ASSIGNED: 'task:assigned',
+} as const;
 
 /**
  * Preload script — exposes safe IPC methods to the renderer process.
@@ -7,31 +22,31 @@ import { IPC_CHANNELS } from '../shared/types';
  */
 contextBridge.exposeInMainWorld('electronAPI', {
   // Tracker
-  getTrackerState: () => ipcRenderer.invoke(IPC_CHANNELS.GET_TRACKER_STATE),
-  toggleTracking: () => ipcRenderer.invoke(IPC_CHANNELS.TOGGLE_TRACKING),
-  pauseTracking: () => ipcRenderer.invoke(IPC_CHANNELS.PAUSE_TRACKING),
-  resumeTracking: () => ipcRenderer.invoke(IPC_CHANNELS.RESUME_TRACKING),
-  getDailySummary: () => ipcRenderer.invoke(IPC_CHANNELS.GET_DAILY_SUMMARY),
+  getTrackerState: () => ipcRenderer.invoke(CHANNELS.GET_TRACKER_STATE),
+  toggleTracking: () => ipcRenderer.invoke(CHANNELS.TOGGLE_TRACKING),
+  pauseTracking: () => ipcRenderer.invoke(CHANNELS.PAUSE_TRACKING),
+  resumeTracking: () => ipcRenderer.invoke(CHANNELS.RESUME_TRACKING),
+  getDailySummary: () => ipcRenderer.invoke(CHANNELS.GET_DAILY_SUMMARY),
 
   // Auth
   login: (data: { email: string; password: string; serverUrl: string }) =>
-    ipcRenderer.invoke(IPC_CHANNELS.LOGIN, data),
-  logout: () => ipcRenderer.invoke(IPC_CHANNELS.LOGOUT),
-  getAuthState: () => ipcRenderer.invoke(IPC_CHANNELS.GET_AUTH_STATE),
+    ipcRenderer.invoke(CHANNELS.LOGIN, data),
+  logout: () => ipcRenderer.invoke(CHANNELS.LOGOUT),
+  getAuthState: () => ipcRenderer.invoke(CHANNELS.GET_AUTH_STATE),
 
   // Settings
-  getSettings: () => ipcRenderer.invoke(IPC_CHANNELS.GET_SETTINGS),
+  getSettings: () => ipcRenderer.invoke(CHANNELS.GET_SETTINGS),
   updateSettings: (settings: Record<string, any>) =>
-    ipcRenderer.invoke(IPC_CHANNELS.UPDATE_SETTINGS, settings),
+    ipcRenderer.invoke(CHANNELS.UPDATE_SETTINGS, settings),
 
   // Events from main process
   onTrackerStateUpdate: (callback: (state: any) => void) => {
-    ipcRenderer.on(IPC_CHANNELS.TRACKER_STATE_UPDATE, (_, state) => callback(state));
+    ipcRenderer.on(CHANNELS.TRACKER_STATE_UPDATE, (_, state) => callback(state));
   },
   onNotification: (callback: (data: any) => void) => {
-    ipcRenderer.on(IPC_CHANNELS.NOTIFICATION, (_, data) => callback(data));
+    ipcRenderer.on(CHANNELS.NOTIFICATION, (_, data) => callback(data));
   },
   onTaskAssigned: (callback: (task: any) => void) => {
-    ipcRenderer.on(IPC_CHANNELS.TASK_ASSIGNED, (_, task) => callback(task));
+    ipcRenderer.on(CHANNELS.TASK_ASSIGNED, (_, task) => callback(task));
   },
 });
