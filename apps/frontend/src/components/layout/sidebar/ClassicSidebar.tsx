@@ -15,6 +15,7 @@ import { CompanyLogo } from "../../ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
 import { useSidebarNavLink } from "./useSidebarNavLink";
 import { isCapacitorNative } from "../../../config/environment";
+import { AppInstallActions } from "../../common/AppInstallActions";
 
 
 interface ClassicSidebarProps {
@@ -502,28 +503,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
           })}
       </div>
 
-      {!isCapacitorNative() && (
-        <div className="p-2.5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-800/20">
-          <a
-            href="/download/maxp.apk"
-            download="MaxP.apk"
-            className={`flex items-center gap-2.5 p-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all ${
-              isCollapsed ? "justify-center" : ""
-            }`}
-            title="تحميل تطبيق الأندرويد (APK)"
-          >
-            <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
-              <DevicePhoneMobileIcon className="h-4 w-4" />
-            </span>
-            {!isCollapsed && (
-              <div className="flex flex-col text-start overflow-hidden">
-                <span className="font-semibold text-gray-900 dark:text-white leading-tight truncate">تطبيق الأندرويد</span>
-                <span className="text-[10px] text-gray-500 dark:text-gray-400">تحميل مباشر (APK)</span>
-              </div>
-            )}
-          </a>
-        </div>
-      )}
+      <AppInstallActions layout="sidebar" isCollapsed={isCollapsed} />
     </div>
   );
 };
