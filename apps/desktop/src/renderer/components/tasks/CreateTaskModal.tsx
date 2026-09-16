@@ -1,0 +1,566 @@
+import React, { useState } from 'react';
+import {
+  X,
+  Plus,
+  Camera,
+  Paperclip,
+  Trash2,
+  Calendar,
+  Users,
+  Repeat,
+  AlertCircle,
+  Clock,
+  Loader2,
+} from 'lucide-react';
+
+interface CompanyUser {
+  id: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+}
+
+interface AttachmentDraft {
+  base64Data: string;
+  fileName: string;
+  mimeType: string;
+  previewUrl: string;
+}
+
+interface CreateTaskModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+  users: CompanyUser[];
+}
+
+export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
+  isOpen,
+  onClose,
+  onCreated,
+  users,
+}) => {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
+  const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
+  const [dueDate, setDueDate] = useState('');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringRule, setRecurringRule] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY'>('DAILY');
+  const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  const handleCaptureScreen = async () => {
+    setIsCapturing(true);
+    setError(null);
+    try {
+      const res = await window.electronAPI.captureDesktopSnippet();
+      if (res.success && res.dataUrl) {
+        const newAtt: AttachmentDraft = {
+          base64Data: res.dataUrl,
+          fileName: `screenshot-${new Date().toISOString().replace(/[:.]/g, '-')}.png`,
+          mimeType: 'image/png',
+          previewUrl: res.dataUrl,
+        };
+        setAttachments((prev) => [...prev, newAtt]);
+      } else {
+        setError(res.error || 'فشل التقاط لقطة الشاشة');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'خطأ أثناء التقاط الشاشة');
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        setAttachments((prev) => [
+          ...prev,
+          {
+            base64Data: result,
+            fileName: file.name,
+            mimeType: file.type || 'image/png',
+            previewUrl: file.type.startsWith('image/') ? result : '',
+          },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) {
+      setError('يرجى كتابة عنوان المهمة');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // 1. Create task
+      const createRes = await window.electronAPI.createTask({
+        title: title.trim(),
+        description: description.trim() || title.trim(),
+        priority,
+        assignedTo: assignedTo || undefined,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        isRecurring,
+        recurringRule: isRecurring ? recurringRule : undefined,
+      });
+
+      if (!createRes.success || !createRes.task?.id) {
+        throw new Error(createRes.error || 'فشل إنشاء المهمة في السيرفر');
+      }
+
+      const newTaskId = createRes.task.id;
+
+      // 2. Upload attachments if any
+      for (const att of attachments) {
+        try {
+          await window.electronAPI.uploadTaskAttachment({
+            taskId: newTaskId,
+            base64Data: att.base64Data,
+            originalName: att.fileName,
+            mimeType: att.mimeType,
+          });
+        } catch (uploadErr) {
+          console.warn('[Task Modal] Attachment upload skipped:', uploadErr);
+        }
+      }
+
+      // Reset form & notify
+      setTitle('');
+      setDescription('');
+      setAssignedTo('');
+      setAttachments([]);
+      setIsRecurring(false);
+      onCreated();
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || 'تعذر حفظ المهمة');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={modalStyles.overlay}>
+      <div style={modalStyles.modal}>
+        {/* Modal Header */}
+        <div style={modalStyles.header}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Plus size={18} color="#38bdf8" />
+            <span style={modalStyles.title}>إسناد وتكليف مهمة عمل جديدة</span>
+          </div>
+          <button onClick={onClose} style={modalStyles.closeBtn}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {error && <div style={modalStyles.errorAlert}>{error}</div>}
+
+        <form onSubmit={handleSubmit} style={modalStyles.form}>
+          {/* Title */}
+          <div>
+            <label style={modalStyles.label}>عنوان المهمة *</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="مثال: مراجعة شحنات بوسطة وتأكيد المرتجعات…"
+              style={modalStyles.input}
+              required
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label style={modalStyles.label}>الوصف والتفاصيل</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="اكتب تعليمات أو ملاحظات توضيحية لزميلك…"
+              rows={3}
+              style={{ ...modalStyles.input, resize: 'vertical' }}
+            />
+          </div>
+
+          {/* Assignee & Priority (2 columns) */}
+          <div style={modalStyles.row2}>
+            <div>
+              <label style={modalStyles.label}>تكليف عضو فريق العمل</label>
+              <select
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+                style={modalStyles.select}
+              >
+                <option value="">تكليف نفسي (المستخدم الحالي)</option>
+                {users.map((u) => {
+                  const label =
+                    u.name ||
+                    `${u.firstName || ''} ${u.lastName || ''}`.trim() ||
+                    u.email ||
+                    u.id;
+                  return (
+                    <option key={u.id} value={u.id}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div>
+              <label style={modalStyles.label}>مستوى الأولوية</label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as any)}
+                style={modalStyles.select}
+              >
+                <option value="URGENT">عاجل وفوري (Urgent)</option>
+                <option value="HIGH">مرتفع (High)</option>
+                <option value="MEDIUM">عادي (Medium)</option>
+                <option value="LOW">منخفض (Low)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Due Date & Recurring */}
+          <div style={modalStyles.row2}>
+            <div>
+              <label style={modalStyles.label}>تاريخ ووقت الاستحقاق</label>
+              <input
+                type="datetime-local"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                style={modalStyles.input}
+              />
+            </div>
+
+            <div>
+              <label style={modalStyles.label}>نمط التكرار التلقائي</label>
+              <div style={modalStyles.recurringWrap}>
+                <label style={modalStyles.toggleLabel}>
+                  <input
+                    type="checkbox"
+                    checked={isRecurring}
+                    onChange={(e) => setIsRecurring(e.target.checked)}
+                    style={{ accentColor: '#38bdf8' }}
+                  />
+                  <span>مهمة متكررة</span>
+                </label>
+                {isRecurring && (
+                  <select
+                    value={recurringRule}
+                    onChange={(e) => setRecurringRule(e.target.value as any)}
+                    style={{ ...modalStyles.select, flex: 1, padding: '4px 8px' }}
+                  >
+                    <option value="DAILY">يومياً</option>
+                    <option value="WEEKLY">أسبوعياً</option>
+                    <option value="MONTHLY">شهرياً</option>
+                  </select>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Attachments & Screen Snippet */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={modalStyles.label}>المرفقات والصور ({attachments.length})</label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  type="button"
+                  onClick={handleCaptureScreen}
+                  disabled={isCapturing}
+                  style={modalStyles.actionSmallBtn}
+                  title="التقاط لقطة شاشة للحاسوب وإرفاقها فوراً"
+                >
+                  <Camera size={13} color="#38bdf8" />
+                  <span>{isCapturing ? 'جاري الالتقاط…' : 'لقطة شاشة فورية'}</span>
+                </button>
+
+                <label style={modalStyles.actionSmallBtn}>
+                  <Paperclip size={13} color="#a855f7" />
+                  <span>رفع صورة / ملف</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx"
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Attachments preview list */}
+            {attachments.length > 0 && (
+              <div style={modalStyles.attachmentList}>
+                {attachments.map((att, i) => (
+                  <div key={i} style={modalStyles.attachmentChip}>
+                    {att.previewUrl ? (
+                      <img src={att.previewUrl} alt="" style={modalStyles.thumb} />
+                    ) : (
+                      <Paperclip size={12} color="#94a3b8" />
+                    )}
+                    <span style={modalStyles.attName}>{att.fileName}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(i)}
+                      style={modalStyles.removeAttBtn}
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Actions Footer */}
+          <div style={modalStyles.footer}>
+            <button type="button" onClick={onClose} style={modalStyles.cancelBtn}>
+              إلغاء
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={modalStyles.submitBtn}
+              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)'; }}
+              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+            >
+              {isSubmitting && <Loader2 size={14} className="animate-spin" />}
+              <span>{isSubmitting ? 'جاري الحفظ والرفع…' : 'إسناد المهمة الآن'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const modalStyles: Record<string, React.CSSProperties> = {
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    backdropFilter: 'blur(3px)',
+  },
+  modal: {
+    backgroundColor: '#121216',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    width: '92%',
+    maxWidth: 580,
+    maxHeight: '90vh',
+    display: 'flex',
+    flexDirection: 'column',
+    overflowY: 'auto',
+    boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '14px 18px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: '#fafafa',
+  },
+  closeBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#71717a',
+    cursor: 'pointer',
+    padding: 4,
+    borderRadius: 4,
+  },
+  form: {
+    padding: '16px 18px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  label: {
+    display: 'block',
+    fontSize: 11,
+    color: '#a1a1aa',
+    marginBottom: 4,
+  },
+  input: {
+    width: '100%',
+    padding: '7px 10px',
+    fontSize: 12,
+    backgroundColor: '#0a0a0d',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: 6,
+    color: '#fafafa',
+    fontFamily: 'inherit',
+    outline: 'none',
+    boxSizing: 'border-box',
+  },
+  select: {
+    width: '100%',
+    padding: '7px 10px',
+    fontSize: 12,
+    backgroundColor: '#0a0a0d',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: 6,
+    color: '#fafafa',
+    fontFamily: 'inherit',
+    outline: 'none',
+    boxSizing: 'border-box',
+  },
+  row2: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 10,
+  },
+  recurringWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    height: 33,
+  },
+  toggleLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 12,
+    color: '#fafafa',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  },
+  actionSmallBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#1c1c21',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: 6,
+    padding: '4px 8px',
+    fontSize: 11,
+    color: '#e4e4e7',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 120ms ease-out',
+  },
+  attachmentList: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6,
+    maxHeight: 100,
+    overflowY: 'auto',
+    padding: 6,
+    backgroundColor: '#0a0a0d',
+    borderRadius: 6,
+    border: '1px solid rgba(255, 255, 255, 0.05)',
+  },
+  attachmentChip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#18181b',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: 4,
+    padding: '3px 6px',
+    fontSize: 11,
+    maxWidth: 220,
+  },
+  thumb: {
+    width: 18,
+    height: 18,
+    borderRadius: 2,
+    objectFit: 'cover',
+  },
+  attName: {
+    flex: 1,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    color: '#d4d4d8',
+    fontSize: 10,
+  },
+  removeAttBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#ef4444',
+    cursor: 'pointer',
+    padding: 1,
+  },
+  footer: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: 8,
+    paddingTop: 10,
+    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+    marginTop: 4,
+  },
+  cancelBtn: {
+    backgroundColor: '#18181b',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    color: '#a1a1aa',
+    padding: '7px 14px',
+    borderRadius: 6,
+    fontSize: 12,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  submitBtn: {
+    backgroundColor: '#0284c7',
+    border: 'none',
+    color: '#ffffff',
+    padding: '7px 16px',
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  errorAlert: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    border: '1px solid rgba(239, 68, 68, 0.25)',
+    color: '#f87171',
+    padding: '8px 12px',
+    margin: '10px 18px 0',
+    borderRadius: 6,
+    fontSize: 12,
+  },
+};
+
+export default CreateTaskModal;

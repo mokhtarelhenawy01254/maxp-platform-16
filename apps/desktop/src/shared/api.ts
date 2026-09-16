@@ -146,19 +146,130 @@ class MonitorApiClient {
     }
   }
 
-  // ── Tasks ──────────────────────────────────────────────────────
+  // ── Tasks Engine ──────────────────────────────────────────────
 
-  async getTasks(): Promise<any[]> {
+  async getTasks(type: 'my-tasks' | 'assigned-by-me' = 'my-tasks'): Promise<any[]> {
     try {
       const base = this.serverUrl;
-      const res = await axios.get(`${base}/api/tasks/my`, {
+      const res = await axios.get(`${base}/api/v1/tasks/${type}`, {
         headers: { Authorization: `Bearer ${this.authToken}` },
         timeout: 10_000,
       });
-      return res.data?.tasks ?? res.data?.data ?? [];
-    } catch {
+      return res.data?.data ?? res.data?.tasks ?? [];
+    } catch (err: any) {
+      console.warn(`[API] getTasks(${type}) failed:`, err?.message);
       return [];
     }
+  }
+
+  async getCompanyUsers(): Promise<any[]> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.get(`${base}/api/v1/tasks/company-users`, {
+        headers: { Authorization: `Bearer ${this.authToken}` },
+        timeout: 10_000,
+      });
+      return res.data?.data ?? [];
+    } catch (err: any) {
+      console.warn('[API] getCompanyUsers failed:', err?.message);
+      return [];
+    }
+  }
+
+  async createTask(taskData: {
+    title: string;
+    description?: string;
+    priority?: string;
+    assignedTo?: string;
+    dueDate?: string;
+    isRecurring?: boolean;
+    recurringRule?: string;
+  }): Promise<any> {
+    const base = this.serverUrl;
+    const payload = {
+      title: taskData.title,
+      description: taskData.description || taskData.title,
+      priority: (taskData.priority || 'MEDIUM').toUpperCase(),
+      assignedTo: taskData.assignedTo,
+      dueDate: taskData.dueDate || null,
+      isRecurring: taskData.isRecurring || false,
+      recurringRule: taskData.recurringRule || null,
+    };
+
+    const res = await axios.post(`${base}/api/v1/tasks`, payload, {
+      headers: {
+        Authorization: `Bearer ${this.authToken}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: 15_000,
+    });
+    return res.data?.data ?? res.data;
+  }
+
+  async updateTaskStatus(taskId: string, status: string): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.put(
+      `${base}/api/v1/tasks/${taskId}/status`,
+      { status: status.toUpperCase() },
+      {
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 10_000,
+      }
+    );
+    return res.data?.data ?? res.data;
+  }
+
+  async uploadTaskAttachment(
+    taskId: string,
+    base64Data: string,
+    originalName: string,
+    mimeType: string = 'image/png'
+  ): Promise<any> {
+    const base = this.serverUrl;
+    const buffer = Buffer.from(
+      base64Data.replace(/^data:[^;]+;base64,/, ''),
+      'base64'
+    );
+    const blob = new Blob([buffer], { type: mimeType });
+    const formData = new FormData();
+    formData.append('file', blob, originalName || 'screenshot.png');
+
+    // 1. Upload file binary
+    const uploadRes = await axios.post(`${base}/api/v1/upload`, formData, {
+      headers: {
+        Authorization: `Bearer ${this.authToken}`,
+      },
+      timeout: 30_000,
+    });
+
+    const uploadPayload = uploadRes.data;
+    if (!uploadPayload?.success && !uploadPayload?.filePath) {
+      throw new Error(uploadPayload?.error || 'فشل في رفع المرفق');
+    }
+
+    // 2. Link attachment to task
+    const linkRes = await axios.post(
+      `${base}/api/v1/tasks/${taskId}/attachments`,
+      {
+        fileName: uploadPayload.fileName,
+        originalName: uploadPayload.originalName || originalName,
+        fileSize: uploadPayload.fileSize || buffer.length,
+        fileType: mimeType,
+        filePath: uploadPayload.filePath,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 10_000,
+      }
+    );
+
+    return linkRes.data?.data ?? linkRes.data;
   }
 }
 

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain, desktopCapturer } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -445,6 +445,76 @@ function registerIpcHandlers(): void {
       user: store.get('user', null),
       serverUrl: store.get('serverUrl', ''),
     };
+  });
+
+  // ── Tasks Engine Handlers ──
+  ipcMain.handle('tasks:get', async (_, type?: 'my-tasks' | 'assigned-by-me') => {
+    try {
+      const tasks = await apiClient.getTasks(type || 'my-tasks');
+      return { success: true, tasks };
+    } catch (err: any) {
+      return { success: false, error: err.message, tasks: [] };
+    }
+  });
+
+  ipcMain.handle('tasks:get-users', async () => {
+    try {
+      const users = await apiClient.getCompanyUsers();
+      return { success: true, users };
+    } catch (err: any) {
+      return { success: false, error: err.message, users: [] };
+    }
+  });
+
+  ipcMain.handle('tasks:create', async (_, taskData) => {
+    try {
+      const task = await apiClient.createTask(taskData);
+      return { success: true, task };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('tasks:update-status', async (_, { taskId, status }) => {
+    try {
+      const task = await apiClient.updateTaskStatus(taskId, status);
+      return { success: true, task };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle(
+    'tasks:upload-attachment',
+    async (_, { taskId, base64Data, originalName, mimeType }) => {
+      try {
+        const attachment = await apiClient.uploadTaskAttachment(
+          taskId,
+          base64Data,
+          originalName,
+          mimeType
+        );
+        return { success: true, attachment };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    }
+  );
+
+  ipcMain.handle('tasks:capture-screen', async () => {
+    try {
+      const sources = await desktopCapturer.getSources({
+        types: ['screen'],
+        thumbnailSize: { width: 1440, height: 900 },
+      });
+      if (sources.length > 0) {
+        const dataUrl = sources[0].thumbnail.toDataURL();
+        return { success: true, dataUrl };
+      }
+      return { success: false, error: 'لم يتم العثور على شاشة متاحة للالتقاط' };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   });
 }
 

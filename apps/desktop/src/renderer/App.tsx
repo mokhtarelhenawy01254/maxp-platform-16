@@ -21,6 +21,17 @@ declare global {
       getAuthState: () => Promise<{ isLoggedIn: boolean; user: any; serverUrl: string }>;
       getSettings: () => Promise<any>;
       updateSettings: (settings: Record<string, any>) => Promise<boolean>;
+      getTasks: (type?: 'my-tasks' | 'assigned-by-me') => Promise<{ success: boolean; tasks: any[]; error?: string }>;
+      getCompanyUsers: () => Promise<{ success: boolean; users: any[]; error?: string }>;
+      createTask: (taskData: any) => Promise<{ success: boolean; task?: any; error?: string }>;
+      updateTaskStatus: (taskId: string, status: string) => Promise<{ success: boolean; task?: any; error?: string }>;
+      uploadTaskAttachment: (data: {
+        taskId: string;
+        base64Data: string;
+        originalName: string;
+        mimeType?: string;
+      }) => Promise<{ success: boolean; attachment?: any; error?: string }>;
+      captureDesktopSnippet: () => Promise<{ success: boolean; dataUrl?: string; error?: string }>;
       onTrackerStateUpdate: (callback: (state: any) => void) => void;
       onNotification: (callback: (data: any) => void) => void;
       onTaskAssigned: (callback: (task: any) => void) => void;

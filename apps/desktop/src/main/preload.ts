@@ -49,6 +49,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateSettings: (settings: Record<string, any>) =>
     ipcRenderer.invoke(CHANNELS.UPDATE_SETTINGS, settings),
 
+  // Tasks Engine
+  getTasks: (type?: 'my-tasks' | 'assigned-by-me') =>
+    ipcRenderer.invoke('tasks:get', type),
+  getCompanyUsers: () =>
+    ipcRenderer.invoke('tasks:get-users'),
+  createTask: (taskData: any) =>
+    ipcRenderer.invoke('tasks:create', taskData),
+  updateTaskStatus: (taskId: string, status: string) =>
+    ipcRenderer.invoke('tasks:update-status', { taskId, status }),
+  uploadTaskAttachment: (data: {
+    taskId: string;
+    base64Data: string;
+    originalName: string;
+    mimeType?: string;
+  }) => ipcRenderer.invoke('tasks:upload-attachment', data),
+  captureDesktopSnippet: () =>
+    ipcRenderer.invoke('tasks:capture-screen'),
+
   // Events from main process
   onTrackerStateUpdate: (callback: (state: any) => void) => {
     ipcRenderer.on(CHANNELS.TRACKER_STATE_UPDATE, (_, state) => callback(state));
@@ -60,3 +78,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on(CHANNELS.TASK_ASSIGNED, (_, task) => callback(task));
   },
 });
+

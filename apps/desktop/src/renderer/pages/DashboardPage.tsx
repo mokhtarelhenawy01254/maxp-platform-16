@@ -13,7 +13,21 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<TabId>('cockpit');
+  const [activeTab, setActiveTabState] = useState<TabId>(() => {
+    try {
+      return (localStorage.getItem('maxp_active_tab') as TabId) || 'tasks';
+    } catch {
+      return 'tasks';
+    }
+  });
+
+  const setActiveTab = (tab: TabId) => {
+    setActiveTabState(tab);
+    try {
+      localStorage.setItem('maxp_active_tab', tab);
+    } catch {}
+  };
+
   const [trackerState, setTrackerState] = useState<any>(null);
   const [dailySummary, setDailySummary] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
