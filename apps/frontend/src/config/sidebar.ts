@@ -703,14 +703,14 @@ export const getSidebarConfig = (
             title: t('sidebar.productsSection'),
             icon: ShoppingBag,
             items: [
+                { to: '/products', icon: ShoppingBag, label: t('sidebar.products') },
+                { to: '/products/products-availability', icon: Table2, label: t('sidebar.productsAvailability'), requiredPermissions: ['products.view'] },
+                { to: '/categories', icon: Tag, label: t('sidebar.categories') },
                 {
                     to: '/inventory/studio',
                     icon: Sparkles,
                     label: isEn ? 'AI Product & Inventory Studio' : 'مركز المنتجات والمخزون الذكي (AI Studio)',
                 },
-                { to: '/products', icon: ShoppingBag, label: t('sidebar.products') },
-                { to: '/products/products-availability', icon: Table2, label: t('sidebar.productsAvailability'), requiredPermissions: ['products.view'] },
-                { to: '/categories', icon: Tag, label: t('sidebar.categories') },
             ],
             hidden: user?.role === 'AFFILIATE' || !isStoreActive()
         },
@@ -884,11 +884,6 @@ export const getSidebarConfig = (
             title: t('sidebar.inventorySection'),
             icon: ClipboardList,
             items: [
-                {
-                    to: '/inventory/studio',
-                    icon: Sparkles,
-                    label: isEn ? 'AI Inventory & Pricing Studio' : 'مركز المخزون والتسعير الذكي (AI Studio)',
-                },
                 { to: '/inventory', icon: Archive, label: t('sidebar.inventory') },
                 { to: '/inventory/movements', icon: ArrowLeftRight, label: t('sidebar.stockMovements') },
                 { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['inventory-pro', 'multi-warehouse-pro', 'store-pro']) },
@@ -896,6 +891,11 @@ export const getSidebarConfig = (
                 { to: '/inventory/reorder-points', icon: AlertTriangle, label: t('sidebar.reorderPoints') },
                 { to: '/inventory/analytics', icon: BarChart3, label: t('sidebar.orderAnalytics') },
                 { to: '/inventory/reports', icon: BarChart3, label: t('sidebar.inventoryReports') },
+                {
+                    to: '/inventory/studio',
+                    icon: Sparkles,
+                    label: isEn ? 'AI Inventory & Pricing Studio' : 'مركز المخزون والتسعير الذكي (AI Studio)',
+                },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['inventory-pro', 'multi-warehouse-pro', ...STORE_APP_SLUGS])

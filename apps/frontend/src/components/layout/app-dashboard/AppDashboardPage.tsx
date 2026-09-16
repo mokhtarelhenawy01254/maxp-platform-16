@@ -510,10 +510,11 @@ const buildAppFromSection = (
     bgGradient: metadata?.bgGradient ?? `from-${fallbackColor}-500 to-${fallbackColor}-600`,
     sectionIds: [section.id],
     category,
-      displayName: section.title,
-      displayDescription: exactMetadata?.descriptionKey
-        ? t(exactMetadata.descriptionKey)
-        : t('appDashboard.toolsCount', { count: visibleItemCount }),
+    displayName: section.title,
+    displayDescription: exactMetadata?.descriptionKey
+      ? t(exactMetadata.descriptionKey)
+      : t('appDashboard.toolsCount', { count: visibleItemCount }),
+    route: metadata?.route || (section.id === 'products' ? '/products' : section.id === 'inventory' ? '/inventory' : undefined),
   };
 };
 

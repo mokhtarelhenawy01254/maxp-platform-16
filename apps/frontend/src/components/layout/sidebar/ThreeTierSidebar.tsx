@@ -58,6 +58,14 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
   );
 
   const findActiveSection = () => {
+    const normalized = currentPath.split("?")[0].replace(/\/+$/, "") || "/";
+    const directSection = visibleSectionsWithItems.find(
+      (section) => normalized === `/${section.id}` || normalized.startsWith(`/${section.id}/`)
+    );
+    if (directSection && directSection.visibleItems.some((item) => isSidebarPathActive(currentPath, item.to))) {
+      return directSection.id;
+    }
+
     return (
       visibleSectionsWithItems.find((section) =>
         section.visibleItems.some((item) =>
@@ -69,12 +77,23 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
     );
   };
 
-  const routeActiveSectionId =
-    visibleSectionsWithItems.find((section) =>
-      section.visibleItems.some((item) =>
-        isSidebarPathActive(currentPath, item.to),
-      ),
-    )?.id || "";
+  const routeActiveSectionId = useMemo(() => {
+    const normalized = currentPath.split("?")[0].replace(/\/+$/, "") || "/";
+    const directSection = visibleSectionsWithItems.find(
+      (section) => normalized === `/${section.id}` || normalized.startsWith(`/${section.id}/`)
+    );
+    if (directSection && directSection.visibleItems.some((item) => isSidebarPathActive(currentPath, item.to))) {
+      return directSection.id;
+    }
+
+    return (
+      visibleSectionsWithItems.find((section) =>
+        section.visibleItems.some((item) =>
+          isSidebarPathActive(currentPath, item.to),
+        ),
+      )?.id || ""
+    );
+  }, [visibleSectionsWithItems, currentPath]);
 
   const [activeSectionId, setActiveSectionId] =
     useState<string>(findActiveSection());

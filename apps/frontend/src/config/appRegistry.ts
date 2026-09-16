@@ -172,6 +172,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-pink-500 to-pink-600',
     sectionIds: ['products'],
     category: 'sales',
+    route: '/products',
   },
   {
     id: 'storefront-design',
@@ -225,6 +226,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     sectionIds: ['inventory'],
     category: 'operations',
     requiredApps: ['inventory-pro', 'multi-warehouse-pro', ...STORE_DEPENDENT_APPS],
+    route: '/inventory',
   },
   {
     id: 'shipping',

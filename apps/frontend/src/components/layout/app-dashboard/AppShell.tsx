@@ -334,13 +334,33 @@ const buildAppFromSection = (section: SidebarSection): AppDefinition => {
     sectionIds: [section.id],
     category: metadata?.category ?? 'main',
     displayName: section.title,
+    route: metadata?.route || (section.id === 'products' ? '/products' : section.id === 'inventory' ? '/inventory' : undefined),
   };
 };
 
-const getAppByPath = (
+export const getAppByPath = (
   pathname: string,
   allSections: SidebarSection[],
 ): AppDefinition | undefined => {
+  const normalized = normalizePathname(pathname);
+
+  // 1. Direct section prefix match (e.g. /inventory/* matches section 'inventory', /products/* matches section 'products')
+  const directSection = allSections.find(
+    (s) => !s.hidden && (normalized === `/${s.id}` || normalized.startsWith(`/${s.id}/`))
+  );
+  if (directSection && directSection.items.some((item) => itemOrChildrenMatchPath(item, pathname))) {
+    return buildAppFromSection(directSection);
+  }
+
+  // 2. Exact item path match
+  const exactSection = allSections.find(
+    (candidate) => !candidate.hidden && candidate.items.some((item) => !item.hidden && normalizePathname(item.to) === normalized)
+  );
+  if (exactSection) {
+    return buildAppFromSection(exactSection);
+  }
+
+  // 3. General section match
   const section = allSections.find((candidate) => sectionHasPath(candidate, pathname));
   if (section) {
     return buildAppFromSection(section);
