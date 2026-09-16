@@ -861,9 +861,10 @@ async function listTenantAIKeys(companyId, includeSecret = false, options = {}) 
 
 function getAgentModelHints(agentConfig) {
   const config = parseJsonObject(agentConfig?.config, {});
-  const provider = String(
+  let provider = String(
     config.provider || config.providerType || agentConfig?.provider || ''
   ).trim().toUpperCase();
+  if (provider === 'GEMINI') provider = 'GOOGLE';
   const keyId = String(
     config.keyId || config.key_id || agentConfig?.keyId || agentConfig?.key_id || ''
   ).trim();
@@ -873,7 +874,10 @@ function getAgentModelHints(agentConfig) {
 
 async function resolveRequestedSandboxModelSelection(companyId, { provider, model, keyId }) {
   return tenantContext.bypass(async () => {
-    const requestedProvider = String(provider || '').trim().toUpperCase();
+    let requestedProvider = String(provider || '').trim().toUpperCase();
+    if (requestedProvider === 'GEMINI') {
+      requestedProvider = 'GOOGLE';
+    }
     const requestedModel = String(model || '').trim();
     const requestedKeyId = typeof keyId === 'string' ? keyId.trim() : '';
 

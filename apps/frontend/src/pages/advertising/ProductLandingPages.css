@@ -2302,7 +2302,7 @@
 /* Zero Horizontal Overflow on small screens (<= 768px) */
 @media (max-width: 768px) {
   .eo-builder-page {
-    padding: 8px;
+    padding: 8px 8px calc(5rem + env(safe-area-inset-bottom, 0px)) 8px;
     overflow-x: hidden;
     width: 100%;
     max-width: 100%;

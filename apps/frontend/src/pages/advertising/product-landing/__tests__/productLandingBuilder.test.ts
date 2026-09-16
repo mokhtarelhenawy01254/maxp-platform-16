@@ -163,6 +163,52 @@ describe("Product Landing Builder - Full EasyOrders Parity Tests", () => {
     expect(html).toContain("نماذج وقوالب");
     expect(html).toContain("تصدير JSON");
     expect(html).toContain("استيراد JSON");
+    expect(html).toContain("eo-header-mobile-bar");
+  });
+
+  it("should render ElementsSidebarDrawer with mobile sheet and close button", async () => {
+    const { renderToString } = await import("react-dom/server");
+    const React = await import("react");
+    const { ElementsSidebarDrawer } = await import("../ElementsSidebarDrawer");
+
+    const html = renderToString(
+      React.createElement(ElementsSidebarDrawer, {
+        onAddSection: () => {},
+        onClose: () => {},
+        isMobileSheet: true,
+      })
+    );
+
+    expect(html).toContain("is-mobile-sheet");
+    expect(html).toContain("eo-sidebar-close-btn");
+    expect(html).toContain("مكتبة عناصر الصفحة");
+  });
+
+  it("should render PhoneMockupPreview in full-bleed mobile mode", async () => {
+    const { renderToString } = await import("react-dom/server");
+    const React = await import("react");
+    const { PhoneMockupPreview } = await import("../PhoneMockupPreview");
+
+    const html = renderToString(
+      React.createElement(PhoneMockupPreview, {
+        title: "صفحة هبوط تجريبية",
+        product: mockProduct as any,
+        sections: [],
+        formConfig: {
+          orderKicker: "اطلب الآن",
+          orderTitle: "شراء",
+          orderCopy: "تفاصيل",
+          buttonLabel: "تأكيد",
+        },
+        previewUrl: "https://example.com/preview",
+        isMobileView: true,
+      })
+    );
+
+    expect(html).toContain("is-mobile-view");
+    expect(html).toContain("is-mobile-full-bleed");
+    // In mobile view, artificial phone notch should be omitted
+    expect(html).not.toContain("eo-phone-notch");
   });
 });
 
