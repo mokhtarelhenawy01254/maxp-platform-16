@@ -661,6 +661,28 @@ export const storefrontApi = {
     }
     return data;
   },
+
+  getPostPurchaseOffer: async () => {
+    return storefrontFetch("/public/post-purchase-offer", {
+      method: "GET",
+    });
+  },
+
+  acceptPostPurchaseOffer: async (
+    orderId: string,
+    payload: Record<string, unknown>,
+  ) => {
+    return storefrontFetch(
+      `/orders/${encodeURIComponent(orderId)}/accept-offer`,
+      withJsonBody("POST", payload),
+    );
+  },
+
+  getPublicOrder: async (orderId: string) => {
+    return storefrontFetch(`/orders/${encodeURIComponent(orderId)}`, {
+      method: "GET",
+    });
+  },
 };
 
 export default storefrontApi;

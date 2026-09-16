@@ -267,6 +267,7 @@ const authRoutes = require("./routes/authRoutes");
 const branchRoutes = require("./routes/branchRoutes");
 const broadcastRoutes = require("./routes/broadcastRoutes");
 const checkoutFormSettingsRoutes = require("./routes/checkoutFormSettingsRoutes");
+const postPurchaseOfferRoutes = require("./routes/postPurchaseOfferRoutes");
 const commentRoutes = require("./routes/commentRoutes");
 const companyDashboardRoutes = require("./routes/companyDashboardRoutes");
 const companyRoutes = require("./routes/companyRoutes");
@@ -686,6 +687,7 @@ app.use("/api/v1/public/lp-pages", require("./routes/lpAdminRoutes").publicRoute
 app.use("/api/v1/public/support-settings", require("./routes/publicSupportSettings"));
 app.use("/api/v1/public", publicCouponsRoutes);
 app.use("/api/v1/public/checkout-form-settings", checkoutFormSettingsRoutes);
+app.use("/api/v1/public/post-purchase-offer", postPurchaseOfferRoutes);
 app.use("/api/v1/public/footer-settings", footerSettingsRoutes);
 app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
 app.use("/api/v1/public/forms", publicFormsRoutes);
@@ -821,6 +823,7 @@ app.use("/api/v1/analytics/order-movement", require("./routes/orderMovementRoute
 app.use("/api/v1/storefront-settings", storefrontSettingsRoutes);
 app.use("/api/v1/storefront/settings", storefrontSettingsRoutes); // Convenient alias
 app.use("/api/v1/checkout-form-settings", checkoutFormSettingsRoutes);
+app.use("/api/v1/post-purchase-offer", postPurchaseOfferRoutes);
 app.use("/api/v1/footer-settings", footerSettingsRoutes);
 
 // Customer & Order Lifecycle

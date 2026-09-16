@@ -439,6 +439,14 @@ export default function UpsellHubPage() {
         <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0">
           <button
             type="button"
+            onClick={() => navigate("/settings/post-purchase-offer")}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2.5 text-xs font-black text-emerald-800 shadow-sm transition hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200"
+          >
+            <Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            أداة العرض بعد الطلب (One-Click Offer)
+          </button>
+          <button
+            type="button"
             onClick={() => navigate("/tools/upsell-planner")}
             className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-xs font-bold text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
           >

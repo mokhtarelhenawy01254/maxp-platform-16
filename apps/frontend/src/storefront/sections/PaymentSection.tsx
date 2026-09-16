@@ -799,18 +799,25 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
   useEffect(() => {
     if (orderSuccess) {
       const resolvedOrderId = orderSuccess.orderNumber || orderSuccess.id || 'success';
-      const thankYouPath = buildStorefrontPath(
+      const postPurchaseOffer = (storefrontSettings as any)?.designTokens?.postPurchaseOffer;
+      const isOfferActive = Boolean(
+        postPurchaseOffer?.enabled &&
+        postPurchaseOffer?.productId
+      );
+
+      const targetRoute = isOfferActive ? '/order-offer' : '/thank-you';
+      const nextPath = buildStorefrontPath(
         location.pathname,
-        `/thank-you?orderId=${encodeURIComponent(resolvedOrderId)}`,
+        `${targetRoute}?orderId=${encodeURIComponent(resolvedOrderId)}`,
         location.search,
       );
-      navigate(thankYouPath, {
+      navigate(nextPath, {
         state: orderSuccess.purchaseTracking
           ? { purchaseTracking: orderSuccess.purchaseTracking }
           : null,
       });
     }
-  }, [location.pathname, location.search, navigate, orderSuccess]);
+  }, [location.pathname, location.search, navigate, orderSuccess, storefrontSettings]);
 
   const validateForm = useCallback((): string[] => {
     const errors: string[] = [];

@@ -731,37 +731,77 @@ def genai_tools_from_dicts(tool_list: list[dict[str, Any]]) -> list[Any]:
     return result
 
 
-def _dict_to_schema(schema_dict: dict[str, Any]) -> Any:
-    from google.genai import types
-
-    return types.Schema(**schema_dict) if schema_dict.get("type") else types.Schema(type="OBJECT", **schema_dict)
-
-
-def _gemini_clean_schema(schema: dict[str, Any]) -> dict[str, Any]:
+def _clean_schema_for_genai(raw_schema: dict[str, Any]) -> dict[str, Any]:
     import copy
 
-    converted = copy.deepcopy(schema)
+    schema = copy.deepcopy(raw_schema)
+    defs = schema.pop("$defs", {}) or schema.pop("definitions", {})
 
-    def convert_node(node: Any) -> Any:
+    def resolve_node(node: Any) -> Any:
         if isinstance(node, list):
-            return [convert_node(item) for item in node]
+            return [resolve_node(item) for item in node]
         if not isinstance(node, dict):
             return node
-        result: dict[str, Any] = {}
+
+        if "$ref" in node:
+            ref_path = str(node["$ref"])
+            ref_name = ref_path.split("/")[-1]
+            if ref_name in defs:
+                resolved = resolve_node(copy.deepcopy(defs[ref_name]))
+                for k, v in node.items():
+                    if k != "$ref":
+                        resolved[k] = resolve_node(v)
+                return resolved
+
+        if "anyOf" in node:
+            any_of = node["anyOf"]
+            if isinstance(any_of, list):
+                non_null = [item for item in any_of if not (isinstance(item, dict) and item.get("type") == "null")]
+                has_null = len(non_null) < len(any_of)
+                if len(non_null) == 1:
+                    resolved = resolve_node(copy.deepcopy(non_null[0]))
+                    if has_null and isinstance(resolved, dict):
+                        resolved["nullable"] = True
+                    return resolved
+                else:
+                    node["anyOf"] = [resolve_node(item) for item in non_null]
+                    if has_null:
+                        node["nullable"] = True
+
+        cleaned: dict[str, Any] = {}
         for key, value in node.items():
-            if key in {"additionalProperties", "const", "minimum", "maximum"}:
+            if key in {
+                "$defs", "definitions", "$schema", "title", "default", "examples",
+                "additionalProperties", "const", "minimum", "maximum", "minLength",
+                "maxLength", "pattern"
+            }:
                 continue
             if key == "type" and isinstance(value, list):
                 non_null = [item for item in value if item != "null"]
                 if non_null:
-                    result["type"] = non_null[0]
+                    cleaned["type"] = non_null[0]
                 if "null" in value:
-                    result["nullable"] = True
+                    cleaned["nullable"] = True
                 continue
-            result[key] = convert_node(value)
-        return result
+            cleaned[key] = resolve_node(value)
+        return cleaned
 
-    return convert_node(converted)
+    cleaned_schema = resolve_node(schema)
+    if not isinstance(cleaned_schema, dict):
+        cleaned_schema = {"type": "OBJECT"}
+    cleaned_schema.setdefault("type", "OBJECT")
+    return cleaned_schema
+
+
+def _dict_to_schema(schema_dict: dict[str, Any]) -> Any:
+    from google.genai import types
+
+    cleaned = _clean_schema_for_genai(schema_dict)
+    return types.Schema(**cleaned)
+
+
+def _gemini_clean_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    return _clean_schema_for_genai(schema)
 
 
 if __name__ == "__main__":

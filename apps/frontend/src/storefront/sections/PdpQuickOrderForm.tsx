@@ -1076,9 +1076,15 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       const resolvedOrderTotal = Number(
         response.data?.finalTotal ?? response.data?.total ?? total,
       );
+      const postPurchaseOffer = (storefrontSettings as any)?.designTokens?.postPurchaseOffer;
+      const isOfferActive = Boolean(
+        postPurchaseOffer?.enabled &&
+        postPurchaseOffer?.productId
+      );
+      const targetRoute = isOfferActive ? "/order-offer" : "/thank-you";
       const thankYouPath = buildStorefrontPath(
         location.pathname,
-        `/thank-you?orderId=${encodeURIComponent(String(resolvedOrderId))}`,
+        `${targetRoute}?orderId=${encodeURIComponent(String(resolvedOrderId))}`,
         location.search,
       );
 

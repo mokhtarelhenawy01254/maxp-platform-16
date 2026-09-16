@@ -76,6 +76,7 @@ export const shouldBootstrapStorefront = (
     pathname.startsWith("/shop/") ||
     pathname.startsWith("/cart") ||
     pathname.startsWith("/checkout") ||
+    pathname.startsWith("/order-offer") ||
     pathname.startsWith("/thank-you") ||
     pathname.startsWith("/collections/") ||
     pathname.startsWith("/pages/")

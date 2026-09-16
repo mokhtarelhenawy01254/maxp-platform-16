@@ -23,7 +23,12 @@ vi.mock("sonner", () => ({
 
 vi.mock("../../utils/storefrontApi", () => ({
   getCompanyId: () => "company-1",
+  getStorefrontScope: () => null,
   storefrontApi: storefrontApiMocks,
+}));
+
+vi.mock("../hooks/useStorefrontSettings", () => ({
+  useStorefrontSettings: () => ({ settings: null, isLoading: false, error: null }),
 }));
 
 const baseProduct = {

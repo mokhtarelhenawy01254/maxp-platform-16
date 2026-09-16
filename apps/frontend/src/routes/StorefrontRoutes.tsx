@@ -13,10 +13,12 @@ const StorefrontVisualEditorPage = React.lazy(() => import('../pages/settings/St
 const StorePages = React.lazy(() => import('../pages/settings/StorePages'));
 const StorefrontClaritySettings = React.lazy(() => import('../pages/settings/StorefrontClaritySettings'));
 const CodDepositSettings = React.lazy(() => import('../pages/settings/CodDepositSettings'));
+const PostPurchaseOfferBuilderPage = React.lazy(() => import('../pages/marketing/PostPurchaseOfferBuilderPage'));
 
 export const StorefrontRoutes = [
   <Route key="store-settings-redir" path="/store-settings" element={<Navigate to="/settings/store?tab=branches" replace />} />,
   <Route key="settings-store" path="/settings/store" element={<Layout><StoreSettings /></Layout>} />,
+  <Route key="settings-post-purchase-offer" path="/settings/post-purchase-offer" element={<Layout><PostPurchaseOfferBuilderPage /></Layout>} />,
   <Route key="settings-store-prod-conv" path="/settings/store/product-conversion" element={<Layout><ProductPageConversionSettingsPage /></Layout>} />,
   <Route key="settings-store-offers" path="/settings/store/offers-bundles" element={<Layout><StoreOffersBundlesSettingsPage /></Layout>} />,
   <Route key="settings-store-growth" path="/settings/store/growth-widgets" element={<Layout><StoreGrowthWidgetsSettingsPage /></Layout>} />,

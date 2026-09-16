@@ -80,6 +80,7 @@ import {
 import ProductImageLandingPage from "./pages/ProductImageLandingPage";
 import FunnelCodSalesPage from "./pages/FunnelCodSalesPage";
 import ReturnsPage from "./pages/ReturnsPage";
+import PostPurchaseOfferPage from "./pages/PostPurchaseOfferPage";
 import StorefrontNotFound from "./components/StorefrontNotFound";
 import { useStorePage } from "../hooks/useStorePage";
 import { footerSettingsService, type FooterSettings } from "../services/footerSettingsService";
@@ -284,6 +285,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
     isProductImageLandingPage ||
     isFunnelPage ||
     normalizedPath.endsWith("/checkout") ||
+    normalizedPath.endsWith("/order-offer") ||
     normalizedPath.endsWith("/thank-you");
   const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const isKhemetLuxeInnerRoute =
@@ -1321,6 +1323,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         />
         <Route path={scopedPath("cart")} element={cartPageElement} />
         <Route path={scopedPath("checkout")} element={checkoutPageElement} />
+        <Route path={scopedPath("order-offer")} element={<PostPurchaseOfferPage />} />
         <Route path={scopedPath("thank-you")} element={thankYouPageElement} />
         <Route
           path={scopedPath("registration")}

@@ -3353,6 +3353,193 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * ⚡ POST /api/v1/public/orders/:id/accept-offer
+ * Accept post-purchase special offer and append item to existing order atomically
+ */
+router.post('/:id/accept-offer', async (req, res) => {
+  try {
+    const { company } = req;
+    const { id } = req.params;
+    const {
+      productId,
+      variantId,
+      quantity = 1,
+      price,
+      name,
+      imageUrl,
+      originalPrice
+    } = req.body || {};
+
+    console.log('🎁 [ACCEPT-POST-PURCHASE-OFFER] Request for order:', id, 'company:', company?.id);
+
+    if (!company?.id) {
+      return res.status(400).json({ success: false, message: 'Storefront company context required' });
+    }
+
+    const prisma = await getPrisma();
+
+    // Find order by id or orderNumber
+    let order = await prisma.guestOrder.findFirst({
+      where: {
+        id,
+        companyId: company.id
+      }
+    });
+
+    if (!order) {
+      order = await prisma.guestOrder.findFirst({
+        where: {
+          orderNumber: id,
+          companyId: company.id
+        }
+      });
+    }
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+    }
+
+    let metadata = {};
+    try {
+      metadata = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {});
+    } catch (_) {
+      metadata = {};
+    }
+
+    // Guard against duplicate accept
+    if (metadata.postPurchaseOfferAccepted) {
+      return res.json({
+        success: true,
+        alreadyAccepted: true,
+        message: 'تمت إضافة العرض مسبقاً',
+        data: order
+      });
+    }
+
+    let resolvedName = name || 'عرض خاص بعد الطلب';
+    let resolvedPrice = Math.max(0, Number(price) || 0);
+    let resolvedImage = imageUrl || null;
+    let resolvedSku = '';
+
+    if (productId) {
+      const dbProduct = await prisma.product.findFirst({
+        where: { id: productId, companyId: company.id },
+        include: { variants: true }
+      });
+      if (dbProduct) {
+        resolvedName = dbProduct.name;
+        if (!resolvedImage) {
+          const firstImg = dbProduct.imageUrl || (Array.isArray(dbProduct.images) && dbProduct.images[0]);
+          resolvedImage = typeof firstImg === 'string' ? firstImg : firstImg?.url || null;
+        }
+        if (variantId && Array.isArray(dbProduct.variants)) {
+          const matchedVariant = dbProduct.variants.find(v => v.id === variantId);
+          if (matchedVariant) {
+            resolvedName = `${dbProduct.name} - ${matchedVariant.name || ''}`;
+            resolvedSku = matchedVariant.sku || '';
+            if (matchedVariant.price && resolvedPrice === 0) {
+              resolvedPrice = Number(matchedVariant.price);
+            }
+          }
+        } else if (resolvedPrice === 0 && dbProduct.price) {
+          resolvedPrice = Number(dbProduct.price);
+        }
+      }
+    }
+
+    let existingItems = [];
+    try {
+      existingItems = typeof order.items === 'string'
+        ? JSON.parse(order.items)
+        : (Array.isArray(order.items) ? order.items : []);
+    } catch (_) {
+      existingItems = [];
+    }
+
+    const offerItemQty = Math.max(1, Number(quantity) || 1);
+    const offerItem = {
+      productId: productId || null,
+      variantId: variantId || null,
+      name: resolvedName,
+      sku: resolvedSku,
+      price: resolvedPrice,
+      basePrice: resolvedPrice,
+      originalPrice: Math.max(0, Number(originalPrice) || resolvedPrice),
+      quantity: offerItemQty,
+      imageUrl: resolvedImage,
+      isPostPurchaseOffer: true,
+      addedPostPurchase: true
+    };
+
+    existingItems.push(offerItem);
+
+    const additionalTotal = Number((resolvedPrice * offerItemQty).toFixed(2));
+    const nextTotal = Number((Number(order.total || 0) + additionalTotal).toFixed(2));
+    const nextFinalTotal = Number((Number(order.finalTotal || 0) + additionalTotal).toFixed(2));
+
+    metadata.postPurchaseOfferAccepted = true;
+    metadata.postPurchaseOffer = {
+      productId,
+      variantId: variantId || null,
+      productName: resolvedName,
+      offerPrice: resolvedPrice,
+      quantity: offerItemQty,
+      acceptedAt: new Date().toISOString()
+    };
+
+    const updatedOrder = await prisma.guestOrder.update({
+      where: { id: order.id },
+      data: {
+        items: JSON.stringify(existingItems),
+        total: nextTotal,
+        finalTotal: nextFinalTotal,
+        metadata: JSON.stringify(metadata)
+      }
+    });
+
+    // Decrement stock if tracking enabled
+    try {
+      if (variantId) {
+        const variant = await prisma.productVariant.findUnique({ where: { id: variantId } });
+        if (variant && variant.trackInventory !== false) {
+          await prisma.productVariant.update({
+            where: { id: variantId },
+            data: { stock: { decrement: offerItemQty } }
+          });
+        }
+      }
+      if (productId) {
+        const prod = await prisma.product.findUnique({ where: { id: productId } });
+        if (prod && prod.trackInventory !== false) {
+          await prisma.product.update({
+            where: { id: productId },
+            data: { stock: { decrement: offerItemQty } }
+          });
+        }
+      }
+    } catch (stockErr) {
+      console.warn('⚠️ [POST-PURCHASE-OFFER] Stock decrement warning:', stockErr.message);
+    }
+
+    // Try socket notification for merchant realtime dashboard
+    try {
+      socketService.emitToCompany(company.id, 'order:updated', updatedOrder);
+    } catch (_) {}
+
+    console.log('🎉 [ACCEPT-POST-PURCHASE-OFFER] Success for order:', order.orderNumber, 'new total:', nextFinalTotal);
+
+    return res.json({
+      success: true,
+      data: updatedOrder,
+      message: 'تمت إضافة العرض الخاص بنجاح إلى طلبك'
+    });
+  } catch (error) {
+    console.error('❌ [ACCEPT-POST-PURCHASE-OFFER] Error accepting offer:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Update guest order status
 router.patch('/orders/:orderNumber/status', async (req, res) => {
   return res.status(403).json({

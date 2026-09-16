@@ -440,6 +440,7 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
   const locationState = location.state as { purchaseTracking?: PurchaseTrackingState } | null;
   const submittedPurchaseTracking = locationState?.purchaseTracking || null;
   const orderQueryParam = searchParams.get('orderId') || '';
+  const isOfferAccepted = searchParams.get('offerAccepted') === '1' || Boolean((location.state as any)?.offerAccepted);
   const storedPurchaseTracking = useMemo<PurchaseTrackingState | null>(
     () => getStoredPurchaseTracking(orderQueryParam) as PurchaseTrackingState | null,
     [orderQueryParam],
@@ -1366,6 +1367,22 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
               <span className={`text-xs font-bold ${isPcHub ? 'text-current' : 'text-foreground'}`}>{statusLabel}</span>
             </div>
           </div>
+
+          {isOfferAccepted ? (
+            <div className="rounded-2xl border border-emerald-300/80 bg-emerald-500/10 p-4 sm:p-5 text-emerald-950 dark:text-emerald-100 flex items-center gap-3.5 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm font-bold">
+                ✓
+              </div>
+              <div className="space-y-0.5">
+                <h3 className="font-black text-sm sm:text-base text-emerald-900 dark:text-emerald-200">
+                  🎉 رائع! تمت إضافة العرض الخاص بنجاح إلى شحنتك
+                </h3>
+                <p className="text-xs text-emerald-800/80 dark:text-emerald-300/80">
+                  تم تحديث بيانات طلبك وسيتم تجهيز وشحن العرض الإضافي داخل نفس الطرد.
+                </p>
+              </div>
+            </div>
+          ) : null}
 
           {showTimeline ? (
             <OrderStepTimeline currentStep={pcHubStatusExperience?.timelineStep || 'placed'} labels={timelineLabels} />

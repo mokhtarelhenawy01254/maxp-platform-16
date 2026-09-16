@@ -11,6 +11,7 @@ import { getPrimaryProductImage } from "../utils/productImages";
 import { buildStorefrontPath } from "../utils/paths";
 import { persistPurchaseTracking } from "../utils/purchaseTrackingStorage";
 import { isValidStorefrontPhone } from "../utils/phoneValidation";
+import { useStorefrontSettings } from "../hooks/useStorefrontSettings";
 import {
   getVariantAttributes,
   canonicalizeAttributeKey,
@@ -685,6 +686,7 @@ const ProductImageLandingPage: React.FC = () => {
   const { id: routeId } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
+  const { settings: storefrontSettings } = useStorefrontSettings();
   const searchParams = useMemo(
     () => new URLSearchParams(location.search),
     [location.search],
@@ -1438,9 +1440,15 @@ const ProductImageLandingPage: React.FC = () => {
           });
       }
 
+      const postPurchaseOffer = (storefrontSettings as any)?.designTokens?.postPurchaseOffer;
+      const isOfferActive = Boolean(
+        postPurchaseOffer?.enabled &&
+        postPurchaseOffer?.productId
+      );
+      const targetRoute = isOfferActive ? "/order-offer" : "/thank-you";
       const thankYouPath = buildStorefrontPath(
         location.pathname,
-        `/thank-you?orderId=${encodeURIComponent(String(orderId))}`,
+        `${targetRoute}?orderId=${encodeURIComponent(String(orderId))}`,
         location.search,
       );
 
@@ -1557,38 +1565,16 @@ const ProductImageLandingPage: React.FC = () => {
             style={{
               backgroundColor: content.bgColor || "transparent",
               backgroundImage: content.bgImage ? `url(${content.bgImage})` : undefined,
-              maxWidth: 760,
-              margin: "0 auto",
-              padding: "8px 16px 12px",
             }}
           >
             {/* Pure Clean Image Stage - No Dark Overlay, No Text, No Buttons */}
-            <div
-              className="pil-pure-media-stage"
-              style={{
-                width: "100%",
-                borderRadius: 14,
-                overflow: "hidden",
-                backgroundColor: "#ffffff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-              }}
-            >
+            <div className="pil-pure-media-stage">
               {currentImg ? (
                 <img
                   src={currentImg}
                   alt={activeProduct.name}
                   loading="eager"
                   className="pil-pure-media-img"
-                  style={{
-                    width: "100%",
-                    maxHeight: 560,
-                    objectFit: "contain",
-                    display: "block",
-                    borderRadius: 14,
-                  }}
                 />
               ) : null}
             </div>
@@ -2139,7 +2125,15 @@ const ProductImageLandingPage: React.FC = () => {
                       {tier.badge ? (
                         <span className="pil-bundle-badge">{tier.badge}</span>
                       ) : null}
-                      <div className="pil-bundle-qty-label">{tier.label}</div>
+                      <div className="pil-bundle-main-info">
+                        <div
+                          className={`pil-bundle-radio ${isSelected ? "is-checked" : ""}`}
+                          aria-hidden="true"
+                        >
+                          {isSelected ? "✓" : ""}
+                        </div>
+                        <div className="pil-bundle-qty-label">{tier.label}</div>
+                      </div>
                       <div className="pil-bundle-pricing">
                         <strong className="pil-bundle-total">
                           {formatPrice(tierTotal, currency)}
@@ -2149,11 +2143,6 @@ const ProductImageLandingPage: React.FC = () => {
                             ({formatPrice(tierUnitPrice, currency)} للقطعة)
                           </small>
                         )}
-                      </div>
-                      <div
-                        className={`pil-bundle-radio ${isSelected ? "is-checked" : ""}`}
-                      >
-                        {isSelected ? "✓" : ""}
                       </div>
                     </button>
                   );

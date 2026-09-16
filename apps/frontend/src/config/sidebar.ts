@@ -745,6 +745,7 @@ export const getSidebarConfig = (
                 { to: '/settings/store', icon: Store, label: t('sidebar.storeSettings') },
                 { to: '/settings/store/tools', icon: Sparkles, label: t('sidebar.conversionTools') },
                 { to: '/settings/upsell', icon: TrendingUp, label: t('sidebar.upsellManagement') },
+                { to: '/settings/post-purchase-offer', icon: Zap, label: isEn ? 'Post-Purchase Offer' : 'العرض بعد الطلب (Upsell)' },
                 { to: '/admin/faqs', icon: HelpCircle, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardCheck, label: t('sidebar.policies') },
                 { to: '/settings/clarity', icon: BarChart3, label: t('sidebar.microsoftClarity') },
