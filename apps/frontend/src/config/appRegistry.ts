@@ -377,6 +377,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     sectionIds: ['ai-operator'],
     category: 'system',
     requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'],
+    route: '/admin/agent-profiles',
   },
   {
     id: 'admin',
