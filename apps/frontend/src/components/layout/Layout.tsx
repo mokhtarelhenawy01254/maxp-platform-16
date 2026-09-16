@@ -767,11 +767,11 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
           ) : null}
         </div>
       </div>
-      <QuickWalletRechargeModal
-        isOpen={isWalletModalOpen}
-        onClose={() => setIsWalletModalOpen(false)}
-      />
     </header>
+    <QuickWalletRechargeModal
+      isOpen={isWalletModalOpen}
+      onClose={() => setIsWalletModalOpen(false)}
+    />
     </>
   );
 
