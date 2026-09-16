@@ -333,8 +333,10 @@ function registerIpcHandlers(): void {
   });
 
   ipcMain.handle(IPC_CHANNELS.LOGIN, async (_, { email, password, serverUrl }) => {
+    console.log('[Main IPC] Login attempt for email:', email, 'server:', serverUrl);
     try {
       const { token, user } = await apiClient.login(email, password, serverUrl);
+      console.log('[Main IPC] Login successful! User:', user?.id, user?.email);
       store.set('authToken', token);
       store.set('serverUrl', serverUrl);
       store.set('user', user);
@@ -343,6 +345,7 @@ function registerIpcHandlers(): void {
       updateTrayMenu();
       return { success: true, user };
     } catch (err: any) {
+      console.error('[Main IPC] Login failed:', err.message);
       return { success: false, error: err.message };
     }
   });

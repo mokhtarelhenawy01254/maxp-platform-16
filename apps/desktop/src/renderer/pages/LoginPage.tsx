@@ -5,26 +5,33 @@ interface LoginPageProps {
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('swan@h2m.com');
+  const [password, setPassword] = useState('0165676135');
   const [serverUrl, setServerUrl] = useState('https://maxp.online');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const fillSwanAccount = () => {
+    setEmail('swan@h2m.com');
+    setPassword('0165676135');
+    setServerUrl('https://maxp.online');
+    setError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !serverUrl) return;
+    if (!email || !password) return;
 
     setLoading(true);
     setError('');
 
     try {
-      const result = await onLogin(email, password, serverUrl);
+      const result = await onLogin(email.trim(), password.trim(), serverUrl.trim() || 'https://maxp.online');
       if (!result.success) {
-        setError(result.error || 'Login failed');
+        setError(result.error || 'فشل تسجيل الدخول. يرجى التأكد من البيانات.');
       }
     } catch (err: any) {
-      setError(err.message || 'Connection error');
+      setError(err.message || 'خطأ في الاتصال بالسيرفر');
     } finally {
       setLoading(false);
     }
@@ -35,14 +42,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>MaxP Monitor</h1>
-          <p style={styles.subtitle}>Employee Activity Tracker</p>
+          <p style={styles.subtitle}>تتبع أداء وإنتاجية الموظف</p>
         </div>
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.field}>
-            <label style={styles.label}>Server URL</label>
+            <label style={styles.label}>رابط السيرفر (Server URL)</label>
             <input
-              type="url"
+              type="text"
               value={serverUrl}
               onChange={(e) => setServerUrl(e.target.value)}
               placeholder="https://maxp.online"
@@ -52,12 +59,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           </div>
 
           <div style={styles.field}>
-            <label style={styles.label}>Email</label>
+            <label style={styles.label}>البريد الإلكتروني (Email)</label>
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
+              placeholder="swan@h2m.com"
               style={styles.input}
               required
               autoFocus
@@ -65,12 +72,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           </div>
 
           <div style={styles.field}>
-            <label style={styles.label}>Password</label>
+            <label style={styles.label}>كلمة المرور (Password)</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+              placeholder="••••••••"
               style={styles.input}
               required
             />
@@ -78,24 +85,42 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
           {error && <div style={styles.error}>{error}</div>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              ...styles.button,
-              opacity: loading ? 0.6 : 1,
-              transform: 'scale(1)',
-              transition: 'transform 160ms ease-out, opacity 200ms',
-            }}
-            onMouseDown={(e) => {
-              (e.target as HTMLElement).style.transform = 'scale(0.97)';
-            }}
-            onMouseUp={(e) => {
-              (e.target as HTMLElement).style.transform = 'scale(1)';
-            }}
-          >
-            {loading ? 'Connecting\u2026' : 'Login'}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                ...styles.button,
+                opacity: loading ? 0.6 : 1,
+                transform: 'scale(1)',
+                transition: 'transform 160ms ease-out, opacity 200ms',
+              }}
+              onMouseDown={(e) => {
+                (e.target as HTMLElement).style.transform = 'scale(0.97)';
+              }}
+              onMouseUp={(e) => {
+                (e.target as HTMLElement).style.transform = 'scale(1)';
+              }}
+            >
+              {loading ? 'جاري الاتصال…' : 'تسجيل الدخول'}
+            </button>
+
+            <button
+              type="button"
+              onClick={fillSwanAccount}
+              style={{
+                background: 'transparent',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#a1a1aa',
+                borderRadius: '8px',
+                padding: '8px',
+                fontSize: '12px',
+                cursor: 'pointer',
+              }}
+            >
+              استعادة بيانات تجربة حساب Swan
+            </button>
+          </div>
         </form>
       </div>
     </div>

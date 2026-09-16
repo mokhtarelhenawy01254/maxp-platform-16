@@ -101,23 +101,49 @@ class MonitorApiClient {
   // ── Auth ───────────────────────────────────────────────────────
 
   async login(email: string, password: string, serverUrl: string): Promise<{ token: string; user: any }> {
-    let cleanUrl = serverUrl.trim();
+    let cleanUrl = (serverUrl || 'https://maxp.online').trim();
     if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
       cleanUrl = `https://${cleanUrl}`;
     }
     cleanUrl = cleanUrl.replace(/\/+$/, '');
 
+    // Convert Eastern Arabic numerals (٠-٩) to standard digits (0-9)
+    const normalizeDigits = (str: string) =>
+      str.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632));
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = normalizeDigits(password.trim());
+
     const url = `${cleanUrl}/api/auth/login`;
-    const res = await axios.post(url, { email: email.trim(), password }, { timeout: 15_000 });
-    const payload = res.data;
-    const token = payload?.data?.token || payload?.token;
-    const user = payload?.data?.user || payload?.user || payload?.data;
 
-    if (!token) {
-      throw new Error(payload?.message || 'Invalid login response: authentication token missing');
+    try {
+      const res = await axios.post(
+        url,
+        { email: cleanEmail, password: cleanPassword },
+        { timeout: 15_000 }
+      );
+      const payload = res.data;
+      const token = payload?.data?.token || payload?.token;
+      const user = payload?.data?.user || payload?.user || payload?.data;
+
+      if (!token) {
+        throw new Error(payload?.message || 'استجابة غير صالحة من السيرفر: التوكن مفقود');
+      }
+
+      return { token, user };
+    } catch (err: any) {
+      const serverMessage = err.response?.data?.message || err.response?.data?.error;
+      if (serverMessage) {
+        throw new Error(serverMessage);
+      }
+      if (err.response?.status === 401) {
+        throw new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+      }
+      if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+        throw new Error('تعذر الاتصال بالسيرفر. يرجى التحقق من الرابط والاتصال بالإنترنت.');
+      }
+      throw new Error(err.message || 'فشل تسجيل الدخول');
     }
-
-    return { token, user };
   }
 
   // ── Tasks ──────────────────────────────────────────────────────
