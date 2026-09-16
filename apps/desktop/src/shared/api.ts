@@ -18,7 +18,7 @@ class MonitorApiClient {
     this.serverUrl = serverUrl.replace(/\/$/, '');
     this.authToken = authToken;
     this.client = axios.create({
-      baseURL: `${this.serverUrl}/api/monitor`,
+      baseURL: `${this.serverUrl}/api/v1/employee-monitor`,
       timeout: 15_000,
       headers: {
         Authorization: `Bearer ${this.authToken}`,
