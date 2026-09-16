@@ -184,13 +184,57 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     )}
                   </button>
 
-                  {order.turboShipmentStatus && (() => {
-                    const turboInfo = getTurboStatusDisplay(order.turboShipmentStatus);
-                    return (
-                      <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${turboInfo.colorClass}`}>
-                        🚚 {turboInfo.label}
-                      </span>
-                    );
+                  {/* Courier / Shipping Status Badge */}
+                  {(() => {
+                    if (order.turboShipmentStatus) {
+                      const turboInfo = getTurboStatusDisplay(order.turboShipmentStatus);
+                      return (
+                        <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${turboInfo.colorClass}`}>
+                          🚚 {turboInfo.label}
+                        </span>
+                      );
+                    }
+
+                    const firstShipment = (order as any).shipment || (Array.isArray((order as any).shipments) && (order as any).shipments[0]);
+                    const carrier = (order as any).carrierType || (order as any).shippingCarrier || firstShipment?.carrierType;
+                    const trackingNumber = (order as any).trackingNumber || firstShipment?.trackingNumber || (order as any).metadata?.trackingNumber;
+                    const sStatus = firstShipment?.status || (order as any).shipmentStatus;
+
+                    if (carrier === "QP_EXPRESS" || (order as any).metadata?.qpExpress || (trackingNumber && String(trackingNumber).startsWith("22"))) {
+                      const isDelivered = sStatus === "DELIVERED";
+                      const isReturned = sStatus === "RETURNED" || sStatus === "CANCELLED";
+                      return (
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border ${
+                            isDelivered
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+                              : isReturned
+                              ? "bg-rose-50 text-rose-800 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
+                              : "bg-indigo-50 text-indigo-800 border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
+                          }`}
+                        >
+                          🚚 كيو بي (QP): {isDelivered ? "تم التسليم" : isReturned ? "مرتجع / ملغي" : `بوليصة #${trackingNumber || ""}`}
+                        </span>
+                      );
+                    }
+
+                    if (carrier === "BOSTA" || firstShipment?.carrierType === "BOSTA") {
+                      return (
+                        <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium bg-orange-50 text-orange-800 border border-orange-300 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800">
+                          🚚 بوستا: {sStatus === "DELIVERED" ? "تم التسليم" : `بوليصة #${trackingNumber || ""}`}
+                        </span>
+                      );
+                    }
+
+                    if (firstShipment && trackingNumber) {
+                      return (
+                        <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
+                          🚚 الشحنة: #{trackingNumber}
+                        </span>
+                      );
+                    }
+
+                    return null;
                   })()}
                   {canQuickSelectStatus && isStatusMenuOpen && (
                     <div className="absolute right-0 top-full z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
@@ -236,6 +280,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                   const isPaid = pStatus === "COMPLETED";
                   const isFailed = pStatus === "FAILED";
                   const hasKashier = Boolean(order.kashierPayment || (order.metadata as any)?.kashierPayment);
+                  const isCod = !hasKashier && (order.paymentMethod === "COD" || !order.paymentMethod || String(order.paymentMethod).toLowerCase() === "cash_on_delivery");
 
                   return (
                     <span
@@ -248,7 +293,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                       }`}
                     >
                       <span>💳</span>
-                      <span>{isPaid ? "مدفوع بالكامل" : isFailed ? "فشل الدفع" : "بانتظار الدفع"}</span>
+                      <span>{isPaid ? "مدفوع بالكامل" : isFailed ? "فشل الدفع" : isCod ? "دفع عند الاستلام (COD)" : "بانتظار الدفع"}</span>
                       {hasKashier && <span className="opacity-75 font-normal">(كاشير)</span>}
                     </span>
                   );

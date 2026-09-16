@@ -616,6 +616,11 @@ router.post('/:id/sync', verifyToken.authenticateToken, async (req, res) => {
           },
         });
         return res.json({ success: true, tracking, message: 'تمت المزامنة مع QP Express بنجاح' });
+      } else {
+        return res.status(404).json({
+          success: false,
+          error: tracking?.message || 'الشحنة غير موجودة في سيستم QP Express بعد أو قيد المراجعة',
+        });
       }
     }
 

@@ -502,6 +502,26 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
           if (onOrderUpdated) onOrderUpdated();
           return;
         }
+      } else if (isQpExpress) {
+        const res: any = await apiClient.post(`/qp-express/orders/${order.id}/shipment`, {
+          notes: qpNotes || "المعاينة في وجود المندوب ولا يوجد استرجاع إلا في حالة عيوب الصناعة",
+        });
+        if (res.data?.success) {
+          toast.success(res.data.message || "تم إنشاء وتوجيه بوليصة الشحن بنجاح لـ QP Express");
+          if (onOrderUpdated) onOrderUpdated();
+          return;
+        } else {
+          throw new Error(res.data?.error || "تعذر إعادة إرسال الشحنة لـ QP Express");
+        }
+      } else if (isBosta) {
+        const res: any = await apiClient.post(`/bosta/orders/${order.id}/shipment`);
+        if (res.data?.success) {
+          toast.success(res.data.message || "تم إنشاء وتوجيه الشحنة لـ Bosta بنجاح");
+          if (onOrderUpdated) onOrderUpdated();
+          return;
+        } else {
+          throw new Error(res.data?.error || "تعذر إعادة إرسال الشحنة لـ Bosta");
+        }
       } else if (shipment?.id) {
         const res: any = await apiClient.post(`/shipments/${shipment.id}/sync`);
         if (res.data?.success) {
