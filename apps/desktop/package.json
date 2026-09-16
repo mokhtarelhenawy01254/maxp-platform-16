@@ -47,6 +47,8 @@
   "build": {
     "appId": "online.maxp.monitor",
     "productName": "MaxP Monitor",
+    "npmRebuild": false,
+    "nodeGypRebuild": false,
     "directories": {
       "output": "release"
     },
@@ -55,8 +57,7 @@
       "assets/**/*"
     ],
     "win": {
-      "target": ["nsis"],
-      "icon": "assets/icon.ico"
+      "target": ["dir"]
     },
     "nsis": {
       "oneClick": true,

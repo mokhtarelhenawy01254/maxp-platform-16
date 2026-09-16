@@ -58,6 +58,7 @@ jspm_packages/
 # Build outputs
 dist/
 build/
+apps/desktop/release/
 
 # IDE files
 .vscode/

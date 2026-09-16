@@ -48,9 +48,14 @@ let tray: Tray | null = null;
 let isTracking = false;
 let isPaused = false;
 
+app.setName('MaxP Employee Monitor');
+app.setAppUserModelId('online.maxp.monitor');
+app.disableHardwareAcceleration();
+
 // ── App Lifecycle ─────────────────────────────────────────────
 
 app.whenReady().then(async () => {
+  console.log('[Main] App ready! Initializing...');
   store.init();
   // Initialize local database
   localDb.init();
@@ -82,42 +87,25 @@ app.on('before-quit', () => {
   localDb.close();
 });
 
-// Single instance lock
-const gotLock = app.requestSingleInstanceLock();
-if (!gotLock) {
-  app.quit();
-}
-
-app.on('second-instance', () => {
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.focus();
-  } else {
-    createMainWindow();
-  }
-});
-
-app.setName('MaxP Employee Monitor');
-
 // ── Window Management ─────────────────────────────────────────
 
 function createMainWindow(): void {
+  console.log('[Main] Creating main window...');
   if (mainWindow) {
     if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.setAlwaysOnTop(true);
     mainWindow.show();
     mainWindow.focus();
-    mainWindow.setAlwaysOnTop(false);
     return;
   }
 
   mainWindow = new BrowserWindow({
     title: 'MaxP Employee Monitor',
-    width: 440,
-    height: 660,
+    width: 460,
+    height: 680,
     minWidth: 380,
     minHeight: 500,
-    show: false,
+    show: true,
+    center: true,
     frame: true,
     resizable: true,
     skipTaskbar: false,
@@ -129,6 +117,8 @@ function createMainWindow(): void {
     },
   });
 
+  console.log('[Main] Window created successfully, HWND id:', mainWindow.id);
+
   const distIndex = path.resolve(__dirname, '../../renderer/index.html');
 
   mainWindow.webContents.on('did-fail-load', (_e, errorCode, errorDescription) => {
@@ -137,13 +127,8 @@ function createMainWindow(): void {
 
   mainWindow.webContents.on('did-finish-load', () => {
     console.log('[Main] UI content loaded successfully');
-  });
-
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.setAlwaysOnTop(true);
     mainWindow?.show();
     mainWindow?.focus();
-    mainWindow?.setAlwaysOnTop(false);
   });
 
   // In development, load from Vite dev server if running, otherwise load dist
@@ -154,6 +139,9 @@ function createMainWindow(): void {
   } else {
     mainWindow.loadFile(distIndex);
   }
+
+  mainWindow.show();
+  mainWindow.focus();
 
   mainWindow.on('close', (e) => {
     // Minimize to tray instead of closing
