@@ -173,4 +173,41 @@ describe("OrdersToolbar", () => {
     fireEvent.click(screen.getByLabelText("orders.refreshOrders"));
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
+
+  it("opens the slide-over filter drawer and closes it via close button", () => {
+    const onToggleAdvancedFilters = jest.fn();
+    render(
+      <MemoryRouter>
+        <OrdersToolbar
+          {...makeProps({
+            showAdvancedFilters: true,
+            onToggleAdvancedFilters,
+          })}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("common.close"));
+    expect(onToggleAdvancedFilters).toHaveBeenCalled();
+  });
+
+  it("clears advanced filters from inside the drawer", () => {
+    const onClearAdvancedFilters = jest.fn();
+    render(
+      <MemoryRouter>
+        <OrdersToolbar
+          {...makeProps({
+            showAdvancedFilters: true,
+            advancedFilterCount: 2,
+            onClearAdvancedFilters,
+          })}
+        />
+      </MemoryRouter>,
+    );
+
+    const clearButtons = screen.getAllByText("orders.clearAdvancedFilters");
+    fireEvent.click(clearButtons[0]);
+    expect(onClearAdvancedFilters).toHaveBeenCalled();
+  });
 });
