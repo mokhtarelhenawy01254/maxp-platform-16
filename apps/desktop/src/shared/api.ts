@@ -114,14 +114,28 @@ class MonitorApiClient {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = normalizeDigits(password.trim());
 
-    const url = `${cleanUrl}/api/auth/login`;
+    const url = `${cleanUrl}/api/v1/auth/login`;
 
     try {
-      const res = await axios.post(
-        url,
-        { email: cleanEmail, password: cleanPassword },
-        { timeout: 15_000 }
-      );
+      let res;
+      try {
+        res = await axios.post(
+          url,
+          { email: cleanEmail, password: cleanPassword },
+          { timeout: 15_000 }
+        );
+      } catch (err: any) {
+        if (err.response?.status === 404) {
+          // Fallback for legacy nginx /api/auth/login rewrite
+          res = await axios.post(
+            `${cleanUrl}/api/auth/login`,
+            { email: cleanEmail, password: cleanPassword },
+            { timeout: 15_000 }
+          );
+        } else {
+          throw err;
+        }
+      }
       const payload = res.data;
       const token = payload?.data?.token || payload?.token;
       const user = payload?.data?.user || payload?.user || payload?.data;
@@ -277,10 +291,22 @@ class MonitorApiClient {
   async checkTodayAttendance(): Promise<any> {
     try {
       const base = this.serverUrl;
-      const res = await axios.get(`${base}/api/hr/attendance/my-today`, {
-        headers: { Authorization: `Bearer ${this.authToken}` },
-        timeout: 10_000,
-      });
+      let res;
+      try {
+        res = await axios.get(`${base}/api/v1/hr/attendance/my-today`, {
+          headers: { Authorization: `Bearer ${this.authToken}` },
+          timeout: 10_000,
+        });
+      } catch (err: any) {
+        if (err.response?.status === 404) {
+          res = await axios.get(`${base}/api/hr/attendance/my-today`, {
+            headers: { Authorization: `Bearer ${this.authToken}` },
+            timeout: 10_000,
+          });
+        } else {
+          throw err;
+        }
+      }
       return res.data?.attendance ?? res.data?.data ?? res.data;
     } catch {
       return null;
@@ -290,20 +316,42 @@ class MonitorApiClient {
   async autoClockIn(): Promise<{ success: boolean; attendance?: any }> {
     try {
       const base = this.serverUrl;
-      const res = await axios.post(
-        `${base}/api/hr/attendance/check-in`,
-        {
-          method: 'desktop_workspace',
-          workMode: 'office',
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${this.authToken}`,
-            'Content-Type': 'application/json',
+      let res;
+      try {
+        res = await axios.post(
+          `${base}/api/v1/hr/attendance/check-in`,
+          {
+            method: 'desktop_workspace',
+            workMode: 'office',
           },
-          timeout: 10_000,
+          {
+            headers: {
+              Authorization: `Bearer ${this.authToken}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 10_000,
+          }
+        );
+      } catch (err: any) {
+        if (err.response?.status === 404) {
+          res = await axios.post(
+            `${base}/api/hr/attendance/check-in`,
+            {
+              method: 'desktop_workspace',
+              workMode: 'office',
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${this.authToken}`,
+                'Content-Type': 'application/json',
+              },
+              timeout: 10_000,
+            }
+          );
+        } else {
+          throw err;
         }
-      );
+      }
       return res.data;
     } catch {
       return { success: false };

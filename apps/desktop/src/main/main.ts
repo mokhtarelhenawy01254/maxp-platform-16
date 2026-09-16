@@ -244,6 +244,17 @@ function updateTrayMenu(): void {
 }
 
 function getTrayIconPath(): string {
+  const possiblePaths = [
+    path.resolve(__dirname, '../../../assets/icon.png'),
+    path.resolve(__dirname, '../../assets/icon.png'),
+    path.resolve(__dirname, '../assets/icon.png'),
+    path.resolve(app.getAppPath(), 'assets/icon.png'),
+    path.resolve(process.resourcesPath || '', 'assets/icon.png'),
+    path.resolve(process.resourcesPath || '', 'app.asar.unpacked/assets/icon.png'),
+  ];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) return p;
+  }
   return path.resolve(__dirname, '../../../assets/icon.png');
 }
 
