@@ -105,6 +105,7 @@ app.whenReady().then(async () => {
   if (savedToken && savedServer) {
     apiClient.configure(savedServer, savedToken);
     startTracking();
+    setTimeout(() => { triggerAutoClockIn(); }, 3000);
   }
 });
 
@@ -451,6 +452,7 @@ function registerIpcHandlers(): void {
       apiClient.configure(serverUrl, token);
       await startTracking();
       updateTrayMenu();
+      setTimeout(() => { triggerAutoClockIn(); }, 2000);
       return { success: true, user };
     } catch (err: any) {
       console.error('[Main IPC] Login failed:', err.message);
@@ -571,6 +573,31 @@ function sendStateToRenderer(): void {
 function showNotification(title: string, body: string): void {
   if (Notification.isSupported()) {
     new Notification({ title, body, silent: true }).show();
+  }
+}
+
+async function triggerAutoClockIn(): Promise<void> {
+  try {
+    const currentHour = new Date().getHours();
+    // Only auto clock in between 6 AM and 6 PM
+    if (currentHour < 6 || currentHour > 18) {
+      return;
+    }
+
+    const todayAtt = await apiClient.checkTodayAttendance();
+    const hasCheckedIn = todayAtt && (todayAtt.checkIn || todayAtt.checkInTime);
+    if (!hasCheckedIn) {
+      console.log('[Main] Auto clock-in triggered for employee...');
+      const res = await apiClient.autoClockIn();
+      if (res?.success) {
+        showNotification('MaxP Workspace', 'تم توثيق حضورك الصباحي تلقائياً بنجاح.');
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('attendance:updated', res.attendance);
+        }
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Main] Auto clock-in check skipped:', err?.message || err);
   }
 }
 

@@ -271,6 +271,44 @@ class MonitorApiClient {
 
     return linkRes.data?.data ?? linkRes.data;
   }
+
+  // ── Automated Attendance Linkage ─────────────────────────────
+
+  async checkTodayAttendance(): Promise<any> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.get(`${base}/api/hr/attendance/my-today`, {
+        headers: { Authorization: `Bearer ${this.authToken}` },
+        timeout: 10_000,
+      });
+      return res.data?.attendance ?? res.data?.data ?? res.data;
+    } catch {
+      return null;
+    }
+  }
+
+  async autoClockIn(): Promise<{ success: boolean; attendance?: any }> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.post(
+        `${base}/api/hr/attendance/check-in`,
+        {
+          method: 'desktop_workspace',
+          workMode: 'office',
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.authToken}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 10_000,
+        }
+      );
+      return res.data;
+    } catch {
+      return { success: false };
+    }
+  }
 }
 
 export const apiClient = new MonitorApiClient();

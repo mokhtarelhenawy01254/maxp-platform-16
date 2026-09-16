@@ -37,31 +37,71 @@ const TITLE_DOMAIN_MAP: [RegExp, string][] = [
   [/Zoom/i, 'zoom.us'],
   [/Microsoft Teams/i, 'teams.microsoft.com'],
   [/Slack/i, 'slack.com'],
+  [/Discord/i, 'discord.com'],
 
-  // Productivity & Cloud SaaS
+  // MaxP Platform & Workspaces
   [/MaxP/i, 'maxp.online'],
+
+  // E-Commerce & Merchant Platforms (Regional & Global)
+  [/Salla|سلة/i, 'salla.sa'],
+  [/Zid|زد/i, 'zid.sa'],
+  [/Shopify/i, 'shopify.com'],
+  [/WooCommerce/i, 'woocommerce.com'],
+  [/Amazon|أمازون/i, 'amazon.com'],
+  [/Noon|نون/i, 'noon.com'],
+  [/Jumia|جوميا/i, 'jumia.com.eg'],
+
+  // Ad Networks & Marketing Managers
+  [/Ads Manager|Meta Business|Business Suite|Facebook Ads/i, 'business.facebook.com'],
+  [/TikTok Ads/i, 'ads.tiktok.com'],
+  [/Snapchat Ads|Snap Ads/i, 'ads.snapchat.com'],
+  [/Google Ads|AdWords/i, 'ads.google.com'],
+  [/LinkedIn Campaign/i, 'linkedin.com'],
+
+  // Shipping & Logistics (MENA)
+  [/Bosta|بوسطة/i, 'bosta.co'],
+  [/Aramex|أرامكس/i, 'aramex.com'],
+  [/Mylerz/i, 'mylerz.com'],
+
+  // AI Engines & Productivity
+  [/ChatGPT|OpenAI/i, 'chatgpt.com'],
+  [/Claude|Anthropic/i, 'claude.ai'],
+  [/Gemini|Google AI/i, 'gemini.google.com'],
+  [/Perplexity/i, 'perplexity.ai'],
+  [/DeepSeek/i, 'deepseek.com'],
+
+  // Design, Media & Creative
+  [/Figma/i, 'figma.com'],
+  [/Canva/i, 'canva.com'],
+  [/Behance/i, 'behance.net'],
+  [/Dribbble/i, 'dribbble.com'],
+  [/Freepik/i, 'freepik.com'],
+  [/Midjourney/i, 'midjourney.com'],
+  [/Adobe/i, 'adobe.com'],
+
+  // Developer, Cloud & Project Tools
   [/GitHub/i, 'github.com'],
   [/GitLab/i, 'gitlab.com'],
   [/Stack Overflow/i, 'stackoverflow.com'],
-  [/Google (Docs|Sheets|Slides|Drive)/i, 'docs.google.com'],
-  [/Notion/i, 'notion.so'],
-  [/Figma/i, 'figma.com'],
-  [/Canva/i, 'canva.com'],
+  [/Vercel/i, 'vercel.com'],
+  [/Supabase/i, 'supabase.com'],
+  [/AWS|Amazon Web Services/i, 'aws.amazon.com'],
+  [/DigitalOcean/i, 'digitalocean.com'],
   [/Linear/i, 'linear.app'],
   [/Jira/i, 'atlassian.net'],
   [/Trello/i, 'trello.com'],
-  [/ChatGPT|OpenAI/i, 'chatgpt.com'],
-  [/Claude|Anthropic/i, 'claude.ai'],
-  [/Vercel/i, 'vercel.com'],
-  [/AWS|Amazon Web Services/i, 'aws.amazon.com'],
-  [/DigitalOcean/i, 'digitalocean.com'],
+  [/Asana/i, 'asana.com'],
+  [/ClickUp/i, 'clickup.com'],
+  [/Monday\.com/i, 'monday.com'],
+  [/Notion/i, 'notion.so'],
+  [/Google (Docs|Sheets|Slides|Drive)/i, 'docs.google.com'],
   [/WhatsApp/i, 'web.whatsapp.com'],
   [/Telegram/i, 'web.telegram.org'],
   [/LinkedIn/i, 'linkedin.com'],
   [/Gmail/i, 'mail.google.com'],
   [/Outlook/i, 'outlook.live.com'],
 
-  // Social & Media (Usually Unproductive during work)
+  // Social & Entertainment (General Browsing)
   [/YouTube/i, 'youtube.com'],
   [/Facebook/i, 'facebook.com'],
   [/Instagram/i, 'instagram.com'],
@@ -349,19 +389,33 @@ export class WindowTracker {
   }
 
   private extractDomainFromTitle(title: string): string | null {
-    // Match against known high-traffic web platforms and SaaS services
+    if (!title || typeof title !== 'string') return null;
+
+    // 1. Match against known high-traffic web platforms and SaaS services
     for (const [regex, domain] of TITLE_DOMAIN_MAP) {
       if (regex.test(title)) {
         return domain;
       }
     }
 
-    // Fallback: check tab format "Page Title - BrandName - Browser"
-    const parts = title.split(' - ');
-    if (parts.length >= 2) {
-      const candidate = parts[parts.length - 2].trim().toLowerCase().replace(/[^a-z0-9.-]/g, '');
-      if (candidate.length >= 3 && candidate.length <= 25 && !candidate.includes(' ')) {
-        return candidate.includes('.') ? candidate : `${candidate}.com`;
+    // 2. Direct embedded domain detection in title (e.g. "my-store.com", "app.example.io")
+    const domainMatch = title.match(/\b([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.(?:com|org|net|io|sa|eg|ae|app|ai|me|co|dev|tech|store|shop))\b/i);
+    if (domainMatch && domainMatch[1]) {
+      return domainMatch[1].toLowerCase();
+    }
+
+    // 3. Fallback: check tab format "Page Title - BrandName - Browser" or "Page Title | Brand"
+    const separators = [' - ', ' — ', ' | ', ' · '];
+    for (const sep of separators) {
+      if (title.includes(sep)) {
+        const parts = title.split(sep).map((s) => s.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          // Check candidate brand before the browser name
+          const candidate = parts[parts.length - 2].toLowerCase().replace(/[^a-z0-9.-]/g, '');
+          if (candidate.length >= 3 && candidate.length <= 25 && !candidate.includes(' ')) {
+            return candidate.includes('.') ? candidate : `${candidate}.com`;
+          }
+        }
       }
     }
 

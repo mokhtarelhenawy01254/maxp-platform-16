@@ -15,6 +15,7 @@
     "build:renderer": "vite build",
     "start": "electron dist/main/main/main.js",
     "pack": "electron-builder --dir",
+    "build:installer": "electron-builder --win nsis",
     "dist": "electron-builder",
     "dist:win": "electron-builder --win"
   },
@@ -74,8 +75,12 @@
       "target": ["dir"]
     },
     "nsis": {
-      "oneClick": true,
-      "allowToChangeInstallationDirectory": false,
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MaxP Workspace",
+      "artifactName": "MaxP-Workspace-Setup.${ext}",
       "runAfterFinish": true
     }
   }
