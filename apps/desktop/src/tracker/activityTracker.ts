@@ -30,6 +30,12 @@ export class ActivityTracker {
 
   /** Seconds since last mouse or keyboard input */
   get idleSeconds(): number {
+    try {
+      const { powerMonitor } = require('electron');
+      if (powerMonitor && typeof powerMonitor.getSystemIdleTime === 'function') {
+        return powerMonitor.getSystemIdleTime();
+      }
+    } catch {}
     return Math.floor((Date.now() - this.lastInputTime) / 1000);
   }
 
@@ -45,30 +51,13 @@ export class ActivityTracker {
     this.isTracking = true;
     this.resetCounters();
 
-    try {
-      const { GlobalKeyboardListener } = await import('node-global-key-listener');
-      this.listener = new GlobalKeyboardListener();
-
-      this.listener.addListener((event: any) => {
-        if (event.state === 'DOWN') {
-          this.keyboardCount++;
-          this.recordActiveBucket();
-          this.lastInputTime = Date.now();
-        }
-      });
-    } catch (err) {
-      console.warn('[ActivityTracker] Keyboard listener notice:', err);
-    }
-
-    this.startMousePolling();
+    // Clean native input and idle polling using official Electron powerMonitor + screen APIs
+    this.startInputPolling();
   }
 
   stop(): void {
     this.isTracking = false;
-    if (this.listener) {
-      try { this.listener.kill(); } catch {}
-      this.listener = null;
-    }
+    this.listener = null;
   }
 
   /**
@@ -186,24 +175,41 @@ export class ActivityTracker {
     return false;
   }
 
-  private startMousePolling(): void {
+  private startInputPolling(): void {
     let lastX = -1;
     let lastY = -1;
 
     const poll = () => {
       if (!this.isTracking) return;
       try {
-        const { screen } = require('electron');
+        const { screen, powerMonitor } = require('electron');
+
+        // 1. Mouse movement detection
         const point = screen.getCursorScreenPoint();
+        let mouseMoved = false;
         if (lastX !== -1 && lastY !== -1) {
           const dx = point.x - lastX;
           const dy = point.y - lastY;
           if (dx !== 0 || dy !== 0) {
             this.registerMouseEvent(dx, dy);
+            mouseMoved = true;
           }
         }
         lastX = point.x;
         lastY = point.y;
+
+        // 2. System idle & typing detection via native OS API
+        if (powerMonitor && typeof powerMonitor.getSystemIdleTime === 'function') {
+          const idleSec = powerMonitor.getSystemIdleTime();
+          if (idleSec <= 1) {
+            this.recordActiveBucket();
+            this.lastInputTime = Date.now();
+            // If user was active in the last second but mouse did not move, that indicates keyboard activity
+            if (!mouseMoved) {
+              this.keyboardCount++;
+            }
+          }
+        }
       } catch {}
 
       if (this.isTracking) {
