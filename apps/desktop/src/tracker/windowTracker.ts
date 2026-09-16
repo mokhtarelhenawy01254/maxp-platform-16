@@ -1,4 +1,7 @@
 import type { AppUsageRecord, WebUsageRecord, AppCategory, CategoryRule } from '../shared/types';
+import path from 'path';
+import fs from 'fs';
+import { execFileSync } from 'child_process';
 
 /** Extracts domain from a URL string */
 function extractDomain(url: string): string {
@@ -61,11 +64,11 @@ export class WindowTracker {
     try {
       const mod: any = await import('active-win');
       this.getActiveWin = mod.default ?? mod.activeWindow ?? mod;
-    } catch (err) {
-      console.error('[WindowTracker] Failed to load active-win:', err);
-      return;
+    } catch (err: any) {
+      console.warn('[WindowTracker] active-win optional load notice:', err.message);
     }
 
+    // Always start polling! On Windows, native GetActiveWindow takes precedence.
     this.poll();
   }
 
@@ -79,31 +82,95 @@ export class WindowTracker {
    * Flush all accumulated records since last call.
    */
   flushRecords(): { apps: AppUsageRecord[]; websites: WebUsageRecord[] } {
-    // Finalize current records to get accurate durations
     const now = new Date().toISOString();
 
+    const apps = [...this.appRecords];
     if (this.currentApp) {
-      this.currentApp.endedAt = now;
-      this.currentApp.durationSeconds = this.calcDuration(this.currentApp.startedAt, now);
-    }
-    if (this.currentWeb) {
-      this.currentWeb.endedAt = now;
-      this.currentWeb.durationSeconds = this.calcDuration(this.currentWeb.startedAt, now);
+      const dur = this.calcDuration(this.currentApp.startedAt, now);
+      if (dur > 0) {
+        apps.push({
+          ...this.currentApp,
+          endedAt: now,
+          durationSeconds: dur,
+        });
+        // Reset startedAt to now so duration continues seamlessly
+        this.currentApp.startedAt = now;
+      }
     }
 
-    const apps = [...this.appRecords];
     const websites = [...this.webRecords];
+    if (this.currentWeb) {
+      const dur = this.calcDuration(this.currentWeb.startedAt, now);
+      if (dur > 0) {
+        websites.push({
+          ...this.currentWeb,
+          endedAt: now,
+          durationSeconds: dur,
+        });
+        this.currentWeb.startedAt = now;
+      }
+    }
+
     this.appRecords = [];
     this.webRecords = [];
 
     return { apps, websites };
   }
 
+  private getWindowsActiveWindow(): { appName: string; windowTitle: string } | null {
+    try {
+      const exeName = 'GetActiveWindow.exe';
+      const devPath = path.resolve(__dirname, '../../../bin', exeName);
+      const prodPath = path.resolve(process.resourcesPath || '', 'bin', exeName);
+      const asarUnpackedPath = path.resolve(process.resourcesPath || '', 'app.asar.unpacked', 'bin', exeName);
+      const appPath = path.resolve(__dirname, '../../bin', exeName);
+
+      const resolvedPath = fs.existsSync(prodPath)
+        ? prodPath
+        : fs.existsSync(asarUnpackedPath)
+        ? asarUnpackedPath
+        : fs.existsSync(devPath)
+        ? devPath
+        : fs.existsSync(appPath)
+        ? appPath
+        : null;
+
+      if (!resolvedPath) return null;
+
+      const out = execFileSync(resolvedPath, { timeout: 1500, encoding: 'utf8' }).trim();
+      if (out && out.includes('|||')) {
+        const [proc, title] = out.split('|||');
+        return {
+          appName: proc.trim(),
+          windowTitle: title.trim(),
+        };
+      }
+    } catch {}
+    return null;
+  }
+
   private async poll(): Promise<void> {
-    if (!this.isTracking || !this.getActiveWin) return;
+    if (!this.isTracking) return;
 
     try {
-      const win = await this.getActiveWin();
+      let win: any = null;
+
+      // 1. Try ultra-fast native Windows detector
+      if (process.platform === 'win32') {
+        const nativeWin = this.getWindowsActiveWindow();
+        if (nativeWin && nativeWin.appName && nativeWin.appName !== 'Unknown') {
+          win = {
+            title: nativeWin.windowTitle,
+            owner: { name: nativeWin.appName },
+          };
+        }
+      }
+
+      // 2. Fallback to active-win if needed
+      if (!win && this.getActiveWin) {
+        win = await this.getActiveWin();
+      }
+
       if (win) {
         this.processWindow(win);
       }

@@ -315,10 +315,20 @@ function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('tracker:get-apps-summary', () => {
+    try {
+      const { apps, websites } = windowTracker.flushRecords();
+      for (const a of apps) localDb.queueAppUsage(a);
+      for (const w of websites) localDb.queueWebUsage(w);
+    } catch {}
     return localDb.getTodayAppsSummary();
   });
 
   ipcMain.handle('tracker:get-websites-summary', () => {
+    try {
+      const { apps, websites } = windowTracker.flushRecords();
+      for (const a of apps) localDb.queueAppUsage(a);
+      for (const w of websites) localDb.queueWebUsage(w);
+    } catch {}
     return localDb.getTodayWebsitesSummary();
   });
 

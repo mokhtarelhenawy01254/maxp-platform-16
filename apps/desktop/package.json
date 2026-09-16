@@ -56,6 +56,15 @@
       "dist/**/*",
       "assets/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin"
+      }
+    ],
+    "asarUnpack": [
+      "bin/**/*"
+    ],
     "win": {
       "target": ["dir"]
     },
