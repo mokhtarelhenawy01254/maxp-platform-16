@@ -97,21 +97,27 @@ app.on('second-instance', () => {
   }
 });
 
+app.setName('MaxP Employee Monitor');
+
 // ── Window Management ─────────────────────────────────────────
 
 function createMainWindow(): void {
   if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.setAlwaysOnTop(true);
     mainWindow.show();
     mainWindow.focus();
+    mainWindow.setAlwaysOnTop(false);
     return;
   }
 
   mainWindow = new BrowserWindow({
     title: 'MaxP Employee Monitor',
-    width: 420,
-    height: 640,
+    width: 440,
+    height: 660,
     minWidth: 380,
     minHeight: 500,
+    show: false,
     frame: true,
     resizable: true,
     skipTaskbar: false,
@@ -123,8 +129,24 @@ function createMainWindow(): void {
     },
   });
 
-  // In development, load from Vite dev server if running, otherwise load dist
   const distIndex = path.resolve(__dirname, '../../renderer/index.html');
+
+  mainWindow.webContents.on('did-fail-load', (_e, errorCode, errorDescription) => {
+    console.error(`[Main] Failed to load UI: ${errorCode} - ${errorDescription}`);
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('[Main] UI content loaded successfully');
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.setAlwaysOnTop(true);
+    mainWindow?.show();
+    mainWindow?.focus();
+    mainWindow?.setAlwaysOnTop(false);
+  });
+
+  // In development, load from Vite dev server if running, otherwise load dist
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:5174').catch(() => {
       mainWindow?.loadFile(distIndex);
@@ -132,9 +154,6 @@ function createMainWindow(): void {
   } else {
     mainWindow.loadFile(distIndex);
   }
-
-  mainWindow.show();
-  mainWindow.focus();
 
   mainWindow.on('close', (e) => {
     // Minimize to tray instead of closing
