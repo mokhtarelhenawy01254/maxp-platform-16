@@ -259,3 +259,30 @@ export const buildCreateAdWizardTargetingPayload = (
     customerLifecycleStrategy: formData.customerLifecycleStrategy || "ALL_AUDIENCES",
   };
 };
+
+export const isValidWebUrl = (value?: string | null): boolean => {
+  if (!value || typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
+export const isValidMediaUrl = (value?: string | null): boolean => {
+  if (!value || typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith("/") && trimmed.includes("/uploads/")) {
+    return true;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};

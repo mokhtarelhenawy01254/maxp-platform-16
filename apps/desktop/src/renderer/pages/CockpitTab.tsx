@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   MousePointer,
@@ -9,6 +9,7 @@ import {
   ExternalLink,
   Activity,
   CheckCircle2,
+  CheckSquare,
 } from 'lucide-react';
 
 interface CockpitTabProps {
@@ -16,6 +17,8 @@ interface CockpitTabProps {
   dailySummary: any;
   formatTime: (sec: number) => string;
   onToggleBreak?: () => void;
+  user?: any;
+  isAdmin?: boolean;
 }
 
 export const CockpitTab: React.FC<CockpitTabProps> = ({
@@ -23,7 +26,31 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
   dailySummary,
   formatTime,
   onToggleBreak,
+  user,
+  isAdmin = false,
 }) => {
+  const [taskStats, setTaskStats] = useState<{ total: number; completed: number }>({
+    total: 0,
+    completed: 0,
+  });
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const res = await window.electronAPI.getTasks('my-tasks');
+        if (res?.success && Array.isArray(res.tasks)) {
+          const total = res.tasks.length;
+          const completed = res.tasks.filter(
+            (t: any) => String(t.status || '').toUpperCase() === 'COMPLETED'
+          ).length;
+          setTaskStats({ total, completed });
+        }
+      } catch {}
+    };
+    fetchTasks();
+    const interval = setInterval(fetchTasks, 20_000);
+    return () => clearInterval(interval);
+  }, []);
   const activeSeconds = dailySummary?.total_active_seconds ?? 0;
   const idleSeconds = dailySummary?.total_idle_seconds ?? 0;
   const totalTracked = activeSeconds + idleSeconds;
@@ -103,33 +130,73 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
           </div>
         </div>
 
-        {/* Mouse Telemetry */}
-        <div style={styles.metricCard}>
-          <div style={styles.metricHeader}>
-            <div style={{ ...styles.iconBadge, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)' }}>
-              <MousePointer size={15} />
+        {/* Card 3: Task Completion (Employee) vs Mouse Telemetry (Admin) */}
+        {isAdmin ? (
+          <div style={styles.metricCard}>
+            <div style={styles.metricHeader}>
+              <div style={{ ...styles.iconBadge, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)' }}>
+                <MousePointer size={15} />
+              </div>
+              <span style={styles.metricLabel}>تفاعل ونقرات الماوس</span>
             </div>
-            <span style={styles.metricLabel}>تفاعل ونقرات الماوس</span>
+            <div style={styles.metricValue}>{mouseEvents.toLocaleString()}</div>
+            <div style={styles.metricSubtext}>
+              <span>إجمالي الحركات والنقرات اليوم</span>
+            </div>
           </div>
-          <div style={styles.metricValue}>{mouseEvents.toLocaleString()}</div>
-          <div style={styles.metricSubtext}>
-            <span>إجمالي الحركات والنقرات اليوم</span>
+        ) : (
+          <div style={styles.metricCard}>
+            <div style={styles.metricHeader}>
+              <div style={{ ...styles.iconBadge, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)' }}>
+                <CheckSquare size={15} />
+              </div>
+              <span style={styles.metricLabel}>المهام المنجزة اليوم</span>
+            </div>
+            <div style={{ ...styles.metricValue, fontVariantNumeric: 'tabular-nums' }}>
+              {taskStats.completed} / {taskStats.total}
+            </div>
+            <div style={styles.metricSubtext}>
+              <span>
+                {taskStats.total === 0
+                  ? 'لا توجد مهام مسندة لليوم'
+                  : taskStats.completed === taskStats.total
+                  ? 'تم إنجاز كافة المهام بنجاح'
+                  : `${taskStats.total - taskStats.completed} مهام متبقية قيد التنفيذ`}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Keyboard Telemetry */}
-        <div style={styles.metricCard}>
-          <div style={styles.metricHeader}>
-            <div style={{ ...styles.iconBadge, color: '#a855f7', background: 'rgba(168, 85, 247, 0.1)' }}>
-              <Keyboard size={15} />
+        {/* Card 4: Break Allowance (Employee) vs Keyboard Telemetry (Admin) */}
+        {isAdmin ? (
+          <div style={styles.metricCard}>
+            <div style={styles.metricHeader}>
+              <div style={{ ...styles.iconBadge, color: '#a855f7', background: 'rgba(168, 85, 247, 0.1)' }}>
+                <Keyboard size={15} />
+              </div>
+              <span style={styles.metricLabel}>ضربات لوحة المفاتيح</span>
             </div>
-            <span style={styles.metricLabel}>ضربات لوحة المفاتيح</span>
+            <div style={styles.metricValue}>{keyboardEvents.toLocaleString()}</div>
+            <div style={styles.metricSubtext}>
+              <span>إجمالي المدخلات الموثقة</span>
+            </div>
           </div>
-          <div style={styles.metricValue}>{keyboardEvents.toLocaleString()}</div>
-          <div style={styles.metricSubtext}>
-            <span>إجمالي المدخلات الموثقة</span>
+        ) : (
+          <div style={styles.metricCard}>
+            <div style={styles.metricHeader}>
+              <div style={{ ...styles.iconBadge, color: '#22c55e', background: 'rgba(34, 197, 94, 0.1)' }}>
+                <ShieldCheck size={15} />
+              </div>
+              <span style={styles.metricLabel}>رصيد الاستراحة الرسمي</span>
+            </div>
+            <div style={styles.metricValue}>45 دقيقة</div>
+            <div style={styles.metricSubtext}>
+              <span style={{ color: isPaused ? '#eab308' : '#a1a1aa' }}>
+                {isPaused ? 'أنت في وضع استراحة معتمد الآن' : 'مخصص للصلاة والغداء والراحة'}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Ratio Bar */}

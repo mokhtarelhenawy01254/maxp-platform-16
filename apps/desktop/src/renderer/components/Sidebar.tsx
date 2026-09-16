@@ -30,36 +30,57 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   isOnline = true,
 }) => {
-  const navItems: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    {
-      id: 'cockpit',
-      label: 'النشاط المباشر',
-      icon: <Activity size={17} />,
-    },
-    {
-      id: 'tasks',
-      label: 'المهام والإنتاجية',
-      icon: <CheckSquare size={17} />,
-    },
-    {
-      id: 'apps',
-      label: 'البرامج والمواقع',
-      icon: <Globe size={17} />,
-    },
-    {
-      id: 'attendance',
-      label: 'مطابقة الحضور',
-      icon: <Clock size={17} />,
-    },
-    {
-      id: 'system',
-      label: 'حالة السحابة والجهاز',
-      icon: <Cpu size={17} />,
-    },
-  ];
+  const roleStr = String(user?.role || '').toUpperCase();
+  const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
+
+  const navItems: { id: TabId; label: string; icon: React.ReactNode }[] = isAdmin
+    ? [
+        {
+          id: 'tasks',
+          label: 'المهام والإنتاجية',
+          icon: <CheckSquare size={17} />,
+        },
+        {
+          id: 'cockpit',
+          label: 'النشاط المباشر',
+          icon: <Activity size={17} />,
+        },
+        {
+          id: 'apps',
+          label: 'البرامج والمواقع',
+          icon: <Globe size={17} />,
+        },
+        {
+          id: 'attendance',
+          label: 'مطابقة الحضور والتدقيق',
+          icon: <Clock size={17} />,
+        },
+        {
+          id: 'system',
+          label: 'حالة السحابة والجهاز',
+          icon: <Cpu size={17} />,
+        },
+      ]
+    : [
+        {
+          id: 'tasks',
+          label: 'المهام والإنتاجية',
+          icon: <CheckSquare size={17} />,
+        },
+        {
+          id: 'cockpit',
+          label: 'النشاط وساعات العمل',
+          icon: <Activity size={17} />,
+        },
+        {
+          id: 'apps',
+          label: 'البرامج والمواقع',
+          icon: <Globe size={17} />,
+        },
+      ];
 
   const displayName = user?.firstName || user?.name || user?.email?.split('@')[0] || 'الموظف';
-  const roleLabel = user?.role === 'COMPANY_ADMIN' ? 'مدير المنظومة' : 'موظف';
+  const roleLabel = isAdmin ? 'مدير المنظومة' : 'عضو فريق العمل';
 
   return (
     <aside style={styles.sidebar}>

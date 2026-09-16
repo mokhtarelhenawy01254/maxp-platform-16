@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Coffee, Play } from 'lucide-react';
+import { Coffee, Play, Clock, CheckCircle2 } from 'lucide-react';
 import Sidebar, { TabId } from '../components/Sidebar';
 import CockpitTab from './CockpitTab';
 import TasksTab from './TasksTab';
@@ -14,15 +14,26 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) => {
+  const roleStr = String(user?.role || '').toUpperCase();
+  const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
+
   const [activeTab, setActiveTabState] = useState<TabId>(() => {
     try {
-      return (localStorage.getItem('maxp_active_tab') as TabId) || 'tasks';
+      const saved = (localStorage.getItem('maxp_active_tab') as TabId) || 'tasks';
+      if (!isAdmin && (saved === 'attendance' || saved === 'system')) {
+        return 'tasks';
+      }
+      return saved;
     } catch {
       return 'tasks';
     }
   });
 
   const setActiveTab = (tab: TabId) => {
+    if (!isAdmin && (tab === 'attendance' || tab === 'system')) {
+      setActiveTabState('tasks');
+      return;
+    }
     setActiveTabState(tab);
     try {
       localStorage.setItem('maxp_active_tab', tab);
@@ -33,6 +44,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
   const [dailySummary, setDailySummary] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [breakLoading, setBreakLoading] = useState(false);
+  const [clockInDisplay, setClockInDisplay] = useState<string | null>(null);
+
+  // Auto-redirect if non-admin somehow lands on restricted tab
+  useEffect(() => {
+    if (!isAdmin && (activeTab === 'attendance' || activeTab === 'system')) {
+      setActiveTab('tasks');
+    }
+  }, [isAdmin, activeTab]);
+
+  // Load attendance clock-in time for affirmative top-bar badge
+  useEffect(() => {
+    const fetchClockIn = async () => {
+      try {
+        const audit = await window.electronAPI.getAttendanceAudit();
+        if (audit?.clockInTime) {
+          const timeStr = new Date(audit.clockInTime).toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          setClockInDisplay(timeStr);
+        }
+      } catch {}
+    };
+    fetchClockIn();
+    const interval = setInterval(fetchClockIn, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const refreshState = useCallback(async () => {
     try {
@@ -84,7 +122,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
   const getTabTitle = () => {
     switch (activeTab) {
       case 'cockpit':
-        return 'النشاط المباشر والعدادات';
+        return isAdmin ? 'النشاط المباشر والعدادات' : 'النشاط وساعات العمل';
       case 'tasks':
         return 'المهام اليومية ومعدل الإنجاز';
       case 'apps':
@@ -119,6 +157,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {clockInDisplay && (
+              <div style={styles.clockInBadge} title="تسجيل حضور اليوم موثق في السحابة">
+                <Clock size={12} color="#22c55e" />
+                <span>حضور اليوم: {clockInDisplay}</span>
+              </div>
+            )}
+
             {isPaused ? (
               <div style={styles.breakStatusGroup}>
                 <div style={styles.breakActiveChip}>
@@ -167,6 +212,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
               dailySummary={dailySummary}
               formatTime={formatTime}
               onToggleBreak={handleToggleBreak}
+              user={user}
+              isAdmin={isAdmin}
             />
           )}
 
@@ -185,7 +232,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
       </main>
 
       {/* Settings Modal */}
-      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        user={user}
+        isAdmin={isAdmin}
+      />
     </div>
   );
 };
@@ -230,6 +282,19 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
+  },
+  clockInBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'rgba(34, 197, 94, 0.08)',
+    border: '1px solid rgba(34, 197, 94, 0.22)',
+    borderRadius: 20,
+    padding: '4px 10px',
+    fontSize: 11,
+    color: '#d4d4d8',
+    fontWeight: 500,
+    fontVariantNumeric: 'tabular-nums',
   },
   enforcedChip: {
     display: 'flex',

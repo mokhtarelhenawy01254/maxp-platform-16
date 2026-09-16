@@ -66,11 +66,11 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
   const getCategoryMeta = (cat?: string) => {
     switch (cat) {
       case 'productive':
-        return { label: 'إنتاجي', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' };
+        return { label: 'مرتبط بالعمل', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' };
       case 'unproductive':
-        return { label: 'غير إنتاجي', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' };
+        return { label: 'تصفح عام / استخدام متنوع', color: '#a1a1aa', bg: 'rgba(255, 255, 255, 0.06)' };
       case 'neutral':
-        return { label: 'محايد', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.1)' };
+        return { label: 'أدوات مساعدة', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.1)' };
       default:
         return { label: 'غير مصنف', color: '#71717a', bg: 'rgba(113, 113, 122, 0.1)' };
     }
