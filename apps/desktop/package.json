@@ -45,8 +45,8 @@
     "lucide-react": "^0.460.0"
   },
   "build": {
-    "appId": "online.maxp.monitor",
-    "productName": "MaxP Monitor",
+    "appId": "online.maxp.workspace",
+    "productName": "MaxP Workspace",
     "npmRebuild": false,
     "nodeGypRebuild": false,
     "directories": {

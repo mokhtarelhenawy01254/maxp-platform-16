@@ -136,7 +136,7 @@ export const SystemStatusTab: React.FC = () => {
           <span style={styles.infoValue}>{sysInfo?.osVersion || 'Windows'}</span>
         </div>
         <div style={styles.infoRow}>
-          <span style={styles.infoLabel}>إصدار عميل المراقبة</span>
+          <span style={styles.infoLabel}>إصدار بيئة العمل (Workspace)</span>
           <span style={styles.infoValue}>v{sysInfo?.appVersion || '1.0.0'}</span>
         </div>
         <div style={styles.infoRow}>
