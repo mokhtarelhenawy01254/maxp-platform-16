@@ -21,12 +21,14 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ section, settings
   const stageRef = React.useRef<HTMLDivElement | null>(null);
 
   const updatePosition = (clientX: number) => {
-    if (!stageRef.current) return;
+    if (!stageRef.current || typeof clientX !== "number" || Number.isNaN(clientX)) return;
     const rect = stageRef.current.getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const offsetX = clientX - rect.left;
+    if (!rect || !rect.width || rect.width <= 0) return;
+    const offsetX = clientX - (rect.left || 0);
     const pct = Math.max(0, Math.min(100, (offsetX / rect.width) * 100));
-    setPos(Math.round(pct));
+    if (Number.isFinite(pct)) {
+      setPos(Math.round(pct));
+    }
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -34,12 +36,14 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ section, settings
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {}
-    updatePosition(e.clientX);
+    const clientX = typeof e.clientX === "number" ? e.clientX : (e as any).pageX;
+    updatePosition(clientX);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging) return;
-    updatePosition(e.clientX);
+    const clientX = typeof e.clientX === "number" ? e.clientX : (e as any).pageX;
+    updatePosition(clientX);
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {

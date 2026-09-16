@@ -692,5 +692,122 @@ describe("ProductImageLandingPage", () => {
     expect(nameInput.compareDocumentPosition(colorBlock) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(colorBlock.compareDocumentPosition(govSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it("verifies 1:1 canonical store checkout form layout, symmetrical SVG trust badges, and WhatsApp dialogue with store reply", async () => {
+    storefrontApiMocks.getProductLandingPreview.mockResolvedValueOnce({
+      data: {
+        landing: {
+          id: "landing-canonical",
+          companyId: "company-1",
+          productId: "prod-1",
+          slug: "swan-canonical-store-checkout",
+          title: "سوان سنيكرز كلاسيك",
+          status: "DRAFT",
+          generationMode: "IMAGE_STACK",
+          generationStatus: "READY_TO_REVIEW",
+          slices: [
+            {
+              id: "slice-hero",
+              src: "https://cdn.example.com/clean-hero.jpg",
+              alt: "Clean Product Hero Asset",
+            },
+          ],
+          sections: [
+            {
+              id: "sec-wa",
+              type: "REVIEWS",
+              variant: "WHATSAPP",
+              enabled: true,
+              content: {
+                reviews: [
+                  { name: "أحمد فهمي", comment: "المنتج ممتاز جدا ومريح في المشي", rating: 5 },
+                ],
+              },
+            },
+          ],
+          formConfig: {
+            orderTitle: "اطلب الحذاء الآن",
+            buttonLabel: "تأكيد الطلب الآن",
+          },
+        },
+        product: {
+          ...baseProduct,
+          productVariants: [
+            {
+              id: "var-1",
+              productId: "prod-1",
+              name: "ابيض - 37",
+              price: 620,
+              isActive: true,
+              attributes: { "اللون_:": "ابيض", "المقاس_:": "37" },
+            },
+            {
+              id: "var-2",
+              productId: "prod-1",
+              name: "ابيض بتطعيم احمر - 38",
+              price: 620,
+              isActive: true,
+              attributes: { "اللون_:": "ابيض بتطعيم احمر", "المقاس_:": "38" },
+            },
+          ],
+        },
+        company: {
+          id: "company-1",
+          name: "Swan",
+          currency: "EGP",
+        },
+      },
+    });
+
+    renderLanding("/store/lp/swan-canonical-store-checkout?companyId=company-1&preview=1");
+
+    await screen.findByRole("heading", { name: "اطلب الحذاء الآن" });
+
+    // 1. Check strict DOM order of form fields matching media_1789555611902.png
+    const nameField = screen.getByLabelText("الاسم");
+    const phoneField = screen.getByLabelText("رقم الموبايل");
+    const colorRadioGroup = screen.getByLabelText("اختيار اللون");
+    const sizeRadioGroup = screen.getByLabelText("اختيار المقاس");
+    const govField = screen.getByLabelText("المحافظة");
+    const areaField = screen.getByLabelText("المنطقة");
+    const addressField = screen.getByLabelText("العنوان بالتفصيل");
+    const notesField = screen.getByLabelText("ملاحظات إضافية للتوصيل (اختياري)");
+
+    expect(nameField.compareDocumentPosition(phoneField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(phoneField.compareDocumentPosition(colorRadioGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(colorRadioGroup.compareDocumentPosition(sizeRadioGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(sizeRadioGroup.compareDocumentPosition(govField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(govField.compareDocumentPosition(areaField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(areaField.compareDocumentPosition(addressField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(addressField.compareDocumentPosition(notesField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    // 2. Check Placeholders match store 1:1
+    expect(nameField).toHaveAttribute("placeholder", "اكتب اسمك بالكامل");
+    expect(phoneField).toHaveAttribute("placeholder", "01xxxxxxxxx");
+    expect(areaField).toHaveAttribute("placeholder", "مثال: مدينة نصر");
+    expect(addressField).toHaveAttribute("placeholder", "الشارع، العمارة، الدور، علامة مميزة");
+    expect(notesField).toHaveAttribute("placeholder", "مثال: موعد مفضل للتسليم، أو الاتصال قبل الوصول");
+
+    // 3. Color chips show radio indicators (● for selected, ○ for unselected)
+    const whiteColorBtn = screen.getByRole("button", { name: "ابيض" });
+    const redAccentBtn = screen.getByRole("button", { name: "ابيض بتطعيم احمر" });
+    expect(whiteColorBtn).toHaveTextContent("●");
+    expect(redAccentBtn).toHaveTextContent("○");
+
+    // 4. Trust Badges: Symmetrical 3-items with stroke icons, no emoji litter
+    expect(screen.getByText("معاينة قبل الدفع")).toBeInTheDocument();
+    expect(screen.getByText("الدفع نقدياً عند الاستلام")).toBeInTheDocument();
+    expect(screen.getByText("استبدال واسترجاع سهل")).toBeInTheDocument();
+
+    // 5. WhatsApp Reviews: Authentic Header, incoming review, and store response bubble
+    expect(screen.getByText("فريق خدمة عملاء المتجر")).toBeInTheDocument();
+    expect(screen.getByText("أحمد فهمي")).toBeInTheDocument();
+    expect(screen.getByText("فريق الدعم")).toBeInTheDocument();
+    expect(screen.getByText(/أهلاً بحضرتك يا فندم!/)).toBeInTheDocument();
+
+    // 6. Anti-bot verification: Ensure no conversational chatbot or AI prompt fluff is present
+    expect(document.querySelector(".bot-chat-container")).toBeNull();
+    expect(document.querySelector(".ai-chat-thread")).toBeNull();
+  });
 });
 

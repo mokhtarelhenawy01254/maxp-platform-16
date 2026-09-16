@@ -286,13 +286,14 @@ function ProductFormDrawer({
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
+        showCloseButton={false}
         className={cn(
-          "flex flex-col p-0",
-          isMobile ? "h-[92vh] rounded-t-[20px]" : "",
+          "flex flex-col p-0 bg-card text-card-foreground border-border shadow-2xl z-50",
+          isMobile ? "h-[92vh] rounded-t-[20px]" : "border-l dark:border-white/10",
         )}
         style={{ maxWidth: isMobile ? "100%" : 460, width: isMobile ? "100%" : 460 }}
       >
-        <SheetHeader className="border-b px-6 py-5">
+        <SheetHeader className="border-b border-border px-6 py-5 bg-card shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isEditing ? (
@@ -300,13 +301,13 @@ function ProductFormDrawer({
               ) : (
                 <Plus className="size-5 text-primary" />
               )}
-              <SheetTitle className="text-lg font-black">
+              <SheetTitle className="text-lg font-black text-foreground">
                 {isEditing
                   ? t("aiCatalog.editProduct")
                   : t("aiCatalog.addProduct")}
               </SheetTitle>
             </div>
-            <Button variant="ghost" size="icon-sm" onClick={onClose}>
+            <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label={t("common.close", "إغلاق")}>
               <X className="size-4" />
             </Button>
           </div>
@@ -318,7 +319,7 @@ function ProductFormDrawer({
           </div>
         )}
 
-        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
+        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6 bg-card">
           <div className="flex justify-center">
             <ImageUploadArea
               previewUrl={formData._mainImagePreview || formData.mainImage}
@@ -330,12 +331,13 @@ function ProductFormDrawer({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               {t("aiCatalog.productName")} <span className="text-destructive">*</span>
             </label>
             <Input
               value={formData.name}
               onChange={(e) => handleField("name", e.target.value)}
+              className="bg-background/80 dark:bg-black/30 border-border"
               required
               autoFocus
             />
@@ -343,7 +345,7 @@ function ProductFormDrawer({
 
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="mb-1.5 block text-sm font-medium">
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
                 {t("aiCatalog.price")} <span className="text-destructive">*</span>
               </label>
               <div className="relative">
@@ -352,13 +354,13 @@ function ProductFormDrawer({
                   value={formData.price}
                   onChange={(e) => handleField("price", e.target.value)}
                   type="number"
-                  className="pl-8"
+                  className="pl-8 bg-background/80 dark:bg-black/30 border-border"
                   required
                 />
               </div>
             </div>
             <div className="flex-1">
-              <label className="mb-1.5 block text-sm font-medium">
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
                 {t("aiCatalog.stock")}
               </label>
               <div className="relative">
@@ -367,39 +369,41 @@ function ProductFormDrawer({
                   value={formData.stock}
                   onChange={(e) => handleField("stock", e.target.value)}
                   type="number"
-                  className="pl-8"
+                  className="pl-8 bg-background/80 dark:bg-black/30 border-border"
                 />
               </div>
             </div>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               {t("aiCatalog.sku")}
             </label>
             <Input
               value={formData.sku}
               onChange={(e) => handleField("sku", e.target.value)}
+              className="bg-background/80 dark:bg-black/30 border-border"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               {t("aiCatalog.description")}
             </label>
             <Textarea
               value={formData.description}
               onChange={(e) => handleField("description", e.target.value)}
               rows={3}
+              className="bg-background/80 dark:bg-black/30 border-border"
             />
           </div>
 
-          <Separator />
+          <Separator className="border-border" />
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Palette className="size-5 text-primary" />
-              <span className="text-sm font-extrabold">
+              <span className="text-sm font-extrabold text-foreground">
                 {t("aiCatalog.variants")}
               </span>
             </div>
@@ -415,7 +419,7 @@ function ProductFormDrawer({
           {formData.variants.map((variant, idx) => (
             <div
               key={idx}
-              className="rounded-lg border p-3"
+              className="rounded-lg border border-border bg-muted/30 dark:bg-white/[0.03] p-3"
             >
               <div className="flex items-center gap-3">
                 <ImageUploadArea
@@ -438,6 +442,7 @@ function ProductFormDrawer({
                       updateVariant(idx, { color: e.target.value })
                     }
                     placeholder={t("aiCatalog.variantColor")}
+                    className="bg-background/80 dark:bg-black/30 border-border"
                   />
                 </div>
                 <Button
@@ -452,7 +457,7 @@ function ProductFormDrawer({
           ))}
         </div>
 
-        <SheetFooter className="border-t px-6 py-4">
+        <SheetFooter className="border-t border-border px-6 py-4 bg-card shrink-0">
           <div className="flex w-full gap-3">
             <Button
               variant="outline"

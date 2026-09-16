@@ -168,6 +168,10 @@ html *::after {
   --color-success-foreground: oklch(1.000 0.000 0.0);
   --color-card: oklch(1.000 0.000 0.0);
   --color-card-foreground: oklch(0.221 0.039 258.3);
+  --color-popover: oklch(1.000 0.000 0.0);
+  --color-popover-foreground: oklch(0.221 0.039 258.3);
+  --popover: var(--color-popover);
+  --popover-foreground: var(--color-popover-foreground);
   --color-accent: oklch(0.921 0.018 250.6);
   --color-accent-foreground: oklch(0.221 0.039 258.3);
   --color-info: oklch(0.581 0.229 263.9);
@@ -534,6 +538,10 @@ html *::after {
   --color-input: oklch(0.212 0.038 257.2);
   --color-card: oklch(0.217 0.042 257.8);
   --color-card-foreground: oklch(0.965 0.017 259.4);
+  --color-popover: oklch(0.217 0.042 257.8);
+  --color-popover-foreground: oklch(0.965 0.017 259.4);
+  --popover: var(--color-popover);
+  --popover-foreground: var(--color-popover-foreground);
   --color-accent: oklch(0.270 0.051 256.1);
   --color-accent-foreground: oklch(0.965 0.017 259.4);
 
@@ -900,6 +908,10 @@ html *::after {
   --color-muted-foreground: oklch(0.711 0.035 256.8);
   --color-border: oklch(0.269 0.000 0.0);
   --color-input: oklch(0.178 0.000 0.0);
+  --color-card: oklch(0.120 0.000 0.0);
+  --color-card-foreground: oklch(0.984 0.003 247.9);
+  --color-popover: oklch(0.120 0.000 0.0);
+  --color-popover-foreground: oklch(0.984 0.003 247.9);
 
   --app-bg-gradient: linear-gradient(
     135deg,
