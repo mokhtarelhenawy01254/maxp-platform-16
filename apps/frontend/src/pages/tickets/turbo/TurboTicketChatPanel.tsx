@@ -103,6 +103,10 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
   const [submittingRating, setSubmittingRating] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [showOrderSidebar, setShowOrderSidebar] = useState(false);
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
+  const [searchingOrder, setSearchingOrder] = useState(false);
+  const [manualMatchedOrder, setManualMatchedOrder] = useState<any | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -111,12 +115,126 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
       setRatingScore(ticket.rate ?? ticket.rating ?? null);
       setReplyText("");
       setReplyImage(null);
+      setManualMatchedOrder(null);
+      setOrderSearchQuery("");
+      if (ticket.matchedOrder) {
+        setShowOrderSidebar(true);
+      }
     }
   }, [ticket?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [ticket?.messages?.length, ticket?.replies?.length]);
+
+  const activeOrder = ticket?.matchedOrder || manualMatchedOrder;
+
+  const formatSenderName = (msg: TurboMessage) => {
+    const isStore =
+      Number(msg.is_client_message) === 1 ||
+      msg.is_client_message === true;
+
+    if (isStore) {
+      const storeName = user?.company?.name?.trim() || "المتجر";
+      let personName = (
+        msg.sender_name ||
+        msg.user?.name ||
+        ""
+      ).trim();
+      personName = personName
+        .replace(/العميل\s+[^\s]+/gi, "")
+        .replace(/client\s+[^\s]+/gi, "")
+        .trim();
+
+      if (
+        !personName ||
+        personName.toLowerCase() === "المتجر" ||
+        personName.toLowerCase() === "swan" ||
+        personName.toLowerCase() === "client"
+      ) {
+        personName =
+          `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+          "المسؤول";
+      }
+      return `${storeName} - ${personName}`;
+    } else {
+      let turboName = (
+        msg.user?.name ||
+        msg.sender_name ||
+        [msg.user?.first_name, msg.user?.last_name].filter(Boolean).join(" ") ||
+        [msg.sender?.first_name, msg.sender?.last_name].filter(Boolean).join(" ") ||
+        ""
+      ).trim();
+
+      turboName = turboName
+        .replace(/^تربو\s*[-–:]*\s*/gi, "")
+        .replace(/^turbo\s*[-–:]*\s*/gi, "")
+        .trim();
+
+      if (!turboName || turboName === "خدمة عملاء" || turboName === "الدعم الفني") {
+        turboName = "خدمة العملاء";
+      }
+      return `تربو - ${turboName}`;
+    }
+  };
+
+  const handleSearchOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orderSearchQuery.trim()) return;
+    try {
+      setSearchingOrder(true);
+      const res = await apiClient.get<any>(
+        `/orders?search=${encodeURIComponent(orderSearchQuery.trim())}&limit=1`
+      );
+      const ord =
+        res.data?.orders?.[0] ||
+        res.data?.data?.orders?.[0] ||
+        res.data?.data?.[0];
+      if (ord) {
+        setManualMatchedOrder({
+          id: ord.id,
+          orderNumber: ord.orderNumber,
+          status: ord.status,
+          turboStatus: ord.turboShipmentStatus || ord.shippingStatus,
+          turboTrackingNumber: ord.turboTrackingNumber,
+          turboShipmentId: ord.turboShipmentId,
+          turboCaptainName: ord.turboCaptainName,
+          turboCaptainPhone: ord.turboCaptainPhone,
+          customer: {
+            name: ord.customerName || ord.customer?.name,
+            phone: ord.customerPhone || ord.customer?.phone,
+            address:
+              ord.shippingAddress ||
+              ord.customerAddress ||
+              ord.customer?.address,
+            city: ord.city || ord.customer?.city,
+            governorate: ord.governorate || ord.customer?.governorate,
+          },
+          items: (ord.orderItems || ord.items || []).map((it: any) => ({
+            id: it.id,
+            productName: it.productName || it.product?.name || "منتج",
+            variantName: it.variantName || it.productVariant?.name,
+            quantity: it.quantity,
+            unitPrice: Number(it.price || it.unitPrice || 0),
+            total: Number(it.total || (it.quantity || 1) * (it.price || 0)),
+          })),
+          financials: {
+            subtotal: Number(ord.subtotal || 0),
+            shippingFee: Number(ord.shippingFee || ord.shippingCost || 0),
+            discount: Number(ord.discount || 0),
+            total: Number(ord.total || 0),
+          },
+        });
+        toast.success(`تم العثور على أوردر #${ord.orderNumber}`);
+      } else {
+        toast.error("لم يتم العثور على أوردر بهذا الرقم");
+      }
+    } catch {
+      toast.error("فشل البحث عن الأوردر");
+    } finally {
+      setSearchingOrder(false);
+    }
+  };
 
   if (!ticket) {
     return (
@@ -268,8 +386,29 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
           </div>
         </div>
 
-        {/* Right Tools: Rating & Logs & Refresh */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right Tools: Order Details & Rating & Logs & Refresh */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowOrderSidebar((prev) => !prev)}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition border ${
+              showOrderSidebar
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 shadow-xs"
+                : activeOrder || ticket.matchedOrderSummary
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
+                : "border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            }`}
+            title="تفاصيل الأوردر المرتبط"
+          >
+            <ShoppingBagIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">تفاصيل الأوردر</span>
+            {(activeOrder || ticket.matchedOrderSummary) && (
+              <span className="tabular-nums font-mono px-1.5 py-0.2 rounded text-[10px] bg-emerald-600 text-white font-bold">
+                #{activeOrder?.orderNumber || ticket.matchedOrderSummary?.orderNumber}
+              </span>
+            )}
+          </button>
+
           {/* Rating */}
           <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs">
             <span className="text-zinc-500 text-[11px] ml-1">تقييم:</span>
@@ -313,232 +452,511 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
         </div>
       </header>
 
-      {/* Messages Thread Feed */}
-      <div
-        className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-3.5 min-h-0 touch-pan-y"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        {/* Initial Ticket Card */}
-        {(() => {
-          const storeName = user?.company?.name?.trim() || "";
-          const ticketSenderName =
-            ticket.creator_name ||
-            ticket.user?.name ||
-            ticket.user_name ||
-            ticket.client_name ||
-            (ticket.messages && ticket.messages.length > 0
-              ? ticket.messages[0]?.user?.name || ticket.messages[0]?.sender_name
-              : "") ||
-            "";
+      {/* Main Workspace: Chat Feed + Collapsible Order Details Sidebar */}
+      <div className="flex-1 flex min-h-0 overflow-hidden relative">
+        {/* Left Column: Messages Thread & Input Bar */}
+        <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden">
+          {/* Messages Thread Feed */}
+          <div
+            className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-3.5 min-h-0 touch-pan-y"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
+            {/* Initial Ticket Card */}
+            {(() => {
+              const storeName = user?.company?.name?.trim() || "المتجر";
+              let creatorClean = (
+                ticket.creator_name ||
+                ticket.user?.name ||
+                ticket.user_name ||
+                ticket.client_name ||
+                ""
+              )
+                .trim()
+                .replace(/العميل\s+[^\s]+/gi, "")
+                .trim();
 
-          let byText = "";
-          if (storeName && ticketSenderName) {
-            if (ticketSenderName.toLowerCase().includes(storeName.toLowerCase())) {
-              byText = ticketSenderName;
-            } else {
-              byText = `${storeName} / ${ticketSenderName}`;
-            }
-          } else if (storeName) {
-            byText = storeName;
-          } else if (ticketSenderName) {
-            byText = ticketSenderName;
-          } else {
-            const userName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
-            byText = userName || "المتجر";
-          }
+              if (
+                !creatorClean ||
+                creatorClean.toLowerCase() === "swan" ||
+                creatorClean === "المتجر"
+              ) {
+                creatorClean =
+                  `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+                  "المسؤول";
+              }
+              const byText = `${storeName} - ${creatorClean}`;
 
-          return (
-            <div className="p-3 sm:p-3.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs">
-              <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5 flex-wrap gap-1">
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                  تذكرة بواسطة: {byText}
-                </span>
-                <span className="tabular-nums font-mono text-[11px]">
-                  {ticket.created_at
-                    ? new Date(ticket.created_at).toLocaleString("ar-EG")
-                    : ""}
-                </span>
-              </div>
-              {ticket.category?.name && (
-                <div className="mb-2">
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
-                    الفئة: {ticket.category.name}
-                  </span>
-                </div>
-              )}
-              <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                {ticket.content || ticket.description || "لا يوجد وصف إضافي"}
-              </p>
-
-              {/* Initial Ticket Attachment if present */}
-              {(ticket.attachment || (ticket.attachments && ticket.attachments.length > 0)) && (
-                <div className="mt-2.5 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
-                  <p className="text-[11px] text-zinc-400 mb-1.5">مرفقات التذكرة:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {ticket.attachment && (
-                      <button
-                        type="button"
-                        onClick={() => setPreviewImage(ticket.attachment!)}
-                        className="group relative rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 max-w-[160px] max-h-[120px] focus:outline-hidden"
-                      >
-                        <img
-                          src={ticket.attachment}
-                          alt="مرفق التذكرة"
-                          className="object-cover w-full h-full group-hover:scale-105 transition"
-                        />
-                      </button>
-                    )}
-                    {ticket.attachments?.map((att, attIdx) => {
-                      const url = att.file_url || att.url;
-                      if (!url || url === ticket.attachment) return null;
-                      return (
-                        <button
-                          key={att.id || attIdx}
-                          type="button"
-                          onClick={() => setPreviewImage(url)}
-                          className="group relative rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 max-w-[160px] max-h-[120px] focus:outline-hidden"
-                        >
-                          <img
-                            src={url}
-                            alt={`مرفق ${attIdx + 1}`}
-                            className="object-cover w-full h-full group-hover:scale-105 transition"
-                          />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* Messages Stream */}
-        {sortedMessages.length === 0 ? (
-          <div className="py-12 text-center text-xs text-zinc-400">
-            لا توجد ردود بعد. سيتم عرض ردود خدمة عملاء تربو هنا فور وصولها.
-          </div>
-        ) : (
-          sortedMessages.map((msg, idx) => {
-            const isStore =
-              Number(msg.is_client_message) === 1 ||
-              msg.is_client_message === true;
-            const senderTitle =
-              msg.sender_name ||
-              (isStore ? "أنا (المتجر)" : "خدمة عملاء تربو");
-            const roleName =
-              msg.user?.role?.name ||
-              msg.sender?.role_name ||
-              (isStore ? "المتجر" : "تربو");
-            const textContent = msg.content || msg.message || "";
-            const imageUrl = msg.image || msg.media_url;
-
-            return (
-              <div
-                key={msg.id || idx}
-                className={`flex flex-col ${
-                  isStore ? "items-end" : "items-start"
-                }`}
-              >
-                <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 mb-1 px-1 flex-wrap">
-                  <UserIcon className="h-3 w-3" />
-                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                    {senderTitle}
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
-                    {roleName}
-                  </span>
-                  {msg.created_at && (
-                    <span className="tabular-nums font-mono text-[10px]">
-                      •{" "}
-                      {new Date(msg.created_at).toLocaleTimeString("ar-EG", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+              return (
+                <div className="p-3 sm:p-3.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs">
+                  <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5 flex-wrap gap-1">
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                      تذكرة بواسطة: {byText}
                     </span>
+                    <span className="tabular-nums font-mono text-[11px]">
+                      {ticket.created_at
+                        ? new Date(ticket.created_at).toLocaleString("ar-EG")
+                        : ""}
+                    </span>
+                  </div>
+                  {ticket.category?.name && (
+                    <div className="mb-2">
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
+                        الفئة: {ticket.category.name}
+                      </span>
+                    </div>
                   )}
-                </div>
+                  <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                    {ticket.content || ticket.description || "لا يوجد وصف إضافي"}
+                  </p>
 
-                <div
-                  className={`max-w-[88%] sm:max-w-[75%] rounded-2xl p-3 text-xs leading-relaxed shadow-2xs ${
-                    isStore
-                      ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-br-xs"
-                      : "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-bl-xs"
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap break-words">{textContent}</p>
-
-                  {imageUrl && (
-                    <div className="mt-2">
-                      <img
-                        src={imageUrl}
-                        alt="مرفق التذكرة"
-                        onClick={() => setPreviewImage(imageUrl)}
-                        className="max-h-48 rounded-lg cursor-pointer hover:opacity-90 transition border border-white/20"
-                      />
+                  {/* Initial Ticket Attachment if present */}
+                  {(ticket.attachment || (ticket.attachments && ticket.attachments.length > 0)) && (
+                    <div className="mt-2.5 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
+                      <p className="text-[11px] text-zinc-400 mb-1.5">مرفقات التذكرة:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {ticket.attachment && (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewImage(ticket.attachment!)}
+                            className="group relative rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 max-w-[160px] max-h-[120px] focus:outline-hidden"
+                          >
+                            <img
+                              src={ticket.attachment}
+                              alt="مرفق التذكرة"
+                              className="object-cover w-full h-full group-hover:scale-105 transition"
+                            />
+                          </button>
+                        )}
+                        {ticket.attachments?.map((att, attIdx) => {
+                          const url = att.file_url || att.url;
+                          if (!url || url === ticket.attachment) return null;
+                          return (
+                            <button
+                              key={att.id || attIdx}
+                              type="button"
+                              onClick={() => setPreviewImage(url)}
+                              className="group relative rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 max-w-[160px] max-h-[120px] focus:outline-hidden"
+                            >
+                              <img
+                                src={url}
+                                alt={`مرفق ${attIdx + 1}`}
+                                className="object-cover w-full h-full group-hover:scale-105 transition"
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
+              );
+            })()}
+
+            {/* Messages Stream */}
+            {sortedMessages.length === 0 ? (
+              <div className="py-12 text-center text-xs text-zinc-400">
+                لا توجد ردود بعد. سيتم عرض ردود خدمة عملاء تربو هنا فور وصولها.
               </div>
-            );
-          })
+            ) : (
+              sortedMessages.map((msg, idx) => {
+                const isStore =
+                  Number(msg.is_client_message) === 1 ||
+                  msg.is_client_message === true;
+                const senderTitle = formatSenderName(msg);
+                const roleName = isStore
+                  ? user?.company?.name?.trim() || "المتجر"
+                  : "تربو";
+                const textContent = msg.content || msg.message || "";
+                const imageUrl = msg.image || msg.media_url;
+
+                return (
+                  <div
+                    key={msg.id || idx}
+                    className={`flex flex-col ${
+                      isStore ? "items-end" : "items-start"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 mb-1 px-1 flex-wrap">
+                      <UserIcon className="h-3 w-3" />
+                      <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                        {senderTitle}
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+                        {roleName}
+                      </span>
+                      {msg.created_at && (
+                        <span className="tabular-nums font-mono text-[10px]">
+                          •{" "}
+                          {new Date(msg.created_at).toLocaleTimeString("ar-EG", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      )}
+                    </div>
+
+                    <div
+                      className={`max-w-[88%] sm:max-w-[75%] rounded-2xl p-3 text-xs leading-relaxed shadow-2xs ${
+                        isStore
+                          ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-br-xs"
+                          : "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-bl-xs"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap break-words">{textContent}</p>
+
+                      {imageUrl && (
+                        <div className="mt-2">
+                          <img
+                            src={imageUrl}
+                            alt="مرفق التذكرة"
+                            onClick={() => setPreviewImage(imageUrl)}
+                            className="max-h-48 rounded-lg cursor-pointer hover:opacity-90 transition border border-white/20"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Bar with Safe Area Bottom Padding */}
+          <footer className="p-2.5 sm:p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 z-20 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg sm:shadow-none">
+            {replyImage && (
+              <div className="flex items-center gap-2 mb-2 p-1.5 px-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs w-fit">
+                <PhotoIcon className="h-4 w-4 text-zinc-500" />
+                <span className="truncate max-w-[200px] text-zinc-700 dark:text-zinc-300">
+                  {replyImage.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setReplyImage(null)}
+                  className="text-rose-500 hover:text-rose-600 p-0.5 rounded"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+
+            <form onSubmit={handleSendReply} className="flex items-center gap-1.5 sm:gap-2">
+              <label className="p-2 sm:p-2.5 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition active:scale-95 shrink-0" title="إرفاق صورة">
+                <PhotoIcon className="h-5 w-5" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={sending}
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setReplyImage(e.target.files[0]);
+                    }
+                  }}
+                />
+              </label>
+
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="اكتب ردك لخدمة عملاء وعمليات تربو..."
+                disabled={sending}
+                className="flex-1 min-w-0 px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:border-zinc-400 dark:focus:border-zinc-600 transition"
+              />
+
+              <button
+                type="submit"
+                disabled={sending || (!replyText.trim() && !replyImage)}
+                className="p-2.5 px-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 disabled:opacity-40 transition active:scale-97 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold shrink-0 shadow-xs"
+              >
+                <span>{sending ? "إرسال..." : "إرسال"}</span>
+                <PaperAirplaneIcon className="h-3.5 w-3.5 rotate-180" />
+              </button>
+            </form>
+          </footer>
+        </div>
+
+        {/* Right Column: In-Chat Order Details Sidebar */}
+        {showOrderSidebar && (
+          <aside className="w-80 sm:w-88 md:w-96 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col h-full min-h-0 overflow-hidden shrink-0 absolute inset-y-0 right-0 z-30 md:static md:z-auto shadow-2xl md:shadow-none animate-in slide-in-from-right duration-200">
+            {/* Sidebar Header */}
+            <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50 shrink-0">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <ShoppingBagIcon className="h-4 w-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
+                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                  {activeOrder
+                    ? `تفاصيل طلب #${activeOrder.orderNumber}`
+                    : "تفاصيل الأوردر المرتبط"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOrderSidebar(false)}
+                className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+                title="إغلاق القائمة الجانبية"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Sidebar Body */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-3.5 text-xs">
+              {activeOrder ? (
+                <>
+                  {/* Statuses & Tracking */}
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/70 dark:border-zinc-700/60 space-y-2">
+                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                      <span className="text-[11px] text-zinc-500">حالة الطلب بالمتجر:</span>
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200">
+                        {activeOrder.status}
+                      </span>
+                    </div>
+                    {activeOrder.turboStatus && (
+                      <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-zinc-500">حالة شحن تربو:</span>
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                          {activeOrder.turboStatus}
+                        </span>
+                      </div>
+                    )}
+                    {(activeOrder.turboTrackingNumber || activeOrder.turboShipmentId) && (
+                      <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-zinc-200/50 dark:border-zinc-700/50">
+                        <span className="text-[11px] text-zinc-500">رقم البوليصة / الشحنة:</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleCopyCode(
+                              String(activeOrder.turboTrackingNumber || activeOrder.turboShipmentId)
+                            )
+                          }
+                          className="font-mono text-[11px] font-bold text-zinc-800 dark:text-zinc-200 hover:text-primary transition flex items-center gap-1"
+                        >
+                          <span>{activeOrder.turboTrackingNumber || activeOrder.turboShipmentId}</span>
+                          <ClipboardDocumentIcon className="h-3 w-3 text-zinc-400" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Customer Details Card */}
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/70 dark:border-zinc-700/60 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                        <UserIcon className="h-3.5 w-3.5 text-zinc-500" />
+                        <span>بيانات العميل</span>
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        {activeOrder.customer?.name || "عميل بدون اسم"}
+                      </p>
+                      {activeOrder.customer?.phone && (
+                        <div className="flex items-center justify-between pt-1 flex-wrap gap-1">
+                          <span className="font-mono text-zinc-700 dark:text-zinc-300 tabular-nums text-[11px]">
+                            {activeOrder.customer.phone}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <a
+                              href={`tel:${activeOrder.customer.phone}`}
+                              className="p-1 px-1.5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition flex items-center gap-1 text-[10px]"
+                              title="اتصال بالعميل"
+                            >
+                              <PhoneIcon className="h-3 w-3" />
+                              <span>اتصال</span>
+                            </a>
+                            {(() => {
+                              const cleanP = String(activeOrder.customer.phone).replace(/\D/g, "");
+                              const waNumber = cleanP.startsWith("0") ? `2${cleanP}` : cleanP;
+                              return (
+                                <a
+                                  href={`https://wa.me/${waNumber}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1 px-1.5 rounded bg-emerald-500 text-white hover:bg-emerald-600 transition flex items-center gap-1 text-[10px] font-semibold"
+                                  title="محادثة واتساب"
+                                >
+                                  <ChatBubbleLeftRightIcon className="h-3 w-3" />
+                                  <span>واتساب</span>
+                                </a>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Address */}
+                    {(activeOrder.customer?.governorate ||
+                      activeOrder.customer?.city ||
+                      activeOrder.customer?.address) && (
+                      <div className="pt-2 border-t border-zinc-200/50 dark:border-zinc-700/50 space-y-1">
+                        <div className="flex items-start gap-1.5 text-zinc-600 dark:text-zinc-300 text-[11px]">
+                          <MapPinIcon className="h-3.5 w-3.5 text-zinc-400 shrink-0 mt-0.5" />
+                          <div>
+                            {(activeOrder.customer.governorate || activeOrder.customer.city) && (
+                              <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                                {[activeOrder.customer.governorate, activeOrder.customer.city]
+                                  .filter(Boolean)
+                                  .join(" - ")}
+                              </p>
+                            )}
+                            {activeOrder.customer.address && (
+                              <p className="text-zinc-500 dark:text-zinc-400 leading-snug">
+                                {activeOrder.customer.address}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Products List */}
+                  {activeOrder.items && activeOrder.items.length > 0 && (
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/70 dark:border-zinc-700/60 space-y-2">
+                      <span className="font-bold text-zinc-800 dark:text-zinc-200 block">
+                        المنتجات المطلوبة ({activeOrder.items.length})
+                      </span>
+                      <div className="space-y-1.5 divide-y divide-zinc-200/50 dark:divide-zinc-700/50">
+                        {activeOrder.items.map((item: any, iIdx: number) => (
+                          <div
+                            key={item.id || iIdx}
+                            className="pt-1.5 first:pt-0 flex items-start justify-between gap-2"
+                          >
+                            <div className="min-w-0">
+                              <p className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                                {item.productName}
+                              </p>
+                              {item.variantName && (
+                                <p className="text-[10px] text-zinc-500">
+                                  {item.variantName}
+                                </p>
+                              )}
+                              <p className="text-[10px] text-zinc-400 font-mono tabular-nums">
+                                {item.quantity} × {item.unitPrice} ج.م
+                              </p>
+                            </div>
+                            <span className="font-bold font-mono text-zinc-900 dark:text-zinc-100 tabular-nums text-xs">
+                              {item.total} ج.م
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Financial Breakdown */}
+                  {activeOrder.financials && (
+                    <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/70 dark:border-zinc-700/60 space-y-1.5">
+                      <span className="font-bold text-zinc-800 dark:text-zinc-200 block mb-1">
+                        الحسابات المالية
+                      </span>
+                      <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-[11px]">
+                        <span>قيمة المنتجات:</span>
+                        <span className="font-mono tabular-nums font-medium">
+                          {activeOrder.financials.subtotal} ج.م
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-[11px]">
+                        <span>مصاريف الشحن:</span>
+                        <span className="font-mono tabular-nums font-medium">
+                          {activeOrder.financials.shippingFee} ج.م
+                        </span>
+                      </div>
+                      {activeOrder.financials.discount > 0 && (
+                        <div className="flex items-center justify-between text-emerald-600 text-[11px]">
+                          <span>الخصم:</span>
+                          <span className="font-mono tabular-nums font-medium">
+                            -{activeOrder.financials.discount} ج.م
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between pt-1.5 border-t border-zinc-200 dark:border-zinc-700 text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                        <span>المطلوب تحصيله:</span>
+                        <span className="font-mono tabular-nums text-sm text-emerald-600 dark:text-emerald-400">
+                          {activeOrder.financials.total} ج.م
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Turbo Captain info if assigned */}
+                  {(activeOrder.turboCaptainName || activeOrder.turboCaptainPhone) && (
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1">
+                      <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                        <TruckIcon className="h-3.5 w-3.5" />
+                        <span>مندوب / كابتن تربو</span>
+                      </span>
+                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        {activeOrder.turboCaptainName || "كابتن تربو"}
+                      </p>
+                      {activeOrder.turboCaptainPhone && (
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="font-mono text-zinc-700 dark:text-zinc-300 tabular-nums text-[11px]">
+                            {activeOrder.turboCaptainPhone}
+                          </span>
+                          <a
+                            href={`tel:${activeOrder.turboCaptainPhone}`}
+                            className="p-1 px-2 rounded bg-amber-600 text-white hover:bg-amber-700 transition text-[10px] font-semibold"
+                          >
+                            اتصال
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Direct Link to Store Order */}
+                  <a
+                    href={`/orders?search=${encodeURIComponent(activeOrder.orderNumber)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-semibold text-xs flex items-center justify-center gap-1.5 transition active:scale-97 shadow-xs"
+                  >
+                    <span>عرض الأوردر بالكامل في المتجر</span>
+                    <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
+                  </a>
+                </>
+              ) : (
+                <div className="space-y-3 py-4">
+                  <div className="text-center space-y-1">
+                    <ShoppingBagIcon className="h-8 w-8 text-zinc-300 dark:text-zinc-600 mx-auto" />
+                    <p className="font-bold text-zinc-700 dark:text-zinc-300">
+                      لا يوجد أوردر مرتبط تلقائياً
+                    </p>
+                    <p className="text-[11px] text-zinc-400">
+                      يمكنك البحث برقم الأوردر أو كود الشحنة لعرض كافة تفاصيل الطلب هنا.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleSearchOrder} className="space-y-2">
+                    <div className="relative">
+                      <MagnifyingGlassIcon className="absolute right-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+                      <input
+                        type="text"
+                        value={orderSearchQuery}
+                        onChange={(e) => setOrderSearchQuery(e.target.value)}
+                        placeholder="رقم الأوردر (مثال: 1042)..."
+                        className="w-full pr-8 pl-3 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:border-zinc-400 transition"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={searchingOrder || !orderSearchQuery.trim()}
+                      className="w-full py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-semibold text-xs transition disabled:opacity-40"
+                    >
+                      {searchingOrder ? "جاري البحث..." : "بحث عن الأوردر"}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+          </aside>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Bar with Safe Area Bottom Padding */}
-      <footer className="p-2.5 sm:p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 z-20 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg sm:shadow-none">
-        {replyImage && (
-          <div className="flex items-center gap-2 mb-2 p-1.5 px-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs w-fit">
-            <PhotoIcon className="h-4 w-4 text-zinc-500" />
-            <span className="truncate max-w-[200px] text-zinc-700 dark:text-zinc-300">
-              {replyImage.name}
-            </span>
-            <button
-              type="button"
-              onClick={() => setReplyImage(null)}
-              className="text-rose-500 hover:text-rose-600 p-0.5 rounded"
-            >
-              <XMarkIcon className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-
-        <form onSubmit={handleSendReply} className="flex items-center gap-1.5 sm:gap-2">
-          <label className="p-2 sm:p-2.5 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition active:scale-95 shrink-0" title="إرفاق صورة">
-            <PhotoIcon className="h-5 w-5" />
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              disabled={sending}
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  setReplyImage(e.target.files[0]);
-                }
-              }}
-            />
-          </label>
-
-          <input
-            type="text"
-            value={replyText}
-            onChange={(e) => setReplyText(e.target.value)}
-            placeholder="اكتب ردك لخدمة عملاء وعمليات تربو..."
-            disabled={sending}
-            className="flex-1 min-w-0 px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:border-zinc-400 dark:focus:border-zinc-600 transition"
-          />
-
-          <button
-            type="submit"
-            disabled={sending || (!replyText.trim() && !replyImage)}
-            className="p-2.5 px-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 disabled:opacity-40 transition active:scale-97 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-semibold shrink-0 shadow-xs"
-          >
-            <span>{sending ? "إرسال..." : "إرسال"}</span>
-            <PaperAirplaneIcon className="h-3.5 w-3.5 rotate-180" />
-          </button>
-        </form>
-      </footer>
 
       {/* Enlarged Image Lightbox */}
       {previewImage && (

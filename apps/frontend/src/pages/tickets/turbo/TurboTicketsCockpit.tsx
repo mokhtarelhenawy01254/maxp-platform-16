@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
-import { TurboTicketListPanel } from "./TurboTicketListPanel";
+import { TurboTicketListPanel, TurboCategoryTab } from "./TurboTicketListPanel";
 import { TurboTicketChatPanel } from "./TurboTicketChatPanel";
 import { TurboNewTicketModal } from "./TurboNewTicketModal";
 import { TurboTicketLogsModal } from "./TurboTicketLogsModal";
@@ -54,12 +54,14 @@ export const TurboTicketsCockpit: React.FC = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState<TurboCategoryTab>("all");
   const [searchQuery, setSearchQuery] = useState(urlSearch);
 
-  // Active Ticket state
+  // Active Ticket state & Fast Cache
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
   const [activeTicket, setActiveTicket] = useState<TurboTicketItem | null>(null);
   const [loadingTicket, setLoadingTicket] = useState(false);
+  const ticketDetailsCacheRef = useRef<Map<number, TurboTicketItem>>(new Map());
 
   // Modals state
   const [isNewModalOpen, setIsNewModalOpen] = useState(urlShouldOpenNew);
@@ -71,6 +73,7 @@ export const TurboTicketsCockpit: React.FC = () => {
   // Notification tracker refs
   const prevSnapshotRef = useRef<Map<number, TicketSnapshot>>(new Map());
   const isInitialLoadRef = useRef(true);
+
 
   // 1. Check if Turbo is enabled
   const checkTurboStatus = useCallback(async () => {
@@ -248,16 +251,21 @@ export const TurboTicketsCockpit: React.FC = () => {
     [selectedTicketId, statusFilter, searchQuery]
   );
 
-  // 4. Fetch Active Ticket Details
+  // 4. Fetch Active Ticket Details with Fast SWR Cache
   const loadActiveTicketDetails = useCallback(
     async (ticketId: number, isSilent = false) => {
       try {
-        if (!isSilent) setLoadingTicket(true);
+        const hasCache = ticketDetailsCacheRef.current.has(ticketId);
+        if (!isSilent && !hasCache) setLoadingTicket(true);
+
         const res = await apiClient.get<any>(`/turbo/tickets/${ticketId}`);
         if (res.data?.success) {
           const ticketData =
             res.data.data?.ticket || res.data.ticket || res.data.data;
           if (ticketData) {
+            // Save in in-memory cache for instant switching
+            ticketDetailsCacheRef.current.set(ticketId, ticketData);
+
             if (isSilent && activeTicket && activeTicket.id === ticketId) {
               const prevLen = (activeTicket.messages || activeTicket.replies || []).length;
               const newLen = (ticketData.messages || ticketData.replies || []).length;
@@ -277,11 +285,12 @@ export const TurboTicketsCockpit: React.FC = () => {
       } catch {
         // If error, active ticket remains or shows fallback
       } finally {
-        if (!isSilent) setLoadingTicket(false);
+        setLoadingTicket(false);
       }
     },
     [activeTicket]
   );
+
 
   // Initial Load
   useEffect(() => {
@@ -347,7 +356,14 @@ export const TurboTicketsCockpit: React.FC = () => {
 
   const handleSelectTicket = (t: TurboTicketItem) => {
     setSelectedTicketId(t.id);
-    setActiveTicket(t);
+
+    // Instant 0ms SWR render: use full cached ticket if available, or item from list
+    if (ticketDetailsCacheRef.current.has(t.id)) {
+      setActiveTicket(ticketDetailsCacheRef.current.get(t.id)!);
+    } else {
+      setActiveTicket(t);
+    }
+
     setMobileView("chat");
 
     // Optimistically clear unread badge in local list
@@ -466,12 +482,15 @@ export const TurboTicketsCockpit: React.FC = () => {
             onPageChange={handlePageChange}
             statusFilter={statusFilter}
             onChangeStatusFilter={handleFilterChange}
+            categoryFilter={categoryFilter}
+            onChangeCategoryFilter={setCategoryFilter}
             searchQuery={searchQuery}
             onChangeSearchQuery={handleSearchChange}
             desktopNotificationPermission={notificationPerm}
             onRequestNotificationPermission={handleRequestNotificationPermission}
           />
         </div>
+
 
         {/* Right/Chat Panel (Hidden on mobile when list is active) */}
         <div
