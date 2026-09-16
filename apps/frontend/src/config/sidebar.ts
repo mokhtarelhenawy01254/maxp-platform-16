@@ -464,6 +464,7 @@ export const getSidebarConfig = (
                 icon: Box,
                 items: [
                     { to: '/marketplace', icon: Box, label: isEn ? 'App Marketplace' : 'متجر التطبيقات' },
+                    { to: '/marketplace/downloads', icon: Monitor, label: isEn ? 'Device & Mobile Apps' : 'تطبيقات الأجهزة والموبايل' },
                     { to: '/my-apps', icon: Grid3x3, label: t('sidebar.myApps') },
                     { to: '/marketplace/bundles', icon: Gift, label: t('sidebar.browseBundles') },
                     { to: '/payments', icon: Wallet, label: t('sidebar.myPayments') },

@@ -1380,6 +1380,9 @@ const BundleDetails = React.lazy(
 const CompareApps = React.lazy(
   () => import("./pages/marketplace/CompareApps"),
 );
+const AppDownloadsPage = React.lazy(
+  () => import("./pages/marketplace/AppDownloadsPage"),
+);
 
 const MindMapPage = React.lazy(() => import("./pages/mindmap/MindMapPage"));
 
@@ -1707,6 +1710,7 @@ if (typeof window !== "undefined") {
   p["/support"] = () => import("./pages/support/SupportCenter");
   p["/profile"] = () => import("./pages/profile/Profile");
   p["/marketplace"] = () => import("./pages/marketplace/MarketplaceV2");
+  p["/marketplace/downloads"] = () => import("./pages/marketplace/AppDownloadsPage");
   p["/marketplace/agents"] = () => import("./pages/marketplace/agents/AgentMarketplacePage");
   p["/my-apps"] = () => import("./pages/marketplace/MyApps");
   p["/mindmap"] = () => import("./pages/mindmap/MindMapPage");
@@ -3077,6 +3081,18 @@ const AppContent = () => {
                 <Route
                   path="/marketplace/v2"
                   element={<Navigate to="/marketplace" replace />}
+                />
+                <Route
+                  path="/marketplace/downloads"
+                  element={
+                    <Layout>
+                      <AppDownloadsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/apps/downloads"
+                  element={<Navigate to="/marketplace/downloads" replace />}
                 />
                 <Route
                   path="/marketplace/themes"

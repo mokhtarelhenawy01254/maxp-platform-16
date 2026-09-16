@@ -139,6 +139,10 @@ export const SystemStatusTab: React.FC = () => {
           <span style={styles.infoLabel}>إصدار عميل المراقبة</span>
           <span style={styles.infoValue}>v{sysInfo?.appVersion || '1.0.0'}</span>
         </div>
+        <div style={styles.infoRow}>
+          <span style={styles.infoLabel}>التحديثات الصامتة التلقائية</span>
+          <span style={{ ...styles.infoValue, color: '#38bdf8' }}>مفعلة (تنزيل صامت في الخلفية)</span>
+        </div>
       </div>
     </div>
   );

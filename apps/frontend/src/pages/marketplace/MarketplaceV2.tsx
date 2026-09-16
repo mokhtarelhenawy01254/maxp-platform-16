@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -14,6 +14,7 @@ import {
   LayoutGrid, List,
   Truck,
   CreditCard, Gamepad2, Palette, ClipboardList, Percent,
+  Laptop,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -403,6 +404,17 @@ export default function MarketplaceV2() {
                   </button>
                 );
               })}
+
+              <Link
+                to="/marketplace/downloads"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 transition-all shrink-0 active:scale-[0.98] mr-auto"
+              >
+                <Laptop size={14} className="text-primary" />
+                <span>تطبيقات الأجهزة والموبايل</span>
+                <span className="text-[10px] tabular-nums px-1.5 py-0.2 rounded-full bg-primary/20 text-primary font-semibold">
+                  تحميل
+                </span>
+              </Link>
             </div>
 
             {/* Row 1: Search, Status Segmented Controls, Drawer Sheet Trigger, and View Switcher */}

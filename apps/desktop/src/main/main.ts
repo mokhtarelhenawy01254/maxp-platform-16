@@ -8,6 +8,7 @@ import { syncEngine } from '../tracker/syncEngine';
 import { localDb } from '../db/localDb';
 import { apiClient } from '../shared/api';
 import { IPC_CHANNELS } from '../shared/types';
+import { autoUpdater } from 'electron-updater';
 
 class SimpleStore {
   private file = '';
@@ -79,6 +80,9 @@ app.whenReady().then(async () => {
 
   // Always show window on startup
   createMainWindow();
+
+  // Initialize background silent auto-updates
+  initAutoUpdater();
 
   // Check if user is already logged in
   const savedToken = store.get('authToken') as string | undefined;
@@ -459,3 +463,56 @@ function showNotification(title: string, body: string): void {
     new Notification({ title, body, silent: true }).show();
   }
 }
+
+// ── Background Auto-Updater ──────────────────────────────────
+
+function initAutoUpdater(): void {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Updater] Skipping auto-updater in development mode');
+    return;
+  }
+
+  try {
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on('checking-for-update', () => {
+      console.log('[Updater] Checking for updates...');
+    });
+
+    autoUpdater.on('update-available', (info) => {
+      console.log('[Updater] Update available:', info.version);
+      showNotification('MaxP Monitor', `تحديث متوفر v${info.version}، جاري التنزيل في الخلفية...`);
+    });
+
+    autoUpdater.on('update-not-available', () => {
+      console.log('[Updater] App is up to date.');
+    });
+
+    autoUpdater.on('error', (err) => {
+      console.warn('[Updater] Auto-updater warning:', err?.message || err);
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+      console.log('[Updater] Update downloaded successfully:', info.version);
+      showNotification(
+        'MaxP Monitor',
+        `تم تنزيل التحديث v${info.version}. سيتم تطبيقه تلقائياً عند إعادة التشغيل القادمة.`
+      );
+    });
+
+    // Check on startup after 15 seconds, and then every 2 hours
+    setTimeout(() => {
+      autoUpdater.checkForUpdatesAndNotify().catch((e) => {
+        console.warn('[Updater] Initial check failed:', e?.message);
+      });
+    }, 15000);
+
+    setInterval(() => {
+      autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+    }, 2 * 60 * 60 * 1000);
+  } catch (err: any) {
+    console.warn('[Updater] Could not initialize autoUpdater:', err?.message);
+  }
+}
+

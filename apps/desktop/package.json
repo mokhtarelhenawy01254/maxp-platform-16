@@ -65,6 +65,11 @@
     "asarUnpack": [
       "bin/**/*"
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "elhenawym124-ops",
+      "repo": "maxp-platform-10"
+    },
     "win": {
       "target": ["dir"]
     },
