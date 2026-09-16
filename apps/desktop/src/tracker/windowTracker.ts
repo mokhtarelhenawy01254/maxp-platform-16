@@ -59,8 +59,7 @@ export class WindowTracker {
     this.isTracking = true;
 
     try {
-      // active-win is ESM-only, need dynamic import
-      const mod = await import('active-win');
+      const mod: any = await import('active-win');
       this.getActiveWin = mod.default ?? mod.activeWindow ?? mod;
     } catch (err) {
       console.error('[WindowTracker] Failed to load active-win:', err);

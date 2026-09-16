@@ -7,7 +7,7 @@ class MonitorService {
 
   async processActivityBatch(companyId, employeeId, activities) {
     if (!activities || !activities.length) return { count: 0 };
-    return this.prisma.monitorActivityLog.createMany({
+    const res = await this.prisma.monitorActivityLog.createMany({
       data: activities.map(a => ({
         companyId,
         employeeId,
@@ -19,6 +19,49 @@ class MonitorService {
         activityScore: Number(a.activityScore || 0),
         status: a.status || 'active',
       }))
+    });
+
+    try {
+      await this.updateDailySummaryFromActivity(companyId, employeeId, activities);
+    } catch (e) {
+      console.error('[MonitorService] Failed to update daily summary:', e.message);
+    }
+
+    return res;
+  }
+
+  async updateDailySummaryFromActivity(companyId, employeeId, activities) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const totalActive = activities.reduce((sum, a) => sum + (Number(a.activeSeconds) || 0), 0);
+    const avgScore = activities.reduce((sum, a) => sum + (Number(a.activityScore) || 0), 0) / activities.length;
+
+    await this.prisma.monitorDailySummary.upsert({
+      where: {
+        companyId_employeeId_date: {
+          companyId,
+          employeeId,
+          date: today,
+        },
+      },
+      update: {
+        totalActiveSeconds: { increment: totalActive },
+        lastActivityTime: new Date(),
+        avgActivityScore: avgScore,
+        productivityScore: Math.round(avgScore),
+      },
+      create: {
+        companyId,
+        employeeId,
+        date: today,
+        firstActivityTime: new Date(),
+        lastActivityTime: new Date(),
+        totalActiveSeconds: totalActive,
+        totalIdleSeconds: 0,
+        productivityScore: Math.round(avgScore),
+        avgActivityScore: avgScore,
+      },
     });
   }
 
@@ -80,9 +123,31 @@ class MonitorService {
   }
 
   async getTeamOverview(companyId, date) {
-    return this.prisma.monitorDailySummary.findMany({
-      where: { companyId, date: new Date(date) }
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const summaries = await this.prisma.monitorDailySummary.findMany({
+      where: { companyId, date: { gte: startOfDay, lte: endOfDay } }
     });
+
+    const employeeIds = summaries.map(s => s.employeeId).filter(Boolean);
+    let employees = [];
+    if (employeeIds.length > 0) {
+      employees = await this.prisma.employee.findMany({
+        where: { id: { in: employeeIds } },
+        include: { department: true }
+      });
+    }
+
+    const empMap = new Map(employees.map(e => [e.id, e]));
+
+    return summaries.map(s => ({
+      ...s,
+      employee: empMap.get(s.employeeId) || null,
+      status: s.lastActivityTime && (Date.now() - new Date(s.lastActivityTime).getTime() < 15 * 60 * 1000) ? 'active' : 'idle'
+    }));
   }
 
   async getEmployeeTimeline(companyId, employeeId, date) {

@@ -1,14 +1,48 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain } from 'electron';
 import path from 'path';
+import fs from 'fs';
 import { activityTracker } from '../tracker/activityTracker';
 import { windowTracker } from '../tracker/windowTracker';
 import { syncEngine } from '../tracker/syncEngine';
 import { localDb } from '../db/localDb';
 import { apiClient } from '../shared/api';
 import { IPC_CHANNELS } from '../shared/types';
-import Store from 'electron-store';
 
-const store = new Store();
+class SimpleStore {
+  private file = '';
+  private data: Record<string, any> = {};
+
+  init() {
+    try {
+      this.file = path.join(app.getPath('userData'), 'config.json');
+      if (fs.existsSync(this.file)) {
+        this.data = JSON.parse(fs.readFileSync(this.file, 'utf8'));
+      }
+    } catch {}
+  }
+
+  get(key: string, defaultValue: any = null): any {
+    return this.data[key] !== undefined ? this.data[key] : defaultValue;
+  }
+
+  set(key: string, value: any): void {
+    this.data[key] = value;
+    try {
+      if (!this.file) this.file = path.join(app.getPath('userData'), 'config.json');
+      fs.writeFileSync(this.file, JSON.stringify(this.data, null, 2), 'utf8');
+    } catch {}
+  }
+
+  delete(key: string): void {
+    delete this.data[key];
+    try {
+      if (!this.file) this.file = path.join(app.getPath('userData'), 'config.json');
+      fs.writeFileSync(this.file, JSON.stringify(this.data, null, 2), 'utf8');
+    } catch {}
+  }
+}
+
+const store = new SimpleStore();
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isTracking = false;
@@ -17,6 +51,7 @@ let isPaused = false;
 // ── App Lifecycle ─────────────────────────────────────────────
 
 app.whenReady().then(async () => {
+  store.init();
   // Initialize local database
   localDb.init();
 
@@ -38,9 +73,8 @@ app.whenReady().then(async () => {
   }
 });
 
-app.on('window-all-closed', (e: Event) => {
+app.on('window-all-closed', () => {
   // Don't quit on window close — keep running in tray
-  e.preventDefault();
 });
 
 app.on('before-quit', () => {
@@ -88,11 +122,14 @@ function createMainWindow(): void {
     },
   });
 
-  // In development, load from Vite dev server
+  // In development, load from Vite dev server if running, otherwise load dist
+  const distIndex = path.resolve(__dirname, '../../renderer/index.html');
   if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:5174');
+    mainWindow.loadURL('http://localhost:5174').catch(() => {
+      mainWindow?.loadFile(distIndex);
+    });
   } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+    mainWindow.loadFile(distIndex);
   }
 
   mainWindow.on('close', (e) => {
@@ -164,7 +201,7 @@ function updateTrayMenu(): void {
 }
 
 function getTrayIconPath(): string {
-  return path.join(__dirname, '..', '..', 'assets', 'icon.png');
+  return path.resolve(__dirname, '../../../assets/icon.png');
 }
 
 // ── Tracking Control ──────────────────────────────────────────
