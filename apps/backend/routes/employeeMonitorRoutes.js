@@ -20,5 +20,7 @@ router.get('/categories', monitorDashboardController.getCategories);
 router.put('/categories', monitorDashboardController.updateCategory);
 router.get('/alerts', monitorDashboardController.getAlerts);
 router.put('/alerts/:id/read', monitorDashboardController.markAlertRead);
+router.get('/ai-standup', monitorDashboardController.getAiDailyStandup);
+router.post('/admin/retention-archive', monitorDashboardController.triggerDataArchival);
 
 module.exports = router;

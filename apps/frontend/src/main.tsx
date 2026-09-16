@@ -9,21 +9,12 @@ import {
 } from "./utils/chunkLoadRecovery";
 import { clearAllSWCaches } from "./utils/swCacheFlush";
 
-// Auto-purge legacy SW caches once for all existing clients
-const SW_MIGRATION_VERSION = "maxp_sw_v3_20260729";
+// Proactively unregister any active or legacy Service Workers and wipe CacheStorage
 if (typeof window !== "undefined") {
   try {
-    if (localStorage.getItem("maxp:sw_migrated") !== SW_MIGRATION_VERSION) {
-      void clearAllSWCaches().then(() => {
-        try {
-          localStorage.setItem("maxp:sw_migrated", SW_MIGRATION_VERSION);
-        } catch {
-          // Ignore storage quota error
-        }
-      });
-    }
+    void clearAllSWCaches();
   } catch {
-    // Ignore private browsing error
+    // Ignore environments with restricted storage or workers
   }
 }
 
@@ -210,30 +201,6 @@ const bootstrapApp = async (): Promise<void> => {
   root.render(<AdminAppBootstrap />);
   scheduleOptionalGoogleFonts();
 
-  // Service Worker for PWA installability and background push notifications
-  const registerPwaServiceWorker = () => {
-    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw-v4.js", { scope: "/", updateViaCache: "none" })
-        .catch(() => {});
-    }
-  };
-
-  if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(() => {
-      registerPwaServiceWorker();
-      import("./utils/pushNotifications")
-        .then(({ registerPushServiceWorker }) => registerPushServiceWorker())
-        .catch(() => {});
-    }, { timeout: 5000 });
-  } else {
-    setTimeout(() => {
-      registerPwaServiceWorker();
-      import("./utils/pushNotifications")
-        .then(({ registerPushServiceWorker }) => registerPushServiceWorker())
-        .catch(() => {});
-    }, 1500);
-  }
 };
 
 void bootstrapApp()

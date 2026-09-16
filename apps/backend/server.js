@@ -43,6 +43,7 @@ const FRONTEND_STATIC_PREFIXES = [
   "/assets/",
   "/icons/",
   "/brand/",
+  "/downloads/",
   "/landing-pages/",
   "/placeholders/",
   "/previews/",

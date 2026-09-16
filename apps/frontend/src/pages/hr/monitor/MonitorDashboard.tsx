@@ -12,6 +12,8 @@ import {
   PauseCircle,
   XCircle,
   ShieldAlert,
+  Sparkles,
+  Archive,
 } from 'lucide-react';
 import api from '../../../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
@@ -36,6 +38,7 @@ export const MonitorDashboard: React.FC = () => {
   const { user } = useAuth();
   const roleStr = String(user?.role || '').toUpperCase();
   const isManagerOrHR = ['ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'OWNER', 'MANAGER'].includes(roleStr);
+  const isSuperOrOwner = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(roleStr);
 
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -43,6 +46,16 @@ export const MonitorDashboard: React.FC = () => {
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [teamMembers, setTeamMembers] = useState<TeamMemberSummary[]>([]);
+  const [aiStandup, setAiStandup] = useState<{
+    date?: string;
+    headline?: string;
+    summary?: string;
+    telemetry?: any;
+    attentionFlags?: string[];
+  } | null>(null);
+  const [archiving, setArchiving] = useState(false);
+  const [archiveSuccess, setArchiveSuccess] = useState<string | null>(null);
+
   const [stats, setStats] = useState({
     totalTracked: 0,
     activeNow: 0,
@@ -57,46 +70,72 @@ export const MonitorDashboard: React.FC = () => {
     }
     setLoading(true);
     try {
-      const response = await api.get(`/employee-monitor/team/overview?date=${selectedDate}`);
-      const data = response.data?.data || [];
+      const [overviewRes, aiRes] = await Promise.allSettled([
+        api.get(`/employee-monitor/team/overview?date=${selectedDate}`),
+        api.get(`/employee-monitor/ai-standup?date=${selectedDate}`),
+      ]);
 
-      let totalActiveSec = 0;
-      let totalProdScore = 0;
-      let activeCount = 0;
+      if (overviewRes.status === 'fulfilled') {
+        const data = overviewRes.value.data?.data || [];
+        let totalActiveSec = 0;
+        let totalProdScore = 0;
+        let activeCount = 0;
 
-      const formatted: TeamMemberSummary[] = data.map((item: any) => {
-        totalActiveSec += item.totalActiveSeconds || 0;
-        totalProdScore += item.productivityScore || 0;
-        if (item.status === 'active') activeCount++;
+        const formatted: TeamMemberSummary[] = data.map((item: any) => {
+          totalActiveSec += item.totalActiveSeconds || 0;
+          totalProdScore += item.productivityScore || 0;
+          if (item.status === 'active') activeCount++;
 
-        return {
-          employeeId: item.employeeId,
-          employeeName: item.employee?.firstName
-            ? `${item.employee.firstName} ${item.employee.lastName || ''}`
-            : item.employeeId,
-          departmentName: item.employee?.department?.name || 'General',
-          status: item.status || 'offline',
-          totalActiveSeconds: item.totalActiveSeconds || 0,
-          totalIdleSeconds: item.totalIdleSeconds || 0,
-          productivityScore: Math.round(item.productivityScore || 0),
-          lastHeartbeat: item.lastActivityTime,
-          topApp: item.topApps ? Object.keys(JSON.parse(item.topApps || '{}'))[0] : undefined,
-        };
-      });
+          return {
+            employeeId: item.employeeId,
+            employeeName: item.employee?.firstName
+              ? `${item.employee.firstName} ${item.employee.lastName || ''}`
+              : item.employeeId,
+            departmentName: item.employee?.department?.name || 'General',
+            status: item.status || 'offline',
+            totalActiveSeconds: item.totalActiveSeconds || 0,
+            totalIdleSeconds: item.totalIdleSeconds || 0,
+            productivityScore: Math.round(item.productivityScore || 0),
+            lastHeartbeat: item.lastActivityTime,
+            topApp: item.topApps ? Object.keys(JSON.parse(item.topApps || '{}'))[0] : undefined,
+          };
+        });
 
-      setTeamMembers(formatted);
-      setStats({
-        totalTracked: formatted.length,
-        activeNow: activeCount,
-        avgProductivity: formatted.length ? Math.round(totalProdScore / formatted.length) : 0,
-        totalHoursTracked: Math.round((totalActiveSec / 3600) * 10) / 10,
-      });
+        setTeamMembers(formatted);
+        setStats({
+          totalTracked: formatted.length,
+          activeNow: activeCount,
+          avgProductivity: formatted.length ? Math.round(totalProdScore / formatted.length) : 0,
+          totalHoursTracked: Math.round((totalActiveSec / 3600) * 10) / 10,
+        });
+      }
+
+      if (aiRes.status === 'fulfilled' && aiRes.value.data?.data) {
+        setAiStandup(aiRes.value.data.data);
+      }
     } catch (err) {
       console.error('Failed to fetch monitor data:', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, isManagerOrHR]);
+
+  const handleArchiveLogs = async () => {
+    if (!window.confirm('هل تريد أرشفة وتفريغ السجلات اللحظية الأقدم من 60 يوماً؟ (يتم الاحتفاظ بالملخصات اليومية دائماً)')) {
+      return;
+    }
+    setArchiving(true);
+    setArchiveSuccess(null);
+    try {
+      const res = await api.post('/employee-monitor/admin/retention-archive', { retentionDays: 60 });
+      setArchiveSuccess(`تم تفريغ ${res.data?.prunedCounts?.activityLogs ?? 0} سجل لحظي بنجاح.`);
+      setTimeout(() => setArchiveSuccess(null), 5000);
+    } catch (e: any) {
+      alert(e?.response?.data?.error || 'فشلت أرشفة السجلات');
+    } finally {
+      setArchiving(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -161,6 +200,19 @@ export const MonitorDashboard: React.FC = () => {
             onChange={(e) => setSelectedDate(e.target.value)}
             className="w-38 text-xs font-mono"
           />
+          {isSuperOrOwner && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleArchiveLogs}
+              disabled={archiving}
+              className="gap-1.5 text-muted-foreground hover:text-foreground text-xs"
+              title="أرشفة السجلات الأقدم من 60 يوماً لحماية سرعة قاعدة البيانات"
+            >
+              <Archive className={`w-3.5 h-3.5 ${archiving ? 'animate-spin' : ''}`} />
+              <span>{archiving ? 'جاري الأرشفة...' : 'أرشفة السجلات (+60 يوم)'}</span>
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -173,6 +225,61 @@ export const MonitorDashboard: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Archive Feedback Toast */}
+      {archiveSuccess && (
+        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-xs text-emerald-500 flex items-center gap-2">
+          <CheckCircle2 className="size-4" />
+          <span>{archiveSuccess}</span>
+        </div>
+      )}
+
+      {/* AI Daily Standup Digest */}
+      {aiStandup && (
+        <div className="rounded-xl border border-primary/25 bg-gradient-to-l from-primary/5 via-card to-card p-4 sm:p-5 shadow-sm transition-all">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-2.5">
+            <div className="flex items-center gap-2">
+              <div className="flex size-7 items-center justify-center rounded-lg bg-primary/15 text-primary border border-primary/30">
+                <Sparkles className="size-4" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-foreground">الملخص التنفيذي الذكي للفريق (AI Standup)</span>
+                <span className="text-[10px] text-muted-foreground mr-2 font-mono">
+                  {new Date(aiStandup.date || selectedDate).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary text-[10px] font-medium">
+                {aiStandup.headline}
+              </Badge>
+            </div>
+          </div>
+
+          <p className="text-xs text-foreground/90 leading-relaxed sm:text-sm font-normal">
+            {aiStandup.summary}
+          </p>
+
+          {/* Attention Points / Flags if any */}
+          {aiStandup.attentionFlags && aiStandup.attentionFlags.length > 0 && (
+            <div className="mt-3 pt-2.5 border-t border-border/40 flex flex-wrap gap-2 items-center">
+              <span className="text-[11px] font-semibold text-amber-500 flex items-center gap-1">
+                <AlertTriangle className="size-3" />
+                تنبيهات المتابعة:
+              </span>
+              {aiStandup.attentionFlags.map((flag: string, idx: number) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center rounded-md bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 text-[10px] text-amber-600 dark:text-amber-400"
+                >
+                  {flag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* KPI Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
