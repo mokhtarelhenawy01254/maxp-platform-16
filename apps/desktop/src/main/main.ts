@@ -61,15 +61,15 @@ app.whenReady().then(async () => {
   // Register IPC handlers
   registerIpcHandlers();
 
+  // Always show window on startup
+  createMainWindow();
+
   // Check if user is already logged in
   const savedToken = store.get('authToken') as string | undefined;
   const savedServer = store.get('serverUrl') as string | undefined;
   if (savedToken && savedServer) {
     apiClient.configure(savedServer, savedToken);
     startTracking();
-  } else {
-    // Show login window
-    createMainWindow();
   }
 });
 
@@ -107,6 +107,7 @@ function createMainWindow(): void {
   }
 
   mainWindow = new BrowserWindow({
+    title: 'MaxP Employee Monitor',
     width: 420,
     height: 640,
     minWidth: 380,
@@ -131,6 +132,9 @@ function createMainWindow(): void {
   } else {
     mainWindow.loadFile(distIndex);
   }
+
+  mainWindow.show();
+  mainWindow.focus();
 
   mainWindow.on('close', (e) => {
     // Minimize to tray instead of closing
