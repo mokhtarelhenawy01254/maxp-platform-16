@@ -106,6 +106,17 @@ exports.createShipment = async (req, res) => {
     if (result.success && result.trackingNumber) {
       try {
         if (!isGuest) {
+          const qpCompany = await safeQuery(() =>
+            prisma.shippingCompany.findFirst({
+              where: {
+                companyId: req.user?.companyId || order.companyId,
+                providerKey: 'QP_EXPRESS',
+                isActive: true,
+              },
+              select: { id: true },
+            })
+          , 2);
+
           const existingShipment = await safeQuery(() =>
             prisma.shipment.findFirst({
               where: { orderId: order.id, companyId: req.user?.companyId || order.companyId },
@@ -117,6 +128,7 @@ exports.createShipment = async (req, res) => {
               prisma.shipment.update({
                 where: { id: existingShipment.id },
                 data: {
+                  shippingCompanyId: qpCompany?.id || existingShipment.shippingCompanyId || null,
                   carrierType: 'QP_EXPRESS',
                   trackingNumber: String(result.trackingNumber),
                   status: 'CREATED',
@@ -136,6 +148,7 @@ exports.createShipment = async (req, res) => {
                 data: {
                   orderId: order.id,
                   companyId: req.user?.companyId || order.companyId,
+                  shippingCompanyId: qpCompany?.id || null,
                   carrierType: 'QP_EXPRESS',
                   trackingNumber: String(result.trackingNumber),
                   status: 'CREATED',
