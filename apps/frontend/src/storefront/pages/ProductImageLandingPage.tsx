@@ -11,6 +11,11 @@ import { getPrimaryProductImage } from "../utils/productImages";
 import { buildStorefrontPath } from "../utils/paths";
 import { persistPurchaseTracking } from "../utils/purchaseTrackingStorage";
 import { isValidStorefrontPhone } from "../utils/phoneValidation";
+import {
+  getVariantAttributes,
+  canonicalizeAttributeKey,
+  getVariantAttributeLabel,
+} from "../utils/variants";
 import "./ProductImageLandingPage.css";
 
 type LandingSlice = {
@@ -231,44 +236,19 @@ const normalizeLandingKey = (value?: string | null): string => {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-const getVariantAttributes = (variant?: ProductVariant | null): AttributeMap => {
-  const rawAttributes = variant?.attributes || variant?.attributeValues || null;
-
-  if (!rawAttributes) {
-    return {};
-  }
-
-  if (typeof rawAttributes === "string") {
-    try {
-      const parsed = JSON.parse(rawAttributes);
-      return isRecord(parsed)
-        ? Object.fromEntries(
-            Object.entries(parsed).map(([key, value]) => [key, String(value)]),
-          )
-        : {};
-    } catch {
-      return {};
-    }
-  }
-
-  if (isRecord(rawAttributes)) {
-    return Object.fromEntries(
-      Object.entries(rawAttributes).map(([key, value]) => [key, String(value)]),
-    );
-  }
-
-  return {};
-};
-
 const readVariantAttribute = (
   variant: ProductVariant,
   keys: string[],
 ): string => {
   const attributes = getVariantAttributes(variant);
-  const normalizedKeys = keys.map((key) => key.trim().toLowerCase());
-  const entry = Object.entries(attributes).find(([key]) =>
-    normalizedKeys.includes(key.trim().toLowerCase()),
-  );
+  const normalizedKeys = keys.map((key) => canonicalizeAttributeKey(key).toLowerCase());
+  const entry = Object.entries(attributes).find(([key]) => {
+    const canonicalKey = canonicalizeAttributeKey(key).toLowerCase();
+    return (
+      normalizedKeys.includes(canonicalKey) ||
+      normalizedKeys.includes(key.trim().toLowerCase())
+    );
+  });
 
   return entry?.[1]?.trim() || "";
 };
@@ -326,19 +306,58 @@ const BeforeAfterSlider: React.FC<{
   afterLabel?: string;
 }> = ({ beforeImage, afterImage, beforeLabel = "قبل (بدائل السوق)", afterLabel = "بعد (المنتج الأصلي)" }) => {
   const [sliderPos, setSliderPos] = useState(50);
+  const [isDragging, setIsDragging] = useState(false);
+  const stageRef = React.useRef<HTMLDivElement | null>(null);
+
+  const updatePosition = (clientX: number) => {
+    if (!stageRef.current) return;
+    const rect = stageRef.current.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const offsetX = clientX - rect.left;
+    const pct = Math.max(0, Math.min(100, (offsetX / rect.width) * 100));
+    setSliderPos(Math.round(pct));
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+    updatePosition(e.clientX);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    updatePosition(e.clientX);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsDragging(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+  };
 
   return (
     <div className="pil-before-after-container">
-      <div className="pil-ba-stage">
+      <div
+        ref={stageRef}
+        className="pil-ba-stage"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        style={{ touchAction: "none" }}
+      >
         {/* After / Our Product image (Base) */}
-        {afterImage && <img src={afterImage} alt={afterLabel} className="pil-ba-img pil-ba-after" />}
+        {afterImage && <img src={afterImage} alt={afterLabel} className="pil-ba-img pil-ba-after" draggable={false} />}
 
         {/* Before / Competitor image (Clipped) */}
         <div
           className="pil-ba-clipped"
           style={{ clipPath: `polygon(0 0, ${sliderPos}% 0, ${sliderPos}% 100%, 0 100%)` }}
         >
-          {beforeImage && <img src={beforeImage} alt={beforeLabel} className="pil-ba-img pil-ba-before" />}
+          {beforeImage && <img src={beforeImage} alt={beforeLabel} className="pil-ba-img pil-ba-before" draggable={false} />}
         </div>
 
         {/* Corner Badges: permanently visible on opposite corners, never clipped */}
@@ -352,7 +371,7 @@ const BeforeAfterSlider: React.FC<{
           </div>
         </div>
 
-        {/* Interactive range input */}
+        {/* Accessible range input for keyboard / screen readers */}
         <input
           type="range"
           min="0"
@@ -698,6 +717,7 @@ const ProductImageLandingPage: React.FC = () => {
     useState<LandingFormState>(DEFAULT_FORM_STATE);
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
+  const [selectedCustomAttributes, setSelectedCustomAttributes] = useState<Record<string, string>>({});
   const [selectedBundleQty, setSelectedBundleQty] = useState<number>(1);
   const [bundleItems, setBundleItems] = useState<BundleItemSelection[]>([
     { color: "", size: "" },
@@ -817,31 +837,34 @@ const ProductImageLandingPage: React.FC = () => {
   const countdownSection = activeSections.find((s) => s?.type === "COUNTDOWN");
   const bannerSection = activeSections.find((s) => s?.type === "BANNERS");
 
-  const activeConfig = {
-    orderKicker:
-      formSection?.content?.orderKicker ||
-      activeLanding?.formConfig?.orderKicker ||
-      fallbackConfig?.orderKicker ||
-      "نموذج الطلب",
-    orderTitle:
-      formSection?.content?.orderTitle ||
-      activeLanding?.formConfig?.orderTitle ||
-      fallbackConfig?.orderTitle ||
-      (activeProduct ? `اطلب ${activeProduct.name}` : "اطلب المنتج"),
-    orderCopy:
-      formSection?.content?.orderCopy ||
-      activeLanding?.formConfig?.orderCopy ||
-      fallbackConfig?.orderCopy ||
-      "املأ بياناتك وسيتم التواصل معك لتأكيد الطلب.",
-    buttonLabel:
-      formSection?.content?.buttonLabel ||
-      activeLanding?.formConfig?.buttonLabel ||
-      "تأكيد الطلب",
-    slices:
-      activeLanding?.slices?.length
-        ? activeLanding.slices
-        : fallbackConfig?.slices || [],
-  };
+  const activeConfig = useMemo(
+    () => ({
+      orderKicker:
+        formSection?.content?.orderKicker ||
+        activeLanding?.formConfig?.orderKicker ||
+        fallbackConfig?.orderKicker ||
+        "نموذج الطلب",
+      orderTitle:
+        formSection?.content?.orderTitle ||
+        activeLanding?.formConfig?.orderTitle ||
+        fallbackConfig?.orderTitle ||
+        (activeProduct ? `اطلب ${activeProduct.name}` : "اطلب المنتج"),
+      orderCopy:
+        formSection?.content?.orderCopy ||
+        activeLanding?.formConfig?.orderCopy ||
+        fallbackConfig?.orderCopy ||
+        "املأ بياناتك وسيتم التواصل معك لتأكيد الطلب.",
+      buttonLabel:
+        formSection?.content?.buttonLabel ||
+        activeLanding?.formConfig?.buttonLabel ||
+        "تأكيد الطلب",
+      slices:
+        activeLanding?.slices?.length
+          ? activeLanding.slices
+          : fallbackConfig?.slices || [],
+    }),
+    [formSection, activeLanding, fallbackConfig, activeProduct],
+  );
 
   const variants = useMemo(
     () => getActiveVariants(activeProduct),
@@ -871,15 +894,48 @@ const ProductImageLandingPage: React.FC = () => {
         ),
       );
       if (parsed.length > 0) return parsed;
-      const isFootwear = /كوتشي|حذاء|سنيكر|شوز|جزمة|أحذية|boot|sneaker|shoe/i.test(activeProduct?.name || "") ||
-        /كوتشي|حذاء|سنيكر|شوز/i.test(activeProduct?.description || "");
+      const isFootwear =
+        /كوتشي|حذاء|سنيكر|شوز|جزمة|أحذية|boot|sneaker|shoe/i.test(activeProduct?.name || "") ||
+        /كوتشي|حذاء|سنيكر|شوز/i.test(activeProduct?.description || "") ||
+        /كوتشي|حذاء|سنيكر|شوز|جزمة|أحذية/i.test(activeLanding?.title || "") ||
+        /كوتشي|حذاء|سنيكر|شوز|جزمة|أحذية/i.test(activeConfig?.orderTitle || "");
       if (isFootwear) {
         return ["37", "38", "39", "40", "41"];
       }
       return [];
     },
-    [variants, activeProduct],
+    [variants, activeProduct, activeLanding, activeConfig],
   );
+
+  const customAttributeGroups = useMemo(() => {
+    const groups: { key: string; label: string; options: string[] }[] = [];
+    const keysSeen = new Set<string>();
+
+    variants.forEach((v) => {
+      const attrs = getVariantAttributes(v);
+      Object.keys(attrs).forEach((rawKey) => {
+        const canonical = canonicalizeAttributeKey(rawKey);
+        if (canonical === "Color" || canonical === "Size" || keysSeen.has(canonical)) return;
+        keysSeen.add(canonical);
+
+        const label = getVariantAttributeLabel(rawKey, true) || rawKey;
+        const options = uniqueValues(
+          variants
+            .map((item) => {
+              const a = getVariantAttributes(item);
+              return a[canonical] || a[rawKey] || "";
+            })
+            .filter(Boolean),
+        );
+
+        if (options.length > 0) {
+          groups.push({ key: canonical, label, options });
+        }
+      });
+    });
+
+    return groups;
+  }, [variants]);
   const selectedVariant = useMemo(() => {
     if (!variants.length) {
       return null;
@@ -1063,16 +1119,46 @@ const ProductImageLandingPage: React.FC = () => {
       setSelectedSize(firstSize);
     }
 
+    if (customAttributeGroups.length > 0) {
+      setSelectedCustomAttributes((prev) => {
+        let hasChange = false;
+        const next = { ...prev };
+        customAttributeGroups.forEach((g) => {
+          if (!next[g.key] || !g.options.includes(next[g.key])) {
+            next[g.key] = g.options[0];
+            hasChange = true;
+          }
+        });
+        return hasChange ? next : prev;
+      });
+    }
+
     setBundleItems((prev) => {
       const defColor = selectedColor || firstColor;
       const defSize = selectedSize || firstSize;
+      const c0 = prev[0]?.color || defColor;
+      const s0 = prev[0]?.size || defSize;
+      const c1 = prev[1]?.color || defColor;
+      const s1 = prev[1]?.size || defSize;
+      const c2 = prev[2]?.color || defColor;
+      const s2 = prev[2]?.size || defSize;
+      if (
+        prev[0]?.color === c0 &&
+        prev[0]?.size === s0 &&
+        prev[1]?.color === c1 &&
+        prev[1]?.size === s1 &&
+        prev[2]?.color === c2 &&
+        prev[2]?.size === s2
+      ) {
+        return prev;
+      }
       return [
-        { color: prev[0]?.color || defColor, size: prev[0]?.size || defSize },
-        { color: prev[1]?.color || defColor, size: prev[1]?.size || defSize },
-        { color: prev[2]?.color || defColor, size: prev[2]?.size || defSize },
+        { color: c0, size: s0 },
+        { color: c1, size: s1 },
+        { color: c2, size: s2 },
       ];
     });
-  }, [colorOptions, selectedColor, selectedSize, sizeOptions]);
+  }, [colorOptions, selectedColor, selectedSize, sizeOptions, customAttributeGroups]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -1215,9 +1301,17 @@ const ProductImageLandingPage: React.FC = () => {
 
         itemsToOrder = activePieces.map((piece, pIdx) => {
           const matchedVariant = variants.find((v) => {
-            const attrs = (v.attributes || v.attributeValues || {}) as Record<string, string>;
-            const cMatch = !piece.color || Object.values(attrs).includes(piece.color);
-            const sMatch = !piece.size || Object.values(attrs).includes(piece.size);
+            const attrs = getVariantAttributes(v);
+            const cMatch =
+              !piece.color ||
+              Object.values(attrs).some(
+                (val) => String(val).trim() === piece.color.trim(),
+              );
+            const sMatch =
+              !piece.size ||
+              Object.values(attrs).some(
+                (val) => String(val).trim() === piece.size.trim(),
+              );
             return cMatch && sMatch;
           });
           return {
@@ -1241,10 +1335,15 @@ const ProductImageLandingPage: React.FC = () => {
         const attributes = {
           ...(selectedColor ? { Color: selectedColor } : {}),
           ...(selectedSize ? { Size: selectedSize } : {}),
+          ...selectedCustomAttributes,
         };
+        const customSummary = Object.entries(selectedCustomAttributes)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(" | ");
         itemsSummaryNotes = [
           selectedColor ? `اللون: ${selectedColor}` : "",
           selectedSize ? `المقاس: ${selectedSize}` : "",
+          customSummary,
         ]
           .filter(Boolean)
           .join(" | ");
@@ -1441,83 +1540,83 @@ const ProductImageLandingPage: React.FC = () => {
     }
 
     if (type === "MEDIA") {
+      const sectionImages =
+        Array.isArray(content.images) && content.images.length > 0
+          ? content.images
+          : allProductImages;
+      const currentImg =
+        sectionImages[activeHeroImageIndex] ||
+        sectionImages[0] ||
+        currentHeroImage;
+
       return (
         <React.Fragment key={section.id || idx}>
-          <section className="pil-hero" aria-labelledby="pil-hero-title">
-            <div className="pil-hero-media" aria-hidden="true">
-              {currentHeroImage ? (
-                <img src={currentHeroImage} alt={activeProduct.name} loading="eager" />
+          <section
+            className="pil-pure-media-section"
+            aria-label="معرض صور المنتج"
+            style={{
+              backgroundColor: content.bgColor || "transparent",
+              backgroundImage: content.bgImage ? `url(${content.bgImage})` : undefined,
+              maxWidth: 760,
+              margin: "0 auto",
+              padding: "8px 16px 12px",
+            }}
+          >
+            {/* Pure Clean Image Stage - No Dark Overlay, No Text, No Buttons */}
+            <div
+              className="pil-pure-media-stage"
+              style={{
+                width: "100%",
+                borderRadius: 14,
+                overflow: "hidden",
+                backgroundColor: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+              }}
+            >
+              {currentImg ? (
+                <img
+                  src={currentImg}
+                  alt={activeProduct.name}
+                  loading="eager"
+                  className="pil-pure-media-img"
+                  style={{
+                    width: "100%",
+                    maxHeight: 560,
+                    objectFit: "contain",
+                    display: "block",
+                    borderRadius: 14,
+                  }}
+                />
               ) : null}
             </div>
-            <div className="pil-hero-shade" />
-            <div className="pil-hero-content">
-              <span className="pil-hero-kicker">
-                {landingData?.company?.name || "المتجر"} · طلب سريع
-              </span>
-              <h1 id="pil-hero-title">{activeProduct.name}</h1>
-              <p>
-                {productDescription ||
-                  activeConfig.orderCopy ||
-                  "اختار المقاس واللون وسيتم التواصل معك لتأكيد الطلب."}
-              </p>
-              <div className="pil-hero-actions">
-                <a className="pil-hero-cta" href="#order">
-                  اطلب الآن
-                </a>
-                <div className="pil-hero-price" aria-label="السعر الحالي">
-                  <strong>{formatPrice(activePrice, currency)}</strong>
-                  {hasComparePrice ? (
-                    <span>{formatPrice(comparePrice, currency)}</span>
-                  ) : null}
+
+            {/* Thumbnail Navigation Strip */}
+            {sectionImages.length > 1 && (
+              <div
+                className="pil-hero-gallery-bar"
+                role="region"
+                aria-label="معرض زوايا وصور المنتج"
+                style={{ marginTop: 12 }}
+              >
+                <div className="pil-hero-thumbs-strip" role="tablist">
+                  {sectionImages.map((img: string, tIdx: number) => (
+                    <button
+                      key={tIdx}
+                      type="button"
+                      className={`pil-hero-thumb ${activeHeroImageIndex === tIdx ? "is-active" : ""}`}
+                      onClick={() => setActiveHeroImageIndex(tIdx)}
+                      aria-label={`عرض الصورة ${tIdx + 1}`}
+                    >
+                      <img src={img} alt="" loading="lazy" />
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
-            <div className="pil-hero-bottom" aria-label="مميزات الطلب">
-              <span>دفع عند الاستلام</span>
-              <span>تأكيد هاتفي</span>
-              <span>اختيار المقاس واللون</span>
-            </div>
+            )}
           </section>
-
-          {allProductImages.length > 1 ? (
-            <div className="pil-hero-gallery-bar" role="region" aria-label="معرض زوايا وصور المنتج">
-              <div className="pil-hero-thumbs-strip" role="tablist">
-                {allProductImages.map((img, tIdx) => (
-                  <button
-                    key={tIdx}
-                    type="button"
-                    className={`pil-hero-thumb ${activeHeroImageIndex === tIdx ? "is-active" : ""}`}
-                    onClick={() => setActiveHeroImageIndex(tIdx)}
-                    aria-label={`عرض الصورة ${tIdx + 1}`}
-                  >
-                    <img src={img} alt="" loading="lazy" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {visibleCampaignSlices.length > 0 ? (
-            <section className="pil-campaign" aria-label="صور الحملة">
-              <div className="pil-section-heading">
-                <span>تصميم صفحة المنتج</span>
-                <h2>لقطات تساعدك تتخيل المنتج</h2>
-              </div>
-              <div className="pil-campaign-grid">
-                {visibleCampaignSlices.slice(0, 3).map((slice, index) => (
-                  <figure className="pil-campaign-shot" key={`${slice.src}-${index}`}>
-                    <img
-                      src={slice.src}
-                      width={slice.width || 1024}
-                      height={slice.height || 1024}
-                      alt={slice.alt}
-                      loading={index === 0 ? "eager" : "lazy"}
-                    />
-                  </figure>
-                ))}
-              </div>
-            </section>
-          ) : null}
         </React.Fragment>
       );
     }
@@ -1811,19 +1910,30 @@ const ProductImageLandingPage: React.FC = () => {
           aria-label="الإثبات الاجتماعي"
         >
           <div className="pil-liveproof-inner">
-            <div className="pil-liveproof-badge">
-              <span className="pil-live-dot" />
-              <strong>طلب مباشر نشط الآن</strong>
+            <div className="pil-liveproof-header-row">
+              <div className="pil-liveproof-badge">
+                <span className="pil-live-dot" />
+                <strong>طلب مباشر نشط الآن</strong>
+              </div>
+              <div className="pil-liveproof-rating">
+                <svg
+                  className="pil-star-svg"
+                  viewBox="0 0 20 20"
+                  width="13"
+                  height="13"
+                  fill="#f59e0b"
+                  aria-hidden="true"
+                >
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <span className="pil-liveproof-rating-val">{satisfaction}</span>
+              </div>
             </div>
             <div className="pil-liveproof-ticker">
               <span>
-                {recent[0]?.buyer} من {recent[0]?.city} طلب {recent[0]?.item} (
+                طلب مؤكد: {recent[0]?.buyer ? `${recent[0].buyer} · ` : ""}{recent[0]?.city} — {recent[0]?.item} (
                 {recent[0]?.timeAgo})
               </span>
-            </div>
-            <div className="pil-liveproof-rating">
-              <span className="pil-stars">★★★★★</span>
-              <small>{satisfaction}</small>
             </div>
           </div>
         </div>
@@ -2109,33 +2219,20 @@ const ProductImageLandingPage: React.FC = () => {
                               <label className="pil-bundle-item-field-label">اللون:</label>
                               <div className="pil-chips-group pil-chips-group-compact" role="radiogroup" aria-label={`لون القطعة ${bIdx + 1}`}>
                                 {colorOptions.map((color) => {
-                                  const swatch = getColorSwatch(color);
                                   const isSelected = curColor === color;
                                   return (
                                     <button
                                       key={color}
                                       type="button"
-                                      className={`pil-chip pil-chip-compact ${isSelected ? "is-selected" : ""}`}
+                                      className={`pil-chip pil-chip-radio pil-chip-compact ${isSelected ? "is-selected" : ""}`}
                                       onClick={() => {
                                         updateBundleItem(bIdx, "color", color);
                                         if (bIdx === 0) setSelectedColor(color);
                                       }}
                                     >
-                                      {swatch ? (
-                                        <span
-                                          className="pil-color-swatch-dot"
-                                          style={{
-                                            display: "inline-block",
-                                            width: 10,
-                                            height: 10,
-                                            borderRadius: "50%",
-                                            backgroundColor: swatch,
-                                            border: swatch === "#ffffff" ? "1px solid #cbd5e1" : "1px solid rgba(0,0,0,0.15)",
-                                            marginInlineEnd: 4,
-                                            verticalAlign: "middle",
-                                          }}
-                                        />
-                                      ) : null}
+                                      <span className="pil-radio-dot" aria-hidden="true">
+                                        {isSelected ? "●" : "○"}
+                                      </span>
                                       {color}
                                     </button>
                                   );
@@ -2147,14 +2244,14 @@ const ProductImageLandingPage: React.FC = () => {
                           {sizeOptions.length > 0 ? (
                             <div className="pil-bundle-item-field">
                               <label className="pil-bundle-item-field-label">المقاس:</label>
-                              <div className="pil-chips-group pil-chips-group-compact" role="radiogroup" aria-label={`مقاس القطعة ${bIdx + 1}`}>
+                              <div className="pil-chips-group pil-chips-group--sizes pil-chips-group-compact" role="radiogroup" aria-label={`مقاس القطعة ${bIdx + 1}`}>
                                 {sizeOptions.map((size) => {
                                   const isSelected = curSize === size;
                                   return (
                                     <button
                                       key={size}
                                       type="button"
-                                      className={`pil-chip pil-chip-compact ${isSelected ? "is-selected" : ""}`}
+                                      className={`pil-chip pil-chip-size pil-chip-compact ${isSelected ? "is-selected" : ""}`}
                                       onClick={() => {
                                         updateBundleItem(bIdx, "size", size);
                                         if (bIdx === 0) setSelectedSize(size);
@@ -2172,7 +2269,7 @@ const ProductImageLandingPage: React.FC = () => {
                     })}
                   </div>
                 </div>
-              ) : sizeOptions.length > 0 || colorOptions.length > 0 ? (
+              ) : sizeOptions.length > 0 || colorOptions.length > 0 || customAttributeGroups.length > 0 ? (
                 <div className="pil-variants-block">
                   {colorOptions.length > 0 ? (
                     <div className="pil-field">
@@ -2183,32 +2280,20 @@ const ProductImageLandingPage: React.FC = () => {
                         aria-label="اختيار اللون"
                       >
                         {colorOptions.map((color) => {
-                          const swatch = getColorSwatch(color);
+                          const isSelected = selectedColor === color;
                           return (
                             <button
                               key={color}
                               type="button"
-                              className={`pil-chip ${selectedColor === color ? "is-selected" : ""}`}
+                              className={`pil-chip pil-chip-radio ${isSelected ? "is-selected" : ""}`}
                               onClick={() => {
                                 setSelectedColor(color);
                                 updateBundleItem(0, "color", color);
                               }}
                             >
-                              {swatch ? (
-                                <span
-                                  className="pil-color-swatch-dot"
-                                  style={{
-                                    display: "inline-block",
-                                    width: 12,
-                                    height: 12,
-                                    borderRadius: "50%",
-                                    backgroundColor: swatch,
-                                    border: swatch === "#ffffff" ? "1px solid #cbd5e1" : "1px solid rgba(0,0,0,0.15)",
-                                    marginInlineEnd: 6,
-                                    verticalAlign: "middle",
-                                  }}
-                                />
-                              ) : null}
+                              <span className="pil-radio-dot" aria-hidden="true">
+                                {isSelected ? "●" : "○"}
+                              </span>
                               {color}
                             </button>
                           );
@@ -2239,7 +2324,7 @@ const ProductImageLandingPage: React.FC = () => {
                     <div className="pil-field">
                       <label htmlFor="pil-size">المقاس</label>
                       <div
-                        className="pil-chips-group"
+                        className="pil-chips-group pil-chips-group--sizes"
                         role="radiogroup"
                         aria-label="اختيار المقاس"
                       >
@@ -2247,7 +2332,7 @@ const ProductImageLandingPage: React.FC = () => {
                           <button
                             key={size}
                             type="button"
-                            className={`pil-chip ${selectedSize === size ? "is-selected" : ""}`}
+                            className={`pil-chip pil-chip-size ${selectedSize === size ? "is-selected" : ""}`}
                             onClick={() => {
                               setSelectedSize(size);
                               updateBundleItem(0, "size", size);
@@ -2277,40 +2362,65 @@ const ProductImageLandingPage: React.FC = () => {
                       </select>
                     </div>
                   ) : null}
+
+                  {customAttributeGroups.map((group) => (
+                    <div key={group.key} className="pil-field">
+                      <label>{group.label}</label>
+                      <div
+                        className="pil-chips-group"
+                        role="radiogroup"
+                        aria-label={`اختيار ${group.label}`}
+                      >
+                        {group.options.map((opt) => (
+                          <button
+                            key={opt}
+                            type="button"
+                            className={`pil-chip ${selectedCustomAttributes[group.key] === opt ? "is-selected" : ""}`}
+                            onClick={() =>
+                              setSelectedCustomAttributes((prev) => ({
+                                ...prev,
+                                [group.key]: opt,
+                              }))
+                            }
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : null}
 
-              <div className="pil-two-cols">
-                <div className="pil-field">
-                  <label htmlFor="pil-governorate">المحافظة</label>
-                  <select
-                    id="pil-governorate"
-                    name="governorate"
-                    value={formState.governorate}
-                    onChange={updateFormField("governorate")}
-                    required
-                  >
-                    <option value="">اختار</option>
-                    {EGYPT_GOVERNORATES.map((governorate) => (
-                      <option key={governorate.id} value={governorate.nameAr}>
-                        {governorate.nameAr}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="pil-field">
+                <label htmlFor="pil-governorate">المحافظة</label>
+                <select
+                  id="pil-governorate"
+                  name="governorate"
+                  value={formState.governorate}
+                  onChange={updateFormField("governorate")}
+                  required
+                >
+                  <option value="">اختار</option>
+                  {EGYPT_GOVERNORATES.map((governorate) => (
+                    <option key={governorate.id} value={governorate.nameAr}>
+                      {governorate.nameAr}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                <div className="pil-field">
-                  <label htmlFor="pil-area">المنطقة</label>
-                  <input
-                    id="pil-area"
-                    name="area"
-                    value={formState.area}
-                    onChange={updateFormField("area")}
-                    autoComplete="address-level2"
-                    placeholder="مثال: مدينة نصر"
-                    required
-                  />
-                </div>
+              <div className="pil-field">
+                <label htmlFor="pil-area">المنطقة</label>
+                <input
+                  id="pil-area"
+                  name="area"
+                  value={formState.area}
+                  onChange={updateFormField("area")}
+                  autoComplete="address-level2"
+                  placeholder="مثال: مدينة نصر"
+                  required
+                />
               </div>
 
               <div className="pil-field">
@@ -2423,22 +2533,40 @@ const ProductImageLandingPage: React.FC = () => {
             {/* Trust Badges Strip */}
             <div className="pil-trust-badges-strip" aria-label="ضمانات الشراء">
               <div className="pil-trust-item">
-                <span className="pil-trust-icon">🛡️</span>
-                <div>
+                <div className="pil-trust-icon-box" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                </div>
+                <div className="pil-trust-text">
                   <strong>معاينة قبل الدفع</strong>
                   <small>افتح الشحنة وتأكد منها براحتك</small>
                 </div>
               </div>
               <div className="pil-trust-item">
-                <span className="pil-trust-icon">🚚</span>
-                <div>
+                <div className="pil-trust-icon-box" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="1" y="3" width="15" height="13" />
+                    <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
+                    <circle cx="5.5" cy="18.5" r="2.5" />
+                    <circle cx="18.5" cy="18.5" r="2.5" />
+                  </svg>
+                </div>
+                <div className="pil-trust-text">
                   <strong>الدفع نقدياً عند الاستلام</strong>
                   <small>لا تدفع أي مبلغ إلا بعد فحص شحنتك</small>
                 </div>
               </div>
               <div className="pil-trust-item">
-                <span className="pil-trust-icon">🔄</span>
-                <div>
+                <div className="pil-trust-icon-box" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10" />
+                    <polyline points="1 20 1 14 7 14" />
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                  </svg>
+                </div>
+                <div className="pil-trust-text">
                   <strong>استبدال واسترجاع سهل</strong>
                   <small>خلال 14 يوم بكل مرونة</small>
                 </div>
@@ -2463,33 +2591,75 @@ const ProductImageLandingPage: React.FC = () => {
             className="pil-whatsapp-section"
             aria-label="آراء وتجارب العملاء على واتساب"
           >
-            <div className="pil-section-heading">
+            <div className="pil-section-heading pil-section-heading--wa">
               <span>تجارب حقيقية موثقة</span>
               <h2>محادثات ورسائل العملاء على واتساب</h2>
             </div>
             <div className="pil-wa-container">
               <div className="pil-wa-header">
-                <div className="pil-wa-avatar">💬</div>
-                <div className="pil-wa-info">
-                  <strong>فريق خدمة عملاء المتجر</strong>
-                  <span>متصل الآن (محادثات استلام حقيقية)</span>
+                <div className="pil-wa-header-profile">
+                  <div className="pil-wa-avatar" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="#ffffff">
+                      <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.698.074-2.029-.482-1.636-.684-2.697-2.348-2.778-2.457-.081-.109-.658-.876-.658-1.671 0-.796.417-1.189.566-1.35.149-.161.326-.201.435-.201.109 0 .217.001.312.006.101.005.236-.038.37.284.14.335.478 1.168.52 1.254.042.086.07.186.012.3-.058.114-.087.186-.174.288-.087.102-.183.228-.261.306-.089.089-.182.186-.078.365.104.179.462.763.992 1.236.683.61 1.26.799 1.44.888.179.089.284.075.39-.047.105-.122.454-.529.576-.71.121-.182.242-.152.406-.091.164.06 1.039.49 1.218.579.179.089.298.134.341.209.043.075.043.435-.101.84zM12 2C6.477 2 2 6.477 2 12c0 1.891.526 3.66 1.438 5.176L2 22l4.974-1.398A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" />
+                    </svg>
+                  </div>
+                  <div className="pil-wa-info">
+                    <div className="pil-wa-name-row">
+                      <strong>فريق خدمة عملاء المتجر</strong>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="#25d366" aria-hidden="true">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                      </svg>
+                    </div>
+                    <span className="pil-wa-status-text">
+                      <span className="pil-wa-status-dot" />
+                      متصل الآن (محادثات استلام حقيقية)
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="pil-wa-chat">
                 {reviews.map((rev: any, rIdx: number) => (
-                  <div key={rIdx} className="pil-wa-bubble">
-                    <div className="pil-wa-bubble-head">
-                      <strong>{rev.name}</strong>
-                      <span className="pil-wa-buyer-tag">مشتري مؤكد ✓</span>
+                  <React.Fragment key={rIdx}>
+                    <div className="pil-wa-bubble pil-wa-bubble--incoming">
+                      <div className="pil-wa-bubble-head">
+                        <strong className="pil-wa-author">{rev.name}</strong>
+                        <span className="pil-wa-buyer-tag">مشتري مؤكد ✓</span>
+                      </div>
+                      <p className="pil-wa-text">{rev.comment || rev.text}</p>
+                      <div className="pil-wa-meta">
+                        <span className="pil-wa-time">
+                          {10 + (rIdx % 12)}:{15 + ((rIdx * 7) % 45)} م
+                        </span>
+                        <span className="pil-wa-checks" aria-label="تمت القراءة">
+                          <svg viewBox="0 0 16 11" width="14" height="10" fill="#53bdeb">
+                            <path d="M11.55 1.45a.75.75 0 0 1 0 1.06l-6.5 6.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 0 1 1.06-1.06L4.52 7.41l5.97-5.96a.75.75 0 0 1 1.06 0zm3.5 0a.75.75 0 0 1 0 1.06l-6.5 6.5a.75.75 0 0 1-1.06 0l-.71-.71a.75.75 0 1 1 1.06-1.06l.18.18 5.97-5.97a.75.75 0 0 1 1.06 0z" />
+                          </svg>
+                        </span>
+                      </div>
                     </div>
-                    <p className="pil-wa-text">{rev.comment || rev.text}</p>
-                    <div className="pil-wa-meta">
-                      <span className="pil-wa-time">
-                        {10 + (rIdx % 12)}:{15 + ((rIdx * 7) % 45)} م
-                      </span>
-                      <span className="pil-wa-checks">✓✓</span>
-                    </div>
-                  </div>
+
+                    {/* Authentic Store Reply for realistic dialogue */}
+                    {rIdx === 0 && (
+                      <div className="pil-wa-bubble pil-wa-bubble--outgoing">
+                        <div className="pil-wa-bubble-head">
+                          <strong className="pil-wa-author-store">فريق الدعم</strong>
+                        </div>
+                        <p className="pil-wa-text">
+                          أهلاً بحضرتك يا فندم! سعداء جداً بتجربتك وراحتك مع المنتج، ونتشرف بخدمتك دائماً 🙏
+                        </p>
+                        <div className="pil-wa-meta">
+                          <span className="pil-wa-time">
+                            {10 + (rIdx % 12)}:{17 + ((rIdx * 7) % 45)} م
+                          </span>
+                          <span className="pil-wa-checks" aria-label="تمت القراءة">
+                            <svg viewBox="0 0 16 11" width="14" height="10" fill="#53bdeb">
+                              <path d="M11.55 1.45a.75.75 0 0 1 0 1.06l-6.5 6.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 0 1 1.06-1.06L4.52 7.41l5.97-5.96a.75.75 0 0 1 1.06 0zm3.5 0a.75.75 0 0 1 0 1.06l-6.5 6.5a.75.75 0 0 1-1.06 0l-.71-.71a.75.75 0 1 1 1.06-1.06l.18.18 5.97-5.97a.75.75 0 0 1 1.06 0z" />
+                            </svg>
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </React.Fragment>
                 ))}
               </div>
             </div>

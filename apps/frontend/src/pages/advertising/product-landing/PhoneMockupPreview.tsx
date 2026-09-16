@@ -64,6 +64,45 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
       : priceNum;
   const bundleTotal = unitPrice * activeBundle.qty;
 
+  const rawVariants = (product as any)?.productVariants || (product as any)?.variants || [];
+  const mockColors = React.useMemo(() => {
+    const colors = new Set<string>();
+    rawVariants.forEach((v: any) => {
+      const attrs = v.metadata?.attributeValues || v.attributes || v.attributeValues || {};
+      Object.entries(attrs).forEach(([k, val]) => {
+        if (/لون|color|colour/i.test(k) && val) colors.add(String(val));
+      });
+      if (v.name && v.name.includes("-")) {
+        const parts = v.name.split("-").map((p: string) => p.trim());
+        parts.forEach((p: string) => {
+          if (!/^\d+$/.test(p) && p.length > 1 && !/shoe|size|سنيكر/i.test(p)) colors.add(p);
+        });
+      }
+    });
+    if (colors.size > 0) return Array.from(colors);
+    return ["أبيض في رمادي", "أبيض في نبيتي"];
+  }, [rawVariants]);
+
+  const mockSizes = React.useMemo(() => {
+    const sizes = new Set<string>();
+    rawVariants.forEach((v: any) => {
+      const attrs = v.metadata?.attributeValues || v.attributes || v.attributeValues || {};
+      Object.entries(attrs).forEach(([k, val]) => {
+        if (/مقاس|size/i.test(k) && val) sizes.add(String(val));
+      });
+      if (v.name && v.name.includes("-")) {
+        const parts = v.name.split("-").map((p: string) => p.trim());
+        parts.forEach((p: string) => {
+          if (/^\d{2}$/.test(p)) sizes.add(p);
+        });
+      }
+    });
+    if (sizes.size > 0) return Array.from(sizes);
+    const isFootwear = /كوتشي|حذاء|سنيكر|شوز|جزمة|أحذية|boot|sneaker|shoe/i.test(product?.name || "");
+    if (isFootwear) return ["37", "38", "39", "40", "41"];
+    return ["37", "38", "39", "40", "41"];
+  }, [rawVariants, product?.name]);
+
   const handleRefreshIframe = () => {
     setIframeKey((prev) => prev + 1);
   };
@@ -231,14 +270,37 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                     const images =
                       content.images && content.images.length > 0
                         ? content.images
-                        : prodImg
-                          ? [prodImg]
-                          : [];
+                        : Array.isArray(product?.images) && product!.images.length > 0
+                          ? product!.images
+                          : prodImg
+                            ? [prodImg]
+                            : [];
                     return (
-                      <div key={id} className="eo-sync-hero-card">
-                        <div className="eo-sync-hero-media">
+                      <div key={id} className="eo-sync-pure-media" style={{ padding: "8px 0" }}>
+                        <div
+                          className="eo-sync-hero-media"
+                          style={{
+                            borderRadius: 12,
+                            overflow: "hidden",
+                            background: "#ffffff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
                           {images.length > 0 ? (
-                            <img src={images[0]} alt="" className="eo-sync-hero-img" />
+                            <img
+                              src={images[0]}
+                              alt=""
+                              className="eo-sync-hero-img"
+                              style={{
+                                width: "100%",
+                                maxHeight: 380,
+                                objectFit: "contain",
+                                display: "block",
+                                borderRadius: 12,
+                              }}
+                            />
                           ) : (
                             <div className="eo-sync-placeholder">
                               <ShoppingBag size={40} />
@@ -246,18 +308,31 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                             </div>
                           )}
                         </div>
-                        <div className="eo-sync-hero-body">
-                          <span className="eo-sync-kicker">طلب مباشر ودفع عند الاستلام</span>
-                          <h3>{title || product?.name}</h3>
-                          <div className="eo-sync-price-row">
-                            <strong>{formatMoney(priceNum)}</strong>
-                            <span className="eo-sync-badge">شحن لجميع المحافظات</span>
-                          </div>
-                        </div>
                         {images.length > 1 && (
-                          <div className="eo-sync-thumbs-strip">
-                            {images.slice(1, 4).map((img, i) => (
-                              <img key={i} src={img} alt="" />
+                          <div
+                            className="eo-sync-thumbs-strip"
+                            style={{
+                              marginTop: 10,
+                              display: "flex",
+                              gap: 6,
+                              justifyContent: "center",
+                              overflowX: "auto",
+                              padding: "2px",
+                            }}
+                          >
+                            {images.slice(0, 6).map((img, i) => (
+                              <img
+                                key={i}
+                                src={img}
+                                alt=""
+                                style={{
+                                  width: 48,
+                                  height: 48,
+                                  borderRadius: 8,
+                                  objectFit: "cover",
+                                  border: i === 0 ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                                }}
+                              />
                             ))}
                           </div>
                         )}
@@ -359,12 +434,90 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                           </div>
                         </div>
 
-                        {/* Mock Inputs */}
+                        {/* Mock Customer Info - Name & Phone first, matching real store */}
                         <div className="eo-sync-inputs-group">
-                          <div className="eo-sync-mock-field">الاسم بالكامل...</div>
-                          <div className="eo-sync-mock-field">رقم الموبايل...</div>
-                          <div className="eo-sync-mock-field">المحافظة والمنطقة...</div>
-                          <div className="eo-sync-mock-field">العنوان بالتفصيل...</div>
+                          <div className="eo-sync-mock-field">اكتب اسمك بالكامل...</div>
+                          <div className="eo-sync-mock-field">01xxxxxxxxx</div>
+                        </div>
+
+                        {/* Mock Variant Selectors */}
+                        {selectedBundleQty > 1 ? (
+                          <div className="eo-sync-bundle-customizer-mock">
+                            <span className="eo-sync-customizer-mock-title">
+                              تحديد المواصفات لكل قطعة ({selectedBundleQty} قطع):
+                            </span>
+                            {Array.from({ length: selectedBundleQty }).map((_, idx) => (
+                              <div key={idx} className="eo-sync-customizer-mock-item">
+                                <span className="eo-sync-customizer-mock-tag">القطعة {idx + 1}</span>
+                                {mockColors.length > 0 && (
+                                  <div className="eo-sync-mock-chips-row">
+                                    <span className="eo-sync-mock-label">اللون:</span>
+                                    {mockColors.map((c, cIdx) => (
+                                      <span
+                                        key={c}
+                                        className={`eo-sync-mock-chip eo-sync-mock-chip-radio ${cIdx === (idx % mockColors.length) ? "is-selected" : ""}`}
+                                      >
+                                        <span style={{ fontSize: 9 }}>{cIdx === (idx % mockColors.length) ? "●" : "○"}</span> {c}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {mockSizes.length > 0 && (
+                                  <div className="eo-sync-mock-chips-row">
+                                    <span className="eo-sync-mock-label">المقاس:</span>
+                                    {mockSizes.map((s, sIdx) => (
+                                      <span
+                                        key={s}
+                                        className={`eo-sync-mock-chip eo-sync-mock-chip-size ${sIdx === 0 ? "is-selected" : ""}`}
+                                      >
+                                        {s}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="eo-sync-variants-mock">
+                            {mockColors.length > 0 && (
+                              <div className="eo-sync-mock-variant-field">
+                                <span className="eo-sync-mock-label">اللون:</span>
+                                <div className="eo-sync-mock-chips-row">
+                                  {mockColors.map((c, i) => (
+                                    <span
+                                      key={c}
+                                      className={`eo-sync-mock-chip eo-sync-mock-chip-radio ${i === 0 ? "is-selected" : ""}`}
+                                    >
+                                      <span style={{ fontSize: 9 }}>{i === 0 ? "●" : "○"}</span> {c}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {mockSizes.length > 0 && (
+                              <div className="eo-sync-mock-variant-field">
+                                <span className="eo-sync-mock-label">المقاس:</span>
+                                <div className="eo-sync-mock-chips-row">
+                                  {mockSizes.map((s, i) => (
+                                    <span
+                                      key={s}
+                                      className={`eo-sync-mock-chip eo-sync-mock-chip-size ${i === 0 ? "is-selected" : ""}`}
+                                    >
+                                      {s}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Mock Address & Submit */}
+                        <div className="eo-sync-inputs-group">
+                          <div className="eo-sync-mock-field">المحافظة: اختار...</div>
+                          <div className="eo-sync-mock-field">مثال: مدينة نصر...</div>
+                          <div className="eo-sync-mock-field">الشارع، العمارة، الدور...</div>
 
                           <div className="eo-sync-submit-btn">
                             {content.buttonLabel || formConfig.buttonLabel || "تأكيد الطلب الآن 🚚"}
@@ -374,9 +527,30 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
 
                         {/* Trust Badges */}
                         <div className="eo-sync-trust-row">
-                          <span>🛡️ معاينة قبل الدفع</span>
-                          <span>🚚 دفع عند الاستلام</span>
-                          <span>🔄 استبدال 14 يوم</span>
+                          <div className="eo-sync-trust-badge-item">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                              <path d="m9 12 2 2 4-4" />
+                            </svg>
+                            <span>معاينة قبل الدفع</span>
+                          </div>
+                          <div className="eo-sync-trust-badge-item">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="1" y="3" width="15" height="13" />
+                              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                              <circle cx="5.5" cy="18.5" r="2.5" />
+                              <circle cx="18.5" cy="18.5" r="2.5" />
+                            </svg>
+                            <span>دفع عند الاستلام</span>
+                          </div>
+                          <div className="eo-sync-trust-badge-item">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="23 4 23 10 17 10" />
+                              <polyline points="1 20 1 14 7 14" />
+                              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                            </svg>
+                            <span>استبدال 14 يوم</span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -384,6 +558,28 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
 
                   if (type === "REVIEWS") {
                     const reviews = content.reviews || [];
+                    const isWhatsApp = section.variant === "WHATSAPP";
+                    if (isWhatsApp) {
+                      return (
+                        <div key={id} className="eo-sync-wa-preview-section" style={{ margin: "10px 0", borderRadius: 10, overflow: "hidden", border: "1px solid #d1d5db", background: "#efeae2" }}>
+                          <div style={{ background: "#008069", color: "#ffffff", padding: "7px 10px", display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ width: 6, height: 6, background: "#25d366", borderRadius: "50%" }} />
+                            <strong style={{ fontSize: "0.75rem" }}>فريق خدمة العملاء — واتساب</strong>
+                          </div>
+                          <div style={{ padding: "8px", display: "flex", flexDirection: "column", gap: 6 }}>
+                            {reviews.map((rev: any, i: number) => (
+                              <div key={i} style={{ background: "#ffffff", borderRadius: "8px 8px 0 8px", padding: "6px 8px", maxWidth: "90%", alignSelf: "flex-start", boxShadow: "0 1px 1px rgba(0,0,0,0.08)", fontSize: "0.7rem" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", gap: 4, marginBottom: 2 }}>
+                                  <strong style={{ color: "#128c7e", fontSize: "0.68rem" }}>{rev.name}</strong>
+                                  <span style={{ fontSize: "0.6rem", background: "#dcfce7", color: "#15803d", padding: "0 4px", borderRadius: 4 }}>مشتري مؤكد ✓</span>
+                                </div>
+                                <p style={{ margin: 0, color: "#111827", lineHeight: 1.4 }}>{rev.text || rev.comment}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
                     return (
                       <div key={id} className="eo-sync-reviews-section">
                         <span className="eo-sync-sec-label">آراء وتجارب العملاء:</span>
@@ -393,7 +589,7 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                               <div className="eo-sync-rev-header">
                                 <strong>{rev.name}</strong>
                                 <span className="eo-sync-stars">
-                                  {"⭐".repeat(rev.rating || 5)}
+                                  {"★".repeat(rev.rating || 5)}
                                 </span>
                               </div>
                               <p>{rev.text}</p>
@@ -465,11 +661,17 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                   if (type === "LIVE_PROOF") {
                     const recent = content.recentOrders || [];
                     return (
-                      <div key={id} className="eo-sync-liveproof-bar" style={{ display: "flex", alignItems: "center", gap: 6, background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "6px 10px", borderRadius: 8, margin: "6px 0", fontSize: "0.72rem" }}>
-                        <span style={{ width: 6, height: 6, background: "#22c55e", borderRadius: "50%" }} />
-                        <small style={{ color: "#166534", fontWeight: 700 }}>
-                          طلب نشط: {recent[0]?.buyer || "عميل"} من {recent[0]?.city || "القاهرة"} ({recent[0]?.timeAgo || "الآن"})
-                        </small>
+                      <div key={id} className="eo-sync-liveproof-bar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#ffffff", border: "1px solid #e2e8f0", padding: "6px 10px", borderRadius: 8, margin: "6px 0", fontSize: "0.72rem", boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                          <span style={{ width: 6, height: 6, background: "#10b981", borderRadius: "50%", display: "inline-block" }} />
+                          <strong style={{ color: "#0f172a", fontSize: "0.7rem" }}>طلب مباشر:</strong>
+                          <span style={{ color: "#475569" }}>
+                            {recent[0]?.city || "القاهرة"} — {recent[0]?.item || "المنتج"}
+                          </span>
+                        </div>
+                        <span style={{ color: "#92400e", background: "#fffbeb", padding: "1px 6px", borderRadius: 10, fontSize: "0.68rem", fontWeight: 700 }}>
+                          ★ 4.9
+                        </span>
                       </div>
                     );
                   }

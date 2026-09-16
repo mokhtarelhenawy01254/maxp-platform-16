@@ -1160,6 +1160,14 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  font-family: "Almarai", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.eo-sync-store-canvas input,
+.eo-sync-store-canvas button,
+.eo-sync-store-canvas select,
+.eo-sync-store-canvas textarea {
+  font-family: "Almarai", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
 .eo-sync-store-bar {
@@ -1446,9 +1454,82 @@
   color: #16a34a;
   font-weight: 700;
 }
-.eo-sync-bundle-right strong {
-  font-size: 12.5px;
-  color: #0f172a;
+.eo-sync-variants-mock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.eo-sync-mock-variant-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.eo-sync-mock-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #475569;
+}
+.eo-sync-mock-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+.eo-sync-mock-chip {
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.eo-sync-mock-chip.is-selected {
+  border-color: #0f172a;
+  background: #0f172a;
+  color: #ffffff;
+}
+.eo-sync-mock-chip-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.eo-sync-mock-chip-size {
+  min-width: 28px;
+  text-align: center;
+  font-weight: 700;
+}
+.eo-sync-bundle-customizer-mock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.eo-sync-customizer-mock-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #1e293b;
+}
+.eo-sync-customizer-mock-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.eo-sync-customizer-mock-tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: #2563eb;
 }
 
 .eo-sync-inputs-group {
@@ -1484,15 +1565,27 @@
 }
 
 .eo-sync-trust-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid #f1f5f9;
-  font-size: 9.5px;
+}
+
+.eo-sync-trust-badge-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 3px;
+  font-size: 8.5px;
   font-weight: 700;
   color: #475569;
+  background: #f8fafc;
+  padding: 4px 2px;
+  border-radius: 6px;
+  border: 1px solid #f1f5f9;
 }
 
 .eo-sync-reviews-section {

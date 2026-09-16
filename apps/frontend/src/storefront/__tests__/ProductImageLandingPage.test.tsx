@@ -112,14 +112,11 @@ describe("ProductImageLandingPage", () => {
 
     renderLanding();
 
+    expect(await screen.findByAltText("Swan Sneaker")).toBeInTheDocument();
     expect(
-      await screen.findByRole("heading", { name: "Swan Sneaker" }),
+      await screen.findByRole("heading", { name: "اطلب Swan Sneaker" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "اطلب الآن" })).toHaveAttribute(
-      "href",
-      "#order",
-    );
-    expect(screen.getByText("دفع عند الاستلام")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /تأكيد الطلب/ })).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent("<p>");
     expect(screen.getByLabelText("الاسم")).toBeInTheDocument();
     expect(screen.getByLabelText("المقاس")).toBeInTheDocument();
@@ -156,7 +153,7 @@ describe("ProductImageLandingPage", () => {
     renderLanding("/store/lp/swan-sneaker-product-only?companyId=company-1&preview=1");
 
     expect(
-      await screen.findByRole("heading", { name: "Swan Sneaker" }),
+      await screen.findByRole("heading", { name: "اطلب Swan Sneaker" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByText("صفحة الهبوط المصورة غير جاهزة لهذا المنتج بعد."),
@@ -233,7 +230,7 @@ describe("ProductImageLandingPage", () => {
 
     renderLanding("/store/lp/swan-sneaker-black-slice?companyId=company-1&preview=1");
 
-    await screen.findByRole("heading", { name: "Swan Sneaker" });
+    await screen.findByRole("heading", { name: "اطلب Swan Sneaker" });
     await waitFor(() => {
       expect(screen.queryByAltText("Blank generated slice")).not.toBeInTheDocument();
     });
@@ -601,6 +598,99 @@ describe("ProductImageLandingPage", () => {
       expect(screen.getByText("القطعة 1")).toBeInTheDocument();
       expect(screen.getByText("القطعة 2")).toBeInTheDocument();
     });
+  });
+
+  it("extracts variants from PostgreSQL metadata (Arabic keys with trailing _:), respects product nature, and orders selectors before customer details", async () => {
+    const dashProduct = {
+      id: "cmtr9fcsg05lbjufbt95y4rw0",
+      companyId: "company-1",
+      name: "Dash Sneaker",
+      slug: "dash-sneaker",
+      description: "حذاء رياضي مريح وعصري",
+      price: 620,
+      comparePrice: 750,
+      mainImage: "https://cdn.example.com/dash.jpg",
+      images: ["https://cdn.example.com/dash.jpg"],
+      productVariants: [
+        {
+          id: "variant-dash-37-white-burgundy",
+          productId: "cmtr9fcsg05lbjufbt95y4rw0",
+          name: "37 - ابيض في نبيتي",
+          price: 620,
+          isActive: true,
+          metadata: JSON.stringify({
+            attributeValues: {
+              "المقاس_:": "37",
+              "اللون_:": "ابيض في نبيتي",
+            },
+          }),
+        },
+        {
+          id: "variant-dash-38-white-grey",
+          productId: "cmtr9fcsg05lbjufbt95y4rw0",
+          name: "38 - ابيض في رمادي",
+          price: 620,
+          isActive: true,
+          metadata: JSON.stringify({
+            attributeValues: {
+              "المقاس_:": "38",
+              "اللون_:": "ابيض في رمادي",
+            },
+          }),
+        },
+      ],
+    };
+
+    storefrontApiMocks.getProductLandingPreview.mockResolvedValueOnce({
+      data: {
+        landing: {
+          id: "landing-dash",
+          companyId: "company-1",
+          productId: "cmtr9fcsg05lbjufbt95y4rw0",
+          slug: "dash-sneaker",
+          title: "كوتشي داش فلوكس",
+          status: "DRAFT",
+          generationMode: "IMAGE_STACK",
+          generationStatus: "READY_TO_REVIEW",
+          slices: [
+            {
+              id: "slice-1",
+              src: "https://cdn.example.com/dash-hero.jpg",
+              alt: "Dash Hero",
+            },
+          ],
+          formConfig: {
+            orderKicker: "عرض حصري",
+            orderTitle: "اطلب كوتشي داش الآن",
+            orderCopy: "التوصيل مجاني والمعاينة قبل الاستلام",
+            buttonLabel: "تأكيد الطلب الآن",
+          },
+        },
+        product: dashProduct,
+        company: {
+          id: "company-1",
+          name: "Swan",
+          currency: "EGP",
+        },
+      },
+    });
+
+    renderLanding("/store/lp/dash-sneaker?companyId=company-1&preview=1");
+
+    await screen.findByRole("heading", { name: "اطلب كوتشي داش الآن" });
+
+    // Verify Arabic variant options extracted from Prisma metadata are rendered as selectable chip buttons
+    expect(screen.getByRole("button", { name: /ابيض في نبيتي/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ابيض في رمادي/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "37" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "38" })).toBeInTheDocument();
+
+    // Verify field order matches canonical store layout: Name -> Phone -> Color -> Size -> Governorate
+    const colorBlock = screen.getByLabelText("اختيار اللون");
+    const nameInput = screen.getByLabelText("الاسم");
+    const govSelect = screen.getByLabelText("المحافظة");
+    expect(nameInput.compareDocumentPosition(colorBlock) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(colorBlock.compareDocumentPosition(govSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 

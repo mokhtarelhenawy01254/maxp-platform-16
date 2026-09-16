@@ -17,6 +17,38 @@ interface BeforeAfterSliderProps {
 
 const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ section, settings }) => {
   const [pos, setPos] = useState(50);
+  const [isDragging, setIsDragging] = useState(false);
+  const stageRef = React.useRef<HTMLDivElement | null>(null);
+
+  const updatePosition = (clientX: number) => {
+    if (!stageRef.current) return;
+    const rect = stageRef.current.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const offsetX = clientX - rect.left;
+    const pct = Math.max(0, Math.min(100, (offsetX / rect.width) * 100));
+    setPos(Math.round(pct));
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+    updatePosition(e.clientX);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    updatePosition(e.clientX);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsDragging(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+  };
+
   const badge = settings?.badge;
   const title = settings?.title || 'قبل وبعد';
   const subtitle = settings?.subtitle || 'اسحب المقبض لمقارنة التفاصيل والتحول.';
@@ -54,7 +86,15 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ section, settings
           )}
         </div>
       )}
-      <div className="relative aspect-[16/10] w-full select-none overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+      <div
+        ref={stageRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        style={{ direction: 'ltr', touchAction: 'none' }}
+        className="relative aspect-[16/10] w-full select-none overflow-hidden rounded-2xl border border-border bg-card shadow-2xl cursor-ew-resize"
+      >
         {/* Background Image (After) */}
         <img
           src={afterSrc}
@@ -75,10 +115,10 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ section, settings
         />
 
         {/* Labels */}
-        <span className="absolute left-4 top-4 z-10 rounded-full bg-black/75 px-3.5 py-1 text-xs font-bold text-white shadow backdrop-blur-sm">
+        <span className="absolute left-4 top-4 z-10 rounded-full bg-black/75 px-3.5 py-1 text-xs font-bold text-white shadow backdrop-blur-sm" style={{ direction: 'rtl' }}>
           {beforeLabel}
         </span>
-        <span className="absolute right-4 top-4 z-10 rounded-full bg-primary/90 px-3.5 py-1 text-xs font-bold text-primary-foreground shadow backdrop-blur-sm">
+        <span className="absolute right-4 top-4 z-10 rounded-full bg-primary/90 px-3.5 py-1 text-xs font-bold text-primary-foreground shadow backdrop-blur-sm" style={{ direction: 'rtl' }}>
           {afterLabel}
         </span>
 
@@ -92,14 +132,15 @@ const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({ section, settings
           </div>
         </div>
 
-        {/* Range Slider for Interaction */}
+        {/* Range Slider for Accessible Interaction */}
         <input
           type="range"
           min={0}
           max={100}
           value={pos}
           onChange={(e) => setPos(Number(e.target.value))}
-          className="absolute inset-0 z-20 h-full w-full cursor-ew-resize opacity-0"
+          className="absolute inset-0 z-10 h-full w-full opacity-0 pointer-events-none"
+          style={{ direction: 'ltr' }}
           aria-label="مقبض المقارنة"
         />
       </div>
