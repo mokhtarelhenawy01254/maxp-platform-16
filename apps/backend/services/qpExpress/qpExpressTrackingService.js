@@ -36,25 +36,33 @@ class QpExpressTrackingService {
 
     const query = String(serialOrOrderNumber).trim();
 
-    // 1. First try by order_serial
-    let result = await this._client.get('/addorders/order/', {
-      order_serial: query,
-    });
+    let order = null;
 
-    let order = Array.isArray(result) ? result[0] : (result?.results ? result.results[0] : null);
+    // 1. First try by exact order serial detail endpoint: GET /addorders/order/<serial>/
+    try {
+      const detailRes = await this._client.get(`/addorders/order/${encodeURIComponent(query)}/`);
+      if (detailRes && detailRes.serial && String(detailRes.serial) === query) {
+        order = detailRes;
+      }
+    } catch (e) {
+      // Ignore 404/not found errors on direct lookup
+    }
 
-    // 2. If not found, try by customer_serial (MaxP Order Number)
+    // 2. If not found by direct detail endpoint, search orders list by exact serial or customer_serial
     if (!order) {
-      result = await this._client.get('/addorders/order/', {
-        customer_serial: query,
-      });
-      order = Array.isArray(result) ? result[0] : (result?.results ? result.results[0] : null);
+      try {
+        const listResult = await this._client.get('/addorders/order/');
+        const list = Array.isArray(listResult) ? listResult : (listResult?.results || []);
+        order = list.find(o => String(o.serial) === query || (o.customer_serial && String(o.customer_serial) === query)) || null;
+      } catch (e) {
+        // Ignore list lookup errors
+      }
     }
 
     if (!order) {
       return {
         found: false,
-        message: 'الشحنة غير موجودة في سيستم QP Express.',
+        message: 'الشحنة غير موجودة في سيستم QP Express أو قيد المراجعة.',
         trackingNumber: query,
       };
     }

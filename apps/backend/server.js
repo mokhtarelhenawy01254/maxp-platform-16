@@ -687,7 +687,7 @@ app.use("/api/v1/public/lp-pages", require("./routes/lpAdminRoutes").publicRoute
 app.use("/api/v1/public/support-settings", require("./routes/publicSupportSettings"));
 app.use("/api/v1/public", publicCouponsRoutes);
 app.use("/api/v1/public/checkout-form-settings", checkoutFormSettingsRoutes);
-app.use("/api/v1/public/post-purchase-offer", postPurchaseOfferRoutes);
+app.use("/api/v1/public/post-purchase-offer", postPurchaseOfferRoutes.publicRouter);
 app.use("/api/v1/public/footer-settings", footerSettingsRoutes);
 app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
 app.use("/api/v1/public/forms", publicFormsRoutes);

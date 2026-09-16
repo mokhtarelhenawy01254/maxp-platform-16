@@ -1,30 +1,40 @@
 const express = require('express');
-const router = express.Router();
 const postPurchaseOfferController = require('../controller/postPurchaseOfferController');
 const verifyToken = require('../utils/verifyToken');
-const { extractSubdomainMiddleware, requireCompany } = require('../middleware/subdomainMiddleware');
+const { extractSubdomainMiddleware } = require('../middleware/subdomainMiddleware');
 
-// 🛡️ Authenticated Merchant Routes
-router.get(
+// 🛡️ Authenticated Merchant Router (mounted at /api/v1/post-purchase-offer)
+const adminRouter = express.Router();
+
+adminRouter.get(
   '/',
   verifyToken.authenticateToken,
   verifyToken.requireCompanyAccess,
   postPurchaseOfferController.getOffer
 );
 
-router.put(
+adminRouter.put(
   '/',
   verifyToken.authenticateToken,
   verifyToken.requireCompanyAccess,
   postPurchaseOfferController.updateOffer
 );
 
-// 🌐 Public Storefront Route
-router.get(
-  '/public',
-  extractSubdomainMiddleware,
-  requireCompany,
+// 🌐 Public Storefront Router (mounted at /api/v1/public/post-purchase-offer)
+const publicRouter = express.Router();
+publicRouter.use(extractSubdomainMiddleware);
+
+publicRouter.get(
+  '/',
   postPurchaseOfferController.getPublicOffer
 );
 
-module.exports = router;
+publicRouter.get(
+  '/:companyId',
+  postPurchaseOfferController.getPublicOffer
+);
+
+adminRouter.adminRouter = adminRouter;
+adminRouter.publicRouter = publicRouter;
+
+module.exports = adminRouter;

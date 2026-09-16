@@ -205,14 +205,20 @@ const updateOffer = async (req, res) => {
  */
 const getPublicOffer = async (req, res) => {
   try {
-    const company = req.company;
-    if (!company?.id) {
+    let companyId = req.company?.id;
+    if (!companyId && req.params?.companyId) {
+      companyId = req.params.companyId;
+    }
+    if (!companyId && req.query?.companyId) {
+      companyId = req.query.companyId;
+    }
+    if (!companyId) {
       return res.status(400).json({ success: false, message: 'Storefront company context required' });
     }
 
     const settings = await runQuery(async (prisma) => {
       return prisma.storefrontSettings.findUnique({
-        where: { companyId: company.id },
+        where: { companyId },
         select: { designTokens: true }
       });
     });
@@ -227,7 +233,7 @@ const getPublicOffer = async (req, res) => {
     // Fetch live product details to guarantee stock and prices are accurate
     const product = await runQuery(async (prisma) => {
       return prisma.product.findFirst({
-        where: { id: offer.productId, companyId: company.id, isActive: true },
+        where: { id: offer.productId, companyId, isActive: true },
         select: {
           id: true,
           name: true,
