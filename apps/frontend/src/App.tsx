@@ -1437,6 +1437,7 @@ const WhatsAppNotificationLogs = React.lazy(() =>
 const HRDashboard = React.lazy(() =>
   import("./pages/hr").then((m) => ({ default: m.HRDashboard })),
 );
+const MonitorDashboard = React.lazy(() => import("./pages/hr/monitor/MonitorDashboard"));
 const OnlineTeam = React.lazy(() => import("./pages/hr/OnlineTeam"));
 const MyCompaniesDashboard = React.lazy(
   () => import("./pages/hr/MyCompaniesDashboard"),
@@ -6836,6 +6837,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <HRDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/monitor"
+                  element={
+                    <Layout>
+                      <MonitorDashboard />
                     </Layout>
                   }
                 />

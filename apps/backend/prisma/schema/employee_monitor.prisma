@@ -1,0 +1,146 @@
+model MonitorActivityLog {
+  id              String   @id @default(cuid())
+  companyId       String
+  employeeId      String
+  intervalStart   DateTime
+  intervalEnd     DateTime
+  mouseEvents     Int      @default(0)
+  keyboardEvents  Int      @default(0)
+  activeSeconds   Int      @default(0)
+  activityScore   Float    @default(0)
+  status          String   @default("active")
+  createdAt       DateTime @default(now())
+
+  @@index([companyId])
+  @@index([employeeId])
+  @@index([intervalStart])
+  @@index([companyId, employeeId, intervalStart])
+  @@map("monitor_activity_logs")
+}
+
+model MonitorAppUsage {
+  id              String   @id @default(cuid())
+  companyId       String
+  employeeId      String
+  appName         String
+  windowTitle     String?
+  category        String   @default("unrated")
+  durationSeconds Int      @default(0)
+  startedAt       DateTime
+  endedAt         DateTime?
+  date            DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([companyId])
+  @@index([employeeId])
+  @@index([date])
+  @@index([companyId, employeeId, date])
+  @@map("monitor_app_usage")
+}
+
+model MonitorWebUsage {
+  id              String   @id @default(cuid())
+  companyId       String
+  employeeId      String
+  url             String
+  domain          String
+  pageTitle       String?
+  category        String   @default("unrated")
+  durationSeconds Int      @default(0)
+  startedAt       DateTime
+  endedAt         DateTime?
+  date            DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([companyId])
+  @@index([employeeId])
+  @@index([date])
+  @@index([domain])
+  @@index([companyId, employeeId, date])
+  @@map("monitor_web_usage")
+}
+
+model MonitorDailySummary {
+  id                       String   @id @default(cuid())
+  companyId                String
+  employeeId               String
+  date                     DateTime
+  clockInTime              DateTime?
+  clockOutTime             DateTime?
+  firstActivityTime        DateTime?
+  lastActivityTime         DateTime?
+  totalClockSeconds        Int      @default(0)
+  totalActiveSeconds       Int      @default(0)
+  totalIdleSeconds         Int      @default(0)
+  totalProductiveSeconds   Int      @default(0)
+  totalUnproductiveSeconds Int      @default(0)
+  productivityScore        Float    @default(0)
+  lateStartSeconds         Int      @default(0)
+  earlyEndSeconds          Int      @default(0)
+  avgActivityScore         Float    @default(0)
+  topApps                  String?  @db.Text
+  topSites                 String?  @db.Text
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@unique([companyId, employeeId, date])
+  @@index([companyId])
+  @@index([employeeId])
+  @@index([date])
+  @@map("monitor_daily_summaries")
+}
+
+model MonitorAppCategory {
+  id           String   @id @default(cuid())
+  companyId    String
+  name         String
+  type         String
+  category     String   @default("unrated")
+  departmentId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([companyId, name, type, departmentId])
+  @@index([companyId])
+  @@index([companyId, type])
+  @@map("monitor_app_categories")
+}
+
+model MonitorDeviceSession {
+  id            String   @id @default(cuid())
+  companyId     String
+  employeeId    String
+  deviceName    String?
+  osVersion     String?
+  appVersion    String?
+  startedAt     DateTime @default(now())
+  endedAt       DateTime?
+  lastHeartbeat DateTime @default(now())
+  isOnline      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@index([companyId])
+  @@index([employeeId])
+  @@index([isOnline])
+  @@map("monitor_device_sessions")
+}
+
+model MonitorAlert {
+  id         String   @id @default(cuid())
+  companyId  String
+  employeeId String
+  type       String
+  message    String
+  severity   String   @default("info")
+  isRead     Boolean  @default(false)
+  readAt     DateTime?
+  metadata   String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([companyId])
+  @@index([employeeId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("monitor_alerts")
+}
