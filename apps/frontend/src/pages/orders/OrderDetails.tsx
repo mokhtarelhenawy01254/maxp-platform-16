@@ -950,30 +950,15 @@ const OrderDetails: React.FC = () => {
       <div className="mt-4 flex flex-wrap gap-3 sm:gap-4">
         {!isEditing && (
           <>
-            <div className="inline-flex rounded-lg shadow-xs">
-              <button
-                type="button"
-                onClick={() => setShowTicketModal(true)}
-                className="inline-flex items-center px-3.5 py-2 border border-amber-300 text-sm leading-4 font-medium rounded-r-lg text-amber-800 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-900/30 transition active:scale-97"
-                title="فتح تذكرة دعم للطلب"
-              >
-                <TicketIcon className="ml-2 -mr-0.5 h-4 w-4 text-amber-600 dark:text-amber-400" />
-                فتح تذكرة
-              </button>
-              <Link
-                to={`/tickets?search=${encodeURIComponent(
-                  order.turboTrackingNumber ||
-                    order.trackingNumber ||
-                    order.shipment?.trackingNumber ||
-                    order.orderNumber ||
-                    ""
-                )}`}
-                className="inline-flex items-center px-2.5 py-2 border-y border-l border-amber-300 text-xs font-medium rounded-l-lg text-amber-700 bg-amber-100/70 hover:bg-amber-200/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700 transition active:scale-97"
-                title="الانتقال إلى صفحة التذاكر (/tickets)"
-              >
-                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
-              </Link>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowTicketModal(true)}
+              className="inline-flex items-center px-3.5 py-2 border border-amber-300 shadow-xs text-sm leading-4 font-medium rounded-lg text-amber-800 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-900/30 transition active:scale-97"
+              title="فتح أو متابعة تذاكر الدعم لهذا الطلب"
+            >
+              <TicketIcon className="ml-2 -mr-0.5 h-4 w-4 text-amber-600 dark:text-amber-400" />
+              تذاكر الدعم
+            </button>
 
             {canUpdatePaymentStatus && (
               <button
