@@ -7,11 +7,27 @@ class TicketService {
     this._client = apiClient;
   }
 
-  async addTicket(content, categoryId, code = null, media = [], priority = 'low', relatedTo = 'others', imageFile = null) {
+  async addTicket(content, categoryId, code = null, media = [], priority = 'medium', relatedTo = 'others', imageFile = null) {
     try {
       const apiKey = await this._client.getApiKey();
       const headers = await this._client.getHeaders();
       const mainClientCode = await this._client.getMainClientCode();
+
+      // Normalize priority to Turbo's allowed enum: 'low' | 'medium' | 'high'
+      let safePriority = 'medium';
+      if (priority) {
+        const p = String(priority).toLowerCase().trim();
+        if (p === 'low' || p === 'منخفضة' || p === 'منخفضه') safePriority = 'low';
+        else if (p === 'high' || p === 'عاجلة' || p === 'عاجله' || p === 'قصوى' || p === 'urgent') safePriority = 'high';
+        else safePriority = 'medium';
+      }
+
+      // Safe related_to
+      let safeRelatedTo = relatedTo || (code ? 'shipments' : 'others');
+      const validRelatedTo = ['shipments', 'branches', 'client_requests', 'others'];
+      if (!validRelatedTo.includes(safeRelatedTo)) {
+        safeRelatedTo = code ? 'shipments' : 'others';
+      }
 
       if (imageFile?.buffer) {
         const formData = new FormData();
@@ -19,8 +35,8 @@ class TicketService {
         formData.append('main_client_code', String(mainClientCode || 37321));
         formData.append('category_id', String(categoryId));
         formData.append('content', content);
-        formData.append('priority', priority || 'low');
-        formData.append('related_to', relatedTo || 'others');
+        formData.append('priority', safePriority);
+        formData.append('related_to', safeRelatedTo);
         if (code) formData.append('code', String(code));
         formData.append('media[0]', imageFile.buffer, {
           filename: imageFile.originalname || 'image.jpg',
@@ -33,13 +49,24 @@ class TicketService {
         const requestHeaders = { ...formData.getHeaders() };
         const response = await axios.post(`${this._client.baseUrl}/tickets/create`, formData, { headers: requestHeaders, timeout: this._client.timeout, maxContentLength: Infinity, maxBodyLength: Infinity });
         const result = response.data;
-        if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
+        const isFailed = result.success === 0 || result.success === false || result.error === true || result.error === 1;
+        if (isFailed) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
         return { success: true, ticketId: result.ticket_id || result.id || result.data?.id || result.code, message: result.message || 'تم إضافة التذكرة بنجاح', data: result };
       }
 
-      const response = await axios.post(`${this._client.baseUrl}/tickets/create`, { authentication_key: apiKey, main_client_code: mainClientCode || 37321, category_id: categoryId, content, media: media || [], priority: priority || 'low', related_to: relatedTo || 'others', code: code || null }, { headers, timeout: this._client.timeout });
+      const response = await axios.post(`${this._client.baseUrl}/tickets/create`, {
+        authentication_key: apiKey,
+        main_client_code: mainClientCode || 37321,
+        category_id: categoryId,
+        content,
+        media: media || [],
+        priority: safePriority,
+        related_to: safeRelatedTo,
+        code: code || null
+      }, { headers, timeout: this._client.timeout });
       const result = response.data;
-      if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
+      const isFailed = result.success === 0 || result.success === false || result.error === true || result.error === 1;
+      if (isFailed) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
       return { success: true, ticketId: result.ticket_id || result.id || result.data?.id || result.code, message: result.message || 'تم إضافة التذكرة بنجاح', data: result };
     } catch (error) {
       handleError(error, 'Create Ticket');

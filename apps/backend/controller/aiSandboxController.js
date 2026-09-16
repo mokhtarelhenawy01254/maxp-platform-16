@@ -975,27 +975,71 @@ async function resolveSandboxModelSelection(companyId, { provider, model, keyId,
   });
 }
 
-async function listAgents(req, res) {
-  try {
-    let companyId = req.user?.companyId || req.companyId || req.query?.companyId || req.headers['x-company-id'];
-    if (!companyId && req.user?.role === 'SUPER_ADMIN') {
-      const targetAgent = req.query?.agent || req.query?.agentId;
-      if (targetAgent) {
-        try {
-          const prisma = getSharedPrismaClient();
-          const rows = await prisma.$queryRawUnsafe(`SELECT company_id FROM ai.agents WHERE id = $1 LIMIT 1`, targetAgent);
-          if (rows && rows[0]?.company_id) {
-            companyId = rows[0].company_id;
-          }
-        } catch (dbErr) {
-          console.warn('[AI-SANDBOX] Could not resolve company from agent:', dbErr.message);
+async function resolveEffectiveCompanyId(req, agentId = null, sessionId = null) {
+  let companyId = req.user?.companyId || req.companyId || req.headers?.['x-company-id'] || req.headers?.['X-Company-Id'] || req.query?.companyId || req.body?.companyId;
+
+  if (!companyId && agentId) {
+    try {
+      const prisma = getSharedPrismaClient();
+      const rows = await prisma.$queryRawUnsafe(`SELECT company_id FROM ai.agents WHERE id = $1 LIMIT 1`, agentId);
+      if (rows && rows[0]?.company_id) {
+        companyId = rows[0].company_id;
+      }
+    } catch (err) {
+      console.warn('[AI-SANDBOX] Failed to resolve company from agentId:', err.message);
+    }
+  }
+
+  if (!companyId && sessionId) {
+    try {
+      const prisma = getSharedPrismaClient();
+      const session = await prisma.aiSandboxSession.findUnique({
+        where: { id: sessionId },
+        select: { companyId: true, agentId: true },
+      });
+      if (session?.companyId) {
+        companyId = session.companyId;
+      } else if (session?.agentId) {
+        const rows = await prisma.$queryRawUnsafe(`SELECT company_id FROM ai.agents WHERE id = $1 LIMIT 1`, session.agentId);
+        if (rows && rows[0]?.company_id) {
+          companyId = rows[0].company_id;
         }
       }
+    } catch (err) {
+      console.warn('[AI-SANDBOX] Failed to resolve company from sessionId:', err.message);
     }
-    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
+  }
+
+  if (!companyId && req.user?.role === 'SUPER_ADMIN') {
+    try {
+      const prisma = getSharedPrismaClient();
+      const rows = await prisma.$queryRawUnsafe(`SELECT company_id FROM ai.agents WHERE company_id IS NOT NULL AND status != 'ARCHIVED' ORDER BY created_at DESC LIMIT 1`);
+      if (rows && rows[0]?.company_id) {
+        companyId = rows[0].company_id;
+      } else {
+        const firstCompany = await prisma.company.findFirst({ select: { id: true }, orderBy: { createdAt: 'desc' } });
+        if (firstCompany?.id) {
+          companyId = firstCompany.id;
+        }
+      }
+    } catch (err) {
+      console.warn('[AI-SANDBOX] Failed to resolve fallback company for SUPER_ADMIN:', err.message);
+    }
+  }
+
+  return companyId || null;
+}
+
+async function listAgents(req, res) {
+  try {
+    const targetAgent = req.query?.agent || req.query?.agentId;
+    let companyId = await resolveEffectiveCompanyId(req, targetAgent);
+    if (!companyId && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(400).json({ success: false, error: 'companyId is required' });
+    }
 
     // 2026: All agent data from ai-service API — no more Prisma companyAgent reads
-    const apiAgents = await aiServiceAdminClient.listAgents(companyId);
+    const apiAgents = await aiServiceAdminClient.listAgents(companyId || undefined);
     const activeAgents = (apiAgents || []).filter(a => a.status !== 'ARCHIVED');
 
     const agents = activeAgents.map(a => ({
@@ -1004,6 +1048,7 @@ async function listAgents(req, res) {
       role: a.role,
       icon: a.icon || '🤖',
       description: a.description || '',
+      companyId: a.company_id || a.companyId || companyId || null,
       skills: (() => { try { return typeof a.skillsRaw === 'string' ? JSON.parse(a.skillsRaw || '[]') : (a.allowedSkills || a.allowed_skills || []); } catch { return []; } })(),
       allowedTools: a.allowedTools || a.allowed_tools || [],
       model: a.model || null,
@@ -1027,20 +1072,9 @@ async function listAgents(req, res) {
 
 async function getAgentProfile(req, res) {
   try {
-    let companyId = req.user?.companyId || req.companyId || req.query?.companyId || req.headers['x-company-id'];
     const { agentId } = req.params;
     if (!agentId) return res.status(400).json({ success: false, error: 'agentId required' });
-    if (!companyId) {
-      try {
-        const prisma = getSharedPrismaClient();
-        const rows = await prisma.$queryRawUnsafe(`SELECT company_id FROM ai.agents WHERE id = $1 LIMIT 1`, agentId);
-        if (rows && rows[0]?.company_id) {
-          companyId = rows[0].company_id;
-        }
-      } catch (dbErr) {
-        console.warn('[AI-SANDBOX] Could not resolve company from agent:', dbErr.message);
-      }
-    }
+    let companyId = await resolveEffectiveCompanyId(req, agentId);
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId required' });
 
     // 2026: Agent data from ai-service API — no more Prisma companyAgent reads
@@ -1308,12 +1342,12 @@ async function getAgentInfo(companyId, agentId) {
 
 async function listSessions(req, res) {
   try {
-    const companyId = req.user?.companyId || req.companyId;
+    const companyId = await resolveEffectiveCompanyId(req);
     const userId = req.user?.id;
-    if (!companyId || !userId) {
+    if (!userId) {
       return sendCodeError(res, 400, 'USER_OR_COMPANY_REQUIRED');
     }
-    const sessions = await aiSandboxService.listSessions(companyId, userId);
+    const sessions = await aiSandboxService.listSessions(companyId || undefined, req.user?.role === 'SUPER_ADMIN' ? undefined : userId);
     const mapped = sessions.map(s => ({
       id: s.id,
       title: s.title,
@@ -1340,9 +1374,9 @@ async function listSessions(req, res) {
 
 async function getSession(req, res) {
   try {
-    const companyId = req.user?.companyId || req.companyId;
     const sessionId = req.params.sessionId;
-    const session = await aiSandboxService.getSession(sessionId, companyId);
+    const companyId = await resolveEffectiveCompanyId(req, null, sessionId);
+    const session = await aiSandboxService.getSession(sessionId, req.user?.role === 'SUPER_ADMIN' ? undefined : companyId);
     if (!session) {
       return sendCodeError(res, 404, 'SESSION_NOT_FOUND');
     }
@@ -1395,9 +1429,9 @@ async function getSession(req, res) {
 
 async function createSession(req, res) {
   try {
-    const companyId = req.user?.companyId || req.companyId;
-    const userId = req.user?.id;
     const { title, agentId, agentName, agentRole, model, provider, keyId } = req.body;
+    let companyId = await resolveEffectiveCompanyId(req, agentId);
+    const userId = req.user?.id;
 
     if (!companyId || !userId) {
       return sendCodeError(res, 400, 'USER_OR_COMPANY_REQUIRED');
@@ -1424,15 +1458,15 @@ async function createSession(req, res) {
 
 async function updateSessionTitle(req, res) {
   try {
-    const companyId = req.user?.companyId || req.companyId;
     const sessionId = req.params.sessionId;
+    const companyId = await resolveEffectiveCompanyId(req, null, sessionId);
     const { title } = req.body;
 
     if (!title || typeof title !== 'string' || !title.trim()) {
       return sendCodeError(res, 400, 'TITLE_REQUIRED');
     }
 
-    await aiSandboxService.updateSessionTitle(sessionId, title.trim(), companyId);
+    await aiSandboxService.updateSessionTitle(sessionId, title.trim(), req.user?.role === 'SUPER_ADMIN' ? undefined : companyId);
     return res.json({ success: true });
   } catch (error) {
     console.error('[AI-SANDBOX] updateSessionTitle error:', error);
@@ -1442,9 +1476,9 @@ async function updateSessionTitle(req, res) {
 
 async function deleteSession(req, res) {
   try {
-    const companyId = req.user?.companyId || req.companyId;
     const sessionId = req.params.sessionId;
-    await aiSandboxService.deleteSession(sessionId, companyId);
+    const companyId = await resolveEffectiveCompanyId(req, null, sessionId);
+    await aiSandboxService.deleteSession(sessionId, req.user?.role === 'SUPER_ADMIN' ? undefined : companyId);
     return res.json({ success: true });
   } catch (error) {
     console.error('[AI-SANDBOX] deleteSession error:', error);
@@ -1455,11 +1489,14 @@ async function deleteSession(req, res) {
 async function sendChatMessage(req, res) {
   try {
     const { sessionId, message, agentId, model, provider, keyId, attachments } = req.body;
-    const companyId = req.user?.companyId || req.companyId;
+    const safeSessionId = validateOptionalSessionId(sessionId);
+    const companyId = await resolveEffectiveCompanyId(req, agentId, safeSessionId);
     const userId = req.user?.id;
+    if (!companyId) {
+      return sendCodeError(res, 400, 'COMPANY_ID_REQUIRED');
+    }
 
     const messageText = validateRequiredText(message, 'MESSAGE_REQUIRED', MAX_SANDBOX_MESSAGE_CHARS);
-    const safeSessionId = validateOptionalSessionId(sessionId);
     const safeAttachments = normalizeSandboxAttachments(attachments);
     const modelSelection = await resolveSandboxModelSelection(companyId, { provider, model, keyId, agentId });
     const startTime = Date.now();
@@ -1506,16 +1543,19 @@ async function streamChatMessage(req, res) {
   let sseTimer;
   try {
     const { sessionId, message, agentId, model, provider, keyId, attachments } = req.body;
-    const companyId = req.user?.companyId || req.companyId;
+    const safeSessionId = validateOptionalSessionId(sessionId);
+    const companyId = await resolveEffectiveCompanyId(req, agentId, safeSessionId);
     const userId = req.user?.id;
+    if (!companyId) {
+      return sendCodeError(res, 400, 'COMPANY_ID_REQUIRED');
+    }
 
     const messageText = validateRequiredText(message, 'MESSAGE_REQUIRED', MAX_SANDBOX_MESSAGE_CHARS);
-    const safeSessionId = validateOptionalSessionId(sessionId);
     const safeAttachments = normalizeSandboxAttachments(attachments);
     const modelSelection = await resolveSandboxModelSelection(companyId, { provider, model, keyId, agentId });
 
     const existingSession = safeSessionId
-      ? await aiSandboxService.getSession(safeSessionId, companyId)
+      ? await aiSandboxService.getSession(safeSessionId, req.user?.role === 'SUPER_ADMIN' ? undefined : companyId)
       : null;
     if (safeSessionId && !existingSession) {
       return sendCodeError(res, 404, 'SESSION_NOT_FOUND');

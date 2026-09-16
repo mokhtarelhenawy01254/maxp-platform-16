@@ -26,7 +26,7 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | number>("");
   const [shipmentCode, setShipmentCode] = useState(initialShipmentCode);
   const [content, setContent] = useState("");
-  const [priority, setPriority] = useState<"low" | "normal" | "high">("normal");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +34,7 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
   useEffect(() => {
     if (isOpen && initialShipmentCode) {
       setShipmentCode(initialShipmentCode);
+      setPriority("medium");
     }
   }, [isOpen, initialShipmentCode]);
 
@@ -44,11 +45,24 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
       if (item.children && Array.isArray(item.children) && item.children.length > 0) {
         result = result.concat(flattenCategories(item.children, currentName));
       } else {
-        result.push({ id: item.id ?? item.type, name: currentName, type: item.related_to || item.type });
+        result.push({ id: item.id ?? item.type, name: currentName, type: item.related_to || item.type || "shipments" });
       }
     }
     return result;
   }
+
+  const fallbackCategoriesList: TurboTicketCategory[] = [
+    { id: 26, name: "شكوى › تسليم الطرد › مشكلة مع الكابتن", type: "shipments" },
+    { id: 19, name: "شكوى › تسليم الطرد › تأخير التسليم", type: "shipments" },
+    { id: 65, name: "شكوى › تسليم الطرد › إفادة وهمية", type: "shipments" },
+    { id: 23, name: "شكوى › تسليم الطرد › تلف الطرد", type: "shipments" },
+    { id: 22, name: "شكوى › تسليم الطرد › تبديل فى التسليم", type: "shipments" },
+    { id: 63, name: "شكوى › تسليم الطرد › طرد مفقود", type: "shipments" },
+    { id: 64, name: "شكوى › تسليم الطرد › جزء من الطرد مفقود", type: "shipments" },
+    { id: 67, name: "شكوى › تسليم الطرد › مرتجع على الراسل غير مستحق", type: "shipments" },
+    { id: 2, name: "شكوى عامة", type: "others" },
+    { id: 1, name: "استفسار عام", type: "others" },
+  ];
 
   useEffect(() => {
     if (!isOpen) return;
@@ -62,30 +76,15 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
         const flat = Array.isArray(list) && list.length > 0 ? flattenCategories(list) : [];
         if (flat.length > 0) {
           setCategories(flat);
-          setSelectedCategoryId(flat[0]?.id || "");
+          const preferred = flat.find((c) => String(c.id) === "26") || flat[0];
+          setSelectedCategoryId(preferred?.id || "");
         } else {
-          const fallback: TurboTicketCategory[] = [
-            { id: 1, name: "استفسار عن موعد تسليم" },
-            { id: 2, name: "شكوى من المندوب" },
-            { id: 3, name: "طلب إيقاف تسليم أو إرجاع" },
-            { id: 4, name: "تعديل عنوان أو هاتف العميل" },
-            { id: 5, name: "استفسار عن تحصيل الفلوس (COD)" },
-            { id: 6, name: "أخرى / متابعة عامة" },
-          ];
-          setCategories(fallback);
-          setSelectedCategoryId(fallback[0]?.id ?? "");
+          setCategories(fallbackCategoriesList);
+          setSelectedCategoryId(fallbackCategoriesList[0]?.id ?? "");
         }
       } catch {
-        const fallback: TurboTicketCategory[] = [
-          { id: 1, name: "استفسار عن موعد تسليم" },
-          { id: 2, name: "شكوى من المندوب" },
-          { id: 3, name: "طلب إيقاف تسليم أو إرجاع" },
-          { id: 4, name: "تعديل عنوان أو هاتف العميل" },
-          { id: 5, name: "استفسار عن تحصيل الفلوس (COD)" },
-          { id: 6, name: "أخرى / متابعة عامة" },
-        ];
-        setCategories(fallback);
-        setSelectedCategoryId(fallback[0]?.id ?? "");
+        setCategories(fallbackCategoriesList);
+        setSelectedCategoryId(fallbackCategoriesList[0]?.id ?? "");
       } finally {
         setLoadingCategories(false);
       }
@@ -105,16 +104,21 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
 
     try {
       setSubmitting(true);
+      const trimmedCode = shipmentCode.trim();
+      const selectedCat = categories.find((c) => String(c.id) === String(selectedCategoryId));
+      const relatedTo = (selectedCat?.type as string) || (trimmedCode ? "shipments" : "others");
+
       const payload: Record<string, any> = {
         content: content.trim(),
         categoryId: selectedCategoryId,
         category_id: selectedCategoryId,
         priority,
-        relatedTo: shipmentCode.trim() ? "shipments" : "others",
+        relatedTo,
+        related_to: relatedTo,
       };
 
-      if (shipmentCode.trim()) {
-        payload["code"] = shipmentCode.trim();
+      if (trimmedCode) {
+        payload["code"] = trimmedCode;
       }
 
       let res;
@@ -131,7 +135,7 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
       }
 
       if (res.data?.success) {
-        toast.success("تم فتح التذكرة بنجاح مع شركة تربو");
+        toast.success(res.data?.message || "تم فتح التذكرة بنجاح مع شركة تربو");
         setContent("");
         setShipmentCode("");
         setImageFile(null);
@@ -139,7 +143,7 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
         onClose();
       } else {
         toast.error(
-          res.data?.message || res.data?.error || "تعذر فتح التذكرة"
+          res.data?.error || res.data?.message || "تعذر فتح التذكرة"
         );
       }
     } catch (err: any) {
@@ -229,8 +233,8 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
                 onChange={(e) => setPriority(e.target.value as any)}
                 className="w-full text-xs rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2.5 text-zinc-900 dark:text-white focus:outline-hidden focus:border-zinc-500"
               >
+                <option value="medium">عادية / متوسطة</option>
                 <option value="low">منخفضة</option>
-                <option value="normal">عادية</option>
                 <option value="high">عاجلة / قصوى</option>
               </select>
             </div>

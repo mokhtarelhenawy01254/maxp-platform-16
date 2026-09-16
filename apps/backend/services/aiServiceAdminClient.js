@@ -41,7 +41,15 @@ async function request(method, path, body) {
         try {
           const parsed = data ? JSON.parse(data) : {};
           if (res.statusCode >= 400) {
-            return reject(new Error(parsed.detail || parsed.message || parsed.error || `AI service error (${res.statusCode})`));
+            let detail = parsed.detail;
+            if (Array.isArray(detail)) {
+              detail = detail
+                .map((d) => `${d.loc ? d.loc.join('.') : ''}: ${d.msg || d.message || JSON.stringify(d)}`)
+                .join('; ');
+            } else if (typeof detail === 'object' && detail !== null) {
+              detail = JSON.stringify(detail);
+            }
+            return reject(new Error(detail || parsed.message || parsed.error || `AI service error (${res.statusCode})`));
           }
           resolve(parsed);
         } catch (e) {

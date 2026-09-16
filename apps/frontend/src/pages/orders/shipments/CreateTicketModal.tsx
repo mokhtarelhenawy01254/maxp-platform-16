@@ -130,7 +130,7 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   const [categories, setCategories] = useState<TicketCategory[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | number>("");
   const [code, setCode] = useState(initialShipmentCode);
-  const [priority, setPriority] = useState<"low" | "normal" | "high">("normal");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [content, setContent] = useState("");
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -154,8 +154,42 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
       setCode(initialShipmentCode);
       setContent("");
       setImageFile(null);
+      setPriority("medium");
     }
   }, [isModalOpen, initialShipmentCode]);
+
+  // Flatten nested category tree with hierarchical labels
+  const flattenCategories = useCallback((list: any[], parentName = ""): TicketCategory[] => {
+    let result: TicketCategory[] = [];
+    for (const item of list) {
+      const currentName = parentName
+        ? `${parentName} › ${item.name || item.nameEn}`
+        : (item.name || item.nameEn);
+      if (item.children && Array.isArray(item.children) && item.children.length > 0) {
+        result = result.concat(flattenCategories(item.children, currentName));
+      } else {
+        result.push({
+          id: item.id ?? item.type,
+          name: currentName,
+          type: item.related_to || item.type || "shipments",
+        });
+      }
+    }
+    return result;
+  }, []);
+
+  const fallbackCategories: TicketCategory[] = [
+    { id: 26, name: "شكوى › تسليم الطرد › مشكلة مع الكابتن", type: "shipments" },
+    { id: 19, name: "شكوى › تسليم الطرد › تأخير التسليم", type: "shipments" },
+    { id: 65, name: "شكوى › تسليم الطرد › إفادة وهمية", type: "shipments" },
+    { id: 23, name: "شكوى › تسليم الطرد › تلف الطرد", type: "shipments" },
+    { id: 22, name: "شكوى › تسليم الطرد › تبديل فى التسليم", type: "shipments" },
+    { id: 63, name: "شكوى › تسليم الطرد › طرد مفقود", type: "shipments" },
+    { id: 64, name: "شكوى › تسليم الطرد › جزء من الطرد مفقود", type: "shipments" },
+    { id: 67, name: "شكوى › تسليم الطرد › مرتجع على الراسل غير مستحق", type: "shipments" },
+    { id: 2, name: "شكوى عامة", type: "others" },
+    { id: 1, name: "استفسار عام", type: "others" },
+  ];
 
   // 1. Fetch Categories
   useEffect(() => {
@@ -166,37 +200,26 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
       try {
         const res = await apiClient.get<any>("/turbo/tickets/categories");
         const list = res.data?.types || res.data?.categories || res.data?.data || [];
-        if (Array.isArray(list) && list.length > 0) {
-          setCategories(list);
-          setSelectedCategoryId(list[0]?.id || list[0]?.type || "");
+        const flat = Array.isArray(list) && list.length > 0 ? flattenCategories(list) : [];
+        if (flat.length > 0) {
+          setCategories(flat);
+          // Prefer category 26 ("مشكلة مع الكابتن") or first available
+          const preferred = flat.find((c) => String(c.id) === "26") || flat[0];
+          setSelectedCategoryId(preferred?.id || "");
         } else {
-          const fallback = [
-            { id: 1, name: "استفسار عن موعد التسليم" },
-            { id: 2, name: "شكوى من المندوب" },
-            { id: 3, name: "طلب إيقاف تسليم أو إرجاع" },
-            { id: 4, name: "تعديل عنوان أو هاتف العميل" },
-            { id: 5, name: "أخرى / متابعة عامة" },
-          ];
-          setCategories(fallback);
-          setSelectedCategoryId(fallback[0]?.id ?? 1);
+          setCategories(fallbackCategories);
+          setSelectedCategoryId(fallbackCategories[0].id);
         }
       } catch {
-        const fallback = [
-          { id: 1, name: "استفسار عن موعد التسليم" },
-          { id: 2, name: "شكوى من المندوب" },
-          { id: 3, name: "طلب إيقاف تسليم أو إرجاع" },
-          { id: 4, name: "تعديل عنوان أو هاتف العميل" },
-          { id: 5, name: "أخرى / متابعة عامة" },
-        ];
-        setCategories(fallback);
-        setSelectedCategoryId(fallback[0]?.id ?? 1);
+        setCategories(fallbackCategories);
+        setSelectedCategoryId(fallbackCategories[0].id);
       } finally {
         setLoadingCategories(false);
       }
     };
 
     fetchCategories();
-  }, [isModalOpen]);
+  }, [isModalOpen, flattenCategories]);
 
   // 2. Fetch Existing Tickets for this order / code
   const fetchOrderTickets = useCallback(async () => {
@@ -267,12 +290,16 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
     setSubmitting(true);
     try {
       const trimmedCode = code.trim();
+      const selectedCat = categories.find((c) => String(c.id) === String(selectedCategoryId));
+      const relatedTo = (selectedCat?.type as string) || (trimmedCode ? "shipments" : "others");
+
       const payload: Record<string, any> = {
         content: content.trim(),
         categoryId: selectedCategoryId,
         category_id: selectedCategoryId,
         priority,
-        relatedTo: trimmedCode ? "shipments" : "others",
+        relatedTo,
+        related_to: relatedTo,
       };
 
       if (trimmedCode) {
@@ -286,7 +313,8 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
         formData.append("categoryId", String(selectedCategoryId));
         formData.append("category_id", String(selectedCategoryId));
         formData.append("priority", priority);
-        formData.append("relatedTo", trimmedCode ? "shipments" : "others");
+        formData.append("relatedTo", relatedTo);
+        formData.append("related_to", relatedTo);
         if (trimmedCode) formData.append("code", trimmedCode);
         formData.append("image", imageFile);
         formData.append("media[0]", imageFile);
@@ -316,14 +344,15 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
 
         if (onSuccess) onSuccess(newTicketId);
       } else {
-        toast.error(res.data?.message || res.data?.error || "تعذر فتح التذكرة");
+        toast.error(res.data?.error || res.data?.message || "تعذر فتح التذكرة");
       }
     } catch (err: any) {
-      toast.error(
+      const errorMsg =
+        err?.response?.data?.error ||
         err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          "حدث خطأ أثناء إرسال التذكرة"
-      );
+        err?.message ||
+        "حدث خطأ أثناء إرسال التذكرة";
+      toast.error(errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -507,12 +536,12 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
                   <select
                     value={priority}
                     onChange={(e) =>
-                      setPriority(e.target.value as "low" | "normal" | "high")
+                      setPriority(e.target.value as "low" | "medium" | "high")
                     }
                     className="w-full text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2.5 text-zinc-900 dark:text-white focus-visible:ring-2 focus-visible:ring-primary outline-hidden"
                   >
+                    <option value="medium">عادية / متوسطة</option>
                     <option value="low">منخفضة</option>
-                    <option value="normal">عادية</option>
                     <option value="high">عاجلة / قصوى</option>
                   </select>
                 </div>

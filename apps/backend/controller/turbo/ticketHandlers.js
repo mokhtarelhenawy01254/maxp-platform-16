@@ -18,11 +18,11 @@ const addTicket = async (req, res) => {
     if (!finalCategoryId) return res.status(400).json({ success: false, error: 'Category ID is required' });
     const turboService = new TurboService(null, companyId);
     const result = await turboService.addTicket(ticketContent.trim(), finalCategoryId, code, media, priority, relatedTo || related_to, req.file);
-    if (!result.success) return res.status(400).json({ success: false, error: result.error, message: result.message });
-    res.json({ success: true, data: result });
+    if (!result.success) return res.status(400).json({ success: false, error: result.error, message: result.message || result.error });
+    res.json({ success: true, data: result, ticketId: result.ticketId, message: result.message });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error adding ticket:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to add ticket' });
+    res.status(400).json({ success: false, error: error.message || 'Failed to add ticket', message: error.message || 'فشل في إضافة التذكرة' });
   }
 };
 

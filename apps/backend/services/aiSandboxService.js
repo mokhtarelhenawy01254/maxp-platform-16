@@ -8,8 +8,8 @@ async function listSessions(companyId, userId, includeDeleted = false) {
   const prisma = getSharedPrismaClient();
   const userSessions = await prisma.aiSandboxSession.findMany({
     where: {
-      companyId,
-      userId,
+      ...(companyId ? { companyId } : {}),
+      ...(userId ? { userId } : {}),
       ...(includeDeleted ? {} : { isDeleted: false }),
     },
     orderBy: { updatedAt: 'desc' },
@@ -23,7 +23,11 @@ async function listSessions(companyId, userId, includeDeleted = false) {
 async function getSession(sessionId, companyId) {
   const prisma = getSharedPrismaClient();
   return prisma.aiSandboxSession.findFirst({
-    where: { id: sessionId, companyId, isDeleted: false },
+    where: {
+      id: sessionId,
+      ...(companyId ? { companyId } : {}),
+      isDeleted: false,
+    },
     include: {
       messages: { orderBy: { createdAt: 'asc' } },
     },
@@ -51,7 +55,11 @@ async function createSession(data) {
 async function updateSessionTitle(sessionId, title, companyId) {
   const prisma = getSharedPrismaClient();
   return prisma.aiSandboxSession.updateMany({
-    where: { id: sessionId, companyId, isDeleted: false },
+    where: {
+      id: sessionId,
+      ...(companyId ? { companyId } : {}),
+      isDeleted: false,
+    },
     data: { title },
   });
 }
@@ -59,7 +67,11 @@ async function updateSessionTitle(sessionId, title, companyId) {
 async function deleteSession(sessionId, companyId) {
   const prisma = getSharedPrismaClient();
   return prisma.aiSandboxSession.updateMany({
-    where: { id: sessionId, companyId, isDeleted: false },
+    where: {
+      id: sessionId,
+      ...(companyId ? { companyId } : {}),
+      isDeleted: false,
+    },
     data: { isDeleted: true },
   });
 }

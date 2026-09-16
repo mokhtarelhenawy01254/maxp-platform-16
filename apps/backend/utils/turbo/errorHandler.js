@@ -32,11 +32,30 @@ function translateTurboErrorToArabic(errorMsg) {
   return `خطأ في الشحن: ${str}`;
 }
 
+function extractErrorFromData(data, status) {
+  if (!data) return status ? `Turbo API error: ${status}` : '';
+  if (data.errors && typeof data.errors === 'object') {
+    const msgs = [];
+    for (const [field, val] of Object.entries(data.errors)) {
+      if (Array.isArray(val)) {
+        msgs.push(...val.filter(Boolean));
+      } else if (typeof val === 'string' && val.trim()) {
+        msgs.push(val.trim());
+      }
+    }
+    if (msgs.length > 0) {
+      return msgs.join(' - ');
+    }
+  }
+  return data.error_msg || data.message || data.error || (status ? `Turbo API error: ${status}` : '');
+}
+
 function getTurboErrorMessage(error) {
+  if (error?.response?.data) {
+    const extracted = extractErrorFromData(error.response.data, error.response.status);
+    if (extracted) return extracted;
+  }
   return (
-    error?.response?.data?.error_msg ||
-    error?.response?.data?.message ||
-    error?.response?.data?.error ||
     error?.message ||
     ''
   );
@@ -50,7 +69,7 @@ function handleError(error, operation) {
   if (error.response) {
     const status = error.response.status;
     const data = error.response.data;
-    const rawError = data?.error_msg || data?.message || data?.error || `Turbo API error: ${status}`;
+    const rawError = extractErrorFromData(data, status);
     const translatedError = translateTurboErrorToArabic(rawError);
     console.error(`❌ [TURBO] ${operation} failed:`, { status, data, error_msg: rawError });
     throw new Error(translatedError);
