@@ -101,10 +101,23 @@ class MonitorApiClient {
   // ── Auth ───────────────────────────────────────────────────────
 
   async login(email: string, password: string, serverUrl: string): Promise<{ token: string; user: any }> {
-    const url = `${serverUrl.replace(/\/$/, '')}/api/auth/login`;
-    const res = await axios.post(url, { email, password }, { timeout: 10_000 });
-    if (!res.data?.token) throw new Error('Invalid login response');
-    return { token: res.data.token, user: res.data.user ?? res.data.data };
+    let cleanUrl = serverUrl.trim();
+    if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+      cleanUrl = `https://${cleanUrl}`;
+    }
+    cleanUrl = cleanUrl.replace(/\/+$/, '');
+
+    const url = `${cleanUrl}/api/auth/login`;
+    const res = await axios.post(url, { email: email.trim(), password }, { timeout: 15_000 });
+    const payload = res.data;
+    const token = payload?.data?.token || payload?.token;
+    const user = payload?.data?.user || payload?.user || payload?.data;
+
+    if (!token) {
+      throw new Error(payload?.message || 'Invalid login response: authentication token missing');
+    }
+
+    return { token, user };
   }
 
   // ── Tasks ──────────────────────────────────────────────────────

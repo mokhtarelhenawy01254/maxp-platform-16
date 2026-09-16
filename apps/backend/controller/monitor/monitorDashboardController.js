@@ -3,8 +3,16 @@ const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 
 async function getSummary(req, res) {
   try {
-    const { companyId, id: userId } = req.user;
-    const employeeId = req.params.employeeId === 'me' ? (req.user.employeeId || userId) : req.params.employeeId;
+    const { companyId, id: userId, role } = req.user;
+    const requestedId = req.params.employeeId;
+    const isSelf = requestedId === 'me' || requestedId === userId || requestedId === req.user.employeeId;
+    const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'OWNER'].includes(role);
+
+    if (!isSelf && !isAdmin) {
+      return res.status(403).json({ error: 'Unauthorized to view another employee summary' });
+    }
+
+    const employeeId = isSelf ? (req.user.employeeId || userId) : requestedId;
     const date = req.query.date || new Date().toISOString().split('T')[0];
     
     const summary = await monitorService.getDailySummary(companyId, employeeId, date);
@@ -17,8 +25,16 @@ async function getSummary(req, res) {
 
 async function getTimeline(req, res) {
   try {
-    const { companyId, id: userId } = req.user;
-    const employeeId = req.params.employeeId === 'me' ? (req.user.employeeId || userId) : req.params.employeeId;
+    const { companyId, id: userId, role } = req.user;
+    const requestedId = req.params.employeeId;
+    const isSelf = requestedId === 'me' || requestedId === userId || requestedId === req.user.employeeId;
+    const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'OWNER'].includes(role);
+
+    if (!isSelf && !isAdmin) {
+      return res.status(403).json({ error: 'Unauthorized to view another employee timeline' });
+    }
+
+    const employeeId = isSelf ? (req.user.employeeId || userId) : requestedId;
     const date = req.query.date || new Date().toISOString().split('T')[0];
     
     const timeline = await monitorService.getEmployeeTimeline(companyId, employeeId, date);
@@ -88,11 +104,16 @@ async function markAlertRead(req, res) {
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
     
-    const alert = await prisma.monitorAlert.update({
+    const result = await prisma.monitorAlert.updateMany({
       where: { id, companyId },
       data: { isRead: true, readAt: new Date() }
     });
-    return res.status(200).json({ data: alert });
+
+    if (result.count === 0) {
+      return res.status(404).json({ error: 'Alert not found' });
+    }
+
+    return res.status(200).json({ success: true, count: result.count });
   } catch (error) {
     console.error('Error in markAlertRead:', error);
     return res.status(500).json({ error: 'Internal server error' });

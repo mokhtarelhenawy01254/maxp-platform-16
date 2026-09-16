@@ -67,18 +67,19 @@ class MonitorService {
 
   async processAppUsageBatch(companyId, employeeId, appData) {
     if (!appData || !appData.length) return { count: 0 };
+    const capped = appData.slice(0, 500);
     return this.prisma.monitorAppUsage.createMany({
-      data: appData.map(a => {
+      data: capped.map(a => {
         const startedAt = a.startedAt ? new Date(a.startedAt) : new Date();
         const startOfDay = new Date(startedAt);
         startOfDay.setHours(0, 0, 0, 0);
         return {
           companyId,
           employeeId,
-          appName: a.appName || 'Unknown',
-          windowTitle: a.windowTitle || null,
-          category: a.category || 'unrated',
-          durationSeconds: Number(a.durationSeconds || 0),
+          appName: String(a.appName || 'Unknown').slice(0, 100),
+          windowTitle: a.windowTitle ? String(a.windowTitle).slice(0, 255) : null,
+          category: ['productive', 'neutral', 'unproductive', 'unrated'].includes(a.category) ? a.category : 'unrated',
+          durationSeconds: Math.max(0, Math.min(86400, Number(a.durationSeconds || 0))),
           startedAt,
           endedAt: a.endedAt ? new Date(a.endedAt) : null,
           date: a.date ? new Date(a.date) : startOfDay,
@@ -89,19 +90,20 @@ class MonitorService {
 
   async processWebUsageBatch(companyId, employeeId, webData) {
     if (!webData || !webData.length) return { count: 0 };
+    const capped = webData.slice(0, 500);
     return this.prisma.monitorWebUsage.createMany({
-      data: webData.map(w => {
+      data: capped.map(w => {
         const startedAt = w.startedAt ? new Date(w.startedAt) : new Date();
         const startOfDay = new Date(startedAt);
         startOfDay.setHours(0, 0, 0, 0);
         return {
           companyId,
           employeeId,
-          url: w.url || w.domain || '',
-          domain: w.domain || '',
-          pageTitle: w.pageTitle || null,
-          category: w.category || 'unrated',
-          durationSeconds: Number(w.durationSeconds || 0),
+          url: String(w.url || w.domain || '').slice(0, 500),
+          domain: String(w.domain || '').slice(0, 150),
+          pageTitle: w.pageTitle ? String(w.pageTitle).slice(0, 255) : null,
+          category: ['productive', 'neutral', 'unproductive', 'unrated'].includes(w.category) ? w.category : 'unrated',
+          durationSeconds: Math.max(0, Math.min(86400, Number(w.durationSeconds || 0))),
           startedAt,
           endedAt: w.endedAt ? new Date(w.endedAt) : null,
           date: w.date ? new Date(w.date) : startOfDay,
@@ -110,9 +112,35 @@ class MonitorService {
     });
   }
 
-  async updateHeartbeat(companyId, employeeId, deviceInfo) {
+  async updateHeartbeat(companyId, employeeId, deviceInfo = {}) {
+    const existing = await this.prisma.monitorDeviceSession.findFirst({
+      where: { companyId, employeeId, isOnline: true },
+      orderBy: { lastHeartbeat: 'desc' }
+    });
+
+    // Reuse session if updated within the last 4 hours
+    if (existing && (Date.now() - new Date(existing.lastHeartbeat).getTime() < 4 * 3600 * 1000)) {
+      return this.prisma.monitorDeviceSession.update({
+        where: { id: existing.id },
+        data: {
+          lastHeartbeat: new Date(),
+          deviceName: deviceInfo.deviceName ? String(deviceInfo.deviceName).slice(0, 100) : existing.deviceName,
+          osVersion: deviceInfo.osVersion ? String(deviceInfo.osVersion).slice(0, 100) : existing.osVersion,
+          appVersion: deviceInfo.appVersion ? String(deviceInfo.appVersion).slice(0, 50) : existing.appVersion,
+        }
+      });
+    }
+
     return this.prisma.monitorDeviceSession.create({
-      data: { companyId, employeeId, ...deviceInfo }
+      data: {
+        companyId,
+        employeeId,
+        deviceName: deviceInfo.deviceName ? String(deviceInfo.deviceName).slice(0, 100) : 'Desktop Device',
+        osVersion: deviceInfo.osVersion ? String(deviceInfo.osVersion).slice(0, 100) : null,
+        appVersion: deviceInfo.appVersion ? String(deviceInfo.appVersion).slice(0, 50) : null,
+        lastHeartbeat: new Date(),
+        isOnline: true
+      }
     });
   }
 
@@ -133,15 +161,43 @@ class MonitorService {
     });
 
     const employeeIds = summaries.map(s => s.employeeId).filter(Boolean);
-    let employees = [];
+    const empMap = new Map();
+
     if (employeeIds.length > 0) {
-      employees = await this.prisma.employee.findMany({
-        where: { id: { in: employeeIds } },
+      // 1. Try resolving through Employee table by id or userId
+      const employees = await this.prisma.employee.findMany({
+        where: {
+          companyId,
+          OR: [{ id: { in: employeeIds } }, { userId: { in: employeeIds } }]
+        },
         include: { department: true }
       });
-    }
 
-    const empMap = new Map(employees.map(e => [e.id, e]));
+      employees.forEach(e => {
+        empMap.set(e.id, e);
+        if (e.userId) empMap.set(e.userId, e);
+      });
+
+      // 2. Fallback for accounts without employee records (e.g. COMPANY_ADMIN)
+      const missingIds = employeeIds.filter(id => !empMap.has(id));
+      if (missingIds.length > 0) {
+        const users = await this.prisma.user.findMany({
+          where: { companyId, id: { in: missingIds } },
+          select: { id: true, firstName: true, lastName: true, email: true, role: true }
+        });
+
+        users.forEach(u => {
+          const fullName = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email;
+          empMap.set(u.id, {
+            id: u.id,
+            firstName: fullName,
+            lastName: '',
+            email: u.email,
+            department: { name: u.role === 'COMPANY_ADMIN' ? 'الإدارة العامة' : 'فريق العمل' }
+          });
+        });
+      }
+    }
 
     return summaries.map(s => ({
       ...s,
