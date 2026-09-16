@@ -7,11 +7,11 @@ import {
   XMarkIcon,
   UsersIcon,
   BuildingStorefrontIcon,
-  WalletIcon,
   UserCircleIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
+import { Wallet } from "lucide-react";
 import "../../styles/hr-theme.css";
 import { useTranslation } from "react-i18next";
 import i18n from "../../i18n";
@@ -662,7 +662,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
               title={t("billing.payments.rechargeWallet") || "شحن المحفظة"}
               aria-label={t("billing.payments.rechargeWallet") || "شحن المحفظة"}
             >
-              <WalletIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              <Wallet className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-gray-700 dark:text-gray-300 transition-transform group-hover:scale-105" strokeWidth={1.8} />
             </button>
             {hasStore && (
               <a

@@ -11,6 +11,7 @@ router.get('/balance', walletController.getBalance);
 router.get('/transactions', walletController.getTransactions);
 router.post('/recharge', walletController.rechargeWallet);
 router.post('/kashier/create-session', walletController.createKashierRechargeSession);
+router.post('/kashier/verify-session', walletController.verifyKashierSession);
 
 // --- Billing Routes ---
 router.get('/billing/summary', walletController.getBillingSummary);

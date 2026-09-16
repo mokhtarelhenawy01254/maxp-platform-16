@@ -210,13 +210,29 @@ const bootstrapApp = async (): Promise<void> => {
   root.render(<AdminAppBootstrap />);
   scheduleOptionalGoogleFonts();
 
-  // ponytail: push notifications are non-critical; load after interactive
+  // Service Worker for PWA installability and background push notifications
+  const registerPwaServiceWorker = () => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw-v4.js", { scope: "/", updateViaCache: "none" })
+        .catch(() => {});
+    }
+  };
+
   if ("requestIdleCallback" in window) {
     window.requestIdleCallback(() => {
+      registerPwaServiceWorker();
       import("./utils/pushNotifications")
         .then(({ registerPushServiceWorker }) => registerPushServiceWorker())
         .catch(() => {});
     }, { timeout: 5000 });
+  } else {
+    setTimeout(() => {
+      registerPwaServiceWorker();
+      import("./utils/pushNotifications")
+        .then(({ registerPushServiceWorker }) => registerPushServiceWorker())
+        .catch(() => {});
+    }, 1500);
   }
 };
 

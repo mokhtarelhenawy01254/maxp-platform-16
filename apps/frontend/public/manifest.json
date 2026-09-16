@@ -1,24 +1,38 @@
 {
-  "short_name": "MAX-P",
-  "name": "MAX-P Business Platform",
-  "description": "منصة MAX-P لإدارة الأعمال والمبيعات والعمليات التجارية والتنبيهات الفورية",
+  "id": "online.maxp.platform",
+  "short_name": "MaxP",
+  "name": "MaxP — منصة إدارة التواصل والتجارة الإلكترونية",
+  "description": "منصة متكاملة لإدارة المحادثات، الذكاء الاصطناعي، والمتاجر الرقمية",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/icons/icon-192x192.png",
       "type": "image/png",
-      "sizes": "192x192 512x512 1024x1024",
+      "sizes": "192x192",
       "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     },
     {
       "src": "/logo.png",
       "type": "image/png",
-      "sizes": "192x192 512x512 1024x1024",
-      "purpose": "maskable"
+      "sizes": "1024x1024",
+      "purpose": "any"
     }
   ],
   "start_url": "/",
-  "background_color": "#0f172a",
-  "theme_color": "#4f46e5",
+  "scope": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#3B82F6",
   "display": "standalone",
   "orientation": "portrait",
   "lang": "ar-EG",

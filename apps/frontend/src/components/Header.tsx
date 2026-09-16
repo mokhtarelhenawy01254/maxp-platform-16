@@ -17,8 +17,8 @@ import {
   MagnifyingGlassIcon,
   ChatBubbleLeftRightIcon,
   BuildingStorefrontIcon,
-  WalletIcon,
 } from "@heroicons/react/24/outline";
+import { Wallet } from "lucide-react";
 import { buildStoreUrl } from "../utils/storeUrl";
 import QuickWalletRechargeModal from "./wallet/QuickWalletRechargeModal";
 
@@ -310,7 +310,7 @@ const Header: React.FC = () => {
               title={t("billing.payments.rechargeWallet") || "شحن المحفظة"}
               aria-label={t("billing.payments.rechargeWallet") || "شحن المحفظة"}
             >
-              <WalletIcon className="h-5 w-5" />
+              <Wallet className="h-5 w-5" strokeWidth={1.8} />
             </button>
 
             {/* Visit Store Button */}

@@ -188,9 +188,8 @@ class KashierService {
       order: orderId,
       merchantRedirect: redirectUrl,
       serverWebhook: webhookUrl,
-      display: 'en',
+      display: 'ar',
       type: 'one-time',
-      paymentType: 'credit',
       allowedMethods: 'card,wallet',
       enable3DS: true,
       merchantId,
@@ -247,8 +246,11 @@ class KashierService {
   static async getSessionStatus(sessionId, companyId = null) {
     try {
       const headers = await this.getHeaders(companyId);
+      const platformConfig = await getPlatformKashierConfig();
+      const effectiveMode = platformConfig.mode || KASHIER_MODE();
+      const baseUrl = getBaseUrlForMode(effectiveMode);
       const { data } = await axios.get(
-        `${KASHIER_BASE_URL()}/v3/payment/sessions/${sessionId}/payment`,
+        `${baseUrl}/v3/payment/sessions/${sessionId}/payment`,
         { headers },
       );
       return {
@@ -256,8 +258,10 @@ class KashierService {
         status: data.data?.status,
         method: data.data?.method,
         amount: data.data?.amount,
+        capturedAmount: data.data?.capturedAmount,
         currency: data.data?.currency,
         merchantOrderId: data.data?.merchantOrderId,
+        data: data.data,
       };
     } catch (error) {
       const errMsg = error.response?.data?.message || error.message;

@@ -1,11 +1,10 @@
-/* MaxP push-notification service worker.
+/* MaxP service worker (Web Push Notifications & PWA Installability).
  *
- * NOT a PWA installer and NOT a cache worker:
- * - No precache, no fetch interception, no CacheStorage writes -> no cache
- *   timestamps, no IDB transactions, no "Cache.put() network error" noise.
- * - The web app manifest is gone, so browsers no longer offer "install app".
- * - This worker exists only to receive web push notifications and route
- *   notification clicks back to the right tab.
+ * Designed to satisfy browser PWA installability criteria without
+ * caching that could cause stale chunks or deploy errors:
+ * - Pass-through fetch handler enables Chrome/Edge PWA install prompt.
+ * - Zero cache writes -> zero stale-chunk errors.
+ * - Handles web push notifications and routes clicks to active tabs.
  */
 
 self.addEventListener('install', () => {
@@ -17,8 +16,13 @@ self.addEventListener('activate', (event) => {
     // Claim clients immediately so the new SW takes control
     await self.clients.claim();
   })());
-  // Note: CacheStorage is not managed by this SW (it is NOT a cache worker).
-  // Cache clearing is handled once during SW migration in main.tsx via localStorage flag.
+});
+
+// Pass-through fetch event handler: satisfies browser PWA installability requirements
+// while allowing all network traffic to flow directly without stale cache risks.
+self.addEventListener('fetch', (event) => {
+  // Pass-through: do not intercept or cache, allow natural network fetching
+  return;
 });
 
 self.addEventListener('message', (event) => {

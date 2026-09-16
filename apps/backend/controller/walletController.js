@@ -880,13 +880,14 @@ class WalletController {
       });
 
       const KashierService = require('../services/kashierService');
+      const customerEmail = req.user.email || 'billing@' + baseDomain;
       const session = await KashierService.createPaymentSession(
         {
           amount: parseFloat(amount),
           currency: 'EGP',
           orderId: orderNumber,
-          customer: { email: req.user.email, reference: `wallet:${companyId}:${amount}` },
-          redirectUrl,
+          customer: { email: customerEmail, reference: `wallet:${companyId}:${amount}` },
+          redirectUrl: `https://${baseDomain}/payments?orderId=${orderNumber}`,
           webhookUrl,
           description: `شحن المحفظة: ${amount} جنيه`,
         },
@@ -909,6 +910,16 @@ class WalletController {
         return res.status(502).json({ success: false, message: 'فشل إنشاء جلسة الدفع', error: session.error });
       }
 
+      // Link session ID to the pending transaction for direct verification
+      if (session.sessionId) {
+        await prisma.transaction.updateMany({
+          where: { referenceId: orderNumber, status: 'PENDING' },
+          data: {
+            description: `شحن المحفظة عبر كاشير (قيد المعالجة): ${amount} جنيه | session:${session.sessionId}`,
+          },
+        }).catch(() => {});
+      }
+
       res.json({
         success: true,
         data: {
@@ -920,6 +931,142 @@ class WalletController {
     } catch (error) {
       console.error('[KASHIER-RECHARGE] Error:', error);
       res.status(500).json({ success: false, message: 'حدث خطأ أثناء إنشاء جلسة الدفع' });
+    }
+  }
+
+  static async verifyKashierSession(req, res) {
+    try {
+      const { companyId } = req.user;
+      if (!companyId) {
+        return res.status(400).json({ success: false, message: 'يجب تحديد الشركة' });
+      }
+
+      const { orderId, sessionId } = req.body || {};
+
+      if (!orderId && !sessionId) {
+        return res.status(400).json({ success: false, message: 'مطلوب معرف الطلب أو معرف الجلسة' });
+      }
+
+      const prisma = require('../services/sharedDatabase').getSharedPrismaClient();
+
+      // Find transaction belonging to this company's wallet
+      const tx = await prisma.transaction.findFirst({
+        where: {
+          wallet: { companyId },
+          type: 'DEPOSIT',
+          OR: [
+            ...(orderId ? [{ referenceId: orderId }] : []),
+            ...(sessionId ? [{ description: { contains: sessionId } }] : []),
+          ],
+        },
+        include: { wallet: true },
+      });
+
+      if (!tx) {
+        return res.status(404).json({ success: false, message: 'لم يتم العثور على المعاملة' });
+      }
+
+      // If already completed, return current balance
+      if (tx.status === 'COMPLETED') {
+        return res.json({
+          success: true,
+          verified: true,
+          status: 'COMPLETED',
+          balance: Number(tx.wallet.balance),
+          message: 'تم تأكيد الدفع بنجاح سابقاً',
+        });
+      }
+
+      // If failed, return failed
+      if (tx.status === 'FAILED') {
+        return res.json({
+          success: false,
+          verified: false,
+          status: 'FAILED',
+          message: 'عملية الدفع تم إلغاؤها أو فشلت',
+        });
+      }
+
+      // If pending, verify with Kashier API directly
+      let effectiveSessionId = sessionId;
+      if (!effectiveSessionId && tx.description) {
+        const match = tx.description.match(/session:([a-zA-Z0-9_-]+)/);
+        if (match) effectiveSessionId = match[1];
+      }
+
+      const KashierService = require('../services/kashierService');
+
+      let isSuccess = false;
+      let kashierStatus = 'PENDING';
+
+      if (effectiveSessionId) {
+        const sessionRes = await KashierService.getSessionStatus(effectiveSessionId, companyId);
+        if (sessionRes.success) {
+          kashierStatus = sessionRes.status;
+          const capAmt = parseFloat(sessionRes.capturedAmount || sessionRes.amount || 0);
+          if (['SUCCESS', 'CAPTURED', 'PAID', 'APPROVED'].includes(kashierStatus?.toUpperCase()) || capAmt > 0) {
+            isSuccess = true;
+          }
+        }
+      }
+
+      if (isSuccess) {
+        const depositAmount = parseFloat(tx.amount);
+        // Atomically update transaction and wallet balance
+        const [updatedTx, updatedWallet] = await prisma.$transaction(async (txPrisma) => {
+          const uTx = await txPrisma.transaction.update({
+            where: { id: tx.id },
+            data: {
+              status: 'COMPLETED',
+              description: `شحن المحفظة عبر كاشير (مكتمل): ${depositAmount} جنيه`,
+            },
+          });
+          const uWallet = await txPrisma.companyWallet.update({
+            where: { id: tx.walletId },
+            data: {
+              balance: { increment: depositAmount },
+              totalDeposited: { increment: depositAmount },
+            },
+          });
+          return [uTx, uWallet];
+        });
+
+        return res.json({
+          success: true,
+          verified: true,
+          status: 'COMPLETED',
+          balance: Number(updatedWallet.balance),
+          credited: true,
+          amount: depositAmount,
+          message: 'تم التحقق من نجاح العملية وإيداع الرصيد في محفظتك بنجاح',
+        });
+      }
+
+      if (['FAILED', 'CANCELLED', 'REJECTED', 'DECLINED'].includes(kashierStatus?.toUpperCase())) {
+        await prisma.transaction.update({
+          where: { id: tx.id },
+          data: {
+            status: 'FAILED',
+            description: `فشلت عملية شحن المحفظة عبر كاشير (${kashierStatus})`,
+          },
+        });
+        return res.json({
+          success: false,
+          verified: false,
+          status: 'FAILED',
+          message: 'فشلت عملية الدفع لدى بوابة كاشير',
+        });
+      }
+
+      return res.json({
+        success: false,
+        verified: false,
+        status: kashierStatus || 'PENDING',
+        message: 'عملية الدفع قيد المعالجة أو لم تكتمل بعد',
+      });
+    } catch (error) {
+      console.error('[KASHIER-VERIFY] Error:', error);
+      res.status(500).json({ success: false, message: 'حدث خطأ أثناء التحقق من عملية الدفع' });
     }
   }
 }
