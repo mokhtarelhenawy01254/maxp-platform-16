@@ -54,6 +54,21 @@ app.setName('MaxP Employee Monitor');
 app.setAppUserModelId('online.maxp.monitor');
 app.disableHardwareAcceleration();
 
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.setAlwaysOnTop(true);
+      mainWindow.focus();
+      setTimeout(() => mainWindow?.setAlwaysOnTop(false), 800);
+    }
+  });
+}
+
 // ── App Lifecycle ─────────────────────────────────────────────
 
 app.whenReady().then(async () => {
@@ -159,8 +174,10 @@ function createMainWindow(): void {
     mainWindow.loadFile(distIndex);
   }
 
+  mainWindow.setAlwaysOnTop(true);
   mainWindow.show();
   mainWindow.focus();
+  setTimeout(() => mainWindow?.setAlwaysOnTop(false), 1200);
 
   mainWindow.on('close', (e) => {
     // Minimize to tray instead of closing
