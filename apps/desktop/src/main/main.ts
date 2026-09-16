@@ -50,8 +50,8 @@ let tray: Tray | null = null;
 let isTracking = false;
 let isPaused = false;
 
-app.setName('MaxP Employee Monitor');
-app.setAppUserModelId('online.maxp.monitor');
+app.setName('MaxP Workspace');
+app.setAppUserModelId('online.maxp.workspace');
 app.disableHardwareAcceleration();
 
 const gotTheLock = app.requestSingleInstanceLock();
@@ -129,7 +129,7 @@ function createMainWindow(): void {
   }
 
   mainWindow = new BrowserWindow({
-    title: 'MaxP Employee Monitor',
+    title: 'MaxP Workspace',
     width: 960,
     height: 680,
     minWidth: 840,
@@ -196,7 +196,7 @@ function createTray(): void {
   const iconPath = getTrayIconPath();
   const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
   tray = new Tray(icon);
-  tray.setToolTip('MaxP Monitor');
+  tray.setToolTip('MaxP Workspace');
   updateTrayMenu();
 
   tray.on('double-click', () => {
@@ -208,24 +208,31 @@ function updateTrayMenu(): void {
   if (!tray) return;
 
   const isLoggedIn = apiClient.isConfigured;
-  const statusLabel = !isLoggedIn ? 'Not logged in' : 'Enforced Tracking Active';
+  const statusLabel = !isLoggedIn ? 'غير متصل' : (isPaused ? 'استراحة رسمية' : 'جلسة العمل موثقة');
 
   const contextMenu = Menu.buildFromTemplate([
-    { label: `MaxP Monitor — ${statusLabel}`, enabled: false },
+    { label: `MaxP Workspace — ${statusLabel}`, enabled: false },
     { type: 'separator' },
     {
-      label: 'Open Dashboard',
+      label: 'فتح مساحة العمل والمهام',
       click: () => createMainWindow(),
     },
     { type: 'separator' as const },
     ...(isLoggedIn ? [
       {
-        label: 'Logout',
+        label: isPaused ? 'استئناف العمل' : 'بدء استراحة رسمية',
+        click: async () => {
+          if (isPaused) await resumeTracking();
+          else pauseTracking();
+        },
+      },
+      {
+        label: 'تسجيل الخروج',
         click: () => logout(),
       },
     ] : []),
     {
-      label: 'Quit',
+      label: 'إغلاق التطبيق',
       click: () => {
         app.exit(0);
       },
@@ -261,7 +268,7 @@ async function startTracking(): Promise<void> {
   updateTrayMenu();
   sendStateToRenderer();
 
-  showNotification('MaxP Monitor', 'Tracking started');
+  showNotification('MaxP Workspace', 'تم بدء جلسة العمل وتوثيق الإنتاجية بنجاح');
 }
 
 function stopTracking(): void {
@@ -283,7 +290,7 @@ function pauseTracking(): void {
   windowTracker.stop();
   updateTrayMenu();
   sendStateToRenderer();
-  showNotification('MaxP Monitor', 'Tracking paused');
+  showNotification('MaxP Workspace', 'تم تفعيل وضع الاستراحة الرسمي (توقف العداد)');
 }
 
 async function resumeTracking(): Promise<void> {
@@ -292,7 +299,7 @@ async function resumeTracking(): Promise<void> {
   await windowTracker.start();
   updateTrayMenu();
   sendStateToRenderer();
-  showNotification('MaxP Monitor', 'Tracking resumed');
+  showNotification('MaxP Workspace', 'تم استئناف جلسة العمل ومتابعة الإنتاجية');
 }
 
 function logout(): void {
@@ -585,7 +592,7 @@ function initAutoUpdater(): void {
 
     autoUpdater.on('update-available', (info) => {
       console.log('[Updater] Update available:', info.version);
-      showNotification('MaxP Monitor', `تحديث متوفر v${info.version}، جاري التنزيل في الخلفية...`);
+      showNotification('MaxP Workspace', `تحديث متوفر v${info.version}، جاري التنزيل في الخلفية...`);
     });
 
     autoUpdater.on('update-not-available', () => {
@@ -599,7 +606,7 @@ function initAutoUpdater(): void {
     autoUpdater.on('update-downloaded', (info) => {
       console.log('[Updater] Update downloaded successfully:', info.version);
       showNotification(
-        'MaxP Monitor',
+        'MaxP Workspace',
         `تم تنزيل التحديث v${info.version}. سيتم تطبيقه تلقائياً عند إعادة التشغيل القادمة.`
       );
     });

@@ -11,12 +11,14 @@ import {
   CheckCircle2,
   PauseCircle,
   XCircle,
+  ShieldAlert,
 } from 'lucide-react';
 import api from '../../../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
+import { useAuth } from '../../../hooks/useAuthSimple';
 
 interface TeamMemberSummary {
   employeeId: string;
@@ -31,6 +33,10 @@ interface TeamMemberSummary {
 }
 
 export const MonitorDashboard: React.FC = () => {
+  const { user } = useAuth();
+  const roleStr = String(user?.role || '').toUpperCase();
+  const isManagerOrHR = ['ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'OWNER', 'MANAGER'].includes(roleStr);
+
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -45,6 +51,10 @@ export const MonitorDashboard: React.FC = () => {
   });
 
   const fetchData = useCallback(async () => {
+    if (!isManagerOrHR) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const response = await api.get(`/employee-monitor/team/overview?date=${selectedDate}`);
@@ -102,6 +112,33 @@ export const MonitorDashboard: React.FC = () => {
     const minutes = Math.floor((sec % 3600) / 60);
     return `${hours}h ${minutes}m`;
   };
+
+  if (!isManagerOrHR) {
+    return (
+      <div className="flex items-center justify-center min-h-[65vh] p-4">
+        <Card className="max-w-md w-full border-border/40 bg-card/60 backdrop-blur text-center p-6 space-y-4">
+          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-500">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-lg font-bold text-foreground">صلاحية إدارية مطلوبة</h2>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              لوحة متابعة نشاط وإنتاجية الفريق مخصصة لمدراء الموارد البشرية ومسؤولي الأقسام فقط.
+              يمكنك متابعة مهامك الموكلة وحضورك الشخصي عبر صفحة المهام الخاصة بك.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.location.href = '/tasks'}
+            className="w-full text-xs"
+          >
+            الانتقال إلى قائمة مهامي
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 p-3 sm:p-6 max-w-7xl mx-auto">

@@ -41,7 +41,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       <div style={styles.card}>
         {/* Brand & Header */}
         <div style={styles.header}>
-          <div style={styles.brandIconWrapper}>
+          <div
+            style={styles.brandIconWrapper}
+            onDoubleClick={() => setShowAdvanced((prev) => !prev)}
+            title="MaxP Workspace"
+          >
             <ShieldCheck size={28} color="#22c55e" />
           </div>
           <h1 style={styles.title}>MaxP Workspace</h1>
@@ -83,20 +87,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             </div>
           </div>
 
-          {/* Advanced Server Settings Toggle */}
-          <div style={styles.advancedToggleRow}>
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              style={styles.advancedToggleBtn}
-            >
-              <Server size={13} color="#71717a" />
-              <span>إعدادات السيرفر السحابي</span>
-              {showAdvanced ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-            </button>
-          </div>
-
-          {/* Collapsible Server URL Field */}
+          {/* Collapsible Server URL Field (Hidden by default for employees, unlocked via double-click on header) */}
           {showAdvanced && (
             <div style={styles.advancedBox}>
               <label style={styles.label}>رابط المنصة (Endpoint)</label>

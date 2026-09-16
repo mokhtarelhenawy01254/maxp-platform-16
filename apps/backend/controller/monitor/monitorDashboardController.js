@@ -45,9 +45,18 @@ async function getTimeline(req, res) {
   }
 }
 
+function checkIsAdminOrHR(role) {
+  const norm = String(role || '').toUpperCase();
+  return ['ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'OWNER', 'MANAGER'].includes(norm);
+}
+
 async function getTeamOverview(req, res) {
   try {
-    const { companyId } = req.user;
+    const { companyId, role } = req.user;
+    if (!checkIsAdminOrHR(role)) {
+      return res.status(403).json({ error: 'غير مصرح: استعراض إحصائيات الفريق متاح لإدارة الموارد البشرية والمدراء فقط' });
+    }
+
     const date = req.query.date || new Date().toISOString().split('T')[0];
     
     const overview = await monitorService.getTeamOverview(companyId, date);
@@ -71,9 +80,12 @@ async function getCategories(req, res) {
 
 async function updateCategory(req, res) {
   try {
-    const { companyId } = req.user;
+    const { companyId, role } = req.user;
+    if (!checkIsAdminOrHR(role)) {
+      return res.status(403).json({ error: 'غير مصرح: تعديل تصنيفات البرامج والمواقع يتطلب صلاحية إدارية' });
+    }
+
     const categoryData = req.body;
-    
     const category = await monitorService.updateCategory(companyId, categoryData);
     return res.status(200).json({ data: category });
   } catch (error) {
@@ -84,10 +96,18 @@ async function updateCategory(req, res) {
 
 async function getAlerts(req, res) {
   try {
-    const { companyId } = req.user;
+    const { companyId, role, id: userId, employeeId } = req.user;
+    const isManager = checkIsAdminOrHR(role);
     const prisma = getSharedPrismaClient();
+
+    // Standard employees only see their own alerts
+    const where = { companyId };
+    if (!isManager) {
+      where.employeeId = employeeId || userId;
+    }
+
     const alerts = await prisma.monitorAlert.findMany({
-      where: { companyId },
+      where,
       orderBy: { createdAt: 'desc' },
       take: 50
     });

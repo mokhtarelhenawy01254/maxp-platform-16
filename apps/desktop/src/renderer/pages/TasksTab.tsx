@@ -162,7 +162,7 @@ export const TasksTab: React.FC = () => {
             }}
           >
             <Users size={12} />
-            <span>مهام كلفت بها فريقي</span>
+            <span>مهام أنشأتها للزملاء</span>
           </button>
         </div>
 

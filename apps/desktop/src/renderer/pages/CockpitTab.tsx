@@ -237,7 +237,15 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
             {currentUrl && (
               <div style={styles.currentUrlRow}>
                 <ExternalLink size={12} color="#71717a" />
-                <span style={styles.currentUrlText}>{currentUrl}</span>
+                <span style={styles.currentUrlText}>
+                  {isAdmin ? currentUrl : (() => {
+                    try {
+                      return new URL(currentUrl).hostname;
+                    } catch {
+                      return currentUrl.split('?')[0].split('#')[0];
+                    }
+                  })()}
+                </span>
               </div>
             )}
           </div>
