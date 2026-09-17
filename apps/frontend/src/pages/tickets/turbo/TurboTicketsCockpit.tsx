@@ -62,6 +62,10 @@ export const TurboTicketsCockpit: React.FC = () => {
   const [activeTicket, setActiveTicket] = useState<TurboTicketItem | null>(null);
   const [loadingTicket, setLoadingTicket] = useState(false);
   const ticketDetailsCacheRef = useRef<Map<number, TurboTicketItem>>(new Map());
+  const activeTicketRef = useRef<TurboTicketItem | null>(null);
+  activeTicketRef.current = activeTicket;
+  const selectedTicketIdRef = useRef<number | null>(null);
+  selectedTicketIdRef.current = selectedTicketId;
 
   // Modals state
   const [isNewModalOpen, setIsNewModalOpen] = useState(urlShouldOpenNew);
@@ -234,7 +238,7 @@ export const TurboTicketsCockpit: React.FC = () => {
           }
 
           // If no ticket selected yet and tickets exist, select first on desktop
-          if (!selectedTicketId && fetchedTickets.length > 0 && window.innerWidth >= 768) {
+          if (!selectedTicketIdRef.current && fetchedTickets.length > 0 && window.innerWidth >= 768) {
             const firstTicket = fetchedTickets[0];
             if (firstTicket) {
               setSelectedTicketId(firstTicket.id);
@@ -252,10 +256,10 @@ export const TurboTicketsCockpit: React.FC = () => {
         if (!isSilent) setLoadingList(false);
       }
     },
-    [selectedTicketId, statusFilter, searchQuery]
+    [statusFilter, searchQuery]
   );
 
-  // 4. Fetch Active Ticket Details with Fast SWR Cache
+  // 4. Fetch Active Ticket Details with Fast SWR Cache (stable ref, zero infinite loop)
   const loadActiveTicketDetails = useCallback(
     async (ticketId: number, isSilent = false) => {
       try {
@@ -270,8 +274,9 @@ export const TurboTicketsCockpit: React.FC = () => {
             // Save in in-memory cache for instant switching
             ticketDetailsCacheRef.current.set(ticketId, ticketData);
 
-            if (isSilent && activeTicket && activeTicket.id === ticketId) {
-              const prevLen = (activeTicket.messages || activeTicket.replies || []).length;
+            const currentActive = activeTicketRef.current;
+            if (isSilent && currentActive && currentActive.id === ticketId) {
+              const prevLen = (currentActive.messages || currentActive.replies || []).length;
               const newLen = (ticketData.messages || ticketData.replies || []).length;
               if (newLen > prevLen) {
                 const latest = (ticketData.messages || ticketData.replies || [])[newLen - 1];
@@ -292,7 +297,7 @@ export const TurboTicketsCockpit: React.FC = () => {
         setLoadingTicket(false);
       }
     },
-    [activeTicket]
+    []
   );
 
 
@@ -328,8 +333,9 @@ export const TurboTicketsCockpit: React.FC = () => {
       if (document.hidden) return;
       loadUnreadCount();
       loadTickets(page, statusFilter, searchQuery, true);
-      if (selectedTicketId) {
-        loadActiveTicketDetails(selectedTicketId, true);
+      const curId = selectedTicketIdRef.current;
+      if (curId) {
+        loadActiveTicketDetails(curId, true);
       }
     };
 
@@ -352,7 +358,6 @@ export const TurboTicketsCockpit: React.FC = () => {
     page,
     statusFilter,
     searchQuery,
-    selectedTicketId,
     loadUnreadCount,
     loadTickets,
     loadActiveTicketDetails,
@@ -441,13 +446,22 @@ export const TurboTicketsCockpit: React.FC = () => {
             لربط ومزامنة التذاكر والمحادثات الحية مع عمليات تربو، يرجى تفعيل
             الخدمة وإدخال الـ API Key وكود العميل في صفحة إعدادات Turbo.
           </p>
-          <button
-            type="button"
-            onClick={() => navigate("/store-settings/turbo")}
-            className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 transition active:scale-97 shadow-xs"
-          >
-            الانتقال لإعدادات Turbo
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => navigate("/settings/turbo")}
+              className="w-full sm:flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 transition active:scale-97 shadow-xs"
+            >
+              الانتقال لإعدادات Turbo
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/support/tickets")}
+              className="w-full sm:flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition active:scale-97"
+            >
+              تذاكر الدعم الفني للمنصة
+            </button>
+          </div>
         </div>
       </div>
     );

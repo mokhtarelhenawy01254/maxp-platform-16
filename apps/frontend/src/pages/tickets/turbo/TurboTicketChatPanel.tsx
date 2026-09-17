@@ -24,6 +24,11 @@ import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { TurboTicketItem, TurboMessage } from "./types";
+import {
+  parseSafeDate,
+  formatSafeTime,
+  formatSafeDateTime,
+} from "./ticketDateUtils";
 
 interface TurboTicketChatPanelProps {
   ticket: TurboTicketItem | null;
@@ -281,8 +286,8 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
   const messages: TurboMessage[] = ticket.messages || ticket.replies || [];
   const uniqueMessages = React.useMemo(() => {
     const sorted = [...messages].sort((a, b) => {
-      const tA = new Date(a.created_at || 0).getTime();
-      const tB = new Date(b.created_at || 0).getTime();
+      const tA = parseSafeDate(a.created_at)?.getTime() || 0;
+      const tB = parseSafeDate(b.created_at)?.getTime() || 0;
       return tA - tB;
     });
 
@@ -548,7 +553,7 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
                     </span>
                     <span className="tabular-nums font-mono text-[11px]">
                       {ticket.created_at
-                        ? new Date(ticket.created_at).toLocaleString("ar-EG")
+                        ? formatSafeDateTime(ticket.created_at)
                         : ""}
                     </span>
                   </div>
@@ -619,7 +624,12 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
                   ? user?.company?.name?.trim() || "المتجر"
                   : "تربو";
                 const textContent = msg.content || msg.message || "";
-                const imageUrl = msg.image || msg.media_url;
+                const imageUrl =
+                  msg.image ||
+                  msg.media_url ||
+                  msg.file ||
+                  (msg as any).file_url ||
+                  (msg as any).attachment;
 
                 return (
                   <div
@@ -639,10 +649,7 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
                       {msg.created_at && (
                         <span className="tabular-nums font-mono text-[10px]">
                           •{" "}
-                          {new Date(msg.created_at).toLocaleTimeString("ar-EG", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {formatSafeTime(msg.created_at)}
                         </span>
                       )}
                     </div>

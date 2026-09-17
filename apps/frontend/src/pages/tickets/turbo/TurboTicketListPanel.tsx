@@ -10,6 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { BellAlertIcon } from "@heroicons/react/24/solid";
 import { TurboTicketItem } from "./types";
+import { parseSafeDate, formatSafeDate } from "./ticketDateUtils";
 
 export type TurboCategoryTab = "all" | "courier" | "complaint" | "support" | "unread";
 
@@ -205,12 +206,12 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
     // Strict Descending Sorting: Newest Activity on Top!
     list.sort((a, b) => {
       const timeA = Math.max(
-        new Date(a.created_at || 0).getTime(),
-        new Date(a.updated_at || 0).getTime()
+        parseSafeDate(a.created_at)?.getTime() || 0,
+        parseSafeDate(a.updated_at)?.getTime() || 0
       );
       const timeB = Math.max(
-        new Date(b.created_at || 0).getTime(),
-        new Date(b.updated_at || 0).getTime()
+        parseSafeDate(b.created_at)?.getTime() || 0,
+        parseSafeDate(b.updated_at)?.getTime() || 0
       );
       if (timeB !== timeA) return timeB - timeA;
       return (Number(b.id) || 0) - (Number(a.id) || 0);
@@ -381,12 +382,7 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
               t.description ||
               t.content ||
               `تذكرة #${t.id}`;
-            const timeStr = t.created_at
-              ? new Date(t.created_at).toLocaleDateString("ar-EG", {
-                  month: "short",
-                  day: "numeric",
-                })
-              : "";
+            const timeStr = t.created_at ? formatSafeDate(t.created_at) : "";
             const creator =
               t.creator_name ||
               t.client_name ||
@@ -440,7 +436,7 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
                         className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-semibold truncate max-w-[130px]"
                         title={`طلب مرتبط: #${linkedOrderNumber}`}
                       >
-                        📦 طلب #{linkedOrderNumber}
+                        <span>طلب #{linkedOrderNumber}</span>
                       </span>
                     )}
                     {unreadMsgCount > 0 && (
