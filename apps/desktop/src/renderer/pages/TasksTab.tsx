@@ -161,15 +161,32 @@ export const TasksTab: React.FC = () => {
         const runningRes = await window.electronAPI.getRunningTaskTimer();
         if (runningRes?.success && runningRes.runningTimer) {
           const rt = runningRes.runningTimer;
-          const startMs = new Date(rt.startTime).getTime();
-          setActiveTask({
-            id: rt.taskId,
-            title: rt.task?.title || 'مهمة جارية',
-            priority: 'MEDIUM',
-            startTime: startMs,
-            accumulatedSeconds: 0,
-            entryId: rt.id,
-          });
+          const isTaskDone = String(rt.task?.status || '').toUpperCase() === 'COMPLETED';
+          if (isTaskDone) {
+            setActiveTask(null);
+            try {
+              localStorage.removeItem('maxp_active_task');
+            } catch {}
+            if (rt.id) {
+              window.electronAPI.stopTaskTimer(rt.id).catch(() => {});
+            }
+          } else {
+            const startMs = new Date(rt.startTime).getTime();
+            setActiveTask({
+              id: rt.taskId,
+              title: rt.task?.title || 'مهمة جارية',
+              priority: 'MEDIUM',
+              startTime: startMs,
+              accumulatedSeconds: 0,
+              entryId: rt.id,
+            });
+          }
+        } else if (runningRes?.success && !runningRes.runningTimer) {
+          // No timer running on backend, clear any stale activeTask
+          setActiveTask(null);
+          try {
+            localStorage.removeItem('maxp_active_task');
+          } catch {}
         }
       } catch {}
     } catch (err) {
@@ -217,16 +234,26 @@ export const TasksTab: React.FC = () => {
     const currentTask = tasks.find((t) => t.id === taskId);
     const prevStatus = currentTask?.status || 'PENDING';
 
-    // If starting work on task, launch runner if not already active
-    if (targetStatus === 'IN_PROGRESS' && currentTask) {
+    // If completing the task, immediately stop runner and clear state
+    if (targetStatus === 'COMPLETED') {
+      if (activeTask?.id === taskId) {
+        const entryId = activeTask?.entryId;
+        setActiveTask(null);
+        try {
+          localStorage.removeItem('maxp_active_task');
+        } catch {}
+        if (entryId) {
+          try {
+            await window.electronAPI.stopTaskTimer(entryId);
+          } catch (err) {
+            console.warn('[TasksTab] stopTaskTimer on complete failed:', err);
+          }
+        }
+      }
+    } else if (targetStatus === 'IN_PROGRESS' && currentTask) {
       if (activeTask?.id !== taskId) {
         handleStartTask(currentTask);
       }
-    }
-
-    // If completing the task, stop runner if active
-    if (targetStatus === 'COMPLETED' && activeTask?.id === taskId) {
-      handleStopTask();
     }
 
     // Optimistic local update

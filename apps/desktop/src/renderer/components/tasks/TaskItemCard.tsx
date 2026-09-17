@@ -61,7 +61,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const isInProgress = rawStatus === 'IN_PROGRESS';
   const isOnHold = rawStatus === 'ON_HOLD';
   const isPending = !isCompleted && !isInProgress && !isOnHold;
-  const isRunning = activeTaskId === task.id;
+  const isRunning = !isCompleted && activeTaskId === task.id;
 
   const attachments = task.taskAttachments || task.attachments || [];
 

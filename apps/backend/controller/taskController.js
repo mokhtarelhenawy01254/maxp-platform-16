@@ -1304,6 +1304,24 @@ const taskController = {
           });
         }
 
+        if (["COMPLETED", "CANCELLED"].includes(normalizedStatus)) {
+          try {
+            const runningEntries = await getSharedPrismaClient().timeEntry.findMany({
+              where: { taskId: id, companyId, isRunning: true },
+            });
+            const stopNow = new Date();
+            for (const entry of runningEntries) {
+              const dur = Math.max(1, Math.round((stopNow - new Date(entry.startTime)) / 60000));
+              await getSharedPrismaClient().timeEntry.update({
+                where: { id: entry.id },
+                data: { endTime: stopNow, duration: dur, isRunning: false },
+              });
+            }
+          } catch (e) {
+            console.warn("[taskController] Failed to auto-stop running time entries on completion:", e?.message);
+          }
+        }
+
         const task = await fetchLegacyTaskById(companyId, id);
 
         if (!task) {
@@ -1411,6 +1429,28 @@ const taskController = {
           success: false,
           error: "المهمة غير موجودة",
         });
+      }
+
+      if (["COMPLETED", "CANCELLED"].includes(normalizedStatus)) {
+        try {
+          const runningEntries = await getSharedPrismaClient().timeEntry.findMany({
+            where: { taskId: id, companyId, isRunning: true },
+          });
+          const stopNow = new Date();
+          for (const entry of runningEntries) {
+            const dur = Math.max(1, Math.round((stopNow - new Date(entry.startTime)) / 60000));
+            await getSharedPrismaClient().timeEntry.update({
+              where: { id: entry.id },
+              data: { endTime: stopNow, duration: dur, isRunning: false },
+            });
+            await getSharedPrismaClient().task.updateMany({
+              where: { id, companyId },
+              data: { actualHours: { increment: Math.round(dur / 60) } },
+            });
+          }
+        } catch (e) {
+          console.warn("[taskController] Failed to auto-stop running time entries on completion:", e?.message);
+        }
       }
 
       // Get updated task with relations
@@ -2723,8 +2763,21 @@ const taskController = {
 
       const runningEntry = await getSharedPrismaClient().timeEntry.findFirst({
         where: { userId, companyId, isRunning: true },
-        include: { task: { select: { id: true, title: true } } },
+        include: { task: { select: { id: true, title: true, status: true } } },
       });
+
+      if (runningEntry) {
+        const taskStatus = String(runningEntry.task?.status || "").toUpperCase();
+        if (["COMPLETED", "CANCELLED"].includes(taskStatus)) {
+          const stopNow = new Date();
+          const dur = Math.max(1, Math.round((stopNow - new Date(runningEntry.startTime)) / 60000));
+          await getSharedPrismaClient().timeEntry.update({
+            where: { id: runningEntry.id },
+            data: { endTime: stopNow, duration: dur, isRunning: false },
+          });
+          return res.json({ success: true, data: null });
+        }
+      }
 
       res.json({ success: true, data: runningEntry });
     } catch (error) {
