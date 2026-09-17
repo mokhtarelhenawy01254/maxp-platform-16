@@ -218,4 +218,40 @@ describe("MessageBubble", () => {
       expect.objectContaining({ id: "message-1" }),
     );
   });
+
+  it("opens reaction selector and triggers reaction callback when emoji is clicked", () => {
+    const onReaction = jest.fn();
+
+    render(
+      <MessageBubble
+        message={{
+          ...baseMessage,
+          content: "رسالة تفاعل",
+        }}
+        onReaction={onReaction}
+      />,
+    );
+
+    // Click More actions button
+    const moreButton = screen.getByTitle("إجراءات الرسالة");
+    fireEvent.click(moreButton);
+
+    // Smile button should be visible
+    const smileBtn = screen.getByTitle("إضافة تفاعل");
+    expect(smileBtn).toBeInTheDocument();
+
+    // Click smile button to open reaction selector
+    fireEvent.click(smileBtn);
+
+    // Reaction emojis should be visible in portal
+    const angryEmojiBtn = screen.getByTitle("😡");
+    expect(angryEmojiBtn).toBeInTheDocument();
+    const thumbsUpBtn = screen.getByTitle("👍");
+    expect(thumbsUpBtn).toBeInTheDocument();
+
+    // Click angry emoji reaction
+    fireEvent.click(angryEmojiBtn);
+    expect(onReaction).toHaveBeenCalledWith("message-1", "😡");
+  });
 });
+

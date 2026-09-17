@@ -283,6 +283,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
     const [showActions, setShowActions] = useState(false);
     const [showReactionSelector, setShowReactionSelector] = useState(false);
     const actionsRef = useRef<HTMLDivElement | null>(null);
+    const reactionTriggerRef = useRef<HTMLButtonElement | null>(null);
 
     // AI Correction state
     const [isEditing, setIsEditing] = useState(false);
@@ -316,6 +317,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
       }
 
       const handlePointerDown = (event: PointerEvent) => {
+        if (
+          (event.target as HTMLElement)?.closest?.("[data-reaction-selector]")
+        ) {
+          return;
+        }
         if (
           actionsRef.current &&
           !actionsRef.current.contains(event.target as Node)
@@ -607,6 +613,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
               {onReaction && (
                 <div className="relative flex-shrink-0">
                   <button
+                    ref={reactionTriggerRef}
                     onClick={() => setShowReactionSelector(!showReactionSelector)}
                     className={`${actionButtonClassName} w-8 h-8 sm:w-7 sm:h-7 ${
                       myReaction
@@ -619,10 +626,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                   </button>
                   {showReactionSelector && (
                     <ReactionSelector
+                      triggerRef={reactionTriggerRef}
                       onSelect={(r) => {
                         if (onReaction) onReaction(message.id, r);
                         setShowReactionSelector(false);
+                        setShowActions(false);
                       }}
+                      onClose={() => setShowReactionSelector(false)}
                       currentReaction={myReaction}
                     />
                   )}

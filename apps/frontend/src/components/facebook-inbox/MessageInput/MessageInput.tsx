@@ -656,13 +656,22 @@ const MessageInput: React.FC<MessageInputProps> = ({
       {showEmojiPicker && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/20"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px]"
             onClick={() => setShowEmojiPicker(false)}
           />
-          <div className="fixed bottom-16 start-2 sm:start-4 z-50 overflow-visible rounded-xl shadow-2xl max-w-[calc(100vw-16px)]">
+          <div className="fixed bottom-16 inset-x-2 sm:inset-x-auto sm:start-4 z-50 flex justify-center sm:block overflow-visible rounded-xl shadow-2xl">
             <EmojiPicker
               onEmojiClick={handleEmojiClick}
-              width={isCompactMobile ? Math.min(window.innerWidth - 24, 320) : 350}
+              width={
+                isCompactMobile
+                  ? Math.min(
+                      typeof window !== "undefined"
+                        ? window.innerWidth - 24
+                        : 320,
+                      320
+                    )
+                  : 350
+              }
               height={isCompactMobile ? 360 : 420}
             />
           </div>

@@ -2852,7 +2852,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
               {/* Messages Container - scrollable area, messages directly above input */}
               <div
-                className="business-chat-stage flex-1 min-h-0 overflow-y-auto p-2 sm:p-4 pb-4"
+                className="business-chat-stage flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 sm:p-4 pb-4"
                 style={{ flex: "1 1 0%", minHeight: 0 }}
                 ref={messagesContainerRef}
                 onScroll={handleScroll}
