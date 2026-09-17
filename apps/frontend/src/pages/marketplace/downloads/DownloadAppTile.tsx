@@ -8,8 +8,7 @@ import {
   ExternalLink,
   Laptop,
   Smartphone,
-  Printer,
-  ShieldCheck,
+  Apple,
   ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -22,6 +21,7 @@ interface DownloadAppTileProps {
   pkg: DownloadPackage;
   viewMode?: "grid" | "list";
   onOpenDetails: (pkg: DownloadPackage) => void;
+  onOpenIosModal?: () => void;
   companyToken?: string;
 }
 
@@ -29,6 +29,7 @@ export const DownloadAppTile: React.FC<DownloadAppTileProps> = ({
   pkg,
   viewMode = "grid",
   onOpenDetails,
+  onOpenIosModal,
   companyToken,
 }) => {
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -106,21 +107,33 @@ export const DownloadAppTile: React.FC<DownloadAppTileProps> = ({
             {copiedUrl ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
           </Button>
 
-          <a
-            href={primaryFile.url}
-            download
-            target={primaryFile.url.startsWith("http") && !primaryFile.url.includes("/downloads/") ? "_blank" : undefined}
-            rel="noreferrer"
-            className="shrink-0"
-          >
+          {pkg.id === "ios-companion" ? (
             <Button
+              type="button"
               size="sm"
-              className="h-9 rounded-xl px-3.5 text-xs font-bold gap-1.5 shadow-sm active:scale-[0.97] transition-transform duration-160 ease-out"
+              onClick={() => (onOpenIosModal ? onOpenIosModal() : onOpenDetails(pkg))}
+              className="h-9 rounded-xl px-3.5 text-xs font-bold gap-1.5 shadow-sm active:scale-[0.97] transition-transform duration-160 ease-out shrink-0"
             >
-              <Download className="size-3.5" />
+              <Apple className="size-3.5" />
               <span>{pkg.primaryActionLabel}</span>
             </Button>
-          </a>
+          ) : (
+            <a
+              href={primaryFile.url}
+              download
+              target={primaryFile.url.startsWith("http") && !primaryFile.url.includes("/downloads/") ? "_blank" : undefined}
+              rel="noreferrer"
+              className="shrink-0"
+            >
+              <Button
+                size="sm"
+                className="h-9 rounded-xl px-3.5 text-xs font-bold gap-1.5 shadow-sm active:scale-[0.97] transition-transform duration-160 ease-out"
+              >
+                <Download className="size-3.5" />
+                <span>{pkg.primaryActionLabel}</span>
+              </Button>
+            </a>
+          )}
         </div>
       </div>
     );
@@ -190,20 +203,31 @@ export const DownloadAppTile: React.FC<DownloadAppTileProps> = ({
       {/* Action Footer (Immediate Above-The-Fold CTAs) */}
       <div className="pt-3 border-t border-border/30 mt-2 flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <a
-            href={primaryFile.url}
-            download
-            target={primaryFile.url.startsWith("http") && !primaryFile.url.includes("/downloads/") ? "_blank" : undefined}
-            rel="noreferrer"
-            className="flex-1"
-          >
+          {pkg.id === "ios-companion" ? (
             <Button
-              className="w-full h-10 rounded-xl text-xs font-bold gap-2 shadow-sm active:scale-[0.97] transition-transform duration-160 ease-out"
+              type="button"
+              onClick={() => (onOpenIosModal ? onOpenIosModal() : onOpenDetails(pkg))}
+              className="w-full h-10 rounded-xl text-xs font-bold gap-2 shadow-sm active:scale-[0.97] transition-transform duration-160 ease-out flex-1"
             >
-              <Download className="size-4" />
+              <Apple className="size-4" />
               <span>{pkg.primaryActionLabel}</span>
             </Button>
-          </a>
+          ) : (
+            <a
+              href={primaryFile.url}
+              download
+              target={primaryFile.url.startsWith("http") && !primaryFile.url.includes("/downloads/") ? "_blank" : undefined}
+              rel="noreferrer"
+              className="flex-1"
+            >
+              <Button
+                className="w-full h-10 rounded-xl text-xs font-bold gap-2 shadow-sm active:scale-[0.97] transition-transform duration-160 ease-out"
+              >
+                <Download className="size-4" />
+                <span>{pkg.primaryActionLabel}</span>
+              </Button>
+            </a>
+          )}
 
           <Button
             type="button"

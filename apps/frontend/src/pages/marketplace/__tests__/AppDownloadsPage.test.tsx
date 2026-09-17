@@ -62,7 +62,7 @@ describe("AppDownloadsPage", () => {
     expect(screen.getByLabelText("معرف المنشأة لربط الأجهزة")).toBeDefined();
   });
 
-  it("provides direct working download links for Windows and Android", () => {
+  it("provides direct working download links for Windows and Android, and renders iOS app", () => {
     const { container } = render(
       <MemoryRouter>
         <AppDownloadsPage />
@@ -77,6 +77,13 @@ describe("AppDownloadsPage", () => {
 
     const androidApkLink = container.querySelector('a[href="https://maxp.online/downloads/maxp.apk"]');
     expect(androidApkLink).not.toBeNull();
+
+    expect(screen.getByText("تطبيق الآيفون ونظام iOS")).toBeDefined();
+    expect(screen.getByText("تثبيت للآيفون (iOS)")).toBeDefined();
+
+    // Verify fake apps are not present
+    expect(screen.queryByText(/استوديو الكاشير والطباعة الفورية/)).toBeNull();
+    expect(screen.queryByText(/دليل النشر والتوزيع المؤسسي/)).toBeNull();
   });
 
   it("filters apps when clicking on segmented platform tabs", () => {
@@ -86,11 +93,20 @@ describe("AppDownloadsPage", () => {
       </MemoryRouter>
     );
 
-    // Filter to POS
-    const posTab = screen.getByRole("button", { name: /^الكاشير/ });
-    fireEvent.click(posTab);
+    // Filter to Android
+    const androidTab = screen.getByRole("button", { name: /^أندرويد/ });
+    fireEvent.click(androidTab);
 
-    expect(screen.getByText(/استوديو الكاشير والطباعة الفورية/)).toBeDefined();
+    expect(screen.getByText(/تطبيق أندرويد للموظفين والميدان/)).toBeDefined();
+    expect(screen.queryByText(/برنامج مراقبة وإنتاجية فريق العمل/)).toBeNull();
+    expect(screen.queryByText(/تطبيق الآيفون ونظام iOS/)).toBeNull();
+
+    // Filter to iOS
+    const iosTab = screen.getByRole("button", { name: /^آبل iOS/ });
+    fireEvent.click(iosTab);
+
+    expect(screen.getByText(/تطبيق الآيفون ونظام iOS/)).toBeDefined();
+    expect(screen.queryByText(/تطبيق أندرويد للموظفين والميدان/)).toBeNull();
     expect(screen.queryByText(/برنامج مراقبة وإنتاجية فريق العمل/)).toBeNull();
 
     // Switch back to All
@@ -98,7 +114,22 @@ describe("AppDownloadsPage", () => {
     fireEvent.click(allTab);
 
     expect(screen.getByText(/برنامج مراقبة وإنتاجية فريق العمل/)).toBeDefined();
-    expect(screen.getByText(/استوديو الكاشير والطباعة الفورية/)).toBeDefined();
+    expect(screen.getByText(/تطبيق أندرويد للموظفين والميدان/)).toBeDefined();
+    expect(screen.getByText(/تطبيق الآيفون ونظام iOS/)).toBeDefined();
+  });
+
+  it("opens iOS install modal when clicking iOS install button", () => {
+    render(
+      <MemoryRouter>
+        <AppDownloadsPage />
+      </MemoryRouter>
+    );
+
+    const iosInstallBtn = screen.getByRole("button", { name: /تثبيت للآيفون \(iOS\)/ });
+    fireEvent.click(iosInstallBtn);
+
+    expect(screen.getByText("تثبيت MaxP على الآيفون")).toBeDefined();
+    expect(screen.getByText("افتح الرابط في متصفح Safari")).toBeDefined();
   });
 
   it("opens technical details drawer when clicking on details button", () => {

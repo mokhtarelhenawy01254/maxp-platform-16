@@ -1,8 +1,7 @@
 import {
   Monitor,
   Smartphone,
-  Printer,
-  ShieldCheck,
+  Apple,
   LucideIcon,
   Laptop,
 } from "lucide-react";
@@ -22,7 +21,7 @@ export interface DownloadPackage {
   slug: string;
   name: string;
   nameEn: string;
-  category: "desktop" | "mobile" | "pos" | "enterprise";
+  category: "desktop" | "mobile";
   categoryLabel: string;
   platform: string;
   platformEn: string;
@@ -98,7 +97,7 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
         isPrimary: false,
       },
     ],
-    tags: ["windows", "monitor", "exe", "zip", "sqlite", "productivity", "مراقبة", "إنتاجية"],
+    tags: ["windows", "monitor", "exe", "zip", "sqlite", "productivity", "مراقبة", "إنتاجية", "ويندوز"],
     drawerDetails: {
       overview: "عميل تشغيل محلي خفيف الوزن مصمم لمراقبة إنتاجية المحطات واحتساب ساعات الدوام الفعلية بدقة الثواني دون استهلاك لموارد المعالج أو الذاكرة.",
       features: [
@@ -142,21 +141,21 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     },
   },
   {
-    id: "mobile-companion",
-    slug: "maxp-mobile-companion",
-    name: "تطبيق الموبايل للموظفين والميدان",
-    nameEn: "MaxP Mobile Operations & Delivery App",
+    id: "android-app",
+    slug: "maxp-android-companion",
+    name: "تطبيق أندرويد للموظفين والميدان",
+    nameEn: "MaxP Android Mobile & Delivery App",
     category: "mobile",
-    categoryLabel: "الموبايل والميدان",
-    platform: "أندرويد وآيفون (Android & iOS)",
-    platformEn: "Android APK & iOS Web",
+    categoryLabel: "أندرويد",
+    platform: "أندرويد (Android 8.0+)",
+    platformEn: "Android APK",
     version: "v2.1.0",
     releaseDate: "2026-03",
     icon: Smartphone,
-    summary: "تسجيل حضور بالبصمة الحيوية والنطاق الجغرافي، مع تنبيهات فورية للمهام والمبيعات.",
+    summary: "تسجيل حضور بالبصمة الحيوية والنطاق الجغرافي، مع تنبيهات فورية للمهام والمبيعات وتوصيل الطلبات.",
     primaryActionLabel: "تحميل تطبيق أندرويد (APK)",
     telemetry: {
-      targetSystem: "Android 8+ / iOS 14+",
+      targetSystem: "Android 8.0+ (ARM64 & x86)",
       primarySize: "155.7 MB",
       ramConsumption: "Cloud Direct Access",
     },
@@ -169,39 +168,25 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
         extension: ".apk",
         isPrimary: true,
       },
-      {
-        id: "web-cloud",
-        label: "الوصول السحابي المباشر عبر الويب",
-        size: "Zero MB",
-        url: "https://maxp.online",
-        extension: "Web",
-        isPrimary: false,
-      },
     ],
-    tags: ["android", "ios", "mobile", "apk", "web", "attendance", "موبايل", "أندرويد", "بصمة", "حضور"],
+    tags: ["android", "mobile", "apk", "attendance", "موبايل", "أندرويد", "بصمة", "حضور", "مناديب"],
     drawerDetails: {
-      overview: "تطبيق متكامل للمناديب وموظفي الفروع والميدان، يدعم إثبات الحضور بالبصمة الحيوية والنطاق الجغرافي (Geofencing) واستلام إشعارات المهام لحظياً.",
+      overview: "تطبيق متكامل لموظفي الفروع والميدان والمناديب، يدعم إثبات الحضور بالبصمة الحيوية والنطاق الجغرافي (Geofencing) واستلام إشعارات المهام لحظياً.",
       features: [
         "تسجيل الحضور والانصراف بالبصمة الحيوية مع التحقق من الموقع الجغرافي للفرع.",
         "إشعارات فورية بحالات الطلبات وتكليفات التوصيل والمهام المستجدة.",
         "دعم العمل دون اتصال بالشبكة ومزامنة العمليات فور توفر الإنترنت.",
-        "وصول مباشر وفوري عبر متصفح الويب من أي هاتف دون الحاجة لتثبيت برامج إضافية.",
+        "تثبيت مباشر وسريع لملف الـ APK دون الحاجة لتسجيل حساب على متجر خارجي.",
       ],
       minRequirements: [
-        "أجهزة أندرويد بنظام Android 8.0 Oreo أو أحدث مع خدمات Google Play أو بدائلها.",
-        "أجهزة آبل iPhone بنظام iOS 14.0 أو أحدث عبر متصفح Safari.",
+        "أجهزة أندرويد بنظام Android 8.0 Oreo أو أحدث مع خدمات الموقع الجغرافي.",
+        "ذاكرة عشوائية (RAM) فارغة بحجم 500 MB على الأقل.",
         "صلاحيات الموقع الجغرافي (GPS) والكاميرا للتحقق من الحضور.",
       ],
       recommendedSpecs: [
-        "Android 12+ أو iOS 16+.",
+        "Android 11.0 أو أحدث مع معالج ثماني النواة.",
         "مستشعر بصمة نشط لتسجيل الدخول السريع.",
       ],
-      iosGuide: {
-        step1: "افتح الرابط maxp.online في متصفح سفاري Safari على الآيفون.",
-        step2: "اضغط على زر المشاركة (أيقونة المربع والسهم لأعلى) في شريط المتصفح.",
-        step3: "اختر من القائمة 'إضافة إلى الصفحة الرئيسية' (Add to Home Screen).",
-        step4: "سيظهر تطبيق MaxP كأيقونة مستقلة على شاشة هاتفك مع دعم الإشعارات الفورية.",
-      },
       sha256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
       changelog: [
         {
@@ -216,112 +201,65 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     },
   },
   {
-    id: "web-pos",
-    slug: "maxp-web-pos",
-    name: "استوديو الكاشير والطباعة الفورية",
-    nameEn: "MaxP Web-Native Cloud POS Station",
-    category: "pos",
-    categoryLabel: "الكاشير والطباعة",
-    platform: "جميع المتصفحات (Zero-Install Web POS)",
-    platformEn: "Web Native POS & ESC/POS",
-    version: "v3.2.0",
+    id: "ios-companion",
+    slug: "maxp-ios-companion",
+    name: "تطبيق الآيفون ونظام iOS",
+    nameEn: "MaxP iOS Mobile App & Safari Web Clip",
+    category: "mobile",
+    categoryLabel: "آبل iOS",
+    platform: "آيفون وآيباد (Apple iOS 14.0+)",
+    platformEn: "iOS Safari & PWA Web Clip",
+    version: "v2.1.0",
     releaseDate: "2026-03",
-    icon: Printer,
-    summary: "محطة نقاط بيع سحابية فورية تدعم طابعات الفواتير الحرارية وماسحات الباركود دون برامج وسيطة.",
-    primaryActionLabel: "فتح محطة الكاشير (POS)",
+    icon: Apple,
+    summary: "تطبيق متكامل للآيفون يثبت مباشرة على الشاشة الرئيسية عبر متصفح Safari مع إشعارات فورية.",
+    primaryActionLabel: "تثبيت للآيفون (iOS)",
     telemetry: {
-      targetSystem: "Chrome, Edge, Safari",
-      primarySize: "Zero Install",
-      protocol: "Raw ESC/POS 80mm/58mm",
+      targetSystem: "iOS 14+ / iPadOS",
+      primarySize: "تثبيت فوري",
+      ramConsumption: "Safari Web App Engine",
     },
     files: [
       {
-        id: "pos-web",
-        label: "محطة الكاشير السحابية (/pos)",
+        id: "ios-webclip",
+        label: "تثبيت تطبيق الآيفون (Safari PWA)",
         size: "0 MB",
-        url: "https://maxp.online/pos",
-        extension: "Web",
+        url: "https://maxp.online",
+        extension: "iOS",
         isPrimary: true,
       },
     ],
-    tags: ["pos", "cashier", "thermal", "printer", "barcode", "escpos", "كاشير", "فواتير", "طابعة"],
+    tags: ["ios", "apple", "iphone", "ipad", "safari", "pwa", "آيفون", "آبل", "موبايل", "بصمة", "تثبيت"],
     drawerDetails: {
-      overview: "محطة كاشير ونقاط بيع متكاملة تعمل مباشرة داخل المتصفح، تدعم الاتصال بطابعات الإيصالات الحرارية عبر USB أو الشبكة المحلية، مع قراءة الباركود اللحظية.",
+      overview: "تطبيق مهيأ خصيصاً لأجهزة آبل iPhone و iPad ليعمل كتطبيق أصيل كامل الشاشة عبر متصفح Safari، مع دعم الإشعارات الفورية اللحظية والعمل الميداني وسرعة الاستجابة.",
       features: [
-        "طباعة فواتير حرارية صامتة وفورية بدون نوافذ منبثقة أو مقاطعة لحركة البيع.",
-        "دعم كامل لبروتوكول Raw ESC/POS القياسي لمقاسات 80mm و 58mm.",
-        "تكامل لحظي مع المخزون المركزي لمنع تكرار البيع وتحديث الأرصدة.",
-        "تعمل على أي جهاز (شاشات لمس، كمبيوتر، أجهزة لوحية) دون الحاجة لتثبيت برامج وسيطة.",
+        "تشغيل بكامل الشاشة دون شريط عنوان المتصفح كأي تطبيق أصيل من متجر التطبيقات.",
+        "استلام إشعارات الدفع الفورية (Web Push Notifications) بحالات الطلبات وتكليفات المناديب.",
+        "تسجيل الحضور والانصراف بالبصمة ومطابقة النطاق الجغرافي (GPS).",
+        "تحديثات تلقائية لحظية دون الحاجة لتحديث يدوي عبر App Store.",
       ],
       minRequirements: [
-        "متصفح Google Chrome أو Microsoft Edge أو Safari محدث.",
-        "طابعة إيصالات حرارية متوافقة مع ESC/POS (USB أو LAN).",
+        "جهاز آيفون يعمل بنظام iOS 14.0 أو أحدث.",
+        "متصفح Safari الافتراضي لإضافة التطبيق إلى الشاشة الرئيسية.",
+        "تفعيل صلاحيات الموقع الجغرافي عند أول تشغيل.",
       ],
       recommendedSpecs: [
-        "شاشة لمس بدقة Full HD للكاشير مع ماسح ضوئي 2D QR.",
+        "iOS 16.4 أو أحدث لدعم كامل للإشعارات الفورية على شاشة القفل.",
+        "Face ID أو Touch ID لتسجيل الدخول اللحظي.",
       ],
-      changelog: [
-        {
-          version: "v3.2.0",
-          date: "2026-02",
-          changes: [
-            "إضافة دعم الطباعة المباشرة عبر WebUSB دون برامج تعريف وسيطة.",
-            "تسريع وتيرة إصدار الفواتير المتتالية في أوقات الذروة.",
-          ],
-        },
-      ],
-    },
-  },
-  {
-    id: "enterprise-kit",
-    slug: "maxp-enterprise-it-kit",
-    name: "دليل النشر والتوزيع المؤسسي",
-    nameEn: "MaxP Corporate Deployment & MDM Kit",
-    category: "enterprise",
-    categoryLabel: "دليل التوزيع",
-    platform: "حزمة مسؤولي الـ IT والمنشآت",
-    platformEn: "IT Kit & Group Policies",
-    version: "v1.2.0",
-    releaseDate: "2026-03",
-    icon: ShieldCheck,
-    summary: "روابط الحزم المجمعة، رموز التوثيق المركزي، وإرشادات الربط الآلي لأجهزة الشركات والفروع.",
-    primaryActionLabel: "نسخ الحزمة الكاملة للفريق",
-    telemetry: {
-      targetSystem: "Multi-Platform Central Hub",
-      primarySize: "MDM Kit",
-      ramConsumption: "TLS 1.3 Encryption",
-    },
-    files: [
-      {
-        id: "corporate-pack",
-        label: "دليل الروابط الرسمي المجمع",
-        size: "Pack",
-        url: "https://maxp.online/marketplace/downloads",
-        extension: "Pack",
-        isPrimary: true,
+      iosGuide: {
+        step1: "افتح الرابط maxp.online في متصفح Safari على الآيفون.",
+        step2: "اضغط على زر المشاركة (أيقونة المربع والسهم لأعلى) في شريط المتصفح.",
+        step3: "اختر من القائمة 'إضافة إلى الصفحة الرئيسية' (Add to Home Screen).",
+        step4: "اضغط 'إضافة' في الزاوية العلوية، وستظهر أيقونة MaxP فوراً على شاشتك الرئيسية.",
       },
-    ],
-    tags: ["enterprise", "mdm", "it", "policy", "نشر", "توزيع", "مؤسسي", "مسؤول"],
-    drawerDetails: {
-      overview: "حزمة شاملة مخصصة لمدراء تقنية المعلومات (IT Admins) وأصحاب الأعمال لتوزيع البرامج والتطبيقات على مئات الأجهزة وربطها بالمنشأة المركزية آلياً.",
-      features: [
-        "توزيع صامت ومؤتمت لحزم ويندوز عبر بروتوكولات Active Directory و GPO.",
-        "تثبيت مباشر لحزم الـ APK دون الحاجة لتسجيل حسابات شخصية على متجر Google Play.",
-        "ربط مشفر متعدد الفروع برمز منشأة مركزي محمي بتشفير TLS 1.3.",
-      ],
-      minRequirements: [
-        "صلاحيات مسؤول نظام (Admin) على أجهزة الموظفين المراد ربطها.",
-      ],
-      recommendedSpecs: [
-        "شبكة داخلية مستقرة تدعم اتصالات الـ WebSocket المشفرة.",
-      ],
       changelog: [
         {
-          version: "v1.2.0",
+          version: "v2.1.0",
           date: "2026-03",
           changes: [
-            "تسهيل نسخ الرابط المباشر لمعرف الشركة.",
-            "إضافة إرشادات التوزيع الصامت بدون تدخل المستخدم النهائي.",
+            "دعم كامل لإشعارات Web Push على iOS 16.4+.",
+            "تحسين سلاسة الواجهة والتمرير لتطابق التطبيقات الأصيلة بنسبة 100%.",
           ],
         },
       ],

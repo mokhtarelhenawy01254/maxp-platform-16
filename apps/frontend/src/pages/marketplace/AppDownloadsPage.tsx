@@ -4,8 +4,7 @@ import {
   Monitor,
   Laptop,
   Smartphone,
-  Printer,
-  ShieldCheck,
+  Apple,
   Search,
   Store,
   Grid3x3,
@@ -23,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { IosInstallModal } from "@/components/common/IosInstallModal";
 import { DOWNLOAD_PACKAGES, DownloadPackage } from "./downloads/downloadsData";
 import { DownloadAppTile } from "./downloads/DownloadAppTile";
 import { AppDetailsDrawer } from "./downloads/AppDetailsDrawer";
@@ -36,10 +36,11 @@ export const AppDownloadsPage: React.FC = () => {
   const { user } = useAuth();
   const [copiedAll, setCopiedAll] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
-  const [activeTab, setActiveTab] = useState<"all" | "desktop" | "mobile" | "pos" | "enterprise">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "desktop" | "mobile" | "android" | "ios">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedDrawerPkg, setSelectedDrawerPkg] = useState<DownloadPackage | null>(null);
+  const [showIosModal, setShowIosModal] = useState(false);
 
   const { os, osLabel, isStandalone } = usePlatformDetect();
 
@@ -54,11 +55,11 @@ https://maxp.online/downloads/MaxP-Monitor-Setup.exe
 النسخة المحمولة بدون تثبيت (Portable .zip):
 https://maxp.online/downloads/MaxP-Monitor-Portable.zip
 
-2. تطبيق الموبايل الميداني للأندرويد (Android APK):
+2. تطبيق الموبايل للأندرويد (Android APK):
 https://maxp.online/downloads/maxp.apk
 
-3. محطة الكاشير والطباعة الفورية (Web POS):
-https://maxp.online/pos
+3. تطبيق الموبايل للآيفون ونظام iOS:
+https://maxp.online (تثبيت فوري عبر متصفح Safari - إضافة إلى الشاشة الرئيسية)
 
 معرّف المنشأة المرجعي لربط الأجهزة: ${companyToken || "تواصل مع مدير الحساب"}`;
 
@@ -84,6 +85,10 @@ https://maxp.online/pos
       window.location.href = "https://maxp.online/downloads/maxp.apk";
       return;
     }
+    if (os === "ios") {
+      setShowIosModal(true);
+      return;
+    }
     if (os === "windows") {
       window.location.href = "https://maxp.online/downloads/MaxP-Monitor-Setup.exe";
       return;
@@ -94,8 +99,17 @@ https://maxp.online/pos
   // Filter packages based on active category and live search
   const filteredPackages = useMemo(() => {
     return DOWNLOAD_PACKAGES.filter((pkg) => {
-      // Category Filter
-      if (activeTab !== "all" && pkg.category !== activeTab) {
+      // Category / Platform Filter
+      if (activeTab === "desktop" && pkg.category !== "desktop") {
+        return false;
+      }
+      if (activeTab === "mobile" && pkg.category !== "mobile") {
+        return false;
+      }
+      if (activeTab === "android" && !pkg.id.includes("android")) {
+        return false;
+      }
+      if (activeTab === "ios" && !pkg.id.includes("ios")) {
         return false;
       }
 
@@ -123,8 +137,8 @@ https://maxp.online/pos
       all: DOWNLOAD_PACKAGES.length,
       desktop: DOWNLOAD_PACKAGES.filter((p) => p.category === "desktop").length,
       mobile: DOWNLOAD_PACKAGES.filter((p) => p.category === "mobile").length,
-      pos: DOWNLOAD_PACKAGES.filter((p) => p.category === "pos").length,
-      enterprise: DOWNLOAD_PACKAGES.filter((p) => p.category === "enterprise").length,
+      android: DOWNLOAD_PACKAGES.filter((p) => p.id.includes("android")).length,
+      ios: DOWNLOAD_PACKAGES.filter((p) => p.id.includes("ios")).length,
     };
   }, []);
 
@@ -252,7 +266,7 @@ https://maxp.online/pos
               </span>
             </div>
             <span className="text-[11px] text-muted-foreground mt-0.5 font-mono tabular-nums block" dir="ltr">
-              155.7&nbsp;MB (APK) + Web
+              155.7&nbsp;MB (APK) + Safari PWA
             </span>
           </div>
 
@@ -334,42 +348,29 @@ https://maxp.online/pos
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("mobile")}
+              onClick={() => setActiveTab("android")}
               className={cn(
                 "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap active:scale-[0.97] duration-160 ease-out",
-                activeTab === "mobile"
+                activeTab === "android"
                   ? "bg-background text-foreground shadow-sm font-bold"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Smartphone className="size-3.5" />
-              <span>الموبايل ({tabCounts.mobile})</span>
+              <span>أندرويد ({tabCounts.android})</span>
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("pos")}
+              onClick={() => setActiveTab("ios")}
               className={cn(
                 "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap active:scale-[0.97] duration-160 ease-out",
-                activeTab === "pos"
+                activeTab === "ios"
                   ? "bg-background text-foreground shadow-sm font-bold"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Printer className="size-3.5" />
-              <span>الكاشير ({tabCounts.pos})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("enterprise")}
-              className={cn(
-                "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap active:scale-[0.97] duration-160 ease-out",
-                activeTab === "enterprise"
-                  ? "bg-background text-foreground shadow-sm font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <ShieldCheck className="size-3.5" />
-              <span>دليل التوزيع ({tabCounts.enterprise})</span>
+              <Apple className="size-3.5" />
+              <span>آبل iOS ({tabCounts.ios})</span>
             </button>
           </div>
 
@@ -414,6 +415,7 @@ https://maxp.online/pos
                   pkg={pkg}
                   viewMode="grid"
                   onOpenDetails={(p) => setSelectedDrawerPkg(p)}
+                  onOpenIosModal={() => setShowIosModal(true)}
                   companyToken={companyToken}
                 />
               ))}
@@ -426,6 +428,7 @@ https://maxp.online/pos
                   pkg={pkg}
                   viewMode="list"
                   onOpenDetails={(p) => setSelectedDrawerPkg(p)}
+                  onOpenIosModal={() => setShowIosModal(true)}
                   companyToken={companyToken}
                 />
               ))}
@@ -458,6 +461,12 @@ https://maxp.online/pos
           isOpen={Boolean(selectedDrawerPkg)}
           onClose={() => setSelectedDrawerPkg(null)}
           companyToken={companyToken}
+        />
+
+        {/* 6. Dedicated iOS Installation Modal */}
+        <IosInstallModal
+          isOpen={showIosModal}
+          onClose={() => setShowIosModal(false)}
         />
       </div>
     </div>
