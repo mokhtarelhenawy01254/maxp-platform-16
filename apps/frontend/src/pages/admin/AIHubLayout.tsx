@@ -145,22 +145,22 @@ export default function AIHubLayout() {
   }, []);
 
   return (
-    <div className="w-full flex flex-col flex-1 min-h-0 overflow-hidden">
-      <div className="border-b bg-background/95 backdrop-blur sticky top-0 z-40 px-6 py-3">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2">
+    <div className="w-full flex flex-col flex-1 min-h-0 overflow-hidden pb-16 lg:pb-0">
+      <div className="border-b bg-background/95 backdrop-blur sticky top-0 z-40 px-3 sm:px-6 py-2.5 sm:py-3">
+        <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2 shrink-0">
             <Bot className="size-5 text-indigo-600 animate-pulse" />
-            <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
               AI Hub {isSuper && <span className="text-amber-500">({t("aiHub.tabs.test")})</span>}
             </h1>
           </div>
-          <div className="flex gap-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 shrink-0 -mx-1 px-1">
             {availableTabs.map((tab) => (
               <button key={tab.key}
                 onClick={() => setSearchParams({ tab: tab.key })}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap shrink-0 active:scale-97 cursor-pointer ${
                   currentTab === tab.key
-                    ? "bg-primary text-primary-foreground shadow-sm"
+                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
                     : "text-muted-foreground hover:bg-muted"
                 }`}>
                 {t(tab.labelKey)}
@@ -169,11 +169,13 @@ export default function AIHubLayout() {
           </div>
         </div>
         {isSuper && (
-          <div className="flex items-center gap-3 mt-3 pt-3 border-t">
-            <Building2 className="size-4 text-muted-foreground shrink-0" />
-            <span className="text-sm font-medium">{t("aiHub.company")}:</span>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2.5 pt-2.5 border-t">
+            <div className="flex items-center gap-2 shrink-0">
+              <Building2 className="size-4 text-muted-foreground shrink-0" />
+              <span className="text-xs sm:text-sm font-medium">{t("aiHub.company")}:</span>
+            </div>
             <select value={selectedCompanyId} onChange={(e) => setSelectedCompanyId(e.target.value)}
-              className="h-9 rounded-lg border border-input bg-background px-3 text-sm min-w-[220px]">
+              className="h-8 sm:h-9 rounded-lg border border-input bg-background px-2.5 text-xs sm:text-sm min-w-[180px] sm:min-w-[220px]">
               <option value="">{t("aiHub.selectCompany")}</option>
               {companies.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>

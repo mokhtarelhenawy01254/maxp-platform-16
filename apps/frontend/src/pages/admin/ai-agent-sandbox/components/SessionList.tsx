@@ -26,6 +26,7 @@ interface SessionListProps {
   isSessionsLoading?: boolean;
   width?: number;
   isSuper?: boolean;
+  onClose?: () => void;
 }
 
 export const SessionList: React.FC<SessionListProps> = ({
@@ -40,6 +41,7 @@ export const SessionList: React.FC<SessionListProps> = ({
   isSessionsLoading = false,
   width = 256,
   isSuper = false,
+  onClose,
 }) => {
   const [search, setSearch] = React.useState("");
   const [editingId, setEditingId] = React.useState<string | null>(null);
@@ -96,15 +98,28 @@ export const SessionList: React.FC<SessionListProps> = ({
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Sessions
           </span>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onCreateSession}
-            className="size-7 hover:bg-slate-50 dark:hover:bg-slate-805 text-indigo-600 dark:text-indigo-400"
-            title="New Session"
-          >
-            <Plus className="size-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onCreateSession}
+              className="size-7 hover:bg-slate-50 dark:hover:bg-slate-805 text-indigo-600 dark:text-indigo-400 cursor-pointer"
+              title="New Session"
+            >
+              <Plus className="size-4" />
+            </Button>
+            {onClose && (
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={onClose}
+                className="size-7 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                title="Close"
+              >
+                <X className="size-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Search */}
@@ -153,7 +168,10 @@ export const SessionList: React.FC<SessionListProps> = ({
           return (
             <div
               key={session.id}
-              onClick={() => onSelectSession(session.id)}
+              onClick={() => {
+                onSelectSession(session.id);
+                onClose?.();
+              }}
               onDoubleClick={() => handleDoubleClick(session)}
               className={`p-2.5 rounded-lg cursor-pointer transition-all duration-150 relative group ${
                 isActive

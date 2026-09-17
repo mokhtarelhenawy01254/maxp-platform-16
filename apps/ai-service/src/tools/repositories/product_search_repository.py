@@ -33,21 +33,23 @@ class ProductSearchRepository(BaseRepository):
 
             if len(words) > 1:
                 word_parts: list[str] = []
+                word_score_parts: list[str] = []
                 for i, word in enumerate(words[:6]):
                     key = f"word_{i}"
                     params[key] = f"%{word}%"
-                    word_parts.append(
-                        f"(p.name ILIKE :{key} OR p.sku ILIKE :{key} OR COALESCE(p.tags,'') ILIKE :{key})"
-                    )
+                    word_match = f"(p.name ILIKE :{key} OR p.sku ILIKE :{key} OR COALESCE(p.tags,'') ILIKE :{key})"
+                    word_parts.append(word_match)
+                    word_score_parts.append(f"(CASE WHEN {word_match} THEN 1 ELSE 0 END)")
                 word_clause = " OR ".join(word_parts)
+                words_score = " + ".join(word_score_parts)
                 where = f"""
                     (p.name ILIKE :full_pattern
                      OR p.sku ILIKE :full_pattern
                      OR COALESCE(p.tags, '') ILIKE :full_pattern
                      OR {word_clause})
                 """
-                # Exact phrase matches rank above word-only matches
-                order_rank = "CASE WHEN p.name ILIKE :full_pattern THEN 0 ELSE 1 END,"
+                # Exact phrase matches rank first, then products matching the most query words
+                order_rank = f"CASE WHEN p.name ILIKE :full_pattern THEN 0 ELSE 1 END, ({words_score}) DESC,"
             else:
                 where = """
                     (p.name ILIKE :full_pattern

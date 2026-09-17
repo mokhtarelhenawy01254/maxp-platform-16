@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 from typing import Any, Protocol
@@ -10,6 +11,14 @@ import structlog
 from src.pipeline.context import PipelineContext
 
 logger = structlog.get_logger(__name__)
+
+GENERIC_PRODUCT_WORDS: set[str] = {
+    "كوتشي", "حذاء", "شوز", "سنيكرز", "فستان", "طقم", "ساعة", "ساعه", "بنطلون", "قميص",
+    "تيشيرت", "شنطة", "شنطه", "جلد", "قطن", "طبيعي", "مريح", "اصلي", "أصلي", "فاخر",
+    "سواريه", "كاجوال", "رياضي", "رجالي", "حريمي", "اطفال", "أطفال", "ابيض", "أبيض",
+    "اسود", "أسود", "احمر", "أحمر", "ازرق", "أزرق", "كبير", "صغير", "منتج", "موديل",
+    "متاح", "متوفر", "سعر", "جملة", "عرض", "قطعة", "خامة", "خامات", "ألوان", "الوان", "لون"
+}
 
 
 class AgentHook(Protocol):
@@ -65,25 +74,95 @@ class AttachmentHook:
     ) -> list[dict[str, Any]] | None:
         return None
 
+    async def _get_already_sent_image_urls(self, ctx: PipelineContext) -> set[str]:
+        """Collect all image URLs already sent to customer in this conversation to prevent duplicate spam."""
+        sent_urls: set[str] = set()
+
+        # 1. From working memory / session_state
+        if getattr(ctx, "session_state", None):
+            for u in (ctx.session_state.get("sent_image_urls") or []):
+                if u:
+                    sent_urls.add(str(u).strip())
+
+        # 2. From DB message history if session is available
+        lookup_id = ctx.conversation_id or ctx.thread_id
+        if lookup_id and getattr(ctx, "session", None):
+            try:
+                from sqlalchemy import text
+                res = await ctx.session.execute(
+                    text(
+                        'SELECT attachments, metadata FROM public.messages '
+                        'WHERE "conversationId" = :cid AND "isFromCustomer" = FALSE '
+                        'ORDER BY "createdAt" DESC LIMIT 25'
+                    ),
+                    {"cid": str(lookup_id)},
+                )
+                for row in res.fetchall():
+                    for val in (row[0], row[1]):
+                        if not val:
+                            continue
+                        parsed = json.loads(val) if isinstance(val, str) else val
+                        if isinstance(parsed, dict) and "attachments" in parsed:
+                            parsed = parsed["attachments"]
+                        if isinstance(parsed, list):
+                            for item in parsed:
+                                if isinstance(item, dict) and item.get("url"):
+                                    sent_urls.add(str(item["url"]).strip())
+            except Exception as e:
+                logger.debug("failed_to_fetch_sent_image_urls", error=str(e))
+
+        return sent_urls
+
     async def before_reply(
         self,
         ctx: PipelineContext,
         executed: list[dict[str, Any]],
     ) -> None:
         _maxp_api_url = os.getenv("MAXP_API_URL", "").rstrip("/")
+
+        # Check if user explicitly asked for photos in this turn
+        user_text = getattr(ctx, "message", None) or getattr(ctx, "user_message", None) or ""
+        user_msg = str(user_text).lower()
+        explicit_photo_request = any(
+            k in user_msg for k in ("صور", "صوره", "صورة", "شكل", "وريني", "اشوف", "أشوف", "كاتالوج", "كتالوج")
+        )
+
+        already_sent_urls = await self._get_already_sent_image_urls(ctx)
+
         for evidence in ctx.tool_evidence:
             result = evidence.get("result", {})
             if not isinstance(result, dict):
                 continue
             self._populate_landmark_images(ctx, result, evidence, _maxp_api_url)
-            self._populate_product_images(ctx, result, evidence, _maxp_api_url)
+            self._populate_product_images(
+                ctx, result, evidence, _maxp_api_url,
+                already_sent_urls=already_sent_urls,
+                explicit_photo_request=explicit_photo_request,
+            )
 
         # Extract any image URLs in text, and strictly strip them so customers never see raw links
-        self._extract_and_strip_reply_images(ctx, _maxp_api_url)
+        self._extract_and_strip_reply_images(
+            ctx, _maxp_api_url,
+            already_sent_urls=already_sent_urls,
+            explicit_photo_request=explicit_photo_request,
+        )
 
-        # Resilient fallback: If user requested photos or a product was mentioned, but no attachments yet
-        if not ctx.response_attachments and ctx.company_id:
-            await self._fallback_product_images(ctx, _maxp_api_url)
+        # Resilient fallback: ONLY if customer explicitly requested photos, but no attachments populated yet
+        if not ctx.response_attachments and ctx.company_id and explicit_photo_request:
+            await self._fallback_product_images(
+                ctx, _maxp_api_url,
+                already_sent_urls=already_sent_urls,
+                explicit_photo_request=explicit_photo_request,
+            )
+
+        # Update session_state with newly sent URLs
+        if ctx.response_attachments and getattr(ctx, "session_state", None) is not None:
+            existing_sent = list(ctx.session_state.get("sent_image_urls") or [])
+            for a in ctx.response_attachments:
+                u = a.get("url")
+                if u and u not in existing_sent:
+                    existing_sent.append(u)
+            ctx.session_state["sent_image_urls"] = existing_sent
 
         if ctx.response_attachments:
             logger.info(
@@ -133,9 +212,13 @@ class AttachmentHook:
         result: dict,
         evidence: dict,
         maxp_api_url: str,
+        already_sent_urls: set[str] | None = None,
+        explicit_photo_request: bool = False,
     ) -> None:
         base_url = maxp_api_url or os.getenv("MAXP_API_URL", "https://maxp.online").rstrip("/")
         reply_lower = (ctx.final_reply or "").lower()
+        if not reply_lower:
+            return
 
         for key in ("results", "products"):
             items = result.get(key) or []
@@ -169,15 +252,32 @@ class AttachmentHook:
                     continue
 
                 prod_name = (product.get("name") or "").strip().lower()
-                name_words = [w for w in prod_name.split() if len(w) >= 3]
-                name_match = prod_name and (prod_name in reply_lower or any(w in reply_lower for w in name_words))
+                if not prod_name:
+                    continue
+
+                # Strict name matching: prevent partial generic single-word false matches
+                name_words = [w for w in re.findall(r"[\u0600-\u06FF\w]+", prod_name) if len(w) >= 3]
+                distinctive_words = [w for w in name_words if w not in GENERIC_PRODUCT_WORDS]
+
+                if prod_name in reply_lower:
+                    name_match = True
+                elif distinctive_words:
+                    # At least 60% of distinctive model words must be in the reply
+                    matched = sum(1 for w in distinctive_words if w in reply_lower)
+                    name_match = (matched >= max(1, math.ceil(len(distinctive_words) * 0.6)))
+                elif name_words:
+                    # If product title only has generic words (e.g. "حذاء جلد"), all must be in reply
+                    name_match = all(w in reply_lower for w in name_words)
+                else:
+                    name_match = False
+
                 img_match = any(
                     os.path.basename(str(img)).strip() in (ctx.final_reply or "")
                     for img in raw_images if img
                 )
-                single_match = len(items) == 1 and bool(ctx.final_reply)
 
-                if not (name_match or img_match or single_match):
+                # BAN single_match: Never attach a product solely because results had 1 item!
+                if not (name_match or img_match):
                     continue
 
                 added_for_prod = 0
@@ -192,6 +292,12 @@ class AttachmentHook:
                         full_url = f"{base_url}{img_clean}"
 
                     if full_url.startswith(("http://", "https://", "data:")):
+                        # 🛡️ DEDUPLICATION GUARD:
+                        # Skip if already sent previously, unless user explicitly asked to see photos
+                        if already_sent_urls and full_url in already_sent_urls and not explicit_photo_request:
+                            logger.debug("skipping_duplicate_sent_image", url=full_url[:80])
+                            continue
+
                         if not any(a.get("url") == full_url for a in ctx.response_attachments):
                             ctx.response_attachments.append({
                                 "type": "image",
@@ -205,15 +311,14 @@ class AttachmentHook:
         self,
         ctx: PipelineContext,
         maxp_api_url: str,
+        already_sent_urls: set[str] | None = None,
+        explicit_photo_request: bool = False,
     ) -> None:
-        """Fetch product images if user asked for pictures or model is named in conversation."""
-        user_text = getattr(ctx, "message", None) or getattr(ctx, "user_message", None) or ""
-        user_msg = str(user_text).lower()
-        reply_msg = (ctx.final_reply or "").lower()
-        image_keywords = {"صور", "صوره", "صورة", "شكل", "وريني", "اشوف", "أشوف", "الوان", "ألوان", "لون", "موديل"}
-        has_intent = any(k in user_msg for k in image_keywords) or any(k in reply_msg for k in ("موديل", "متوفر عندنا"))
-        if not has_intent:
+        """Fetch product images if user explicitly asked for pictures and no attachments populated yet."""
+        if not explicit_photo_request:
             return
+
+        user_text = getattr(ctx, "message", None) or getattr(ctx, "user_message", None) or ""
 
         try:
             import src.db.session as _db_mod
@@ -225,20 +330,23 @@ class AttachmentHook:
             stop_words = {
                 "عايز", "عاوز", "اشوف", "أشوف", "صور", "صوره", "صورة", "موديل",
                 "ممكن", "وريني", "شكل", "من", "فضلك", "لو", "سمحت", "عندكم",
-                "كام", "بكام", "سعر", "اسعار", "الوان", "مقاس", "مقاسات"
+                "كام", "بكام", "سعر", "اسعار", "الوان", "مقاس", "مقاسات",
+                "ابعت", "ابعتلي", "تاني", "كاتالوج", "كتالوج"
             }
-            # Look for English words first (e.g. Luma, Nike, Samba)
+            # Look for model names in user message
             eng_tokens = re.findall(r"[a-zA-Z0-9_-]{2,}", clean_user)
             ar_tokens = [w for w in re.findall(r"[\u0600-\u06FF\w]+", clean_user) if w.lower() not in stop_words and len(w) >= 3]
             candidates = eng_tokens + ar_tokens
 
             # Also check if reply explicitly mentions a model name after 'موديل'
-            reply_models = re.findall(r"موديل\s+([a-zA-Z0-9_\u0600-\u06FF]+)", clean_reply)
+            reply_models = re.findall(r"موديل\s+([a-zA-Z0-9_\u0600-\u06FF]{3,})", clean_reply)
             if reply_models:
-                candidates = reply_models + candidates
+                candidates = [m for m in reply_models if m.lower() not in stop_words] + candidates
+
+            if not candidates:
+                return
 
             logger.info("fallback_product_images_start",
-                has_intent=has_intent,
                 candidates=candidates,
                 company_id=ctx.company_id,
             )
@@ -266,12 +374,11 @@ class AttachmentHook:
 
             if products:
                 mock_ev = {"tool": "product_search_fallback", "result": {"products": products}}
-                self._populate_product_images(ctx, mock_ev["result"], mock_ev, maxp_api_url)
-
-            logger.info("fallback_product_images_finish",
-                found_prods=len(products),
-                attachments_count=len(ctx.response_attachments),
-            )
+                self._populate_product_images(
+                    ctx, mock_ev["result"], mock_ev, maxp_api_url,
+                    already_sent_urls=already_sent_urls,
+                    explicit_photo_request=explicit_photo_request,
+                )
         except Exception as e:
             logger.warning("fallback_product_images_error", error=str(e), exc_info=True)
 
@@ -279,6 +386,8 @@ class AttachmentHook:
         self,
         ctx: PipelineContext,
         base_url: str,
+        already_sent_urls: set[str] | None = None,
+        explicit_photo_request: bool = False,
     ) -> None:
         if not ctx.final_reply:
             return
@@ -295,6 +404,9 @@ class AttachmentHook:
             if url.startswith("/"):
                 url = f"{base_url}{url}"
             if url.startswith(("http://", "https://")):
+                # Deduplication check
+                if already_sent_urls and url in already_sent_urls and not explicit_photo_request:
+                    continue
                 if not any(a.get("url") == url for a in ctx.response_attachments):
                     ctx.response_attachments.append({
                         "type": "image",

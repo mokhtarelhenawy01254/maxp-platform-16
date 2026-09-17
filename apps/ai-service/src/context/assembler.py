@@ -435,12 +435,20 @@ You are continuing an existing conversation on Facebook Messenger that was previ
                     working_memory_lines.append(f"    Price: {ap_price}")
                 if ap_url:
                     working_memory_lines.append(f"    URL: {ap_url}")
-                working_memory_lines.append(
-                    f"    Directive: When merchant says 'المنتج ده' (this product), 'إعلانه', 'سعره', 'مخزونه', "
-                    f"or asks 'شايف المنتج المحدد ؟' / 'المنتج المختار', they strictly refer to '{ap_name or ap_id}'. "
-                    f"Confirm immediately that you see '{ap_name or ap_id}' and provide its details directly without asking for the product name again! "
-                    "IMPORTANT: If the merchant asks a general, analytical, or administrative question, treat this entity only as background context."
-                )
+                is_customer = getattr(ctx, "is_customer_channel", False) or (ctx.channel or "").lower() in ("whatsapp", "facebook", "messenger", "telegram", "instagram")
+                if is_customer:
+                    working_memory_lines.append(
+                        f"    Context: The customer may have arrived from an ad or link referring to '{ap_name or ap_id}'. "
+                        f"If the customer says 'المنتج ده' or asks about the advertised item, reference '{ap_name or ap_id}'. "
+                        "IMPORTANT: If the customer asks about a different product, different model, or general questions, answer their request directly and do NOT force this product onto them!"
+                    )
+                else:
+                    working_memory_lines.append(
+                        f"    Directive: When merchant says 'المنتج ده' (this product), 'إعلانه', 'سعره', 'مخزونه', "
+                        f"or asks 'شايف المنتج المحدد ؟' / 'المنتج المختار', they strictly refer to '{ap_name or ap_id}'. "
+                        f"Confirm immediately that you see '{ap_name or ap_id}' and provide its details directly without asking for the product name again! "
+                        "IMPORTANT: If the merchant asks a general, analytical, or administrative question, treat this entity only as background context."
+                    )
                 working_memory_lines.append("  </active_focus_entity>")
 
             active_obj = session_state.get("activeObjective") or session_state.get("current_objective")

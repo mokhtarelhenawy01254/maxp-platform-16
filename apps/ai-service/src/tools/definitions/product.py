@@ -218,15 +218,14 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     products = result.get("products", [])
     logging.warning("[PS_DEBUG] search_products returned %d products, result keys=%s", len(products), list(result.keys()))
 
-    # Final fallback: if query returned no products, return the full catalog
-    if not products:
+    # Only return full catalog if explicitly requested via list_all or if query was empty
+    if not products and (input_data.list_all or not query.strip()):
         catalog = await product_tools.search_products(
             input_data.company_id or "", "", limit=50, use_vector=False,
         )
         cat_products = catalog.get("products", [])
-        logging.warning("[PS_DEBUG] fallback: catalog returned %d products, keys=%s", len(cat_products), list(catalog.keys()))
         if cat_products:
-            return {"results": cat_products, "count": catalog.get("count", len(cat_products)), "listAll": True, "searchType": "fallback"}
+            return {"results": cat_products, "count": catalog.get("count", len(cat_products)), "listAll": True, "searchType": "catalog"}
 
     return {"results": products, "count": result.get("count", 0), "listAll": input_data.list_all, "searchType": "text"}
 
