@@ -14991,6 +14991,8 @@
     "lastUpdatedAt": "آخر تحديث: {{time}}",
     "liveUpdates": "مباشر — تحديث تلقائي مفعّل",
     "offlineUpdates": "غير متصل — البيانات قد تكون قديمة",
+    "applyFilters": "تطبيق الفلاتر",
+    "unifiedOperations": "العمليات والتنفيذ",
     "paymentStatuses": {
       "pending": "في انتظار الدفع",
       "completed": "مدفوع",

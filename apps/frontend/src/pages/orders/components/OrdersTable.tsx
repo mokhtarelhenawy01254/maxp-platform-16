@@ -151,7 +151,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                 </th>
               )}
               {columns.includes("amount") && (
-                <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
+                <th className="whitespace-nowrap px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
                   {t("orders.amount")}
                 </th>
               )}
@@ -203,6 +203,12 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
             ) : (
               dedupOrders(orders).map((order, idx) => {
                 const orderItemsSummary = summarizeOrderDocumentItems(order.items);
+                const isCartId = String(order.orderNumber || "").startsWith("cart_");
+                const displayOrderNumber =
+                  order.metadata?.isIncompleteCart || isCartId
+                    ? `INC-${String(order.orderNumber || "").replace(/^cart_/, "").slice(0, 8).toUpperCase()}`
+                    : order.orderNumber;
+
                 return (
                   <tr
                     key={order.id || idx}
@@ -216,7 +222,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                       }
                     }}
                     tabIndex={0}
-                    aria-label={`${t("orders.viewDetails")} ${order.orderNumber}`}
+                    aria-label={`${t("orders.viewDetails")} ${displayOrderNumber}`}
                     className={`hover:bg-blue-50/50 dark:hover:bg-blue-900/15 cursor-pointer transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 ${selectedOrders.includes(order.orderNumber)
                       ? "bg-blue-50/60 dark:bg-blue-900/30"
                       : !order.isViewed
@@ -231,7 +237,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                       >
                         <input
                           type="checkbox"
-                          aria-label={String(t("orders.selectOrder", { orderNumber: order.orderNumber }))}
+                          aria-label={String(t("orders.selectOrder", { orderNumber: displayOrderNumber }))}
                           className="w-5 h-5 text-blue-600 dark:text-blue-400 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 dark:bg-slate-700"
                           checked={selectedOrders.includes(order.orderNumber)}
                           onClick={(e) => e.stopPropagation()}
@@ -245,17 +251,17 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                     {columns.includes("orderNumber") && (
                       <td className="px-3 py-2.5 lg:px-4">
                         <div className="flex flex-col gap-1.5">
-                          <div>
-                            <span className="font-medium text-slate-900 dark:text-slate-100">
-                              #{order.orderNumber}
+                          <div className="flex items-center gap-1.5">
+                            <span dir="ltr" className="inline-block font-mono text-xs font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                              #{displayOrderNumber}
                             </span>
                             {order.metadata?.isGuestOrder && (
-                              <span className="mr-2 px-2 py-0.5 text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full">
+                              <span className="px-2 py-0.5 text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full">
                                 {t("orders.guest")}
                               </span>
                             )}
                             {!order.isViewed && (
-                              <span className="mr-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 border border-red-200">
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 border border-red-200">
                                 {t("orders.newLabel")}
                               </span>
                             )}
@@ -281,7 +287,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                           </span>
                           {order.customerPhone && (
                             <span
-                              className="text-slate-500 dark:text-slate-400 text-sm"
+                              className="text-slate-500 dark:text-slate-400 text-xs font-mono tabular-nums"
                               dir="ltr"
                             >
                               {order.customerPhone}
@@ -302,7 +308,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                       </td>
                     )}
                     {columns.includes("amount") && (
-                      <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-slate-100 lg:px-4">
+                      <td className="whitespace-nowrap px-3 py-2.5 font-medium tabular-nums text-slate-900 dark:text-slate-100 lg:px-4">
                         {(() => {
                           try {
                             const subtotal =
@@ -406,17 +412,17 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                     )}
                     {columns.includes("actions") && (
                       <td className="px-3 py-2.5 lg:px-4">
-                        <div className="flex items-center gap-1.5 lg:gap-2">
+                        <div className="flex items-center gap-1">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               onOpenOrder(order);
                             }}
-                            aria-label={`${t("orders.quickView")} ${order.orderNumber}`}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            aria-label={`${t("orders.quickView")} ${displayOrderNumber}`}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-blue-400 active:scale-95 transition"
                             title={t("orders.quickView")}
                           >
-                            <EyeIcon className="w-4 h-4 lg:w-5 lg:h-5" />
+                            <EyeIcon className="w-4 h-4" />
                           </button>
                           <Link
                             to={order.metadata?.isIncompleteCart
@@ -428,11 +434,11 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                                 onMarkAsViewed(order.orderNumber);
                               }
                             }}
-                            aria-label={`${t("orders.viewFullDetails")} ${order.orderNumber}`}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            aria-label={`${t("orders.viewFullDetails")} ${displayOrderNumber}`}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-blue-400 active:scale-95 transition"
                             title={t("orders.viewFullDetails")}
                           >
-                            <ShoppingBagIcon className="w-4 h-4 lg:w-5 lg:h-5" />
+                            <ShoppingBagIcon className="w-4 h-4" />
                           </Link>
                           {order.conversationId && (
                             <Link

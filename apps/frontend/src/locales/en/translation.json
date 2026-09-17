@@ -14349,7 +14349,7 @@
       "update": "Update",
       "history": "History"
     },
-    "noHistoryItems": "No history items yet",
+    "noHistoryItems": "No history records yet",
     "detailSectionIcons": {
       "customer": "Customer",
       "products": "Products",
@@ -14990,6 +14990,8 @@
     "lastUpdatedAt": "Updated: {{time}}",
     "liveUpdates": "Live — auto updates enabled",
     "offlineUpdates": "Offline — data may be stale",
+    "applyFilters": "Apply Filters",
+    "unifiedOperations": "Operations & Fulfillment",
     "paymentStatuses": {
       "pending": "Payment Pending",
       "completed": "Paid",

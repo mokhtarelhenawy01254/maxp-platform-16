@@ -14983,6 +14983,8 @@ declare module 'react-i18next' {
         lastUpdatedAt: string;
         liveUpdates: string;
         offlineUpdates: string;
+        applyFilters: string;
+        unifiedOperations: string;
         paymentStatuses: {
           pending: string;
           completed: string;

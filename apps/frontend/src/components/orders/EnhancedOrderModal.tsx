@@ -480,8 +480,10 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                 >
                   {t("orders.orderDetails")}
                 </h3>
-                <p className="text-[11px] font-medium text-muted-foreground leading-tight" dir="ltr">
-                  #{order.orderNumber}
+                <p className="text-[11px] font-medium font-mono tabular-nums text-muted-foreground leading-tight" dir="ltr">
+                  #{String(order.orderNumber || "").startsWith("cart_") || order.metadata?.isIncompleteCart
+                    ? `INC-${String(order.orderNumber || "").replace(/^cart_/, "").slice(0, 8).toUpperCase()}`
+                    : order.orderNumber}
                 </p>
               </div>
             </div>
@@ -944,7 +946,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
             <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/60 bg-card/30 py-10 text-center">
               <ClipboardDocumentListIcon className="h-8 w-8 text-muted-foreground/60" />
               <p className="text-sm text-muted-foreground">
-                {t("orders.noHistoryItems") || "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø³Ø¬Ù„Ø§Øª Ø¨Ø¹Ø¯"}
+                {t("orders.noHistoryItems", { defaultValue: "لا توجد سجلات بعد" })}
               </p>
             </div>
           )}
@@ -957,25 +959,25 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
         {/* Sticky Bottom Action Bar */}
         <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t border-border/60 bg-background/95 px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-2">
           <div className="flex flex-col gap-2 sm:flex-row">
-            <button
-              onClick={handlePrintInvoice}
-              disabled={isPrinting}
-              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-success px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-success/90 active:scale-[0.98] disabled:opacity-50 sm:min-h-[38px] sm:rounded-lg"
-            >
-              <PrinterIcon className="h-4 w-4" />
-              {isPrinting ? t("orders.printing") : t("orders.printInvoice")}
-            </button>
             <Link
               to={`/orders/${encodeURIComponent(String(order.orderNumber || ""))}`}
-              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98] sm:min-h-[38px] sm:rounded-lg"
+              className="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98] sm:min-h-[38px] sm:rounded-lg"
             >
               <ShoppingBagIcon className="h-4 w-4" />
               {t("orders.viewFullDetails")}
             </Link>
+            <button
+              onClick={handlePrintInvoice}
+              disabled={isPrinting}
+              className="inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted active:scale-[0.98] disabled:opacity-50 sm:min-h-[38px] sm:rounded-lg"
+            >
+              <PrinterIcon className="h-4 w-4 text-muted-foreground" />
+              {isPrinting ? t("orders.printing") : t("orders.printInvoice")}
+            </button>
           </div>
           <button
             onClick={onClose}
-            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-border bg-background px-5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted active:scale-[0.98] sm:min-h-[38px] sm:w-auto sm:rounded-lg"
+            className="inline-flex min-h-[40px] w-full items-center justify-center rounded-xl border border-transparent px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-[0.98] sm:min-h-[38px] sm:w-auto sm:rounded-lg"
           >
             {t("orders.close")}
           </button>

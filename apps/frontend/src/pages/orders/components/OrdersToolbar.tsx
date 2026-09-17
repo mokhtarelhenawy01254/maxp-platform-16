@@ -252,7 +252,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                   key={view.key}
                   type="button"
                   onClick={view.apply}
-                  className={`inline-flex min-h-[32px] flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold transition ${active
+                  className={`inline-flex min-h-[36px] flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-semibold active:scale-95 transition ${active
                     ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-500/20"
                     : "border-slate-200/80 bg-white/80 text-slate-600 hover:border-blue-300 hover:bg-blue-50/60 hover:text-blue-700 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"
                     }`}
@@ -312,7 +312,9 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
             </div>
 
             <div className="flex items-center gap-2 lg:flex-nowrap">
-              <CommandPalette />
+              <div className="hidden sm:block">
+                <CommandPalette />
+              </div>
               {onRefresh && (
                 <button
                   type="button"

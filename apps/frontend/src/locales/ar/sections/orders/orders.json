@@ -1040,6 +1040,9 @@
   "lastUpdatedAt": "آخر تحديث: {{time}}",
   "liveUpdates": "مباشر — تحديث تلقائي مفعّل",
   "offlineUpdates": "غير متصل — البيانات قد تكون قديمة",
+  "applyFilters": "تطبيق الفلاتر",
+  "unifiedOperations": "العمليات والتنفيذ",
+  "noHistoryItems": "لا توجد سجلات بعد",
   "paymentStatuses": {
     "pending": "في انتظار الدفع",
     "completed": "مدفوع",

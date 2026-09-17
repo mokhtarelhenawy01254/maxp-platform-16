@@ -318,7 +318,7 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
             <div className="space-y-3.5 rounded-2xl border border-slate-200/70 bg-slate-50/50 p-3.5 dark:border-slate-800/70 dark:bg-slate-900/30">
               <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 <TruckIcon className="h-4 w-4 text-amber-500" />
-                {t("orders.unifiedOperations") || "العمليات والتنفيذ"}
+                {t("orders.unifiedOperations", { defaultValue: "العمليات والتنفيذ" })}
               </div>
 
               {showMerchantOperationFilters && (
@@ -454,7 +454,7 @@ export const OrdersFilterDrawer: React.FC<OrdersFilterDrawerProps> = ({
               onClick={onClose}
               className="flex-1 rounded-xl bg-blue-600 px-5 py-2 text-center text-xs font-bold text-white shadow-sm shadow-blue-600/30 transition hover:bg-blue-700 active:scale-95 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
-              {t("orders.applyFilters") || "عرض النتائج"}
+              {t("orders.applyFilters", { defaultValue: "تطبيق الفلاتر" })}
             </button>
           </div>
         </div>

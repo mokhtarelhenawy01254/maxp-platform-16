@@ -6,6 +6,7 @@ import {
   EyeIcon,
   ShoppingBagIcon,
   ChatBubbleLeftRightIcon,
+  ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import { summarizeOrderDocumentItems } from "../../../utils/orderDocumentQuantityOffers";
 import { OrdersSkeleton } from "./OrdersSkeleton";
@@ -116,9 +117,10 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
             const orderItemsSummary = summarizeOrderDocumentItems(order.items);
             const isSelected = selectedOrders.includes(order.orderNumber);
 
+            const isCartId = String(order.orderNumber || "").startsWith("cart_");
             const displayOrderNumber =
-              order.metadata?.isIncompleteCart && order.orderNumber?.startsWith("cart_")
-                ? `INC-${order.orderNumber.replace(/^cart_/, "").slice(0, 8).toUpperCase()}`
+              order.metadata?.isIncompleteCart || isCartId
+                ? `INC-${String(order.orderNumber || "").replace(/^cart_/, "").slice(0, 8).toUpperCase()}`
                 : order.orderNumber;
 
             const itemsCount = (order.items || []).reduce(
@@ -145,21 +147,21 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                 key={`mobile-${order.id || virtualRow.key}`}
                 data-index={virtualRow.index}
                 ref={mobileRowVirtualizer.measureElement}
-                className="absolute left-0 top-0 w-full pb-3.5"
+                className="absolute left-0 top-0 w-full pb-3"
                 style={{
                   transform: `translateY(${virtualRow.start - mobileRowVirtualizer.options.scrollMargin}px)`,
                 }}
               >
                 <article
-                  className={`rounded-2xl border ${density === "compact" ? "p-2.5" : "p-3.5"} bg-white/95 shadow-[0_12px_36px_-24px_rgba(15,23,42,0.35)] transition dark:bg-slate-900/90 ${isSelected
+                  className={`rounded-2xl border ${density === "compact" ? "p-2.5" : "p-3"} bg-white/95 shadow-[0_10px_30px_-20px_rgba(15,23,42,0.3)] transition dark:bg-slate-900/90 ${isSelected
                     ? "border-blue-500/70 bg-blue-50/80 ring-1 ring-blue-500/30 dark:border-blue-500/60 dark:bg-blue-500/10"
                     : "border-slate-200/80 dark:border-slate-700/80"
                     }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start justify-between gap-2.5">
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center rounded-full border border-slate-200/70 bg-slate-50 px-2.5 py-0.5 text-[11px] font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                        <span dir="ltr" className="inline-flex items-center rounded-full border border-slate-200/70 bg-slate-50 px-2.5 py-0.5 text-[11px] font-bold font-mono tabular-nums text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                           #{displayOrderNumber}
                         </span>
                         {!order.isViewed && (
@@ -180,7 +182,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                         </h3>
                         {order.customerPhone && (
                           <p
-                            className="text-xs font-medium text-slate-500 dark:text-slate-400"
+                            className="text-xs font-mono font-medium tabular-nums text-slate-500 dark:text-slate-400"
                             dir="ltr"
                           >
                             {order.customerPhone}
@@ -192,7 +194,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                     {canSelectOrders && (
                       <input
                         type="checkbox"
-                        aria-label={String(t("orders.selectOrder", { orderNumber: order.orderNumber }))}
+                        aria-label={String(t("orders.selectOrder", { orderNumber: displayOrderNumber }))}
                         className="mt-0.5 h-5 w-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-blue-400"
                         checked={isSelected}
                         onChange={() => onToggleSelection(order.orderNumber)}
@@ -201,14 +203,14 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                   </div>
 
                   {productsSummary && (
-                    <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-                      <span className="shrink-0 text-slate-400 dark:text-slate-500">📦</span>
+                    <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                      <ArchiveBoxIcon className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                       <span className="truncate font-medium">{productsSummary}</span>
                     </div>
                   )}
 
                   {orderItemsSummary.hasQuantityOffers ? (
-                    <div className="mt-2 rounded-xl border border-amber-200/80 bg-amber-50/80 px-2.5 py-1.5 text-xs text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+                    <div className="mt-1.5 rounded-xl border border-amber-200/80 bg-amber-50/80 px-2.5 py-1 text-xs text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
                       <div className="font-semibold">
                         {t("orders.quantityOffersLabel")}: {orderItemsSummary.primaryLabel}
                       </div>
@@ -219,12 +221,12 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                   ) : null}
 
                   {/* Single-depth metadata layout (Ban box-in-box MOB-015) */}
-                  <div className="mt-2.5 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800/80">
+                  <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 dark:border-slate-800/80">
                     <div className="min-w-0">
                       <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {t("orders.amount")}
                       </p>
-                      <p className="mt-0.5 truncate text-sm font-black text-slate-900 dark:text-white">
+                      <p className="mt-0.5 truncate text-sm font-black tabular-nums text-slate-900 dark:text-white">
                         {formatPrice(getOrderAmount(order))}
                       </p>
                       <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
@@ -236,7 +238,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                       <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {t("orders.time")}
                       </p>
-                      <p className="mt-0.5 truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      <p className="mt-0.5 truncate text-xs font-semibold text-slate-800 dark:text-slate-200">
                         {getRelativeTime(order.createdAt || new Date().toISOString())}
                       </p>
                       <p
@@ -248,7 +250,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                     </div>
                   </div>
 
-                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getPaymentStatusBadgeStyle(
                         order.paymentStatus || "pending",
@@ -273,16 +275,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                     })()}
                   </div>
 
-                  <div className="mt-3 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onOpenOrder(order)}
-                      className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98] dark:bg-blue-500 dark:hover:bg-blue-600"
-                    >
-                      <EyeIcon className="h-4 w-4" />
-                      {t("orders.quickView")}
-                    </button>
-
+                  <div className="mt-2.5 flex items-center gap-2">
                     <Link
                       to={order.metadata?.isIncompleteCart
                         ? `/orders/incomplete/${encodeURIComponent(order.metadata.cartId || order.orderNumber)}`
@@ -292,17 +285,27 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                           onMarkAsViewed(order.orderNumber);
                         }
                       }}
-                      className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                      className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98] dark:bg-blue-500 dark:hover:bg-blue-600"
                     >
                       <ShoppingBagIcon className="h-4 w-4" />
                       {t("orders.viewDetails")}
                     </Link>
 
+                    <button
+                      type="button"
+                      onClick={() => onOpenOrder(order)}
+                      className="inline-flex min-h-[40px] items-center justify-center gap-1 rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                      title={t("orders.quickView")}
+                    >
+                      <EyeIcon className="h-4 w-4" />
+                      <span className="text-xs">{t("orders.quickView")}</span>
+                    </button>
+
                     {order.conversationId && (
                       <Link
                         to={`/whatsapp?conversationId=${order.conversationId}`}
-                        className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98] dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
-                        aria-label={`${t("orders.conversation")} ${order.orderNumber}`}
+                        className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98] dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
+                        aria-label={`${t("orders.conversation")} ${displayOrderNumber}`}
                         title={t("orders.conversation")}
                       >
                         <ChatBubbleLeftRightIcon className="h-4 w-4" />
