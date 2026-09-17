@@ -13,12 +13,49 @@ from src.pipeline.context import PipelineContext
 logger = structlog.get_logger(__name__)
 
 GENERIC_PRODUCT_WORDS: set[str] = {
+    # Footwear / Apparel Categories
     "كوتشي", "حذاء", "شوز", "سنيكرز", "فستان", "طقم", "ساعة", "ساعه", "بنطلون", "قميص",
-    "تيشيرت", "شنطة", "شنطه", "جلد", "قطن", "طبيعي", "مريح", "اصلي", "أصلي", "فاخر",
-    "سواريه", "كاجوال", "رياضي", "رجالي", "حريمي", "اطفال", "أطفال", "ابيض", "أبيض",
-    "اسود", "أسود", "احمر", "أحمر", "ازرق", "أزرق", "كبير", "صغير", "منتج", "موديل",
-    "متاح", "متوفر", "سعر", "جملة", "عرض", "قطعة", "خامة", "خامات", "ألوان", "الوان", "لون"
+    "تيشيرت", "شنطة", "شنطه", "سليبر", "صندل", "شبشب", "بوط", "هاف", "فلات", "بلوزة", "عباية",
+    # Materials & Styles
+    "جلد", "قطن", "طبيعي", "صناعي", "مريح", "اصلي", "أصلي", "فاخر", "سواريه", "كاجوال",
+    "رياضي", "كلاسيك", "مودرن", "طبي", "طبيعيه", "طبيعية", "شمواه", "ووتربروف", "ووتر",
+    "مستورد", "محلي", "تركي", "مصري", "مستورده", "مستوردة",
+    # Demographics & Fit
+    "رجالي", "حريمي", "اطفال", "أطفال", "بناتي", "ولادي", "شبابي", "مقاس", "مقاسات",
+    # Colors
+    "ابيض", "أبيض", "اسود", "أسود", "احمر", "أحمر", "ازرق", "أزرق", "كحلي", "رمادي",
+    "بيج", "بني", "هافان", "زيتي", "نبيتي", "رصاصي", "ألوان", "الوان", "لون",
+    # Generic Commerce Terms
+    "كبير", "صغير", "منتج", "موديل", "متاح", "متوفر", "سعر", "اسعار", "أسعار",
+    "جملة", "قطاعي", "عرض", "عروض", "قطعة", "خامة", "خامات", "جديد", "شياكة", "أحدث"
 }
+
+
+def _normalize_image_key(url: str) -> str:
+    """Extract canonical path/key to deduplicate across domain/protocol variations (e.g. localhost vs production CDN)."""
+    if not url:
+        return ""
+    clean = str(url).strip()
+    if "://" in clean:
+        parts = clean.split("://", 1)[1]
+        if "/" in parts:
+            clean = "/" + parts.split("/", 1)[1]
+    return clean.split("?")[0].rstrip("/").lower()
+
+
+def _is_image_already_sent(url: str, already_sent_urls: set[str] | None) -> bool:
+    """Return True if image URL or its canonical path was already sent to customer."""
+    if not already_sent_urls:
+        return False
+    if url in already_sent_urls:
+        return True
+    key = _normalize_image_key(url)
+    if key:
+        for u in already_sent_urls:
+            if _normalize_image_key(u) == key:
+                return True
+    return False
+
 
 
 class AgentHook(Protocol):
@@ -262,9 +299,8 @@ class AttachmentHook:
                 if prod_name in reply_lower:
                     name_match = True
                 elif distinctive_words:
-                    # At least 60% of distinctive model words must be in the reply
                     matched = sum(1 for w in distinctive_words if w in reply_lower)
-                    name_match = (matched >= max(1, math.ceil(len(distinctive_words) * 0.6)))
+                    name_match = (matched > 0 and (matched >= math.ceil(len(distinctive_words) * 0.5) or len(distinctive_words) <= 2))
                 elif name_words:
                     # If product title only has generic words (e.g. "حذاء جلد"), all must be in reply
                     name_match = all(w in reply_lower for w in name_words)
@@ -294,7 +330,7 @@ class AttachmentHook:
                     if full_url.startswith(("http://", "https://", "data:")):
                         # 🛡️ DEDUPLICATION GUARD:
                         # Skip if already sent previously, unless user explicitly asked to see photos
-                        if already_sent_urls and full_url in already_sent_urls and not explicit_photo_request:
+                        if _is_image_already_sent(full_url, already_sent_urls) and not explicit_photo_request:
                             logger.debug("skipping_duplicate_sent_image", url=full_url[:80])
                             continue
 
@@ -405,7 +441,7 @@ class AttachmentHook:
                 url = f"{base_url}{url}"
             if url.startswith(("http://", "https://")):
                 # Deduplication check
-                if already_sent_urls and url in already_sent_urls and not explicit_photo_request:
+                if _is_image_already_sent(url, already_sent_urls) and not explicit_photo_request:
                     continue
                 if not any(a.get("url") == url for a in ctx.response_attachments):
                     ctx.response_attachments.append({

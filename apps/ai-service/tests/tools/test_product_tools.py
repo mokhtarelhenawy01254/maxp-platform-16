@@ -128,3 +128,30 @@ async def test_top_selling_products_with_data():
     result = await top_selling_products(company_id="", period="month", limit=5)
     assert "products" in result
     assert result.get("code") == "MISSING_COMPANY"
+
+
+@pytest.mark.asyncio
+async def test_product_search_empty_query_no_catalog_dump():
+    """When a specific query returns no products, do NOT dump full catalog."""
+    from unittest.mock import AsyncMock, patch
+    from src.tools.definitions.product import product_search, ProductSearchInput
+
+    with patch("src.tools.product_tools.search_products", new_callable=AsyncMock) as mock_search:
+        mock_search.return_value = {"products": [], "count": 0}
+
+        # 1. Specific query with 0 results -> results should be empty, NOT catalog dump
+        res = await product_search(ProductSearchInput(query="ساعة ابل غير موجودة", company_id="c1"))
+        assert res["results"] == []
+        assert res.get("searchType") == "text"
+        assert mock_search.call_count == 1  # Did NOT call search_products a 2nd time with limit=50
+
+        # 2. Query with list_all=True -> allows catalog fallback
+        mock_search.reset_mock()
+        mock_search.side_effect = [
+            {"products": [], "count": 0},
+            {"products": [{"name": "P1"}], "count": 1},
+        ]
+        res_list = await product_search(ProductSearchInput(query="", list_all=True, company_id="c1"))
+        assert len(res_list["results"]) == 1
+        assert res_list.get("searchType") == "catalog"
+
