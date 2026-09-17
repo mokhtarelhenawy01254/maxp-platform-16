@@ -15,26 +15,25 @@ export const OrdersSkeleton: React.FC<OrdersSkeletonProps> = ({
 }) => {
   if (variant === "mobile") {
     return (
-      <>
+      <div className="flex flex-col gap-1.5">
         {Array.from({ length: rowCount }).map((_, index) => (
           <div
             key={`mobile-skeleton-${index}`}
-            className="mb-4 rounded-[26px] border border-slate-200/70 bg-white/85 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70"
+            className="flex min-h-[50px] items-center justify-between gap-2 rounded-xl border border-slate-200/70 bg-white/85 px-3 py-2 shadow-sm dark:border-slate-800/70 dark:bg-slate-900/70"
           >
-            <div className="mb-4 flex items-start justify-between">
-              <div className="space-y-2">
-                <div className="skeleton-shimmer h-4 w-28 rounded-full" />
-                <div className="skeleton-shimmer h-5 w-40 rounded-full" />
-              </div>
-              <div className="skeleton-shimmer h-6 w-6 rounded-md" />
+            <div className="flex items-center gap-2">
+              {showSelect && <div className="skeleton-shimmer h-4 w-4 rounded" />}
+              <div className="skeleton-shimmer h-5 w-24 rounded-lg" />
+              <div className="skeleton-shimmer h-3.5 w-16 rounded" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="skeleton-shimmer h-16 rounded-2xl" />
-              <div className="skeleton-shimmer h-16 rounded-2xl" />
+            <div className="flex items-center gap-2">
+              <div className="skeleton-shimmer h-4 w-14 rounded" />
+              <div className="skeleton-shimmer h-5 w-16 rounded-full" />
+              <div className="skeleton-shimmer h-4 w-4 rounded-full" />
             </div>
           </div>
         ))}
-      </>
+      </div>
     );
   }
 

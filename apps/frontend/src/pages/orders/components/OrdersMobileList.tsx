@@ -1,14 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  EyeIcon,
-  ShoppingBagIcon,
-  ChatBubbleLeftRightIcon,
-  ArchiveBoxIcon,
-} from "@heroicons/react/24/outline";
-import { summarizeOrderDocumentItems } from "../../../utils/orderDocumentQuantityOffers";
-import { toStandardDigits } from "../../../utils/validation";
+import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { OrdersSkeleton } from "./OrdersSkeleton";
 import { OrdersEmptyState } from "./OrdersEmptyState";
 import type { Order } from "../Orders";
@@ -72,12 +64,8 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
     getCustomerDisplayName,
     formatPrice,
     getOrderAmount,
-    getOrderSourceText,
     getRelativeTime,
     formatDate,
-    getPaymentStatusBadgeStyle,
-    getPaymentStatusColor,
-    getPaymentStatusText,
     getUnifiedStatusDisplay,
   } = helpers;
 
@@ -94,10 +82,9 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
           onClearFilters={onClearFilters}
         />
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
           {orders.map((order, idx) => {
             if (!order) return null;
-            const orderItemsSummary = summarizeOrderDocumentItems(order.items);
             const isSelected = selectedOrders.includes(order.orderNumber);
 
             const isCartId = String(order.orderNumber || "").startsWith("cart_");
@@ -106,192 +93,98 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                 ? `INC-${String(order.orderNumber || "").replace(/^cart_/, "").slice(0, 8).toUpperCase()}`
                 : order.orderNumber;
 
-            const itemsCount = (order.items || []).reduce(
-              (sum, item) => sum + (item.quantity || 1),
-              0,
-            );
-            const firstItemName =
-              order.items?.[0]?.productName || order.items?.[0]?.name;
-            const productsSummary =
-              order.items && order.items.length > 0
-                ? order.items.length === 1
-                  ? `${firstItemName || t("orders.product")}${
-                      (order.items[0]?.quantity || 1) > 1
-                        ? ` × ${order.items[0].quantity}`
-                        : ""
-                    }`
-                  : `${firstItemName || t("orders.product")} + ${
-                      order.items.length - 1
-                    } (${itemsCount} ${t("orders.itemsCount", { defaultValue: "قطع" })})`
-                : null;
+            const unifiedStatus = getUnifiedStatusDisplay(order, t);
+            const customerName = getCustomerDisplayName(order);
+            const orderKey = `mobile-${order.id || order.orderNumber || idx}`;
 
             return (
-              <div
-                key={`mobile-${order.id || order.orderNumber || idx}`}
-                className="w-full"
-              >
-                <article
-                  className={`rounded-2xl border ${density === "compact" ? "p-2.5" : "p-3"} bg-white/95 shadow-[0_10px_30px_-20px_rgba(15,23,42,0.3)] transition dark:bg-slate-900/90 ${isSelected
+              <article
+                key={orderKey}
+                role="button"
+                tabIndex={0}
+                aria-label={`${t("orders.order")} ${displayOrderNumber} - ${customerName}`}
+                onClick={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (target.closest('input[type="checkbox"]')) return;
+                  if (!order.isViewed) {
+                    onMarkAsViewed(order.orderNumber);
+                  }
+                  onOpenOrder(order);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    if (!order.isViewed) {
+                      onMarkAsViewed(order.orderNumber);
+                    }
+                    onOpenOrder(order);
+                  }
+                }}
+                className={`group relative flex items-center justify-between gap-2 rounded-xl border bg-white/95 shadow-sm transition-all duration-150 cursor-pointer select-none active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none dark:bg-slate-900/90 ${
+                  density === "compact"
+                    ? "min-h-[44px] px-2.5 py-1.5"
+                    : "min-h-[50px] px-3 py-2"
+                } ${
+                  isSelected
                     ? "border-blue-500/70 bg-blue-50/80 ring-1 ring-blue-500/30 dark:border-blue-500/60 dark:bg-blue-500/10"
-                    : "border-slate-200/80 dark:border-slate-700/80"
-                    }`}
-                >
-                  <div className="flex items-start justify-between gap-2.5">
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span dir="ltr" className="inline-flex items-center rounded-full border border-slate-200/70 bg-slate-50 px-2.5 py-0.5 text-[11px] font-bold font-mono tabular-nums text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                          #{displayOrderNumber}
-                        </span>
-                        {!order.isViewed && (
-                          <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-                            {t("orders.newLabel")}
-                          </span>
-                        )}
-                        {order.metadata?.isGuestOrder && (
-                          <span className="inline-flex items-center rounded-full border border-slate-200/70 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                            {t("orders.guest")}
-                          </span>
-                        )}
-                      </div>
+                    : "border-slate-200/80 hover:border-slate-300 dark:border-slate-700/80 dark:hover:border-slate-600"
+                }`}
+              >
+                {/* Right side (RTL): Checkbox + Order # + New Dot + Relative Time */}
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  {canSelectOrders && (
+                    <input
+                      type="checkbox"
+                      aria-label={String(
+                        t("orders.selectOrder", { orderNumber: displayOrderNumber }),
+                      )}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-blue-400 shrink-0 cursor-pointer"
+                      checked={isSelected}
+                      onChange={() => onToggleSelection(order.orderNumber)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  )}
 
-                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <h3 className="truncate text-sm font-bold text-slate-900 dark:text-white">
-                          {getCustomerDisplayName(order)}
-                        </h3>
-                        {order.customerPhone && (
-                          <p
-                            className="text-xs font-mono font-medium tabular-nums text-slate-500 dark:text-slate-400"
-                            dir="ltr"
-                          >
-                            {toStandardDigits(order.customerPhone)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {canSelectOrders && (
-                      <input
-                        type="checkbox"
-                        aria-label={String(t("orders.selectOrder", { orderNumber: displayOrderNumber }))}
-                        className="mt-0.5 h-5 w-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-blue-400"
-                        checked={isSelected}
-                        onChange={() => onToggleSelection(order.orderNumber)}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span
+                      dir="ltr"
+                      className="inline-flex items-center rounded-lg border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-[11px] font-bold font-mono tabular-nums text-slate-800 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    >
+                      #{displayOrderNumber}
+                    </span>
+                    {!order.isViewed && (
+                      <span
+                        className="inline-block h-2 w-2 rounded-full bg-red-500 ring-2 ring-red-200 dark:ring-red-900/50 shrink-0"
+                        title={t("orders.newLabel")}
                       />
                     )}
                   </div>
 
-                  {productsSummary && (
-                    <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-                      <ArchiveBoxIcon className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
-                      <span className="truncate font-medium">{productsSummary}</span>
-                    </div>
-                  )}
+                  <span
+                    className="truncate text-[11px] font-medium text-slate-400 dark:text-slate-400 shrink-0"
+                    title={formatDate(order.createdAt || new Date().toISOString())}
+                  >
+                    {getRelativeTime(order.createdAt || new Date().toISOString())}
+                  </span>
+                </div>
 
-                  {orderItemsSummary.hasQuantityOffers ? (
-                    <div className="mt-1.5 rounded-xl border border-amber-200/80 bg-amber-50/80 px-2.5 py-1 text-xs text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-                      <div className="font-semibold">
-                        {t("orders.quantityOffersLabel")}: {orderItemsSummary.primaryLabel}
-                      </div>
-                      <div className="mt-0.5 text-[11px] text-amber-700 dark:text-amber-300">
-                        {orderItemsSummary.secondaryLabel}
-                      </div>
-                    </div>
-                  ) : null}
+                {/* Left side (RTL): Total Amount + Status Badge + Open Indicator */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-black font-mono tabular-nums text-slate-900 dark:text-white shrink-0">
+                    {formatPrice(getOrderAmount(order))}
+                  </span>
 
-                  {/* Single-depth metadata layout (Ban box-in-box MOB-015) */}
-                  <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 dark:border-slate-800/80">
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        {t("orders.amount")}
-                      </p>
-                      <p className="mt-0.5 truncate text-sm font-black tabular-nums text-slate-900 dark:text-white">
-                        {formatPrice(getOrderAmount(order))}
-                      </p>
-                      <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
-                        {getOrderSourceText(order)}
-                      </p>
-                    </div>
+                  <span
+                    className={`${unifiedStatus.className} text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 shadow-sm`}
+                    style={unifiedStatus.style}
+                    aria-label={unifiedStatus.labelKey}
+                  >
+                    {unifiedStatus.text}
+                  </span>
 
-                    <div className="min-w-0 text-end">
-                      <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        {t("orders.time")}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs font-semibold text-slate-800 dark:text-slate-200">
-                        {getRelativeTime(order.createdAt || new Date().toISOString())}
-                      </p>
-                      <p
-                        className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400"
-                        title={formatDate(order.createdAt || new Date().toISOString())}
-                      >
-                        {formatDate(order.createdAt || new Date().toISOString())}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getPaymentStatusBadgeStyle(
-                        order.paymentStatus || "pending",
-                      )
-                        ? ""
-                        : getPaymentStatusColor(
-                            (order.paymentStatus || "pending").toLowerCase(),
-                          )}`}
-                      style={getPaymentStatusBadgeStyle(order.paymentStatus || "pending")}
-                    >
-                      {getPaymentStatusText(
-                        (order.paymentStatus || "pending").toLowerCase(),
-                      )}
-                    </span>
-                    {(() => {
-                      const unifiedStatus = getUnifiedStatusDisplay(order, t);
-                      return (
-                        <span className={unifiedStatus.className} style={unifiedStatus.style} aria-label={unifiedStatus.labelKey}>
-                          {unifiedStatus.text}
-                        </span>
-                      );
-                    })()}
-                  </div>
-
-                  <div className="mt-2.5 flex items-center gap-2">
-                    <Link
-                      to={order.metadata?.isIncompleteCart
-                        ? `/orders/incomplete/${encodeURIComponent(order.metadata.cartId || order.orderNumber)}`
-                        : `/orders/${order.orderNumber}`}
-                      onClick={() => {
-                        if (!order.isViewed) {
-                          onMarkAsViewed(order.orderNumber);
-                        }
-                      }}
-                      className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98] dark:bg-blue-500 dark:hover:bg-blue-600"
-                    >
-                      <ShoppingBagIcon className="h-4 w-4" />
-                      {t("orders.viewDetails")}
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => onOpenOrder(order)}
-                      className="inline-flex min-h-[40px] items-center justify-center gap-1 rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                      title={t("orders.quickView")}
-                    >
-                      <EyeIcon className="h-4 w-4" />
-                      <span className="text-xs">{t("orders.quickView")}</span>
-                    </button>
-
-                    {order.conversationId && (
-                      <Link
-                        to={`/whatsapp?conversationId=${order.conversationId}`}
-                        className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98] dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
-                        aria-label={`${t("orders.conversation")} ${displayOrderNumber}`}
-                        title={t("orders.conversation")}
-                      >
-                        <ChatBubbleLeftRightIcon className="h-4 w-4" />
-                      </Link>
-                    )}
-                  </div>
-                </article>
-              </div>
+                  <ChevronLeftIcon className="h-4 w-4 text-slate-400 transition-transform duration-150 group-hover:text-slate-600 group-active:-translate-x-0.5 dark:text-slate-500 dark:group-hover:text-slate-300 shrink-0" />
+                </div>
+              </article>
             );
           })}
         </div>

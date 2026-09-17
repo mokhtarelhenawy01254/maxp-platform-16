@@ -76,7 +76,7 @@ const baseProps = {
 };
 
 describe("OrdersMobileList", () => {
-  it("renders order cards from the virtualized list", () => {
+  it("renders single-row order cards with order numbers and relative times", () => {
     render(
       <MemoryRouter>
         <OrdersMobileList {...baseProps} />
@@ -84,10 +84,20 @@ describe("OrdersMobileList", () => {
     );
 
     expect(screen.getByText("#ORD-100")).toBeInTheDocument();
-    expect(screen.getByText("Sara Ali")).toBeInTheDocument();
     expect(screen.getByText("#ORD-200")).toBeInTheDocument();
-    expect(screen.getByText("Ahmed Hassan")).toBeInTheDocument();
-    expect(screen.getAllByText("orders.viewDetails").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("just now").length).toBe(2);
+    expect(screen.getAllByText("100 EGP").length).toBe(2);
+    expect(screen.getAllByText("Processing").length).toBe(2);
+  });
+
+  it("includes customer name and order number in accessibility label", () => {
+    render(
+      <MemoryRouter>
+        <OrdersMobileList {...baseProps} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText("orders.order ORD-100 - Sara Ali")).toBeInTheDocument();
   });
 
   it("renders the mobile empty state when there are no orders", () => {
@@ -108,31 +118,6 @@ describe("OrdersMobileList", () => {
     );
 
     expect(document.querySelector(".skeleton-shimmer")).not.toBeNull();
-  });
-
-  it("renders product summary when items are present", () => {
-    const ordersWithItems = [
-      makeOrder({
-        items: [
-          {
-            id: "i1",
-            productId: "p1",
-            name: "Classic Shoes",
-            price: 50,
-            quantity: 2,
-            total: 100,
-          },
-        ],
-      }),
-    ];
-
-    render(
-      <MemoryRouter>
-        <OrdersMobileList {...baseProps} orders={ordersWithItems} />
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByText(/Classic Shoes × 2/)).toBeInTheDocument();
   });
 
   it("formats incomplete cart IDs cleanly", () => {
