@@ -20,16 +20,34 @@ export const QuickWalletRechargeModal: React.FC<QuickWalletRechargeModalProps> =
   const { t } = useTranslation();
   const [amount, setAmount] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [internalBalance, setInternalBalance] = useState<number | null>(null);
+  const [loadingBalance, setLoadingBalance] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setAmount("");
+      if (currentBalance === undefined) {
+        setLoadingBalance(true);
+        apiClient
+          .get("/wallet/balance")
+          .then((res) => {
+            if (res.data?.success && res.data?.data) {
+              const bal = res.data.data.balance;
+              const numBal = typeof bal === "number" ? bal : parseFloat(bal);
+              if (!isNaN(numBal)) {
+                setInternalBalance(numBal);
+              }
+            }
+          })
+          .catch(() => {})
+          .finally(() => setLoadingBalance(false));
+      }
       setTimeout(() => {
         inputRef.current?.focus();
       }, 80);
     }
-  }, [isOpen]);
+  }, [isOpen, currentBalance]);
 
   // Handle ESC key to close
   useEffect(() => {
@@ -94,20 +112,28 @@ export const QuickWalletRechargeModal: React.FC<QuickWalletRechargeModalProps> =
           </button>
         </div>
 
-        {currentBalance !== undefined && currentBalance !== null && (
-          <div className="flex items-center justify-between px-3.5 py-2.5 mb-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 text-xs">
-            <span className="text-gray-500 dark:text-gray-400">
-              {t("billing.payments.walletBalance") || "الرصيد الحالي"}:
-            </span>
-            <span className="font-bold text-gray-900 dark:text-white tabular-nums text-sm">
-              {Number(currentBalance).toLocaleString("ar-EG", {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 2,
-              })}{" "}
-              {currency === "EGP" ? "ج.م" : currency}
-            </span>
-          </div>
-        )}
+        {(() => {
+          const bal = currentBalance !== undefined ? currentBalance : internalBalance;
+          return (
+            <div className="flex items-center justify-between px-3.5 py-2.5 mb-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 text-xs">
+              <span className="text-gray-500 dark:text-gray-400">
+                {t("billing.payments.walletBalance") || "الرصيد الحالي"}:
+              </span>
+              <span className="font-bold text-gray-900 dark:text-white tabular-nums text-sm">
+                {loadingBalance ? (
+                  <span className="inline-block w-12 h-3.5 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
+                ) : bal !== null ? (
+                  `${Number(bal).toLocaleString("ar-EG", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2,
+                  })} ${currency === "EGP" ? "ج.م" : currency}`
+                ) : (
+                  "—"
+                )}
+              </span>
+            </div>
+          );
+        })()}
 
         <form onSubmit={handleRecharge} className="space-y-4">
           <input

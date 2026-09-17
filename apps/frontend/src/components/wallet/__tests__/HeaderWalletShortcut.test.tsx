@@ -31,12 +31,12 @@ describe("HeaderWalletShortcut", () => {
     jest.clearAllMocks();
   });
 
-  it("fetches and displays the wallet balance with currency", async () => {
+  it("renders clean icon button without exposing the balance number outside", async () => {
     (apiClient.get as jest.Mock).mockResolvedValueOnce({
       data: {
         success: true,
         data: {
-          balance: 250.5,
+          balance: 7784.6,
           currency: "EGP",
         },
       },
@@ -44,21 +44,21 @@ describe("HeaderWalletShortcut", () => {
 
     render(<HeaderWalletShortcut />);
 
-    await waitFor(() => {
-      // Formatted as Arabic numerals or Western digits with ج.م
-      const balanceEl = screen.getByText(/ج\.م/);
-      expect(balanceEl).toBeInTheDocument();
-    });
+    const button = await screen.findByRole("button", { name: "شحن المحفظة" });
+    expect(button).toBeInTheDocument();
+    // The number should NOT be visible on the outside button
+    expect(screen.queryByText(/7784/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/٧,٧٨٤/)).not.toBeInTheDocument();
 
     expect(apiClient.get).toHaveBeenCalledWith("/wallet/balance");
   });
 
-  it("opens quick recharge modal when button is clicked", async () => {
+  it("displays the current balance inside the modal when clicked", async () => {
     (apiClient.get as jest.Mock).mockResolvedValueOnce({
       data: {
         success: true,
         data: {
-          balance: 100,
+          balance: 7784.6,
           currency: "EGP",
         },
       },
@@ -66,12 +66,14 @@ describe("HeaderWalletShortcut", () => {
 
     render(<HeaderWalletShortcut />);
 
-    const button = await screen.findByRole("button");
+    const button = await screen.findByRole("button", { name: "شحن المحفظة" });
     fireEvent.click(button);
 
-    // Modal opens and shows title
+    // Modal opens and shows title and current balance inside
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("شحن المحفظة")).toBeInTheDocument();
+    expect(screen.getByText("الرصيد الحالي:")).toBeInTheDocument();
+    expect(screen.getByText(/ج\.م/)).toBeInTheDocument();
   });
 
   it("refetches balance on wallet:updated custom event", async () => {
@@ -92,10 +94,8 @@ describe("HeaderWalletShortcut", () => {
     render(<HeaderWalletShortcut />);
 
     await waitFor(() => {
-      expect(screen.getByText(/ج\.م/)).toBeInTheDocument();
+      expect(apiClient.get).toHaveBeenCalledTimes(1);
     });
-
-    expect(apiClient.get).toHaveBeenCalledTimes(1);
 
     act(() => {
       window.dispatchEvent(new CustomEvent("wallet:updated"));
