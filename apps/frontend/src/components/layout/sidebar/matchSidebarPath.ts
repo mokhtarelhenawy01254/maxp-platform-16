@@ -33,6 +33,7 @@ export const isSidebarPathActive = (
   // We do not want to highlight these parent paths when viewing their sub-paths.
   const baseDashboardPaths = [
     "/",
+    "/settings",
     "/hr",
     "/admin/booking",
     "/admin/education"

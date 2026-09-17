@@ -59,6 +59,19 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
 
   const findActiveSection = () => {
     const normalized = currentPath.split("?")[0].replace(/\/+$/, "") || "/";
+
+    // 1. Exact item match first (e.g. /settings/store belongs to 'storefront-design')
+    const exactSection = visibleSectionsWithItems.find((section) =>
+      section.visibleItems.some((item) => {
+        const itemPath = item.to.split("?")[0].replace(/\/+$/, "") || "/";
+        return itemPath === normalized;
+      })
+    );
+    if (exactSection) {
+      return exactSection.id;
+    }
+
+    // 2. Direct section prefix match (e.g. /inventory/* matches section 'inventory')
     const directSection = visibleSectionsWithItems.find(
       (section) => normalized === `/${section.id}` || normalized.startsWith(`/${section.id}/`)
     );
@@ -66,6 +79,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
       return directSection.id;
     }
 
+    // 3. Fallback to active sub-item match
     return (
       visibleSectionsWithItems.find((section) =>
         section.visibleItems.some((item) =>
@@ -79,6 +93,19 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
 
   const routeActiveSectionId = useMemo(() => {
     const normalized = currentPath.split("?")[0].replace(/\/+$/, "") || "/";
+
+    // 1. Exact item match first
+    const exactSection = visibleSectionsWithItems.find((section) =>
+      section.visibleItems.some((item) => {
+        const itemPath = item.to.split("?")[0].replace(/\/+$/, "") || "/";
+        return itemPath === normalized;
+      })
+    );
+    if (exactSection) {
+      return exactSection.id;
+    }
+
+    // 2. Direct section prefix match
     const directSection = visibleSectionsWithItems.find(
       (section) => normalized === `/${section.id}` || normalized.startsWith(`/${section.id}/`)
     );
@@ -86,6 +113,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
       return directSection.id;
     }
 
+    // 3. Fallback to active sub-item match
     return (
       visibleSectionsWithItems.find((section) =>
         section.visibleItems.some((item) =>

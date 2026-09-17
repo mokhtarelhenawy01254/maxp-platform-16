@@ -184,7 +184,6 @@ export const APP_REGISTRY: AppDefinition[] = [
     sectionIds: ['storefront-design'],
     category: 'sales',
     requiredApps: [...STORE_DEPENDENT_APPS, 'conversion-suite'],
-    route: '/settings/storefront/editor',
   },
   {
     id: 'customers',
