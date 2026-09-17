@@ -36,30 +36,30 @@ describe("AppDownloadsPage", () => {
     cleanup();
   });
 
-  it("renders unified header with title, badge and action buttons", () => {
+  it("renders unified ecosystem navigation with tabs and action button", () => {
     render(
       <MemoryRouter>
         <AppDownloadsPage />
       </MemoryRouter>
     );
 
-    expect(screen.getByRole("heading", { name: "تطبيقات الأجهزة والموبايل" })).toBeDefined();
-    expect(screen.getByText("5 حزم رسمية")).toBeDefined();
     expect(screen.getByText("متجر التطبيقات")).toBeDefined();
     expect(screen.getByText("تطبيقاتي المفعلة")).toBeDefined();
+    expect(screen.getByText("تطبيقات الأجهزة والموبايل")).toBeDefined();
+    expect(screen.getByText(/نسخ دليل الروابط/)).toBeDefined();
   });
 
-  it("renders 4-card telemetry bar with device, desktop, mobile, and company token", () => {
+  it("renders unified single-surface telemetry strip with 4 metrics", () => {
     render(
       <MemoryRouter>
         <AppDownloadsPage />
       </MemoryRouter>
     );
 
-    expect(screen.getByText("جهازك المكتشف حالياً")).toBeDefined();
-    expect(screen.getByText("برامج سطح المكتب")).toBeDefined();
-    expect(screen.getByText("تطبيقات الموبايل والميدان")).toBeDefined();
-    expect(screen.getByText("معرّف المنشأة لربط الأجهزة")).toBeDefined();
+    expect(screen.getByLabelText("جهازك المكتشف حالياً")).toBeDefined();
+    expect(screen.getByLabelText("برامج سطح المكتب ويندوز")).toBeDefined();
+    expect(screen.getByLabelText("تطبيقات الموبايل والميدان")).toBeDefined();
+    expect(screen.getByLabelText("معرف المنشأة لربط الأجهزة")).toBeDefined();
   });
 
   it("provides direct working download links for Windows and Android", () => {
@@ -87,30 +87,31 @@ describe("AppDownloadsPage", () => {
     );
 
     // Filter to POS
-    const posTab = screen.getByText("الكاشير والطباعة (1)");
+    const posTab = screen.getByRole("button", { name: /^الكاشير/ });
     fireEvent.click(posTab);
 
     expect(screen.getByText(/استوديو الكاشير والطباعة الفورية/)).toBeDefined();
     expect(screen.queryByText(/برنامج مراقبة وإنتاجية فريق العمل/)).toBeNull();
 
     // Switch back to All
-    const allTab = screen.getByText("جميع المنصات (5)");
+    const allTab = screen.getByRole("button", { name: /الكل/ });
     fireEvent.click(allTab);
 
     expect(screen.getByText(/برنامج مراقبة وإنتاجية فريق العمل/)).toBeDefined();
     expect(screen.getByText(/استوديو الكاشير والطباعة الفورية/)).toBeDefined();
   });
 
-  it("renders technical architecture and enterprise specifications banner", () => {
+  it("opens technical details drawer when clicking on details button", () => {
     render(
       <MemoryRouter>
         <AppDownloadsPage />
       </MemoryRouter>
     );
 
-    expect(screen.getByText("تحديثات صامتة وتلقائية")).toBeDefined();
-    expect(screen.getByText("تطبيق ويب تقدمي (PWA)")).toBeDefined();
-    expect(screen.getByText("أمان وتشفير معزول")).toBeDefined();
-    expect(screen.getByText("مزامنة سحابية لحظية")).toBeDefined();
+    const detailButtons = screen.getAllByRole("button", { name: /التفاصيل/ });
+    fireEvent.click(detailButtons[0]);
+
+    expect(screen.getByText("المواصفات والإمكانات التقنية")).toBeDefined();
+    expect(screen.getByText("متطلبات التشغيل")).toBeDefined();
   });
 });
