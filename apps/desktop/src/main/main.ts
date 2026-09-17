@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain, desktopCapturer, screen } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain, desktopCapturer, screen, safeStorage, powerMonitor, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -49,6 +49,42 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isTracking = false;
 let isPaused = false;
+let sessionStartedAt: string | null = null;
+let idleReminderTimer: ReturnType<typeof setInterval> | null = null;
+let remindedForThisIdleEpisode = false;
+
+// ── Auth token storage (DPAPI-encrypted via safeStorage) ──────
+
+function saveAuthToken(token: string): void {
+  try {
+    if (safeStorage.isEncryptionAvailable()) {
+      store.set('authTokenEnc', safeStorage.encryptString(token).toString('base64'));
+      store.delete('authToken'); // migrate away from legacy plaintext
+      return;
+    }
+  } catch {}
+  store.set('authToken', token); // fallback: plaintext (encryption unavailable)
+}
+
+function loadAuthToken(): string | null {
+  try {
+    const encrypted = store.get('authTokenEnc') as string | undefined;
+    if (encrypted && safeStorage.isEncryptionAvailable()) {
+      return safeStorage.decryptString(Buffer.from(encrypted, 'base64'));
+    }
+    const legacy = store.get('authToken') as string | undefined;
+    if (legacy) {
+      saveAuthToken(legacy); // migrate legacy plaintext to encrypted
+      return legacy;
+    }
+  } catch {}
+  return null;
+}
+
+function clearAuthToken(): void {
+  store.delete('authTokenEnc');
+  store.delete('authToken');
+}
 
 app.setName('MaxP Workspace');
 app.setAppUserModelId('online.maxp.workspace');
@@ -77,10 +113,10 @@ app.whenReady().then(async () => {
   // Initialize local database
   localDb.init();
 
-  // Enable auto-launch at Windows boot (enforced continuous monitoring)
+  // Enable auto-launch at Windows boot per saved preference (default: on)
   try {
     app.setLoginItemSettings({
-      openAtLogin: true,
+      openAtLogin: store.get('autoLaunchEnabled', true) === true,
       openAsHidden: false,
     });
   } catch (err: any) {
@@ -100,7 +136,7 @@ app.whenReady().then(async () => {
   initAutoUpdater();
 
   // Check if user is already logged in
-  const savedToken = store.get('authToken') as string | undefined;
+  const savedToken = loadAuthToken();
   const savedServer = store.get('serverUrl') as string | undefined;
   if (savedToken && savedServer) {
     apiClient.configure(savedServer, savedToken);
@@ -146,11 +182,23 @@ function createMainWindow(): void {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
   });
 
   mainWindow.setMenuBarVisibility(false);
+
+  // Allow opening external links (like tasks web view) in default system browser, deny internal popups
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+      shell.openExternal(url).catch(() => {});
+    }
+    return { action: 'deny' };
+  });
+  mainWindow.webContents.on('will-navigate', (e, url) => {
+    const allowed = url.startsWith('file://') || url.startsWith('http://localhost:5174');
+    if (!allowed) e.preventDefault();
+  });
 
   console.log('[Main] Window created successfully, HWND id:', mainWindow.id);
 
@@ -180,10 +228,18 @@ function createMainWindow(): void {
   mainWindow.focus();
   setTimeout(() => mainWindow?.setAlwaysOnTop(false), 1200);
 
+  let hasShownTrayNotice = false;
   mainWindow.on('close', (e) => {
     // Minimize to tray instead of closing
     e.preventDefault();
     mainWindow?.hide();
+    if (!hasShownTrayNotice) {
+      hasShownTrayNotice = true;
+      showNotification(
+        'MaxP Workspace',
+        'التطبيق مستمر في تسجيل النشاط بالخلفية بجانب الساعة. انقر نقراً مزدوجاً لفتحه بأي وقت.'
+      );
+    }
   });
 
   mainWindow.on('closed', () => {
@@ -269,6 +325,8 @@ async function startTracking(): Promise<void> {
   if (isTracking) return;
   isTracking = true;
   isPaused = false;
+  sessionStartedAt = new Date().toISOString();
+  remindedForThisIdleEpisode = false;
 
   console.log('[Main] Starting tracking...');
 
@@ -281,6 +339,7 @@ async function startTracking(): Promise<void> {
   await activityTracker.start();
   await windowTracker.start();
   syncEngine.start();
+  startIdleReminder();
 
   updateTrayMenu();
   sendStateToRenderer();
@@ -292,10 +351,12 @@ function stopTracking(): void {
   if (!isTracking) return;
   isTracking = false;
   isPaused = false;
+  sessionStartedAt = null;
 
   activityTracker.stop();
   windowTracker.stop();
   syncEngine.stop();
+  stopIdleReminder();
 
   updateTrayMenu();
   sendStateToRenderer();
@@ -305,23 +366,26 @@ function pauseTracking(): void {
   isPaused = true;
   activityTracker.stop();
   windowTracker.stop();
+  stopIdleReminder();
   updateTrayMenu();
   sendStateToRenderer();
-  showNotification('MaxP Workspace', 'تم تفعيل وضع الاستراحة الرسمي (توقف العداد)');
+  showNotification('MaxP Workspace', 'تم تفعيل وضع الاستراحة الرسمية (توقف العداد)', true);
 }
 
 async function resumeTracking(): Promise<void> {
   isPaused = false;
+  remindedForThisIdleEpisode = false;
   await activityTracker.start();
   await windowTracker.start();
+  startIdleReminder();
   updateTrayMenu();
   sendStateToRenderer();
-  showNotification('MaxP Workspace', 'تم استئناف جلسة العمل ومتابعة الإنتاجية');
+  showNotification('MaxP Workspace', 'تم استئناف جلسة العمل ومتابعة الإنتاجية', true);
 }
 
 function logout(): void {
   stopTracking();
-  store.delete('authToken');
+  clearAuthToken();
   store.delete('serverUrl');
   store.delete('user');
   apiClient.configure('', '');
@@ -333,15 +397,18 @@ function logout(): void {
 
 function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.GET_TRACKER_STATE, () => {
+    const today = new Date().toISOString().split('T')[0];
+    const stored = localDb.getDailyStats(today);
+    const live = isTracking && !isPaused ? activityTracker.getCurrentIntervalStats() : null;
     return {
       isTracking,
       isPaused,
       currentApp: windowTracker.currentAppName,
       currentUrl: windowTracker.currentUrl,
-      activityScore: 0,
-      todayActiveSeconds: localDb.getDailyStats(new Date().toISOString().split('T')[0])?.total_active_seconds ?? 0,
-      todayIdleSeconds: localDb.getDailyStats(new Date().toISOString().split('T')[0])?.total_idle_seconds ?? 0,
-      sessionStartedAt: isTracking ? new Date().toISOString() : null,
+      activityScore: live?.activityScore ?? (activityTracker as any).lastActivityScore ?? 0,
+      todayActiveSeconds: (stored?.total_active_seconds ?? 0) + (live?.activeSeconds || 0),
+      todayIdleSeconds: (stored?.total_idle_seconds ?? 0) + (live?.idleSeconds || 0),
+      sessionStartedAt: isTracking ? sessionStartedAt : null,
     };
   });
 
@@ -382,12 +449,12 @@ function registerIpcHandlers(): void {
     return {
       deviceName: os.hostname(),
       osVersion: `${os.type()} ${os.release()} (${os.arch()})`,
-      appVersion: '1.0.0',
+      appVersion: app.getVersion(),
       serverUrl: store.get('serverUrl', 'https://maxp.online'),
       pendingActivities: counts.activities,
       pendingApps: counts.apps,
       pendingWebsites: counts.websites,
-      autoStartEnabled: true,
+      autoStartEnabled: store.get('autoLaunchEnabled', true) === true,
       heartbeatIntervalSec: 120,
     };
   });
@@ -404,15 +471,21 @@ function registerIpcHandlers(): void {
   ipcMain.handle('tracker:get-attendance-audit', async () => {
     const today = new Date().toISOString().split('T')[0];
     const localDaily = localDb.getDailyStats(today);
+    const live = isTracking && !isPaused ? activityTracker.getCurrentIntervalStats() : null;
 
     let serverDaily: any = null;
     try {
       serverDaily = await apiClient.getDailySummary(today);
     } catch {}
 
-    const clockInTime = serverDaily?.clockInTime || null;
+    let todayAtt: any = null;
+    try {
+      todayAtt = await apiClient.checkTodayAttendance();
+    } catch {}
+
+    const clockInTime = todayAtt?.checkInTime || todayAtt?.checkIn || todayAtt?.createdAt || serverDaily?.clockInTime || null;
     const firstActivityTime = serverDaily?.firstActivityTime || localDaily?.first_activity || null;
-    const clockOutTime = serverDaily?.clockOutTime || null;
+    const clockOutTime = todayAtt?.checkOutTime || todayAtt?.checkOut || serverDaily?.clockOutTime || null;
     const lastActivityTime = serverDaily?.lastActivityTime || localDaily?.last_activity || null;
 
     let lateStartSeconds = 0;
@@ -424,6 +497,9 @@ function registerIpcHandlers(): void {
       }
     }
 
+    const totalActive = (serverDaily?.totalActiveSeconds ?? localDaily?.total_active_seconds ?? 0) + (live?.activeSeconds || 0);
+    const totalIdle = (serverDaily?.totalIdleSeconds ?? localDaily?.total_idle_seconds ?? 0) + (live?.idleSeconds || 0);
+
     return {
       date: today,
       clockInTime,
@@ -431,28 +507,51 @@ function registerIpcHandlers(): void {
       clockOutTime,
       lastActivityTime,
       lateStartSeconds,
-      totalActiveSeconds: serverDaily?.totalActiveSeconds ?? localDaily?.total_active_seconds ?? 0,
-      totalIdleSeconds: serverDaily?.totalIdleSeconds ?? localDaily?.total_idle_seconds ?? 0,
+      totalActiveSeconds: totalActive,
+      totalIdleSeconds: totalIdle,
     };
   });
 
   ipcMain.handle(IPC_CHANNELS.GET_DAILY_SUMMARY, () => {
     const today = new Date().toISOString().split('T')[0];
-    return localDb.getDailyStats(today);
+    const stored = localDb.getDailyStats(today) || {
+      date: today,
+      first_activity: null,
+      last_activity: null,
+      total_active_seconds: 0,
+      total_idle_seconds: 0,
+      total_mouse_events: 0,
+      total_keyboard_events: 0,
+    };
+    const live = isTracking && !isPaused ? activityTracker.getCurrentIntervalStats() : null;
+    return {
+      ...stored,
+      total_active_seconds: stored.total_active_seconds + (live?.activeSeconds || 0),
+      total_idle_seconds: stored.total_idle_seconds + (live?.idleSeconds || 0),
+      total_mouse_events: stored.total_mouse_events + (live?.mouseEvents || 0),
+      total_keyboard_events: stored.total_keyboard_events + (live?.keyboardEvents || 0),
+    };
   });
 
   ipcMain.handle(IPC_CHANNELS.GET_SETTINGS, () => {
     return {
+      autoLaunchEnabled: store.get('autoLaunchEnabled', true) === true,
+      soundAlerts: store.get('soundAlerts', true) === true,
+      idleReminder: store.get('idleReminder', true) === true,
       serverUrl: store.get('serverUrl', ''),
-      idleTimeoutMinutes: store.get('idleTimeoutMinutes', 5),
-      trackingStartHour: store.get('trackingStartHour', 8),
-      trackingEndHour: store.get('trackingEndHour', 18),
     };
   });
 
   ipcMain.handle(IPC_CHANNELS.UPDATE_SETTINGS, (_, settings) => {
-    for (const [key, value] of Object.entries(settings)) {
-      store.set(key, value);
+    const ALLOWED_PREFS = ['autoLaunchEnabled', 'soundAlerts', 'idleReminder'];
+    for (const [key, value] of Object.entries(settings || {})) {
+      if (!ALLOWED_PREFS.includes(key)) continue;
+      store.set(key, value === true);
+      if (key === 'autoLaunchEnabled') {
+        try {
+          app.setLoginItemSettings({ openAtLogin: value === true, openAsHidden: false });
+        } catch {}
+      }
     }
     return true;
   });
@@ -462,7 +561,7 @@ function registerIpcHandlers(): void {
     try {
       const { token, user } = await apiClient.login(email, password, serverUrl);
       console.log('[Main IPC] Login successful! User:', user?.id, user?.email);
-      store.set('authToken', token);
+      saveAuthToken(token);
       store.set('serverUrl', serverUrl);
       store.set('user', user);
       apiClient.configure(serverUrl, token);
@@ -586,9 +685,45 @@ function sendStateToRenderer(): void {
   });
 }
 
-function showNotification(title: string, body: string): void {
+function showNotification(title: string, body: string, respectSoundPref: boolean = false): void {
   if (Notification.isSupported()) {
-    new Notification({ title, body, silent: true }).show();
+    const silent = respectSoundPref ? !store.get('soundAlerts', true) : true;
+    new Notification({ title, body, silent }).show();
+  }
+}
+
+// ── Extended Idle Reminder (real behavior behind the toggle) ──
+
+const IDLE_REMINDER_THRESHOLD_SEC = 600; // 10 minutes of continuous idle
+const IDLE_REMINDER_CHECK_SEC = 60;
+
+function startIdleReminder(): void {
+  stopIdleReminder();
+  idleReminderTimer = setInterval(() => {
+    try {
+      if (!isTracking || isPaused) return;
+      if (!store.get('idleReminder', true)) return;
+
+      const idleSec = powerMonitor.getSystemIdleTime();
+      if (idleSec >= IDLE_REMINDER_THRESHOLD_SEC) {
+        if (remindedForThisIdleEpisode) return;
+        remindedForThisIdleEpisode = true;
+        showNotification(
+          'MaxP Workspace',
+          'لاحظنا خمولاً ممتدًا. لو رجعت للعمل تفقد الجلسة تلقائياً، ولو خارجه فعّل «استراحة رسمية».',
+          true
+        );
+      } else if (idleSec < 30) {
+        remindedForThisIdleEpisode = false; // activity resumed — re-arm
+      }
+    } catch {}
+  }, IDLE_REMINDER_CHECK_SEC * 1000);
+}
+
+function stopIdleReminder(): void {
+  if (idleReminderTimer) {
+    clearInterval(idleReminderTimer);
+    idleReminderTimer = null;
   }
 }
 

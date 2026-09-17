@@ -113,9 +113,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
   }, [refreshState]);
 
   const formatTime = (seconds: number): string => {
-    if (!seconds || seconds <= 0) return '0 س 0 د';
+    if (!seconds || seconds <= 0) return '0 ث';
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h === 0) {
+      return m > 0 ? `${m} د ${s} ث` : `${s} ث`;
+    }
     return `${h} س ${m} د`;
   };
 

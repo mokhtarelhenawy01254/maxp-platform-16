@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import type { SyncBatch, DeviceInfo, MonitorSettings, DailySummary, CategoryRule } from './types';
+import type { SyncBatch, DeviceInfo, DailySummary, CategoryRule } from './types';
 
 /**
  * API client for communicating with MaxP backend.

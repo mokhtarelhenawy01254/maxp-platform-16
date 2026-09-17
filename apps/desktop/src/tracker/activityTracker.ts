@@ -23,10 +23,18 @@ export class ActivityTracker {
   private activeBuckets = new Set<number>();
   private readonly BUCKET_SIZE_SEC = 10;
 
+  // Score of the most recently captured interval (0 before first capture)
+  private lastScore = 0;
+
   // Anti-Jiggler Telemetry
   private movementSamples: MovementSample[] = [];
   private readonly MAX_SAMPLES = 120;
   private isMeeting = false;
+
+  /** Activity score (0-100) of the last captured interval */
+  get lastActivityScore(): number {
+    return this.lastScore;
+  }
 
   /** Seconds since last mouse or keyboard input */
   get idleSeconds(): number {
@@ -83,6 +91,7 @@ export class ActivityTracker {
     }
 
     const activityScore = Math.min(100, Math.round((activeSeconds / intervalSeconds) * 100));
+    this.lastScore = activityScore;
 
     let status: 'active' | 'idle' | 'away' = 'away';
     if (activityScore >= 30 || (this.isMeeting && activityScore >= 20)) {
@@ -106,6 +115,35 @@ export class ActivityTracker {
     this.resetCounters();
     this.intervalStart = now;
     return interval;
+  }
+
+  /**
+   * Get live telemetry accrued in the current interval without resetting counters.
+   * Allows real-time live ticker updates in UI.
+   */
+  getCurrentIntervalStats(): {
+    activeSeconds: number;
+    idleSeconds: number;
+    mouseEvents: number;
+    keyboardEvents: number;
+    activityScore: number;
+  } {
+    const now = new Date();
+    const intervalSeconds = Math.max(1, Math.floor((now.getTime() - this.intervalStart.getTime()) / 1000));
+    let activeSeconds = Math.min(intervalSeconds, this.activeBuckets.size * this.BUCKET_SIZE_SEC);
+    if (this.isMeeting) {
+      activeSeconds = Math.max(activeSeconds, Math.floor(intervalSeconds * 0.85));
+    }
+    const idleSeconds = Math.max(0, intervalSeconds - activeSeconds);
+    const activityScore = Math.min(100, Math.round((activeSeconds / intervalSeconds) * 100));
+
+    return {
+      activeSeconds,
+      idleSeconds,
+      mouseEvents: this.mouseCount,
+      keyboardEvents: this.keyboardCount,
+      activityScore,
+    };
   }
 
   registerMouseEvent(dx: number, dy: number): void {

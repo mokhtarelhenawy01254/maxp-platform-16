@@ -3177,7 +3177,7 @@ const taskController = {
       const { taskId } = req.params;
       const { fileName, originalName, fileSize, fileType, filePath } = req.body;
       const companyId = req.user.companyId;
-      const userId = req.user.userId;
+      const userId = req.user.id || req.user.userId;
 
       const task = await getSharedPrismaClient().task.findFirst({
         where: { id: taskId, companyId },

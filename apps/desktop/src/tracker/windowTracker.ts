@@ -1,8 +1,11 @@
 import type { AppUsageRecord, WebUsageRecord, AppCategory, CategoryRule } from '../shared/types';
 import path from 'path';
 import fs from 'fs';
-import { execFileSync } from 'child_process';
+import { execFile } from 'child_process';
+import util from 'util';
 import { activityTracker } from './activityTracker';
+
+const execFileAsync = util.promisify(execFile);
 
 /** Extracts domain from a URL string */
 function extractDomain(url: string): string {
@@ -212,7 +215,7 @@ export class WindowTracker {
     return { apps, websites };
   }
 
-  private getWindowsActiveWindow(): { appName: string; windowTitle: string } | null {
+  private async getWindowsActiveWindow(): Promise<{ appName: string; windowTitle: string; exePath?: string } | null> {
     try {
       const exeName = 'GetActiveWindow.exe';
       const devPath = path.resolve(__dirname, '../../../bin', exeName);
@@ -232,12 +235,14 @@ export class WindowTracker {
 
       if (!resolvedPath) return null;
 
-      const out = execFileSync(resolvedPath, { timeout: 1500, encoding: 'utf8' }).trim();
+      const { stdout } = await execFileAsync(resolvedPath, { timeout: 2000, encoding: 'utf8' });
+      const out = (stdout || '').trim();
       if (out && out.includes('|||')) {
-        const [proc, title] = out.split('|||');
+        const parts = out.split('|||');
         return {
-          appName: proc.trim(),
-          windowTitle: title.trim(),
+          appName: (parts[0] || '').trim(),
+          windowTitle: (parts[1] || '').trim(),
+          exePath: (parts[2] || '').trim(),
         };
       }
     } catch {}
@@ -250,13 +255,13 @@ export class WindowTracker {
     try {
       let win: any = null;
 
-      // 1. Try ultra-fast native Windows detector
+      // 1. Try ultra-fast native Windows detector (async non-blocking)
       if (process.platform === 'win32') {
-        const nativeWin = this.getWindowsActiveWindow();
+        const nativeWin: any = await this.getWindowsActiveWindow();
         if (nativeWin && nativeWin.appName && nativeWin.appName !== 'Unknown') {
           win = {
             title: nativeWin.windowTitle,
-            owner: { name: nativeWin.appName },
+            owner: { name: nativeWin.appName, exePath: nativeWin.exePath },
           };
         }
       }
@@ -280,13 +285,43 @@ export class WindowTracker {
     return this.meetingActive;
   }
 
+  private friendlyAppName(raw: string, _exePath?: string): string {
+    const lower = (raw || '').toLowerCase().replace(/\.exe$/, '').trim();
+    const map: Record<string, string> = {
+      chrome: 'Google Chrome',
+      msedge: 'Microsoft Edge',
+      firefox: 'Mozilla Firefox',
+      opera: 'Opera',
+      brave: 'Brave Browser',
+      code: 'Visual Studio Code',
+      slack: 'Slack',
+      teams: 'Microsoft Teams',
+      'ms-teams': 'Microsoft Teams',
+      zoom: 'Zoom Meeting',
+      explorer: 'سطح المكتب / مستكشف ويندوز',
+      notepad: 'المفكرة (Notepad)',
+      excel: 'Microsoft Excel',
+      winword: 'Microsoft Word',
+      powerpnt: 'Microsoft PowerPoint',
+      outlook: 'Microsoft Outlook',
+      telegram: 'Telegram',
+      whatsapp: 'WhatsApp',
+      discord: 'Discord',
+      figma: 'Figma',
+      photoshop: 'Adobe Photoshop',
+      illustrator: 'Adobe Illustrator',
+    };
+    return map[lower] || raw || 'تطبيق غير محدد';
+  }
+
   private processWindow(win: any): void {
-    const appName = win.owner?.name || win.title || 'Unknown';
+    const rawName = win.owner?.name || win.title || 'Unknown';
+    const appName = this.friendlyAppName(rawName, win.owner?.exePath);
     const windowTitle = win.title || '';
     const now = new Date().toISOString();
 
     // ── Meeting detection & collaboration guard ─────────────────
-    this.meetingActive = isMeeting(appName, windowTitle);
+    this.meetingActive = isMeeting(rawName, windowTitle);
     activityTracker.setMeetingActive(this.meetingActive);
 
     // ── App tracking ────────────────────────────────────────────
@@ -309,11 +344,15 @@ export class WindowTracker {
     }
 
     // ── Website tracking (if browser) ───────────────────────────
-    if (isBrowser(appName)) {
+    if (isBrowser(rawName)) {
       const url = extractUrlFromTitle(windowTitle);
       const domain = url ? extractDomain(url) : this.extractDomainFromTitle(windowTitle);
 
-      if (domain && (!this.currentWeb || this.currentWeb.domain !== domain)) {
+      if (!domain) {
+        // Unknown/unrecognized site: close the current record instead of
+        // leaking browsing time into the previously known domain.
+        this.finalizeCurrentWeb();
+      } else if (!this.currentWeb || this.currentWeb.domain !== domain) {
         this.finalizeCurrentWeb();
         this.currentWeb = {
           url: url || `https://${domain}`,
@@ -331,9 +370,9 @@ export class WindowTracker {
     }
   }
 
-  private finalizeCurrentApp(): void {
+  private finalizeCurrentApp(endedAt?: Date): void {
     if (!this.currentApp) return;
-    const now = new Date().toISOString();
+    const now = (endedAt ?? new Date()).toISOString();
     this.currentApp.endedAt = now;
     this.currentApp.durationSeconds = this.calcDuration(this.currentApp.startedAt, now);
 
@@ -344,9 +383,9 @@ export class WindowTracker {
     this.currentApp = null;
   }
 
-  private finalizeCurrentWeb(): void {
+  private finalizeCurrentWeb(endedAt?: Date): void {
     if (!this.currentWeb) return;
-    const now = new Date().toISOString();
+    const now = (endedAt ?? new Date()).toISOString();
     this.currentWeb.endedAt = now;
     this.currentWeb.durationSeconds = this.calcDuration(this.currentWeb.startedAt, now);
 
@@ -410,10 +449,12 @@ export class WindowTracker {
       if (title.includes(sep)) {
         const parts = title.split(sep).map((s) => s.trim()).filter(Boolean);
         if (parts.length >= 2) {
-          // Check candidate brand before the browser name
+          // Check candidate brand before the browser name.
+          // Only accept it when it looks like a real domain — never fabricate
+          // a ".com" for a brand word, that poisons usage reports.
           const candidate = parts[parts.length - 2].toLowerCase().replace(/[^a-z0-9.-]/g, '');
-          if (candidate.length >= 3 && candidate.length <= 25 && !candidate.includes(' ')) {
-            return candidate.includes('.') ? candidate : `${candidate}.com`;
+          if (candidate.length >= 3 && candidate.length <= 25 && candidate.includes('.')) {
+            return candidate;
           }
         }
       }

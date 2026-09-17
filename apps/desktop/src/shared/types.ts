@@ -64,17 +64,14 @@ export interface TrackerState {
   sessionStartedAt: string | null;
 }
 
-export interface MonitorSettings {
-  idleTimeoutMinutes: number;       // default: 5
-  syncIntervalSeconds: number;      // default: 60
-  trackingStartHour: number;        // default: 8 (8 AM)
-  trackingEndHour: number;          // default: 18 (6 PM)
-  trackOnWeekends: boolean;         // default: false
-  screenshotEnabled: boolean;       // default: false
-  screenshotIntervalMinutes: number;// default: 10
-  stealthMode: boolean;             // default: false
-  serverUrl: string;
-  authToken: string;
+/**
+ * Personal preferences the employee controls locally.
+ * Every value here MUST be wired to real behavior in the main process.
+ */
+export interface PersonalPrefs {
+  autoLaunchEnabled: boolean;   // default: true — wired to app.setLoginItemSettings
+  soundAlerts: boolean;         // default: true — wired to Notification.silent
+  idleReminder: boolean;        // default: true — wired to extended-idle reminder notification
 }
 
 export interface SyncBatch {

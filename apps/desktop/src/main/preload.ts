@@ -67,15 +67,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   captureDesktopSnippet: () =>
     ipcRenderer.invoke('tasks:capture-screen'),
 
-  // Events from main process
+  // Events from main process — each returns an unsubscribe function
   onTrackerStateUpdate: (callback: (state: any) => void) => {
-    ipcRenderer.on(CHANNELS.TRACKER_STATE_UPDATE, (_, state) => callback(state));
+    const listener = (_: any, state: any) => callback(state);
+    ipcRenderer.on(CHANNELS.TRACKER_STATE_UPDATE, listener);
+    return () => ipcRenderer.removeListener(CHANNELS.TRACKER_STATE_UPDATE, listener);
   },
   onNotification: (callback: (data: any) => void) => {
-    ipcRenderer.on(CHANNELS.NOTIFICATION, (_, data) => callback(data));
+    const listener = (_: any, data: any) => callback(data);
+    ipcRenderer.on(CHANNELS.NOTIFICATION, listener);
+    return () => ipcRenderer.removeListener(CHANNELS.NOTIFICATION, listener);
   },
   onTaskAssigned: (callback: (task: any) => void) => {
-    ipcRenderer.on(CHANNELS.TASK_ASSIGNED, (_, task) => callback(task));
+    const listener = (_: any, task: any) => callback(task);
+    ipcRenderer.on(CHANNELS.TASK_ASSIGNED, listener);
+    return () => ipcRenderer.removeListener(CHANNELS.TASK_ASSIGNED, listener);
   },
 });
 

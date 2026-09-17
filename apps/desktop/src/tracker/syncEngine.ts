@@ -14,11 +14,12 @@ export class SyncEngine {
   private syncInterval: ReturnType<typeof setInterval> | null = null;
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private activityCaptureInterval: ReturnType<typeof setInterval> | null = null;
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
   private isSyncing = false;
 
   private readonly SYNC_INTERVAL_MS = 60_000;           // Sync every 60 seconds
   private readonly HEARTBEAT_INTERVAL_MS = 120_000;      // Heartbeat every 2 minutes
-  private readonly ACTIVITY_CAPTURE_MS = 600_000;        // Capture activity every 10 minutes
+  private readonly ACTIVITY_CAPTURE_MS = 120_000;        // Capture activity every 2 minutes
   private readonly CLEANUP_INTERVAL_MS = 3_600_000;      // Cleanup every hour
 
   start(): void {
@@ -40,7 +41,7 @@ export class SyncEngine {
     }, this.HEARTBEAT_INTERVAL_MS);
 
     // Cleanup old data every hour
-    setInterval(() => {
+    this.cleanupInterval = setInterval(() => {
       localDb.cleanupSynced(48);
     }, this.CLEANUP_INTERVAL_MS);
 
@@ -52,6 +53,11 @@ export class SyncEngine {
     if (this.syncInterval) clearInterval(this.syncInterval);
     if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
     if (this.activityCaptureInterval) clearInterval(this.activityCaptureInterval);
+    if (this.cleanupInterval) clearInterval(this.cleanupInterval);
+    this.syncInterval = null;
+    this.heartbeatInterval = null;
+    this.activityCaptureInterval = null;
+    this.cleanupInterval = null;
 
     // Final capture and sync before shutdown
     this.captureActivityInterval();
