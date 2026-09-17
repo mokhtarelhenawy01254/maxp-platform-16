@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+// Turbo ticket chat panel with strict hook ordering and responsive UX
 import {
   PaperAirplaneIcon,
   PhotoIcon,
