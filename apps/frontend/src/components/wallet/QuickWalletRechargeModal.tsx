@@ -7,11 +7,15 @@ import { toast } from "sonner";
 interface QuickWalletRechargeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  currentBalance?: number | null;
+  currency?: string;
 }
 
 export const QuickWalletRechargeModal: React.FC<QuickWalletRechargeModalProps> = ({
   isOpen,
   onClose,
+  currentBalance,
+  currency = "EGP",
 }) => {
   const { t } = useTranslation();
   const [amount, setAmount] = useState<string>("");
@@ -89,6 +93,21 @@ export const QuickWalletRechargeModal: React.FC<QuickWalletRechargeModalProps> =
             &times;
           </button>
         </div>
+
+        {currentBalance !== undefined && currentBalance !== null && (
+          <div className="flex items-center justify-between px-3.5 py-2.5 mb-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/5 text-xs">
+            <span className="text-gray-500 dark:text-gray-400">
+              {t("billing.payments.walletBalance") || "الرصيد الحالي"}:
+            </span>
+            <span className="font-bold text-gray-900 dark:text-white tabular-nums text-sm">
+              {Number(currentBalance).toLocaleString("ar-EG", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+              })}{" "}
+              {currency === "EGP" ? "ج.م" : currency}
+            </span>
+          </div>
+        )}
 
         <form onSubmit={handleRecharge} className="space-y-4">
           <input

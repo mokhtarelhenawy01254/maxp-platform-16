@@ -18,9 +18,8 @@ import {
   ChatBubbleLeftRightIcon,
   BuildingStorefrontIcon,
 } from "@heroicons/react/24/outline";
-import { Wallet } from "lucide-react";
 import { buildStoreUrl } from "../utils/storeUrl";
-import QuickWalletRechargeModal from "./wallet/QuickWalletRechargeModal";
+import HeaderWalletShortcut from "./wallet/HeaderWalletShortcut";
 
 import { useTimer } from "../contexts/TimerContext";
 import { PlayIcon, PauseIcon, StopIcon } from "@heroicons/react/24/solid";
@@ -184,7 +183,6 @@ const Header: React.FC = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   // Parse company settings if they are a string, otherwise use directly
   const getCompanySettings = () => {
@@ -232,7 +230,6 @@ const Header: React.FC = () => {
   ];
 
   return (
-    <>
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 z-50 relative">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -303,16 +300,8 @@ const Header: React.FC = () => {
               </form>
             )}
 
-            {/* Quick Wallet Recharge Shortcut Button */}
-            <button
-              type="button"
-              onClick={() => setIsWalletModalOpen(true)}
-              className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              title={t("billing.payments.rechargeWallet") || "شحن المحفظة"}
-              aria-label={t("billing.payments.rechargeWallet") || "شحن المحفظة"}
-            >
-              <Wallet className="h-5 w-5" strokeWidth={1.8} />
-            </button>
+            {/* Quick Wallet Recharge Shortcut Button with Live Balance */}
+            <HeaderWalletShortcut />
 
             {/* Visit Store Button */}
             <a
@@ -505,11 +494,6 @@ const Header: React.FC = () => {
         />
       )}
     </header>
-    <QuickWalletRechargeModal
-      isOpen={isWalletModalOpen}
-      onClose={() => setIsWalletModalOpen(false)}
-    />
-    </>
   );
 };
 

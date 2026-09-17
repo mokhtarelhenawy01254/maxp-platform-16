@@ -39,7 +39,7 @@ import { useTemplate } from "../../templates/useTemplate";
 import TemplateSlot from "../../templates/TemplateSlot";
 import { buildStoreUrl } from "../../utils/storeUrl";
 import { hasStoreApp } from "../../utils/storeShortcut";
-import QuickWalletRechargeModal from "../wallet/QuickWalletRechargeModal";
+import HeaderWalletShortcut from "../wallet/HeaderWalletShortcut";
 
 const SuperAdminLayout = React.lazy(() => import("./SuperAdminLayout"));
 const AppDashboardPage = React.lazy(() => import("./app-dashboard/AppDashboardPage"));
@@ -148,7 +148,6 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const [isOrderSearchOpen, setIsOrderSearchOpen] = useState(false);
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   const { settings: sidebarSettings, userSettings, userLayout } = useSidebarSettings();
 
@@ -662,15 +661,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
           ) : null}
 
           <div className="business-shell-utility-row">
-            <button
-              type="button"
-              onClick={() => setIsWalletModalOpen(true)}
-              className="business-icon-button relative group"
-              title={t("billing.payments.rechargeWallet") || "شحن المحفظة"}
-              aria-label={t("billing.payments.rechargeWallet") || "شحن المحفظة"}
-            >
-              <Wallet className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-gray-700 dark:text-gray-300 transition-transform group-hover:scale-105" strokeWidth={1.8} />
-            </button>
+            <HeaderWalletShortcut />
             {hasStore && (
               <a
                 href={storeUrl}
@@ -770,10 +761,6 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
         </div>
       </div>
     </header>
-    <QuickWalletRechargeModal
-      isOpen={isWalletModalOpen}
-      onClose={() => setIsWalletModalOpen(false)}
-    />
     </>
   );
 
