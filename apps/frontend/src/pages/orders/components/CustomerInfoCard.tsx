@@ -11,7 +11,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { OrderDetailsType, Government, Area } from "../types";
 import { GovernorateAreaSearch } from "../../../components/ui/GovernorateAreaSearch";
-import { validateEgyptianPhone } from "../../../utils/validation";
+import { validateEgyptianPhone, toStandardDigits } from "../../../utils/validation";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import {
   customerBlocklistService,
@@ -337,12 +337,17 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
               )}
             </div>
           ) : (
-            <div
-              className="flex items-center text-gray-900 dark:text-gray-100"
-              dir="ltr"
-            >
-              <PhoneIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2" />{" "}
-              {order.customerPhone || t("orders.notSpecified")}
+            <div className="flex items-center text-gray-900 dark:text-gray-100">
+              <PhoneIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 ms-0 me-2 shrink-0" />
+              {order.customerPhone ? (
+                <span dir="ltr" className="font-mono tabular-nums font-medium">
+                  {toStandardDigits(order.customerPhone)}
+                </span>
+              ) : (
+                <span className="text-gray-400 text-sm">
+                  {t("orders.notSpecified")}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -358,10 +363,10 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
                 onChange={(e) =>
                   handlePhoneChange("alternativePhone", e.target.value)
                 }
-                className={`w-full rounded-md text-sm dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 ${
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm ${
                   phoneErrors.alternative
-                    ? "border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500"
-                    : "border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500"
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : "border-gray-300 dark:border-gray-600"
                 }`}
                 dir="ltr"
                 placeholder={t("orderDetails.additionalPhone").toString()}
@@ -374,12 +379,11 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
               )}
             </div>
           ) : order.alternativePhone ? (
-            <div
-              className="flex items-center text-gray-900 dark:text-gray-100"
-              dir="ltr"
-            >
-              <PhoneIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2" />{" "}
-              {order.alternativePhone}
+            <div className="flex items-center text-gray-900 dark:text-gray-100">
+              <PhoneIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 ms-0 me-2 shrink-0" />
+              <span dir="ltr" className="font-mono tabular-nums font-medium">
+                {toStandardDigits(order.alternativePhone)}
+              </span>
             </div>
           ) : (
             <p className="text-gray-400 dark:text-gray-500 text-sm">

@@ -7,6 +7,7 @@ import {
   ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import { summarizeOrderDocumentItems } from "../../../utils/orderDocumentQuantityOffers";
+import { toStandardDigits } from "../../../utils/validation";
 import { OrdersSkeleton } from "./OrdersSkeleton";
 import { OrdersEmptyState } from "./OrdersEmptyState";
 import { OrdersPagination } from "./OrdersPagination";
@@ -287,10 +288,10 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                           </span>
                           {order.customerPhone && (
                             <span
-                              className="text-slate-500 dark:text-slate-400 text-xs font-mono tabular-nums"
+                              className="text-slate-500 dark:text-slate-400 text-xs font-mono tabular-nums self-start"
                               dir="ltr"
                             >
-                              {order.customerPhone}
+                              {toStandardDigits(order.customerPhone)}
                             </span>
                           )}
                           <span className="mt-0.5 hidden text-xs text-slate-400 dark:text-slate-500 2xl:inline">

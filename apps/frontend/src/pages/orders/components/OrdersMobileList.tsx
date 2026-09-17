@@ -9,6 +9,7 @@ import {
   ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import { summarizeOrderDocumentItems } from "../../../utils/orderDocumentQuantityOffers";
+import { toStandardDigits } from "../../../utils/validation";
 import { OrdersSkeleton } from "./OrdersSkeleton";
 import { OrdersEmptyState } from "./OrdersEmptyState";
 import type { Order } from "../Orders";
@@ -185,7 +186,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                             className="text-xs font-mono font-medium tabular-nums text-slate-500 dark:text-slate-400"
                             dir="ltr"
                           >
-                            {order.customerPhone}
+                            {toStandardDigits(order.customerPhone)}
                           </p>
                         )}
                       </div>

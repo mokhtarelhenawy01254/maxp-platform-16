@@ -542,6 +542,17 @@ export function validateOrderItems(
 }
 
 /**
+ * Convert Arabic-Indic (٠-٩) and Eastern Arabic (۰-۹) digits to standard ASCII digits (0-9).
+ */
+export function toStandardDigits(str?: string | null): string {
+  if (!str) return "";
+  return String(str)
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .trim();
+}
+
+/**
  * Validate Egyptian phone number (supporting local, international, Arabic digits, & hidden formatting characters)
  */
 export function validateEgyptianPhone(phone: string): {
@@ -551,10 +562,7 @@ export function validateEgyptianPhone(phone: string): {
   if (!phone) return { isValid: true };
 
   // Convert Arabic-Indic (٠-٩) and Eastern Arabic (۰-۹) digits to ASCII (0-9)
-  const ascii = String(phone)
-    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
-    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
-    .trim();
+  const ascii = toStandardDigits(phone);
 
   // Strip all non-digits except optional leading '+'
   const hasPlus = ascii.startsWith("+");

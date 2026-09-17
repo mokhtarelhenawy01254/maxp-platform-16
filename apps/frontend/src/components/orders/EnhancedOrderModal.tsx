@@ -22,6 +22,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import type { OrderDetailsType } from "../../pages/orders/types";
 import { Link } from "react-router-dom";
 import OrderPartnerOperationsCard from "./OrderPartnerOperationsCard";
+import { toStandardDigits } from "../../utils/validation";
 
 interface StatusOption {
   code: string;
@@ -112,12 +113,12 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           item.productName ||
           item.name ||
           item.product?.name ||
-          "Ù…Ù†ØªØ¬ ØºÙŠØ± Ù…Ø­Ø¯Ø¯",
+          "منتج غير محدد",
         name:
           item.name ||
           item.productName ||
           item.product?.name ||
-          "Ù…Ù†ØªØ¬ ØºÙŠØ± Ù…Ø­Ø¯Ø¯",
+          "منتج غير محدد",
         price: safePrice,
         quantity: safeQuantity,
         total:
@@ -322,7 +323,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
     try {
       setIsPrinting(true);
       setError(null);
-      // ÙØªØ­ Ù†Ø§ÙØ°Ø© Ø§Ù„Ø·Ø¨Ø§Ø¹Ø© ÙÙˆØ±Ø§Ù‹ Ø¶Ù…Ù† ØªÙØ§Ø¹Ù„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ù„ØªØ¬Ù†Ø¨ Ø­Ø¬Ø¨Ù‡Ø§ Ø¨ÙˆØ§Ø³Ø·Ø© Ù…Ø§Ù†Ø¹ Ø§Ù„Ù†ÙˆØ§ÙØ° Ø§Ù„Ù…Ù†Ø¨Ø«Ù‚Ø©
+      // فتح نافذة الطباعة فوراً ضمن تفاعل المستخدم لتجنب حجبها بواسطة مانع النوافذ المنبثقة
       const printWindow = window.open("", "_blank");
       if (!printWindow) {
         setError(
@@ -339,7 +340,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
         const invoice = response.data.data.invoices[0];
         printWindow.location.href = `/orders/invoices/print-multiple?ids=${invoice.id}`;
       } else if (response.data.success && response.data.data.guestOrders?.length > 0) {
-        // Ø·Ù„Ø¨ Ø¶ÙŠÙ ÙØ±Ø¯ÙŠ: Ø§Ø¹Ø±Ø¶Ù‡ ÙÙŠ ØµÙØ­Ø© print-multiple Ø§Ù„Ù…ÙˆØ­Ù‘Ø¯Ø© (Ù†ÙØ³ Ø´Ø±ÙŠØ· Ø§Ù„ØªÙ‚Ø³ÙŠÙ… ÙˆØ§Ù„Ø£ÙƒÙˆØ§Ø¯)
+        // طلب ضيف فردي: اعرضه في صفحة print-multiple الموحّدة (نفس شريط التقسيم والأكواد)
         const { storeGuestPrintPayload } = await import("../../pages/orders/PrintMultipleInvoices");
         const guestKey = storeGuestPrintPayload({
           company: {
@@ -550,190 +551,187 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
 
           {/* Tab: Details */}
           {activeTab === "details" && (
-            <>
-          {/* Customer Info */}
-          <div>
-            {renderSectionHeader(
-              <UserCircleIcon className="h-3.5 w-3.5" />,
-              t("orders.customerInfo"),
-            )}
-            <div className="bg-card/60 border border-border/60 rounded-xl p-2.5 backdrop-blur-sm">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5">
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
-                    {t("orders.name")}
-                  </span>
-                  <span className="text-sm text-foreground font-semibold leading-tight">
-                    {getCustomerDisplayName()}
-                  </span>
-                </div>
-                {order.customerPhone && (
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
-                      {t("orders.phone")}
-                    </span>
-                    <span
-                      className="text-sm text-foreground font-semibold leading-tight"
-                      dir="ltr"
-                    >
-                      {order.customerPhone}
-                    </span>
+            <div className="space-y-3">
+              <div className="rounded-xl border border-border/60 bg-card/40 divide-y divide-border/60 overflow-hidden backdrop-blur-sm">
+                {/* Customer Info */}
+                <div className="p-3">
+                  <div className="flex items-center gap-1.5 pb-2 text-xs font-semibold text-foreground">
+                    <UserCircleIcon className="h-4 w-4 text-primary" />
+                    <span>{t("orders.customerInfo")}</span>
                   </div>
-                )}
-                {(order.governorate || order.shippingAddress?.governorate) && (
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
-                      {t("orders.governorate")}
-                    </span>
-                    <span className="text-sm text-foreground font-semibold leading-tight">
-                      {getLocationDisplayName(
-                        order.governorate || order.shippingAddress?.governorate,
-                      )}
-                    </span>
-                  </div>
-                )}
-                {(order.city || order.shippingAddress?.city) && (
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
-                      {t("orders.city")}
-                    </span>
-                    <span className="text-sm text-foreground font-semibold leading-tight">
-                      {getLocationDisplayName(
-                        order.city || order.shippingAddress?.city,
-                      )}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Order Items */}
-          <div>
-            {renderSectionHeader(
-              <ClipboardDocumentListIcon className="h-3.5 w-3.5" />,
-              t("orders.products"),
-            )}
-            <div className="bg-card/60 border border-border/60 rounded-xl overflow-hidden max-h-48 overflow-y-auto backdrop-blur-sm">
-              {!displayItems || displayItems.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  {t("orders.noProducts")}
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {displayItems.map((item: any, index: number) => (
-                    <div
-                      key={index}
-                      className="p-2 hover:bg-muted/40 transition-colors"
-                    >
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground text-sm leading-tight mb-0.5">
-                            {item.productName ||
-                              item.name ||
-                              t("orders.productNotSpecified")}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {t("orders.quantity")}: {item.quantity}
-                          </p>
-                          {(item.productColor ||
-                            item.productSize ||
-                            item.metadata?.color ||
-                            item.metadata?.size) && (
-                            <div className="text-[11px] mt-1 flex items-center gap-2 flex-nowrap overflow-x-auto max-w-full">
-                              {(item.productColor || item.metadata?.color) && (
-                                <span className="whitespace-nowrap shrink-0 px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-semibold border border-blue-200 dark:border-blue-800">
-                                  🎨 {item.productColor || item.metadata?.color}
-                                </span>
-                              )}
-                              {(item.productSize || item.metadata?.size) && (
-                                <span className="whitespace-nowrap shrink-0 px-2 py-0.5 rounded bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 font-semibold border border-purple-200 dark:border-purple-800">
-                                  📏 {item.productSize || item.metadata?.size}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          {(item.confidence || item.metadata?.confidence) && (
-                            <div
-                              className={`flex items-center mt-2 ${getConfidenceColor(item.confidence || item.metadata?.confidence)}`}
-                            >
-                              {getConfidenceIcon(
-                                item.confidence || item.metadata?.confidence,
-                              )}
-                              <span className="text-xs ml-1 font-medium">
-                                {t("orders.confidence")}:{" "}
-                                {(
-                                  (item.confidence ||
-                                    item.metadata?.confidence) * 100
-                                ).toFixed(0)}
-                                %
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-end">
-                          <p className="font-semibold text-foreground text-sm">
-                            {formatPrice(
-                              item.total || item.price * item.quantity,
-                            )}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {formatPrice(item.price)} / {t("orders.unit")}
-                          </p>
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
+                        {t("orders.name")}
+                      </span>
+                      <span className="text-sm text-foreground font-semibold leading-tight">
+                        {getCustomerDisplayName()}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <OrderPartnerOperationsCard
-            affiliate={order?.affiliate || null}
-            className="mt-4"
-            compact
-            merchantOrder={merchantOrderContext}
-          />
-
-          {/* Order Summary */}
-          <div>
-            {renderSectionHeader(
-              <CalculatorIcon className="h-3.5 w-3.5" />,
-              t("orders.orderSummary"),
-            )}
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-2.5 backdrop-blur-sm">
-              <div className="space-y-2">
-                <div className="flex justify-between text-foreground">
-                  <span>{t("orders.subtotal")}:</span>
-                  <span className="font-medium">
-                    {formatPrice(order.subtotal || 0)}
-                  </span>
-                </div>
-                {order.tax > 0 && (
-                  <div className="flex justify-between text-foreground">
-                    <span>{t("orders.tax")}:</span>
-                    <span className="font-medium">
-                      {formatPrice(order.tax)}
-                    </span>
+                    {order.customerPhone && (
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
+                          {t("orders.phone")}
+                        </span>
+                        <span
+                          className="text-sm text-foreground font-semibold leading-tight font-mono tabular-nums inline-block"
+                          dir="ltr"
+                        >
+                          {toStandardDigits(order.customerPhone)}
+                        </span>
+                      </div>
+                    )}
+                    {(order.governorate || order.shippingAddress?.governorate) && (
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
+                          {t("orders.governorate")}
+                        </span>
+                        <span className="text-sm text-foreground font-semibold leading-tight">
+                          {getLocationDisplayName(
+                            order.governorate || order.shippingAddress?.governorate,
+                          )}
+                        </span>
+                      </div>
+                    )}
+                    {(order.city || order.shippingAddress?.city) && (
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground block leading-none mb-0.5">
+                          {t("orders.city")}
+                        </span>
+                        <span className="text-sm text-foreground font-semibold leading-tight">
+                          {getLocationDisplayName(
+                            order.city || order.shippingAddress?.city,
+                          )}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-                <div className="flex justify-between text-foreground">
-                  <span>{t("orders.shipping")}:</span>
-                  <span className="font-medium">
-                    {formatPrice(order.shipping || 0)}
-                  </span>
                 </div>
-                <div className="flex justify-between pt-2 border-t-2 border-primary/30 text-base font-bold text-foreground">
-                  <span>{t("orders.total")}:</span>
-                  <span className="text-primary">
-                    {formatPrice(order.total || 0)}
-                  </span>
+
+                {/* Order Items */}
+                <div className="p-3">
+                  <div className="flex items-center gap-1.5 pb-2 text-xs font-semibold text-foreground">
+                    <ClipboardDocumentListIcon className="h-4 w-4 text-primary" />
+                    <span>{t("orders.products")}</span>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {!displayItems || displayItems.length === 0 ? (
+                      <div className="py-3 text-center text-xs text-muted-foreground">
+                        {t("orders.noProducts")}
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-border/40">
+                        {displayItems.map((item: any, index: number) => (
+                          <div
+                            key={index}
+                            className="py-2 hover:bg-muted/40 transition-colors"
+                          >
+                            <div className="flex justify-between items-start gap-4">
+                              <div className="flex-1">
+                                <p className="font-medium text-foreground text-sm leading-tight mb-0.5">
+                                  {item.productName ||
+                                    item.name ||
+                                    t("orders.productNotSpecified")}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {t("orders.quantity")}: {item.quantity}
+                                </p>
+                                {(item.productColor ||
+                                  item.productSize ||
+                                  item.metadata?.color ||
+                                  item.metadata?.size) && (
+                                  <div className="text-[11px] mt-1 flex items-center gap-2 flex-nowrap overflow-x-auto max-w-full">
+                                    {(item.productColor || item.metadata?.color) && (
+                                      <span className="whitespace-nowrap shrink-0 px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-medium border border-blue-200 dark:border-blue-800">
+                                        {item.productColor || item.metadata?.color}
+                                      </span>
+                                    )}
+                                    {(item.productSize || item.metadata?.size) && (
+                                      <span className="whitespace-nowrap shrink-0 px-2 py-0.5 rounded bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 font-medium border border-purple-200 dark:border-purple-800">
+                                        {item.productSize || item.metadata?.size}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {(item.confidence || item.metadata?.confidence) && (
+                                  <div
+                                    className={`flex items-center mt-1.5 ${getConfidenceColor(item.confidence || item.metadata?.confidence)}`}
+                                  >
+                                    {getConfidenceIcon(
+                                      item.confidence || item.metadata?.confidence,
+                                    )}
+                                    <span className="text-xs ml-1 font-medium">
+                                      {t("orders.confidence")}:{" "}
+                                      {(
+                                        (item.confidence ||
+                                          item.metadata?.confidence) * 100
+                                      ).toFixed(0)}
+                                      %
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-end">
+                                <p className="font-semibold text-foreground text-sm font-mono tabular-nums">
+                                  {formatPrice(
+                                    item.total || item.price * item.quantity,
+                                  )}
+                                </p>
+                                <p className="text-xs text-muted-foreground font-mono tabular-nums">
+                                  {formatPrice(item.price)} / {t("orders.unit")}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Order Summary */}
+                <div className="p-3 bg-primary/5">
+                  <div className="flex items-center gap-1.5 pb-2 text-xs font-semibold text-foreground">
+                    <CalculatorIcon className="h-4 w-4 text-primary" />
+                    <span>{t("orders.orderSummary")}</span>
+                  </div>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between text-foreground">
+                      <span>{t("orders.subtotal")}:</span>
+                      <span className="font-medium font-mono tabular-nums">
+                        {formatPrice(order.subtotal || 0)}
+                      </span>
+                    </div>
+                    {order.tax > 0 && (
+                      <div className="flex justify-between text-foreground">
+                        <span>{t("orders.tax")}:</span>
+                        <span className="font-medium font-mono tabular-nums">
+                          {formatPrice(order.tax)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-foreground">
+                      <span>{t("orders.shipping")}:</span>
+                      <span className="font-medium font-mono tabular-nums">
+                        {formatPrice(order.shipping || 0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-border/60 text-sm font-bold text-foreground">
+                      <span>{t("orders.total")}:</span>
+                      <span className="text-primary font-mono tabular-nums text-base">
+                        {formatPrice(order.total || 0)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              <OrderPartnerOperationsCard
+                affiliate={order?.affiliate || null}
+                compact
+                merchantOrder={merchantOrderContext}
+              />
             </div>
-          </div>
-            </>
           )}
 
           {/* Tab: Update */}

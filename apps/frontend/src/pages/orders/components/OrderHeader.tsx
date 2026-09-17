@@ -135,11 +135,14 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
           <ArrowLeftIcon className="h-6 w-6" />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-            <ShoppingBagIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400 ml-3" />
-            {t("orderDetails.orderDetailsTitle", {
-              orderNumber: order.orderNumber,
-            })}
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <ShoppingBagIcon className="h-7 w-7 sm:h-8 sm:w-8 text-indigo-600 dark:text-indigo-400" />
+            <span>{t("orderDetails.titlePrefix", { defaultValue: "تفاصيل الطلب" })}</span>
+            <span dir="ltr" className="font-mono tabular-nums text-slate-800 dark:text-slate-200">
+              #{String(order.orderNumber || "").startsWith("cart_")
+                ? `INC-${String(order.orderNumber).replace(/^cart_/, "").slice(0, 8).toUpperCase()}`
+                : order.orderNumber}
+            </span>
           </h1>
           <div className="mt-2 flex items-center gap-3">
             <p className="text-gray-600 dark:text-gray-400">
