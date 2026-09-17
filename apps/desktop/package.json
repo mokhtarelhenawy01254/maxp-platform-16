@@ -70,9 +70,11 @@
       "target": ["nsis", "dir"]
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "MaxP Workspace",
       "artifactName": "MaxP-Workspace-Setup.${ext}",
