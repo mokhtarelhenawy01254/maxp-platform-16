@@ -1,31 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Activity,
   Users,
   Clock,
   Laptop,
-  Globe,
   AlertTriangle,
   RefreshCw,
   Search,
   CheckCircle2,
   PauseCircle,
   XCircle,
-  ShieldAlert,
+  ExternalLink,
+  Calendar,
   Sparkles,
-  Archive,
+  ShieldAlert,
 } from 'lucide-react';
 import api from '../../../services/api';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Badge } from '../../../components/ui/badge';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
 import { useAuth } from '../../../hooks/useAuthSimple';
+import AiStandupCard from './components/AiStandupCard';
+import EmployeeMonitorDetails from './EmployeeMonitorDetails';
 
-interface TeamMemberSummary {
+export interface TeamMemberSummary {
   employeeId: string;
   employeeName?: string;
   departmentName?: string;
+  jobTitle?: string;
   status: 'active' | 'idle' | 'offline';
   totalActiveSeconds: number;
   totalIdleSeconds: number;
@@ -36,6 +36,7 @@ interface TeamMemberSummary {
 
 export const MonitorDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const roleStr = String(user?.role || '').toUpperCase();
   const isManagerOrHR = ['ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'HR_MANAGER', 'OWNER', 'MANAGER'].includes(roleStr);
   const isSuperOrOwner = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(roleStr);
@@ -46,6 +47,8 @@ export const MonitorDashboard: React.FC = () => {
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [teamMembers, setTeamMembers] = useState<TeamMemberSummary[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+
   const [aiStandup, setAiStandup] = useState<{
     date?: string;
     headline?: string;
@@ -76,7 +79,8 @@ export const MonitorDashboard: React.FC = () => {
       ]);
 
       if (overviewRes.status === 'fulfilled') {
-        const data = overviewRes.value.data?.data || [];
+        const resVal: any = overviewRes.value;
+        const data = resVal?.data?.data || [];
         let totalActiveSec = 0;
         let totalProdScore = 0;
         let activeCount = 0;
@@ -89,9 +93,10 @@ export const MonitorDashboard: React.FC = () => {
           return {
             employeeId: item.employeeId,
             employeeName: item.employee?.firstName
-              ? `${item.employee.firstName} ${item.employee.lastName || ''}`
+              ? `${item.employee.firstName} ${item.employee.lastName || ''}`.trim()
               : item.employeeId,
-            departmentName: item.employee?.department?.name || 'General',
+            departmentName: item.employee?.department?.name || 'الإدارة العامة',
+            jobTitle: item.employee?.position?.title || 'موظف',
             status: item.status || 'offline',
             totalActiveSeconds: item.totalActiveSeconds || 0,
             totalIdleSeconds: item.totalIdleSeconds || 0,
@@ -110,316 +115,341 @@ export const MonitorDashboard: React.FC = () => {
         });
       }
 
-      if (aiRes.status === 'fulfilled' && aiRes.value.data?.data) {
-        setAiStandup(aiRes.value.data.data);
+      if (aiRes.status === 'fulfilled') {
+        const aiVal: any = aiRes.value;
+        if (aiVal?.data?.data) {
+          setAiStandup(aiVal.data.data);
+        }
       }
     } catch (err) {
-      console.error('Failed to fetch monitor data:', err);
+      console.warn('[MonitorDashboard] Fetch error:', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, isManagerOrHR]);
+  }, [isManagerOrHR, selectedDate]);
 
-  const handleArchiveLogs = async () => {
-    if (!window.confirm('هل تريد أرشفة وتفريغ السجلات اللحظية الأقدم من 60 يوماً؟ (يتم الاحتفاظ بالملخصات اليومية دائماً)')) {
-      return;
-    }
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 45_000); // 45s live refresh
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
+  const handleTriggerArchive = async () => {
     setArchiving(true);
     setArchiveSuccess(null);
     try {
-      const res = await api.post('/employee-monitor/admin/retention-archive', { retentionDays: 60 });
-      setArchiveSuccess(`تم تفريغ ${res.data?.prunedCounts?.activityLogs ?? 0} سجل لحظي بنجاح.`);
-      setTimeout(() => setArchiveSuccess(null), 5000);
-    } catch (e: any) {
-      alert(e?.response?.data?.error || 'فشلت أرشفة السجلات');
+      const res: any = await api.post('/employee-monitor/admin/retention-archive', { daysThreshold: 60 });
+      if (res?.data?.success) {
+        setArchiveSuccess(`تم بنجاح أرشفة ${res.data.data?.archivedCount || 0} سجل.`);
+        setTimeout(() => setArchiveSuccess(null), 5000);
+      }
+    } catch (err: any) {
+      setArchiveSuccess('تعذر تنفيذ الأرشفة حالياً.');
     } finally {
       setArchiving(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const filteredMembers = teamMembers.filter((m) =>
-    (m.employeeName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (m.departmentName || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const formatSeconds = (sec: number) => {
-    const hours = Math.floor(sec / 3600);
-    const minutes = Math.floor((sec % 3600) / 60);
-    return `${hours}h ${minutes}m`;
+  const formatSeconds = (sec: number = 0) => {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    return `${h} س ${m} د`;
   };
+
+  const filteredMembers = teamMembers.filter((m) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (m.employeeName && m.employeeName.toLowerCase().includes(q)) ||
+      (m.departmentName && m.departmentName.toLowerCase().includes(q)) ||
+      (m.topApp && m.topApp.toLowerCase().includes(q))
+    );
+  });
 
   if (!isManagerOrHR) {
     return (
-      <div className="flex items-center justify-center min-h-[65vh] p-4">
-        <Card className="max-w-md w-full border-border/40 bg-card/60 backdrop-blur text-center p-6 space-y-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-500">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
-          <div className="space-y-1.5">
-            <h2 className="text-lg font-bold text-foreground">صلاحية إدارية مطلوبة</h2>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              لوحة متابعة نشاط وإنتاجية الفريق مخصصة لمدراء الموارد البشرية ومسؤولي الأقسام فقط.
-              يمكنك متابعة مهامك الموكلة وحضورك الشخصي عبر صفحة المهام الخاصة بك.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.location.href = '/tasks'}
-            className="w-full text-xs"
-          >
-            الانتقال إلى قائمة مهامي
-          </Button>
-        </Card>
+      <div className="flex h-[70vh] flex-col items-center justify-center gap-3 text-center" dir="rtl">
+        <ShieldAlert className="h-10 w-10 text-rose-400" />
+        <h2 className="text-base font-bold text-foreground">غير مصرح بالوصول</h2>
+        <p className="max-w-sm text-xs text-muted-foreground">
+          شاشة مراقبة الأجهزة والإنتاجية مخصصة لمسؤولي الموارد البشرية والمدراء فقط.
+        </p>
       </div>
     );
   }
 
+  // If viewing details modal for an employee
+  if (selectedEmployeeId) {
+    return (
+      <EmployeeMonitorDetails
+        employeeIdProp={selectedEmployeeId}
+        onBackProp={() => setSelectedEmployeeId(null)}
+      />
+    );
+  }
+
   return (
-    <div className="space-y-4 p-3 sm:p-6 max-w-7xl mx-auto">
-      {/* Top Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary" />
-            <span>لوحة مراقبة أداء وإنتاجية الموظفين</span>
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            متابعة حية للنشاط، البرامج، والمواقع مع حساب الوقت الفعلي ونسبة الإنتاجية
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-38 text-xs font-mono"
-          />
-          {isSuperOrOwner && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleArchiveLogs}
-              disabled={archiving}
-              className="gap-1.5 text-muted-foreground hover:text-foreground text-xs"
-              title="أرشفة السجلات الأقدم من 60 يوماً لحماية سرعة قاعدة البيانات"
-            >
-              <Archive className={`w-3.5 h-3.5 ${archiving ? 'animate-spin' : ''}`} />
-              <span>{archiving ? 'جاري الأرشفة...' : 'أرشفة السجلات (+60 يوم)'}</span>
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchData}
-            disabled={loading}
-            className="gap-1.5"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>تحديث</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Archive Feedback Toast */}
-      {archiveSuccess && (
-        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-xs text-emerald-500 flex items-center gap-2">
-          <CheckCircle2 className="size-4" />
-          <span>{archiveSuccess}</span>
-        </div>
-      )}
-
-      {/* AI Daily Standup Digest */}
-      {aiStandup && (
-        <div className="rounded-xl border border-primary/25 bg-gradient-to-l from-primary/5 via-card to-card p-4 sm:p-5 shadow-sm transition-all">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-2.5">
+    <div className="min-h-full space-y-4 p-3 sm:p-6" dir="rtl">
+      {/* Top Unified Control Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/40 bg-card/60 p-4 shadow-sm backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/25">
+            <Activity className="h-5 w-5" />
+          </div>
+          <div>
             <div className="flex items-center gap-2">
-              <div className="flex size-7 items-center justify-center rounded-lg bg-primary/15 text-primary border border-primary/30">
-                <Sparkles className="size-4" />
-              </div>
-              <div>
-                <span className="text-xs font-bold text-foreground">الملخص التنفيذي الذكي للفريق (AI Standup)</span>
-                <span className="text-[10px] text-muted-foreground mr-2 font-mono">
-                  {new Date(aiStandup.date || selectedDate).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
-                </span>
-              </div>
+              <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
+                مراقبة وإنتاجية الأجهزة (MaxP Workspace)
+              </h1>
+              <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{stats.activeNow} نشط الآن</span>
+              </span>
             </div>
+            <p className="text-xs text-muted-foreground">
+              متابعة النشاط اللحظي وساعات العمل والإنتاجية لأجهزة سطح المكتب
+            </p>
+          </div>
+        </div>
 
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary text-[10px] font-medium">
-                {aiStandup.headline}
-              </Badge>
-            </div>
+        {/* Date Selector, Search & Sync */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Search Filter */}
+          <div className="relative flex items-center">
+            <Search className="absolute right-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="بحث بالاسم أو القسم…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-8 w-44 rounded-lg border border-border/40 bg-zinc-900/60 pr-8 pl-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none sm:w-56"
+            />
           </div>
 
-          <p className="text-xs text-foreground/90 leading-relaxed sm:text-sm font-normal">
-            {aiStandup.summary}
-          </p>
+          {/* Date Picker */}
+          <div className="flex items-center gap-1.5 rounded-lg border border-border/40 bg-zinc-900/60 px-2.5 py-1 text-xs">
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-transparent text-xs text-foreground focus:outline-none"
+            />
+          </div>
 
-          {/* Attention Points / Flags if any */}
-          {aiStandup.attentionFlags && aiStandup.attentionFlags.length > 0 && (
-            <div className="mt-3 pt-2.5 border-t border-border/40 flex flex-wrap gap-2 items-center">
-              <span className="text-[11px] font-semibold text-amber-500 flex items-center gap-1">
-                <AlertTriangle className="size-3" />
-                تنبيهات المتابعة:
-              </span>
-              {aiStandup.attentionFlags.map((flag: string, idx: number) => (
-                <span
-                  key={idx}
-                  className="inline-flex items-center rounded-md bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 text-[10px] text-amber-600 dark:text-amber-400"
-                >
-                  {flag}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* KPI Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="border border-border/40 bg-card/50 shadow-none">
-          <CardHeader className="p-3 pb-1 flex flex-row items-center justify-between">
-            <CardTitle className="text-xs font-medium text-muted-foreground">الموظفون المتابعون</CardTitle>
-            <Users className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
-            <div className="text-2xl font-bold tabular-nums text-foreground">{stats.totalTracked}</div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">مسجلين على نظام الديسكتوب</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-border/40 bg-card/50 shadow-none">
-          <CardHeader className="p-3 pb-1 flex flex-row items-center justify-between">
-            <CardTitle className="text-xs font-medium text-muted-foreground">نشطون الآن</CardTitle>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
-            <div className="text-2xl font-bold tabular-nums text-emerald-500">{stats.activeNow}</div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">حركة ماوس وكيبورد جارية</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-border/40 bg-card/50 shadow-none">
-          <CardHeader className="p-3 pb-1 flex flex-row items-center justify-between">
-            <CardTitle className="text-xs font-medium text-muted-foreground">متوسط الإنتاجية</CardTitle>
-            <Activity className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
-            <div className="text-2xl font-bold tabular-nums text-foreground">{stats.avgProductivity}%</div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">معدل البرامج والمواقع المنتجة</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-border/40 bg-card/50 shadow-none">
-          <CardHeader className="p-3 pb-1 flex flex-row items-center justify-between">
-            <CardTitle className="text-xs font-medium text-muted-foreground">إجمالي ساعات العمل</CardTitle>
-            <Clock className="w-4 h-4 text-blue-500" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
-            <div className="text-2xl font-bold tabular-nums text-foreground">{stats.totalHoursTracked}h</div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">ساعات نشطة فعلية اليوم</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filter and Search */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="w-4 h-4 absolute right-2.5 top-2.5 text-muted-foreground" />
-          <Input
-            placeholder="بحث بالاسم أو القسم..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-8 text-xs h-9"
-          />
+          <button
+            onClick={fetchData}
+            disabled={loading}
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-border/40 bg-zinc-900/60 px-3 text-xs font-medium text-muted-foreground transition hover:bg-zinc-800 hover:text-foreground active:scale-95"
+            title="تحديث البيانات لحظياً"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>تحديث</span>
+          </button>
         </div>
       </div>
 
-      {/* Employee List Table */}
-      <Card className="border border-border/40 bg-card/50 overflow-hidden shadow-none">
-        <div className="overflow-x-auto">
-          <table className="w-full text-right text-xs">
-            <thead className="bg-muted/40 border-b border-border/40 text-muted-foreground font-medium">
-              <tr>
-                <th className="p-3">الموظف</th>
-                <th className="p-3">القسم</th>
-                <th className="p-3">الحالة الحالية</th>
-                <th className="p-3">الوقت الفعلي</th>
-                <th className="p-3">الوقت الخامل</th>
-                <th className="p-3">معدل الإنتاجية</th>
-                <th className="p-3">البرنامج الرئيسي</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/20">
-              {filteredMembers.length === 0 ? (
+      {/* 4 Bento Operational KPIs */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {/* KPI 1 */}
+        <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>الموظفون الموثقون اليوم</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10 text-sky-400 ring-1 ring-sky-500/20">
+              <Users className="h-3.5 w-3.5" />
+            </span>
+          </div>
+          <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
+            {stats.totalTracked}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            إجمالي الأجهزة التي أرسلت بيانات
+          </div>
+        </div>
+
+        {/* KPI 2 */}
+        <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>نشط ومتصل حالياً</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
+              <Activity className="h-3.5 w-3.5" />
+            </span>
+          </div>
+          <div className="mt-2 text-xl font-bold text-emerald-400 tabular-nums">
+            {stats.activeNow}
+          </div>
+          <div className="mt-1 text-[11px] text-emerald-400">
+            تفاعل مباشر خلال آخر 15 دقيقة
+          </div>
+        </div>
+
+        {/* KPI 3 */}
+        <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>متوسط الإنتاجية اليومية</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20">
+              <Sparkles className="h-3.5 w-3.5" />
+            </span>
+          </div>
+          <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
+            {stats.avgProductivity}%
+          </div>
+          <div className="mt-1 text-[11px] text-purple-400">
+            مؤشر كفاءة استخدام وقت الدوام
+          </div>
+        </div>
+
+        {/* KPI 4 */}
+        <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>إجمالي ساعات العمل</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20">
+              <Clock className="h-3.5 w-3.5" />
+            </span>
+          </div>
+          <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
+            {stats.totalHoursTracked} ساعة
+          </div>
+          <div className="mt-1 text-[11px] text-amber-400">
+            مجموع الساعات الموثقة للفريق
+          </div>
+        </div>
+      </div>
+
+      {/* AI Daily Standup Card */}
+      <AiStandupCard
+        aiStandup={aiStandup}
+        isSuperOrOwner={isSuperOrOwner}
+        archiving={archiving}
+        archiveSuccess={archiveSuccess}
+        onTriggerArchive={handleTriggerArchive}
+      />
+
+      {/* Team Roster Grid Table */}
+      <div className="overflow-hidden rounded-xl border border-border/40 bg-card/60 shadow-sm">
+        <div className="border-b border-border/40 px-4 py-3">
+          <h2 className="text-sm font-semibold text-foreground">
+            سجل نشاط وإنتاجية الفريق ({filteredMembers.length})
+          </h2>
+        </div>
+
+        {loading && teamMembers.length === 0 ? (
+          <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
+            <RefreshCw className="h-4 w-4 animate-spin ml-2 text-sky-400" />
+            <span>جاري استرداد بيانات النشاط السحابية…</span>
+          </div>
+        ) : filteredMembers.length === 0 ? (
+          <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
+            لا توجد أجهزة مطابقة للبحث المسجل لهذا اليوم
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-xs">
+              <thead className="border-b border-border/40 bg-zinc-950/40 text-muted-foreground">
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                    لا توجد بيانات تتبع مسجلة لهذا التاريخ حتى الآن.
-                  </td>
+                  <th className="px-4 py-3 font-semibold">الموظف / القسم</th>
+                  <th className="px-4 py-3 font-semibold">الحالة اللحظية</th>
+                  <th className="px-4 py-3 font-semibold">وقت العمل الفعلي</th>
+                  <th className="px-4 py-3 font-semibold">وقت التوقف / الاستراحة</th>
+                  <th className="px-4 py-3 font-semibold">معدل الإنتاجية</th>
+                  <th className="px-4 py-3 font-semibold">البرنامج الأبرز</th>
+                  <th className="px-4 py-3 text-left font-semibold">الإجراءات</th>
                 </tr>
-              ) : (
-                filteredMembers.map((m) => (
-                  <tr key={m.employeeId} className="hover:bg-muted/20 transition-colors">
-                    <td className="p-3 font-medium text-foreground">
-                      {m.employeeName}
+              </thead>
+              <tbody className="divide-y divide-border/20">
+                {filteredMembers.map((m) => (
+                  <tr
+                    key={m.employeeId}
+                    className="transition-colors hover:bg-zinc-900/40"
+                  >
+                    {/* Employee info */}
+                    <td className="px-4 py-3">
+                      <div className="font-semibold text-foreground">
+                        {m.employeeName}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {m.departmentName} • {m.jobTitle}
+                      </div>
                     </td>
-                    <td className="p-3 text-muted-foreground">{m.departmentName}</td>
-                    <td className="p-3">
+
+                    {/* Status */}
+                    <td className="px-4 py-3">
                       {m.status === 'active' && (
-                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[11px] font-normal">
-                          نشط الآن
-                        </Badge>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                          <CheckCircle2 className="h-3 w-3" /> نشط الآن
+                        </span>
                       )}
                       {m.status === 'idle' && (
-                        <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-[11px] font-normal">
-                          خامل
-                        </Badge>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
+                          <PauseCircle className="h-3 w-3" /> استراحة / خمول
+                        </span>
                       )}
                       {m.status === 'offline' && (
-                        <Badge variant="outline" className="bg-muted/20 text-muted-foreground border-border text-[11px] font-normal">
-                          غير متصل
-                        </Badge>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
+                          <XCircle className="h-3 w-3" /> غير متصل
+                        </span>
                       )}
                     </td>
-                    <td className="p-3 tabular-nums font-mono text-emerald-400">
+
+                    {/* Active Time */}
+                    <td className="px-4 py-3 font-medium text-foreground tabular-nums">
                       {formatSeconds(m.totalActiveSeconds)}
                     </td>
-                    <td className="p-3 tabular-nums font-mono text-amber-400">
+
+                    {/* Idle Time */}
+                    <td className="px-4 py-3 text-muted-foreground tabular-nums">
                       {formatSeconds(m.totalIdleSeconds)}
                     </td>
-                    <td className="p-3">
+
+                    {/* Productivity Score Bar */}
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-16 bg-muted rounded-full h-1.5 overflow-hidden">
+                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-zinc-800">
                           <div
                             className={`h-full rounded-full ${
-                              m.productivityScore >= 70
+                              m.productivityScore >= 75
                                 ? 'bg-emerald-500'
-                                : m.productivityScore >= 40
-                                ? 'bg-amber-500'
-                                : 'bg-red-500'
+                                : m.productivityScore >= 50
+                                ? 'bg-sky-500'
+                                : 'bg-amber-500'
                             }`}
                             style={{ width: `${Math.min(100, m.productivityScore)}%` }}
                           />
                         </div>
-                        <span className="tabular-nums font-mono">{m.productivityScore}%</span>
+                        <span className="font-semibold text-foreground tabular-nums">
+                          {m.productivityScore}%
+                        </span>
                       </div>
                     </td>
-                    <td className="p-3 text-muted-foreground truncate max-w-[140px]">
-                      {m.topApp || '—'}
+
+                    {/* Top App */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 text-zinc-300">
+                        <Laptop className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                        <span className="truncate max-w-[130px]" title={m.topApp || 'سطح المكتب'}>
+                          {m.topApp || 'سطح المكتب'}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3 text-left">
+                      <button
+                        onClick={() => setSelectedEmployeeId(m.employeeId)}
+                        className="inline-flex items-center gap-1 rounded-md border border-border/40 bg-zinc-900 px-2.5 py-1 text-xs font-medium text-sky-400 transition hover:bg-sky-500/10 hover:border-sky-500/30 active:scale-95"
+                        title="عرض المخطط الزمني والبرامج والمواقع لهذا الموظف"
+                      >
+                        <span>التفاصيل</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </button>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

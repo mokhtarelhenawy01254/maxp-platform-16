@@ -208,15 +208,90 @@ class MonitorService {
 
   async getEmployeeTimeline(companyId, employeeId, date) {
     const startOfDay = new Date(date);
-    startOfDay.setHours(0,0,0,0);
+    startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
-    endOfDay.setHours(23,59,59,999);
+    endOfDay.setHours(23, 59, 59, 999);
 
-    const activities = await this.prisma.monitorActivityLog.findMany({
-      where: { companyId, employeeId, intervalStart: { gte: startOfDay, lte: endOfDay } }
-    });
+    const [activities, apps, websites, summary, employee] = await Promise.all([
+      this.prisma.monitorActivityLog.findMany({
+        where: { companyId, employeeId, intervalStart: { gte: startOfDay, lte: endOfDay } },
+        orderBy: { intervalStart: 'asc' },
+      }),
+      this.prisma.monitorAppUsage.findMany({
+        where: { companyId, employeeId, date: { gte: startOfDay, lte: endOfDay } },
+        orderBy: { durationSeconds: 'desc' },
+      }),
+      this.prisma.monitorWebUsage.findMany({
+        where: { companyId, employeeId, date: { gte: startOfDay, lte: endOfDay } },
+        orderBy: { durationSeconds: 'desc' },
+      }),
+      this.prisma.monitorDailySummary.findUnique({
+        where: { companyId_employeeId_date: { companyId, employeeId, date: startOfDay } },
+      }),
+      this.prisma.employee.findFirst({
+        where: { companyId, OR: [{ id: employeeId }, { userId: employeeId }] },
+        include: {
+          department: { select: { name: true } },
+          position: { select: { title: true } },
+        },
+      }).catch(() => null),
+    ]);
 
-    return { activities };
+    // Aggregate app totals by appName
+    const appMap = new Map();
+    for (const a of apps) {
+      const key = a.appName || 'Unknown';
+      if (!appMap.has(key)) {
+        appMap.set(key, {
+          appName: key,
+          windowTitle: a.windowTitle,
+          category: a.category || 'unrated',
+          durationSeconds: 0,
+          entriesCount: 0,
+        });
+      }
+      const existing = appMap.get(key);
+      existing.durationSeconds += (a.durationSeconds || 0);
+      existing.entriesCount += 1;
+      if (a.windowTitle) existing.windowTitle = a.windowTitle;
+    }
+    const aggregatedApps = Array.from(appMap.values()).sort(
+      (a, b) => b.durationSeconds - a.durationSeconds
+    );
+
+    // Aggregate web totals by domain
+    const webMap = new Map();
+    for (const w of websites) {
+      const key = w.domain || w.url || 'Unknown';
+      if (!webMap.has(key)) {
+        webMap.set(key, {
+          domain: key,
+          url: w.url,
+          pageTitle: w.pageTitle,
+          category: w.category || 'unrated',
+          durationSeconds: 0,
+          entriesCount: 0,
+        });
+      }
+      const existing = webMap.get(key);
+      existing.durationSeconds += (w.durationSeconds || 0);
+      existing.entriesCount += 1;
+      if (w.pageTitle) existing.pageTitle = w.pageTitle;
+    }
+    const aggregatedWeb = Array.from(webMap.values()).sort(
+      (a, b) => b.durationSeconds - a.durationSeconds
+    );
+
+    return {
+      date,
+      summary,
+      employee,
+      activities,
+      apps: aggregatedApps,
+      rawApps: apps,
+      websites: aggregatedWeb,
+      rawWebsites: websites,
+    };
   }
 
   async getCategories(companyId) {
