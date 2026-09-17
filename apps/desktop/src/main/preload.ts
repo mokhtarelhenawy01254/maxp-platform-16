@@ -70,8 +70,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Updates
   checkForUpdates: () =>
     ipcRenderer.invoke('update:check'),
+  quitAndInstallUpdate: () =>
+    ipcRenderer.invoke('update:quit-and-install'),
 
   // Events from main process — each returns an unsubscribe function
+  onUpdateStatus: (callback: (data: any) => void) => {
+    const listener = (_: any, data: any) => callback(data);
+    ipcRenderer.on('update:status', listener);
+    return () => ipcRenderer.removeListener('update:status', listener);
+  },
   onTrackerStateUpdate: (callback: (state: any) => void) => {
     const listener = (_: any, state: any) => callback(state);
     ipcRenderer.on(CHANNELS.TRACKER_STATE_UPDATE, listener);

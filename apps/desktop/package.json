@@ -1,6 +1,6 @@
 {
   "name": "maxp-desktop-monitor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MaxP Employee Monitor — Desktop activity tracking agent",
   "main": "dist/main/main/main.js",
   "author": "MaxP",
@@ -63,9 +63,8 @@
       "bin/**/*"
     ],
     "publish": {
-      "provider": "github",
-      "owner": "elhenawym124-ops",
-      "repo": "maxp-platform-10"
+      "provider": "generic",
+      "url": "https://maxp.online/download/"
     },
     "win": {
       "target": ["nsis", "dir"]

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Coffee, Play, Clock, CheckCircle2 } from 'lucide-react';
+import { Coffee, Play, Clock, CheckCircle2, Sparkles } from 'lucide-react';
 import Sidebar, { TabId } from '../components/Sidebar';
 import CockpitTab from './CockpitTab';
 import TasksTab from './TasksTab';
@@ -45,6 +45,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
   const [showSettings, setShowSettings] = useState(false);
   const [breakLoading, setBreakLoading] = useState(false);
   const [clockInDisplay, setClockInDisplay] = useState<string | null>(null);
+  const [updateBanner, setUpdateBanner] = useState<{
+    stage: 'available' | 'downloading' | 'downloaded';
+    version?: string;
+    percent?: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!window.electronAPI?.onUpdateStatus) return;
+    const unsub = window.electronAPI.onUpdateStatus((status: any) => {
+      if (status.stage === 'available') {
+        setUpdateBanner({ stage: 'available', version: status.version });
+      } else if (status.stage === 'downloading') {
+        setUpdateBanner({ stage: 'downloading', percent: status.percent, version: status.version });
+      } else if (status.stage === 'downloaded') {
+        setUpdateBanner({ stage: 'downloaded', version: status.version });
+      } else if (status.stage === 'up-to-date' || status.stage === 'error') {
+        setUpdateBanner((prev) => (prev?.stage === 'downloaded' ? prev : null));
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Auto-redirect if non-admin somehow lands on restricted tab
   useEffect(() => {
@@ -210,6 +231,69 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
             )}
           </div>
         </header>
+
+        {/* Global Update Notification Banner */}
+        {updateBanner && (
+          <div
+            style={{
+              background:
+                updateBanner.stage === 'downloaded'
+                  ? 'rgba(34, 197, 94, 0.14)'
+                  : 'rgba(56, 189, 248, 0.12)',
+              borderBottom: `1px solid ${
+                updateBanner.stage === 'downloaded'
+                  ? 'rgba(34, 197, 94, 0.3)'
+                  : 'rgba(56, 189, 248, 0.25)'
+              }`,
+              padding: '7px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: 12,
+              animation: 'fadeIn 200ms ease-out',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {updateBanner.stage === 'downloaded' ? (
+                <CheckCircle2 size={15} color="#22c55e" />
+              ) : (
+                <Sparkles size={15} color="#38bdf8" />
+              )}
+              <span
+                style={{
+                  color: updateBanner.stage === 'downloaded' ? '#22c55e' : '#38bdf8',
+                  fontWeight: 600,
+                }}
+              >
+                {updateBanner.stage === 'downloaded'
+                  ? `تم تنزيل التحديث الجديد v${updateBanner.version || ''} بنجاح! جاهز للتثبيت الفوري.`
+                  : updateBanner.stage === 'downloading'
+                  ? `جاري تنزيل التحديث v${updateBanner.version || ''} في الخلفية (${updateBanner.percent || 0}%)…`
+                  : `يتوفر تحديث جديد v${updateBanner.version || ''}، جاري التنزيل تلقائياً في الخلفية…`}
+              </span>
+            </div>
+            {updateBanner.stage === 'downloaded' && (
+              <button
+                onClick={() => window.electronAPI.quitAndInstallUpdate()}
+                style={{
+                  background: '#22c55e',
+                  color: '#09090b',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '4px 12px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 140ms ease-out',
+                }}
+                onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+              >
+                إعادة التشغيل والتثبيت الآن
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Content Container */}
         <div style={styles.contentArea}>

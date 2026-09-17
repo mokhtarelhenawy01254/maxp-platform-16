@@ -39,6 +39,8 @@ declare global {
         latestVersion?: string;
         message: string;
       }>;
+      quitAndInstallUpdate: () => Promise<void>;
+      onUpdateStatus: (callback: (status: any) => void) => (() => void);
       onTrackerStateUpdate: (callback: (state: any) => void) => (() => void);
       onNotification: (callback: (data: any) => void) => (() => void);
       onTaskAssigned: (callback: (task: any) => void) => (() => void);

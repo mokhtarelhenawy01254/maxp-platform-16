@@ -37,7 +37,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [currentVersion, setCurrentVersion] = useState('1.0.0');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateResult, setUpdateResult] = useState<{
-    status: 'idle' | 'checking' | 'dev' | 'update-available' | 'up-to-date' | 'error';
+    status: 'idle' | 'checking' | 'dev' | 'update-available' | 'downloaded' | 'up-to-date' | 'error';
     message?: string;
     version?: string;
   }>({ status: 'idle' });
@@ -47,6 +47,49 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       loadPrefs();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!window.electronAPI?.onUpdateStatus) return;
+    const unsub = window.electronAPI.onUpdateStatus((status: any) => {
+      if (status.stage === 'checking') {
+        setIsCheckingUpdate(true);
+        setUpdateResult({ status: 'checking' });
+      } else if (status.stage === 'available') {
+        setIsCheckingUpdate(false);
+        setUpdateResult({
+          status: 'update-available',
+          version: status.version,
+          message: `يتوفر إصدار جديد v${status.version}. جاري التنزيل تلقائياً في الخلفية...`,
+        });
+      } else if (status.stage === 'downloading') {
+        setIsCheckingUpdate(false);
+        setUpdateResult({
+          status: 'update-available',
+          message: `جاري تنزيل التحديث... (${status.percent || 0}%)`,
+        });
+      } else if (status.stage === 'downloaded') {
+        setIsCheckingUpdate(false);
+        setUpdateResult({
+          status: 'downloaded',
+          version: status.version,
+          message: `تم تنزيل التحديث v${status.version} بنجاح! جاهز للتثبيت الفوري.`,
+        });
+      } else if (status.stage === 'up-to-date') {
+        setIsCheckingUpdate(false);
+        setUpdateResult({
+          status: 'up-to-date',
+          message: `البرنامج على أحدث إصدار v${status.version || currentVersion}.`,
+        });
+      } else if (status.stage === 'error') {
+        setIsCheckingUpdate(false);
+        setUpdateResult({
+          status: 'error',
+          message: status.message || 'تعذر الاتصال بخادم التحديثات',
+        });
+      }
+    });
+    return () => unsub();
+  }, [currentVersion]);
 
   const loadPrefs = async () => {
     try {
@@ -262,6 +305,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#38bdf8' }}>
                       <Download size={13} />
                       <span style={{ fontSize: 11, fontWeight: 500 }}>{updateResult.message}</span>
+                    </div>
+                  )}
+
+                  {updateResult.status === 'downloaded' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e' }}>
+                        <CheckCircle2 size={13} />
+                        <span style={{ fontSize: 11, fontWeight: 600 }}>{updateResult.message}</span>
+                      </div>
+                      <button
+                        onClick={() => window.electronAPI.quitAndInstallUpdate()}
+                        style={{
+                          background: '#22c55e',
+                          color: '#09090b',
+                          border: 'none',
+                          borderRadius: 6,
+                          padding: '6px 12px',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                        }}
+                        onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                      >
+                        <span>إعادة التشغيل وتثبيت التحديث الآن</span>
+                      </button>
                     </div>
                   )}
 

@@ -705,6 +705,7 @@ function registerIpcHandlers(): void {
         };
       }
 
+      autoUpdater.setFeedURL({ provider: 'generic', url: 'https://maxp.online/download/' });
       const result = await autoUpdater.checkForUpdates();
       if (result && result.updateInfo && result.updateInfo.version !== currentVersion) {
         return {
@@ -730,6 +731,16 @@ function registerIpcHandlers(): void {
         currentVersion: app.getVersion(),
         message: err?.message || 'تعذر التحقق من التحديثات حالياً. تأكد من اتصال الإنترنت.',
       };
+    }
+  });
+
+  ipcMain.handle('update:quit-and-install', () => {
+    try {
+      autoUpdater.quitAndInstall(false, true);
+      return { success: true };
+    } catch (err: any) {
+      console.warn('[Updater] quitAndInstall failed:', err.message);
+      return { success: false, error: err.message };
     }
   });
 }
@@ -823,37 +834,70 @@ function initAutoUpdater(): void {
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;
 
+    // Direct generic download from maxp.online server without GitHub authentication restrictions
+    autoUpdater.setFeedURL({
+      provider: 'generic',
+      url: 'https://maxp.online/download/',
+    });
+
     autoUpdater.on('checking-for-update', () => {
-      console.log('[Updater] Checking for updates...');
+      console.log('[Updater] Checking for updates from https://maxp.online/download/...');
+      mainWindow?.webContents.send('update:status', { stage: 'checking' });
     });
 
     autoUpdater.on('update-available', (info) => {
       console.log('[Updater] Update available:', info.version);
-      showNotification('MaxP Workspace', `تحديث متوفر v${info.version}، جاري التنزيل في الخلفية...`);
+      mainWindow?.webContents.send('update:status', {
+        stage: 'available',
+        version: info.version,
+      });
+      showNotification('MaxP Workspace', `يتوفر تحديث جديد v${info.version}، جاري التنزيل تلقائياً في الخلفية...`);
+    });
+
+    autoUpdater.on('download-progress', (progressObj) => {
+      mainWindow?.webContents.send('update:status', {
+        stage: 'downloading',
+        percent: Math.round(progressObj.percent),
+        bytesPerSecond: progressObj.bytesPerSecond,
+        total: progressObj.total,
+        transferred: progressObj.transferred,
+      });
     });
 
     autoUpdater.on('update-not-available', () => {
       console.log('[Updater] App is up to date.');
+      mainWindow?.webContents.send('update:status', {
+        stage: 'up-to-date',
+        version: app.getVersion(),
+      });
     });
 
     autoUpdater.on('error', (err) => {
-      console.warn('[Updater] Auto-updater warning:', err?.message || err);
+      console.warn('[Updater] Auto-updater error:', err?.message || err);
+      mainWindow?.webContents.send('update:status', {
+        stage: 'error',
+        message: err?.message || 'تعذر التحقق من التحديثات',
+      });
     });
 
     autoUpdater.on('update-downloaded', (info) => {
       console.log('[Updater] Update downloaded successfully:', info.version);
+      mainWindow?.webContents.send('update:status', {
+        stage: 'downloaded',
+        version: info.version,
+      });
       showNotification(
         'MaxP Workspace',
-        `تم تنزيل التحديث v${info.version}. سيتم تطبيقه تلقائياً عند إعادة التشغيل القادمة.`
+        `تم تنزيل التحديث v${info.version} بنجاح. أعد تشغيل التطبيق لتثبيته.`
       );
     });
 
-    // Check on startup after 15 seconds, and then every 2 hours
+    // Check on startup immediately after 2.5 seconds, and then every 2 hours
     setTimeout(() => {
       autoUpdater.checkForUpdatesAndNotify().catch((e) => {
         console.warn('[Updater] Initial check failed:', e?.message);
       });
-    }, 15000);
+    }, 2500);
 
     setInterval(() => {
       autoUpdater.checkForUpdatesAndNotify().catch(() => {});
