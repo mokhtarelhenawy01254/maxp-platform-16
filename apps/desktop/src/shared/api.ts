@@ -190,34 +190,8 @@ class MonitorApiClient {
     }
   }
 
-  async createTask(taskData: {
-    title: string;
-    description?: string;
-    priority?: string;
-    assignedTo?: string;
-    dueDate?: string;
-    isRecurring?: boolean;
-    recurringRule?: string;
-  }): Promise<any> {
-    const base = this.serverUrl;
-    const payload = {
-      title: taskData.title,
-      description: taskData.description || taskData.title,
-      priority: (taskData.priority || 'MEDIUM').toUpperCase(),
-      assignedTo: taskData.assignedTo,
-      dueDate: taskData.dueDate || null,
-      isRecurring: taskData.isRecurring || false,
-      recurringRule: taskData.recurringRule || null,
-    };
-
-    const res = await axios.post(`${base}/api/v1/tasks`, payload, {
-      headers: {
-        Authorization: `Bearer ${this.authToken}`,
-        'Content-Type': 'application/json',
-      },
-      timeout: 15_000,
-    });
-    return res.data?.data ?? res.data;
+  get token(): string {
+    return this.authToken;
   }
 
   async updateTaskStatus(taskId: string, status: string): Promise<any> {
@@ -233,6 +207,75 @@ class MonitorApiClient {
         timeout: 10_000,
       }
     );
+    return res.data?.data ?? res.data;
+  }
+
+  async updateTask(
+    taskData: {
+      id?: string;
+      title: string;
+      description?: string;
+      priority?: string;
+      assignedTo?: string;
+      dueDate?: string;
+      estimatedMinutes?: number;
+      isRecurring?: boolean;
+      recurringRule?: string;
+    },
+    taskId?: string
+  ): Promise<any> {
+    const base = this.serverUrl;
+    const id = taskId || taskData.id;
+    const payload = {
+      title: taskData.title,
+      description: taskData.description || taskData.title,
+      priority: (taskData.priority || 'MEDIUM').toUpperCase(),
+      assignedTo: taskData.assignedTo,
+      dueDate: taskData.dueDate || null,
+      estimatedMinutes: taskData.estimatedMinutes,
+      isRecurring: taskData.isRecurring || false,
+      recurringRule: taskData.recurringRule || null,
+    };
+
+    const res = await axios.put(`${base}/api/v1/tasks/${id}`, payload, {
+      headers: {
+        Authorization: `Bearer ${this.authToken}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: 15_000,
+    });
+    return res.data?.data ?? res.data;
+  }
+
+  async createTask(taskData: {
+    title: string;
+    description?: string;
+    priority?: string;
+    assignedTo?: string;
+    dueDate?: string;
+    estimatedMinutes?: number;
+    isRecurring?: boolean;
+    recurringRule?: string;
+  }): Promise<any> {
+    const base = this.serverUrl;
+    const payload = {
+      title: taskData.title,
+      description: taskData.description || taskData.title,
+      priority: (taskData.priority || 'MEDIUM').toUpperCase(),
+      assignedTo: taskData.assignedTo,
+      dueDate: taskData.dueDate || null,
+      estimatedMinutes: taskData.estimatedMinutes,
+      isRecurring: taskData.isRecurring || false,
+      recurringRule: taskData.recurringRule || null,
+    };
+
+    const res = await axios.post(`${base}/api/v1/tasks`, payload, {
+      headers: {
+        Authorization: `Bearer ${this.authToken}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: 15_000,
+    });
     return res.data?.data ?? res.data;
   }
 
@@ -284,6 +327,47 @@ class MonitorApiClient {
     );
 
     return linkRes.data?.data ?? linkRes.data;
+  }
+
+  async startTaskTimer(taskId: string): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.post(
+      `${base}/api/v1/tasks/${taskId}/time-tracking/start`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 10_000,
+      }
+    );
+    return res.data?.data ?? res.data;
+  }
+
+  async stopTaskTimer(entryId: string): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.put(
+      `${base}/api/v1/tasks/time-tracking/${entryId}/stop`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 10_000,
+      }
+    );
+    return res.data?.data ?? res.data;
+  }
+
+  async getRunningTaskTimer(): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.get(`${base}/api/v1/tasks/running-timer`, {
+      headers: { Authorization: `Bearer ${this.authToken}` },
+      timeout: 10_000,
+    });
+    return res.data?.data ?? null;
   }
 
   // ── Automated Attendance Linkage ─────────────────────────────

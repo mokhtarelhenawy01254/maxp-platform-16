@@ -12,6 +12,7 @@ import {
   Clock,
   Loader2,
 } from 'lucide-react';
+import { audioAlerts } from '../../utils/audioAlerts';
 
 interface CompanyUser {
   id: string;
@@ -41,11 +42,18 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   onCreated,
   users,
 }) => {
+  const getDefaultDueDate = () => {
+    const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState(getDefaultDueDate);
+  const [estimatedMinutes, setEstimatedMinutes] = useState<number>(60);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringRule, setRecurringRule] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY'>('DAILY');
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
@@ -123,12 +131,19 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         priority,
         assignedTo: assignedTo || undefined,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        estimatedMinutes: Number(estimatedMinutes) || 60,
         isRecurring,
         recurringRule: isRecurring ? recurringRule : undefined,
       });
 
       if (!createRes.success || !createRes.task?.id) {
         throw new Error(createRes.error || 'فشل إنشاء المهمة في السيرفر');
+      }
+
+      if (priority === 'URGENT') {
+        audioAlerts.playUrgentAlert();
+      } else {
+        audioAlerts.playTaskStart();
       }
 
       const newTaskId = createRes.task.id;
@@ -241,6 +256,45 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 <option value="MEDIUM">عادي (Medium)</option>
                 <option value="LOW">منخفض (Low)</option>
               </select>
+            </div>
+          </div>
+
+          {/* Estimated Duration in Minutes */}
+          <div>
+            <label style={modalStyles.label}>وقت الإنجاز المقدر للمهمة (بالدقائق)</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              {[15, 30, 45, 60, 90, 120].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setEstimatedMinutes(m)}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    border: estimatedMinutes === m ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
+                    background: estimatedMinutes === m ? 'rgba(56, 189, 248, 0.15)' : '#18181b',
+                    color: estimatedMinutes === m ? '#38bdf8' : '#a1a1aa',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {m} دقيقة
+                </button>
+              ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <input
+                  type="number"
+                  min={5}
+                  max={1440}
+                  value={estimatedMinutes}
+                  onChange={(e) => setEstimatedMinutes(Math.max(1, Number(e.target.value) || 0))}
+                  placeholder="مخصص"
+                  style={{ ...modalStyles.input, width: 85, padding: '5px 8px', fontSize: 12, textAlign: 'center' }}
+                />
+                <span style={{ fontSize: 11, color: '#71717a' }}>دقيقة</span>
+              </div>
             </div>
           </div>
 

@@ -751,9 +751,14 @@ app.use("/uploads", async (req, res, next) => {
       });
     }
 
-    // Private folders: require a logged-in dashboard session (refreshToken cookie).
+    // Private folders: require a logged-in dashboard session (refreshToken cookie, Authorization header, or token query param).
     // 404 (not 403) to avoid revealing that the file exists.
-    if (isPrivateUpload && !req.cookies?.refreshToken) {
+    const hasAuth =
+      Boolean(req.cookies?.refreshToken) ||
+      Boolean(req.headers.authorization) ||
+      Boolean(req.query?.token);
+
+    if (isPrivateUpload && !hasAuth) {
       return res.status(404).json({
         success: false,
         error: "Asset Not Found",

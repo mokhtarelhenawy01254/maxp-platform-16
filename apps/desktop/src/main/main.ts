@@ -662,6 +662,50 @@ function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('tasks:update', async (_, { taskId, data }) => {
+    try {
+      const task = await apiClient.updateTask(data, taskId);
+      mainWindow?.webContents.send('tasks:refresh', { action: 'update', taskId });
+      setTimeout(() => {
+        pollTaskNotifications().catch(() => {});
+      }, 500);
+      return { success: true, task };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('tasks:start-timer', async (_, { taskId }) => {
+    try {
+      const entry = await apiClient.startTaskTimer(taskId);
+      return { success: true, entry };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('tasks:stop-timer', async (_, { entryId }) => {
+    try {
+      const result = await apiClient.stopTaskTimer(entryId);
+      return { success: true, result };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('tasks:get-running-timer', async () => {
+    try {
+      const runningTimer = await apiClient.getRunningTaskTimer();
+      return { success: true, runningTimer };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('auth:get-token', async () => {
+    return { token: apiClient.token };
+  });
+
   ipcMain.handle(
     'tasks:upload-attachment',
     async (_, { taskId, base64Data, originalName, mimeType }) => {
@@ -774,9 +818,9 @@ function sendStateToRenderer(): void {
   });
 }
 
-function showNotification(title: string, body: string, respectSoundPref: boolean = false): void {
+function showNotification(title: string, body: string, respectSoundPref: boolean = true): void {
   if (Notification.isSupported()) {
-    const silent = respectSoundPref ? !store.get('soundAlerts', true) : true;
+    const silent = respectSoundPref ? !store.get('soundAlerts', true) : false;
     new Notification({ title, body, silent }).show();
   }
 }
@@ -841,7 +885,8 @@ async function triggerAutoClockIn(): Promise<void> {
   }
 }
 
-// ── Task Lifecycle Notifications Engine ───────────────────────
+// ── Real-Time Task Notification Engine ───────────────────────
+
 const knownAssignedTaskIds = new Set<string>();
 const knownMyTasksStatuses = new Map<string, string>();
 const warnedDueSoonTaskIds = new Set<string>();
@@ -862,6 +907,7 @@ async function pollTaskNotifications(): Promise<void> {
       for (const t of myTasks) {
         if (!t?.id) continue;
         const isCompleted = String(t.status || '').toUpperCase() === 'COMPLETED';
+        const isUrgent = String(t.priority || '').toUpperCase() === 'URGENT';
 
         // Check if newly assigned to me
         if (!knownAssignedTaskIds.has(t.id)) {
@@ -871,14 +917,35 @@ async function pollTaskNotifications(): Promise<void> {
               (t.creator?.firstName
                 ? `${t.creator.firstName} ${t.creator.lastName || ''}`.trim()
                 : 'أحد الزملاء');
-            showNotification(
-              '📌 مهمة جديدة موكلة إليك',
-              `كلفك ${assigner} بمهمة: "${t.title}"`
-            );
+            if (isUrgent) {
+              showNotification(
+                '🚨 مهمة طارئة وعاجلة موكلة إليك!',
+                `كلفك ${assigner} بمهمة طارئة وفورية: "${t.title}"`,
+                true
+              );
+            } else {
+              showNotification(
+                '📌 مهمة جديدة موكلة إليك',
+                `كلفك ${assigner} بمهمة: "${t.title}"`,
+                true
+              );
+            }
             hasChanges = true;
           }
           knownAssignedTaskIds.add(t.id);
         }
+
+        // Check if previously completed task was reopened
+        const prevStatusForMe = knownMyTasksStatuses.get(`my_${t.id}`);
+        if (taskPollerInitialized && prevStatusForMe === 'COMPLETED' && !isCompleted) {
+          showNotification(
+            '↺ تمت إعادة فتح المهمة',
+            `أعيد فتح المهمة: "${t.title}" لمتابعة العمل عليها.`,
+            true
+          );
+          hasChanges = true;
+        }
+        knownMyTasksStatuses.set(`my_${t.id}`, String(t.status || '').toUpperCase());
 
         // Check Due Soon & Overdue
         if (!isCompleted && t.dueDate) {
@@ -891,7 +958,8 @@ async function pollTaskNotifications(): Promise<void> {
             const minsLeft = Math.max(1, Math.round(diffMs / 60000));
             showNotification(
               '⏳ تذكير بموعد تسليم مهمة',
-              `متبقي ${minsLeft} دقيقة على موعد تسليم: "${t.title}"`
+              `متبقي ${minsLeft} دقيقة على موعد تسليم: "${t.title}"`,
+              true
             );
           }
           // Overdue (diffMs < 0)
@@ -899,7 +967,8 @@ async function pollTaskNotifications(): Promise<void> {
             warnedOverdueTaskIds.add(t.id);
             showNotification(
               '⚠️ مهمة متأخرة عن التسليم',
-              `تجاوزت المهمة "${t.title}" موعد التسليم المحدد!`
+              `تجاوزت المهمة "${t.title}" موعد التسليم المحدد!`,
+              true
             );
           }
         }

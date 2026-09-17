@@ -58,6 +58,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('tasks:create', taskData),
   updateTaskStatus: (taskId: string, status: string) =>
     ipcRenderer.invoke('tasks:update-status', { taskId, status }),
+  updateTask: (taskId: string, data: any) =>
+    ipcRenderer.invoke('tasks:update', { taskId, data }),
+  startTaskTimer: (taskId: string) =>
+    ipcRenderer.invoke('tasks:start-timer', { taskId }),
+  stopTaskTimer: (entryId: string) =>
+    ipcRenderer.invoke('tasks:stop-timer', { entryId }),
+  getRunningTaskTimer: () =>
+    ipcRenderer.invoke('tasks:get-running-timer'),
+  getAuthToken: () =>
+    ipcRenderer.invoke('auth:get-token'),
   uploadTaskAttachment: (data: {
     taskId: string;
     base64Data: string;

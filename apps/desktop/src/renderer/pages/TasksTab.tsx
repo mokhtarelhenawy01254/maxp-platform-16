@@ -7,12 +7,14 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
+  Download,
   X,
   Layers,
   Play,
   Pause,
 } from 'lucide-react';
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
+import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { TaskItemCard } from '../components/tasks/TaskItemCard';
 
 interface ActiveTaskState {
@@ -21,6 +23,7 @@ interface ActiveTaskState {
   priority: string;
   startTime: number;
   accumulatedSeconds: number;
+  entryId?: string;
 }
 
 export const TasksTab: React.FC = () => {
@@ -30,8 +33,11 @@ export const TasksTab: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'IN_PROGRESS' | 'COMPLETED'>('ALL');
   const [users, setUsers] = useState<any[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<any | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [serverUrl, setServerUrl] = useState('https://maxp.online');
+  const [authToken, setAuthToken] = useState<string>('');
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Active Task Runner state persisted in localStorage
   const [activeTask, setActiveTask] = useState<ActiveTaskState | null>(() => {
@@ -63,13 +69,24 @@ export const TasksTab: React.FC = () => {
     return () => clearInterval(interval);
   }, [activeTask]);
 
-  const handleStartTask = (task: any) => {
+  const handleStartTask = async (task: any) => {
+    let entryId: string | undefined;
+    try {
+      const timerRes = await window.electronAPI.startTaskTimer(task.id);
+      if (timerRes?.success && timerRes.entry?.id) {
+        entryId = timerRes.entry.id;
+      }
+    } catch (err) {
+      console.warn('[TasksTab] startTaskTimer failed:', err);
+    }
+
     const newTask: ActiveTaskState = {
       id: task.id,
       title: task.title,
       priority: task.priority || 'MEDIUM',
       startTime: Date.now(),
       accumulatedSeconds: 0,
+      entryId,
     };
     setActiveTask(newTask);
     try {
@@ -83,11 +100,20 @@ export const TasksTab: React.FC = () => {
     }
   };
 
-  const handleStopTask = () => {
+  const handleStopTask = async () => {
+    const entryId = activeTask?.entryId;
+    if (entryId) {
+      try {
+        await window.electronAPI.stopTaskTimer(entryId);
+      } catch (err) {
+        console.warn('[TasksTab] stopTaskTimer failed:', err);
+      }
+    }
     setActiveTask(null);
     try {
       localStorage.removeItem('maxp_active_task');
     } catch {}
+    loadData(false);
   };
 
   const formatRunnerTimer = (sec: number): string => {
@@ -101,11 +127,22 @@ export const TasksTab: React.FC = () => {
   const loadData = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
     try {
-      // Get auth state to retrieve serverUrl
+      // Get auth state to retrieve serverUrl and user info
       const authState = await window.electronAPI.getAuthState();
       if (authState?.serverUrl) {
         setServerUrl(authState.serverUrl);
       }
+      if (authState?.user) {
+        setCurrentUser(authState.user);
+      }
+
+      // Fetch auth token for secure authenticated image loading
+      try {
+        const tokenRes = await window.electronAPI.getAuthToken();
+        if (tokenRes?.token) {
+          setAuthToken(tokenRes.token);
+        }
+      } catch {}
 
       // 1. Fetch tasks
       const res = await window.electronAPI.getTasks(activeView);
@@ -118,6 +155,23 @@ export const TasksTab: React.FC = () => {
       if (usersRes.success && Array.isArray(usersRes.users)) {
         setUsers(usersRes.users);
       }
+
+      // 3. Sync active timer with backend
+      try {
+        const runningRes = await window.electronAPI.getRunningTaskTimer();
+        if (runningRes?.success && runningRes.runningTimer) {
+          const rt = runningRes.runningTimer;
+          const startMs = new Date(rt.startTime).getTime();
+          setActiveTask({
+            id: rt.taskId,
+            title: rt.task?.title || 'مهمة جارية',
+            priority: 'MEDIUM',
+            startTime: startMs,
+            accumulatedSeconds: 0,
+            entryId: rt.id,
+          });
+        }
+      } catch {}
     } catch (err) {
       console.warn('[TasksTab] Fetch error:', err);
     } finally {
@@ -364,7 +418,13 @@ export const TasksTab: React.FC = () => {
               onToggleStatus={handleToggleStatus}
               onUpdateStatus={handleUpdateStatus}
               onOpenImage={(img) => setPreviewImage(img)}
+              onEdit={(taskToEdit) => setEditingTask(taskToEdit)}
               serverUrl={serverUrl}
+              authToken={authToken}
+              currentUserId={currentUser?.id || currentUser?.userId}
+              isAdmin={['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER'].includes(
+                String(currentUser?.role || '').toUpperCase()
+              )}
               activeTaskId={activeTask?.id}
               activeRunnerSeconds={runnerSeconds}
               onStartTask={handleStartTask}
@@ -379,7 +439,16 @@ export const TasksTab: React.FC = () => {
       <CreateTaskModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onCreated={loadData}
+        onCreated={() => loadData(false)}
+        users={users}
+      />
+
+      {/* Edit Task Modal */}
+      <EditTaskModal
+        isOpen={!!editingTask}
+        task={editingTask}
+        onClose={() => setEditingTask(null)}
+        onUpdated={() => loadData(false)}
         users={users}
       />
 
@@ -388,12 +457,36 @@ export const TasksTab: React.FC = () => {
         <div style={styles.lightboxOverlay} onClick={() => setPreviewImage(null)}>
           <div style={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
             <div style={styles.lightboxHeader}>
-              <span style={{ fontSize: 12, color: '#fafafa', fontWeight: 600 }}>معاينة المرفق</span>
-              <button onClick={() => setPreviewImage(null)} style={styles.closeBtn}>
-                <X size={16} />
-              </button>
+              <span style={{ fontSize: 13, color: '#fafafa', fontWeight: 600 }}>معاينة المرفق بدقة كاملة</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <a
+                  href={previewImage}
+                  download="attachment"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={styles.lightboxActionBtn}
+                  title="تحميل الصورة للحاسوب"
+                >
+                  <Download size={13} />
+                  <span>تنزيل</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => window.open(previewImage, '_blank')}
+                  style={styles.lightboxActionBtn}
+                  title="فتح في المتصفح الخارجي"
+                >
+                  <ExternalLink size={13} />
+                  <span>فتح</span>
+                </button>
+                <button onClick={() => setPreviewImage(null)} style={styles.closeBtn}>
+                  <X size={16} />
+                </button>
+              </div>
             </div>
-            <img src={previewImage} alt="Preview" style={styles.lightboxImg} />
+            <div style={{ padding: 12, display: 'flex', justifyContent: 'center', background: '#09090b' }}>
+              <img src={previewImage} alt="Preview" style={styles.lightboxImg} />
+            </div>
           </div>
         </div>
       )}

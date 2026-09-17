@@ -24,7 +24,12 @@ declare global {
       getTasks: (type?: 'my-tasks' | 'assigned-by-me') => Promise<{ success: boolean; tasks: any[]; error?: string }>;
       getCompanyUsers: () => Promise<{ success: boolean; users: any[]; error?: string }>;
       createTask: (taskData: any) => Promise<{ success: boolean; task?: any; error?: string }>;
+      updateTask: (taskId: string, data: any) => Promise<{ success: boolean; task?: any; error?: string }>;
       updateTaskStatus: (taskId: string, status: string) => Promise<{ success: boolean; task?: any; error?: string }>;
+      startTaskTimer: (taskId: string) => Promise<{ success: boolean; entry?: any; error?: string }>;
+      stopTaskTimer: (entryId: string) => Promise<{ success: boolean; result?: any; error?: string }>;
+      getRunningTaskTimer: () => Promise<{ success: boolean; runningTimer?: any; error?: string }>;
+      getAuthToken: () => Promise<{ token: string }>;
       uploadTaskAttachment: (data: {
         taskId: string;
         base64Data: string;

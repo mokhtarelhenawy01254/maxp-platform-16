@@ -16,14 +16,21 @@ import {
   AlertTriangle,
   ImageIcon,
   Check,
+  Edit3,
+  Lock,
 } from 'lucide-react';
+import { audioAlerts } from '../../utils/audioAlerts';
 
 interface TaskItemCardProps {
   task: any;
   onToggleStatus: (taskId: string, currentStatus: string) => void;
   onUpdateStatus?: (taskId: string, newStatus: string) => void;
   onOpenImage: (imgUrl: string) => void;
+  onEdit?: (task: any) => void;
   serverUrl?: string;
+  authToken?: string;
+  currentUserId?: string;
+  isAdmin?: boolean;
   activeTaskId?: string | null;
   activeRunnerSeconds?: number;
   onStartTask?: (task: any) => void;
@@ -36,7 +43,11 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   onToggleStatus,
   onUpdateStatus,
   onOpenImage,
+  onEdit,
   serverUrl = 'https://maxp.online',
+  authToken = '',
+  currentUserId = '',
+  isAdmin = false,
   activeTaskId = null,
   activeRunnerSeconds = 0,
   onStartTask,
@@ -127,19 +138,29 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
     window.open(targetUrl, '_blank');
   };
 
+  const isUrgent = String(task.priority || '').toUpperCase() === 'URGENT';
+  const isAssignedToMe = !task.assignedTo || task.assignedTo === currentUserId;
+  const isCreatedByMe = task.createdBy === currentUserId;
+  const canRunTask = isAssignedToMe || isAdmin;
+  const canEditTask = isCreatedByMe || isAssignedToMe || isAdmin;
+
   const resolveAttachmentUrl = (rawPath: string) => {
     if (!rawPath) return '';
-    if (
-      rawPath.startsWith('data:') ||
-      rawPath.startsWith('blob:') ||
-      rawPath.startsWith('http://') ||
-      rawPath.startsWith('https://')
-    ) {
+    if (rawPath.startsWith('data:') || rawPath.startsWith('blob:')) {
       return rawPath;
     }
     const cleanBase = (serverUrl || 'https://maxp.online').replace(/\/$/, '');
-    const cleanPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
-    return `${cleanBase}${cleanPath}`;
+    let cleanPath = rawPath;
+    if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+      if (authToken && !rawPath.includes('token=')) {
+        return `${rawPath}${rawPath.includes('?') ? '&' : '?'}token=${encodeURIComponent(authToken)}`;
+      }
+      return rawPath;
+    }
+    if (!cleanPath.startsWith('/')) cleanPath = `/${cleanPath}`;
+    const tokenParam = authToken ? `token=${encodeURIComponent(authToken)}` : '';
+    const sep = cleanPath.includes('?') ? '&' : '?';
+    return `${cleanBase}${cleanPath}${tokenParam ? `${sep}${tokenParam}` : ''}`;
   };
 
   const isImgAttachment = (att: any) => {
@@ -153,12 +174,21 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
       style={{
         ...cardStyles.card,
         opacity: isCompleted ? 0.72 : 1,
-        borderColor: isRunning
+        borderColor: isUrgent && !isCompleted
+          ? 'rgba(239, 68, 68, 0.65)'
+          : isRunning
           ? 'rgba(56, 189, 248, 0.45)'
           : isCompleted
           ? 'rgba(255,255,255,0.04)'
           : 'rgba(255,255,255,0.08)',
-        boxShadow: isRunning ? '0 0 16px rgba(56, 189, 248, 0.1)' : 'none',
+        boxShadow: isUrgent && !isCompleted
+          ? '0 0 16px rgba(239, 68, 68, 0.15)'
+          : isRunning
+          ? '0 0 16px rgba(56, 189, 248, 0.1)'
+          : 'none',
+        background: isUrgent && !isCompleted
+          ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, #121216 100%)'
+          : '#121216',
       }}
     >
       {/* Main Row */}
@@ -166,14 +196,21 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         {/* Status Checkbox */}
         <button
           type="button"
-          onClick={() => onToggleStatus(task.id, task.status)}
+          onClick={() => {
+            if (isCompleted) {
+              audioAlerts.playTaskReopen();
+            } else {
+              audioAlerts.playTaskComplete();
+            }
+            onToggleStatus(task.id, task.status);
+          }}
           style={cardStyles.checkBtn}
           title={isCompleted ? 'إعادة إلى قيد التنفيذ' : 'تعليم كمكتملة'}
         >
           {isCompleted ? (
             <CheckCircle2 size={19} color="#22c55e" />
           ) : (
-            <Square size={19} color="#71717a" />
+            <Square size={19} color={isUrgent ? '#f87171' : '#71717a'} />
           )}
         </button>
 
@@ -191,6 +228,26 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 {task.title}
               </span>
 
+              {/* Urgent Badge */}
+              {isUrgent && !isCompleted && (
+                <span
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.18)',
+                    color: '#f87171',
+                    border: '1px solid rgba(239, 68, 68, 0.45)',
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  🚨 عاجل وفوري
+                </span>
+              )}
+
               {/* Live Stopwatch Badge on Card (if this task is running) */}
               {isRunning && (
                 <span style={cardStyles.runningTimerChip}>
@@ -205,12 +262,31 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
             {/* Smart Action Buttons (One-Click Status Transitions) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              {/* Edit Button for Authorized Users */}
+              {canEditTask && onEdit && !isCompleted && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(task);
+                  }}
+                  style={cardStyles.actionBtn}
+                  title="تعديل تفاصيل المهمة"
+                  onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                  onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                >
+                  <Edit3 size={11} color="#38bdf8" />
+                  <span>تعديل</span>
+                </button>
+              )}
+
               {/* If Task is COMPLETED: Reopen button */}
               {isCompleted ? (
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    audioAlerts.playTaskReopen();
                     if (onUpdateStatus) {
                       onUpdateStatus(task.id, 'IN_PROGRESS');
                     } else {
@@ -227,37 +303,58 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 </button>
               ) : (
                 <>
-                  {/* Start / Pause Task Runner */}
-                  {isRunning ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onStopTask?.();
-                      }}
-                      style={cardStyles.activeRunnerBtn}
-                      title="المشغل يعمل الآن — انقر للإيقاف المؤقت"
-                      onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-                      onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-                    >
-                      <Pause size={11} color="#22c55e" />
-                      <span>إيقاف مؤقت</span>
-                    </button>
+                  {/* Start / Pause Task Runner (Locked if not assigned to me) */}
+                  {canRunTask ? (
+                    isRunning ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onStopTask?.();
+                        }}
+                        style={cardStyles.activeRunnerBtn}
+                        title="المشغل يعمل الآن — انقر للإيقاف المؤقت"
+                        onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                      >
+                        <Pause size={11} color="#22c55e" />
+                        <span>إيقاف مؤقت</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          audioAlerts.playTaskStart();
+                          onStartTask?.(task);
+                        }}
+                        style={cardStyles.startRunnerBtn}
+                        title="بدء تشغيل المهمة واحتساب وقت الإنجاز"
+                        onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                      >
+                        <Play size={10} fill="#38bdf8" color="#38bdf8" />
+                        <span>بدء العمل</span>
+                      </button>
+                    )
                   ) : (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onStartTask?.(task);
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: '#71717a',
+                        background: 'rgba(255,255,255,0.03)',
+                        padding: '3px 8px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(255,255,255,0.06)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
                       }}
-                      style={cardStyles.startRunnerBtn}
-                      title="بدء تشغيل المهمة واحتساب وقت الإنجاز"
-                      onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-                      onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                      title={`المهمة موكلة للزميل: ${assigneeName}`}
                     >
-                      <Play size={10} fill="#38bdf8" color="#38bdf8" />
-                      <span>بدء العمل</span>
-                    </button>
+                      <Lock size={11} color="#71717a" />
+                      <span>موكلة لـ {assigneeName}</span>
+                    </span>
                   )}
 
                   {/* Fast Complete Button */}
@@ -265,6 +362,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      audioAlerts.playTaskComplete();
                       if (onUpdateStatus) {
                         onUpdateStatus(task.id, 'COMPLETED');
                       } else {
@@ -360,6 +458,22 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             >
               {priorityLabel(task.priority)}
             </span>
+
+            {/* Estimated Time */}
+            {(task.estimatedMinutes || task.estimatedHours) && (
+              <span
+                style={{
+                  ...cardStyles.pill,
+                  color: '#38bdf8',
+                  backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                  borderColor: 'rgba(56, 189, 248, 0.25)',
+                }}
+                title="الوقت المقدر لإنجاز المهمة"
+              >
+                <Clock size={11} color="#38bdf8" />
+                <span>المتوقع: {task.estimatedMinutes || (task.estimatedHours * 60)} دقيقة</span>
+              </span>
+            )}
 
             {/* Creator Chip (Always visible in my-tasks so employee knows who created it) */}
             {viewType === 'my-tasks' && creatorName && creatorName !== 'غير محدد' && (
@@ -457,12 +571,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                       alt={label}
                       style={cardStyles.thumbImg}
                       onError={(e) => {
-                        // Fallback icon if image fails to load
-                        (e.currentTarget as HTMLElement).style.display = 'none';
-                        const parent = (e.currentTarget as HTMLElement).parentElement;
-                        if (parent) {
-                          parent.innerHTML = '<span style="color:#38bdf8;font-size:10px">صورة</span>';
-                        }
+                        (e.currentTarget as HTMLImageElement).style.opacity = '0.3';
                       }}
                     />
                     <div style={cardStyles.imgOverlay}>
@@ -556,6 +665,21 @@ const cardStyles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     display: 'flex',
     alignItems: 'center',
+  },
+  actionBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'rgba(255, 255, 255, 0.04)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: 5,
+    padding: '3px 8px',
+    fontSize: 11,
+    fontWeight: 500,
+    color: '#a1a1aa',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
   },
   startRunnerBtn: {
     display: 'flex',

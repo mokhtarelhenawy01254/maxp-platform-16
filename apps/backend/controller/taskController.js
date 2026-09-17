@@ -652,6 +652,10 @@ const taskController = {
         });
       }
 
+      const userRole = String(req.user?.role || "").toUpperCase();
+      const isManagerOrAdmin = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"].includes(userRole);
+      const currentUserId = req.user?.userId || req.user?.id;
+
       // Build filter conditions
       const where = {
         companyId,
@@ -660,6 +664,14 @@ const taskController = {
         ...(priority && { priority }),
         ...(assignedTo && { assignedTo }),
       };
+
+      if (!isManagerOrAdmin && currentUserId) {
+        where.OR = [
+          { assignedTo: currentUserId },
+          { createdBy: currentUserId },
+          { taskWatchers: { some: { userId: currentUserId } } },
+        ];
+      }
 
       // Get tasks with project and user information
       const [tasks, totalTasks] = await Promise.all([
@@ -782,8 +794,16 @@ const taskController = {
 
       const taskId = uuidv4();
       const startDateValue = startDate ? new Date(startDate) : null;
-      const dueDateValue = dueDate ? new Date(dueDate) : null;
-      const safeEstimatedHours = Math.max(0, Math.round(Number(estimatedHours) || 0));
+      const dueDateValue = dueDate
+        ? new Date(dueDate)
+        : new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const safeEstimatedHours = Math.max(
+        0,
+        Math.round(
+          Number(estimatedHours) ||
+            (req.body.estimatedMinutes ? Math.ceil(Number(req.body.estimatedMinutes) / 60) : 0)
+        )
+      );
       const serializedTags =
         tags && Array.isArray(tags) ? JSON.stringify(tags) : null;
       const taskPriority = normalizePriority(priority);
@@ -1017,6 +1037,17 @@ const taskController = {
         });
       }
 
+      const userRole = String(req.user?.role || "").toUpperCase();
+      const isManagerOrAdmin = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"].includes(userRole);
+      const currentUserId = req.user?.userId || req.user?.id;
+
+      if (!isManagerOrAdmin && existingTask.createdBy !== currentUserId && existingTask.assignedTo !== currentUserId) {
+        return res.status(403).json({
+          success: false,
+          error: "ليس لديك صلاحية تعديل بيانات هذه المهمة (ليست مسندة إليك وليست من إنشائك)",
+        });
+      }
+
       // التحقق من أن المستخدم المحدد موجود في نفس الشركة (إذا تم تحديث assignedTo)
       if (assignedTo && assignedTo !== existingTask.assignedTo) {
         const assignedUser = await getSharedPrismaClient().user.findFirst({
@@ -1214,6 +1245,10 @@ const taskController = {
       const { status, progress } = req.body;
       const companyId = req.user.companyId;
 
+      const userRole = String(req.user?.role || "").toUpperCase();
+      const isManagerOrAdmin = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"].includes(userRole);
+      const currentUserId = req.user?.userId || req.user?.id;
+
       if (await shouldUseLegacyTaskQueries()) {
         const existingTask = await fetchLegacyTaskById(companyId, id);
 
@@ -1224,13 +1259,23 @@ const taskController = {
           });
         }
 
+        if (!isManagerOrAdmin && existingTask.assignedTo !== currentUserId && existingTask.createdBy !== currentUserId) {
+          return res.status(403).json({
+            success: false,
+            error: "ليس لديك صلاحية تعديل حالة هذه المهمة (ليست موكلة إليك وليست من إنشائك)",
+          });
+        }
+
         const normalizedStatus = normalizeStatus(status);
+        const isReopening = existingTask.status === "COMPLETED" && normalizedStatus !== "COMPLETED";
         const nextProgress =
           normalizedStatus === "COMPLETED"
             ? 100
-            : progress === undefined
-              ? existingTask.progress
-              : clampProgress(progress);
+            : isReopening
+              ? (existingTask.progress === 100 ? 50 : existingTask.progress)
+              : progress === undefined
+                ? existingTask.progress
+                : clampProgress(progress);
         const completedDate =
           normalizedStatus === "COMPLETED" ? new Date() : null;
         const updatedCount = await getSharedPrismaClient().$executeRawUnsafe(
@@ -1271,16 +1316,27 @@ const taskController = {
         res.json({
           success: true,
           data: task,
-          message: "تم تحديث حالة المهمة بنجاح",
+          message: isReopening ? "تم إعادة فتح المهمة بنجاح" : "تم تحديث حالة المهمة بنجاح",
         });
+
+        const notifTitle = isReopening
+          ? "إعادة فتح المهمة"
+          : normalizedStatus === "COMPLETED"
+            ? "إنجاز المهمة"
+            : "تحديث حالة المهمة";
+        const notifMsg = isReopening
+          ? `أعاد ${req.user.firstName || "مستخدم"} فتح المهمة "${task.title}"`
+          : normalizedStatus === "COMPLETED"
+            ? `أنجز ${req.user.firstName || "مستخدم"} المهمة "${task.title}"`
+            : `تم تغيير حالة المهمة "${task.title}" إلى ${taskNotificationHelpers.normalizeStatusLabel(normalizedStatus)}`;
 
         await taskNotificationService.notifyTaskStakeholders({
           companyId,
           task,
           actorUserId: req.user.userId,
-          type: "status_changed",
-          title: "تحديث حالة المهمة",
-          message: `تم تغيير حالة المهمة "${task.title}" إلى ${taskNotificationHelpers.normalizeStatusLabel(normalizedStatus)}`,
+          type: isReopening ? "task_reopened" : "status_changed",
+          title: notifTitle,
+          message: notifMsg,
           includeAssignee: true,
           includeCreator: true,
           includeWatchers: true,
@@ -1293,7 +1349,7 @@ const taskController = {
             }),
           },
           logActivity: true,
-          activityDescription: `تم إرسال إشعار تغيير حالة المهمة إلى ${taskNotificationHelpers.normalizeStatusLabel(normalizedStatus)}`,
+          activityDescription: `تم إرسال إشعار ${notifTitle}: ${notifMsg}`,
         });
 
         queueTaskWebhook("task.status_changed", {
@@ -1317,17 +1373,30 @@ const taskController = {
         });
       }
 
+      if (!isManagerOrAdmin && existingTask.assignedTo !== currentUserId && existingTask.createdBy !== currentUserId) {
+        return res.status(403).json({
+          success: false,
+          error: "ليس لديك صلاحية تعديل حالة هذه المهمة (ليست موكلة إليك وليست من إنشائك)",
+        });
+      }
+
       const normalizedStatus = normalizeStatus(status);
+      const isReopening = existingTask.status === "COMPLETED" && normalizedStatus !== "COMPLETED";
+      const nextProgress =
+        normalizedStatus === "COMPLETED"
+          ? 100
+          : isReopening
+            ? (existingTask.progress === 100 ? 50 : existingTask.progress)
+            : progress === undefined
+              ? existingTask.progress
+              : clampProgress(progress);
+      const completedDate = normalizedStatus === "COMPLETED" ? new Date() : null;
+
       const updateData = {
         status: normalizedStatus,
-        progress:
-          normalizedStatus === "COMPLETED" ? 100 : clampProgress(progress),
-        completedDate: normalizedStatus === "COMPLETED" ? new Date() : null,
+        progress: nextProgress,
+        completedDate,
       };
-
-      if (progress === undefined && normalizedStatus !== "COMPLETED") {
-        delete updateData.progress;
-      }
 
       const updatedTask = await getSharedPrismaClient().task.updateMany({
         where: {
@@ -1360,17 +1429,28 @@ const taskController = {
       res.json({
         success: true,
         data: formatTaskSummary(task),
-        message: "تم تحديث حالة المهمة بنجاح",
+        message: isReopening ? "تم إعادة فتح المهمة بنجاح" : "تم تحديث حالة المهمة بنجاح",
       });
+
+      const notifTitle = isReopening
+        ? "إعادة فتح المهمة"
+        : normalizedStatus === "COMPLETED"
+          ? "إنجاز المهمة"
+          : "تحديث حالة المهمة";
+      const notifMsg = isReopening
+        ? `أعاد ${req.user.firstName || "مستخدم"} فتح المهمة "${task.title}"`
+        : normalizedStatus === "COMPLETED"
+          ? `أنجز ${req.user.firstName || "مستخدم"} المهمة "${task.title}"`
+          : `تم تغيير حالة المهمة "${task.title}" إلى ${taskNotificationHelpers.normalizeStatusLabel(normalizedStatus)}`;
 
       // 🔔 ارسال اشعارات بتغيير الحالة للمسؤول والمراقبين
       await taskNotificationService.notifyTaskStakeholders({
         companyId,
         task,
         actorUserId: req.user.userId,
-        type: "status_changed",
-        title: "تحديث حالة المهمة",
-        message: `تم تغيير حالة المهمة "${task.title}" إلى ${taskNotificationHelpers.normalizeStatusLabel(normalizedStatus)}`,
+        type: isReopening ? "task_reopened" : "status_changed",
+        title: notifTitle,
+        message: notifMsg,
         includeAssignee: true,
         includeCreator: true,
         includeWatchers: true,
@@ -1383,7 +1463,7 @@ const taskController = {
           }),
         },
         logActivity: true,
-        activityDescription: `تم إرسال إشعار تغيير حالة المهمة إلى ${taskNotificationHelpers.normalizeStatusLabel(normalizedStatus)}`,
+        activityDescription: `تم إرسال إشعار ${notifTitle}: ${notifMsg}`,
       });
 
       queueTaskWebhook("task.status_changed", {
@@ -2279,6 +2359,24 @@ const taskController = {
       const { description, isBillable, hourlyRate } = req.body;
       const companyId = req.user.companyId;
       const userId = req.user.userId;
+
+      const userRole = String(req.user?.role || "").toUpperCase();
+      const isManagerOrAdmin = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"].includes(userRole);
+
+      const targetTask = await getSharedPrismaClient().task.findFirst({
+        where: { id: taskId, companyId },
+        select: { id: true, title: true, assignedTo: true, createdBy: true },
+      });
+      if (!targetTask) {
+        return res.status(404).json({ success: false, error: "المهمة غير موجودة" });
+      }
+
+      if (!isManagerOrAdmin && targetTask.assignedTo !== userId) {
+        return res.status(403).json({
+          success: false,
+          error: "لا يمكنك بدء تتبع الوقت على مهمة غير موكلة إليك",
+        });
+      }
 
       const runningEntry = await getSharedPrismaClient().timeEntry.findFirst({
         where: { userId, companyId, isRunning: true },
