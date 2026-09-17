@@ -105,11 +105,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
     refreshState();
     const interval = setInterval(refreshState, 10_000); // 10s poll
 
-    window.electronAPI.onTrackerStateUpdate((state) => {
+    const unsubscribe = window.electronAPI.onTrackerStateUpdate((state) => {
       setTrackerState((prev: any) => ({ ...prev, ...state }));
     });
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      unsubscribe?.();
+    };
   }, [refreshState]);
 
   const formatTime = (seconds: number): string => {
@@ -239,8 +242,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
-        user={user}
-        isAdmin={isAdmin}
       />
     </div>
   );

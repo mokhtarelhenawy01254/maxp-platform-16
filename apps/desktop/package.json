@@ -21,10 +21,8 @@
   },
   "dependencies": {
     "active-win": "^9.0.0",
-    "electron-store": "^10.0.0",
     "electron-updater": "^6.3.9",
-    "axios": "^1.7.0",
-    "socket.io-client": "^4.8.0"
+    "axios": "^1.7.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.0",

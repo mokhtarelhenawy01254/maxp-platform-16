@@ -111,7 +111,6 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
           <div style={styles.metricValue}>{formatTime(activeSeconds)}</div>
           <div style={styles.metricSubtext}>
             <span>معدل النشاط المستمر</span>
-            <span style={{ color: '#22c55e', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{activeRatio}%</span>
           </div>
         </div>
 
@@ -126,7 +125,6 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
           <div style={styles.metricValue}>{formatTime(idleSeconds)}</div>
           <div style={styles.metricSubtext}>
             <span>فترات الاستراحة أو الانتظار</span>
-            <span style={{ color: '#eab308', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{100 - activeRatio}%</span>
           </div>
         </div>
 
@@ -187,12 +185,12 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
               <div style={{ ...styles.iconBadge, color: '#22c55e', background: 'rgba(34, 197, 94, 0.1)' }}>
                 <ShieldCheck size={15} />
               </div>
-              <span style={styles.metricLabel}>رصيد الاستراحة الرسمي</span>
+              <span style={styles.metricLabel}>إجمالي المدخلات اليوم</span>
             </div>
-            <div style={styles.metricValue}>45 دقيقة</div>
+            <div style={styles.metricValue}>{keyboardEvents.toLocaleString()}</div>
             <div style={styles.metricSubtext}>
               <span style={{ color: isPaused ? '#eab308' : '#a1a1aa' }}>
-                {isPaused ? 'أنت في وضع استراحة معتمد الآن' : 'مخصص للصلاة والغداء والراحة'}
+                {isPaused ? 'أنت في وضع استراحة معتمد الآن' : 'مدخلاتك الموثقة في السحابة'}
               </span>
             </div>
           </div>
@@ -423,7 +421,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   progressBar: {
     height: '100%',
-    background: 'linear-gradient(90deg, #22c55e, #38bdf8)',
+    background: '#22c55e',
     borderRadius: 4,
     transition: 'width 300ms ease-out',
   },

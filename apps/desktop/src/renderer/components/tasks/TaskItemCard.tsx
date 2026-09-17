@@ -365,7 +365,7 @@ const cardStyles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     cursor: 'pointer',
     maxWidth: 160,
-    shrink: 0,
+    flexShrink: 0,
   },
   thumbImg: {
     width: 24,

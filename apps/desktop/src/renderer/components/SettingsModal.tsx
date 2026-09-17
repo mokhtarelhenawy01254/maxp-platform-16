@@ -1,80 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Lock,
   ShieldCheck,
   Bell,
   Volume2,
   Monitor,
   X,
-  Clock,
-  Coffee,
   CheckCircle2,
 } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  user?: any;
-  isAdmin?: boolean;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({
-  isOpen,
-  onClose,
-  user,
-  isAdmin = false,
-}) => {
-  const [idleTimeout, setIdleTimeout] = useState(5);
-  const [startHour, setStartHour] = useState(8);
-  const [endHour, setEndHour] = useState(18);
+interface Prefs {
+  autoLaunchEnabled: boolean;
+  soundAlerts: boolean;
+  idleReminder: boolean;
+}
 
-  // Employee personal preferences
-  const [soundAlerts, setSoundAlerts] = useState(true);
-  const [idleReminder, setIdleReminder] = useState(true);
-  const [autoLaunch, setAutoLaunch] = useState(true);
+const DEFAULT_PREFS: Prefs = {
+  autoLaunchEnabled: true,
+  soundAlerts: true,
+  idleReminder: true,
+};
 
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+  const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      loadSettings();
+      loadPrefs();
     }
   }, [isOpen]);
 
-  const loadSettings = async () => {
+  const loadPrefs = async () => {
     try {
       const s = await window.electronAPI.getSettings();
       if (s) {
-        if (s.idleTimeoutMinutes) setIdleTimeout(s.idleTimeoutMinutes);
-        if (s.trackingStartHour !== undefined) setStartHour(s.trackingStartHour);
-        if (s.trackingEndHour !== undefined) setEndHour(s.trackingEndHour);
+        setPrefs({
+          autoLaunchEnabled: s.autoLaunchEnabled === true,
+          soundAlerts: s.soundAlerts === true,
+          idleReminder: s.idleReminder === true,
+        });
       }
-
-      const savedSound = localStorage.getItem('maxp_pref_sound');
-      if (savedSound !== null) setSoundAlerts(savedSound === 'true');
-
-      const savedIdle = localStorage.getItem('maxp_pref_idle_remind');
-      if (savedIdle !== null) setIdleReminder(savedIdle === 'true');
-
-      const savedAuto = localStorage.getItem('maxp_pref_autolaunch');
-      if (savedAuto !== null) setAutoLaunch(savedAuto === 'true');
     } catch {}
+  };
+
+  const toggle = (key: keyof Prefs) => {
+    setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleSave = async () => {
     try {
-      localStorage.setItem('maxp_pref_sound', String(soundAlerts));
-      localStorage.setItem('maxp_pref_idle_remind', String(idleReminder));
-      localStorage.setItem('maxp_pref_autolaunch', String(autoLaunch));
-
-      if (isAdmin) {
-        await window.electronAPI.updateSettings({
-          idleTimeoutMinutes: idleTimeout,
-          trackingStartHour: startHour,
-          trackingEndHour: endHour,
-        });
-      }
-
+      await window.electronAPI.updateSettings({ ...prefs });
       setSaved(true);
       setTimeout(() => {
         setSaved(false);
@@ -94,11 +74,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div style={styles.headerIcon}>
               <ShieldCheck size={16} color="#22c55e" />
             </div>
-            <div>
-              <h2 style={styles.title}>
-                {isAdmin ? 'إعدادات المنظومة والسياسات' : 'إعدادات وتفضيلات التطبيق'}
-              </h2>
-            </div>
+            <h2 style={styles.title}>إعدادات التطبيق</h2>
           </div>
           <button onClick={onClose} style={styles.closeBtn} aria-label="إغلاق">
             <X size={16} />
@@ -106,148 +82,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div style={styles.content}>
-          {/* Section 1: Corporate Policies (Locked for Employees) */}
-          <div style={styles.sectionCard}>
-            <div style={styles.sectionHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Lock size={13} color="#a1a1aa" />
-                <span style={styles.sectionTitle}>
-                  {isAdmin ? 'سياسات التوثيق المركزية' : 'سياسات العمل المعتمدة (للقراءة فقط)'}
-                </span>
-              </div>
-              <span style={styles.lockedBadge}>
-                {isAdmin ? 'صلاحية الإدارة' : 'سياسة إدارية مقفلة 🔒'}
-              </span>
-            </div>
-
-            {isAdmin ? (
-              // Admin Editable Policy Fields
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 10 }}>
-                <div style={styles.field}>
-                  <label style={styles.label}>مهلة احتساب الخمول (بالدقائق)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={60}
-                    value={idleTimeout}
-                    onChange={(e) => setIdleTimeout(Number(e.target.value))}
-                    style={styles.input}
-                  />
-                  <span style={styles.hint}>المدة بدون إدخال قبل وسم الجلسة كفترة توقف</span>
-                </div>
-
-                <div style={styles.rowFields}>
-                  <div style={styles.field}>
-                    <label style={styles.label}>ساعة بدء الدوام (24h)</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={23}
-                      value={startHour}
-                      onChange={(e) => setStartHour(Number(e.target.value))}
-                      style={styles.input}
-                    />
-                  </div>
-                  <div style={styles.field}>
-                    <label style={styles.label}>ساعة انتهاء الدوام (24h)</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={23}
-                      value={endHour}
-                      onChange={(e) => setEndHour(Number(e.target.value))}
-                      style={styles.input}
-                    />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              // Employee Read-Only Badges
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
-                <div style={styles.readOnlyRow}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Clock size={14} color="#38bdf8" />
-                    <div>
-                      <div style={styles.readOnlyLabel}>مهلة احتساب الخمول التلقائي</div>
-                      <div style={styles.readOnlyDesc}>
-                        يتم تفعيل وضع التوقف تلقائياً بعد عدم تفاعل الماوس أو الكيبورد
-                      </div>
-                    </div>
-                  </div>
-                  <div style={styles.policyPill}>{idleTimeout} دقائق</div>
-                </div>
-
-                <div style={styles.readOnlyRow}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Coffee size={14} color="#22c55e" />
-                    <div>
-                      <div style={styles.readOnlyLabel}>ساعات الدوام الرسمي المعتمد</div>
-                      <div style={styles.readOnlyDesc}>
-                        النطاق الزمني المعتمد لتوثيق الجلسات والإنتاجية
-                      </div>
-                    </div>
-                  </div>
-                  <div style={styles.policyPill}>
-                    {String(startHour).padStart(2, '0')}:00 - {String(endHour).padStart(2, '0')}:00
-                  </div>
-                </div>
-
-                <div style={styles.policyNote}>
-                  تُدار مهل الخمول ومواعيد الدوام مركزياً من قبل إدارة المنظومة لضمان عدالة التقييم.
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Section 2: Personal Preferences (Always Editable) */}
           <div style={styles.sectionCard}>
             <div style={styles.sectionHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Bell size={13} color="#22c55e" />
-                <span style={styles.sectionTitle}>التفضيلات الشخصية للتطبيق</span>
+                <span style={styles.sectionTitle}>التفضيلات الشخصية</span>
               </div>
+              <span style={styles.savedBadge}>تُطبّق فوراً على هذا الجهاز</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 10 }}>
-              {/* Sound Alerts */}
-              <label style={styles.toggleRow}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Volume2 size={14} color="#a1a1aa" />
-                  <div>
-                    <div style={styles.toggleTitle}>تنبيه صوتي للاستراحة</div>
-                    <div style={styles.toggleDesc}>
-                      إصدار رنين ناعم عند بدء وضع الاستراحة أو استئناف العمل
-                    </div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={soundAlerts}
-                  onChange={(e) => setSoundAlerts(e.target.checked)}
-                  style={styles.checkbox}
-                />
-              </label>
-
-              {/* Idle Reminder */}
-              <label style={styles.toggleRow}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Bell size={14} color="#a1a1aa" />
-                  <div>
-                    <div style={styles.toggleTitle}>تذكير لطيف عند الخمول الممتد</div>
-                    <div style={styles.toggleDesc}>
-                      إشعار مكتبي تذكيري في حال نسيت تفعيل الاستراحة أو استئناف المهام
-                    </div>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={idleReminder}
-                  onChange={(e) => setIdleReminder(e.target.checked)}
-                  style={styles.checkbox}
-                />
-              </label>
-
-              {/* Auto Launch with Windows */}
+              {/* Auto Launch — wired to app.setLoginItemSettings */}
               <label style={styles.toggleRow}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Monitor size={14} color="#a1a1aa" />
@@ -260,8 +105,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <input
                   type="checkbox"
-                  checked={autoLaunch}
-                  onChange={(e) => setAutoLaunch(e.target.checked)}
+                  checked={prefs.autoLaunchEnabled}
+                  onChange={() => toggle('autoLaunchEnabled')}
+                  style={styles.checkbox}
+                />
+              </label>
+
+              {/* Sound Alerts — wired to notification sound */}
+              <label style={styles.toggleRow}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Volume2 size={14} color="#a1a1aa" />
+                  <div>
+                    <div style={styles.toggleTitle}>تنبيه صوتي للاستراحة</div>
+                    <div style={styles.toggleDesc}>
+                      رنين عند بدء وضع الاستراحة أو استئناف العمل أو توثيق الحضور
+                    </div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={prefs.soundAlerts}
+                  onChange={() => toggle('soundAlerts')}
+                  style={styles.checkbox}
+                />
+              </label>
+
+              {/* Idle Reminder — wired to extended-idle notification */}
+              <label style={styles.toggleRow}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Bell size={14} color="#a1a1aa" />
+                  <div>
+                    <div style={styles.toggleTitle}>تذكير عند الخمول الممتد</div>
+                    <div style={styles.toggleDesc}>
+                      إشعار بعد 10 دقائق خمول متواصل لتذكيرك باستئناف العمل أو تفعيل الاستراحة
+                    </div>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={prefs.idleReminder}
+                  onChange={() => toggle('idleReminder')}
                   style={styles.checkbox}
                 />
               </label>
@@ -388,7 +271,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     color: '#d4d4d8',
   },
-  lockedBadge: {
+  savedBadge: {
     fontSize: 10,
     fontWeight: 600,
     color: '#a1a1aa',
@@ -396,41 +279,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: 6,
     padding: '2px 6px',
-  },
-  readOnlyRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '6px 0',
-  },
-  readOnlyLabel: {
-    fontSize: 12,
-    fontWeight: 500,
-    color: '#fafafa',
-  },
-  readOnlyDesc: {
-    fontSize: 11,
-    color: '#71717a',
-    marginTop: 2,
-  },
-  policyPill: {
-    fontSize: 11,
-    fontWeight: 600,
-    color: '#38bdf8',
-    background: 'rgba(56, 189, 248, 0.1)',
-    border: '1px solid rgba(56, 189, 248, 0.25)',
-    borderRadius: 6,
-    padding: '3px 8px',
-    fontVariantNumeric: 'tabular-nums',
-  },
-  policyNote: {
-    fontSize: 10.5,
-    color: '#52525b',
-    background: 'rgba(255, 255, 255, 0.02)',
-    padding: '6px 10px',
-    borderRadius: 6,
-    border: '1px dashed rgba(255, 255, 255, 0.06)',
-    lineHeight: 1.4,
   },
   toggleRow: {
     display: 'flex',
@@ -454,36 +302,8 @@ const styles: Record<string, React.CSSProperties> = {
     height: 16,
     accentColor: '#22c55e',
     cursor: 'pointer',
-  },
-  field: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-  },
-  rowFields: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 10,
-  },
-  label: {
-    fontSize: 11.5,
-    fontWeight: 500,
-    color: '#a1a1aa',
-  },
-  input: {
-    background: '#09090b',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: 6,
-    padding: '7px 10px',
-    fontSize: 13,
-    color: '#fafafa',
-    outline: 'none',
-    fontFamily: 'inherit',
-    fontVariantNumeric: 'tabular-nums',
-  },
-  hint: {
-    fontSize: 10.5,
-    color: '#71717a',
+    flexShrink: 0,
+    marginRight: 8,
   },
   footer: {
     display: 'flex',

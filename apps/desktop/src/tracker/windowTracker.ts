@@ -109,7 +109,7 @@ const TITLE_DOMAIN_MAP: [RegExp, string][] = [
   [/Facebook/i, 'facebook.com'],
   [/Instagram/i, 'instagram.com'],
   [/TikTok/i, 'tiktok.com'],
-  [/Twitter|\bX\b/i, 'x.com'],
+  [/Twitter|\bX\.com\b|\s\/\sX$/i, 'x.com'],
   [/Reddit/i, 'reddit.com'],
   [/Netflix/i, 'netflix.com'],
   [/Twitch/i, 'twitch.tv'],
@@ -252,6 +252,25 @@ export class WindowTracker {
   private async poll(): Promise<void> {
     if (!this.isTracking) return;
 
+    // Idle-aware accrual: while the user is AFK, close current records at the
+    // moment the idle gap began and stop attributing time until activity resumes.
+    let idleSec = 0;
+    try {
+      idleSec = activityTracker.idleSeconds || 0;
+    } catch {}
+
+    if (idleSec >= this.IDLE_GAP_SEC) {
+      if (!this.idleGapActive) {
+        this.idleGapActive = true;
+        const gapStart = new Date(Date.now() - idleSec * 1000);
+        this.finalizeCurrentApp(gapStart);
+        this.finalizeCurrentWeb(gapStart);
+      }
+      setTimeout(() => this.poll(), this.pollIntervalMs);
+      return;
+    }
+    this.idleGapActive = false;
+
     try {
       let win: any = null;
 
@@ -281,13 +300,34 @@ export class WindowTracker {
 
   private meetingActive = false;
 
+  // Idle-aware accrual state
+  private idleGapActive = false;
+  private readonly IDLE_GAP_SEC = 120;
+
   get isMeetingActive(): boolean {
     return this.meetingActive;
   }
 
-  private friendlyAppName(raw: string, _exePath?: string): string {
+  private friendlyAppName(raw: string, exePath?: string): string {
     const lower = (raw || '').toLowerCase().replace(/\.exe$/, '').trim();
-    const map: Record<string, string> = {
+
+    // UWP/store apps all surface as ApplicationFrameHost — resolve the real
+    // app from its executable path when the helper reports one.
+    if (lower === 'applicationframehost') {
+      if (exePath) {
+        const base = path.basename(exePath).replace(/\.exe$/i, '').trim();
+        if (base && base.toLowerCase() !== 'applicationframehost') {
+          const mapped = this.APP_NAME_MAP[base.toLowerCase()];
+          return mapped || base;
+        }
+      }
+      return 'تطبيق ويندوز';
+    }
+    return this.APP_NAME_MAP[lower] || raw || 'تطبيق غير محدد';
+  }
+
+  private get APP_NAME_MAP(): Record<string, string> {
+    return {
       chrome: 'Google Chrome',
       msedge: 'Microsoft Edge',
       firefox: 'Mozilla Firefox',
@@ -311,7 +351,6 @@ export class WindowTracker {
       photoshop: 'Adobe Photoshop',
       illustrator: 'Adobe Illustrator',
     };
-    return map[lower] || raw || 'تطبيق غير محدد';
   }
 
   private processWindow(win: any): void {
