@@ -57,7 +57,7 @@ const CompanySwitcher: React.FC<CompanySwitcherProps> = ({
     setIsOpen(false);
   }, [currentCompany?.id]);
 
-  if (!user?.hasMultipleCompanies || companies.length <= 1) {
+  if ((!user?.hasMultipleCompanies && user?.role !== 'SUPER_ADMIN') || companies.length <= 1) {
     return null;
   }
 

@@ -886,6 +886,40 @@ const login = async (req, res) => {
       }
     }
 
+    // For SUPER_ADMIN users without explicit company bindings, expose active companies
+    if (user.role === 'SUPER_ADMIN' && companiesMap.size <= 1) {
+      try {
+        const allActive = await getSharedPrismaClient().company.findMany({
+          where: { isActive: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logo: true,
+            currency: true,
+            isActive: true,
+            sidebarLayout: true,
+            settings: true,
+          },
+          orderBy: { createdAt: 'asc' },
+          take: 50
+        });
+        for (const comp of allActive) {
+          if (!companiesMap.has(comp.id)) {
+            companiesMap.set(comp.id, {
+              ...comp,
+              activeApps: [],
+              role: 'SUPER_ADMIN',
+              isDefault: false,
+              isCurrent: false
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[LOGIN] Failed to fetch active companies for super admin:', e.message);
+      }
+    }
+
     // Ensure at least one company is marked as isCurrent: true
     const hasCurrentCompany = Array.from(companiesMap.values()).some(c => c.isCurrent);
     if (!hasCurrentCompany && companiesMap.size > 0) {
@@ -1179,6 +1213,39 @@ const me = async (req, res) => {
         if (user.role !== 'SUPER_ADMIN' && uc.companyId === decoded.companyId) {
           currentActiveRole = uc.roleRef?.key || uc.role;
         }
+    }
+
+    // For SUPER_ADMIN users, expose active companies so they can switch contexts
+    if (user.role === 'SUPER_ADMIN' && companiesMap.size <= 1) {
+      try {
+        const allActive = await getSharedPrismaClient().company.findMany({
+          where: { isActive: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logo: true,
+            currency: true,
+            isActive: true,
+            sidebarLayout: true,
+            settings: true,
+          },
+          orderBy: { createdAt: 'asc' },
+          take: 50
+        });
+        for (const comp of allActive) {
+          if (!companiesMap.has(comp.id)) {
+            companiesMap.set(comp.id, {
+              ...comp,
+              activeApps: [],
+              role: 'SUPER_ADMIN',
+              isDefault: false,
+              isCurrent: comp.id === decoded.companyId
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[AUTH-ME] Failed to fetch active companies for super admin:', e.message);
       }
     }
 
@@ -1844,8 +1911,8 @@ const switchCompany = async (req, res) => {
     }
 
     // Check if user has access to this company
-    // First, check if it's the main company
-    let hasAccess = user.companyId === companyId;
+    // First, check if it's the main company or if user is SUPER_ADMIN
+    let hasAccess = user.companyId === companyId || user.role === 'SUPER_ADMIN';
     let userRole = user.role;
 
     if (!hasAccess) {

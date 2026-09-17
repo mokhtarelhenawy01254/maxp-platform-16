@@ -264,27 +264,9 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
     }
   };
 
-  if (!ticket) {
-    return (
-      <main className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-zinc-50/50 dark:bg-zinc-950/40">
-        <div className="max-w-md space-y-3">
-          <div className="h-12 w-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 mx-auto flex items-center justify-center">
-            <DocumentTextIcon className="h-6 w-6" />
-          </div>
-          <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
-            اختر تذكرة لعرض المحادثة
-          </h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            يمكنك متابعة المحادثة الحية مع فريق عمليات وخدمة عملاء شركة تربو،
-            والرد المباشر وإرفاق الصور أو فتح تذكرة جديدة.
-          </p>
-        </div>
-      </main>
-    );
-  }
-
-  const messages: TurboMessage[] = ticket.messages || ticket.replies || [];
+  const messages: TurboMessage[] = ticket?.messages || ticket?.replies || [];
   const uniqueMessages = React.useMemo(() => {
+    if (!ticket) return [];
     const sorted = [...messages].sort((a, b) => {
       const tA = parseSafeDate(a.created_at)?.getTime() || 0;
       const tB = parseSafeDate(b.created_at)?.getTime() || 0;
@@ -319,7 +301,26 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
 
       return true;
     });
-  }, [ticket.messages, ticket.replies, ticket.content, ticket.description, (ticket as any)?.agent]);
+  }, [ticket?.messages, ticket?.replies, ticket?.content, ticket?.description, (ticket as any)?.agent]);
+
+  if (!ticket) {
+    return (
+      <main className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-zinc-50/50 dark:bg-zinc-950/40">
+        <div className="max-w-md space-y-3">
+          <div className="h-12 w-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 mx-auto flex items-center justify-center">
+            <DocumentTextIcon className="h-6 w-6" />
+          </div>
+          <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
+            اختر تذكرة لعرض المحادثة
+          </h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+            يمكنك متابعة المحادثة الحية مع فريق عمليات وخدمة عملاء شركة تربو،
+            والرد المباشر وإرفاق الصور أو فتح تذكرة جديدة.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
