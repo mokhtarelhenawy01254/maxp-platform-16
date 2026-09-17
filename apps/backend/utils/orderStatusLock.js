@@ -17,7 +17,7 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const createLockError = (currentStatusCode = '') => {
   const error = new Error(
-    `لا يمكن تعديل بيانات هذا الطلب — الحالة الحالية (${currentStatusCode}) غير مسموح تعديل بياناتها. يمكن للأدمن/المالك فك القفل من إعدادات الطلبات.`
+    `حالة هذا الطلب (${currentStatusCode}) مضبوطة حالياً على "غير مسموح بالتعديل". لتمكين تعديل بيانات الطلب، يُرجى تفعيل خيار "مسموح بالتعديل" لهذه الحالة من صفحة (إعدادات الطلبات ← حالات الطلب).`
   );
   error.statusCode = 403;
   return error;
