@@ -141,7 +141,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const isUrgent = String(task.priority || '').toUpperCase() === 'URGENT';
   const isAssignedToMe = !task.assignedTo || task.assignedTo === currentUserId;
   const isCreatedByMe = task.createdBy === currentUserId;
-  const canRunTask = isAssignedToMe || isAdmin;
+  const canRunTask = isAssignedToMe;
   const canEditTask = isCreatedByMe || isAssignedToMe || isAdmin;
 
   const resolveAttachmentUrl = (rawPath: string) => {
@@ -149,18 +149,24 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
     if (rawPath.startsWith('data:') || rawPath.startsWith('blob:')) {
       return rawPath;
     }
-    const cleanBase = (serverUrl || 'https://maxp.online').replace(/\/$/, '');
-    let cleanPath = rawPath;
-    if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
-      if (authToken && !rawPath.includes('token=')) {
-        return `${rawPath}${rawPath.includes('?') ? '&' : '?'}token=${encodeURIComponent(authToken)}`;
-      }
-      return rawPath;
+    const cleanRaw = rawPath.trim();
+    if (cleanRaw.startsWith('http://') || cleanRaw.startsWith('https://')) {
+      return cleanRaw;
     }
-    if (!cleanPath.startsWith('/')) cleanPath = `/${cleanPath}`;
-    const tokenParam = authToken ? `token=${encodeURIComponent(authToken)}` : '';
-    const sep = cleanPath.includes('?') ? '&' : '?';
-    return `${cleanBase}${cleanPath}${tokenParam ? `${sep}${tokenParam}` : ''}`;
+    let base = (serverUrl || 'https://maxp.online').trim().replace(/\/$/, '');
+    if (!base.startsWith('http://') && !base.startsWith('https://')) {
+      base = `https://${base}`;
+    }
+    let normalized = cleanRaw.replace(/\\/g, '/');
+    if (!normalized.startsWith('/')) normalized = `/${normalized}`;
+    if (!normalized.startsWith('/uploads/')) {
+      if (normalized.startsWith('/tasks/')) {
+        normalized = `/uploads${normalized}`;
+      } else {
+        normalized = `/uploads/tasks${normalized}`;
+      }
+    }
+    return `${base}${normalized}`;
   };
 
   const isImgAttachment = (att: any) => {
@@ -337,6 +343,24 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                         <span>بدء العمل</span>
                       </button>
                     )
+                  ) : isInProgress ? (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: '#38bdf8',
+                        background: 'rgba(56, 189, 248, 0.1)',
+                        padding: '3px 8px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(56, 189, 248, 0.3)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                      }}
+                      title={`المهمة قيد التنفيذ حالياً بواسطة: ${assigneeName}`}
+                    >
+                      <span style={cardStyles.pulsingDot} />
+                      <span>جاري العمل: {assigneeName}</span>
+                    </span>
                   ) : (
                     <span
                       style={{

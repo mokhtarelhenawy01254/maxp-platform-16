@@ -722,11 +722,9 @@ const PRIVATE_UPLOAD_PREFIXES = [
   '/affiliate-documents/',
   '/affiliate-payouts/',
   '/dental-lab/',
-  '/tasks/',
-  '/dev-tasks/',
   '/support/',
 ];
-const NO_CACHE_UPLOAD_PREFIXES = ['/conversations/', '/whatsapp/', '/companies/'];
+const NO_CACHE_UPLOAD_PREFIXES = ['/conversations/', '/whatsapp/', '/companies/', '/tasks/', '/dev-tasks/'];
 
 app.use("/uploads", async (req, res, next) => {
   try {

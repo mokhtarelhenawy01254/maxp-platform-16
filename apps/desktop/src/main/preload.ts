@@ -76,6 +76,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   }) => ipcRenderer.invoke('tasks:upload-attachment', data),
   captureDesktopSnippet: () =>
     ipcRenderer.invoke('tasks:capture-screen'),
+  openExternal: (url: string) =>
+    ipcRenderer.invoke('shell:open-external', url),
 
   // Updates
   checkForUpdates: () =>

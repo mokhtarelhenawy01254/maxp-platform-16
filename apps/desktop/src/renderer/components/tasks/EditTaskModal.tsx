@@ -8,6 +8,9 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
+  Camera,
+  Paperclip,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
 
@@ -19,12 +22,20 @@ interface CompanyUser {
   email?: string;
 }
 
+interface AttachmentDraft {
+  base64Data: string;
+  fileName: string;
+  mimeType: string;
+  previewUrl: string;
+}
+
 interface EditTaskModalProps {
   isOpen: boolean;
   task: any;
   onClose: () => void;
   onUpdated: () => void;
   users: CompanyUser[];
+  serverUrl?: string;
 }
 
 export const EditTaskModal: React.FC<EditTaskModalProps> = ({
@@ -33,6 +44,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   onClose,
   onUpdated,
   users,
+  serverUrl = 'https://maxp.online',
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -40,6 +52,9 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
   const [dueDate, setDueDate] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState<number>(60);
+  const [existingAttachments, setExistingAttachments] = useState<any[]>([]);
+  const [newAttachments, setNewAttachments] = useState<AttachmentDraft[]>([]);
+  const [isCapturing, setIsCapturing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +64,8 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     setDescription(task.description || '');
     setAssignedTo(task.assignedTo || '');
     setPriority((task.priority || 'MEDIUM').toUpperCase());
+    setExistingAttachments(task.taskAttachments || task.attachments || []);
+    setNewAttachments([]);
 
     // Format dueDate for datetime-local
     if (task.dueDate) {
@@ -69,6 +86,81 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   }, [task]);
 
   if (!isOpen || !task) return null;
+
+  const resolveAttachmentUrl = (rawPath: string) => {
+    if (!rawPath) return '';
+    if (rawPath.startsWith('data:') || rawPath.startsWith('blob:')) {
+      return rawPath;
+    }
+    const cleanRaw = rawPath.trim();
+    if (cleanRaw.startsWith('http://') || cleanRaw.startsWith('https://')) {
+      return cleanRaw;
+    }
+    let base = (serverUrl || 'https://maxp.online').trim().replace(/\/$/, '');
+    if (!base.startsWith('http://') && !base.startsWith('https://')) {
+      base = `https://${base}`;
+    }
+    let normalized = cleanRaw.replace(/\\/g, '/');
+    if (!normalized.startsWith('/')) normalized = `/${normalized}`;
+    if (!normalized.startsWith('/uploads/')) {
+      if (normalized.startsWith('/tasks/')) {
+        normalized = `/uploads${normalized}`;
+      } else {
+        normalized = `/uploads/tasks${normalized}`;
+      }
+    }
+    return `${base}${normalized}`;
+  };
+
+  const handleCaptureScreen = async () => {
+    setIsCapturing(true);
+    setError(null);
+    try {
+      const res = await window.electronAPI.captureDesktopSnippet();
+      if (res.success && res.dataUrl) {
+        const newAtt: AttachmentDraft = {
+          base64Data: res.dataUrl,
+          fileName: `screenshot-${new Date().toISOString().replace(/[:.]/g, '-')}.png`,
+          mimeType: 'image/png',
+          previewUrl: res.dataUrl,
+        };
+        setNewAttachments((prev) => [...prev, newAtt]);
+      } else {
+        setError(res.error || 'فشل التقاط لقطة الشاشة');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'خطأ أثناء التقاط الشاشة');
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        setNewAttachments((prev) => [
+          ...prev,
+          {
+            base64Data: result,
+            fileName: file.name,
+            mimeType: file.type || 'image/png',
+            previewUrl: file.type.startsWith('image/') ? result : '',
+          },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const removeNewAttachment = (index: number) => {
+    setNewAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +184,20 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
       if (!res.success) {
         throw new Error(res.error || 'فشل تحديث المهمة في السيرفر');
+      }
+
+      // Upload new attachments if any
+      for (const att of newAttachments) {
+        try {
+          await window.electronAPI.uploadTaskAttachment({
+            taskId: task.id,
+            base64Data: att.base64Data,
+            originalName: att.fileName,
+            mimeType: att.mimeType,
+          });
+        } catch (uploadErr) {
+          console.warn('[EditTaskModal] Attachment upload skipped:', uploadErr);
+        }
       }
 
       if (priority === 'URGENT') {
@@ -245,6 +351,92 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             />
           </div>
 
+          {/* Attachments Section */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <label style={modalStyles.label}>
+                المرفقات والصور ({existingAttachments.length + newAttachments.length})
+              </label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  type="button"
+                  onClick={handleCaptureScreen}
+                  disabled={isCapturing}
+                  style={modalStyles.actionSmallBtn}
+                  title="التقاط لقطة شاشة للحاسوب وإرفاقها فوراً"
+                >
+                  <Camera size={13} color="#38bdf8" />
+                  <span>{isCapturing ? 'جاري الالتقاط…' : 'لقطة شاشة فورية'}</span>
+                </button>
+
+                <label style={modalStyles.actionSmallBtn}>
+                  <Paperclip size={13} color="#a855f7" />
+                  <span>إرفاق صورة / ملف</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx"
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Existing Attachments */}
+            {existingAttachments.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 11, color: '#71717a', marginBottom: 4 }}>المرفقات المحفوظة مسبقاً:</div>
+                <div style={modalStyles.attachmentList}>
+                  {existingAttachments.map((att: any, i: number) => {
+                    const fileUrl = resolveAttachmentUrl(att.filePath || att.fileUrl || att.url || '');
+                    const isImg = (att.mimeType || '').startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(att.fileName || att.originalName || att.filePath || '');
+                    return (
+                      <div key={att.id || i} style={modalStyles.attachmentChip}>
+                        {isImg && fileUrl ? (
+                          <img src={fileUrl} alt="" style={modalStyles.thumb} />
+                        ) : (
+                          <Paperclip size={12} color="#94a3b8" />
+                        )}
+                        <span style={modalStyles.attName} title={att.originalName || att.fileName}>
+                          {att.originalName || att.fileName || `مرفق #${i + 1}`}
+                        </span>
+                        <span style={modalStyles.badgeExisting}>محفوظ</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* New Draft Attachments */}
+            {newAttachments.length > 0 && (
+              <div>
+                <div style={{ fontSize: 11, color: '#38bdf8', marginBottom: 4 }}>مرفقات جديدة ستُرفع عند الحفظ:</div>
+                <div style={modalStyles.attachmentList}>
+                  {newAttachments.map((att, i) => (
+                    <div key={i} style={{ ...modalStyles.attachmentChip, borderColor: 'rgba(56, 189, 248, 0.3)' }}>
+                      {att.previewUrl ? (
+                        <img src={att.previewUrl} alt="" style={modalStyles.thumb} />
+                      ) : (
+                        <Paperclip size={12} color="#38bdf8" />
+                      )}
+                      <span style={modalStyles.attName} title={att.fileName}>{att.fileName}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeNewAttachment(i)}
+                        style={modalStyles.removeAttBtn}
+                        title="حذف هذا المرفق"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Footer Buttons */}
           <div style={modalStyles.footer}>
             <button
@@ -263,12 +455,12 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               {isSubmitting ? (
                 <>
                   <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
-                  <span>جاري الحفظ…</span>
+                  <span>جاري الحفظ والرفع…</span>
                 </>
               ) : (
                 <>
                   <CheckCircle2 size={15} />
-                  <span>حفظ التعديلات</span>
+                  <span>حفظ التعديلات والمرفقات</span>
                 </>
               )}
             </button>
@@ -296,7 +488,8 @@ const modalStyles: Record<string, React.CSSProperties> = {
   },
   modal: {
     width: '100%',
-    maxWidth: 520,
+    maxWidth: 540,
+    maxHeight: '92vh',
     background: '#121214',
     border: '1px solid rgba(255,255,255,0.12)',
     borderRadius: 12,
@@ -313,6 +506,7 @@ const modalStyles: Record<string, React.CSSProperties> = {
     padding: '14px 18px',
     borderBottom: '1px solid rgba(255,255,255,0.07)',
     background: '#18181b',
+    flexShrink: 0,
   },
   title: {
     fontSize: 14,
@@ -334,6 +528,7 @@ const modalStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 12,
+    overflowY: 'auto',
   },
   label: {
     display: 'block',
@@ -369,6 +564,69 @@ const modalStyles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: '1fr 1fr',
     gap: 10,
   },
+  actionSmallBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    padding: '4px 9px',
+    background: '#18181b',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: 6,
+    color: '#d4d4d8',
+    fontSize: 11,
+    cursor: 'pointer',
+    userSelect: 'none',
+    transition: 'all 0.15s ease',
+  },
+  attachmentList: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  attachmentChip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: '#18181b',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 6,
+    padding: '4px 8px',
+    fontSize: 11,
+    maxWidth: 240,
+  },
+  thumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 3,
+    objectFit: 'cover',
+    flexShrink: 0,
+  },
+  attName: {
+    flex: 1,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    color: '#d4d4d8',
+    fontSize: 11,
+  },
+  badgeExisting: {
+    fontSize: 9,
+    padding: '1px 5px',
+    borderRadius: 4,
+    background: 'rgba(255,255,255,0.06)',
+    color: '#a1a1aa',
+    flexShrink: 0,
+  },
+  removeAttBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#ef4444',
+    cursor: 'pointer',
+    padding: 2,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   errorAlert: {
     background: 'rgba(239, 68, 68, 0.12)',
     borderBottom: '1px solid rgba(239, 68, 68, 0.25)',
@@ -381,8 +639,9 @@ const modalStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: 8,
-    paddingTop: 8,
+    paddingTop: 10,
     borderTop: '1px solid rgba(255,255,255,0.06)',
+    flexShrink: 0,
   },
   cancelBtn: {
     background: 'transparent',

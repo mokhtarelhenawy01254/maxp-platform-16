@@ -37,6 +37,7 @@ declare global {
         mimeType?: string;
       }) => Promise<{ success: boolean; attachment?: any; error?: string }>;
       captureDesktopSnippet: () => Promise<{ success: boolean; dataUrl?: string; error?: string }>;
+      openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
       checkForUpdates: () => Promise<{
         success: boolean;
         status: 'dev' | 'update-available' | 'up-to-date' | 'error';

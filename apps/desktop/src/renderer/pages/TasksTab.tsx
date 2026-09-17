@@ -35,6 +35,7 @@ export const TasksTab: React.FC = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [lightboxImgError, setLightboxImgError] = useState(false);
   const [serverUrl, setServerUrl] = useState('https://maxp.online');
   const [authToken, setAuthToken] = useState<string>('');
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -477,42 +478,104 @@ export const TasksTab: React.FC = () => {
         onClose={() => setEditingTask(null)}
         onUpdated={() => loadData(false)}
         users={users}
+        serverUrl={serverUrl}
       />
 
       {/* Image Lightbox Modal */}
       {previewImage && (
-        <div style={styles.lightboxOverlay} onClick={() => setPreviewImage(null)}>
+        <div
+          style={styles.lightboxOverlay}
+          onClick={() => {
+            setPreviewImage(null);
+            setLightboxImgError(false);
+          }}
+        >
           <div style={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
             <div style={styles.lightboxHeader}>
               <span style={{ fontSize: 13, color: '#fafafa', fontWeight: 600 }}>معاينة المرفق بدقة كاملة</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <a
-                  href={previewImage}
-                  download="attachment"
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(previewImage);
+                      const blob = await res.blob();
+                      const blobUrl = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = blobUrl;
+                      const cleanName = previewImage.split('/').pop()?.split('?')[0] || 'attachment.png';
+                      a.download = cleanName;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+                    } catch {
+                      if (window.electronAPI.openExternal) {
+                        window.electronAPI.openExternal(previewImage);
+                      } else {
+                        window.open(previewImage, '_blank');
+                      }
+                    }
+                  }}
                   style={styles.lightboxActionBtn}
                   title="تحميل الصورة للحاسوب"
                 >
                   <Download size={13} />
                   <span>تنزيل</span>
-                </a>
+                </button>
                 <button
                   type="button"
-                  onClick={() => window.open(previewImage, '_blank')}
+                  onClick={() => {
+                    if (window.electronAPI.openExternal) {
+                      window.electronAPI.openExternal(previewImage);
+                    } else {
+                      window.open(previewImage, '_blank');
+                    }
+                  }}
                   style={styles.lightboxActionBtn}
                   title="فتح في المتصفح الخارجي"
                 >
                   <ExternalLink size={13} />
                   <span>فتح</span>
                 </button>
-                <button onClick={() => setPreviewImage(null)} style={styles.closeBtn}>
+                <button
+                  onClick={() => {
+                    setPreviewImage(null);
+                    setLightboxImgError(false);
+                  }}
+                  style={styles.closeBtn}
+                >
                   <X size={16} />
                 </button>
               </div>
             </div>
-            <div style={{ padding: 12, display: 'flex', justifyContent: 'center', background: '#09090b' }}>
-              <img src={previewImage} alt="Preview" style={styles.lightboxImg} />
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#09090b', minHeight: 200 }}>
+              {!lightboxImgError ? (
+                <img
+                  src={previewImage}
+                  alt="Preview"
+                  style={styles.lightboxImg}
+                  onError={() => setLightboxImgError(true)}
+                />
+              ) : (
+                <div style={{ textAlign: 'center', padding: 24 }}>
+                  <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 12 }}>تعذر تحميل الصورة مباشرة داخل التطبيق</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.electronAPI.openExternal) {
+                        window.electronAPI.openExternal(previewImage);
+                      } else {
+                        window.open(previewImage, '_blank');
+                      }
+                    }}
+                    style={{ ...styles.lightboxActionBtn, margin: '0 auto' }}
+                  >
+                    <ExternalLink size={13} />
+                    <span>فتح المرفق في المتصفح الخارجي</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

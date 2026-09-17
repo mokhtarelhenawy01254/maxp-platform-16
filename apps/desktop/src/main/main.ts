@@ -755,6 +755,18 @@ function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('shell:open-external', async (_, url: string) => {
+    try {
+      if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+        await shell.openExternal(url);
+        return { success: true };
+      }
+      return { success: false, error: 'Invalid URL scheme' };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('update:check', async () => {
     try {
       const currentVersion = app.getVersion();
@@ -975,30 +987,60 @@ async function pollTaskNotifications(): Promise<void> {
       }
     }
 
-    // 2. Check tasks assigned BY me to peers
+    // 2. Check tasks assigned BY me to peers (Manager Smart Notification Radar)
     const delegatedTasks = await apiClient.getTasks('assigned-by-me');
     if (Array.isArray(delegatedTasks)) {
+      const now = Date.now();
       for (const t of delegatedTasks) {
         if (!t?.id) continue;
         const currentStatus = String(t.status || '').toUpperCase();
         const prevStatus = knownMyTasksStatuses.get(t.id);
+        const assigneeName =
+          t.assignedToName ||
+          (t.assignee?.firstName
+            ? `${t.assignee.firstName} ${t.assignee.lastName || ''}`.trim()
+            : 'الزميل المكلف');
 
+        // Alert Manager when employee starts working
+        if (
+          taskPollerInitialized &&
+          prevStatus &&
+          prevStatus !== 'IN_PROGRESS' &&
+          currentStatus === 'IN_PROGRESS'
+        ) {
+          showNotification(
+            '🟢 بدء العمل على مهمة',
+            `بدأ ${assigneeName} العمل على المهمة: "${t.title}" الآن.`
+          );
+          hasChanges = true;
+        }
+
+        // Alert Manager when employee completes task
         if (
           taskPollerInitialized &&
           prevStatus &&
           prevStatus !== 'COMPLETED' &&
           currentStatus === 'COMPLETED'
         ) {
-          const assigneeName =
-            t.assignedToName ||
-            (t.assignee?.firstName
-              ? `${t.assignee.firstName} ${t.assignee.lastName || ''}`.trim()
-              : 'الزميل المكلف');
           showNotification(
             '🎉 تم إنجاز مهمة كلفت بها',
             `أنجز ${assigneeName} المهمة: "${t.title}" بنجاح.`
           );
           hasChanges = true;
+        }
+
+        // Alert Manager if delegated task is overdue
+        if (currentStatus !== 'COMPLETED' && t.dueDate) {
+          const dueTime = new Date(t.dueDate).getTime();
+          const diffMs = dueTime - now;
+          if (diffMs < 0 && !warnedOverdueTaskIds.has(`mgr_${t.id}`)) {
+            warnedOverdueTaskIds.add(`mgr_${t.id}`);
+            showNotification(
+              '⚠️ مهمة متأخرة في فريقك',
+              `تجاوزت المهمة "${t.title}" الموكلة لـ ${assigneeName} موعد التسليم المحدد!`,
+              true
+            );
+          }
         }
 
         knownMyTasksStatuses.set(t.id, currentStatus);
