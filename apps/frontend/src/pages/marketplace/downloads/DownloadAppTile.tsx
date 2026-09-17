@@ -121,7 +121,7 @@ export const DownloadAppTile: React.FC<DownloadAppTileProps> = ({
             <a
               href={primaryFile.url}
               download
-              target={primaryFile.url.startsWith("http") && !primaryFile.url.includes("/downloads/") ? "_blank" : undefined}
+              target={primaryFile.url.startsWith("http") && !primaryFile.url.includes("/download") ? "_blank" : undefined}
               rel="noreferrer"
               className="shrink-0"
             >
@@ -216,7 +216,7 @@ export const DownloadAppTile: React.FC<DownloadAppTileProps> = ({
             <a
               href={primaryFile.url}
               download
-              target={primaryFile.url.startsWith("http") && !primaryFile.url.includes("/downloads/") ? "_blank" : undefined}
+              target={primaryFile.url.startsWith("http") && !primaryFile.url.includes("/download") ? "_blank" : undefined}
               rel="noreferrer"
               className="flex-1"
             >
@@ -261,7 +261,7 @@ export const DownloadAppTile: React.FC<DownloadAppTileProps> = ({
                 href={sec.url}
                 download
                 className="w-full"
-                target={sec.url.startsWith("http") && !sec.url.includes("/downloads/") ? "_blank" : undefined}
+                target={sec.url.startsWith("http") && !sec.url.includes("/download") ? "_blank" : undefined}
                 rel="noreferrer"
               >
                 <Button

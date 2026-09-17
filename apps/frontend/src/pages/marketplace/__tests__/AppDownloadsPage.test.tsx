@@ -69,7 +69,7 @@ describe("AppDownloadsPage", () => {
       </MemoryRouter>
     );
 
-    const winSetupLink = container.querySelector('a[href="https://maxp.online/downloads/MaxP-Monitor-Setup.exe"]');
+    const winSetupLink = container.querySelector('a[href="https://maxp.online/download/MaxP-Workspace-Setup.exe"]');
     expect(winSetupLink).not.toBeNull();
 
     const winPortableLink = container.querySelector('a[href="https://maxp.online/downloads/MaxP-Monitor-Portable.zip"]');

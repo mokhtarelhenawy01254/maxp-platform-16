@@ -51,7 +51,7 @@ export const AppDownloadsPage: React.FC = () => {
     const text = `دليل روابط وتطبيقات MaxP لمنشأة: ${companyName}
 
 1. برنامج مراقبة وإنتاجية فريق العمل لسطح المكتب (Windows Setup .exe):
-https://maxp.online/downloads/MaxP-Monitor-Setup.exe
+https://maxp.online/download/MaxP-Workspace-Setup.exe
 النسخة المحمولة بدون تثبيت (Portable .zip):
 https://maxp.online/downloads/MaxP-Monitor-Portable.zip
 
@@ -90,7 +90,7 @@ https://maxp.online (تثبيت فوري عبر متصفح Safari - إضافة �
       return;
     }
     if (os === "windows") {
-      window.location.href = "https://maxp.online/downloads/MaxP-Monitor-Setup.exe";
+      window.location.href = "https://maxp.online/download/MaxP-Workspace-Setup.exe";
       return;
     }
     toast.info("اختر الحزمة المتوافقة مع احتياجاتك من القائمة أدناه");

@@ -270,7 +270,7 @@ export const AppDetailsDrawer: React.FC<AppDetailsDrawerProps> = ({
                   href={file.url}
                   download
                   className="flex-1"
-                  target={file.url.startsWith("http") && !file.url.includes("/downloads/") ? "_blank" : undefined}
+                  target={file.url.startsWith("http") && !file.url.includes("/download") ? "_blank" : undefined}
                   rel="noreferrer"
                 >
                   <Button
