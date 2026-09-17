@@ -362,7 +362,30 @@ exports.deleteShippingZone = (req, res) => shippingZoneController.deleteShipping
  */
 exports.getTurboSettings = async (req, res) => {
   try {
-    const { companyId } = req.user;
+    const companyId =
+      req.user?.companyId ||
+      req.headers['x-company-id'] ||
+      req.headers['X-Company-Id'] ||
+      req.query?.companyId ||
+      req.companyId;
+
+    if (!companyId) {
+      return res.json({
+        success: true,
+        data: {
+          turboEnabled: false,
+          turboAutoCreate: false,
+          turboMainClientCode: null,
+          turboSenderNumber: null,
+          turboWebhookUrl: null,
+          turboWebhookToken: null,
+          hasApiKey: false,
+          maskedApiKey: null,
+          requiresCompanySelection: true
+        }
+      });
+    }
+
     const prisma = await getPrisma();
 
     const company = await safeQuery(async () => {
@@ -413,7 +436,20 @@ exports.getTurboSettings = async (req, res) => {
  */
 exports.updateTurboSettings = async (req, res) => {
   try {
-    const { companyId } = req.user;
+    const companyId =
+      req.user?.companyId ||
+      req.headers['x-company-id'] ||
+      req.headers['X-Company-Id'] ||
+      req.query?.companyId ||
+      req.companyId;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'معرف الشركة مطلوب لتحديث إعدادات Turbo'
+      });
+    }
+
     const { turboApiKey, turboMainClientCode, turboSenderNumber, turboEnabled, turboAutoCreate, turboWebhookUrl, turboWebhookToken } = req.body;
     const prisma = await getPrisma();
 

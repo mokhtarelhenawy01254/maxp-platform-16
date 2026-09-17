@@ -326,9 +326,13 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 export const ProductNewFinal: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
   const isEditMode = Boolean(id);
-  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user, switchCompany } = useAuth();
+  const [accessibleTargetCompany, setAccessibleTargetCompany] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const { currency } = useCurrency();
   const { t } = useTranslation();
   const isMerchant = user?.role === "MERCHANT";
@@ -604,6 +608,7 @@ export const ProductNewFinal: React.FC = () => {
   const fetchProduct = useCallback(async () => {
     if (!isEditMode || !id) return;
     setIsFetchingProduct(true);
+    setAccessibleTargetCompany(null);
     try {
       const response = await apiClient.get(`/products/${id}`);
       const data = response.data;
@@ -883,12 +888,29 @@ export const ProductNewFinal: React.FC = () => {
         setQuantityOffers(normalizeQuantityOffers(parsedMetadata));
       } else {
         setProductCompanyId(null);
-        setError(t("products.messages.productError"));
+        setError((data as any)?.message || (data as any)?.error || t("products.messages.productError"));
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("❌ [ProductEdit] Error fetching product:", err);
       setProductCompanyId(null);
-      setError(t("products.messages.productErrorNetwork"));
+      const errData = err?.response?.data;
+      const status = err?.response?.status;
+
+      if (errData?.code === "DIFFERENT_COMPANY_ACCESSIBLE" && errData?.targetCompanyId) {
+        setAccessibleTargetCompany({
+          id: errData.targetCompanyId,
+          name: errData.targetCompanyName || "الشركة المالكة للمنتج",
+        });
+        setError(errData.message || errData.error || "هذا المنتج يتبع لشركة أخرى ضمن حسابك.");
+      } else if (errData?.message || errData?.error) {
+        setError(errData.message || errData.error);
+      } else if (status === 404) {
+        setError("المنتج غير موجود أو قد تم حذفه أو يتبع لشركة أخرى.");
+      } else if (status === 403) {
+        setError("لا تملك صلاحية الوصول إلى هذا المنتج.");
+      } else {
+        setError(t("products.messages.productErrorNetwork"));
+      }
     } finally {
       setIsFetchingProduct(false);
     }
@@ -1624,10 +1646,26 @@ export const ProductNewFinal: React.FC = () => {
                 />
               </div>
               <div className="ml-3 rtl:mr-3 rtl:ml-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm text-red-700 dark:text-red-300">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <p className="text-sm font-medium text-red-700 dark:text-red-300">
                     {error}
                   </p>
+                  {accessibleTargetCompany && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await switchCompany(accessibleTargetCompany.id);
+                          window.location.reload();
+                        } catch (swErr) {
+                          console.error("Switch failed:", swErr);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-all active:scale-95 cursor-pointer"
+                    >
+                      التبديل إلى شركة {accessibleTargetCompany.name} والفتح فوراً
+                    </button>
+                  )}
                   {fieldErrors.category && (
                     <button
                       type="button"

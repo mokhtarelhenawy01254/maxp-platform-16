@@ -1161,7 +1161,63 @@ const getSingleProduct = async (req, res) => {
     // });
 
     if (!product) {
-      //console.log(`❌ [server] Product not found: ${id}`);
+      // Check if this product exists in another company accessible to this user
+      if (req.user?.id) {
+        try {
+          const userCompanies = await getSharedPrismaClient().userCompany.findMany({
+            where: { userId: req.user.id, isActive: true },
+            select: { companyId: true, company: { select: { id: true, name: true, slug: true } } }
+          });
+          const accessibleCompanyIds = userCompanies
+            .map(uc => uc.companyId)
+            .filter(cid => cid && cid !== companyId);
+
+          if (accessibleCompanyIds.length > 0) {
+            const productInOtherCompany = await getSharedPrismaClient().product.findFirst({
+              where: withActiveProductFilter({
+                OR: orConditions,
+                companyId: { in: accessibleCompanyIds }
+              }),
+              select: {
+                id: true,
+                name: true,
+                companyId: true,
+                company: { select: { id: true, name: true, slug: true } }
+              }
+            });
+
+            if (productInOtherCompany) {
+              return res.status(403).json({
+                success: false,
+                code: 'DIFFERENT_COMPANY_ACCESSIBLE',
+                message: `هذا المنتج ("${productInOtherCompany.name}") يتبع لشركة "${productInOtherCompany.company?.name}". يمكنك التبديل إلى شركة "${productInOtherCompany.company?.name}" للوصول إليه.`,
+                targetCompanyId: productInOtherCompany.companyId,
+                targetCompanyName: productInOtherCompany.company?.name
+              });
+            }
+          }
+        } catch (switchCheckErr) {
+          console.warn('[getSingleProduct] Error checking other accessible companies:', switchCheckErr.message);
+        }
+      }
+
+      // Check if product exists anywhere in another company
+      try {
+        const productAnywhere = await getSharedPrismaClient().product.findFirst({
+          where: withActiveProductFilter({ OR: orConditions }),
+          select: { id: true, name: true, company: { select: { name: true } } }
+        });
+        if (productAnywhere) {
+          return res.status(404).json({
+            success: false,
+            code: 'DIFFERENT_COMPANY_NO_ACCESS',
+            message: `المنتج يتبع لشركة أخرى (${productAnywhere.company?.name || 'شركة أخرى'}) ولا تملك صلاحية الوصول إليه بحسابك الحالي.`
+          });
+        }
+      } catch (errAnywhere) {
+        // ignore
+      }
+
       return res.status(404).json({
         success: false,
         error: 'Product not found'

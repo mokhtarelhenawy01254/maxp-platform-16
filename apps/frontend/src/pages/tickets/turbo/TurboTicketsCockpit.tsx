@@ -249,7 +249,11 @@ export const TurboTicketsCockpit: React.FC = () => {
           setTotal(0);
         }
       } catch (err: any) {
-        if (!isSilent) toast.error("تعذر جلب التذاكر من تربو");
+        const errMsg =
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          "تعذر جلب التذاكر من تربو";
+        if (!isSilent) toast.error(errMsg);
         setTickets([]);
         setTotal(0);
       } finally {

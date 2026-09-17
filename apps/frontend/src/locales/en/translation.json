@@ -16466,7 +16466,7 @@
       "productCreated": "Product created successfully!",
       "productError": "Failed to update product",
       "productCreationError": "Failed to create product",
-      "productErrorNetwork": "Network error while updating product",
+      "productErrorNetwork": "Unable to connect to server. Please check your internet connection and try again.",
       "categoriesLoadError": "Failed to load categories",
       "categoriesLoadErrorNetwork": "Network error while loading categories",
       "editingProduct": "Edit current product data",

@@ -16467,7 +16467,7 @@
       "productCreated": "تم إنشاء المنتج بنجاح!",
       "productError": "فشل في تحديث المنتج",
       "productCreationError": "فشل في إنشاء المنتج",
-      "productErrorNetwork": "فشل الاتصال بالخادم لتحديث المنتج",
+      "productErrorNetwork": "تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة لاحقاً.",
       "categoriesLoadError": "فشل في تحميل الفئات",
       "categoriesLoadErrorNetwork": "فشل في الاتصال لتحميل الفئات",
       "editingProduct": "تعديل بيانات المنتج الحالي",

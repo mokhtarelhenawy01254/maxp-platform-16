@@ -14,11 +14,22 @@ const isTurboConfigError = (error) => {
   );
 };
 
+const resolveCompanyId = (req) => {
+  return (
+    req.user?.companyId ||
+    req.headers['x-company-id'] ||
+    req.headers['X-Company-Id'] ||
+    req.query?.companyId ||
+    req.companyId ||
+    null
+  );
+};
+
 const addTicket = async (req, res) => {
   try {
     const { description, content, type, categoryId, category_id, inquiryTypeId, inquiry_type_id, complaintTypeId, complaint_type_id, code, media, priority, relatedTo, related_to } = req.body;
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    const companyId = resolveCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, error: 'Company ID is required', message: 'يرجى اختيار شركة أولاً' });
     const ticketContent = content || description || '';
     if (!ticketContent.trim()) return res.status(400).json({ success: false, error: 'Content/Description is required' });
     let finalCategoryId = categoryId || category_id;
@@ -40,8 +51,8 @@ const addTicket = async (req, res) => {
 
 const getInquiriesTypes = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    const companyId = resolveCompanyId(req);
+    if (!companyId) return res.json({ success: true, data: [] });
     const turboService = new TurboService(null, companyId);
     const result = await turboService.getInquiriesTypes();
     res.json({ success: true, data: result });
@@ -54,9 +65,16 @@ const getInquiriesTypes = async (req, res) => {
 
 const getTickets = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     const { page = 1, per_page = 15, status, search } = req.query;
-    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    if (!companyId) {
+      return res.json({
+        success: true,
+        data: { tickets: [], pagination: { total: 0, page: 1, per_page: 15, pages: 0, total_pages: 0 } },
+        tickets: [],
+        message: 'يرجى اختيار شركة لعرض التذاكر'
+      });
+    }
     const turboService = new TurboService(null, companyId);
     const result = await turboService.getTickets(parseInt(page), parseInt(per_page), { status, search });
 
@@ -139,15 +157,23 @@ const getTickets = async (req, res) => {
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error getting tickets:', error);
     const isConfigError = isTurboConfigError(error);
-    res.status(isConfigError ? 400 : 500).json({ success: false, error: error.message || 'Failed to get tickets', tickets: [], pagination: { total: 0, page: 1, per_page: 10, pages: 0 } });
+    res.status(isConfigError ? 400 : 500).json({
+      success: false,
+      error: error.message || 'Failed to get tickets',
+      message: isConfigError
+        ? 'خدمة تذاكر وشات تربو غير مفعلة لهذه الشركة'
+        : (error.message || 'فشل في جلب التذاكر من تربو'),
+      tickets: [],
+      pagination: { total: 0, page: 1, per_page: 15, pages: 0 }
+    });
   }
 };
 
 const getTicket = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     const { id } = req.params;
-    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    if (!companyId) return res.status(400).json({ success: false, error: 'Company ID is required', message: 'يرجى اختيار شركة أولاً' });
     if (!id) return res.status(400).json({ success: false, error: 'Ticket ID is required' });
 
     // Redis SWR fast-cache (15s)
@@ -275,9 +301,9 @@ const getTicket = async (req, res) => {
 
 const getTicketLog = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     const { id } = req.params;
-    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    if (!companyId) return res.status(400).json({ success: false, error: 'Company ID is required', message: 'يرجى اختيار شركة أولاً' });
     if (!id) return res.status(400).json({ success: false, error: 'Ticket ID is required' });
     const turboService = new TurboService(null, companyId);
     const result = await turboService.getTicketLog(id);
@@ -292,11 +318,11 @@ const getTicketLog = async (req, res) => {
 
 const replyToTicket = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     const { id } = req.params;
     const { message } = req.body;
     const imageFile = req.file;
-    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    if (!companyId) return res.status(400).json({ success: false, error: 'Company ID is required', message: 'يرجى اختيار شركة أولاً' });
     if (!id) return res.status(400).json({ success: false, error: 'Ticket ID is required' });
     if (!message) return res.status(400).json({ success: false, error: 'Message is required' });
     const turboService = new TurboService(null, companyId);
@@ -318,8 +344,15 @@ const replyToTicket = async (req, res) => {
 
 const getUnreadTicketsCount = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    const companyId = resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(200).json({
+        success: true,
+        data: { counts: { tickets: 0, missions: 0, orders: 0 } },
+        counts: { tickets: 0, missions: 0, orders: 0 },
+        unconfigured: true,
+      });
+    }
     const turboService = new TurboService(null, companyId);
     const result = await turboService.getUnreadTicketsCount();
     res.json({ success: true, data: result });
@@ -340,8 +373,8 @@ const getUnreadTicketsCount = async (req, res) => {
 
 const getTicketStatuses = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    const companyId = resolveCompanyId(req);
+    if (!companyId) return res.json({ success: true, statuses: [] });
     const turboService = new TurboService(null, companyId);
     const result = await turboService.getTicketStatuses();
     res.json(result);
@@ -356,8 +389,8 @@ const getTicketStatuses = async (req, res) => {
 
 const getTicketInstructions = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    const companyId = resolveCompanyId(req);
+    if (!companyId) return res.json({ success: true, instructions: [] });
     const turboService = new TurboService(null, companyId);
     const result = await turboService.getTicketInstructions();
     res.json(result);
@@ -372,8 +405,8 @@ const getTicketInstructions = async (req, res) => {
 
 const getCanCreateTicket = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    const companyId = resolveCompanyId(req);
+    if (!companyId) return res.json({ success: true, canCreate: false, reason: 'يرجى اختيار شركة أولاً' });
     const turboService = new TurboService(null, companyId);
     const result = await turboService.canCreateTicket();
     res.json(result);
@@ -388,8 +421,8 @@ const getCanCreateTicket = async (req, res) => {
 
 const getTotalOpenTickets = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    const companyId = resolveCompanyId(req);
+    if (!companyId) return res.json({ success: true, total: 0 });
     const turboService = new TurboService(null, companyId);
     const result = await turboService.getTotalOpenTickets();
     res.json(result);
@@ -404,10 +437,10 @@ const getTotalOpenTickets = async (req, res) => {
 
 const rateTicket = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     const { id } = req.params;
     const { rate } = req.body;
-    if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
+    if (!companyId) return res.status(400).json({ success: false, error: 'Company ID is required', message: 'يرجى اختيار شركة أولاً' });
     if (!id) return res.status(400).json({ success: false, error: 'Ticket ID is required' });
     if (!rate || Number(rate) < 1 || Number(rate) > 5) {
       return res.status(400).json({ success: false, error: 'Rate must be a number between 1 and 5' });

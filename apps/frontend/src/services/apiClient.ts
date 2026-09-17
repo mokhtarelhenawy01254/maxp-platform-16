@@ -172,17 +172,46 @@ class ApiClient {
         if (config._companyId) {
           config.headers["X-Company-Id"] = config._companyId;
         } else {
-          // Read companyId from the JWT token (authoritative source), not from localStorage("user")
+          let resolvedCompanyId: string | null = null;
+          // 1. Read companyId from JWT token
           try {
             const token = tokenManager.getAccessToken();
             if (token) {
               const payload = JSON.parse(atob(token.split(".")[1]));
               if (payload?.companyId) {
-                config.headers["X-Company-Id"] = payload.companyId;
+                resolvedCompanyId = payload.companyId;
               }
             }
           } catch {
             // Token decode failed silently
+          }
+
+          // 2. Fallback for SuperAdmin / switched tenant context where JWT has companyId=null
+          if (!resolvedCompanyId && typeof window !== "undefined") {
+            try {
+              const rawUser = localStorage.getItem("user");
+              if (rawUser) {
+                const parsedUser = JSON.parse(rawUser);
+                if (parsedUser?.companyId) {
+                  resolvedCompanyId = parsedUser.companyId;
+                } else if (parsedUser?.company?.id) {
+                  resolvedCompanyId = parsedUser.company.id;
+                }
+              }
+              if (!resolvedCompanyId) {
+                resolvedCompanyId =
+                  localStorage.getItem("currentCompanyId") ||
+                  localStorage.getItem("companyId") ||
+                  sessionStorage.getItem("currentCompanyId") ||
+                  null;
+              }
+            } catch {
+              // ignore
+            }
+          }
+
+          if (resolvedCompanyId) {
+            config.headers["X-Company-Id"] = resolvedCompanyId;
           }
         }
 
