@@ -83,9 +83,9 @@ describe("OrdersMobileList", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("#ORD-100")).toBeInTheDocument();
-    expect(screen.getByText("#ORD-200")).toBeInTheDocument();
-    expect(screen.getAllByText("just now").length).toBe(2);
+    expect(screen.getByText("#100")).toBeInTheDocument();
+    expect(screen.getByText("#200")).toBeInTheDocument();
+    expect(screen.getAllByText("now").length).toBe(2);
     expect(screen.getAllByText("100 EGP").length).toBe(2);
     expect(screen.getAllByText("Processing").length).toBe(2);
   });

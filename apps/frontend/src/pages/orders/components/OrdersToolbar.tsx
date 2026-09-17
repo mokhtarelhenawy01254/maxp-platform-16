@@ -9,6 +9,7 @@ import {
   ArrowLeftIcon,
   ArrowPathIcon,
   BoltIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { CommandPalette } from "../../../components/common/CommandPalette";
 import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
@@ -75,6 +76,15 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   const navigate = useNavigate();
 
   const [localSearch, setLocalSearch] = React.useState(filters.search);
+  const [isSpinning, setIsSpinning] = React.useState(false);
+
+  const handleRefresh = () => {
+    if (onRefresh) {
+      setIsSpinning(true);
+      onRefresh();
+      setTimeout(() => setIsSpinning(false), 700);
+    }
+  };
 
   React.useEffect(() => {
     setLocalSearch(filters.search);
@@ -235,56 +245,14 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   };
 
   return (
-    <div className="mb-3 space-y-2.5">
-      {/* Compact Filters Section */}
-      <div className="rounded-[22px] border border-slate-200/70 bg-white/90 p-2 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/55">
-        <div className="flex flex-col gap-3">
-          {/* Quick views: one-press presets for the highest-frequency filters */}
-          <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-0.5 sm:flex-wrap">
-            <span className="hidden items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 sm:inline-flex">
-              <BoltIcon className="h-3.5 w-3.5" />
-              {t("orders.quickViews")}
-            </span>
-            {quickViews.map((view) => {
-              const active = view.isActive(filters);
-              return (
-                <button
-                  key={view.key}
-                  type="button"
-                  onClick={view.apply}
-                  className={`inline-flex min-h-[36px] flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-semibold active:scale-95 transition ${active
-                    ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-500/20"
-                    : "border-slate-200/80 bg-white/80 text-slate-600 hover:border-blue-300 hover:bg-blue-50/60 hover:text-blue-700 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"
-                    }`}
-                >
-                  {view.label}
-                </button>
-              );
-            })}
-            <span className="mx-0.5 hidden h-5 w-px bg-slate-200 dark:bg-slate-700 sm:inline-block" />
-            <div className="flex-shrink-0">
-              <SavedViews filters={filters} onApplyFilters={onApplyFilters} />
-            </div>
-          </div>
-
-          {ordersLoadError && (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-red-200/80 bg-red-50/80 px-3 py-1.5 text-[11px] text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
-              <div className="flex min-w-0 items-center gap-2">
-                <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
-                <span className="truncate">{ordersLoadError}</span>
-              </div>
-              <button
-                onClick={onRetry}
-                className="rounded-xl border border-red-200/80 px-2.5 py-1 font-semibold transition hover:bg-red-100/80 dark:border-red-500/30 dark:hover:bg-red-500/10"
-              >
-                {t("orders.incompleteRetry")}
-              </button>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
-            <div className="relative min-w-[200px] flex-1 lg:min-w-0">
-              <MagnifyingGlassIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+    <div className="mb-2 space-y-2 sm:mb-3 sm:space-y-2.5">
+      {/* Filters Section: Single-surface on mobile without nested border padding, framed on desktop */}
+      <div className="space-y-2 sm:rounded-[22px] sm:border sm:border-slate-200/70 sm:bg-white/90 sm:p-2.5 sm:shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:sm:border-slate-700/70 dark:sm:bg-slate-950/55">
+        <div className="flex flex-col gap-2 sm:gap-2.5">
+          {/* Row 1: Unified Search & Action Bar */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="relative min-w-0 flex-1">
+              <MagnifyingGlassIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 aria-label={String(t("orders.searchPlaceholderUnified"))}
@@ -292,8 +260,21 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className={`${fieldClassName} pr-10`}
+                className={`${fieldClassName} h-10 w-full rounded-xl sm:rounded-2xl border border-slate-200/80 bg-white/95 pr-9 pl-8 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-100 dark:placeholder:text-slate-500`}
               />
+              {localSearch && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLocalSearch("");
+                    onFilterChange("search", "");
+                  }}
+                  aria-label={String(t("common.clear", { defaultValue: "مسح" }))}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 active:scale-95 transition dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                >
+                  <XMarkIcon className="h-3.5 w-3.5" />
+                </button>
+              )}
               {looksLikeOrderCode && (
                 <button
                   type="button"
@@ -311,62 +292,110 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               )}
             </div>
 
-            <div className="flex items-center gap-2 lg:flex-nowrap">
-              <div className="hidden sm:block">
-                <CommandPalette />
-              </div>
-              {onRefresh && (
-                <button
-                  type="button"
-                  onClick={onRefresh}
-                  aria-label={String(t("orders.refreshOrders"))}
-                  title={t("orders.refreshOrders")}
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-slate-200/80 bg-white/90 p-2.5 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  <ArrowPathIcon className="h-4 w-4" />
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={onToggleAdvancedFilters}
-                className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:flex-initial sm:text-sm ${showAdvancedFilters || advancedFilterCount > 0
-                  ? "border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                  : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-800"
-                  }`}
-              >
-                <AdjustmentsHorizontalIcon className="h-4 w-4" />
-                <span className="whitespace-nowrap">
-                  {t("orders.filters")}
-                </span>
-                {advancedFilterCount > 0 && (
-                  <span className={`inline-flex min-w-[22px] items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold ${showAdvancedFilters || advancedFilterCount > 0
-                    ? "bg-white/90 text-blue-700 dark:bg-slate-900/80 dark:text-blue-200"
-                    : "bg-blue-600 text-white dark:bg-blue-500 dark:text-white"
-                    }`}>
-                    {advancedFilterCount}
-                  </span>
-                )}
-              </button>
+            <div className="hidden sm:block">
+              <CommandPalette />
+            </div>
 
+            {onRefresh && (
               <button
                 type="button"
-                onClick={() =>
-                  onFilterChange("onlyUnseen", !filters.onlyUnseen)
-                }
-                className={`flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:min-w-[118px] sm:flex-initial sm:text-sm ${filters.onlyUnseen
-                  ? "border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                  : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-800"
-                  }`}
+                onClick={handleRefresh}
+                aria-label={String(t("orders.refreshOrders"))}
+                title={t("orders.refreshOrders")}
+                className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl sm:rounded-2xl border border-slate-200/80 bg-white/90 p-2.5 text-slate-700 transition hover:bg-slate-50 active:scale-95 dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:bg-slate-800"
               >
-                <EyeIcon className="h-4 w-4" />
-                <span className="whitespace-nowrap">
-                  {filters.onlyUnseen
-                    ? t("orders.showAll")
-                    : t("orders.unseen")}
-                </span>
+                <ArrowPathIcon className={`h-4 w-4 ${isSpinning ? "animate-spin text-blue-600 dark:text-blue-400" : ""}`} />
               </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onToggleAdvancedFilters}
+              aria-label={String(t("orders.filters"))}
+              className={`inline-flex h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border px-2.5 sm:px-3.5 text-xs sm:text-sm font-semibold transition active:scale-95 ${
+                showAdvancedFilters || advancedFilterCount > 0
+                  ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-500/20"
+                  : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:bg-slate-800"
+              }`}
+            >
+              <AdjustmentsHorizontalIcon className="h-4 w-4" />
+              <span className="hidden sm:inline whitespace-nowrap">
+                {t("orders.filters")}
+              </span>
+              {advancedFilterCount > 0 && (
+                <span
+                  className={`inline-flex min-w-[20px] h-5 items-center justify-center rounded-full px-1 text-[11px] font-bold tabular-nums ${
+                    showAdvancedFilters || advancedFilterCount > 0
+                      ? "bg-white/90 text-blue-700 dark:bg-slate-900/80 dark:text-blue-200"
+                      : "bg-blue-600 text-white dark:bg-blue-500 dark:text-white"
+                  }`}
+                >
+                  {advancedFilterCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onFilterChange("onlyUnseen", !filters.onlyUnseen)}
+              aria-label={String(filters.onlyUnseen ? t("orders.showAll") : t("orders.unseen"))}
+              title={filters.onlyUnseen ? t("orders.showAll") : t("orders.unseen")}
+              className={`inline-flex h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border px-2.5 sm:px-3 text-xs sm:text-sm font-semibold transition active:scale-95 ${
+                filters.onlyUnseen
+                  ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-500/20"
+                  : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:bg-slate-800"
+              }`}
+            >
+              <EyeIcon className="h-4 w-4" />
+              <span className="hidden sm:inline whitespace-nowrap">
+                {filters.onlyUnseen ? t("orders.showAll") : t("orders.unseen")}
+              </span>
+            </button>
+          </div>
+
+          {/* Row 2: Status Pill Capsule Rail & Saved Views */}
+          <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto py-0.5 sm:flex-wrap">
+            <span className="hidden items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 sm:inline-flex">
+              <BoltIcon className="h-3.5 w-3.5" />
+              {t("orders.quickViews")}
+            </span>
+            {quickViews.map((view) => {
+              const active = view.isActive(filters);
+              return (
+                <button
+                  key={view.key}
+                  type="button"
+                  onClick={view.apply}
+                  className={`inline-flex h-8 min-h-[32px] flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold active:scale-95 transition ${
+                    active
+                      ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-500/20"
+                      : "border-slate-200/80 bg-white/80 text-slate-600 hover:border-blue-300 hover:bg-blue-50/60 hover:text-blue-700 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"
+                  }`}
+                >
+                  {view.label}
+                </button>
+              );
+            })}
+            <span className="mx-0.5 hidden h-5 w-px bg-slate-200 dark:bg-slate-700 sm:inline-block" />
+            <div className="flex-shrink-0">
+              <SavedViews filters={filters} onApplyFilters={onApplyFilters} />
             </div>
           </div>
+
+          {ordersLoadError && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200/80 bg-red-50/80 px-3 py-1.5 text-[11px] text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
+              <div className="flex min-w-0 items-center gap-2">
+                <ExclamationTriangleIcon className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{ordersLoadError}</span>
+              </div>
+              <button
+                onClick={onRetry}
+                className="rounded-lg border border-red-200/80 px-2.5 py-1 font-semibold transition hover:bg-red-100/80 dark:border-red-500/30 dark:hover:bg-red-500/10"
+              >
+                {t("orders.incompleteRetry")}
+              </button>
+            </div>
+          )}
 
           {(advancedFilterCount > 0 || filters.onlyUnseen) && (
             <FilterChips

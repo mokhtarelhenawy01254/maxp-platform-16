@@ -3026,6 +3026,7 @@ const Orders: React.FC = () => {
         onToggleAdvancedFilters={() => setShowAdvancedFilters((prev) => !prev)}
         onSetQuickDate={setQuickDate}
         onRetry={fetchOrders}
+        onRefresh={fetchOrders}
       />
 
       <OrdersStatsBar
