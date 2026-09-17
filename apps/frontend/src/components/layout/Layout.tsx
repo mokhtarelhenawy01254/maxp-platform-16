@@ -28,7 +28,6 @@ import { shouldUseSuperAdminShell } from "./layoutMode";
 import CompanySwitcher from "../common/CompanySwitcher";
 import LanguageSwitcher from "../common/LanguageSwitcher";
 import NotificationDropdown from "../notifications/NotificationDropdown";
-import BrowserPushBanner from "../notifications/BrowserPushBanner";
 import ThemeToggle from "../ui/theme-toggle";
 import { apiClient } from "../../services/apiClient";
 import type { ApiRequestConfig } from "../../services/apiClient";
@@ -600,7 +599,6 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
 
   const headerBlock = (
     <>
-      <BrowserPushBanner />
       {isValidSuperAdminSession() ? (
         <div
           role="status"

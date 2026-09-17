@@ -22,7 +22,7 @@ export const MobileCompanionCard: React.FC = () => {
   const [copiedApkLink, setCopiedApkLink] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
   const [showQrCode, setShowQrCode] = useState(false);
-  const { canInstallPwa, installPwa, isStandalone, isIosSafari } = usePlatformDetect();
+  const { isStandalone } = usePlatformDetect();
 
   // Verified working APK endpoint hosted directly on maxp.online
   const apkUrl = "https://maxp.online/downloads/maxp.apk";
@@ -36,21 +36,6 @@ export const MobileCompanionCard: React.FC = () => {
     setCopiedApkLink(true);
     toast.success("تم نسخ رابط حزمة أندرويد (APK) لمشاركته");
     setTimeout(() => setCopiedApkLink(false), 2500);
-  };
-
-  const handleInstallPwa = async () => {
-    if (isIosSafari) {
-      setShowIosGuide(true);
-      return;
-    }
-    if (canInstallPwa) {
-      const installed = await installPwa();
-      if (installed) {
-        toast.success("جاري تثبيت تطبيق MaxP على جهازك...");
-      }
-    } else {
-      toast.info("للتثبيت السريع: افتح قائمة المتصفح (⋮) واختر 'تثبيت التطبيق' أو 'إضافة للشاشة الرئيسية'");
-    }
   };
 
   return (
@@ -72,7 +57,7 @@ export const MobileCompanionCard: React.FC = () => {
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                MaxP Mobile Companion for Android (APK) &amp; iOS PWA
+                MaxP Mobile Companion for Android (APK) &amp; iOS Web
               </p>
             </div>
           </div>
@@ -93,8 +78,8 @@ export const MobileCompanionCard: React.FC = () => {
             <span className="text-xs font-mono font-bold text-foreground mt-0.5 block tabular-nums">155.7 MB (APK)</span>
           </div>
           <div className="rounded-xl border border-border/40 bg-muted/20 p-2.5 text-center">
-            <span className="text-[10px] text-muted-foreground block">نسخة PWA الفورية</span>
-            <span className="text-xs font-bold text-foreground mt-0.5 block">Zero Download</span>
+            <span className="text-[10px] text-muted-foreground block">الوصول الفوري</span>
+            <span className="text-xs font-bold text-foreground mt-0.5 block">سحابي مباشر</span>
           </div>
           <div className="rounded-xl border border-border/40 bg-muted/20 p-2.5 text-center">
             <span className="text-[10px] text-muted-foreground block">الصلاحيات</span>
@@ -102,7 +87,7 @@ export const MobileCompanionCard: React.FC = () => {
           </div>
         </div>
 
-        {/* Content with Features and Optional QR */}
+        {/* Content with Features */}
         <div className="space-y-2.5 mb-5 text-xs text-muted-foreground">
           <div className="flex items-start gap-2.5">
             <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
@@ -119,7 +104,7 @@ export const MobileCompanionCard: React.FC = () => {
           <div className="flex items-start gap-2.5">
             <DownloadCloud className="size-4 text-primary shrink-0 mt-0.5" />
             <span className="leading-relaxed">
-              تثبيت فوري كـ Progressive Web App على جميع الهواتف مع دعم التخزين المؤقت في المناطق ضعيفة الشبكة.
+              وصول مباشر وسريع عبر متصفح الويب من أي جهاز بدون الحاجة لأي تثبيت أو تخزين مؤقت معقد.
             </span>
           </div>
         </div>
@@ -139,7 +124,7 @@ export const MobileCompanionCard: React.FC = () => {
               <div className="text-start space-y-1">
                 <p className="text-xs font-bold text-foreground">امسح الرمز بكاميرا الهاتف المحمول</p>
                 <p className="text-[11px] text-muted-foreground max-w-xs leading-relaxed">
-                  يفتح التطبيق فوراً في متصفح الهاتف مع إمكانية التثبيت على الشاشة الرئيسية بنقرة واحدة.
+                  يفتح المنصة فوراً في متصفح الهاتف مع إمكانية إضافة اختصار للشاشة الرئيسية بنقرة واحدة.
                 </p>
               </div>
             </div>
@@ -151,13 +136,13 @@ export const MobileCompanionCard: React.FC = () => {
           <div className="mb-4 rounded-xl border border-primary/30 bg-primary/[0.04] p-3.5 text-xs text-foreground animate-in fade-in duration-200">
             <div className="flex items-center gap-2 font-bold mb-2">
               <Share2 className="size-4 text-primary" />
-              <span>طريقة تثبيت التطبيق على هواتف آيفون (iOS Safari):</span>
+              <span>طريقة إضافة اختصار للمنصة على آيفون (iOS Safari):</span>
             </div>
             <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground text-[11px] pr-1 leading-relaxed">
               <li>افتح موقع <span className="font-mono text-foreground font-semibold">maxp.online</span> في متصفح سفاري Safari.</li>
               <li>اضغط على زر المشاركة <span className="font-semibold text-foreground">(أيقونة السهم لأعلى)</span> أسفل شاشة الهاتف.</li>
               <li>اختر <span className="font-bold text-primary">"إضافة إلى الصفحة الرئيسية" (Add to Home Screen)</span>.</li>
-              <li>سيعمل تطبيق MaxP كـ تطبيق مستقل سريع على الشاشة الرئيسية وبدون متجر تطبيقات.</li>
+              <li>سيعمل اختصار MaxP للوصول السريع والمباشر من شاشتك الرئيسية.</li>
             </ol>
           </div>
         )}
@@ -179,15 +164,21 @@ export const MobileCompanionCard: React.FC = () => {
             </Button>
           </a>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleInstallPwa}
-            className="w-full h-10 rounded-xl text-xs font-bold gap-2 border-border/60 hover:bg-muted active:scale-[0.98] transition-all"
+          <a
+            href={webPwaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full"
           >
-            <DownloadCloud className="size-4 text-primary" />
-            <span>{isStandalone ? "التطبيق مثبت على جهازك" : "تثبيت فوري كـ PWA"}</span>
-          </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-10 rounded-xl text-xs font-bold gap-2 border-border/60 hover:bg-muted active:scale-[0.98] transition-all"
+            >
+              <DownloadCloud className="size-4 text-primary" />
+              <span>{isStandalone ? "فتح المنصة السحابية" : "فتح عبر الويب السحابي"}</span>
+            </Button>
+          </a>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1 text-xs text-muted-foreground">
@@ -233,4 +224,3 @@ export const MobileCompanionCard: React.FC = () => {
 };
 
 export default MobileCompanionCard;
-

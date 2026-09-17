@@ -33,10 +33,9 @@ import { usePlatformDetect } from "./downloads/usePlatformDetect";
 
 export const AppDownloadsPage: React.FC = () => {
   const { user } = useAuth();
-  const [copiedAll, setCopiedAll] = useState(false);
   const [activeTab, setActiveTab] = useState<"all" | "desktop" | "mobile" | "pos" | "enterprise">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const { os, osLabel, canInstallPwa, installPwa, isStandalone } = usePlatformDetect();
+  const { os, osLabel, isStandalone } = usePlatformDetect();
 
   const companyToken = (user?.company as any)?.id || (user as any)?.companyId || "";
   const companyName = (user?.company as any)?.name || "مؤسستك";
@@ -52,7 +51,7 @@ https://maxp.online/downloads/MaxP-Monitor-Portable.zip
 2. تطبيق الموبايل الميداني للأندرويد (Android APK - 155 MB):
 https://maxp.online/downloads/maxp.apk
 
-3. تطبيق الويب والموبايل السريع (PWA):
+3. وصول سحابي مباشر عبر الويب (Web Cloud):
 https://maxp.online
 
 معرّف المنشأة المرجعي لربط الأجهزة: ${companyToken || "تواصل مع مدير الحساب"}`;
@@ -63,7 +62,7 @@ https://maxp.online
     setTimeout(() => setCopiedAll(false), 2500);
   };
 
-  const handleHeroInstall = async () => {
+  const handleHeroInstall = () => {
     if (os === "android") {
       window.location.href = "https://maxp.online/downloads/maxp.apk";
       return;
@@ -72,14 +71,7 @@ https://maxp.online
       window.location.href = "https://maxp.online/downloads/MaxP-Monitor-Setup.exe";
       return;
     }
-    if (canInstallPwa) {
-      const ok = await installPwa();
-      if (ok) {
-        toast.success("جاري تثبيت تطبيق MaxP...");
-      }
-    } else {
-      toast.info("للتثبيت السريع: استخدم خيار 'تثبيت التطبيق' من قائمة المتصفح");
-    }
+    window.open("https://maxp.online", "_blank");
   };
 
   // Filter cards based on tab and search

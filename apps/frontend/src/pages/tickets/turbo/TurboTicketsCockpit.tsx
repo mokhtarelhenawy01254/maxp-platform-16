@@ -207,7 +207,6 @@ export const TurboTicketsCockpit: React.FC = () => {
                     title: `تذكرة تربو #${t.id}${t.code ? ` - ${t.code}` : ""}`,
                     body: snippet.slice(0, 90),
                     tag: `turbo-ticket-${t.id}-${Date.now()}`,
-                    bypassPushCheck: true,
                     onClick: () => {
                       window.focus();
                       handleSelectTicket(t);

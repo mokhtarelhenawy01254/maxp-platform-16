@@ -2,23 +2,15 @@ import { useState, useEffect } from "react";
 
 export type ClientPlatform = "android" | "ios" | "windows" | "macos" | "linux" | "other";
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
-}
-
 export interface PlatformDetectResult {
   os: ClientPlatform;
   osLabel: string;
   isMobile: boolean;
   isStandalone: boolean;
-  canInstallPwa: boolean;
   isIosSafari: boolean;
-  installPwa: () => Promise<boolean>;
 }
 
 export function usePlatformDetect(): PlatformDetectResult {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState<boolean>(false);
   const [os, setOs] = useState<ClientPlatform>("other");
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -59,50 +51,22 @@ export function usePlatformDetect(): PlatformDetectResult {
       !/Chrome|CriOS|FxiOS|EdgiOS/i.test(ua) &&
       detectedOs === "ios";
     setIsIosSafari(isSafari);
-
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    };
   }, []);
-
-  const installPwa = async (): Promise<boolean> => {
-    if (!deferredPrompt) {
-      return false;
-    }
-    try {
-      await deferredPrompt.prompt();
-      const choiceResult = await deferredPrompt.userChoice;
-      if (choiceResult.outcome === "accepted") {
-        setDeferredPrompt(null);
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  };
 
   const getOsLabel = (platform: ClientPlatform): string => {
     switch (platform) {
       case "android":
-        return "أندرويد (Android)";
+        return "\u0623\u0646\u062F\u0631\u0648\u064A\u062F (Android)";
       case "ios":
-        return "آبل (iOS / iPhone)";
+        return "\u0622\u0628\u0644 (iOS / iPhone)";
       case "windows":
-        return "ويندوز (Windows)";
+        return "\u0648\u064A\u0646\u062F\u0648\u0632 (Windows)";
       case "macos":
-        return "ماك (macOS)";
+        return "\u0645\u0627\u0643 (macOS)";
       case "linux":
-        return "لينكس (Linux)";
+        return "\u0644\u064A\u0646\u0643\u0633 (Linux)";
       default:
-        return "نظام التشغيل الحالي";
+        return "\u0646\u0638\u0627\u0645 \u0627\u0644\u062A\u0634\u063A\u064A\u0644 \u0627\u0644\u062D\u0627\u0644\u064A";
     }
   };
 
@@ -111,8 +75,6 @@ export function usePlatformDetect(): PlatformDetectResult {
     osLabel: getOsLabel(os),
     isMobile,
     isStandalone,
-    canInstallPwa: deferredPrompt !== null,
     isIosSafari,
-    installPwa,
   };
 }

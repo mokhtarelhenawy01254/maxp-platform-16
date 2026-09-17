@@ -645,7 +645,6 @@ const NotificationSettings: React.FC = () => {
           tag: "notification-settings-test",
           requireInteraction:
             settings?.channels.browser.requireInteraction ?? false,
-          bypassPushCheck: true,
         });
 
         if (!shown) {
