@@ -1,0 +1,129 @@
+﻿name: Build & Release MaxP Desktop Workspace
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'إنشاء GitHub Release وتحديث سيرفر التحديثات التلقائية'
+        required: false
+        default: true
+        type: boolean
+      deploy_to_server:
+        description: 'نشر ملف التثبيت المباشر على السيرفر (https://maxp.online/download/MaxP-Workspace-Setup.exe)'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-desktop-workspace-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows-installer:
+    name: Build & Release Windows Desktop Setup
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Install Desktop Dependencies
+        working-directory: apps/desktop
+        run: npm ci
+
+      - name: Build TypeScript Main & Vite Renderer
+        working-directory: apps/desktop
+        run: npm run build
+
+      - name: Package Windows NSIS Installer & Updates
+        working-directory: apps/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win nsis --publish never
+
+      - name: Verify Generated Artifacts
+        shell: pwsh
+        run: |
+          Write-Host "Listing generated release artifacts:"
+          Get-ChildItem -Path apps/desktop/release -Recurse | Select-Object Name, Length, FullName | Format-Table
+          
+          $setupExe = Get-ChildItem -Path apps/desktop/release -Filter "*.exe" | Select-Object -First 1
+          if (-not $setupExe) {
+            Write-Error "No setup .exe generated in apps/desktop/release!"
+            exit 1
+          }
+          Write-Host "Main installer generated: $($setupExe.FullName)"
+
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MaxP-Workspace-Windows-Installer-${{ github.run_number }}
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.blockmap
+            apps/desktop/release/latest.yml
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: ${{ github.event_name == 'push' || github.event.inputs.create_release != 'false' }}
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "MaxP Desktop Workspace Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.blockmap
+            apps/desktop/release/latest.yml
+
+      - name: Setup SSH Key for Server Direct Download Deployment
+        if: ${{ github.event.inputs.deploy_to_server != 'false' && secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
+      - name: Deploy Installer to Production Web Download Route
+        if: ${{ github.event.inputs.deploy_to_server != 'false' && secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT || '22' }}
+        run: |
+          echo "🚀 Publishing MaxP-Workspace-Setup.exe to direct server download URL..."
+          SETUP_FILE=$(find apps/desktop/release/ -name "*.exe" | head -n 1)
+          
+          ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+            "$SERVER_USER@$SERVER_HOST" \
+            "mkdir -p /var/www/frontend2/dist/download /var/www/frontend2/dist/downloads"
+
+          scp -4 -i "$HOME/.ssh/maxp_deploy_key" -P "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            "$SETUP_FILE" "$SERVER_USER@$SERVER_HOST:/var/www/frontend2/dist/download/MaxP-Workspace-Setup.exe"
+
+          ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            "$SERVER_USER@$SERVER_HOST" \
+            "cp -f /var/www/frontend2/dist/download/MaxP-Workspace-Setup.exe /var/www/frontend2/dist/downloads/MaxP-Workspace-Setup.exe"
+
+          echo "✅ Desktop Setup successfully published to https://maxp.online/download/MaxP-Workspace-Setup.exe"
