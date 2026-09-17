@@ -94,7 +94,7 @@ jobs:
             apps/desktop/release/latest.yml
 
       - name: Setup SSH Key for Server Direct Download Deployment
-        if: ${{ github.event.inputs.deploy_to_server != 'false' && secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
+        if: ${{ github.event.inputs.deploy_to_server != 'false' }}
         uses: ./.github/actions/setup-ssh
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -102,7 +102,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
 
       - name: Deploy Installer to Production Web Download Route
-        if: ${{ github.event.inputs.deploy_to_server != 'false' && secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
+        if: ${{ github.event.inputs.deploy_to_server != 'false' }}
         shell: bash
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
