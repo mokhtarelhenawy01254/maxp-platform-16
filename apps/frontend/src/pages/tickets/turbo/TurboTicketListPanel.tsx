@@ -430,9 +430,9 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
                     <span className="font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
                       #{t.id}
                     </span>
-                    {t.code && (
+                    {t.code && String(t.code).trim() !== String(t.id).trim() && (
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 truncate max-w-[120px]">
-                        {t.code}
+                        شحنة: {t.code}
                       </span>
                     )}
                     {linkedOrderNumber && (

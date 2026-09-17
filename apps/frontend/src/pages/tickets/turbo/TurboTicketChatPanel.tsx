@@ -129,10 +129,33 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
 
   const activeOrder = ticket?.matchedOrder || manualMatchedOrder;
 
+  const isMessageFromStore = (msg: TurboMessage) => {
+    if (msg.is_client_message === 1 || msg.is_client_message === true) return true;
+    if (msg.is_client_message === 0 || msg.is_client_message === false) return false;
+
+    // Fallback if is_client_message not provided by Turbo API
+    const agentId = (ticket as any)?.agent?.id ? String((ticket as any).agent.id) : null;
+    const userId = msg.user?.id ? String(msg.user.id) : null;
+    const userName = (msg.user?.name || "").toLowerCase();
+    const username = (msg.user?.username || "").toLowerCase();
+    const email = (msg.user?.email || "").toLowerCase();
+
+    if (
+      (agentId && userId === agentId) ||
+      username === "ai_customer_service" ||
+      email.includes("algoistic.com") ||
+      userName.includes("ai customer") ||
+      userName.includes("خدمة العملاء") ||
+      userName.includes("الدعم الفني")
+    ) {
+      return false;
+    }
+
+    return true;
+  };
+
   const formatSenderName = (msg: TurboMessage) => {
-    const isStore =
-      Number(msg.is_client_message) === 1 ||
-      msg.is_client_message === true;
+    const isStore = isMessageFromStore(msg);
 
     if (isStore) {
       const storeName = user?.company?.name?.trim() || "المتجر";
@@ -256,11 +279,42 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
   }
 
   const messages: TurboMessage[] = ticket.messages || ticket.replies || [];
-  const sortedMessages = [...messages].sort((a, b) => {
-    const tA = new Date(a.created_at || 0).getTime();
-    const tB = new Date(b.created_at || 0).getTime();
-    return tA - tB;
-  });
+  const uniqueMessages = React.useMemo(() => {
+    const sorted = [...messages].sort((a, b) => {
+      const tA = new Date(a.created_at || 0).getTime();
+      const tB = new Date(b.created_at || 0).getTime();
+      return tA - tB;
+    });
+
+    const seenKeys = new Set<string>();
+    const initialText = (ticket.content || ticket.description || "")
+      .trim()
+      .replace(/\s+/g, " ");
+
+    return sorted.filter((msg, idx) => {
+      const text = (msg.content || msg.message || "").trim().replace(/\s+/g, " ");
+
+      // 1. Deduplicate by unique message ID
+      if (msg.id) {
+        const idKey = `id_${msg.id}`;
+        if (seenKeys.has(idKey)) return false;
+        seenKeys.add(idKey);
+      }
+
+      // 2. Suppress duplicate initial message matching the ticket's Initial Ticket Card
+      const isStore = isMessageFromStore(msg);
+      if (initialText && text === initialText && (idx === 0 || isStore)) {
+        return false;
+      }
+
+      // 3. Fallback dedup for identical content repeated with the same timestamp & sender
+      const contentKey = `c_${text}_${msg.created_at || ""}_${msg.user?.name || ""}`;
+      if (seenKeys.has(contentKey)) return false;
+      seenKeys.add(contentKey);
+
+      return true;
+    });
+  }, [ticket.messages, ticket.replies, ticket.content, ticket.description, (ticket as any)?.agent]);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -364,7 +418,7 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
                   {getStatusBadge(ticket.status).label}
                 </span>
               )}
-              {ticket.code && (
+              {ticket.code && String(ticket.code).trim() !== String(ticket.id).trim() && (
                 <button
                   type="button"
                   onClick={() => handleCopyCode(ticket.code!)}
@@ -553,15 +607,13 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
             })()}
 
             {/* Messages Stream */}
-            {sortedMessages.length === 0 ? (
+            {uniqueMessages.length === 0 ? (
               <div className="py-12 text-center text-xs text-zinc-400">
                 لا توجد ردود بعد. سيتم عرض ردود خدمة عملاء تربو هنا فور وصولها.
               </div>
             ) : (
-              sortedMessages.map((msg, idx) => {
-                const isStore =
-                  Number(msg.is_client_message) === 1 ||
-                  msg.is_client_message === true;
+              uniqueMessages.map((msg, idx) => {
+                const isStore = isMessageFromStore(msg);
                 const senderTitle = formatSenderName(msg);
                 const roleName = isStore
                   ? user?.company?.name?.trim() || "المتجر"

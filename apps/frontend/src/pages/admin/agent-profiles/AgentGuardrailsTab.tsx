@@ -240,36 +240,36 @@ export default function AgentGuardrailsTab({
       <div className="w-full flex flex-col gap-4 min-w-0">
         
         {/* Sub-header card */}
-        <div className="bg-card p-4 rounded-xl border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-card p-3 sm:p-4 rounded-xl border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-              <Shield className="size-5 text-primary" />
-              {t("agentProfiles.guardrails.title")}
+            <h3 className="font-bold text-base sm:text-lg text-foreground flex items-center gap-2">
+              <Shield className="size-5 text-primary shrink-0" />
+              <span>{t("agentProfiles.guardrails.title")}</span>
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
               {t("agentProfiles.guardrails.desc")}
             </p>
           </div>
           
-          <Button variant="outline" size="sm" onClick={fetchRules} className="shrink-0 flex items-center gap-1.5">
+          <Button variant="outline" size="sm" onClick={fetchRules} className="shrink-0 flex items-center gap-1.5 h-8 text-xs self-start sm:self-auto">
             <RefreshCw className="size-3.5" />
-            {t("agentProfiles.guardrails.refresh")}
+            <span>{t("agentProfiles.guardrails.refresh")}</span>
           </Button>
         </div>
 
         {/* Add Rule Form */}
-        <div className="bg-card p-4 rounded-xl border border-border">
-          <h4 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
+        <div className="bg-card p-3 sm:p-4 rounded-xl border border-border">
+          <h4 className="font-semibold text-sm mb-2.5 flex items-center gap-1.5">
             <Plus className="size-4 text-green-500" />
             {t("agentProfiles.guardrails.addTitle")}
           </h4>
           
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Textarea
               placeholder={t("agentProfiles.guardrails.inputPlaceholder")}
               value={feedbackText}
               onChange={(e) => setFeedbackText(e.target.value)}
-              className="resize-none h-16 text-sm text-right"
+              className="resize-none h-20 sm:h-16 text-base sm:text-sm text-right"
               onKeyDown={(e) => {
                 if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
                   handleSaveRule();
@@ -279,7 +279,7 @@ export default function AgentGuardrailsTab({
             <Button
               onClick={() => handleSaveRule(false)}
               disabled={savingRule || !feedbackText.trim()}
-              className="h-16 shrink-0 flex flex-col items-center justify-center gap-1 px-4"
+              className="h-10 sm:h-16 w-full sm:w-auto shrink-0 flex sm:flex-col items-center justify-center gap-1.5 px-4"
             >
               {savingRule ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -291,7 +291,7 @@ export default function AgentGuardrailsTab({
           </div>
         </div>
 
-        {/* Rules Table */}
+        {/* Rules Table & Mobile Cards */}
         <div className="border border-border rounded-xl bg-card overflow-hidden">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
@@ -307,67 +307,141 @@ export default function AgentGuardrailsTab({
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-right text-xs">
-                <thead className="bg-muted/40 border-b border-border text-muted-foreground font-semibold">
-                  <tr>
-                    <th className="p-3 w-1/4">{t("agentProfiles.guardrails.colExcuse")}</th>
-                    <th className="p-3 w-1/4">{t("agentProfiles.guardrails.colRebuttal")}</th>
-                    <th className="p-3 w-1/4">{t("agentProfiles.guardrails.colAction")}</th>
-                    <th className="p-3 text-center">{t("agentProfiles.guardrails.colSource")}</th>
-                    <th className="p-3 text-center">{t("agentProfiles.guardrails.colStatus")}</th>
-                    <th className="p-3 text-center">{t("agentProfiles.guardrails.colActions")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {rules.map((rule) => (
-                    <tr key={rule.id} className="hover:bg-muted/10 transition-colors">
-                      <td className="p-3 font-semibold text-foreground align-top whitespace-pre-wrap">{rule.excuse}</td>
-                      <td className="p-3 text-muted-foreground align-top whitespace-pre-wrap">{rule.rebuttal}</td>
-                      <td className="p-3 text-muted-foreground align-top whitespace-pre-wrap">{rule.action}</td>
-                      <td className="p-3 text-center align-top whitespace-nowrap">
-                        {rule.source === "template_default" && (
-                          <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-none">{t("agentProfiles.guardrails.sourceTemplate")}</Badge>
-                        )}
-                        {rule.source === "merchant_manual" && (
-                          <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-none">{t("agentProfiles.guardrails.sourceManual")}</Badge>
-                        )}
-                        {rule.source === "correction_auto" && (
-                          <Badge variant="secondary" className="bg-purple-500/10 text-purple-500 border-none">{t("agentProfiles.guardrails.sourceLearning")}</Badge>
-                        )}
-                      </td>
-                      <td className="p-3 text-center align-top">
+            <>
+              {/* Mobile Cards View (< md) */}
+              <div className="md:hidden divide-y divide-border">
+                {rules.map((rule) => (
+                  <div key={rule.id} className="p-3.5 space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                          {t("agentProfiles.guardrails.colExcuse")}
+                        </span>
+                        <p className="font-semibold text-xs text-foreground mt-0.5 leading-relaxed">{rule.excuse}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <Switch
                           checked={rule.isActive}
                           onCheckedChange={() => handleToggleRule(rule)}
+                          className="scale-90"
                         />
-                      </td>
-                      <td className="p-3 text-center align-top whitespace-nowrap">
-                        <div className="flex justify-center gap-1.5">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7 hover:bg-muted"
-                            onClick={() => setEditingRule(rule)}
-                          >
-                            <Edit2 className="size-3.5 text-muted-foreground" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7 hover:bg-red-500/10"
-                            onClick={() => setRuleToDelete(rule.id)}
-                            aria-label={t("common.delete", "حذف")}
-                          >
-                            <Trash2 className="size-3.5 text-red-500" />
-                          </Button>
-                        </div>
-                      </td>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 hover:bg-muted text-muted-foreground"
+                          onClick={() => setEditingRule(rule)}
+                          aria-label={t("common.edit", "تعديل")}
+                        >
+                          <Edit2 className="size-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 hover:bg-red-500/10 text-red-500"
+                          onClick={() => setRuleToDelete(rule.id)}
+                          aria-label={t("common.delete", "حذف")}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 text-xs">
+                      <div className="bg-muted/30 rounded-lg p-2.5">
+                        <span className="text-[10px] font-medium text-muted-foreground block">
+                          {t("agentProfiles.guardrails.colRebuttal")}
+                        </span>
+                        <p className="text-foreground/90 mt-0.5 leading-relaxed">{rule.rebuttal}</p>
+                      </div>
+                      <div className="bg-muted/30 rounded-lg p-2.5">
+                        <span className="text-[10px] font-medium text-muted-foreground block">
+                          {t("agentProfiles.guardrails.colAction")}
+                        </span>
+                        <p className="text-foreground/90 mt-0.5 leading-relaxed">{rule.action}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
+                      <span>{t("agentProfiles.guardrails.colSource")}:</span>
+                      <div>
+                        {rule.source === "template_default" && (
+                          <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-none text-[10px]">{t("agentProfiles.guardrails.sourceTemplate")}</Badge>
+                        )}
+                        {rule.source === "merchant_manual" && (
+                          <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-none text-[10px]">{t("agentProfiles.guardrails.sourceManual")}</Badge>
+                        )}
+                        {rule.source === "correction_auto" && (
+                          <Badge variant="secondary" className="bg-purple-500/10 text-purple-500 border-none text-[10px]">{t("agentProfiles.guardrails.sourceLearning")}</Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View (>= md) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-right text-xs">
+                  <thead className="bg-muted/40 border-b border-border text-muted-foreground font-semibold">
+                    <tr>
+                      <th className="p-3 w-1/4">{t("agentProfiles.guardrails.colExcuse")}</th>
+                      <th className="p-3 w-1/4">{t("agentProfiles.guardrails.colRebuttal")}</th>
+                      <th className="p-3 w-1/4">{t("agentProfiles.guardrails.colAction")}</th>
+                      <th className="p-3 text-center">{t("agentProfiles.guardrails.colSource")}</th>
+                      <th className="p-3 text-center">{t("agentProfiles.guardrails.colStatus")}</th>
+                      <th className="p-3 text-center">{t("agentProfiles.guardrails.colActions")}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {rules.map((rule) => (
+                      <tr key={rule.id} className="hover:bg-muted/10 transition-colors">
+                        <td className="p-3 font-semibold text-foreground align-top whitespace-pre-wrap">{rule.excuse}</td>
+                        <td className="p-3 text-muted-foreground align-top whitespace-pre-wrap">{rule.rebuttal}</td>
+                        <td className="p-3 text-muted-foreground align-top whitespace-pre-wrap">{rule.action}</td>
+                        <td className="p-3 text-center align-top whitespace-nowrap">
+                          {rule.source === "template_default" && (
+                            <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-none">{t("agentProfiles.guardrails.sourceTemplate")}</Badge>
+                          )}
+                          {rule.source === "merchant_manual" && (
+                            <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-none">{t("agentProfiles.guardrails.sourceManual")}</Badge>
+                          )}
+                          {rule.source === "correction_auto" && (
+                            <Badge variant="secondary" className="bg-purple-500/10 text-purple-500 border-none">{t("agentProfiles.guardrails.sourceLearning")}</Badge>
+                          )}
+                        </td>
+                        <td className="p-3 text-center align-top">
+                          <Switch
+                            checked={rule.isActive}
+                            onCheckedChange={() => handleToggleRule(rule)}
+                          />
+                        </td>
+                        <td className="p-3 text-center align-top whitespace-nowrap">
+                          <div className="flex justify-center gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 hover:bg-muted"
+                              onClick={() => setEditingRule(rule)}
+                            >
+                              <Edit2 className="size-3.5 text-muted-foreground" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 hover:bg-red-500/10"
+                              onClick={() => setRuleToDelete(rule.id)}
+                              aria-label={t("common.delete", "حذف")}
+                            >
+                              <Trash2 className="size-3.5 text-red-500" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -389,7 +463,7 @@ export default function AgentGuardrailsTab({
                 <Textarea
                   value={editingRule.excuse}
                   onChange={(e) => setEditingRule({ ...editingRule, excuse: e.target.value })}
-                  className="h-16 text-xs resize-none"
+                  className="h-16 text-base sm:text-xs resize-none"
                 />
               </div>
 
@@ -398,7 +472,7 @@ export default function AgentGuardrailsTab({
                 <Textarea
                   value={editingRule.rebuttal}
                   onChange={(e) => setEditingRule({ ...editingRule, rebuttal: e.target.value })}
-                  className="h-20 text-xs resize-none"
+                  className="h-20 text-base sm:text-xs resize-none"
                 />
               </div>
 
@@ -407,7 +481,7 @@ export default function AgentGuardrailsTab({
                 <Textarea
                   value={editingRule.action}
                   onChange={(e) => setEditingRule({ ...editingRule, action: e.target.value })}
-                  className="h-16 text-xs resize-none"
+                  className="h-16 text-base sm:text-xs resize-none"
                 />
               </div>
             </div>

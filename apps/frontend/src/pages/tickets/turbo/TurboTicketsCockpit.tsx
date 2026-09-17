@@ -153,9 +153,14 @@ export const TurboTicketsCockpit: React.FC = () => {
           const pagination =
             res.data.data?.pagination || res.data.pagination || {};
 
-          const fetchedTickets: TurboTicketItem[] = Array.isArray(list)
-            ? list
-            : [];
+          const rawTickets: TurboTicketItem[] = Array.isArray(list) ? list : [];
+          const seenTicketIds = new Set<string>();
+          const fetchedTickets = rawTickets.filter((t) => {
+            const key = String(t.id);
+            if (seenTicketIds.has(key)) return false;
+            seenTicketIds.add(key);
+            return true;
+          });
           setTickets(fetchedTickets);
           setTotal(pagination.total || fetchedTickets.length);
 

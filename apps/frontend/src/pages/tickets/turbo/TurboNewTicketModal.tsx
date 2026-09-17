@@ -97,6 +97,7 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     if (!content.trim()) {
       toast.error("يرجى كتابة تفاصيل المشكلة أو الاستفسار");
       return;

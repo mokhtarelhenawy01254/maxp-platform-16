@@ -155,58 +155,58 @@ export default function AgentToolsTab({
   }, [enrichedTools, typeFilter, searchQuery]);
 
   return (
-    <div className="max-w-4xl space-y-5">
-      {/* ── Summary Stats Banner ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-xl border border-border/70 bg-card p-3.5 flex items-center gap-3">
-          <div className="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <Wrench className="size-5" />
+    <div className="max-w-4xl space-y-4 sm:space-y-5">
+      {/* ── Summary Stats Banner (Compact on Mobile) ── */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="rounded-xl border border-border/70 bg-card p-2 sm:p-3.5 flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-start gap-1 sm:gap-3">
+          <div className="size-7 sm:size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Wrench className="size-3.5 sm:size-5" />
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{t("agentProfiles.tools.totalAllowed", "إجمالي الأدوات المصرحة")}</p>
-            <p className="text-xl font-black text-foreground">{allowedTools.length}</p>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-border/70 bg-card p-3.5 flex items-center gap-3">
-          <div className="size-10 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-            <ShieldCheck className="size-5" />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{t("agentProfiles.tools.readTools", "أدوات قراءة واستعلام")}</p>
-            <p className="text-xl font-black text-blue-600 dark:text-blue-400">{readToolsCount}</p>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t("agentProfiles.tools.totalAllowed", "إجمالي الأدوات")}</p>
+            <p className="text-base sm:text-xl font-black text-foreground">{allowedTools.length}</p>
           </div>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-card p-3.5 flex items-center gap-3">
-          <div className="size-10 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-            <ShieldAlert className="size-5" />
+        <div className="rounded-xl border border-border/70 bg-card p-2 sm:p-3.5 flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-start gap-1 sm:gap-3">
+          <div className="size-7 sm:size-10 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <ShieldCheck className="size-3.5 sm:size-5" />
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{t("agentProfiles.tools.writeTools", "أدوات تنفيذ وحركات")}</p>
-            <p className="text-xl font-black text-amber-600 dark:text-amber-400">{writeToolsCount}</p>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t("agentProfiles.tools.readTools", "أدوات قراءة")}</p>
+            <p className="text-base sm:text-xl font-black text-blue-600 dark:text-blue-400">{readToolsCount}</p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-2 sm:p-3.5 flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-start gap-1 sm:gap-3">
+          <div className="size-7 sm:size-10 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <ShieldAlert className="size-3.5 sm:size-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t("agentProfiles.tools.writeTools", "أدوات تنفيذ")}</p>
+            <p className="text-base sm:text-xl font-black text-amber-600 dark:text-amber-400">{writeToolsCount}</p>
           </div>
         </div>
       </div>
 
       {/* ── Filter Bar & Actions ── */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-1 min-w-[220px] max-w-md">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 max-w-full sm:max-w-md">
           <div className="relative flex-1">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/50 pointer-events-none" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t("agentProfiles.tools.searchPlaceholder", "بحث في اسم الأداة أو الوصف...")}
-              className="h-8 pr-8 text-xs bg-card"
+              className="h-9 sm:h-8 pr-8 text-base sm:text-xs bg-card"
             />
           </div>
 
-          <div className="flex items-center bg-muted/50 p-0.5 rounded-lg border border-border/40 shrink-0">
+          <div className="flex items-center bg-muted/50 p-0.5 rounded-lg border border-border/40 shrink-0 justify-center">
             <button
               onClick={() => setTypeFilter("all")}
               className={cn(
-                "px-2.5 py-1 text-xs rounded-md font-medium transition-all",
+                "flex-1 sm:flex-initial px-3 py-1.5 min-h-[34px] sm:min-h-[28px] text-xs rounded-md font-medium transition-all text-center",
                 typeFilter === "all"
                   ? "bg-card text-foreground shadow-sm font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -217,7 +217,7 @@ export default function AgentToolsTab({
             <button
               onClick={() => setTypeFilter("read")}
               className={cn(
-                "px-2.5 py-1 text-xs rounded-md font-medium transition-all",
+                "flex-1 sm:flex-initial px-3 py-1.5 min-h-[34px] sm:min-h-[28px] text-xs rounded-md font-medium transition-all text-center",
                 typeFilter === "read"
                   ? "bg-card text-blue-600 dark:text-blue-400 shadow-sm font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -228,7 +228,7 @@ export default function AgentToolsTab({
             <button
               onClick={() => setTypeFilter("write")}
               className={cn(
-                "px-2.5 py-1 text-xs rounded-md font-medium transition-all",
+                "flex-1 sm:flex-initial px-3 py-1.5 min-h-[34px] sm:min-h-[28px] text-xs rounded-md font-medium transition-all text-center",
                 typeFilter === "write"
                   ? "bg-card text-amber-600 dark:text-amber-400 shadow-sm font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -243,7 +243,7 @@ export default function AgentToolsTab({
           variant="outline"
           size="sm"
           onClick={() => navigate("/admin/ai-hub?tab=tools")}
-          className="h-8 text-xs gap-1.5 bg-card"
+          className="h-9 sm:h-8 text-xs gap-1.5 bg-card w-full sm:w-auto justify-center"
         >
           <SlidersHorizontal className="size-3 text-primary" />
           <span>{t("agentProfiles.tools.manageTools", "إدارة صلاحيات الأدوات")}</span>
@@ -253,7 +253,7 @@ export default function AgentToolsTab({
 
       {/* ── Tools Cards Grid / Empty State ── */}
       {filteredTools.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3">
           {filteredTools.map((tItem) => {
             const isWrite = tItem.sideEffects === "write";
             const groupName = tItem.group
@@ -264,7 +264,7 @@ export default function AgentToolsTab({
               <div
                 key={tItem.name}
                 className={cn(
-                  "p-3.5 rounded-xl border bg-card transition-all duration-150 flex flex-col justify-between gap-2.5",
+                  "p-3 sm:p-3.5 rounded-xl border bg-card transition-all duration-150 flex flex-col justify-between gap-2 sm:gap-2.5",
                   isWrite
                     ? "border-amber-500/20 hover:border-amber-500/40"
                     : "border-border/70 hover:border-primary/40"

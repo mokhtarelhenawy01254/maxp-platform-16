@@ -68,7 +68,7 @@ function SkillCard({ skill }: { skill: AgentSkillDetail }) {
       {/* Skill Card Header */}
       <div
         onClick={() => setExpanded((p) => !p)}
-        className="p-4 flex items-start justify-between gap-3 cursor-pointer select-none bg-card hover:bg-muted/30 transition-colors"
+        className="p-3 sm:p-4 flex items-start justify-between gap-2.5 sm:gap-3 cursor-pointer select-none bg-card hover:bg-muted/30 transition-colors"
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
@@ -78,12 +78,12 @@ function SkillCard({ skill }: { skill: AgentSkillDetail }) {
           }
         }}
       >
-        <div className="flex items-start gap-3 min-w-0 flex-1">
-          <div className="size-9 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+        <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
+          <div className="size-8 sm:size-9 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
             <Zap className="size-4" />
           </div>
           <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <h3 className="text-sm font-bold text-foreground truncate">
                 {skill.displayName || skill.id}
               </h3>
@@ -114,11 +114,11 @@ function SkillCard({ skill }: { skill: AgentSkillDetail }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <span className="text-xs text-muted-foreground font-medium hidden sm:inline-block">
             {tools.length} {t("agentProfiles.skills.toolsCount", "أدوات")}
           </span>
-          <div className="size-7 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground">
+          <div className="size-8 sm:size-7 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground">
             {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
           </div>
         </div>
@@ -126,14 +126,14 @@ function SkillCard({ skill }: { skill: AgentSkillDetail }) {
 
       {/* Expanded Details */}
       {expanded && (
-        <div className="border-t border-border/50 p-4 space-y-4 bg-muted/10 text-xs">
+        <div className="border-t border-border/50 p-3 sm:p-4 space-y-3.5 sm:space-y-4 bg-muted/10 text-xs">
           {/* Instructions snippet */}
           {skill.instructions && (
             <div>
               <label className="block font-semibold text-muted-foreground uppercase tracking-wider text-[10px] mb-1.5">
                 {t("agentProfiles.skills.instructions", "توجيهات وسير عمل المهارة")}
               </label>
-              <pre className="p-3 rounded-lg bg-card border border-border/60 text-foreground/90 whitespace-pre-wrap font-sans text-xs leading-relaxed max-h-48 overflow-y-auto">
+              <pre className="p-2.5 sm:p-3 rounded-lg bg-card border border-border/60 text-foreground/90 whitespace-pre-wrap break-words font-sans text-xs leading-relaxed max-h-48 overflow-y-auto overflow-x-hidden">
                 {skill.instructions}
               </pre>
             </div>
@@ -180,16 +180,16 @@ export default function AgentSkillsTab({ skills, agentName }: AgentSkillsTabProp
   }, [skills, searchQuery]);
 
   return (
-    <div className="max-w-4xl space-y-5">
+    <div className="max-w-4xl space-y-4 sm:space-y-5">
       {/* ── Toolbar: Search & Action ── */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <div className="relative flex-1 max-w-full sm:max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/50 pointer-events-none" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t("agentProfiles.skills.searchPlaceholder", "بحث في المهارات والأدوات...")}
-            className="h-8 pr-8 text-xs bg-card"
+            className="h-9 sm:h-8 pr-8 text-base sm:text-xs bg-card"
           />
         </div>
 
@@ -198,7 +198,7 @@ export default function AgentSkillsTab({ skills, agentName }: AgentSkillsTabProp
             variant="outline"
             size="sm"
             onClick={() => navigate("/admin/ai-hub?tab=skills")}
-            className="h-8 text-xs gap-1.5 bg-card"
+            className="h-9 sm:h-8 text-xs gap-1.5 bg-card w-full sm:w-auto justify-center"
           >
             <SlidersHorizontal className="size-3 text-indigo-500" />
             <span>{t("agentProfiles.skills.manageSkills", "إدارة المهارات")}</span>

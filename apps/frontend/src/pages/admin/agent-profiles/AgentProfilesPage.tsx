@@ -420,7 +420,7 @@ export default function AgentProfilesPage() {
 
   /* ── Sidebar Component ── */
   const sidebarContent = (
-    <aside className="w-64 shrink-0 border-e border-border/50 flex flex-col overflow-hidden bg-card/40">
+    <aside className="w-full lg:w-64 h-full shrink-0 border-e border-border/50 flex flex-col overflow-hidden bg-card/40">
       <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bot className="size-4 text-primary" />
@@ -510,7 +510,7 @@ export default function AgentProfilesPage() {
                   setMobileDrawerOpen(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-right transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[44px] rounded-lg text-right transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   isCurrentSelected
                     ? "bg-primary/10 border border-primary/20 text-primary font-semibold"
                     : "hover:bg-muted/50 border border-transparent text-foreground/80"
@@ -543,7 +543,7 @@ export default function AgentProfilesPage() {
       {/* ── Mobile Drawer ── */}
       {isMobile && (
         <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
-          <SheetContent side="right" className="w-[300px] p-0">
+          <SheetContent side="right" className="w-[85vw] max-w-[340px] p-0 flex flex-col h-full bg-card">
             {sidebarContent}
           </SheetContent>
         </Sheet>
@@ -554,38 +554,28 @@ export default function AgentProfilesPage() {
 
       {/* ── Main Panel ── */}
       <main className="flex-1 flex flex-col overflow-hidden min-h-0 min-w-0">
-        {/* Mobile Header Row */}
-        <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50 lg:hidden bg-card/60">
-          <button
-            onClick={() => setMobileDrawerOpen(true)}
-            className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground"
-            aria-label="القائمة"
-          >
-            <Menu className="size-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate(`/admin/ai-hub?tab=sandbox&agent=${selectedId || ""}`)}
-              className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground"
-              title="تجربة في الساندبوكس"
+        {/* Mobile Fallback Bar (Only when no agent profile is loaded) */}
+        {isMobile && !(selectedAgent && profile) && (
+          <div className="flex items-center justify-between gap-2 p-2.5 border-b border-border/50 lg:hidden bg-card/60">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMobileDrawerOpen(true)}
+              className="gap-2 text-xs h-8"
             >
-              <MessageSquare className="size-4" />
-            </button>
-            <button
-              onClick={loadAgents}
-              className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground"
-              disabled={agentsLoading}
-            >
-              <RefreshCw className={cn("size-4", agentsLoading && "animate-spin")} />
-            </button>
-            <button
+              <Menu className="size-4" />
+              <span>{t("agentProfiles.sidebar.title", "فريق الايجنت")}</span>
+            </Button>
+            <Button
+              size="sm"
               onClick={() => setCreateOpen(true)}
-              className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground"
+              className="gap-1.5 text-xs h-8"
             >
-              <Plus className="size-5" />
-            </button>
+              <Plus className="size-4" />
+              <span>{t("agentProfiles.sidebar.addTitle", "إضافة")}</span>
+            </Button>
           </div>
-        </div>
+        )}
 
         {selectedAgent && profile ? (
           <>
@@ -611,16 +601,18 @@ export default function AgentProfilesPage() {
               onDelete={() => setDeleteConfirm(selectedId)}
               onRefresh={loadAgents}
               refreshLoading={agentsLoading}
+              onOpenDrawer={() => setMobileDrawerOpen(true)}
+              onCreateAgent={() => setCreateOpen(true)}
             />
 
             {/* Tabs Bar */}
-            <div className="border-b border-border/50 px-4 lg:px-6 flex gap-2 bg-card/40 overflow-x-auto no-scrollbar shrink-0">
+            <div className="border-b border-border/50 px-2 sm:px-4 lg:px-6 flex gap-1 sm:gap-2 bg-card/40 overflow-x-auto no-scrollbar shrink-0">
               {tabs.map(({ key, label, count, icon }) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
                   className={cn(
-                    "flex items-center gap-2 px-3 lg:px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
+                    "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2.5 sm:py-3 min-h-[44px] text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap active:scale-98",
                     tab === key
                       ? "border-primary text-primary font-semibold"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -631,7 +623,7 @@ export default function AgentProfilesPage() {
                   {typeof count === "number" && (
                     <span
                       className={cn(
-                        "text-[11px] px-1.5 py-0.5 rounded-full font-mono font-medium",
+                        "text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-full font-mono font-medium",
                         tab === key
                           ? "bg-primary/15 text-primary font-bold"
                           : "bg-muted text-muted-foreground"
@@ -645,7 +637,7 @@ export default function AgentProfilesPage() {
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-6 min-h-0 min-w-0">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5 lg:p-6 pb-24 sm:pb-8 min-h-0 min-w-0">
               {profileError && (
                 <div role="alert" className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-xl max-w-2xl mb-5 text-destructive text-xs">
                   <AlertCircle className="size-4 shrink-0 mt-0.5" />

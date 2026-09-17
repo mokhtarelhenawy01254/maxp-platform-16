@@ -49,11 +49,11 @@ export default function AgentSettingsTab({
   };
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-4 sm:space-y-6">
       {/* ── Settings Form ── */}
-      <div className="rounded-xl border border-border/70 bg-card p-5 space-y-5 shadow-sm">
+      <div className="rounded-xl border border-border/60 bg-card p-3.5 sm:p-5 space-y-4 sm:space-y-5 shadow-sm">
         {!editing ? (
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             {/* اسم الوكيل */}
             <div>
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
@@ -107,7 +107,7 @@ export default function AgentSettingsTab({
             </div>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             {/* اسم الوكيل */}
             <div>
               <label htmlFor="agent-name-input" className="block text-xs font-semibold text-foreground mb-1.5">
@@ -118,7 +118,7 @@ export default function AgentSettingsTab({
                 value={draftName}
                 onChange={(e) => setDraftName(e.target.value)}
                 placeholder={t("agentProfiles.settings.agentNamePlaceholder", "أدخل اسم الوكيل")}
-                className="h-9 text-sm"
+                className="h-10 sm:h-9 text-base sm:text-sm"
               />
             </div>
 
@@ -134,7 +134,7 @@ export default function AgentSettingsTab({
                 value={draftDescription}
                 onChange={(e) => setDraftDescription(e.target.value)}
                 placeholder={t("agentProfiles.settings.descriptionPlaceholder", "وصف مختصر للوكيل ودوره في المتجر")}
-                className="h-9 text-sm"
+                className="h-10 sm:h-9 text-base sm:text-sm"
               />
             </div>
 
@@ -145,12 +145,12 @@ export default function AgentSettingsTab({
               <label className="block text-xs font-semibold text-foreground mb-1.5">
                 {t("agentProfiles.settings.tone", "نبرة الرد")}
               </label>
-              <div className="flex flex-wrap gap-1.5 bg-muted/40 p-1 rounded-lg w-fit border border-border/40">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-1.5 bg-muted/40 p-1 rounded-lg w-full sm:w-fit border border-border/40">
                 {toneOptions.map((opt) => (
                   <button
                     key={opt.key}
                     type="button"
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                    className={`px-3 py-2 sm:py-1.5 min-h-[38px] sm:min-h-[32px] rounded-md text-xs font-medium transition-all cursor-pointer flex items-center justify-center ${
                       currentToneKey === opt.key
                         ? "bg-background text-foreground shadow-sm font-semibold"
                         : "text-muted-foreground hover:text-foreground"
@@ -178,7 +178,7 @@ export default function AgentSettingsTab({
                 value={draftFiles["PERSONA.md"] || ""}
                 onChange={(e) => handleCustomInstructionsChange(e.target.value)}
                 placeholder={t("agentProfiles.settings.personaPlaceholder", "اكتب أي توجيهات إضافية تريد من الوكيل الالتزام بها (مثال: ركز على العروض، لا تعرض تقسيط، كلم العميل بلباقة...)")}
-                className="text-sm min-h-[130px] resize-y leading-relaxed"
+                className="text-base sm:text-sm min-h-[120px] sm:min-h-[130px] resize-y leading-relaxed"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 {t("agentProfiles.settings.personaOverrideHint", "تعليمات إضافية يلتزم بها الوكيل في ردوده لتعكس سياسة متجرك الخاصة")}

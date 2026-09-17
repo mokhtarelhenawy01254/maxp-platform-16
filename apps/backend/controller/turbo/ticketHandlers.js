@@ -230,6 +230,26 @@ const getTicket = async (req, res) => {
         console.warn('⚠️ [TURBO-CONTROLLER] Error attaching matched order to ticket:', linkErr.message);
       }
 
+      // Ensure sender orientation and attribution in messages
+      if (ticket && Array.isArray(ticket.messages)) {
+        const agentId = ticket.agent?.id ? String(ticket.agent.id) : null;
+        ticket.messages.forEach((msg) => {
+          if (msg.is_client_message === undefined || msg.is_client_message === null) {
+            const userId = msg.user?.id ? String(msg.user.id) : null;
+            const userName = (msg.user?.name || '').toLowerCase();
+            const username = (msg.user?.username || '').toLowerCase();
+            const email = (msg.user?.email || '').toLowerCase();
+            const isSupport = (agentId && userId === agentId) ||
+              username === 'ai_customer_service' ||
+              email.includes('algoistic.com') ||
+              userName.includes('ai customer') ||
+              userName.includes('خدمة العملاء') ||
+              userName.includes('الدعم الفني');
+            msg.is_client_message = isSupport ? 0 : 1;
+          }
+        });
+      }
+
       await redisCacheService.set(cacheKey, result, 15).catch(() => {});
     }
 
