@@ -6,6 +6,10 @@ import {
   Monitor,
   X,
   CheckCircle2,
+  RefreshCw,
+  Download,
+  AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -29,6 +33,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [saved, setSaved] = useState(false);
 
+  // Auto-updater state
+  const [currentVersion, setCurrentVersion] = useState('1.0.0');
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [updateResult, setUpdateResult] = useState<{
+    status: 'idle' | 'checking' | 'dev' | 'update-available' | 'up-to-date' | 'error';
+    message?: string;
+    version?: string;
+  }>({ status: 'idle' });
+
   useEffect(() => {
     if (isOpen) {
       loadPrefs();
@@ -37,13 +50,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
   const loadPrefs = async () => {
     try {
-      const s = await window.electronAPI.getSettings();
+      const [s, sys] = await Promise.all([
+        window.electronAPI.getSettings().catch(() => null),
+        window.electronAPI.getSystemInfo().catch(() => null),
+      ]);
       if (s) {
         setPrefs({
           autoLaunchEnabled: s.autoLaunchEnabled === true,
           soundAlerts: s.soundAlerts === true,
           idleReminder: s.idleReminder === true,
         });
+      }
+      if (sys?.appVersion) {
+        setCurrentVersion(sys.appVersion);
       }
     } catch {}
   };
@@ -61,6 +80,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         onClose();
       }, 700);
     } catch {}
+  };
+
+  const handleCheckUpdate = async () => {
+    setIsCheckingUpdate(true);
+    setUpdateResult({ status: 'checking' });
+    try {
+      const res = await window.electronAPI.checkForUpdates();
+      setUpdateResult({
+        status: res.status,
+        message: res.message,
+        version: res.latestVersion || res.currentVersion,
+      });
+    } catch (err: any) {
+      setUpdateResult({
+        status: 'error',
+        message: err?.message || 'تعذر الاتصال بخادم التحديثات',
+      });
+    } finally {
+      setIsCheckingUpdate(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -148,6 +187,99 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   style={styles.checkbox}
                 />
               </label>
+            </div>
+          </div>
+
+          {/* Software Updates Section */}
+          <div style={styles.sectionCard}>
+            <div style={styles.sectionHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={13} color="#38bdf8" />
+                <span style={styles.sectionTitle}>تحديثات البرنامج</span>
+              </div>
+              <span style={styles.versionBadge}>v{currentVersion}</span>
+            </div>
+
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={styles.toggleTitle}>التحقق من التحديثات</div>
+                  <div style={styles.toggleDesc}>
+                    التأكد من تشغيل أحدث حزمة ميزات وأمان لمنصة MaxP
+                  </div>
+                </div>
+                <button
+                  onClick={handleCheckUpdate}
+                  disabled={isCheckingUpdate}
+                  style={{
+                    ...styles.checkUpdateBtn,
+                    opacity: isCheckingUpdate ? 0.7 : 1,
+                  }}
+                  onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                  onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                >
+                  <RefreshCw
+                    size={12}
+                    style={{
+                      animation: isCheckingUpdate ? 'spin 1s linear infinite' : 'none',
+                    }}
+                  />
+                  <span>{isCheckingUpdate ? 'جاري الفحص…' : 'فحص الآن'}</span>
+                </button>
+              </div>
+
+              {/* Status Feedback banner */}
+              {updateResult.status !== 'idle' && (
+                <div
+                  style={{
+                    ...styles.updateAlert,
+                    background:
+                      updateResult.status === 'update-available'
+                        ? 'rgba(56, 189, 248, 0.1)'
+                        : updateResult.status === 'up-to-date' || updateResult.status === 'dev'
+                        ? 'rgba(34, 197, 94, 0.1)'
+                        : updateResult.status === 'error'
+                        ? 'rgba(239, 68, 68, 0.1)'
+                        : 'rgba(255, 255, 255, 0.05)',
+                    borderColor:
+                      updateResult.status === 'update-available'
+                        ? 'rgba(56, 189, 248, 0.25)'
+                        : updateResult.status === 'up-to-date' || updateResult.status === 'dev'
+                        ? 'rgba(34, 197, 94, 0.25)'
+                        : updateResult.status === 'error'
+                        ? 'rgba(239, 68, 68, 0.25)'
+                        : 'rgba(255, 255, 255, 0.1)',
+                  }}
+                >
+                  {updateResult.status === 'checking' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#38bdf8' }}>
+                      <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                      <span style={{ fontSize: 11, fontWeight: 500 }}>جاري الاتصال بخادم التحديثات…</span>
+                    </div>
+                  )}
+
+                  {updateResult.status === 'update-available' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#38bdf8' }}>
+                      <Download size={13} />
+                      <span style={{ fontSize: 11, fontWeight: 500 }}>{updateResult.message}</span>
+                    </div>
+                  )}
+
+                  {(updateResult.status === 'up-to-date' || updateResult.status === 'dev') && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e' }}>
+                      <CheckCircle2 size={13} />
+                      <span style={{ fontSize: 11, fontWeight: 500 }}>{updateResult.message}</span>
+                    </div>
+                  )}
+
+                  {updateResult.status === 'error' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f87171' }}>
+                      <AlertCircle size={13} />
+                      <span style={{ fontSize: 11, fontWeight: 500 }}>{updateResult.message}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -304,6 +436,39 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     flexShrink: 0,
     marginRight: 8,
+  },
+  versionBadge: {
+    fontSize: 10,
+    fontWeight: 700,
+    fontFamily: 'monospace',
+    color: '#38bdf8',
+    background: 'rgba(56, 189, 248, 0.08)',
+    border: '1px solid rgba(56, 189, 248, 0.25)',
+    borderRadius: 6,
+    padding: '2px 7px',
+  },
+  checkUpdateBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: 7,
+    padding: '6px 12px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#fafafa',
+    cursor: 'pointer',
+    transition: 'all 140ms ease-out',
+  },
+  updateAlert: {
+    borderRadius: 8,
+    border: '1px solid',
+    padding: '8px 12px',
+    marginTop: 4,
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'all 200ms ease-out',
   },
   footer: {
     display: 'flex',

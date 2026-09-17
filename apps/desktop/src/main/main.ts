@@ -308,6 +308,25 @@ function updateTrayMenu(): void {
       },
     ] : []),
     {
+      label: 'التحقق من التحديثات',
+      click: async () => {
+        try {
+          if (process.env.NODE_ENV === 'development') {
+            showNotification('MaxP Workspace', 'أنت في وضع التطوير المحلي (Dev Mode). التحديثات مفعلة في النسخة المثبتة.');
+            return;
+          }
+          showNotification('MaxP Workspace', 'جاري فحص وجود تحديثات جديدة…');
+          const result = await autoUpdater.checkForUpdates();
+          if (!result || !result.updateInfo || result.updateInfo.version === app.getVersion()) {
+            showNotification('MaxP Workspace', `أنت تستخدم أحدث إصدار v${app.getVersion()}`);
+          }
+        } catch (err: any) {
+          showNotification('MaxP Workspace', 'تعذر فحص التحديثات حالياً.');
+        }
+      },
+    },
+    { type: 'separator' as const },
+    {
       label: 'إغلاق التطبيق',
       click: () => {
         app.exit(0);
@@ -671,6 +690,46 @@ function registerIpcHandlers(): void {
       return { success: false, error: 'لم يتم العثور على شاشة متاحة للالتقاط' };
     } catch (err: any) {
       return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('update:check', async () => {
+    try {
+      const currentVersion = app.getVersion();
+      if (process.env.NODE_ENV === 'development') {
+        return {
+          success: true,
+          status: 'dev',
+          currentVersion,
+          message: 'أنت تعمل في بيئة التطوير المحلية (Dev Mode). التحديثات مفعلة في النسخة المثبتة.',
+        };
+      }
+
+      const result = await autoUpdater.checkForUpdates();
+      if (result && result.updateInfo && result.updateInfo.version !== currentVersion) {
+        return {
+          success: true,
+          status: 'update-available',
+          currentVersion,
+          latestVersion: result.updateInfo.version,
+          message: `يتوفر إصدار جديد v${result.updateInfo.version}. جاري التنزيل تلقائياً في الخلفية.`,
+        };
+      }
+
+      return {
+        success: true,
+        status: 'up-to-date',
+        currentVersion,
+        message: `أنت تستخدم أحدث إصدار v${currentVersion}.`,
+      };
+    } catch (err: any) {
+      console.warn('[Updater] Manual check error:', err?.message || err);
+      return {
+        success: false,
+        status: 'error',
+        currentVersion: app.getVersion(),
+        message: err?.message || 'تعذر التحقق من التحديثات حالياً. تأكد من اتصال الإنترنت.',
+      };
     }
   });
 }

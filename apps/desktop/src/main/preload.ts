@@ -67,6 +67,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   captureDesktopSnippet: () =>
     ipcRenderer.invoke('tasks:capture-screen'),
 
+  // Updates
+  checkForUpdates: () =>
+    ipcRenderer.invoke('update:check'),
+
   // Events from main process — each returns an unsubscribe function
   onTrackerStateUpdate: (callback: (state: any) => void) => {
     const listener = (_: any, state: any) => callback(state);

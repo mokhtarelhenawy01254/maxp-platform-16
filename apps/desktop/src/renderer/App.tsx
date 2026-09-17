@@ -32,6 +32,13 @@ declare global {
         mimeType?: string;
       }) => Promise<{ success: boolean; attachment?: any; error?: string }>;
       captureDesktopSnippet: () => Promise<{ success: boolean; dataUrl?: string; error?: string }>;
+      checkForUpdates: () => Promise<{
+        success: boolean;
+        status: 'dev' | 'update-available' | 'up-to-date' | 'error';
+        currentVersion: string;
+        latestVersion?: string;
+        message: string;
+      }>;
       onTrackerStateUpdate: (callback: (state: any) => void) => (() => void);
       onNotification: (callback: (data: any) => void) => (() => void);
       onTaskAssigned: (callback: (task: any) => void) => (() => void);
