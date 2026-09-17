@@ -10,17 +10,21 @@ import {
   DownloadCloud,
   Share2,
   Info,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { usePlatformDetect } from "./usePlatformDetect";
 
 export const MobileCompanionCard: React.FC = () => {
   const [copiedApkLink, setCopiedApkLink] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
-  const { os, canInstallPwa, installPwa, isStandalone, isIosSafari } = usePlatformDetect();
+  const [showQrCode, setShowQrCode] = useState(false);
+  const { canInstallPwa, installPwa, isStandalone, isIosSafari } = usePlatformDetect();
 
-  // The verified working APK endpoint hosted directly on maxp.online
+  // Verified working APK endpoint hosted directly on maxp.online
   const apkUrl = "https://maxp.online/downloads/maxp.apk";
   const webPwaUrl = "https://maxp.online";
   const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
@@ -30,7 +34,7 @@ export const MobileCompanionCard: React.FC = () => {
   const handleCopyApk = () => {
     navigator.clipboard.writeText(apkUrl);
     setCopiedApkLink(true);
-    toast.success("تم نسخ رابط تحميل تطبيق الأندرويد المباشر (APK)");
+    toast.success("تم نسخ رابط حزمة أندرويد (APK) لمشاركته");
     setTimeout(() => setCopiedApkLink(false), 2500);
   };
 
@@ -45,142 +49,183 @@ export const MobileCompanionCard: React.FC = () => {
         toast.success("جاري تثبيت تطبيق MaxP على جهازك...");
       }
     } else {
-      toast.info("للتثبيت الفوري: افتح قائمة المتصفح (⋮) واختر 'تثبيت التطبيق' أو 'إضافة للشاشة الرئيسية'");
+      toast.info("للتثبيت السريع: افتح قائمة المتصفح (⋮) واختر 'تثبيت التطبيق' أو 'إضافة للشاشة الرئيسية'");
     }
   };
 
   return (
-    <div className="relative flex flex-col justify-between rounded-xl border border-border/50 bg-card p-5 sm:p-6 shadow-sm transition-all hover:border-primary/40">
-      {/* Top Header Badge */}
+    <div className="relative flex flex-col justify-between rounded-2xl border border-border/40 bg-card p-5 sm:p-6 shadow-sm hover:border-primary/40 hover:bg-accent/[0.01] transition-all duration-200">
+      {/* Top Header & Title */}
       <div>
         <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary shrink-0">
-              <Smartphone className="size-6" />
+          <div className="flex items-start gap-3.5 min-w-0">
+            <div className="size-12 sm:size-14 rounded-2xl bg-muted/60 dark:bg-muted/30 border border-border/40 flex items-center justify-center shrink-0 text-foreground transition-transform duration-150">
+              <Smartphone className="size-6 text-primary" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-foreground">تطبيق الموبايل للموظفين والميدان</h3>
-                <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-500 font-mono">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
+                  تطبيق الموبايل للموظفين والعمليات الميدانية
+                </h3>
+                <Badge variant="outline" className="text-[11px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
                   APK متاح الآن
-                </span>
+                </Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                MaxP Mobile Companion for Android &amp; iOS PWA
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                MaxP Mobile Companion for Android (APK) &amp; iOS PWA
               </p>
             </div>
           </div>
 
-          <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] font-medium text-foreground shrink-0">
-            تثبيت مباشر وسريع
+          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-foreground shrink-0">
+            أندرويد وآيفون
           </span>
         </div>
 
-        {/* Content with QR and Features */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-5">
-          {/* QR Code Container */}
-          <div className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-border/60 bg-white shrink-0 shadow-sm">
-            <img
-              src={qrImgUrl}
-              alt="Scan to open mobile app"
-              className="size-28 sm:size-32 object-contain"
-              loading="lazy"
-            />
-            <span className="text-[10px] font-medium text-zinc-800 mt-1 flex items-center gap-1">
-              <QrCode className="size-3 text-zinc-600" />
-              امسح بكاميرا الهاتف
-            </span>
+        {/* Telemetry Matrix Chips */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+          <div className="rounded-xl border border-border/40 bg-muted/20 p-2.5 text-center">
+            <span className="text-[10px] text-muted-foreground block">الأنظمة المدعومة</span>
+            <span className="text-xs font-bold text-foreground mt-0.5 block">Android 8+ / iOS 14+</span>
           </div>
-
-          {/* Details */}
-          <div className="flex-1 space-y-2.5 text-xs text-muted-foreground w-full">
-            <div className="flex items-center gap-2">
-              <MapPin className="size-3.5 text-primary shrink-0" />
-              <span>تسجيل حضور وانصراف بالبصمة الحيوية وربط النطاق الجغرافي للمقر.</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <BellRing className="size-3.5 text-primary shrink-0" />
-              <span>إشعارات لحظية بالمهام الموكلة وتنبيهات الطلبات الجديدة والمبيعات.</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <DownloadCloud className="size-3.5 text-primary shrink-0" />
-              <span>دعم التثبيت الفوري كـ Progressive Web App على جميع الهواتف.</span>
-            </div>
-
-            <div className="pt-2 grid grid-cols-2 gap-2">
-              <div className="rounded-lg border border-border/40 bg-muted/20 p-2 text-center">
-                <div className="text-[10px] text-muted-foreground">أنظمة التشغيل</div>
-                <div className="text-xs font-semibold text-foreground mt-0.5">Android &amp; iOS</div>
-              </div>
-              <div className="rounded-lg border border-border/40 bg-muted/20 p-2 text-center">
-                <div className="text-[10px] text-muted-foreground">حجم حزمة الـ APK</div>
-                <div className="text-xs font-semibold text-foreground mt-0.5 font-mono tabular-nums">155.7 MB</div>
-              </div>
-            </div>
+          <div className="rounded-xl border border-border/40 bg-muted/20 p-2.5 text-center">
+            <span className="text-[10px] text-muted-foreground block">حجم حزمة أندرويد</span>
+            <span className="text-xs font-mono font-bold text-foreground mt-0.5 block tabular-nums">155.7 MB (APK)</span>
+          </div>
+          <div className="rounded-xl border border-border/40 bg-muted/20 p-2.5 text-center">
+            <span className="text-[10px] text-muted-foreground block">نسخة PWA الفورية</span>
+            <span className="text-xs font-bold text-foreground mt-0.5 block">Zero Download</span>
+          </div>
+          <div className="rounded-xl border border-border/40 bg-muted/20 p-2.5 text-center">
+            <span className="text-[10px] text-muted-foreground block">الصلاحيات</span>
+            <span className="text-xs font-semibold text-foreground mt-0.5 block">البصمة / الإشعارات</span>
           </div>
         </div>
 
-        {/* iOS Quick Helper if toggled */}
-        {showIosGuide && (
-          <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs text-foreground animate-in fade-in duration-200">
-            <div className="flex items-center gap-2 font-semibold mb-1">
-              <Share2 className="size-4 text-primary" />
-              <span>طريقة تثبيت التطبيق على آيفون (iOS Safari):</span>
+        {/* Content with Features and Optional QR */}
+        <div className="space-y-2.5 mb-5 text-xs text-muted-foreground">
+          <div className="flex items-start gap-2.5">
+            <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
+            <span className="leading-relaxed">
+              تسجيل الحضور والانصراف بالبصمة الحيوية مع ربط النطاق الجغرافي الدقيق لفروع المنشأة ومستودعاتها.
+            </span>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <BellRing className="size-4 text-primary shrink-0 mt-0.5" />
+            <span className="leading-relaxed">
+              تنبيهات فورية بالمهام المستجدة، تحديثات حالات الطلبات، وإشعارات المبيعات اللحظية للمناديب.
+            </span>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <DownloadCloud className="size-4 text-primary shrink-0 mt-0.5" />
+            <span className="leading-relaxed">
+              تثبيت فوري كـ Progressive Web App على جميع الهواتف مع دعم التخزين المؤقت في المناطق ضعيفة الشبكة.
+            </span>
+          </div>
+        </div>
+
+        {/* Collapsible QR Code Panel */}
+        {showQrCode && (
+          <div className="mb-4 rounded-xl border border-border/60 bg-muted/20 p-4 text-center animate-in fade-in duration-150">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="size-28 sm:size-32 rounded-xl bg-white p-2 border border-border/60 shadow-sm flex items-center justify-center">
+                <img
+                  src={qrImgUrl}
+                  alt="Scan to open mobile app"
+                  className="size-full object-contain"
+                  loading="lazy"
+                />
+              </div>
+              <div className="text-start space-y-1">
+                <p className="text-xs font-bold text-foreground">امسح الرمز بكاميرا الهاتف المحمول</p>
+                <p className="text-[11px] text-muted-foreground max-w-xs leading-relaxed">
+                  يفتح التطبيق فوراً في متصفح الهاتف مع إمكانية التثبيت على الشاشة الرئيسية بنقرة واحدة.
+                </p>
+              </div>
             </div>
-            <ol className="list-decimal list-inside space-y-1 text-muted-foreground text-[11px] pr-1">
-              <li>افتح موقع <span className="font-mono text-foreground font-medium">maxp.online</span> في متصفح سفاري Safari.</li>
-              <li>اضغط على زر المشاركة <span className="font-medium text-foreground">(أيقونة السهم لأعلى)</span> أسفل الشاشة.</li>
-              <li>اختر <span className="font-semibold text-primary">"إضافة إلى الصفحة الرئيسية" (Add to Home Screen)</span>.</li>
-              <li>سيظهر تطبيق MaxP على شاشتك الرئيسية فوراً كأنه تطبيق من App Store!</li>
+          </div>
+        )}
+
+        {/* iOS Quick Helper */}
+        {showIosGuide && (
+          <div className="mb-4 rounded-xl border border-primary/30 bg-primary/[0.04] p-3.5 text-xs text-foreground animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 font-bold mb-2">
+              <Share2 className="size-4 text-primary" />
+              <span>طريقة تثبيت التطبيق على هواتف آيفون (iOS Safari):</span>
+            </div>
+            <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground text-[11px] pr-1 leading-relaxed">
+              <li>افتح موقع <span className="font-mono text-foreground font-semibold">maxp.online</span> في متصفح سفاري Safari.</li>
+              <li>اضغط على زر المشاركة <span className="font-semibold text-foreground">(أيقونة السهم لأعلى)</span> أسفل شاشة الهاتف.</li>
+              <li>اختر <span className="font-bold text-primary">"إضافة إلى الصفحة الرئيسية" (Add to Home Screen)</span>.</li>
+              <li>سيعمل تطبيق MaxP كـ تطبيق مستقل سريع على الشاشة الرئيسية وبدون متجر تطبيقات.</li>
             </ol>
           </div>
         )}
       </div>
 
-      {/* Action Buttons */}
-      <div className="space-y-2.5 pt-4 border-t border-border/40">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {/* Working APK download link with download attribute */}
+      {/* Action Footer & Downloads */}
+      <div className="space-y-3 pt-4 border-t border-border/40">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <a
             href={apkUrl}
             download="MaxP.apk"
-            className={cn(
-              "inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
-            )}
+            className="w-full"
           >
-            <ArrowDownToLine className="size-4" />
-            <span>تحميل أندرويد (APK المباشر)</span>
+            <Button
+              className="w-full h-10 rounded-xl text-xs font-bold gap-2 shadow-sm active:scale-[0.98] transition-all"
+            >
+              <ArrowDownToLine className="size-4" />
+              <span>تحميل تطبيق أندرويد (APK 155 MB)</span>
+            </Button>
           </a>
 
-          {/* Instant PWA Install Trigger */}
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={handleInstallPwa}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted px-3 py-2.5 text-xs font-semibold text-foreground shadow-sm transition-all active:scale-[0.98]"
+            className="w-full h-10 rounded-xl text-xs font-bold gap-2 border-border/60 hover:bg-muted active:scale-[0.98] transition-all"
           >
             <DownloadCloud className="size-4 text-primary" />
-            <span>{isStandalone ? "التطبيق مثبت على جهازك" : "تثبيت فوري (PWA Web)"}</span>
-          </button>
+            <span>{isStandalone ? "التطبيق مثبت على جهازك" : "تثبيت فوري كـ PWA"}</span>
+          </Button>
         </div>
 
-        <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
-          <button
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1 text-xs text-muted-foreground">
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={handleCopyApk}
-            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+            className="h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground gap-1.5"
           >
-            {copiedApkLink ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
-            <span>نسخ رابط ملف الـ APK لمشاركته عبر واتساب</span>
-          </button>
+            {copiedApkLink ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+            <span>نسخ رابط تحميل حزمة الـ APK للموظفين</span>
+          </Button>
 
-          <button
-            type="button"
-            onClick={() => setShowIosGuide(!showIosGuide)}
-            className="inline-flex items-center gap-1 text-primary hover:underline"
-          >
-            <Info className="size-3" />
-            <span>مستخدمي آيفون (iOS)</span>
-          </button>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowQrCode(!showQrCode)}
+              className="h-8 px-2 text-xs font-medium text-primary hover:bg-primary/10 gap-1"
+            >
+              <QrCode className="size-3.5" />
+              <span>{showQrCode ? "إخفاء الـ QR" : "مسح QR"}</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowIosGuide(!showIosGuide)}
+              className="h-8 px-2 text-xs font-medium text-primary hover:bg-primary/10 gap-1"
+            >
+              <Info className="size-3.5" />
+              <span>دليل آيفون</span>
+              {showIosGuide ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

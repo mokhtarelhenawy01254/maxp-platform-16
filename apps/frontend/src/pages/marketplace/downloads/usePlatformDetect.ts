@@ -26,9 +26,13 @@ export function usePlatformDetect(): PlatformDetectResult {
 
   useEffect(() => {
     const checkStandalone = () => {
-      const isStandaloneMedia = window.matchMedia("(display-mode: standalone)").matches;
-      const isNavigatorStandalone = (window.navigator as any).standalone === true;
-      setIsStandalone(isStandaloneMedia || isNavigatorStandalone);
+      const isStandaloneMedia =
+        typeof window !== "undefined" && typeof window.matchMedia === "function"
+          ? window.matchMedia("(display-mode: standalone)").matches
+          : false;
+      const isNavigatorStandalone =
+        typeof window !== "undefined" && (window.navigator as any)?.standalone === true;
+      setIsStandalone(Boolean(isStandaloneMedia || isNavigatorStandalone));
     };
     checkStandalone();
 

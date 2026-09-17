@@ -6,85 +6,94 @@ import {
   Zap,
   HardDrive,
   Cpu,
-  ExternalLink,
+  Receipt,
+  ScanBarcode,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export const MerchantStudioCard: React.FC = () => {
   return (
-    <div className="relative flex flex-col justify-between rounded-xl border border-border/50 bg-card p-5 sm:p-6 shadow-sm transition-all hover:border-primary/40">
-      {/* Top Header Badge */}
+    <div className="relative flex flex-col justify-between rounded-2xl border border-border/40 bg-card p-5 sm:p-6 shadow-sm hover:border-primary/40 hover:bg-accent/[0.01] transition-all duration-200">
+      {/* Top Header & Title */}
       <div>
         <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary shrink-0">
-              <Printer className="size-6" />
+          <div className="flex items-start gap-3.5 min-w-0">
+            <div className="size-12 sm:size-14 rounded-2xl bg-muted/60 dark:bg-muted/30 border border-border/40 flex items-center justify-center shrink-0 text-foreground transition-transform duration-150">
+              <Printer className="size-6 text-primary" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-foreground">استوديو الكاشير والطباعة الفورية</h3>
-                <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary font-mono">
-                  Web Native POS
-                </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
+                  استوديو الكاشير والطباعة الفورية (Web POS)
+                </h3>
+                <Badge variant="outline" className="text-[11px] font-mono font-semibold text-primary border-primary/30 bg-primary/10">
+                  سحابي فوري
+                </Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                محطة نقاط البيع المباشرة والطباعة الحرارية السريعة
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                MaxP Web Native POS &amp; ESC/POS Thermal Printing Station
               </p>
             </div>
           </div>
 
-          <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-[11px] font-medium text-foreground shrink-0">
+          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-foreground shrink-0">
             طابعات حرارية فورية
           </span>
         </div>
 
-        {/* Core Specs Chips */}
+        {/* Telemetry Matrix Chips */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
-          <div className="rounded-lg border border-border/40 bg-muted/20 p-2 text-center">
-            <div className="text-[10px] text-muted-foreground">التشغيل</div>
-            <div className="text-xs font-semibold text-foreground mt-0.5">سحابي مباشر</div>
+          <div className="rounded-xl border border-border/40 bg-muted/20 p-2.5 text-center">
+            <span className="text-[10px] text-muted-foreground block">نمط التشغيل</span>
+            <span className="text-xs font-bold text-foreground mt-0.5 block">سحابي مباشر 100%</span>
           </div>
-          <div className="rounded-lg border border-border/40 bg-muted/20 p-2 text-center">
-            <div className="text-[10px] text-muted-foreground">سرعة الطباعة</div>
-            <div className="text-xs font-semibold text-emerald-500 mt-0.5 font-mono tabular-nums">فورية (ESC/POS)</div>
+          <div className="rounded-xl border border-border/40 bg-muted/20 p-2.5 text-center">
+            <span className="text-[10px] text-muted-foreground block">بروتوكول الطباعة</span>
+            <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block tabular-nums">Raw ESC/POS</span>
           </div>
-          <div className="rounded-lg border border-border/40 bg-muted/20 p-2 text-center">
-            <div className="text-[10px] text-muted-foreground">طرق الاتصال</div>
-            <div className="text-xs font-semibold text-foreground mt-0.5 font-mono">USB / LAN / Wi-Fi</div>
+          <div className="rounded-xl border border-border/40 bg-muted/20 p-2.5 text-center">
+            <span className="text-[10px] text-muted-foreground block">الاتصال بالطابعات</span>
+            <span className="text-xs font-mono font-bold text-foreground mt-0.5 block">USB / LAN / Wi-Fi</span>
           </div>
-          <div className="rounded-lg border border-border/40 bg-muted/20 p-2 text-center">
-            <div className="text-[10px] text-muted-foreground">التثبيت المطلوب</div>
-            <div className="text-xs font-semibold text-foreground mt-0.5">بدون برامج إضافية</div>
+          <div className="rounded-xl border border-border/40 bg-muted/20 p-2.5 text-center">
+            <span className="text-[10px] text-muted-foreground block">مقاسات الفواتير</span>
+            <span className="text-xs font-mono font-semibold text-foreground mt-0.5 block tabular-nums">80mm &amp; 58mm</span>
           </div>
         </div>
 
-        {/* Feature List */}
+        {/* Core Specs & Features List */}
         <div className="space-y-2.5 mb-6 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Zap className="size-3.5 text-primary shrink-0" />
-            <span>طباعة صامتة فورية لبوالص الشحن وفواتير الكاشير بتوافق كامل مع طابعات 80mm و 58mm.</span>
+          <div className="flex items-start gap-2.5">
+            <Receipt className="size-4 text-primary shrink-0 mt-0.5" />
+            <span className="leading-relaxed">
+              طباعة صامتة وفورية لفواتير الكاشير وبوالص الشحن بدون شاشات منبثقة أو مقاطعة لسرعة عملية البيع.
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <HardDrive className="size-3.5 text-primary shrink-0" />
-            <span>ربط مباشر مع ماسحات الباركود الضوئية وقارئات QR لإنهاء عمليات البيع في ثوانٍ.</span>
+          <div className="flex items-start gap-2.5">
+            <ScanBarcode className="size-4 text-primary shrink-0 mt-0.5" />
+            <span className="leading-relaxed">
+              تكامل مباشر مع ماسحات الباركود الضوئية وقارئات QR لإنهاء فواتير العملاء وسحب المنتجات في ثوانٍ.
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <Cpu className="size-3.5 text-primary shrink-0" />
-            <span>محطة كاشير متصلة مباشرة بالمخزون المركزي لمنع ازدواج البيع وتحديث الأرصدة لحظياً.</span>
+          <div className="flex items-start gap-2.5">
+            <Cpu className="size-4 text-primary shrink-0 mt-0.5" />
+            <span className="leading-relaxed">
+              محطة متصلة مباشرة بالمخزون المركزي لمنع ازدواج البيع وتحديث أرصدة الفروع فور اعتماد الفاتورة.
+            </span>
           </div>
         </div>
       </div>
 
       {/* Action Footer */}
-      <div className="pt-4 border-t border-border/40 flex flex-col sm:flex-row items-center gap-2.5">
-        <Link
-          to="/pos"
-          className={cn(
-            "w-full sm:flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
-          )}
-        >
-          <span>فتح محطة الكاشير ونقاط البيع (POS)</span>
-          <ArrowRight className="size-4 rtl:rotate-180" />
+      <div className="pt-4 border-t border-border/40">
+        <Link to="/pos" className="w-full block">
+          <Button
+            className="w-full h-10 rounded-xl text-xs font-bold gap-2 shadow-sm active:scale-[0.98] transition-all"
+          >
+            <span>فتح محطة الكاشير ونقاط البيع (POS)</span>
+            <ArrowRight className="size-4 rtl:rotate-180" />
+          </Button>
         </Link>
       </div>
     </div>

@@ -1541,6 +1541,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/marketplace', icon: Box, label: isEn ? 'App Marketplace' : 'متجر التطبيقات' },
                 { to: '/my-apps', icon: Grid3x3, label: t('sidebar.myApps') },
+                { to: '/marketplace/downloads', icon: Monitor, label: isEn ? 'Device & Mobile Apps' : 'تطبيقات الأجهزة والموبايل' },
                 { to: '/marketplace/agents', icon: Bot, label: isEn ? 'Agents Marketplace' : 'سوق الإيجنت (Workforce)' },
                 { to: '/marketplace/themes', icon: Palette, label: t('sidebar.storeThemes') },
                 { to: '/marketplace/bundles', icon: Gift, label: t('sidebar.browseBundles') },

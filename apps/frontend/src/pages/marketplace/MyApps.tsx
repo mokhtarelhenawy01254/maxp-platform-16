@@ -551,6 +551,17 @@ export function MyApps() {
               <RefreshCw className={cn("size-3.5", isRefreshing && "animate-spin text-primary")} />
               <span className="hidden sm:inline">تحديث</span>
             </Button>
+            <Link to="/marketplace/downloads" className="hidden sm:inline-flex">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 rounded-xl px-3 text-xs font-semibold gap-1.5 border-border/60 hover:bg-muted"
+                title="تحميل تطبيقات الأجهزة والموبايل"
+              >
+                <Download className="size-3.5 text-primary" />
+                <span>تحميل التطبيقات</span>
+              </Button>
+            </Link>
             <Link to="/marketplace" className="flex-1 sm:flex-initial">
               <Button size="sm" className="w-full sm:w-auto h-10 rounded-xl px-4 text-xs font-bold gap-2 shadow-sm">
                 <Store className="size-4" />
