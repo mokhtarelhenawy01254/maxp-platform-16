@@ -11,6 +11,7 @@ import {
   Camera,
   Paperclip,
   Image as ImageIcon,
+  Eye,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
 
@@ -50,6 +51,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
+  const [watchers, setWatchers] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState<number>(60);
   const [existingAttachments, setExistingAttachments] = useState<any[]>([]);
@@ -66,6 +68,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     setPriority((task.priority || 'MEDIUM').toUpperCase());
     setExistingAttachments(task.taskAttachments || task.attachments || []);
     setNewAttachments([]);
+
+    const initialWatchers = (task.taskWatchers || task.watchers || [])
+      .map((w: any) => w.userId || w.id || w.user?.id)
+      .filter(Boolean);
+    setWatchers(initialWatchers);
 
     // Format dueDate for datetime-local
     if (task.dueDate) {
@@ -162,6 +169,16 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     setNewAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const addWatcher = (userId: string) => {
+    if (userId && !watchers.includes(userId)) {
+      setWatchers((prev) => [...prev, userId]);
+    }
+  };
+
+  const removeWatcher = (userId: string) => {
+    setWatchers((prev) => prev.filter((id) => id !== userId));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -180,6 +197,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         assignedTo: assignedTo || undefined,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         estimatedMinutes: Number(estimatedMinutes) || 60,
+        watchers,
       });
 
       if (!res.success) {
@@ -295,6 +313,95 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 <option value="LOW">منخفض (Low)</option>
               </select>
             </div>
+          </div>
+
+          {/* Watchers Section (المتابعون والمراقبون) */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+              <label style={modalStyles.label}>
+                المتابعون والمراقبون ({watchers.length})
+              </label>
+              <span style={{ fontSize: 11, color: '#71717a' }}>
+                يتلقون إشعارات حية بكافة التحديثات
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <select
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    addWatcher(e.target.value);
+                  }
+                }}
+                style={modalStyles.select}
+              >
+                <option value="">+ إضافة زميل أو مدير كمتابع للمهمة…</option>
+                {users
+                  .filter((u) => u.id !== assignedTo && !watchers.includes(u.id))
+                  .map((u) => {
+                    const label =
+                      u.name ||
+                      `${u.firstName || ''} ${u.lastName || ''}`.trim() ||
+                      u.email ||
+                      u.id;
+                    return (
+                      <option key={u.id} value={u.id}>
+                        {label}
+                      </option>
+                    );
+                  })}
+              </select>
+            </div>
+
+            {/* Watchers Chips */}
+            {watchers.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                {watchers.map((wId) => {
+                  const u = users.find((x) => x.id === wId);
+                  const label =
+                    u?.name ||
+                    `${u?.firstName || ''} ${u?.lastName || ''}`.trim() ||
+                    u?.email ||
+                    wId;
+                  return (
+                    <div
+                      key={wId}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        background: 'rgba(56, 189, 248, 0.12)',
+                        border: '1px solid rgba(56, 189, 248, 0.28)',
+                        borderRadius: 6,
+                        padding: '3px 8px',
+                        fontSize: 11,
+                        color: '#38bdf8',
+                      }}
+                    >
+                      <Eye size={12} color="#38bdf8" />
+                      <span>{label}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeWatcher(wId)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#f87171',
+                          cursor: 'pointer',
+                          padding: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                        title="إزالة المتابع"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Estimated Duration */}

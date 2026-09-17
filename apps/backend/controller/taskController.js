@@ -534,6 +534,20 @@ const buildTaskSummaryInclude = () => ({
       createdAt: "asc",
     },
   },
+  taskWatchers: {
+    select: {
+      id: true,
+      userId: true,
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+  },
 });
 
 const formatTaskSummary = (task) => ({
@@ -561,6 +575,7 @@ const formatTaskSummary = (task) => ({
     ? `${task.creator.firstName || ''} ${task.creator.lastName || ''}`.trim() || task.creator.email
     : "غير محدد",
   taskAttachments: task.taskAttachments || [],
+  taskWatchers: task.taskWatchers || [],
   dueDate: task.dueDate,
   startDate: task.startDate || null,
   estimatedHours: task.estimatedHours,
@@ -731,6 +746,7 @@ const taskController = {
         metricUnit,
         metricTargetValue,
         metricCurrentValue,
+        watchers = [],
       } = req.body;
 
       const companyId = req.user?.companyId;
@@ -901,13 +917,28 @@ const taskController = {
         throw new Error("Failed to load task after creation");
       }
 
+      // حفظ المتابعين إن وجدوا
+      if (watchers && Array.isArray(watchers) && watchers.length > 0) {
+        for (const wUserId of watchers) {
+          if (wUserId && wUserId !== finalAssignedTo) {
+            await getSharedPrismaClient().taskWatcher.create({
+              data: {
+                taskId: newTask.id,
+                userId: wUserId,
+                companyId,
+              },
+            }).catch(() => {});
+          }
+        }
+      }
+
       res.json({
         success: true,
         data: isLegacyTaskSchema ? newTask : formatTaskSummary(newTask),
         message: "تم إنشاء المهمة بنجاح",
       });
 
-      // 🔔 ارسال اشعارات
+      // 🔔 ارسال اشعارات للمكلف
       if (newTask.assignedTo && newTask.assignedTo !== createdBy) {
         await taskNotificationService.notify({
           companyId,
@@ -1142,6 +1173,24 @@ const taskController = {
           success: false,
           error: "المهمة غير موجودة",
         });
+      }
+
+      // مزامنة المتابعين في حال تم تمريرهم
+      if (req.body.watchers !== undefined && Array.isArray(req.body.watchers)) {
+        await getSharedPrismaClient().taskWatcher.deleteMany({
+          where: { taskId: id, companyId },
+        });
+        for (const wUserId of req.body.watchers) {
+          if (wUserId && wUserId !== (assignedTo || existingTask.assignedTo)) {
+            await getSharedPrismaClient().taskWatcher.create({
+              data: {
+                taskId: id,
+                userId: wUserId,
+                companyId,
+              },
+            }).catch(() => {});
+          }
+        }
       }
 
       // Get updated task with relations
@@ -2824,7 +2873,7 @@ const taskController = {
 
       const watcher = await getSharedPrismaClient().taskWatcher.create({
         data: { taskId, userId: watcherUserId, companyId },
-        include: { users: { select: { firstName: true, lastName: true } } },
+        include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
       });
 
       res.json({
@@ -2890,13 +2939,13 @@ const taskController = {
       const watchers = await getSharedPrismaClient().taskWatcher.findMany({
         where: { taskId, companyId },
         include: {
-          users: {
-            select: { id: true, firstName: true, lastName: true, avatar: true },
+          user: {
+            select: { id: true, firstName: true, lastName: true, avatar: true, email: true },
           },
         },
       });
 
-      res.json({ success: true, data: watchers.map((w) => w.users) });
+      res.json({ success: true, data: watchers.map((w) => w.user).filter(Boolean) });
     } catch (error) {
       console.error("Error fetching watchers:", error);
       res.status(500).json({ success: false, error: "فشل في جلب المتابعين" });

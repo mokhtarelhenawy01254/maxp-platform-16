@@ -76,6 +76,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   }) => ipcRenderer.invoke('tasks:upload-attachment', data),
   captureDesktopSnippet: () =>
     ipcRenderer.invoke('tasks:capture-screen'),
+  addWatcher: (taskId: string, userId: string) =>
+    ipcRenderer.invoke('tasks:add-watcher', { taskId, userId }),
+  removeWatcher: (taskId: string, userId: string) =>
+    ipcRenderer.invoke('tasks:remove-watcher', { taskId, userId }),
   openExternal: (url: string) =>
     ipcRenderer.invoke('shell:open-external', url),
 

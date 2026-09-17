@@ -18,6 +18,8 @@ import {
   Check,
   Edit3,
   Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
 
@@ -64,6 +66,24 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const isRunning = !isCompleted && activeTaskId === task.id;
 
   const attachments = task.taskAttachments || task.attachments || [];
+  const watchers = task.taskWatchers || task.watchers || [];
+  const isWatching = currentUserId
+    ? watchers.some((w: any) => (w.userId || w.id || w.user?.id) === currentUserId)
+    : false;
+
+  const handleToggleWatch = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUserId) return;
+    try {
+      if (isWatching) {
+        await window.electronAPI.removeWatcher(task.id, currentUserId);
+      } else {
+        await window.electronAPI.addWatcher(task.id, currentUserId);
+      }
+    } catch (err) {
+      console.warn('[TaskItemCard] Failed to toggle watch:', err);
+    }
+  };
 
   const priorityColor = (p: string) => {
     const norm = String(p || '').toUpperCase();
@@ -416,6 +436,26 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 </button>
               )}
 
+              {/* Watch / Unwatch quick button */}
+              {currentUserId && (
+                <button
+                  type="button"
+                  onClick={handleToggleWatch}
+                  style={{
+                    ...cardStyles.iconBtn,
+                    color: isWatching ? '#38bdf8' : '#71717a',
+                    backgroundColor: isWatching ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+                  }}
+                  title={
+                    isWatching
+                      ? 'أنت تتابع هذه المهمة (انقر لإلغاء المتابعة)'
+                      : 'متابعة المهمة لتلقي الإشعارات الفورية'
+                  }
+                >
+                  {isWatching ? <Eye size={13} color="#38bdf8" /> : <EyeOff size={13} />}
+                </button>
+              )}
+
               {/* Web link */}
               <button
                 type="button"
@@ -566,6 +606,29 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               <span style={cardStyles.attCountPill}>
                 <Paperclip size={11} />
                 <span>{attachments.length} مرفق</span>
+              </span>
+            )}
+
+            {/* Watchers Count Badge */}
+            {watchers.length > 0 && (
+              <span
+                style={{
+                  ...cardStyles.pill,
+                  color: '#c084fc',
+                  backgroundColor: 'rgba(192, 132, 252, 0.1)',
+                  borderColor: 'rgba(192, 132, 252, 0.25)',
+                }}
+                title={`المتابعون للمهمة: ${watchers
+                  .map((w: any) =>
+                    w.user
+                      ? `${w.user.firstName || ''} ${w.user.lastName || ''}`.trim() || w.user.email
+                      : w.name || w.userId
+                  )
+                  .filter(Boolean)
+                  .join('، ')}`}
+              >
+                <Eye size={11} color="#c084fc" />
+                <span>{watchers.length} متابع</span>
               </span>
             )}
           </div>

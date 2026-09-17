@@ -221,6 +221,7 @@ class MonitorApiClient {
       estimatedMinutes?: number;
       isRecurring?: boolean;
       recurringRule?: string;
+      watchers?: string[];
     },
     taskId?: string
   ): Promise<any> {
@@ -235,6 +236,7 @@ class MonitorApiClient {
       estimatedMinutes: taskData.estimatedMinutes,
       isRecurring: taskData.isRecurring || false,
       recurringRule: taskData.recurringRule || null,
+      watchers: taskData.watchers || [],
     };
 
     const res = await axios.put(`${base}/api/v1/tasks/${id}`, payload, {
@@ -256,6 +258,7 @@ class MonitorApiClient {
     estimatedMinutes?: number;
     isRecurring?: boolean;
     recurringRule?: string;
+    watchers?: string[];
   }): Promise<any> {
     const base = this.serverUrl;
     const payload = {
@@ -267,6 +270,7 @@ class MonitorApiClient {
       estimatedMinutes: taskData.estimatedMinutes,
       isRecurring: taskData.isRecurring || false,
       recurringRule: taskData.recurringRule || null,
+      watchers: taskData.watchers || [],
     };
 
     const res = await axios.post(`${base}/api/v1/tasks`, payload, {
@@ -277,6 +281,36 @@ class MonitorApiClient {
       timeout: 15_000,
     });
     return res.data?.data ?? res.data;
+  }
+
+  async addTaskWatcher(taskId: string, userId: string): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.post(
+      `${base}/api/v1/tasks/${taskId}/watchers`,
+      { userId },
+      {
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 10_000,
+      }
+    );
+    return res.data?.data ?? res.data;
+  }
+
+  async removeTaskWatcher(taskId: string, userId: string): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.delete(
+      `${base}/api/v1/tasks/${taskId}/watchers/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+        },
+        timeout: 10_000,
+      }
+    );
+    return res.data;
   }
 
   async uploadTaskAttachment(

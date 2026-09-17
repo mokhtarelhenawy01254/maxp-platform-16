@@ -37,6 +37,8 @@ declare global {
         mimeType?: string;
       }) => Promise<{ success: boolean; attachment?: any; error?: string }>;
       captureDesktopSnippet: () => Promise<{ success: boolean; dataUrl?: string; error?: string }>;
+      addWatcher: (taskId: string, userId: string) => Promise<{ success: boolean; result?: any; error?: string }>;
+      removeWatcher: (taskId: string, userId: string) => Promise<{ success: boolean; result?: any; error?: string }>;
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
       checkForUpdates: () => Promise<{
         success: boolean;
