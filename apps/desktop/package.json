@@ -1,6 +1,6 @@
 {
   "name": "maxp-desktop-monitor",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "MaxP Employee Monitor — Desktop activity tracking agent",
   "main": "dist/main/main/main.js",
   "author": "MaxP",
