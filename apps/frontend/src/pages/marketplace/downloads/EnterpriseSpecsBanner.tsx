@@ -11,9 +11,9 @@ export const EnterpriseSpecsBanner: React.FC = () => {
     },
     {
       icon: Zap,
-      title: "تطبيق ويب تقدمي (PWA)",
-      subtitle: "Instant Standalone App",
-      desc: "تثبيت فوري على الهواتف وأجهزة الكمبيوتر مع عمل فوري وتخزين كاش محلي فائق السرعة.",
+      title: "وصول سحابي مباشر",
+      subtitle: "Instant Cloud-Native Access",
+      desc: "وصول فوري من أي متصفح مع تصفير كامل لمشاكل الكاش والتحديثات اللحظية المباشرة.",
     },
     {
       icon: ShieldCheck,

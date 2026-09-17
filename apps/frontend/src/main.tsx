@@ -246,45 +246,11 @@ void bootstrapApp()
     renderBootstrapError(error);
   });
 
-// Service Worker management (Production only)
-if ("serviceWorker" in navigator && (import.meta.env.PROD || import.meta.env.MODE === "production")) {
-  if (isStorefrontRequest()) {
-    // 🛡️ Storefront Isolation (2026 Gold Standard):
-    // E-commerce storefronts must NEVER run a Service Worker.
-    // Cleanly unregister any legacy workers in the background so shoppers never hit stale chunk errors.
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      regs.forEach((r) => r.unregister().catch(() => false));
-    });
-  } else {
-    // Admin Shell Service Worker: for web push notifications only.
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      regs.forEach((r) => {
-        if (r.active && r.active.scriptURL && !/\/sw-v4\.js(?:[?#].*)?$/.test(r.active.scriptURL)) {
-          r.unregister().catch(() => false);
-        }
-      });
-    });
-    navigator.serviceWorker.register("/sw-v4.js", { updateViaCache: "none" }).then((reg) => {
-      const notify = () => {
-        window.__SW_UPDATE_PENDING__ = true;
-        window.dispatchEvent(new CustomEvent("sw-update-ready"));
-      };
-
-      if (reg.waiting && navigator.serviceWorker.controller) {
-        notify();
-      }
-
-      reg.addEventListener("updatefound", () => {
-        const installing = reg.installing;
-        if (!installing) return;
-        installing.addEventListener("statechange", () => {
-          if (installing.state === "installed" && navigator.serviceWorker.controller) {
-            notify();
-          }
-        });
-      });
-    });
-  }
+// Unregister all Service Workers permanently across the entire application
+if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    regs.forEach((r) => r.unregister().catch(() => false));
+  }).catch(() => {});
 }
 
 // Hot Module Replacement (HMR) for development

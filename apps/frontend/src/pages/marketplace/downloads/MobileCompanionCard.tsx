@@ -67,13 +67,13 @@ export const MobileCompanionCard: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5 truncate font-mono">
-                MaxP Mobile Companion for Android &amp; iOS PWA
+                MaxP Mobile Companion for Android &amp; iOS
               </p>
             </div>
           </div>
 
           <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-0.5 text-[11px] font-medium text-foreground">
-            تثبيت فوري
+            تنزيل مباشر
           </span>
         </div>
 
@@ -88,8 +88,8 @@ export const MobileCompanionCard: React.FC = () => {
             <span className="text-xs font-semibold text-foreground font-mono tabular-nums">155.7 MB</span>
           </div>
           <div className="border-r border-border/30 pr-2 col-span-2 sm:col-span-1">
-            <span className="text-[10px] text-muted-foreground block">نوع التثبيت</span>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 font-mono">تنزيل مباشر / PWA</span>
+            <span className="text-[10px] text-muted-foreground block">نوع الوصول</span>
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 font-mono">تنزيل مباشر / ويب سحابي</span>
           </div>
         </div>
 
@@ -156,15 +156,16 @@ export const MobileCompanionCard: React.FC = () => {
             <span>تحميل أندرويد (APK 155 MB)</span>
           </a>
 
-          {/* Instant PWA Install Trigger */}
-          <button
-            type="button"
-            onClick={handleInstallPwa}
+          {/* Web Access Link */}
+          <a
+            href={webPwaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted px-3 py-2.5 text-xs font-medium text-foreground transition-all active:scale-[0.98]"
           >
             <DownloadCloud className="size-4 text-primary" />
-            <span>{isStandalone ? "التطبيق مثبت على جهازك" : "تثبيت فوري (PWA Web)"}</span>
-          </button>
+            <span>فتح المنصة عبر الويب السحابي</span>
+          </a>
         </div>
 
         <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 flex-wrap gap-2">

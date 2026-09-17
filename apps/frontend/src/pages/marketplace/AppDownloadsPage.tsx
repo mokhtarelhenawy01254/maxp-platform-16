@@ -41,7 +41,7 @@ https://maxp.online/downloads/MaxP-Monitor-Portable.zip
 2. تطبيق الموبايل الميداني للأندرويد (Android APK - 155 MB):
 https://maxp.online/downloads/maxp.apk
 
-3. تطبيق الويب والموبايل الفوري (PWA):
+3. منصة الويب السحابية الفورية:
 https://maxp.online
 
 معرّف المنشأة المرجعي لربط الأجهزة: ${companyToken || "تواصل مع مدير الحساب"}`;
@@ -61,14 +61,7 @@ https://maxp.online
       window.location.href = "https://maxp.online/downloads/MaxP-Monitor-Setup.exe";
       return;
     }
-    if (canInstallPwa) {
-      const ok = await installPwa();
-      if (ok) {
-        toast.success("جاري تثبيت تطبيق MaxP...");
-      }
-    } else {
-      toast.info("للتثبيت السريع: استخدم خيار 'تثبيت التطبيق' من قائمة المتصفح");
-    }
+    window.open("https://maxp.online", "_blank");
   };
 
   return (
@@ -178,7 +171,7 @@ https://maxp.online
                     className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted px-4 py-2.5 text-xs font-medium text-foreground transition-all active:scale-[0.98]"
                   >
                     <DownloadCloud className="size-4 text-primary" />
-                    <span>{isStandalone ? "التطبيق مثبت" : "تثبيت فوري كـ PWA"}</span>
+                    <span>فتح المنصة عبر الويب السحابي</span>
                   </button>
                 </>
               ) : (
@@ -188,7 +181,7 @@ https://maxp.online
                   className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
                 >
                   <DownloadCloud className="size-4" />
-                  <span>{isStandalone ? "التطبيق مثبت بالفعل على جهازك" : "تثبيت التطبيق على هذا الجهاز"}</span>
+                  <span>{os === "windows" ? "تحميل برنامج سطح المكتب (Windows Setup)" : "فتح المنصة عبر الويب السحابي"}</span>
                 </button>
               )}
             </div>

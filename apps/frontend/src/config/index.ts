@@ -37,7 +37,7 @@ export const config = {
     notifications:
       getEnvVar("REACT_APP_ENABLE_NOTIFICATIONS", "true") === "true",
     realTime: getEnvVar("REACT_APP_ENABLE_REAL_TIME", "true") === "true",
-    pwa: getEnvVar("REACT_APP_ENABLE_PWA", "true") === "true",
+    pwa: false,
   },
 
   // External Services

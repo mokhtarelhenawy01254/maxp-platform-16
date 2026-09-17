@@ -23,14 +23,6 @@ import {
   type BrowserNotificationPermissionState,
 } from "../utils/browserNotifications";
 import {
-  getBrowserPushDiagnostics,
-  readBrowserPushState,
-  syncBrowserPushSubscription,
-  waitForBrowserPushNotification,
-  type BrowserPushDiagnostics,
-  type BrowserPushState,
-} from "../utils/pushNotifications";
-import {
   cacheNotificationSettings,
   type NotificationChannelId,
   type NotificationSettingsData,
