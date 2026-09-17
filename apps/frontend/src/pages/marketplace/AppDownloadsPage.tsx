@@ -37,7 +37,7 @@ export const AppDownloadsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedDrawerPkg, setSelectedDrawerPkg] = useState<DownloadPackage | null>(null);
 
-  const { os, osLabel, canInstallPwa, installPwa, isStandalone } = usePlatformDetect();
+  const { os, osLabel, isStandalone } = usePlatformDetect();
 
   const companyToken = (user?.company as any)?.id || (user as any)?.companyId || "";
   const companyName = (user?.company as any)?.name || "منشأتك";
@@ -75,7 +75,7 @@ https://maxp.online/pos
     setTimeout(() => setCopiedToken(false), 2000);
   };
 
-  const handleHeroInstall = async () => {
+  const handleHeroInstall = () => {
     if (os === "android") {
       window.location.href = "https://maxp.online/downloads/maxp.apk";
       return;
@@ -84,14 +84,7 @@ https://maxp.online/pos
       window.location.href = "https://maxp.online/downloads/MaxP-Monitor-Setup.exe";
       return;
     }
-    if (canInstallPwa) {
-      const ok = await installPwa();
-      if (ok) {
-        toast.success("جاري تثبيت تطبيق MaxP…");
-      }
-    } else {
-      toast.info("للتثبيت المباشر: استخدم خيار 'تثبيت التطبيق' من قائمة المتصفح");
-    }
+    toast.info("اختر الحزمة المتوافقة مع احتياجاتك من القائمة أدناه");
   };
 
   // Filter packages based on active category and live search
