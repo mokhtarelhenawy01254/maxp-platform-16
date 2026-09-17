@@ -117,11 +117,6 @@ export const config = {
     ), // 30 seconds
   },
 
-  // PWA
-  pwa: {
-    name: getEnvVar("REACT_APP_PWA_NAME", "Communication Platform"),
-    shortName: getEnvVar("REACT_APP_PWA_SHORT_NAME", "CommPlatform"),
-  },
 
   // API Endpoints
   endpoints: {

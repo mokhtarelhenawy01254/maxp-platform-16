@@ -149,7 +149,7 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     category: "mobile",
     categoryLabel: "الموبايل والميدان",
     platform: "أندرويد وآيفون (Android & iOS)",
-    platformEn: "Android APK & iOS PWA",
+    platformEn: "Android APK & iOS Web",
     version: "v2.1.0",
     releaseDate: "2026-03",
     icon: Smartphone,
@@ -158,7 +158,7 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     telemetry: {
       targetSystem: "Android 8+ / iOS 14+",
       primarySize: "155.7 MB",
-      ramConsumption: "Zero Setup PWA",
+      ramConsumption: "Cloud Direct Access",
     },
     files: [
       {
@@ -170,22 +170,22 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
         isPrimary: true,
       },
       {
-        id: "web-pwa",
-        label: "تطبيق الويب الفوري (PWA)",
+        id: "web-cloud",
+        label: "الوصول السحابي المباشر عبر الويب",
         size: "Zero MB",
         url: "https://maxp.online",
-        extension: "PWA",
+        extension: "Web",
         isPrimary: false,
       },
     ],
-    tags: ["android", "ios", "mobile", "apk", "pwa", "attendance", "موبايل", "أندرويد", "بصمة", "حضور"],
+    tags: ["android", "ios", "mobile", "apk", "web", "attendance", "موبايل", "أندرويد", "بصمة", "حضور"],
     drawerDetails: {
       overview: "تطبيق متكامل للمناديب وموظفي الفروع والميدان، يدعم إثبات الحضور بالبصمة الحيوية والنطاق الجغرافي (Geofencing) واستلام إشعارات المهام لحظياً.",
       features: [
         "تسجيل الحضور والانصراف بالبصمة الحيوية مع التحقق من الموقع الجغرافي للفرع.",
         "إشعارات فورية بحالات الطلبات وتكليفات التوصيل والمهام المستجدة.",
         "دعم العمل دون اتصال بالشبكة ومزامنة العمليات فور توفر الإنترنت.",
-        "تثبيت فوري كـ Progressive Web App على جميع الهواتف دون الحاجة لمتاجر التطبيقات.",
+        "وصول مباشر وفوري عبر متصفح الويب من أي هاتف دون الحاجة لتثبيت برامج إضافية.",
       ],
       minRequirements: [
         "أجهزة أندرويد بنظام Android 8.0 Oreo أو أحدث مع خدمات Google Play أو بدائلها.",

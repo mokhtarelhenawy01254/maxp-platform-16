@@ -248,7 +248,7 @@ https://maxp.online/pos
               </span>
             </div>
             <span className="text-[11px] text-muted-foreground mt-0.5 font-mono tabular-nums block" dir="ltr">
-              155.7&nbsp;MB (APK) + PWA
+              155.7&nbsp;MB (APK) + Web
             </span>
           </div>
 
