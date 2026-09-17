@@ -1258,6 +1258,7 @@ export const getSidebarConfig = (
                 { to: '/hr', icon: BarChart3, label: t('sidebar.hrDashboard') },
                 { to: '/hr/employees', icon: Users, label: t('sidebar.employees') },
                 { to: '/hr/online', icon: Radio, label: t('sidebar.onlineTeam') },
+                { to: '/hr/monitor', icon: Monitor, label: 'مراقبة نشاط الموظفين والأجهزة' },
                 { to: '/hr/departments', icon: Building, label: t('sidebar.departments') },
                 { to: '/hr/attendance', icon: CheckCircle2, label: t('sidebar.attendance') },
                 { to: '/hr/leaves', icon: Calendar, label: t('sidebar.leaves') },
