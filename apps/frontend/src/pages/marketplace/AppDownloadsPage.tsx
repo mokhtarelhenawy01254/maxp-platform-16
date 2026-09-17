@@ -28,6 +28,10 @@ import { DownloadAppTile } from "./downloads/DownloadAppTile";
 import { AppDetailsDrawer } from "./downloads/AppDetailsDrawer";
 import { usePlatformDetect } from "./downloads/usePlatformDetect";
 
+/**
+ * MaxP Downloads & Client Applications Cockpit
+ * Unified single-surface chassis matching /my-apps and /marketplace
+ */
 export const AppDownloadsPage: React.FC = () => {
   const { user } = useAuth();
   const [copiedAll, setCopiedAll] = useState(false);
