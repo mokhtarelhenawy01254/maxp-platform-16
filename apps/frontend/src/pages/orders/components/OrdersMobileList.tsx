@@ -1,7 +1,6 @@
-import React, { useRef } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import {
   EyeIcon,
   ShoppingBagIcon,
@@ -82,21 +81,8 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
     getUnifiedStatusDisplay,
   } = helpers;
 
-  const mobileListRef = useRef<HTMLDivElement>(null);
-  const mobileRowVirtualizer = useWindowVirtualizer({
-    count: orders.length,
-    estimateSize: (index) => {
-      const order = orders[index];
-      if (!order) return 240;
-      const hasOffers = summarizeOrderDocumentItems(order.items || []).hasQuantityOffers;
-      return hasOffers ? 300 : 240;
-    },
-    overscan: 5,
-    scrollMargin: mobileListRef.current?.offsetTop ?? 0,
-  });
-
   return (
-    <div ref={mobileListRef} className="mb-6 lg:hidden">
+    <div className="mb-6 lg:hidden">
       {loading ? (
         <OrdersSkeleton variant="mobile" />
       ) : orders.length === 0 ? (
@@ -108,12 +94,8 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
           onClearFilters={onClearFilters}
         />
       ) : (
-        <div
-          className="relative w-full"
-          style={{ height: `${mobileRowVirtualizer.getTotalSize()}px` }}
-        >
-          {mobileRowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const order = orders[virtualRow.index];
+        <div className="flex flex-col gap-3">
+          {orders.map((order, idx) => {
             if (!order) return null;
             const orderItemsSummary = summarizeOrderDocumentItems(order.items);
             const isSelected = selectedOrders.includes(order.orderNumber);
@@ -145,13 +127,8 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
 
             return (
               <div
-                key={`mobile-${order.id || virtualRow.key}`}
-                data-index={virtualRow.index}
-                ref={mobileRowVirtualizer.measureElement}
-                className="absolute left-0 top-0 w-full pb-3"
-                style={{
-                  transform: `translateY(${virtualRow.start - mobileRowVirtualizer.options.scrollMargin}px)`,
-                }}
+                key={`mobile-${order.id || order.orderNumber || idx}`}
+                className="w-full"
               >
                 <article
                   className={`rounded-2xl border ${density === "compact" ? "p-2.5" : "p-3"} bg-white/95 shadow-[0_10px_30px_-20px_rgba(15,23,42,0.3)] transition dark:bg-slate-900/90 ${isSelected

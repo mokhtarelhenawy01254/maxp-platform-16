@@ -31,7 +31,7 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
 
   if (variant === "mobile") {
     return (
-      <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-3.5 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/90 lg:hidden">
+      <div className="mb-24 rounded-2xl border border-slate-200/80 bg-white/95 p-3.5 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/90 lg:hidden">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
