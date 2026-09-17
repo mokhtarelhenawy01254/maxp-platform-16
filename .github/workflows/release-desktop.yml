@@ -1,4 +1,4 @@
-name: Build & Release MaxP Desktop Workspace
+name: Build and Release MaxP Desktop Workspace
 
 on:
   push:
@@ -7,12 +7,12 @@ on:
   workflow_dispatch:
     inputs:
       create_release:
-        description: 'إنشاء GitHub Release وتحديث سيرفر التحديثات التلقائية'
+        description: 'Create GitHub Release'
         required: false
         default: true
         type: boolean
       deploy_to_server:
-        description: 'نشر ملف التثبيت المباشر على السيرفر (https://maxp.online/download/MaxP-Workspace-Setup.exe)'
+        description: 'Deploy to server'
         required: false
         default: true
         type: boolean
@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   build-windows-installer:
-    name: Build & Release Windows Desktop Setup
+    name: Build and Release Windows Desktop Setup
     runs-on: windows-latest
 
     steps:
@@ -44,11 +44,11 @@ jobs:
         working-directory: apps/desktop
         run: npm ci
 
-      - name: Build TypeScript Main & Vite Renderer
+      - name: Build TypeScript Main and Vite Renderer
         working-directory: apps/desktop
         run: npm run build
 
-      - name: Package Windows NSIS Installer & Updates
+      - name: Package Windows NSIS Installer and Updates
         working-directory: apps/desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -109,7 +109,7 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PORT: ${{ secrets.SERVER_PORT || '22' }}
         run: |
-          echo "🚀 Publishing MaxP-Workspace-Setup.exe to direct server download URL..."
+          echo "Publishing MaxP-Workspace-Setup.exe to direct server download URL..."
           SETUP_FILE=$(find apps/desktop/release/ -name "*.exe" | head -n 1)
           
           ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
@@ -126,4 +126,4 @@ jobs:
             "$SERVER_USER@$SERVER_HOST" \
             "cp -f /var/www/frontend2/dist/download/MaxP-Workspace-Setup.exe /var/www/frontend2/dist/downloads/MaxP-Workspace-Setup.exe"
 
-          echo "✅ Desktop Setup successfully published to https://maxp.online/download/MaxP-Workspace-Setup.exe"
+          echo "Desktop Setup successfully published to https://maxp.online/download/MaxP-Workspace-Setup.exe"
