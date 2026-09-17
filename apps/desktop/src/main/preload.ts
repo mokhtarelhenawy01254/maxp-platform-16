@@ -29,7 +29,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Tracker
   getTrackerState: () => ipcRenderer.invoke(CHANNELS.GET_TRACKER_STATE),
   toggleTracking: () => ipcRenderer.invoke(CHANNELS.TOGGLE_TRACKING),
-  pauseTracking: () => ipcRenderer.invoke(CHANNELS.PAUSE_TRACKING),
+  pauseTracking: (reason?: string) => ipcRenderer.invoke(CHANNELS.PAUSE_TRACKING, reason),
   resumeTracking: () => ipcRenderer.invoke(CHANNELS.RESUME_TRACKING),
   getDailySummary: () => ipcRenderer.invoke(CHANNELS.GET_DAILY_SUMMARY),
   getAppsSummary: () => ipcRenderer.invoke(CHANNELS.GET_APPS_SUMMARY),

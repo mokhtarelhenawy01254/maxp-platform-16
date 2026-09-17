@@ -7,6 +7,7 @@ import AppsTimelineTab from './AppsTimelineTab';
 import AttendanceAuditTab from './AttendanceAuditTab';
 import SystemStatusTab from './SystemStatusTab';
 import SettingsModal from '../components/SettingsModal';
+import { BreakReasonModal } from '../components/BreakReasonModal';
 
 interface DashboardPageProps {
   user: any;
@@ -43,6 +44,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
   const [trackerState, setTrackerState] = useState<any>(null);
   const [dailySummary, setDailySummary] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showBreakModal, setShowBreakModal] = useState(false);
   const [breakLoading, setBreakLoading] = useState(false);
   const [clockInDisplay, setClockInDisplay] = useState<string | null>(null);
   const [updateBanner, setUpdateBanner] = useState<{
@@ -107,16 +109,29 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
   const isPaused = trackerState?.isPaused ?? false;
 
   const handleToggleBreak = async () => {
+    if (isPaused) {
+      setBreakLoading(true);
+      try {
+        await window.electronAPI.resumeTracking();
+        await refreshState();
+      } catch (err) {
+        console.error('Resume error:', err);
+      } finally {
+        setBreakLoading(false);
+      }
+    } else {
+      setShowBreakModal(true);
+    }
+  };
+
+  const handleConfirmBreak = async (reason: string) => {
     setBreakLoading(true);
     try {
-      if (isPaused) {
-        await window.electronAPI.resumeTracking();
-      } else {
-        await window.electronAPI.pauseTracking();
-      }
+      await window.electronAPI.pauseTracking(reason);
+      setShowBreakModal(false);
       await refreshState();
     } catch (err) {
-      console.error('Break toggle error:', err);
+      console.error('Break start error:', err);
     } finally {
       setBreakLoading(false);
     }
@@ -194,9 +209,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
 
             {isPaused ? (
               <div style={styles.breakStatusGroup}>
-                <div style={styles.breakActiveChip}>
+                <div style={styles.breakActiveChip} title={`السبب الموثق: ${trackerState?.breakReason || 'استراحة رسمية'}`}>
                   <Coffee size={13} color="#eab308" />
-                  <span>استراحة رسمية جارية</span>
+                  <span>استراحة: {trackerState?.breakReason || 'استراحة رسمية'}</span>
                 </div>
                 <button
                   onClick={handleToggleBreak}
@@ -326,6 +341,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
+      />
+
+      {/* Break Reason & Duration Modal */}
+      <BreakReasonModal
+        isOpen={showBreakModal}
+        onClose={() => setShowBreakModal(false)}
+        onConfirm={handleConfirmBreak}
       />
     </div>
   );

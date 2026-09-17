@@ -73,7 +73,9 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
           </div>
           <div style={{ flex: 1 }}>
             <div style={styles.bannerTitleRow}>
-              <span style={styles.breakTitle}>أنت الآن في وضع الاستراحة الرسمية المعتمدة</span>
+              <span style={styles.breakTitle}>
+                {trackerState?.breakReason ? `استراحة موثقة: ${trackerState.breakReason}` : 'أنت الآن في وضع الاستراحة الرسمية المعتمدة'}
+              </span>
               <span style={styles.breakChip}>عداد التوقف موقوف</span>
             </div>
             <div style={styles.breakSubtext}>

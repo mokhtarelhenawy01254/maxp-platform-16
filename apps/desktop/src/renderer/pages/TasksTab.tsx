@@ -9,9 +9,19 @@ import {
   ExternalLink,
   X,
   Layers,
+  Play,
+  Pause,
 } from 'lucide-react';
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
 import { TaskItemCard } from '../components/tasks/TaskItemCard';
+
+interface ActiveTaskState {
+  id: string;
+  title: string;
+  priority: string;
+  startTime: number;
+  accumulatedSeconds: number;
+}
 
 export const TasksTab: React.FC = () => {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -22,6 +32,65 @@ export const TasksTab: React.FC = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [serverUrl, setServerUrl] = useState('https://maxp.online');
+
+  // Active Task Runner state persisted in localStorage
+  const [activeTask, setActiveTask] = useState<ActiveTaskState | null>(() => {
+    try {
+      const saved = localStorage.getItem('maxp_active_task');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+  const [runnerSeconds, setRunnerSeconds] = useState<number>(0);
+
+  // Ticking stopwatch for active task
+  useEffect(() => {
+    if (!activeTask) {
+      setRunnerSeconds(0);
+      return;
+    }
+
+    const calc = () => {
+      const now = Date.now();
+      const elapsed =
+        (activeTask.accumulatedSeconds || 0) +
+        Math.floor((now - activeTask.startTime) / 1000);
+      setRunnerSeconds(Math.max(0, elapsed));
+    };
+
+    calc();
+    const interval = setInterval(calc, 1000);
+    return () => clearInterval(interval);
+  }, [activeTask]);
+
+  const handleStartTask = (task: any) => {
+    const newTask: ActiveTaskState = {
+      id: task.id,
+      title: task.title,
+      priority: task.priority || 'MEDIUM',
+      startTime: Date.now(),
+      accumulatedSeconds: 0,
+    };
+    setActiveTask(newTask);
+    try {
+      localStorage.setItem('maxp_active_task', JSON.stringify(newTask));
+    } catch {}
+  };
+
+  const handleStopTask = () => {
+    setActiveTask(null);
+    try {
+      localStorage.removeItem('maxp_active_task');
+    } catch {}
+  };
+
+  const formatRunnerTimer = (sec: number): string => {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -138,6 +207,59 @@ export const TasksTab: React.FC = () => {
         </div>
       </div>
 
+      {/* Active Task Runner Dock */}
+      {activeTask && (
+        <div style={styles.runnerDock}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+            <div style={styles.runnerIconBox}>
+              <span style={styles.runnerPulseDot} />
+              <Play size={13} fill="#22c55e" color="#22c55e" />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={styles.runnerSubtitle}>المشغل قيد العمل المباشر:</div>
+              <div style={styles.runnerTaskTitle} title={activeTask.title}>
+                {activeTask.title}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Live Timer Display */}
+            <div style={styles.runnerTimerBadge} title="عداد وقت العمل الفعلي على هذه المهمة">
+              <Clock size={13} color="#38bdf8" />
+              <span style={styles.runnerTimerText}>{formatRunnerTimer(runnerSeconds)}</span>
+            </div>
+
+            {/* Pause / Stop Button */}
+            <button
+              onClick={handleStopTask}
+              style={styles.runnerPauseBtn}
+              title="إيقاف مؤقت للمشغل"
+              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+            >
+              <Pause size={12} />
+              <span>إيقاف مؤقت</span>
+            </button>
+
+            {/* Complete Task Button */}
+            <button
+              onClick={() => {
+                handleStopTask();
+                handleToggleStatus(activeTask.id, 'PENDING');
+              }}
+              style={styles.runnerCompleteBtn}
+              title="إكمال المهمة وتوثيق إنجازها الآن"
+              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+            >
+              <CheckCircle2 size={13} />
+              <span>إكمال المهمة</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main View Switcher (Assigned to Me vs Assigned by Me) */}
       <div style={styles.viewRow}>
         <div style={styles.segmented}>
@@ -203,6 +325,10 @@ export const TasksTab: React.FC = () => {
               onToggleStatus={handleToggleStatus}
               onOpenImage={(img) => setPreviewImage(img)}
               serverUrl={serverUrl}
+              activeTaskId={activeTask?.id}
+              onStartTask={handleStartTask}
+              onStopTask={handleStopTask}
+              viewType={activeView}
             />
           ))
         )}
@@ -248,6 +374,101 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  runnerDock: {
+    backgroundColor: '#0c131d',
+    border: '1px solid rgba(56, 189, 248, 0.35)',
+    boxShadow: '0 4px 18px rgba(0, 0, 0, 0.35), 0 0 12px rgba(56, 189, 248, 0.1)',
+    borderRadius: 8,
+    padding: '10px 14px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  runnerIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    border: '1px solid rgba(34, 197, 94, 0.3)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    flexShrink: 0,
+  },
+  runnerPulseDot: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 7,
+    height: 7,
+    borderRadius: '50%',
+    backgroundColor: '#22c55e',
+    boxShadow: '0 0 8px rgba(34, 197, 94, 1)',
+  },
+  runnerSubtitle: {
+    fontSize: 10,
+    color: '#38bdf8',
+    fontWeight: 500,
+    letterSpacing: '-0.01em',
+  },
+  runnerTaskTitle: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#fafafa',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    maxWidth: 320,
+  },
+  runnerTimerBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    border: '1px solid rgba(56, 189, 248, 0.3)',
+    borderRadius: 6,
+    padding: '4px 10px',
+  },
+  runnerTimerText: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#38bdf8',
+    fontVariantNumeric: 'tabular-nums',
+    letterSpacing: '0.05em',
+  },
+  runnerPauseBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#1e293b',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+    color: '#e2e8f0',
+    borderRadius: 6,
+    padding: '5px 10px',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 120ms ease-out',
+  },
+  runnerCompleteBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#15803d',
+    border: '1px solid rgba(34, 197, 94, 0.4)',
+    color: '#ffffff',
+    borderRadius: 6,
+    padding: '5px 12px',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 120ms ease-out',
   },
   iconBox: {
     width: 34,

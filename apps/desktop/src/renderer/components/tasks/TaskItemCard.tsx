@@ -9,6 +9,9 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  Play,
+  Pause,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface TaskItemCardProps {
@@ -16,6 +19,10 @@ interface TaskItemCardProps {
   onToggleStatus: (taskId: string, currentStatus: string) => void;
   onOpenImage: (imgUrl: string) => void;
   serverUrl?: string;
+  activeTaskId?: string | null;
+  onStartTask?: (task: any) => void;
+  onStopTask?: () => void;
+  viewType?: 'my-tasks' | 'assigned-by-me';
 }
 
 export const TaskItemCard: React.FC<TaskItemCardProps> = ({
@@ -23,10 +30,15 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   onToggleStatus,
   onOpenImage,
   serverUrl = 'https://maxp.online',
+  activeTaskId = null,
+  onStartTask,
+  onStopTask,
+  viewType = 'my-tasks',
 }) => {
   const [expanded, setExpanded] = useState(false);
 
-  const isCompleted = task.status === 'COMPLETED';
+  const isCompleted = String(task.status || '').toUpperCase() === 'COMPLETED';
+  const isRunning = activeTaskId === task.id;
   const attachments = task.taskAttachments || [];
 
   const priorityColor = (p: string) => {
@@ -58,10 +70,28 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
     task.assignee?.email ||
     'غير محدد';
 
-  const isOverdue =
-    task.dueDate &&
-    !isCompleted &&
-    new Date(task.dueDate).getTime() < Date.now();
+  const now = Date.now();
+  const dueTime = task.dueDate ? new Date(task.dueDate).getTime() : null;
+  const diffMs = dueTime ? dueTime - now : null;
+
+  const isOverdue = !!dueTime && !isCompleted && diffMs! < 0;
+  const isDueSoon = !!dueTime && !isCompleted && !isOverdue && diffMs! <= 24 * 60 * 60 * 1000;
+
+  const getOverdueText = () => {
+    if (!diffMs) return '';
+    const hours = Math.floor(Math.abs(diffMs) / 3600000);
+    const days = Math.floor(hours / 24);
+    if (days >= 1) return `متأخرة ${days} يوم`;
+    return `متأخرة ${Math.max(1, hours)} س`;
+  };
+
+  const getDueSoonText = () => {
+    if (!diffMs) return '';
+    const hours = Math.floor(diffMs / 3600000);
+    const mins = Math.floor((diffMs % 3600000) / 60000);
+    if (hours >= 1) return `متبقي ${hours} س`;
+    return `متبقي ${Math.max(1, mins)} د`;
+  };
 
   const handleOpenInWeb = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -74,7 +104,12 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
       style={{
         ...cardStyles.card,
         opacity: isCompleted ? 0.65 : 1,
-        borderColor: isCompleted ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)',
+        borderColor: isRunning
+          ? 'rgba(56, 189, 248, 0.45)'
+          : isCompleted
+          ? 'rgba(255,255,255,0.04)'
+          : 'rgba(255,255,255,0.08)',
+        boxShadow: isRunning ? '0 0 16px rgba(56, 189, 248, 0.1)' : 'none',
       }}
     >
       {/* Main Row */}
@@ -108,6 +143,36 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
             {/* Actions */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {/* Task Runner Action Button */}
+              {!isCompleted && (
+                isRunning ? (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onStopTask?.(); }}
+                    style={cardStyles.activeRunnerBtn}
+                    title="المشغل يعمل الآن — انقر للإيقاف المؤقت"
+                    onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                    onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                  >
+                    <span style={cardStyles.pulsingDot} />
+                    <Pause size={11} color="#ffffff" />
+                    <span>المشغل نشط</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onStartTask?.(task); }}
+                    style={cardStyles.startRunnerBtn}
+                    title="بدء تشغيل المهمة واحتساب وقت الإنجاز"
+                    onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                    onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                  >
+                    <Play size={10} fill="#38bdf8" color="#38bdf8" />
+                    <span>بدء العمل</span>
+                  </button>
+                )
+              )}
+
               {task.description && task.description !== task.title && (
                 <button
                   type="button"
@@ -182,6 +247,30 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                     minute: '2-digit',
                   })}
                 </span>
+              </span>
+            )}
+
+            {/* Overdue Badge */}
+            {isOverdue && (
+              <span style={cardStyles.overduePill}>
+                <AlertTriangle size={11} color="#ef4444" />
+                <span>{getOverdueText()}</span>
+              </span>
+            )}
+
+            {/* Due Soon Badge */}
+            {isDueSoon && (
+              <span style={cardStyles.dueSoonPill}>
+                <Clock size={11} color="#f59e0b" />
+                <span>{getDueSoonText()}</span>
+              </span>
+            )}
+
+            {/* Delegated Task Completed Badge */}
+            {isCompleted && viewType === 'assigned-by-me' && (
+              <span style={cardStyles.delegatedDonePill}>
+                <CheckCircle2 size={11} color="#22c55e" />
+                <span>أنجزها: {assigneeName}</span>
               </span>
             )}
 
@@ -388,6 +477,82 @@ const cardStyles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+  },
+  startRunnerBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'rgba(56, 189, 248, 0.08)',
+    border: '1px solid rgba(56, 189, 248, 0.25)',
+    borderRadius: 5,
+    padding: '3px 8px',
+    fontSize: 10,
+    fontWeight: 600,
+    color: '#38bdf8',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  activeRunnerBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    background: 'rgba(34, 197, 94, 0.15)',
+    border: '1px solid rgba(34, 197, 94, 0.4)',
+    borderRadius: 5,
+    padding: '3px 8px',
+    fontSize: 10,
+    fontWeight: 600,
+    color: '#22c55e',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  pulsingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: '#22c55e',
+    boxShadow: '0 0 6px rgba(34, 197, 94, 0.9)',
+    display: 'inline-block',
+  },
+  overduePill: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 10,
+    fontWeight: 600,
+    color: '#ef4444',
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    border: '1px solid rgba(239, 68, 68, 0.3)',
+    padding: '2px 7px',
+    borderRadius: 4,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  dueSoonPill: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 10,
+    fontWeight: 600,
+    color: '#f59e0b',
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    border: '1px solid rgba(245, 158, 11, 0.3)',
+    padding: '2px 7px',
+    borderRadius: 4,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  delegatedDonePill: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 10,
+    fontWeight: 600,
+    color: '#22c55e',
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    border: '1px solid rgba(34, 197, 94, 0.25)',
+    padding: '2px 7px',
+    borderRadius: 4,
   },
 };
 

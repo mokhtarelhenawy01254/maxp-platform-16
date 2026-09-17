@@ -8,7 +8,7 @@ declare global {
     electronAPI: {
       getTrackerState: () => Promise<any>;
       toggleTracking: () => Promise<boolean>;
-      pauseTracking: () => Promise<void>;
+      pauseTracking: (reason?: string) => Promise<void>;
       resumeTracking: () => Promise<void>;
       getDailySummary: () => Promise<any>;
       getAppsSummary: () => Promise<{ appName: string; durationSeconds: number; category: string }[]>;

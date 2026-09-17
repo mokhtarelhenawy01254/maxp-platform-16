@@ -49,6 +49,7 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isTracking = false;
 let isPaused = false;
+let currentBreakReason = '';
 let sessionStartedAt: string | null = null;
 let idleReminderTimer: ReturnType<typeof setInterval> | null = null;
 let remindedForThisIdleEpisode = false;
@@ -134,6 +135,12 @@ app.whenReady().then(async () => {
 
   // Initialize background silent auto-updates
   initAutoUpdater();
+
+  // Start periodic task notifications poller
+  setTimeout(() => {
+    pollTaskNotifications();
+    setInterval(pollTaskNotifications, 45_000);
+  }, 15_000);
 
   // Check if user is already logged in
   const savedToken = loadAuthToken();
@@ -381,18 +388,20 @@ function stopTracking(): void {
   sendStateToRenderer();
 }
 
-function pauseTracking(): void {
+function pauseTracking(reason: string = 'استراحة رسمية'): void {
   isPaused = true;
+  currentBreakReason = reason || 'استراحة رسمية';
   activityTracker.stop();
   windowTracker.stop();
   stopIdleReminder();
   updateTrayMenu();
   sendStateToRenderer();
-  showNotification('MaxP Workspace', 'تم تفعيل وضع الاستراحة الرسمية (توقف العداد)', true);
+  showNotification('MaxP Workspace', `تم تفعيل استراحة: ${currentBreakReason} (توقف العداد)`, true);
 }
 
 async function resumeTracking(): Promise<void> {
   isPaused = false;
+  currentBreakReason = '';
   remindedForThisIdleEpisode = false;
   await activityTracker.start();
   await windowTracker.start();
@@ -422,6 +431,7 @@ function registerIpcHandlers(): void {
     return {
       isTracking,
       isPaused,
+      breakReason: currentBreakReason,
       currentApp: windowTracker.currentAppName,
       currentUrl: windowTracker.currentUrl,
       activityScore: live?.activityScore ?? (activityTracker as any).lastActivityScore ?? 0,
@@ -437,8 +447,8 @@ function registerIpcHandlers(): void {
     return isTracking;
   });
 
-  ipcMain.handle(IPC_CHANNELS.PAUSE_TRACKING, () => {
-    pauseTracking();
+  ipcMain.handle(IPC_CHANNELS.PAUSE_TRACKING, (_, reason?: string) => {
+    pauseTracking(reason);
   });
 
   ipcMain.handle(IPC_CHANNELS.RESUME_TRACKING, async () => {
@@ -752,6 +762,7 @@ function sendStateToRenderer(): void {
   mainWindow.webContents.send(IPC_CHANNELS.TRACKER_STATE_UPDATE, {
     isTracking,
     isPaused,
+    breakReason: currentBreakReason,
   });
 }
 
@@ -819,6 +830,97 @@ async function triggerAutoClockIn(): Promise<void> {
     }
   } catch (err: any) {
     console.warn('[Main] Auto clock-in check skipped:', err?.message || err);
+  }
+}
+
+// ── Task Lifecycle Notifications Engine ───────────────────────
+const knownAssignedTaskIds = new Set<string>();
+const knownMyTasksStatuses = new Map<string, string>();
+const warnedDueSoonTaskIds = new Set<string>();
+const warnedOverdueTaskIds = new Set<string>();
+let taskPollerInitialized = false;
+
+async function pollTaskNotifications(): Promise<void> {
+  if (!apiClient.isConfigured || !isTracking) return;
+
+  try {
+    // 1. Check tasks assigned to me
+    const myTasks = await apiClient.getTasks('my-tasks');
+    if (Array.isArray(myTasks)) {
+      const now = Date.now();
+
+      for (const t of myTasks) {
+        if (!t?.id) continue;
+        const isCompleted = String(t.status || '').toUpperCase() === 'COMPLETED';
+
+        // Check if newly assigned to me
+        if (taskPollerInitialized && !knownAssignedTaskIds.has(t.id) && !isCompleted) {
+          const assigner = t.creator?.firstName
+            ? `${t.creator.firstName} ${t.creator.lastName || ''}`.trim()
+            : 'أحد الزملاء';
+          showNotification(
+            '📌 مهمة جديدة موكلة إليك',
+            `كلفك ${assigner} بمهمة: "${t.title}"`
+          );
+        }
+        knownAssignedTaskIds.add(t.id);
+
+        // Check Due Soon & Overdue
+        if (!isCompleted && t.dueDate) {
+          const dueTime = new Date(t.dueDate).getTime();
+          const diffMs = dueTime - now;
+
+          // Due within 1 hour (0 < diffMs <= 3600000)
+          if (diffMs > 0 && diffMs <= 60 * 60 * 1000 && !warnedDueSoonTaskIds.has(t.id)) {
+            warnedDueSoonTaskIds.add(t.id);
+            const minsLeft = Math.max(1, Math.round(diffMs / 60000));
+            showNotification(
+              '⏳ تذكير بموعد تسليم مهمة',
+              `متبقي ${minsLeft} دقيقة على موعد تسليم: "${t.title}"`
+            );
+          }
+          // Overdue (diffMs < 0)
+          else if (diffMs < 0 && !warnedOverdueTaskIds.has(t.id)) {
+            warnedOverdueTaskIds.add(t.id);
+            showNotification(
+              '⚠️ مهمة متأخرة عن التسليم',
+              `تجاوزت المهمة "${t.title}" موعد التسليم المحدد!`
+            );
+          }
+        }
+      }
+    }
+
+    // 2. Check tasks assigned BY me to peers
+    const delegatedTasks = await apiClient.getTasks('assigned-by-me');
+    if (Array.isArray(delegatedTasks)) {
+      for (const t of delegatedTasks) {
+        if (!t?.id) continue;
+        const currentStatus = String(t.status || '').toUpperCase();
+        const prevStatus = knownMyTasksStatuses.get(t.id);
+
+        if (
+          taskPollerInitialized &&
+          prevStatus &&
+          prevStatus !== 'COMPLETED' &&
+          currentStatus === 'COMPLETED'
+        ) {
+          const assigneeName = t.assignee?.firstName
+            ? `${t.assignee.firstName} ${t.assignee.lastName || ''}`.trim()
+            : 'الزميل المكلف';
+          showNotification(
+            '🎉 تم إنجاز مهمة كلفت بها',
+            `أنجز ${assigneeName} المهمة: "${t.title}" بنجاح.`
+          );
+        }
+
+        knownMyTasksStatuses.set(t.id, currentStatus);
+      }
+    }
+
+    taskPollerInitialized = true;
+  } catch (err) {
+    // Silent background poll
   }
 }
 
