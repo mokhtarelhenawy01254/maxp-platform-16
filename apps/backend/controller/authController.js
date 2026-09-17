@@ -1213,6 +1213,7 @@ const me = async (req, res) => {
         if (user.role !== 'SUPER_ADMIN' && uc.companyId === decoded.companyId) {
           currentActiveRole = uc.roleRef?.key || uc.role;
         }
+      }
     }
 
     // For SUPER_ADMIN users, expose active companies so they can switch contexts
