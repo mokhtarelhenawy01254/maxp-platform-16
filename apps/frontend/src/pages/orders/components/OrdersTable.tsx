@@ -125,8 +125,8 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
   } = helpers;
 
   const isCompact = density === "compact";
-  const cellPadding = isCompact ? "px-3 py-1.5" : "px-3.5 py-2";
-  const headerPadding = isCompact ? "px-3 py-2" : "px-3.5 py-2.5";
+  const cellPadding = isCompact ? "px-3.5 py-2" : "px-4 py-2.5";
+  const headerPadding = isCompact ? "px-3.5 py-2.5" : "px-4 py-3";
 
   return (
     <div
@@ -154,27 +154,27 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                 </th>
               )}
               {columns.includes("orderNumber") && (
-                <th className={`${headerPadding} text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                <th className={`${headerPadding} text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.orderNumber")}
                 </th>
               )}
               {columns.includes("customer") && (
-                <th className={`${headerPadding} text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                <th className={`${headerPadding} text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.customer")}
                 </th>
               )}
               {columns.includes("amount") && (
-                <th className={`${headerPadding} whitespace-nowrap text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                <th className={`${headerPadding} whitespace-nowrap text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.amount")}
                 </th>
               )}
               {columns.includes("status") && (
-                <th className={`${headerPadding} text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                <th className={`${headerPadding} text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.status")}
                 </th>
               )}
               {columns.includes("payment") && (
-                <th className={`${headerPadding} text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
+                <th className={`${headerPadding} text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.payment")}
                 </th>
               )}
@@ -267,23 +267,23 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                           <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <span
                               dir="ltr"
-                              className="inline-block whitespace-nowrap font-mono text-xs font-bold tabular-nums text-slate-900 dark:text-slate-100"
+                              className="inline-block whitespace-nowrap font-mono text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-100"
                             >
                               #{displayOrderNumber}
                             </span>
                             {order.metadata?.isGuestOrder && (
-                              <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                                 {t("orders.guest")}
                               </span>
                             )}
                             {!order.isViewed && (
-                              <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-700 border border-red-200/80 dark:bg-red-950/60 dark:text-red-300 dark:border-red-900/50">
+                              <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 border border-red-200/80 dark:bg-red-950/60 dark:text-red-300 dark:border-red-900/50">
                                 {t("orders.newLabel")}
                               </span>
                             )}
                           </div>
                           {orderItemsSummary.hasQuantityOffers && (
-                            <div className="inline-flex items-center gap-1 max-w-[220px] truncate rounded border border-amber-200/80 bg-amber-50/80 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200">
+                            <div className="inline-flex items-center gap-1 max-w-[220px] truncate rounded border border-amber-200/80 bg-amber-50/80 px-1.5 py-0.5 text-[11px] font-medium text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200">
                               <span>{orderItemsSummary.primaryLabel}</span>
                             </div>
                           )}
@@ -293,12 +293,12 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                     {columns.includes("customer") && (
                       <td className={cellPadding}>
                         <div className="flex flex-col leading-tight">
-                          <span className="truncate max-w-[170px] text-xs font-semibold text-slate-900 dark:text-slate-100">
+                          <span className="truncate max-w-[190px] text-sm font-medium text-slate-900 dark:text-slate-100">
                             {getCustomerDisplayName(order)}
                           </span>
                           {order.customerPhone && (
                             <span
-                              className="text-[11px] text-slate-400 dark:text-slate-500 font-mono tabular-nums self-start"
+                              className="text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums self-start mt-0.5"
                               dir="ltr"
                             >
                               {toStandardDigits(order.customerPhone)}
@@ -308,7 +308,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                       </td>
                     )}
                     {columns.includes("amount") && (
-                      <td className={`${cellPadding} whitespace-nowrap text-xs sm:text-sm font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100`}>
+                      <td className={`${cellPadding} whitespace-nowrap text-sm font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100`}>
                         {(() => {
                           try {
                             const subtotal =
@@ -338,7 +338,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                             const unifiedStatus = getUnifiedStatusDisplay(order, t);
                             return (
                               <span
-                                className={`${unifiedStatus.className} text-[11px] py-0.5 px-2`}
+                                className={`${unifiedStatus.className} text-xs py-1 px-2.5 rounded-full font-medium`}
                                 style={unifiedStatus.style}
                                 aria-label={unifiedStatus.labelKey}
                               >
@@ -349,7 +349,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                           {order.isScheduled &&
                             order.scheduledDeliveryDate && (
                               <span
-                                className="text-[10px] text-slate-500 dark:text-slate-400 font-mono"
+                                className="text-xs text-slate-500 dark:text-slate-400 font-mono"
                                 dir="ltr"
                               >
                                 📅{" "}
@@ -363,7 +363,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                             )}
                           {order.confidence && (
                             <span
-                              className={`inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] ${getConfidenceColor(order.confidence)}`}
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getConfidenceColor(order.confidence)}`}
                             >
                               {getConfidenceIcon(order.confidence)}
                               <span className="mr-0.5">
@@ -377,7 +377,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                     {columns.includes("payment") && (
                       <td className={cellPadding}>
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${getPaymentStatusBadgeStyle(
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getPaymentStatusBadgeStyle(
                             order.paymentStatus || "pending",
                           )
                             ? ""
@@ -394,7 +394,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                     )}
                     {columns.includes("date") && (
                       <td
-                        className={`hidden ${cellPadding} whitespace-nowrap text-xs text-slate-400 dark:text-slate-500 xl:table-cell`}
+                        className={`hidden ${cellPadding} whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 xl:table-cell`}
                         title={formatDate(
                           order.createdAt || new Date().toISOString(),
                         )}
@@ -419,10 +419,10 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                               onOpenOrder(order);
                             }}
                             aria-label={`${t("orders.quickView")} ${displayOrderNumber}`}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:border hover:border-slate-200 hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-blue-400 active:scale-95 transition"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-blue-400 active:scale-95 transition"
                             title={t("orders.quickView")}
                           >
-                            <EyeIcon className="w-3.5 h-3.5" />
+                            <EyeIcon className="w-4 h-4" />
                           </button>
                           <Link
                             to={order.metadata?.isIncompleteCart
@@ -435,20 +435,20 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                               }
                             }}
                             aria-label={`${t("orders.viewFullDetails")} ${displayOrderNumber}`}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:border hover:border-slate-200 hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-blue-400 active:scale-95 transition"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-blue-400 active:scale-95 transition"
                             title={t("orders.viewFullDetails")}
                           >
-                            <ShoppingBagIcon className="w-3.5 h-3.5" />
+                            <ShoppingBagIcon className="w-4 h-4" />
                           </Link>
                           {order.conversationId && (
                             <Link
                               to={`/whatsapp?conversationId=${order.conversationId}`}
                               onClick={(e) => e.stopPropagation()}
                               aria-label={`${t("orders.conversation")} ${order.orderNumber}`}
-                              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:border hover:border-slate-200 hover:bg-slate-100 hover:text-emerald-600 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-emerald-400 transition"
                               title={t("orders.conversation")}
                             >
-                              <ChatBubbleLeftRightIcon className="w-3.5 h-3.5" />
+                              <ChatBubbleLeftRightIcon className="w-4 h-4" />
                             </Link>
                           )}
                         </div>

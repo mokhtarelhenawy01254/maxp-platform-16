@@ -417,6 +417,7 @@ function logout(): void {
   store.delete('serverUrl');
   store.delete('user');
   apiClient.configure('', '');
+  resetTaskPollerState();
   updateTrayMenu();
   createMainWindow();
 }
@@ -594,9 +595,11 @@ function registerIpcHandlers(): void {
       store.set('serverUrl', serverUrl);
       store.set('user', user);
       apiClient.configure(serverUrl, token);
+      resetTaskPollerState();
       await startTracking();
       updateTrayMenu();
       setTimeout(() => { triggerAutoClockIn(); }, 2000);
+      setTimeout(() => { pollTaskNotifications().catch(() => {}); }, 1500);
       return { success: true, user };
     } catch (err: any) {
       console.error('[Main IPC] Login failed:', err.message);
@@ -904,6 +907,14 @@ const knownMyTasksStatuses = new Map<string, string>();
 const warnedDueSoonTaskIds = new Set<string>();
 const warnedOverdueTaskIds = new Set<string>();
 let taskPollerInitialized = false;
+
+function resetTaskPollerState(): void {
+  knownAssignedTaskIds.clear();
+  knownMyTasksStatuses.clear();
+  warnedDueSoonTaskIds.clear();
+  warnedOverdueTaskIds.clear();
+  taskPollerInitialized = false;
+}
 
 async function pollTaskNotifications(): Promise<void> {
   if (!apiClient.isConfigured) return;

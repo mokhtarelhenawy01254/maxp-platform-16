@@ -408,6 +408,7 @@ async function hydrateLegacyTasks(tasks) {
       metricCurrentValue: 0,
       tags: parseStringArray(task.tags),
       dependencies: parseStringArray(task.dependencies),
+      taskAttachments: [],
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
     }));
