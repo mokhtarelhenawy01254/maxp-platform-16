@@ -73,13 +73,10 @@ export const readBrowserPushState = (): BrowserPushState | null => {
   }
 };
 
-export const isBrowserPushSupported = () =>
-  typeof window !== "undefined" &&
-  "serviceWorker" in navigator &&
-  "PushManager" in window &&
-  "Notification" in window;
+// Browser push via Service Worker is permanently disabled to prevent caching/PWA conflicts
+export const isBrowserPushSupported = () => false;
 
-export const isBrowserPushActive = () => readBrowserPushState()?.active === true;
+export const isBrowserPushActive = () => false;
 
 const getBrowserPushPermission = (): BrowserPushPermissionState => {
   if (typeof window === "undefined" || !("Notification" in window)) {
@@ -260,16 +257,7 @@ const urlBase64ToUint8Array = (value: string) => {
 
 export const registerPushServiceWorker =
   async (): Promise<ServiceWorkerRegistration | null> => {
-    if (!isBrowserPushSupported()) {
-      return null;
-    }
-
-    const registration = await navigator.serviceWorker.register("/sw-v4.js", {
-      scope: "/",
-      updateViaCache: "none",
-    });
-
-    return navigator.serviceWorker.ready.then(() => registration);
+    return null;
   };
 
 const getOrCreateBrowserPushSubscription = async () => {

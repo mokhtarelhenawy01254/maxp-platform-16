@@ -140,6 +140,121 @@ async function markAlertRead(req, res) {
   }
 }
 
+const monitorRetentionService = require('../../services/monitorRetentionService');
+
+async function getAiDailyStandup(req, res) {
+  try {
+    const { companyId, role } = req.user;
+    if (!checkIsAdminOrHR(role)) {
+      return res.status(403).json({ error: 'غير مصرح: الملخص التنفيذي الذكي متاح للمدراء ومسؤولي الموارد البشرية فقط' });
+    }
+
+    const dateStr = req.query.date || new Date().toISOString().split('T')[0];
+    const targetDate = new Date(dateStr);
+    const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+
+    const prisma = getSharedPrismaClient();
+
+    // 1. Fetch team overview for date
+    const teamOverview = await monitorService.getTeamOverview(companyId, dateStr);
+    const summaries = teamOverview?.summaries || [];
+
+    // 2. Fetch completed tasks for company today
+    let completedTasksCount = 0;
+    try {
+      completedTasksCount = await prisma.task.count({
+        where: {
+          companyId,
+          status: 'COMPLETED',
+          updatedAt: { gte: startOfDay, lte: endOfDay }
+        }
+      });
+    } catch {}
+
+    // 3. Aggregate productivity telemetry
+    const totalActiveEmployees = summaries.length;
+    let totalFocusSeconds = 0;
+    let totalBreakSeconds = 0;
+    let totalClockSeconds = 0;
+    const attentionFlags = [];
+
+    for (const s of summaries) {
+      totalFocusSeconds += (s.totalProductiveSeconds || 0);
+      totalBreakSeconds += (s.totalIdleSeconds || 0);
+      totalClockSeconds += (s.totalClockSeconds || 0);
+
+      // Burnout heuristic: working > 9 hours with < 20 min breaks
+      if ((s.totalClockSeconds || 0) > 9 * 3600 && (s.totalIdleSeconds || 0) < 1200) {
+        attentionFlags.push(`الموظف ${s.employeeId || 'عضو الفريق'} يعمل منذ أكثر من 9 ساعات بفرص راحة محدودة.`);
+      }
+      // Low activity on clock: active < 30% of clocked time
+      else if ((s.totalClockSeconds || 0) > 4 * 3600 && (s.totalActiveSeconds || 0) < (s.totalClockSeconds * 0.3)) {
+        attentionFlags.push(`انخفاض وتيرة التفاعل الموثقة لـ ${s.employeeId || 'عضو الفريق'} مقارنة بساعات الحضور.`);
+      }
+    }
+
+    const avgFocusHours = totalActiveEmployees > 0 
+      ? ((totalFocusSeconds / totalActiveEmployees) / 3600).toFixed(1)
+      : '0.0';
+
+    // 4. Synthesize crisp Executive Standup
+    let headline = 'استقرار تشغيلي وتدفق عمل منضبط';
+    let summaryText = '';
+
+    if (totalActiveEmployees === 0) {
+      headline = 'لا يوجد نشاط موثق حتى الآن';
+      summaryText = `لم يتم رصد أي جلسات عمل نشطة للموظفين بتاريخ ${dateStr}. في انتظار بدء الجلسات الصباحية.`;
+    } else {
+      if (completedTasksCount > 0) {
+        headline = `إنجاز ${completedTasksCount} مهمة اليوم بنسبة تركيز مستقرة`;
+        summaryText = `حقق الفريق اليوم إنجاز ${completedTasksCount} مهمة مكتملة بمشاركة ${totalActiveEmployees} من أعضاء الفريق النشطين، وبمتوسط ساعات تركيز عميق يبلغ ${avgFocusHours} ساعة لكل موظف.`;
+      } else {
+        headline = `نشاط مستمر لـ ${totalActiveEmployees} من أعضاء الفريق`;
+        summaryText = `يتواجد حالياً ${totalActiveEmployees} موظفاً في جلسات العمل المفتوحة بمتوسط ${avgFocusHours} ساعة عمل مركزة. وتجري متابعة استكمال المهام قيد التنفيذ.`;
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        date: dateStr,
+        headline,
+        summary: summaryText,
+        telemetry: {
+          activeEmployees: totalActiveEmployees,
+          completedTasks: completedTasksCount,
+          avgFocusHours,
+          totalClockHours: (totalClockSeconds / 3600).toFixed(1),
+          totalBreakMinutes: Math.round(totalBreakSeconds / 60),
+        },
+        attentionFlags: attentionFlags.slice(0, 3),
+        generatedAt: new Date().toISOString(),
+      }
+    });
+  } catch (error) {
+    console.error('Error in getAiDailyStandup:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function triggerDataArchival(req, res) {
+  try {
+    const { companyId, role } = req.user;
+    const isSuperOrOwner = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(role);
+    if (!isSuperOrOwner) {
+      return res.status(403).json({ error: 'صلاحية مرفوضة: أرشفة البيانات محصورة بالمدير التنفيذي فقط' });
+    }
+
+    const retentionDays = Number(req.body.retentionDays || 60);
+    const result = await monitorRetentionService.archiveAndPruneOldLogs(companyId, retentionDays);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Error in triggerDataArchival:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   getSummary,
   getTimeline,
@@ -147,5 +262,7 @@ module.exports = {
   getCategories,
   updateCategory,
   getAlerts,
-  markAlertRead
+  markAlertRead,
+  getAiDailyStandup,
+  triggerDataArchival
 };

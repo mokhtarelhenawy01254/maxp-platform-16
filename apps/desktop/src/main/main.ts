@@ -194,15 +194,34 @@ function createMainWindow(): void {
 // ── System Tray ───────────────────────────────────────────────
 
 function createTray(): void {
-  const iconPath = getTrayIconPath();
-  const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
-  tray = new Tray(icon);
-  tray.setToolTip('MaxP Workspace');
-  updateTrayMenu();
+  try {
+    const iconPath = getTrayIconPath();
+    const icon = nativeImage.createFromPath(iconPath);
+    tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon.resize({ width: 16, height: 16 }));
+    tray.setToolTip('MaxP Workspace');
+    updateTrayMenu();
 
-  tray.on('double-click', () => {
-    createMainWindow();
-  });
+    tray.on('double-click', () => {
+      createMainWindow();
+    });
+  } catch (err: any) {
+    console.warn('[Main] Tray creation skipped:', err?.message || err);
+  }
+}
+
+function getTrayIconPath(): string {
+  const possiblePaths = [
+    path.join(process.resourcesPath, 'assets', 'icon.ico'),
+    path.join(process.resourcesPath, 'assets', 'icon.png'),
+    path.resolve(__dirname, '../../../assets/icon.ico'),
+    path.resolve(__dirname, '../../../assets/icon.png'),
+    path.resolve(__dirname, '../../assets/icon.ico'),
+    path.resolve(__dirname, '../../assets/icon.png'),
+  ];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return path.resolve(__dirname, '../../../assets/icon.ico');
 }
 
 function updateTrayMenu(): void {
@@ -243,20 +262,6 @@ function updateTrayMenu(): void {
   tray.setContextMenu(contextMenu);
 }
 
-function getTrayIconPath(): string {
-  const possiblePaths = [
-    path.resolve(__dirname, '../../../assets/icon.png'),
-    path.resolve(__dirname, '../../assets/icon.png'),
-    path.resolve(__dirname, '../assets/icon.png'),
-    path.resolve(app.getAppPath(), 'assets/icon.png'),
-    path.resolve(process.resourcesPath || '', 'assets/icon.png'),
-    path.resolve(process.resourcesPath || '', 'app.asar.unpacked/assets/icon.png'),
-  ];
-  for (const p of possiblePaths) {
-    if (fs.existsSync(p)) return p;
-  }
-  return path.resolve(__dirname, '../../../assets/icon.png');
-}
 
 // ── Tracking Control ──────────────────────────────────────────
 

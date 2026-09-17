@@ -31,31 +31,21 @@ export async function clearAllSWCaches(): Promise<boolean> {
     }
   }
 
-  // 2. Unregister legacy workers (/push-sw.js) and notify active/waiting workers
+  // 2. Unregister ALL Service Workers permanently
   if ("serviceWorker" in navigator && navigator.serviceWorker) {
     try {
       const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const reg of registrations) {
-        const scriptUrl =
-          reg.active?.scriptURL ||
-          reg.waiting?.scriptURL ||
-          reg.installing?.scriptURL ||
-          "";
-
-        if (scriptUrl.includes("/push-sw.js")) {
-          console.warn("[SW-Flush] Unregistering legacy push-sw.js worker:", scriptUrl);
-          await reg.unregister().catch(() => false);
-          continue;
-        }
-
-        if (reg.waiting) {
-          reg.waiting.postMessage("SKIP_WAITING");
-        } else if (reg.active) {
-          reg.active.postMessage("SKIP_WAITING");
-        }
-      }
+      await Promise.all(
+        registrations.map(async (reg) => {
+          try {
+            await reg.unregister();
+          } catch {
+            // Ignore unregister errors
+          }
+        }),
+      );
     } catch (error) {
-      console.warn("[SW-Flush] Error notifying service worker:", error);
+      console.warn("[SW-Flush] Error unregistering service workers:", error);
     }
   }
 

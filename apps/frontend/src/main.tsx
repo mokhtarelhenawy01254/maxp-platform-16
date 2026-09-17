@@ -9,21 +9,12 @@ import {
 } from "./utils/chunkLoadRecovery";
 import { clearAllSWCaches } from "./utils/swCacheFlush";
 
-// Auto-purge legacy SW caches once for all existing clients
-const SW_MIGRATION_VERSION = "maxp_sw_v3_20260729";
+// Proactively unregister any active or legacy Service Workers and wipe CacheStorage
 if (typeof window !== "undefined") {
   try {
-    if (localStorage.getItem("maxp:sw_migrated") !== SW_MIGRATION_VERSION) {
-      void clearAllSWCaches().then(() => {
-        try {
-          localStorage.setItem("maxp:sw_migrated", SW_MIGRATION_VERSION);
-        } catch {
-          // Ignore storage quota error
-        }
-      });
-    }
+    void clearAllSWCaches();
   } catch {
-    // Ignore private browsing error
+    // Ignore environments with restricted storage or workers
   }
 }
 
@@ -210,30 +201,6 @@ const bootstrapApp = async (): Promise<void> => {
   root.render(<AdminAppBootstrap />);
   scheduleOptionalGoogleFonts();
 
-  // Service Worker for PWA installability and background push notifications
-  const registerPwaServiceWorker = () => {
-    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw-v4.js", { scope: "/", updateViaCache: "none" })
-        .catch(() => {});
-    }
-  };
-
-  if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(() => {
-      registerPwaServiceWorker();
-      import("./utils/pushNotifications")
-        .then(({ registerPushServiceWorker }) => registerPushServiceWorker())
-        .catch(() => {});
-    }, { timeout: 5000 });
-  } else {
-    setTimeout(() => {
-      registerPwaServiceWorker();
-      import("./utils/pushNotifications")
-        .then(({ registerPushServiceWorker }) => registerPushServiceWorker())
-        .catch(() => {});
-    }, 1500);
-  }
 };
 
 void bootstrapApp()
@@ -279,45 +246,11 @@ void bootstrapApp()
     renderBootstrapError(error);
   });
 
-// Service Worker management (Production only)
-if ("serviceWorker" in navigator && (import.meta.env.PROD || import.meta.env.MODE === "production")) {
-  if (isStorefrontRequest()) {
-    // 🛡️ Storefront Isolation (2026 Gold Standard):
-    // E-commerce storefronts must NEVER run a Service Worker.
-    // Cleanly unregister any legacy workers in the background so shoppers never hit stale chunk errors.
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      regs.forEach((r) => r.unregister().catch(() => false));
-    });
-  } else {
-    // Admin Shell Service Worker: for web push notifications only.
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      regs.forEach((r) => {
-        if (r.active && r.active.scriptURL && !/\/sw-v4\.js(?:[?#].*)?$/.test(r.active.scriptURL)) {
-          r.unregister().catch(() => false);
-        }
-      });
-    });
-    navigator.serviceWorker.register("/sw-v4.js", { updateViaCache: "none" }).then((reg) => {
-      const notify = () => {
-        window.__SW_UPDATE_PENDING__ = true;
-        window.dispatchEvent(new CustomEvent("sw-update-ready"));
-      };
-
-      if (reg.waiting && navigator.serviceWorker.controller) {
-        notify();
-      }
-
-      reg.addEventListener("updatefound", () => {
-        const installing = reg.installing;
-        if (!installing) return;
-        installing.addEventListener("statechange", () => {
-          if (installing.state === "installed" && navigator.serviceWorker.controller) {
-            notify();
-          }
-        });
-      });
-    });
-  }
+// Unregister all Service Workers permanently across the entire application
+if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    regs.forEach((r) => r.unregister().catch(() => false));
+  }).catch(() => {});
 }
 
 // Hot Module Replacement (HMR) for development

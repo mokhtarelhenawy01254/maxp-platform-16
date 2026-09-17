@@ -45,6 +45,7 @@
   "build": {
     "appId": "online.maxp.workspace",
     "productName": "MaxP Workspace",
+    "icon": "assets/icon.ico",
     "npmRebuild": false,
     "nodeGypRebuild": false,
     "directories": {
@@ -69,7 +70,7 @@
       "repo": "maxp-platform-10"
     },
     "win": {
-      "target": ["dir"]
+      "target": ["nsis", "dir"]
     },
     "nsis": {
       "oneClick": false,

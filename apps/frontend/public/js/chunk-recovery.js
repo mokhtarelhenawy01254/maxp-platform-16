@@ -116,9 +116,7 @@
       if ("serviceWorker" in navigator && navigator.serviceWorker) {
         navigator.serviceWorker.getRegistrations().then(function (regs) {
           regs.forEach(function (r) {
-            if (r.active && r.active.scriptURL && !/\/sw-v4\.js(?:[?#].*)?$/.test(r.active.scriptURL)) {
-              r.unregister();
-            }
+            r.unregister();
           });
         });
       }
