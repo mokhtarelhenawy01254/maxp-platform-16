@@ -63,35 +63,11 @@ interface NotificationStats {
 }
 
 type SettingsTab = "general" | "types" | "stats";
-type BackgroundPushTestType = "order_created" | "customer_message";
 
 type FeedbackState = {
   type: "success" | "error" | "info";
   message: string;
 } | null;
-
-const BACKGROUND_PUSH_TESTS: Array<{
-  typeId: BackgroundPushTestType;
-  label: string;
-  title: string;
-  message: string;
-  successLabel: string;
-}> = [
-  {
-    typeId: "order_created",
-    label: "اختبار طلب جديد",
-    title: "اختبار طلب جديد",
-    message: "هذا Web Push تجريبي لمسار الطلبات الجديدة.",
-    successLabel: "طلب جديد",
-  },
-  {
-    typeId: "customer_message",
-    label: "اختبار رسالة عميل",
-    title: "اختبار رسالة عميل",
-    message: "هذا Web Push تجريبي لمسار رسائل العملاء.",
-    successLabel: "رسالة عميل",
-  },
-];
 
 const buildDefaultTypePreference = (
   type: NotificationType,
@@ -234,13 +210,6 @@ const NotificationSettings: React.FC = () => {
     useState<BrowserNotificationPermissionState>(
       getBrowserNotificationPermission(),
     );
-  const [browserPushState, setBrowserPushState] =
-    useState<BrowserPushState | null>(() => readBrowserPushState());
-  const [browserPushDiagnostics, setBrowserPushDiagnostics] =
-    useState<BrowserPushDiagnostics | null>(null);
-  const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
-  const [backgroundPushTestingType, setBackgroundPushTestingType] =
-    useState<BackgroundPushTestType | null>(null);
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
 
   const userId = user?.id ? String(user.id) : "";
@@ -266,72 +235,6 @@ const NotificationSettings: React.FC = () => {
     return nextPermission;
   };
 
-  const refreshBrowserPushDiagnostics = async () => {
-    setDiagnosticsLoading(true);
-
-    try {
-      const diagnostics = await getBrowserPushDiagnostics();
-      setBrowserPushDiagnostics(diagnostics);
-      return diagnostics;
-    } catch (error) {
-      console.error("Failed to refresh browser push diagnostics:", error);
-      setBrowserPushDiagnostics(null);
-      return null;
-    } finally {
-      setDiagnosticsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const handleBrowserPushUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent<BrowserPushState>;
-      setBrowserPushState(customEvent.detail || readBrowserPushState());
-    };
-
-    window.addEventListener("browser-push:updated", handleBrowserPushUpdate);
-    return () => {
-      window.removeEventListener(
-        "browser-push:updated",
-        handleBrowserPushUpdate,
-      );
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadDiagnostics = async () => {
-      setDiagnosticsLoading(true);
-
-      try {
-        const diagnostics = await getBrowserPushDiagnostics();
-        if (!cancelled) {
-          setBrowserPushDiagnostics(diagnostics);
-        }
-      } catch (error) {
-        console.error("Failed to load browser push diagnostics:", error);
-        if (!cancelled) {
-          setBrowserPushDiagnostics(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setDiagnosticsLoading(false);
-        }
-      }
-    };
-
-    void loadDiagnostics();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    browserPermission,
-    browserPushState?.active,
-    browserPushState?.endpoint,
-    browserPushState?.updatedAt,
-    settings?.channels.browser.enabled,
-  ]);
 
   useEffect(() => {
     if (authLoading || !userId) {
@@ -380,51 +283,6 @@ const NotificationSettings: React.FC = () => {
     loadData();
   }, [authLoading, companyId, userEmail, userId, userTimezone]);
 
-  useEffect(() => {
-    if (!savedSettings) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const syncSavedBrowserPush = async () => {
-      try {
-        if (
-          savedSettings.channels.browser.enabled &&
-          browserPermission === "granted"
-        ) {
-          const nextState = await syncBrowserPushSubscription(true);
-          if (!cancelled) {
-            setBrowserPushState(nextState);
-          }
-          return;
-        }
-
-        if (!savedSettings.channels.browser.enabled && browserPushState?.active) {
-          const nextState = await syncBrowserPushSubscription(false);
-          if (!cancelled) {
-            setBrowserPushState(nextState);
-          }
-          return;
-        }
-
-        if (!cancelled) {
-          setBrowserPushState(readBrowserPushState());
-        }
-      } catch (error) {
-        console.error("Error syncing saved browser push subscription:", error);
-        if (!cancelled) {
-          setBrowserPushState(readBrowserPushState());
-        }
-      }
-    };
-
-    void syncSavedBrowserPush();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [browserPermission, browserPushState?.active, savedSettings]);
 
   const updateSettings = (path: string, value: unknown) => {
     setSettings((previousSettings) => {
@@ -509,7 +367,7 @@ const NotificationSettings: React.FC = () => {
 
     setFeedback({
       type: "success",
-      message: "سيتم تفعيل Web Push خارج الصفحة بعد حفظ الإعدادات.",
+      message: "تم تفعيل إشعارات المتصفح بنجاح.",
     });
   };
 
@@ -577,29 +435,9 @@ const NotificationSettings: React.FC = () => {
       setSettings(normalizedResponse);
       setSavedSettings(cloneSettings(normalizedResponse));
       cacheNotificationSettings(normalizedResponse);
-
-      try {
-        const nextBrowserPushState = await syncBrowserPushSubscription(
-          normalizedResponse.channels.browser.enabled,
-        );
-        setBrowserPushState(nextBrowserPushState);
-
-        setFeedback({
-          type: "success",
-          message: normalizedResponse.channels.browser.enabled
-            ? "تم حفظ الإعدادات وتفعيل Web Push حتى عند غلق الصفحة."
-            : "تم حفظ الإعدادات وإيقاف Web Push للمتصفح.",
-        });
-        return;
-      } catch (syncError) {
-        console.error("Error syncing browser push after saving:", syncError);
-        setBrowserPushState(readBrowserPushState());
-      }
-
       setFeedback({
-        type: "info",
-        message:
-          "تم حفظ الإعدادات لكن تعذر مزامنة Web Push الآن. افتح الإذن ثم أعد الحفظ.",
+        type: "success",
+        message: "تم حفظ إعدادات الإشعارات بنجاح.",
       });
     } catch (error) {
       console.error("Error saving notification settings:", error);
@@ -672,107 +510,6 @@ const NotificationSettings: React.FC = () => {
     }
   };
 
-  const backgroundPushTestUnavailableReason = useMemo(() => {
-    if (!settings) {
-      return "جاري تجهيز إعدادات الإشعارات قبل تشغيل الاختبار.";
-    }
-
-    if (!settings.channels.browser.enabled) {
-      return "فعّل إشعار المتصفح ثم احفظ الإعدادات أولًا قبل تشغيل اختبار الخلفية.";
-    }
-
-    if (hasUnsavedChanges) {
-      return "احفظ التغييرات الحالية أولًا حتى يختبر الزر آخر إعدادات محفوظة فعليًا.";
-    }
-
-    if (browserPermission === "denied") {
-      return "إذن الإشعارات مرفوض لهذا الموقع. غيّره إلى Allow ثم حدّث الحالة.";
-    }
-
-    if (browserPermission !== "granted") {
-      return "اسمح بإشعارات المتصفح أولًا ثم أعد تشغيل الاختبار.";
-    }
-
-    if (!browserPushState?.active && !browserPushDiagnostics?.subscriptionFound) {
-      return "لا يوجد Push Subscription نشط بعد. احفظ الإعدادات أو حدّث التشخيص ثم أعد المحاولة.";
-    }
-
-    return null;
-  }, [
-    browserPermission,
-    browserPushDiagnostics?.subscriptionFound,
-    browserPushState?.active,
-    hasUnsavedChanges,
-    settings,
-  ]);
-
-  const handleBackgroundPushTest = async (typeId: BackgroundPushTestType) => {
-    if (!userId) {
-      return;
-    }
-
-    if (backgroundPushTestUnavailableReason) {
-      setFeedback({
-        type: "info",
-        message: backgroundPushTestUnavailableReason,
-      });
-      return;
-    }
-
-    const selectedTest = BACKGROUND_PUSH_TESTS.find((test) => test.typeId === typeId);
-    if (!selectedTest) {
-      return;
-    }
-
-    const uniqueTag = `notification-settings-background-test-${typeId}-${Date.now()}`;
-
-    try {
-      setBackgroundPushTestingType(typeId);
-      setFeedback(null);
-
-      await api.post("/notifications/test", {
-        userId,
-        testConfig: {
-          type: typeId,
-          channel: "browser",
-          title: selectedTest.title,
-          message: selectedTest.message,
-          tag: uniqueTag,
-          forceVisibleNotification: true,
-          requireInteraction: true,
-        },
-      });
-
-      const matchedNotification = await waitForBrowserPushNotification({
-        tag: uniqueTag,
-        timeoutMs: 6000,
-      });
-
-      if (matchedNotification) {
-        void refreshBrowserPushDiagnostics();
-        setFeedback({
-          type: "success",
-          message: `وصل اختبار ${selectedTest.successLabel} عبر Web Push بنجاح: ${matchedNotification.title}`,
-        });
-        return;
-      }
-
-      setFeedback({
-        type: "info",
-        message: `تم إرسال اختبار ${selectedTest.successLabel} عبر Web Push، لكن المتصفح لم يرجع إشعارًا نشطًا خلال 6 ثوانٍ.`,
-      });
-    } catch (error) {
-      console.error("Error testing background browser push:", error);
-      setFeedback({
-        type: "error",
-        message:
-          (error as { response?: { data?: { error?: string } } })?.response?.data
-            ?.error || "فشل اختبار Web Push في الخلفية.",
-      });
-    } finally {
-      setBackgroundPushTestingType(null);
-    }
-  };
 
   const getChannelIcon = (channel: NotificationChannelId) => {
     switch (channel) {
@@ -840,7 +577,7 @@ const NotificationSettings: React.FC = () => {
     }
   }, [browserPermission]);
 
-  const browserPushStatusLabel = useMemo(() => {
+  const browserNotificationStatusLabel = useMemo(() => {
     if (!isBrowserNotificationSupported()) {
       return {
         label: "غير مدعوم",
@@ -848,165 +585,32 @@ const NotificationSettings: React.FC = () => {
       };
     }
 
-    if (browserPushState?.active) {
+    if (!settings?.channels.browser.enabled) {
       return {
-        label: "يعمل خارج الصفحة",
+        label: "متوقف",
+        className: "bg-gray-100 text-gray-700 border-gray-200",
+      };
+    }
+
+    if (browserPermission === "granted") {
+      return {
+        label: "مفعّل",
         className: "bg-green-50 text-green-700 border-green-100",
       };
     }
 
-    if (settings?.channels.browser.enabled && hasUnsavedChanges) {
+    if (browserPermission === "denied") {
       return {
-        label: "بانتظار الحفظ",
-        className: "bg-amber-50 text-amber-700 border-amber-100",
-      };
-    }
-
-    if (settings?.channels.browser.enabled && browserPermission === "granted") {
-      return {
-        label: "جاهز للتفعيل",
-        className: "bg-blue-50 text-blue-700 border-blue-100",
+        label: "محظور بالمتصفح",
+        className: "bg-red-50 text-red-700 border-red-100",
       };
     }
 
     return {
-      label: "متوقف",
-      className: "bg-gray-100 text-gray-700 border-gray-200",
+      label: "بانتظار منح الإذن",
+      className: "bg-amber-50 text-amber-700 border-amber-100",
     };
-  }, [browserPermission, browserPushState?.active, hasUnsavedChanges, settings]);
-
-  const browserDiagnosticsRows = useMemo(() => {
-    if (!browserPushDiagnostics) {
-      return [];
-    }
-
-    return [
-      {
-        label: "الدعم",
-        value: browserPushDiagnostics.supported ? "مدعوم" : "غير مدعوم",
-        className: browserPushDiagnostics.supported
-          ? "bg-green-50 text-green-700 border-green-100"
-          : "bg-gray-100 text-gray-700 border-gray-200",
-      },
-      {
-        label: "الإذن",
-        value:
-          browserPushDiagnostics.permission === "granted"
-            ? "مسموح"
-            : browserPushDiagnostics.permission === "denied"
-              ? "مرفوض"
-              : browserPushDiagnostics.permission === "default"
-                ? "بانتظار القرار"
-                : "غير مدعوم",
-        className:
-          browserPushDiagnostics.permission === "granted"
-            ? "bg-green-50 text-green-700 border-green-100"
-            : browserPushDiagnostics.permission === "denied"
-              ? "bg-red-50 text-red-700 border-red-100"
-              : "bg-amber-50 text-amber-700 border-amber-100",
-      },
-      {
-        label: "Service Worker",
-        value: browserPushDiagnostics.serviceWorkerRegistered
-          ? "مسجل"
-          : "غير مسجل",
-        className: browserPushDiagnostics.serviceWorkerRegistered
-          ? "bg-green-50 text-green-700 border-green-100"
-          : "bg-amber-50 text-amber-700 border-amber-100",
-      },
-      {
-        label: "Push Subscription",
-        value: browserPushDiagnostics.subscriptionFound ? "موجود" : "غير موجود",
-        className: browserPushDiagnostics.subscriptionFound
-          ? "bg-green-50 text-green-700 border-green-100"
-          : "bg-amber-50 text-amber-700 border-amber-100",
-      },
-      {
-        label: "الحالة المحلية",
-        value: browserPushDiagnostics.cachedStateActive ? "نشطة" : "غير نشطة",
-        className: browserPushDiagnostics.cachedStateActive
-          ? "bg-blue-50 text-blue-700 border-blue-100"
-          : "bg-gray-100 text-gray-700 border-gray-200",
-      },
-    ];
-  }, [browserPushDiagnostics]);
-
-  const browserDiagnosticsIssues = useMemo(() => {
-    if (!browserPushDiagnostics) {
-      return ["تعذر قراءة تشخيص Web Push من المتصفح الآن."];
-    }
-
-    const issues: string[] = [];
-
-    if (!browserPushDiagnostics.supported) {
-      issues.push("هذا المتصفح أو هذه الصفحة لا تدعم Web Push حاليًا.");
-      return issues;
-    }
-
-    if (browserPushDiagnostics.permission === "denied") {
-      issues.push(
-        "إذن الإشعارات مرفوض لهذا الموقع. غيّره إلى Allow من إعدادات المتصفح ثم حدّث الحالة.",
-      );
-    }
-
-    if (!browserPushDiagnostics.serviceWorkerRegistered) {
-      issues.push("ملف الـ Service Worker لم يُسجل بعد داخل هذا المتصفح.");
-    }
-
-    if (
-      settings?.channels.browser.enabled &&
-      browserPushDiagnostics.permission === "granted" &&
-      !browserPushDiagnostics.subscriptionFound
-    ) {
-      issues.push(
-        "القناة مفعلة لكن لا يوجد Push Subscription نشط بعد. احفظ الإعدادات أو أعد تحميل الصفحة ثم أعد المحاولة.",
-      );
-    }
-
-    if (
-      !settings?.channels.browser.enabled &&
-      browserPushDiagnostics.subscriptionFound
-    ) {
-      issues.push(
-        "يوجد Push Subscription محفوظ في المتصفح بينما القناة العامة متوقفة الآن.",
-      );
-    }
-
-    if (
-      browserPushDiagnostics.cachedStateActive &&
-      !browserPushDiagnostics.subscriptionFound
-    ) {
-      issues.push(
-        "الحالة المحلية تقول إن Web Push نشط، لكن المتصفح لا يرجع اشتراكًا نشطًا الآن.",
-      );
-    }
-
-    if (
-      !browserPushDiagnostics.cachedStateActive &&
-      browserPushDiagnostics.subscriptionFound
-    ) {
-      issues.push(
-        "يوجد Push Subscription فعلي داخل المتصفح لكن الحالة المحلية لم تتحدث بعد.",
-      );
-    }
-
-    if (!issues.length) {
-      issues.push("المسار جاهز من جهة المتصفح. لو القناة محفوظة ومفعلة فالمفترض أن Web Push يعمل.");
-    }
-
-    return issues;
-  }, [browserPushDiagnostics, settings?.channels.browser.enabled]);
-
-  const truncatedSubscriptionEndpoint = useMemo(() => {
-    const endpoint = browserPushDiagnostics?.subscriptionEndpoint;
-    if (!endpoint) {
-      return null;
-    }
-
-    return endpoint.length > 72
-      ? `${endpoint.slice(0, 48)}...${endpoint.slice(-18)}`
-      : endpoint;
-  }, [browserPushDiagnostics?.subscriptionEndpoint]);
+  }, [browserPermission, settings?.channels.browser.enabled]);
 
   const browserPermissionAction = useMemo(() => {
     if (browserPermission === "granted") {
@@ -1024,14 +628,14 @@ const NotificationSettings: React.FC = () => {
     if (browserPermission === "unsupported") {
       return {
         label: "التحقق من الدعم",
-        helper: "هذا المتصفح لا يدعم Web Push لهذه الصفحة.",
+        helper: "هذا المتصفح لا يدعم إشعارات النظام المباشرة.",
       };
     }
 
     return {
       label: "طلب إذن المتصفح",
       helper:
-        "إذا لم تمنح إذن المتصفح بعد، اطلب الإذن أولًا ثم احفظ الإعدادات حتى يتم تسجيل Web Push في الخلفية.",
+        "إذا لم تمنح إذن المتصفح بعد، اطلب الإذن أولًا لتصلك تنبيهات الطلبات والرسائل الجديدة فوراً.",
     };
   }, [browserPermission]);
 
@@ -1082,8 +686,7 @@ const NotificationSettings: React.FC = () => {
             إعدادات الإشعارات
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            تخصيص تفضيلات الإشعارات وقنوات التواصل، مع دعم Web Push للطلبات
-            والرسائل حتى عند غلق الصفحة.
+            تخصيص تفضيلات الإشعارات وقنوات التواصل، مع إشعارات المتصفح للطلبات والرسائل اللحظية.
           </p>
         </div>
 
@@ -1330,14 +933,13 @@ const NotificationSettings: React.FC = () => {
                             {browserPermissionLabel.label}
                           </span>
                           <span
-                            className={`rounded-full border px-2.5 py-1 text-xs font-medium ${browserPushStatusLabel.className}`}
+                            className={`rounded-full border px-2.5 py-1 text-xs font-medium ${browserNotificationStatusLabel.className}`}
                           >
-                            {browserPushStatusLabel.label}
+                            {browserNotificationStatusLabel.label}
                           </span>
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          يظهر إشعار نظام حتى لو كانت صفحة المنصة مقفولة، طالما
-                          المتصفح نفسه يدعم Web Push والموقع مُفعّل.
+                          تنبيهات فورية تظهر في نظام التشغيل عند ورود طلبات أو رسائل جديدة للمنشأة.
                         </p>
                       </div>
                     </div>
@@ -1409,141 +1011,44 @@ const NotificationSettings: React.FC = () => {
                     />
                   </div>
 
-                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-900/40">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
-                          تشخيص Web Push
-                        </h4>
-                        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                          يعرض حالة الإذن والتسجيل والاشتراك الفعلي داخل هذا
-                          المتصفح.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void refreshBrowserPushDiagnostics();
-                        }}
-                        className="inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-white dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
-                      >
-                        <ArrowPathIcon
-                          className={`ml-2 h-4 w-4 ${
-                            diagnosticsLoading ? "animate-spin" : ""
-                          }`}
-                        />
-                        تحديث التشخيص
-                      </button>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {browserDiagnosticsRows.map((item) => (
-                        <div
-                          key={item.label}
-                          className={`rounded-full border px-3 py-1 text-xs font-medium ${item.className}`}
-                        >
-                          {item.label}: {item.value}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-1 gap-3 text-xs text-slate-600 dark:text-slate-300 md:grid-cols-2">
-                      <div className="rounded-xl bg-white/80 p-3 dark:bg-slate-800/70">
-                        <span className="block font-medium text-slate-800 dark:text-slate-100">
-                          Service Worker Scope
-                        </span>
-                        <span className="mt-1 block break-all">
-                          {browserPushDiagnostics?.serviceWorkerScope || "غير متوفر"}
-                        </span>
-                      </div>
-                      <div className="rounded-xl bg-white/80 p-3 dark:bg-slate-800/70">
-                        <span className="block font-medium text-slate-800 dark:text-slate-100">
-                          Subscription Endpoint
-                        </span>
-                        <span className="mt-1 block break-all">
-                          {truncatedSubscriptionEndpoint || "غير متوفر"}
-                        </span>
-                      </div>
-                      <div className="rounded-xl bg-white/80 p-3 dark:bg-slate-800/70">
-                        <span className="block font-medium text-slate-800 dark:text-slate-100">
-                          الصفحة تحت تحكم الـService Worker
-                        </span>
-                        <span className="mt-1 block">
-                          {browserPushDiagnostics?.serviceWorkerControllingPage
-                            ? "نعم"
-                            : "لا"}
-                        </span>
-                      </div>
-                      <div className="rounded-xl bg-white/80 p-3 dark:bg-slate-800/70">
-                        <span className="block font-medium text-slate-800 dark:text-slate-100">
-                          آخر حالة محلية محفوظة
-                        </span>
-                        <span className="mt-1 block">
-                          {browserPushDiagnostics?.cachedStateUpdatedAt ||
-                            "لا يوجد"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 space-y-2">
-                      {browserDiagnosticsIssues.map((issue) => (
-                        <div
-                          key={issue}
-                          className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200"
-                        >
-                          {issue}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div>
-                          <h5 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                            اختبار Web Push الكامل
-                          </h5>
-                          <p className="mt-1 text-xs text-blue-800/80 dark:text-blue-100/80">
-                            يرسل إشعارًا حقيقيًا من السيرفر إلى الـService Worker
-                            ويجبر إشعار النظام على الظهور لهذا الاختبار فقط، حتى
-                            لو الصفحة نفسها مفتوحة.
-                          </p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          {BACKGROUND_PUSH_TESTS.map((test) => {
-                            const isRunning =
-                              backgroundPushTestingType === test.typeId;
-
-                            return (
-                              <button
-                                key={test.typeId}
-                                type="button"
-                                onClick={() => {
-                                  void handleBackgroundPushTest(test.typeId);
-                                }}
-                                disabled={
-                                  Boolean(backgroundPushTestUnavailableReason) ||
-                                  Boolean(backgroundPushTestingType)
-                                }
-                                className="inline-flex items-center rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-100 dark:hover:bg-blue-900/40"
-                              >
-                                {isRunning ? (
-                                  <ArrowPathIcon className="ml-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                  <PlayIcon className="ml-2 h-4 w-4" />
-                                )}
-                                {test.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <p className="mt-3 text-xs text-blue-900/80 dark:text-blue-100/80">
-                        {backgroundPushTestUnavailableReason ||
-                          "هذا الزر يختبر المسار الحقيقي end-to-end: backend -> web-push -> service worker -> system notification."}
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-3.5 dark:border-slate-700 dark:bg-slate-900/40">
+                    <div>
+                      <h4 className="text-xs font-semibold text-slate-900 dark:text-white">
+                        تجربة إشعار المتصفح
+                      </h4>
+                      <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        اختبار فوري لظهور إشعار سطح المكتب والنظام على هذا الجهاز.
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const shown = showBrowserNotification({
+                          title: "تجربة إشعار المتصفح - منصة ماكس بي",
+                          body: "هذا إشعار تجريبي للتأكد من وصول التنبيهات المباشرة إلى جهازك بنجاح.",
+                          tag: "browser-test-instant",
+                          requireInteraction: settings.channels.browser.requireInteraction,
+                        });
+                        if (shown) {
+                          setFeedback({
+                            type: "success",
+                            message: "تم إظهار الإشعار التجريبي بنجاح.",
+                          });
+                        } else {
+                          setFeedback({
+                            type: "info",
+                            message:
+                              browserPermission === "denied"
+                                ? "الإشعارات محظورة في متصفحك. اسمح بها من شريط العنوان."
+                                : "اضغط على زر 'طلب إذن المتصفح' أولاً للسماح بالإشعارات.",
+                          });
+                        }
+                      }}
+                      className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                    >
+                      <PlayIcon className="ml-1.5 h-3.5 w-3.5 text-primary" />
+                      إرسال إشعار تجريبي الآن
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1770,8 +1275,8 @@ const NotificationSettings: React.FC = () => {
                             {!settings.channels.browser.enabled
                               ? "فعّل إشعار المتصفح من الإعدادات العامة أولًا"
                               : browserPermission !== "granted"
-                                ? "اسمح بإذن المتصفح أولًا ليعمل Web Push هنا"
-                                : "يمكنك تشغيل Web Push لهذا النوع تحديدًا"}
+                                ? "اسمح بإذن المتصفح أولًا ليعمل إشعار المتصفح هنا"
+                                : "يمكنك تشغيل إشعار المتصفح لهذا النوع تحديدًا"}
                           </span>
                         ) : null}
                       </div>
