@@ -1,4 +1,4 @@
-﻿name: Build & Release MaxP Desktop Workspace
+name: Build & Release MaxP Desktop Workspace
 
 on:
   push:
