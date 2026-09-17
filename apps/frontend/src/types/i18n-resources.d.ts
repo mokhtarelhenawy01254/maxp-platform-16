@@ -17472,6 +17472,7 @@ declare module 'react-i18next' {
         cancellationSettings: string;
         storefrontStudio: string;
         storefrontSection: string;
+        storefrontDesign: string;
         storeShipping: string;
         storeThemeDesign: string;
         storefrontStudioRail: string;

@@ -13,6 +13,14 @@ import { OrdersEmptyState } from "./OrdersEmptyState";
 import { OrdersPagination } from "./OrdersPagination";
 import type { Order } from "../Orders";
 
+const toStandardDigits = (str?: string | null): string => {
+  if (!str) return "";
+  return String(str)
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .trim();
+};
+
 // شبكة أمان إضافية ضد التكرار في الواجهة: لو الباك أرسل نفس الطلب مرتين
 // (بنفس رقم الطلب) في نفس الصفحة، نعرض النسخة الأولى بس.
 const dedupOrders = (list: Order[]): Order[] => {
@@ -116,21 +124,25 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
     getConfidenceIcon,
   } = helpers;
 
+  const isCompact = density === "compact";
+  const cellPadding = isCompact ? "px-3 py-1.5" : "px-3.5 py-2";
+  const headerPadding = isCompact ? "px-3 py-2" : "px-3.5 py-2.5";
+
   return (
     <div
       data-orders-density={density}
-      className="hidden overflow-hidden rounded-[24px] border border-slate-200/70 bg-white/90 shadow-[0_24px_80px_-56px_rgba(15,23,42,0.5)] dark:border-slate-700/70 dark:bg-slate-900/70 lg:block"
+      className="hidden overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 lg:block"
     >
       <div className="overflow-x-auto">
-        <table className="w-full text-right">
-          <thead className="sticky top-0 z-10 bg-slate-50/90 backdrop-blur-md border-b border-slate-200/80 dark:bg-slate-900/90 dark:border-slate-700/80">
+        <table className="w-full text-right border-collapse">
+          <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-md border-b border-slate-200/80 dark:bg-slate-900/95 dark:border-slate-800">
             <tr>
               {canSelectOrders && (
-                <th className="w-10 px-3 py-2.5 lg:px-4">
+                <th className={`w-10 ${headerPadding}`}>
                   <input
                     type="checkbox"
                     aria-label={String(t("orders.selectAllOrders"))}
-                    className="w-5 h-5 text-blue-600 dark:text-blue-400 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 dark:bg-slate-700"
+                    className="h-4 w-4 text-blue-600 dark:text-blue-400 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 dark:bg-slate-700"
                     onChange={onToggleAllSelection}
                     checked={
                       orders.length > 0 &&
@@ -142,43 +154,43 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                 </th>
               )}
               {columns.includes("orderNumber") && (
-                <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
+                <th className={`${headerPadding} text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.orderNumber")}
                 </th>
               )}
               {columns.includes("customer") && (
-                <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
+                <th className={`${headerPadding} text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.customer")}
                 </th>
               )}
               {columns.includes("amount") && (
-                <th className="whitespace-nowrap px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
+                <th className={`${headerPadding} whitespace-nowrap text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.amount")}
                 </th>
               )}
               {columns.includes("status") && (
-                <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
+                <th className={`${headerPadding} text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.status")}
                 </th>
               )}
               {columns.includes("payment") && (
-                <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
+                <th className={`${headerPadding} text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.payment")}
                 </th>
               )}
               {columns.includes("date") && (
-                <th className="hidden px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4 xl:table-cell">
+                <th className={`hidden ${headerPadding} text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400 xl:table-cell`}>
                   {t("orders.date")}
                 </th>
               )}
               {columns.includes("actions") && (
-                <th className="px-3 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 lg:px-4">
+                <th className={`${headerPadding} text-xs font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400`}>
                   {t("orders.actions")}
                 </th>
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
             {loading ? (
               <OrdersSkeleton
                 variant="table"
@@ -224,22 +236,22 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                     }}
                     tabIndex={0}
                     aria-label={`${t("orders.viewDetails")} ${displayOrderNumber}`}
-                    className={`hover:bg-blue-50/50 dark:hover:bg-blue-900/15 cursor-pointer transition-all duration-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 ${selectedOrders.includes(order.orderNumber)
+                    className={`hover:bg-blue-50/40 dark:hover:bg-blue-900/15 cursor-pointer transition-colors duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 ${selectedOrders.includes(order.orderNumber)
                       ? "bg-blue-50/60 dark:bg-blue-900/30"
                       : !order.isViewed
-                        ? "bg-blue-50 dark:bg-blue-900/20"
+                        ? "bg-blue-50/30 dark:bg-blue-900/10"
                         : ""
                       }`}
                   >
                     {canSelectOrders && (
                       <td
-                        className="px-3 py-2.5 lg:px-4"
+                        className={`${cellPadding} w-10`}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <input
                           type="checkbox"
                           aria-label={String(t("orders.selectOrder", { orderNumber: displayOrderNumber }))}
-                          className="w-5 h-5 text-blue-600 dark:text-blue-400 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 dark:bg-slate-700"
+                          className="h-4 w-4 text-blue-600 dark:text-blue-400 border-slate-300 dark:border-slate-600 rounded focus:ring-blue-500 dark:bg-slate-700"
                           checked={selectedOrders.includes(order.orderNumber)}
                           onClick={(e) => e.stopPropagation()}
                           onChange={(e) => {
@@ -250,66 +262,53 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                       </td>
                     )}
                     {columns.includes("orderNumber") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <span dir="ltr" className="inline-block font-mono text-xs font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                      <td className={cellPadding}>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1.5 whitespace-nowrap">
+                            <span
+                              dir="ltr"
+                              className="inline-block whitespace-nowrap font-mono text-xs font-bold tabular-nums text-slate-900 dark:text-slate-100"
+                            >
                               #{displayOrderNumber}
                             </span>
                             {order.metadata?.isGuestOrder && (
-                              <span className="px-2 py-0.5 text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full">
+                              <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                                 {t("orders.guest")}
                               </span>
                             )}
                             {!order.isViewed && (
-                              <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 border border-red-200">
+                              <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-700 border border-red-200/80 dark:bg-red-950/60 dark:text-red-300 dark:border-red-900/50">
                                 {t("orders.newLabel")}
                               </span>
                             )}
                           </div>
-                          {orderItemsSummary.hasQuantityOffers ? (
-                            <div className="max-w-[240px] rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-100">
-                              <div className="font-semibold">
-                                {t("orders.quantityOffersLabel")}: {orderItemsSummary.primaryLabel}
-                              </div>
-                              <div className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
-                                {orderItemsSummary.secondaryLabel}
-                              </div>
+                          {orderItemsSummary.hasQuantityOffers && (
+                            <div className="inline-flex items-center gap-1 max-w-[220px] truncate rounded border border-amber-200/80 bg-amber-50/80 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200">
+                              <span>{orderItemsSummary.primaryLabel}</span>
                             </div>
-                          ) : null}
+                          )}
                         </div>
                       </td>
                     )}
                     {columns.includes("customer") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="flex flex-col">
-                          <span className="text-slate-900 dark:text-slate-100 font-medium">
+                      <td className={cellPadding}>
+                        <div className="flex flex-col leading-tight">
+                          <span className="truncate max-w-[170px] text-xs font-semibold text-slate-900 dark:text-slate-100">
                             {getCustomerDisplayName(order)}
                           </span>
                           {order.customerPhone && (
                             <span
-                              className="text-slate-500 dark:text-slate-400 text-xs font-mono tabular-nums self-start"
+                              className="text-[11px] text-slate-400 dark:text-slate-500 font-mono tabular-nums self-start"
                               dir="ltr"
                             >
                               {toStandardDigits(order.customerPhone)}
                             </span>
                           )}
-                          <span className="mt-0.5 hidden text-xs text-slate-400 dark:text-slate-500 2xl:inline">
-                            {helpers.getOrderSourceText
-                              ? helpers.getOrderSourceText(order)
-                              : order.extractionMethod === "ai_enhanced"
-                                ? t("orders.enhancedExtraction")
-                                : order.extractionMethod === "ai_basic"
-                                  ? t("orders.basicExtraction")
-                                  : order.extractionMethod === "manual"
-                                    ? t("orders.manual")
-                                    : order.extractionMethod}
-                          </span>
                         </div>
                       </td>
                     )}
                     {columns.includes("amount") && (
-                      <td className="whitespace-nowrap px-3 py-2.5 font-medium tabular-nums text-slate-900 dark:text-slate-100 lg:px-4">
+                      <td className={`${cellPadding} whitespace-nowrap text-xs sm:text-sm font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100`}>
                         {(() => {
                           try {
                             const subtotal =
@@ -333,13 +332,13 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                       </td>
                     )}
                     {columns.includes("status") && (
-                      <td className="px-3 py-2.5 lg:px-4">
-                        <div className="flex flex-col gap-1">
+                      <td className={cellPadding}>
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
                           {(() => {
                             const unifiedStatus = getUnifiedStatusDisplay(order, t);
                             return (
                               <span
-                                className={unifiedStatus.className}
+                                className={`${unifiedStatus.className} text-[11px] py-0.5 px-2`}
                                 style={unifiedStatus.style}
                                 aria-label={unifiedStatus.labelKey}
                               >
@@ -350,7 +349,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                           {order.isScheduled &&
                             order.scheduledDeliveryDate && (
                               <span
-                                className="text-xs text-slate-600 dark:text-slate-400"
+                                className="text-[10px] text-slate-500 dark:text-slate-400 font-mono"
                                 dir="ltr"
                               >
                                 📅{" "}
@@ -364,10 +363,10 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                             )}
                           {order.confidence && (
                             <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${getConfidenceColor(order.confidence)}`}
+                              className={`inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] ${getConfidenceColor(order.confidence)}`}
                             >
                               {getConfidenceIcon(order.confidence)}
-                              <span className="mr-1">
+                              <span className="mr-0.5">
                                 {(order.confidence * 100).toFixed(0)}%
                               </span>
                             </span>
@@ -376,9 +375,9 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                       </td>
                     )}
                     {columns.includes("payment") && (
-                      <td className="px-3 py-2.5 lg:px-4">
+                      <td className={cellPadding}>
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusBadgeStyle(
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap ${getPaymentStatusBadgeStyle(
                             order.paymentStatus || "pending",
                           )
                             ? ""
@@ -395,7 +394,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                     )}
                     {columns.includes("date") && (
                       <td
-                        className="hidden px-3 py-2.5 text-sm text-slate-500 dark:text-slate-400 lg:px-4 xl:table-cell"
+                        className={`hidden ${cellPadding} whitespace-nowrap text-xs text-slate-400 dark:text-slate-500 xl:table-cell`}
                         title={formatDate(
                           order.createdAt || new Date().toISOString(),
                         )}
@@ -412,7 +411,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                       </td>
                     )}
                     {columns.includes("actions") && (
-                      <td className="px-3 py-2.5 lg:px-4">
+                      <td className={cellPadding}>
                         <div className="flex items-center gap-1">
                           <button
                             onClick={(e) => {
@@ -420,10 +419,10 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                               onOpenOrder(order);
                             }}
                             aria-label={`${t("orders.quickView")} ${displayOrderNumber}`}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-blue-400 active:scale-95 transition"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:border hover:border-slate-200 hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-blue-400 active:scale-95 transition"
                             title={t("orders.quickView")}
                           >
-                            <EyeIcon className="w-4 h-4" />
+                            <EyeIcon className="w-3.5 h-3.5" />
                           </button>
                           <Link
                             to={order.metadata?.isIncompleteCart
@@ -436,20 +435,20 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                               }
                             }}
                             aria-label={`${t("orders.viewFullDetails")} ${displayOrderNumber}`}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-blue-400 active:scale-95 transition"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:border hover:border-slate-200 hover:bg-slate-100 hover:text-blue-600 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-blue-400 active:scale-95 transition"
                             title={t("orders.viewFullDetails")}
                           >
-                            <ShoppingBagIcon className="w-4 h-4" />
+                            <ShoppingBagIcon className="w-3.5 h-3.5" />
                           </Link>
                           {order.conversationId && (
                             <Link
                               to={`/whatsapp?conversationId=${order.conversationId}`}
                               onClick={(e) => e.stopPropagation()}
                               aria-label={`${t("orders.conversation")} ${order.orderNumber}`}
-                              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 dark:text-slate-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+                              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                               title={t("orders.conversation")}
                             >
-                              <ChatBubbleLeftRightIcon className="w-4 h-4 lg:w-5 lg:h-5" />
+                              <ChatBubbleLeftRightIcon className="w-3.5 h-3.5" />
                             </Link>
                           )}
                         </div>
