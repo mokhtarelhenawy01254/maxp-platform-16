@@ -136,11 +136,11 @@ app.whenReady().then(async () => {
   // Initialize background silent auto-updates
   initAutoUpdater();
 
-  // Start periodic task notifications poller
+  // Start periodic task notifications poller (runs every 15s for instant alerts)
   setTimeout(() => {
     pollTaskNotifications();
-    setInterval(pollTaskNotifications, 45_000);
-  }, 15_000);
+    setInterval(pollTaskNotifications, 15_000);
+  }, 2_500);
 
   // Check if user is already logged in
   const savedToken = loadAuthToken();
@@ -639,6 +639,10 @@ function registerIpcHandlers(): void {
   ipcMain.handle('tasks:create', async (_, taskData) => {
     try {
       const task = await apiClient.createTask(taskData);
+      mainWindow?.webContents.send('tasks:refresh', { action: 'create', taskId: task?.id });
+      setTimeout(() => {
+        pollTaskNotifications().catch(() => {});
+      }, 500);
       return { success: true, task };
     } catch (err: any) {
       return { success: false, error: err.message };
@@ -648,6 +652,10 @@ function registerIpcHandlers(): void {
   ipcMain.handle('tasks:update-status', async (_, { taskId, status }) => {
     try {
       const task = await apiClient.updateTaskStatus(taskId, status);
+      mainWindow?.webContents.send('tasks:refresh', { action: 'update-status', taskId, status });
+      setTimeout(() => {
+        pollTaskNotifications().catch(() => {});
+      }, 500);
       return { success: true, task };
     } catch (err: any) {
       return { success: false, error: err.message };
@@ -841,9 +849,11 @@ const warnedOverdueTaskIds = new Set<string>();
 let taskPollerInitialized = false;
 
 async function pollTaskNotifications(): Promise<void> {
-  if (!apiClient.isConfigured || !isTracking) return;
+  if (!apiClient.isConfigured) return;
 
   try {
+    let hasChanges = false;
+
     // 1. Check tasks assigned to me
     const myTasks = await apiClient.getTasks('my-tasks');
     if (Array.isArray(myTasks)) {
@@ -854,16 +864,21 @@ async function pollTaskNotifications(): Promise<void> {
         const isCompleted = String(t.status || '').toUpperCase() === 'COMPLETED';
 
         // Check if newly assigned to me
-        if (taskPollerInitialized && !knownAssignedTaskIds.has(t.id) && !isCompleted) {
-          const assigner = t.creator?.firstName
-            ? `${t.creator.firstName} ${t.creator.lastName || ''}`.trim()
-            : 'أحد الزملاء';
-          showNotification(
-            '📌 مهمة جديدة موكلة إليك',
-            `كلفك ${assigner} بمهمة: "${t.title}"`
-          );
+        if (!knownAssignedTaskIds.has(t.id)) {
+          if (taskPollerInitialized && !isCompleted) {
+            const assigner =
+              t.createdByName ||
+              (t.creator?.firstName
+                ? `${t.creator.firstName} ${t.creator.lastName || ''}`.trim()
+                : 'أحد الزملاء');
+            showNotification(
+              '📌 مهمة جديدة موكلة إليك',
+              `كلفك ${assigner} بمهمة: "${t.title}"`
+            );
+            hasChanges = true;
+          }
+          knownAssignedTaskIds.add(t.id);
         }
-        knownAssignedTaskIds.add(t.id);
 
         // Check Due Soon & Overdue
         if (!isCompleted && t.dueDate) {
@@ -905,17 +920,25 @@ async function pollTaskNotifications(): Promise<void> {
           prevStatus !== 'COMPLETED' &&
           currentStatus === 'COMPLETED'
         ) {
-          const assigneeName = t.assignee?.firstName
-            ? `${t.assignee.firstName} ${t.assignee.lastName || ''}`.trim()
-            : 'الزميل المكلف';
+          const assigneeName =
+            t.assignedToName ||
+            (t.assignee?.firstName
+              ? `${t.assignee.firstName} ${t.assignee.lastName || ''}`.trim()
+              : 'الزميل المكلف');
           showNotification(
             '🎉 تم إنجاز مهمة كلفت بها',
             `أنجز ${assigneeName} المهمة: "${t.title}" بنجاح.`
           );
+          hasChanges = true;
         }
 
         knownMyTasksStatuses.set(t.id, currentStatus);
       }
+    }
+
+    // Broadcast refresh to renderer if new tasks or status updates arrived
+    if (taskPollerInitialized && hasChanges) {
+      mainWindow?.webContents.send('tasks:refresh', { source: 'poll-changes' });
     }
 
     taskPollerInitialized = true;

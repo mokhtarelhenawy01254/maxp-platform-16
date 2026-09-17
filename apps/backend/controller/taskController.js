@@ -505,14 +505,32 @@ const buildTaskSummaryInclude = () => ({
   },
   assignee: {
     select: {
+      id: true,
       firstName: true,
       lastName: true,
+      email: true,
     },
   },
   creator: {
     select: {
+      id: true,
       firstName: true,
       lastName: true,
+      email: true,
+    },
+  },
+  taskAttachments: {
+    select: {
+      id: true,
+      fileName: true,
+      originalName: true,
+      fileSize: true,
+      fileType: true,
+      filePath: true,
+      createdAt: true,
+    },
+    orderBy: {
+      createdAt: "asc",
     },
   },
 });
@@ -532,13 +550,16 @@ const formatTaskSummary = (task) => ({
   priority: task.priority,
   type: task.type,
   assignedTo: task.assignedTo,
+  assignee: task.assignee || null,
   assignedToName: task.assignee
-    ? `${task.assignee.firstName} ${task.assignee.lastName}`
+    ? `${task.assignee.firstName || ''} ${task.assignee.lastName || ''}`.trim() || task.assignee.email
     : "غير محدد",
   createdBy: task.createdBy,
+  creator: task.creator || null,
   createdByName: task.creator
-    ? `${task.creator.firstName} ${task.creator.lastName}`
+    ? `${task.creator.firstName || ''} ${task.creator.lastName || ''}`.trim() || task.creator.email
     : "غير محدد",
+  taskAttachments: task.taskAttachments || [],
   dueDate: task.dueDate,
   startDate: task.startDate || null,
   estimatedHours: task.estimatedHours,

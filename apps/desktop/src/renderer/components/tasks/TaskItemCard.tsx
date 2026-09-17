@@ -4,6 +4,7 @@ import {
   Square,
   Clock,
   User,
+  UserCheck,
   Repeat,
   Paperclip,
   ExternalLink,
@@ -11,15 +12,20 @@ import {
   ChevronUp,
   Play,
   Pause,
+  RotateCcw,
   AlertTriangle,
+  ImageIcon,
+  Check,
 } from 'lucide-react';
 
 interface TaskItemCardProps {
   task: any;
   onToggleStatus: (taskId: string, currentStatus: string) => void;
+  onUpdateStatus?: (taskId: string, newStatus: string) => void;
   onOpenImage: (imgUrl: string) => void;
   serverUrl?: string;
   activeTaskId?: string | null;
+  activeRunnerSeconds?: number;
   onStartTask?: (task: any) => void;
   onStopTask?: () => void;
   viewType?: 'my-tasks' | 'assigned-by-me';
@@ -28,18 +34,25 @@ interface TaskItemCardProps {
 export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   task,
   onToggleStatus,
+  onUpdateStatus,
   onOpenImage,
   serverUrl = 'https://maxp.online',
   activeTaskId = null,
+  activeRunnerSeconds = 0,
   onStartTask,
   onStopTask,
   viewType = 'my-tasks',
 }) => {
   const [expanded, setExpanded] = useState(false);
 
-  const isCompleted = String(task.status || '').toUpperCase() === 'COMPLETED';
+  const rawStatus = String(task.status || '').toUpperCase();
+  const isCompleted = rawStatus === 'COMPLETED';
+  const isInProgress = rawStatus === 'IN_PROGRESS';
+  const isOnHold = rawStatus === 'ON_HOLD';
+  const isPending = !isCompleted && !isInProgress && !isOnHold;
   const isRunning = activeTaskId === task.id;
-  const attachments = task.taskAttachments || [];
+
+  const attachments = task.taskAttachments || task.attachments || [];
 
   const priorityColor = (p: string) => {
     const norm = String(p || '').toUpperCase();
@@ -64,7 +77,14 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
     return 'متكرر';
   };
 
+  const creatorName =
+    task.createdByName ||
+    `${task.creator?.firstName || ''} ${task.creator?.lastName || ''}`.trim() ||
+    task.creator?.email ||
+    'غير محدد';
+
   const assigneeName =
+    task.assignedToName ||
     task.assignee?.name ||
     `${task.assignee?.firstName || ''} ${task.assignee?.lastName || ''}`.trim() ||
     task.assignee?.email ||
@@ -93,17 +113,46 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
     return `متبقي ${Math.max(1, mins)} د`;
   };
 
+  const formatRunnerTimer = (sec: number): string => {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  };
+
   const handleOpenInWeb = (e: React.MouseEvent) => {
     e.stopPropagation();
     const targetUrl = `${serverUrl.replace(/\/$/, '')}/tasks?taskId=${task.id}`;
     window.open(targetUrl, '_blank');
   };
 
+  const resolveAttachmentUrl = (rawPath: string) => {
+    if (!rawPath) return '';
+    if (
+      rawPath.startsWith('data:') ||
+      rawPath.startsWith('blob:') ||
+      rawPath.startsWith('http://') ||
+      rawPath.startsWith('https://')
+    ) {
+      return rawPath;
+    }
+    const cleanBase = (serverUrl || 'https://maxp.online').replace(/\/$/, '');
+    const cleanPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+    return `${cleanBase}${cleanPath}`;
+  };
+
+  const isImgAttachment = (att: any) => {
+    if (att.fileType?.startsWith('image/')) return true;
+    const name = att.originalName || att.fileName || att.filePath || '';
+    return /\.(png|jpe?g|webp|gif|svg)$/i.test(name);
+  };
+
   return (
     <div
       style={{
         ...cardStyles.card,
-        opacity: isCompleted ? 0.65 : 1,
+        opacity: isCompleted ? 0.72 : 1,
         borderColor: isRunning
           ? 'rgba(56, 189, 248, 0.45)'
           : isCompleted
@@ -119,76 +168,138 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           type="button"
           onClick={() => onToggleStatus(task.id, task.status)}
           style={cardStyles.checkBtn}
-          title={isCompleted ? 'إعادة إلى قيد التنفيذ' : 'تعليم كمكتمل'}
+          title={isCompleted ? 'إعادة إلى قيد التنفيذ' : 'تعليم كمكتملة'}
         >
           {isCompleted ? (
-            <CheckCircle2 size={18} color="#22c55e" />
+            <CheckCircle2 size={19} color="#22c55e" />
           ) : (
-            <Square size={18} color="#71717a" />
+            <Square size={19} color="#71717a" />
           )}
         </button>
 
         {/* Info Column */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={cardStyles.titleRow}>
-            <span
-              style={{
-                ...cardStyles.taskTitle,
-                textDecoration: isCompleted ? 'line-through' : 'none',
-                color: isCompleted ? '#a1a1aa' : '#fafafa',
-              }}
-            >
-              {task.title}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
+              <span
+                style={{
+                  ...cardStyles.taskTitle,
+                  textDecoration: isCompleted ? 'line-through' : 'none',
+                  color: isCompleted ? '#a1a1aa' : '#fafafa',
+                }}
+              >
+                {task.title}
+              </span>
 
-            {/* Actions */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {/* Task Runner Action Button */}
-              {!isCompleted && (
-                isRunning ? (
+              {/* Live Stopwatch Badge on Card (if this task is running) */}
+              {isRunning && (
+                <span style={cardStyles.runningTimerChip}>
+                  <span style={cardStyles.pulsingDot} />
+                  <Clock size={11} color="#22c55e" />
+                  <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
+                    {formatRunnerTimer(activeRunnerSeconds)}
+                  </span>
+                </span>
+              )}
+            </div>
+
+            {/* Smart Action Buttons (One-Click Status Transitions) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              {/* If Task is COMPLETED: Reopen button */}
+              {isCompleted ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onUpdateStatus) {
+                      onUpdateStatus(task.id, 'IN_PROGRESS');
+                    } else {
+                      onToggleStatus(task.id, task.status);
+                    }
+                  }}
+                  style={cardStyles.reopenBtn}
+                  title="إعادة فتح المهمة والعمل عليها"
+                  onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                  onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                >
+                  <RotateCcw size={11} />
+                  <span>إعادة فتح</span>
+                </button>
+              ) : (
+                <>
+                  {/* Start / Pause Task Runner */}
+                  {isRunning ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onStopTask?.();
+                      }}
+                      style={cardStyles.activeRunnerBtn}
+                      title="المشغل يعمل الآن — انقر للإيقاف المؤقت"
+                      onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                      onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                    >
+                      <Pause size={11} color="#22c55e" />
+                      <span>إيقاف مؤقت</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onStartTask?.(task);
+                      }}
+                      style={cardStyles.startRunnerBtn}
+                      title="بدء تشغيل المهمة واحتساب وقت الإنجاز"
+                      onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                      onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                    >
+                      <Play size={10} fill="#38bdf8" color="#38bdf8" />
+                      <span>بدء العمل</span>
+                    </button>
+                  )}
+
+                  {/* Fast Complete Button */}
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); onStopTask?.(); }}
-                    style={cardStyles.activeRunnerBtn}
-                    title="المشغل يعمل الآن — انقر للإيقاف المؤقت"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onUpdateStatus) {
+                        onUpdateStatus(task.id, 'COMPLETED');
+                      } else {
+                        onToggleStatus(task.id, task.status);
+                      }
+                    }}
+                    style={cardStyles.quickDoneBtn}
+                    title="تعليم المهمة كمكتملة وتوثيق إنجازها"
                     onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                     onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                   >
-                    <span style={cardStyles.pulsingDot} />
-                    <Pause size={11} color="#ffffff" />
-                    <span>المشغل نشط</span>
+                    <Check size={11} color="#22c55e" />
+                    <span>إنجاز</span>
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onStartTask?.(task); }}
-                    style={cardStyles.startRunnerBtn}
-                    title="بدء تشغيل المهمة واحتساب وقت الإنجاز"
-                    onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-                    onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-                  >
-                    <Play size={10} fill="#38bdf8" color="#38bdf8" />
-                    <span>بدء العمل</span>
-                  </button>
-                )
+                </>
               )}
 
+              {/* Expand description toggle */}
               {task.description && task.description !== task.title && (
                 <button
                   type="button"
                   onClick={() => setExpanded(!expanded)}
                   style={cardStyles.iconBtn}
-                  title="عرض التفاصيل"
+                  title="عرض التفاصيل والملاحظات"
                 >
                   {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </button>
               )}
 
+              {/* Web link */}
               <button
                 type="button"
                 onClick={handleOpenInWeb}
                 style={cardStyles.iconBtn}
-                title="فتح في لوحة التحكم الكاملة"
+                title="فتح في لوحة التحكم الكاملة على الويب"
               >
                 <ExternalLink size={13} />
               </button>
@@ -202,6 +313,42 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
           {/* Meta Chips Row */}
           <div style={cardStyles.metaRow}>
+            {/* Status Chip */}
+            <span
+              style={{
+                ...cardStyles.statusPill,
+                color: isCompleted
+                  ? '#22c55e'
+                  : isInProgress
+                  ? '#38bdf8'
+                  : isOnHold
+                  ? '#f59e0b'
+                  : '#a1a1aa',
+                backgroundColor: isCompleted
+                  ? 'rgba(34, 197, 94, 0.1)'
+                  : isInProgress
+                  ? 'rgba(56, 189, 248, 0.1)'
+                  : isOnHold
+                  ? 'rgba(245, 158, 11, 0.1)'
+                  : 'rgba(255,255,255,0.05)',
+                borderColor: isCompleted
+                  ? 'rgba(34, 197, 94, 0.25)'
+                  : isInProgress
+                  ? 'rgba(56, 189, 248, 0.25)'
+                  : isOnHold
+                  ? 'rgba(245, 158, 11, 0.25)'
+                  : 'rgba(255,255,255,0.08)',
+              }}
+            >
+              {isCompleted
+                ? '✓ مكتملة'
+                : isInProgress
+                ? '⚡ قيد التنفيذ'
+                : isOnHold
+                ? '⏸ معلقة'
+                : '⏳ قيد الانتظار'}
+            </span>
+
             {/* Priority */}
             <span
               style={{
@@ -214,11 +361,21 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               {priorityLabel(task.priority)}
             </span>
 
-            {/* Assignee */}
-            <span style={cardStyles.assigneePill}>
-              <User size={11} color="#94a3b8" />
-              <span>{assigneeName}</span>
-            </span>
+            {/* Creator Chip (Always visible in my-tasks so employee knows who created it) */}
+            {viewType === 'my-tasks' && creatorName && creatorName !== 'غير محدد' && (
+              <span style={cardStyles.creatorPill} title={`أنشأها: ${creatorName}`}>
+                <UserCheck size={11} color="#38bdf8" />
+                <span>أنشأها: {creatorName}</span>
+              </span>
+            )}
+
+            {/* Assignee Chip */}
+            {viewType === 'assigned-by-me' && (
+              <span style={cardStyles.assigneePill} title={`المكلف بالتنفيذ: ${assigneeName}`}>
+                <User size={11} color="#94a3b8" />
+                <span>المكلف: {assigneeName}</span>
+              </span>
+            )}
 
             {/* Recurring */}
             {task.isRecurring && (
@@ -266,15 +423,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               </span>
             )}
 
-            {/* Delegated Task Completed Badge */}
-            {isCompleted && viewType === 'assigned-by-me' && (
-              <span style={cardStyles.delegatedDonePill}>
-                <CheckCircle2 size={11} color="#22c55e" />
-                <span>أنجزها: {assigneeName}</span>
-              </span>
-            )}
-
-            {/* Attachments Count */}
+            {/* Attachments Count Badge */}
             {attachments.length > 0 && (
               <span style={cardStyles.attCountPill}>
                 <Paperclip size={11} />
@@ -285,33 +434,54 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         </div>
       </div>
 
-      {/* Attachments Thumbnails (if any) */}
+      {/* Attachments Gallery (Clean Visual Thumbnails for Screenshots/Photos) */}
       {attachments.length > 0 && (
         <div style={cardStyles.attachRow}>
-          {attachments.map((att: any) => {
+          {attachments.map((att: any, idx: number) => {
             const rawPath = att.filePath || '';
-            const fullUrl = rawPath.startsWith('http')
-              ? rawPath
-              : `${serverUrl.replace(/\/$/, '')}${rawPath}`;
-            const isImg =
-              att.fileType?.startsWith('image/') ||
-              /\.(png|jpe?g|webp|gif)$/i.test(att.fileName || '');
+            const fullUrl = resolveAttachmentUrl(rawPath);
+            const isImg = isImgAttachment(att);
+            const label = att.originalName || att.fileName || `مرفق ${idx + 1}`;
 
             return (
               <div
-                key={att.id || att.fileName}
+                key={att.id || att.fileName || idx}
                 onClick={() => onOpenImage(fullUrl)}
-                style={cardStyles.attThumbWrap}
-                title={`معاينة: ${att.originalName || att.fileName}`}
+                style={cardStyles.attCard}
+                title={`انقر للمعاينة الكاملة: ${label}`}
               >
                 {isImg ? (
-                  <img src={fullUrl} alt="" style={cardStyles.thumbImg} />
+                  <div style={cardStyles.imgWrap}>
+                    <img
+                      src={fullUrl}
+                      alt={label}
+                      style={cardStyles.thumbImg}
+                      onError={(e) => {
+                        // Fallback icon if image fails to load
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                        const parent = (e.currentTarget as HTMLElement).parentElement;
+                        if (parent) {
+                          parent.innerHTML = '<span style="color:#38bdf8;font-size:10px">صورة</span>';
+                        }
+                      }}
+                    />
+                    <div style={cardStyles.imgOverlay}>
+                      <ImageIcon size={12} color="#ffffff" />
+                    </div>
+                  </div>
                 ) : (
                   <div style={cardStyles.docThumb}>
-                    <Paperclip size={14} color="#38bdf8" />
+                    <Paperclip size={16} color="#38bdf8" />
                   </div>
                 )}
-                <span style={cardStyles.thumbName}>{att.originalName || att.fileName}</span>
+                <div style={cardStyles.attInfo}>
+                  <span style={cardStyles.thumbName}>{label}</span>
+                  {att.fileSize && (
+                    <span style={cardStyles.thumbSize}>
+                      {Math.round(att.fileSize / 1024)} KB
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -355,8 +525,27 @@ const cardStyles: Record<string, React.CSSProperties> = {
   },
   taskTitle: {
     fontSize: 13,
-    fontWeight: 500,
+    fontWeight: 600,
     lineHeight: 1.4,
+  },
+  runningTimerChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    border: '1px solid rgba(34, 197, 94, 0.3)',
+    color: '#22c55e',
+    fontSize: 11,
+    padding: '2px 7px',
+    borderRadius: 5,
+  },
+  pulsingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: '#22c55e',
+    boxShadow: '0 0 6px rgba(34, 197, 94, 0.9)',
+    display: 'inline-block',
   },
   iconBtn: {
     background: 'none',
@@ -367,6 +556,66 @@ const cardStyles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     display: 'flex',
     alignItems: 'center',
+  },
+  startRunnerBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'rgba(56, 189, 248, 0.1)',
+    border: '1px solid rgba(56, 189, 248, 0.3)',
+    borderRadius: 5,
+    padding: '3px 8px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#38bdf8',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  activeRunnerBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    background: 'rgba(34, 197, 94, 0.15)',
+    border: '1px solid rgba(34, 197, 94, 0.4)',
+    borderRadius: 5,
+    padding: '3px 8px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#22c55e',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  quickDoneBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'rgba(34, 197, 94, 0.08)',
+    border: '1px solid rgba(34, 197, 94, 0.25)',
+    borderRadius: 5,
+    padding: '3px 8px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#22c55e',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  reopenBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: 5,
+    padding: '3px 8px',
+    fontSize: 11,
+    fontWeight: 500,
+    color: '#d4d4d8',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
   },
   descBox: {
     marginTop: 6,
@@ -385,12 +634,31 @@ const cardStyles: Record<string, React.CSSProperties> = {
     gap: 6,
     marginTop: 6,
   },
+  statusPill: {
+    fontSize: 10,
+    fontWeight: 600,
+    padding: '2px 6px',
+    borderRadius: 4,
+    border: '1px solid',
+  },
   pill: {
     fontSize: 10,
     fontWeight: 600,
     padding: '2px 6px',
     borderRadius: 4,
     border: '1px solid transparent',
+  },
+  creatorPill: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 10,
+    fontWeight: 600,
+    color: '#38bdf8',
+    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+    border: '1px solid rgba(56, 189, 248, 0.25)',
+    padding: '2px 7px',
+    borderRadius: 4,
   },
   assigneePill: {
     display: 'flex',
@@ -437,84 +705,80 @@ const cardStyles: Record<string, React.CSSProperties> = {
   },
   attachRow: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 8,
-    marginTop: 4,
+    marginTop: 6,
     paddingTop: 8,
     borderTop: '1px solid rgba(255, 255, 255, 0.04)',
     overflowX: 'auto',
   },
-  attThumbWrap: {
+  attCard: {
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
-    padding: '3px 6px',
+    gap: 8,
+    padding: '4px 8px',
     backgroundColor: '#0a0a0d',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: 4,
+    borderRadius: 6,
     cursor: 'pointer',
-    maxWidth: 160,
+    maxWidth: 220,
+    flexShrink: 0,
+    transition: 'all 120ms ease-out',
+  },
+  imgWrap: {
+    position: 'relative',
+    width: 44,
+    height: 44,
+    borderRadius: 4,
+    overflow: 'hidden',
+    backgroundColor: '#18181b',
     flexShrink: 0,
   },
   thumbImg: {
-    width: 24,
-    height: 24,
-    borderRadius: 3,
+    width: '100%',
+    height: '100%',
     objectFit: 'cover',
   },
-  docThumb: {
-    width: 24,
-    height: 24,
+  imgOverlay: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    backgroundColor: 'rgba(0,0,0,0.6)',
     borderRadius: 3,
-    backgroundColor: '#18181b',
+    padding: 2,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  docThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 4,
+    backgroundColor: '#18181b',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  attInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+    gap: 2,
+  },
   thumbName: {
     fontSize: 10,
-    color: '#d4d4d8',
+    fontWeight: 500,
+    color: '#f4f4f5',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    maxWidth: 140,
   },
-  startRunnerBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    background: 'rgba(56, 189, 248, 0.08)',
-    border: '1px solid rgba(56, 189, 248, 0.25)',
-    borderRadius: 5,
-    padding: '3px 8px',
-    fontSize: 10,
-    fontWeight: 600,
-    color: '#38bdf8',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    transition: 'all 140ms ease-out',
-  },
-  activeRunnerBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 5,
-    background: 'rgba(34, 197, 94, 0.15)',
-    border: '1px solid rgba(34, 197, 94, 0.4)',
-    borderRadius: 5,
-    padding: '3px 8px',
-    fontSize: 10,
-    fontWeight: 600,
-    color: '#22c55e',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    transition: 'all 140ms ease-out',
-  },
-  pulsingDot: {
-    width: 6,
-    height: 6,
-    borderRadius: '50%',
-    backgroundColor: '#22c55e',
-    boxShadow: '0 0 6px rgba(34, 197, 94, 0.9)',
-    display: 'inline-block',
+  thumbSize: {
+    fontSize: 9,
+    color: '#71717a',
+    fontVariantNumeric: 'tabular-nums',
   },
   overduePill: {
     display: 'flex',
@@ -541,18 +805,6 @@ const cardStyles: Record<string, React.CSSProperties> = {
     padding: '2px 7px',
     borderRadius: 4,
     fontVariantNumeric: 'tabular-nums',
-  },
-  delegatedDonePill: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    fontSize: 10,
-    fontWeight: 600,
-    color: '#22c55e',
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
-    padding: '2px 7px',
-    borderRadius: 4,
   },
 };
 

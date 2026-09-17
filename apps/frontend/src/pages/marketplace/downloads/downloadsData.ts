@@ -69,7 +69,7 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     categoryLabel: "سطح المكتب",
     platform: "ويندوز (Windows 10 / 11 x64)",
     platformEn: "Windows 64-bit",
-    version: "v1.0.2",
+    version: "v1.0.3",
     releaseDate: "2026-09",
     icon: Monitor,
     summary: "تسجيل دقيق لساعات العمل والإنتاجية مع طابور تخزين محلي يعمل دون اتصال بالإنترنت وتحديثات تلقائية صامتة.",

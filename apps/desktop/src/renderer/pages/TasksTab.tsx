@@ -75,6 +75,12 @@ export const TasksTab: React.FC = () => {
     try {
       localStorage.setItem('maxp_active_task', JSON.stringify(newTask));
     } catch {}
+
+    // Auto-switch status to IN_PROGRESS if currently PENDING
+    const norm = String(task.status || '').toUpperCase();
+    if (norm !== 'IN_PROGRESS' && norm !== 'COMPLETED') {
+      handleUpdateStatus(task.id, 'IN_PROGRESS');
+    }
   };
 
   const handleStopTask = () => {
@@ -92,8 +98,8 @@ export const TasksTab: React.FC = () => {
     return `${pad(h)}:${pad(m)}:${pad(s)}`;
   };
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
       // Get auth state to retrieve serverUrl
       const authState = await window.electronAPI.getAuthState();
@@ -115,12 +121,27 @@ export const TasksTab: React.FC = () => {
     } catch (err) {
       console.warn('[TasksTab] Fetch error:', err);
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
   }, [activeView]);
 
   useEffect(() => {
-    loadData();
+    loadData(true);
+
+    // Auto-sync polling every 15s in background
+    const pollInterval = setInterval(() => {
+      loadData(false);
+    }, 15_000);
+
+    // IPC listener for real-time task changes from main process
+    const unsubscribe = window.electronAPI.onTasksRefresh?.(() => {
+      loadData(false);
+    });
+
+    return () => {
+      clearInterval(pollInterval);
+      unsubscribe?.();
+    };
   }, [loadData]);
 
   useEffect(() => {
@@ -131,31 +152,49 @@ export const TasksTab: React.FC = () => {
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
         e.preventDefault();
-        loadData();
+        loadData(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [loadData]);
 
-  const handleToggleStatus = async (taskId: string, currentStatus: string) => {
-    const isCompleted = String(currentStatus || '').toUpperCase() === 'COMPLETED';
-    const nextStatus = isCompleted ? 'PENDING' : 'COMPLETED';
+  const handleUpdateStatus = async (taskId: string, targetStatus: string) => {
+    const currentTask = tasks.find((t) => t.id === taskId);
+    const prevStatus = currentTask?.status || 'PENDING';
+
+    // If starting work on task, launch runner if not already active
+    if (targetStatus === 'IN_PROGRESS' && currentTask) {
+      if (activeTask?.id !== taskId) {
+        handleStartTask(currentTask);
+      }
+    }
+
+    // If completing the task, stop runner if active
+    if (targetStatus === 'COMPLETED' && activeTask?.id === taskId) {
+      handleStopTask();
+    }
 
     // Optimistic local update
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: nextStatus } : t))
+      prev.map((t) => (t.id === taskId ? { ...t, status: targetStatus } : t))
     );
 
     try {
-      await window.electronAPI.updateTaskStatus(taskId, nextStatus);
+      await window.electronAPI.updateTaskStatus(taskId, targetStatus);
     } catch (err) {
       console.warn('[TasksTab] Status update failed:', err);
       // Rollback on error
       setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, status: currentStatus } : t))
+        prev.map((t) => (t.id === taskId ? { ...t, status: prevStatus } : t))
       );
     }
+  };
+
+  const handleToggleStatus = async (taskId: string, currentStatus: string) => {
+    const isCompleted = String(currentStatus || '').toUpperCase() === 'COMPLETED';
+    const nextStatus = isCompleted ? 'PENDING' : 'COMPLETED';
+    handleUpdateStatus(taskId, nextStatus);
   };
 
   const filteredTasks = tasks.filter((t) => {
@@ -323,9 +362,11 @@ export const TasksTab: React.FC = () => {
               key={t.id}
               task={t}
               onToggleStatus={handleToggleStatus}
+              onUpdateStatus={handleUpdateStatus}
               onOpenImage={(img) => setPreviewImage(img)}
               serverUrl={serverUrl}
               activeTaskId={activeTask?.id}
+              activeRunnerSeconds={runnerSeconds}
               onStartTask={handleStartTask}
               onStopTask={handleStopTask}
               viewType={activeView}

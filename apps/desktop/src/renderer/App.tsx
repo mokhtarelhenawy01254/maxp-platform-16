@@ -44,6 +44,7 @@ declare global {
       onTrackerStateUpdate: (callback: (state: any) => void) => (() => void);
       onNotification: (callback: (data: any) => void) => (() => void);
       onTaskAssigned: (callback: (task: any) => void) => (() => void);
+      onTasksRefresh: (callback: (data?: any) => void) => (() => void);
     };
   }
 }

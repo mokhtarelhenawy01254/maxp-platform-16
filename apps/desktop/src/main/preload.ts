@@ -94,5 +94,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on(CHANNELS.TASK_ASSIGNED, listener);
     return () => ipcRenderer.removeListener(CHANNELS.TASK_ASSIGNED, listener);
   },
+  onTasksRefresh: (callback: (data?: any) => void) => {
+    const listener = (_: any, data: any) => callback(data);
+    ipcRenderer.on('tasks:refresh', listener);
+    return () => ipcRenderer.removeListener('tasks:refresh', listener);
+  },
 });
 
