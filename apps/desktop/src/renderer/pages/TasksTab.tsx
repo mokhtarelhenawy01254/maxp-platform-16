@@ -31,15 +31,64 @@ export const TasksTab: React.FC = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'my-tasks' | 'assigned-by-me'>('my-tasks');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'>('IN_PROGRESS');
   const [users, setUsers] = useState<any[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [lightboxBlobUrl, setLightboxBlobUrl] = useState<string | null>(null);
   const [lightboxImgError, setLightboxImgError] = useState(false);
   const [serverUrl, setServerUrl] = useState('https://maxp.online');
   const [authToken, setAuthToken] = useState<string>('');
   const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Authenticated or direct blob loader for lightbox images
+  useEffect(() => {
+    if (!previewImage) {
+      if (lightboxBlobUrl) {
+        URL.revokeObjectURL(lightboxBlobUrl);
+        setLightboxBlobUrl(null);
+      }
+      setLightboxImgError(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setLightboxImgError(false);
+
+    if (previewImage.startsWith('data:') || previewImage.startsWith('blob:')) {
+      setLightboxBlobUrl(previewImage);
+      return;
+    }
+
+    const fetchImgBlob = async () => {
+      try {
+        const headers: Record<string, string> = {};
+        if (authToken) {
+          headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        const res = await fetch(previewImage, { headers });
+        if (res.ok) {
+          const blob = await res.blob();
+          if (!isCancelled) {
+            const url = URL.createObjectURL(blob);
+            setLightboxBlobUrl(url);
+          }
+        }
+      } catch (err) {
+        console.warn('Blob fetch failed, falling back to direct previewImage:', err);
+      }
+    };
+
+    fetchImgBlob();
+
+    return () => {
+      isCancelled = true;
+      if (lightboxBlobUrl) {
+        URL.revokeObjectURL(lightboxBlobUrl);
+      }
+    };
+  }, [previewImage, authToken]);
 
   // Active Task Runner state persisted in localStorage
   const [activeTask, setActiveTask] = useState<ActiveTaskState | null>(() => {
@@ -318,10 +367,9 @@ export const TasksTab: React.FC = () => {
     const raw = String(t.status || '').toUpperCase();
     const isDone = raw === 'COMPLETED';
     const isReview = raw === 'IN_REVIEW' || raw === 'PENDING_REVIEW';
-    if (statusFilter === 'IN_PROGRESS') return !isDone && !isReview;
     if (statusFilter === 'IN_REVIEW') return isReview;
     if (statusFilter === 'COMPLETED') return isDone;
-    return true;
+    return !isDone && !isReview;
   });
 
   const completedCount = tasks.filter(
@@ -485,9 +533,9 @@ export const TasksTab: React.FC = () => {
           </button>
         </div>
 
-        {/* Status Filters */}
+        {/* Status Filters (Focused Workflow: No Cluttered ALL option) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {(['ALL', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const).map((s) => (
+          {(['IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
@@ -498,7 +546,6 @@ export const TasksTab: React.FC = () => {
                 color: statusFilter === s ? 'var(--text-primary)' : 'var(--text-dim)',
               }}
             >
-              {s === 'ALL' && `الكل (${tasks.length})`}
               {s === 'IN_PROGRESS' && `قيد التنفيذ (${inProgressCount})`}
               {s === 'IN_REVIEW' && `قيد الاعتماد (${inReviewCount})`}
               {s === 'COMPLETED' && `المكتملة (${completedCount})`}
@@ -564,6 +611,10 @@ export const TasksTab: React.FC = () => {
           style={styles.lightboxOverlay}
           onClick={() => {
             setPreviewImage(null);
+            if (lightboxBlobUrl) {
+              URL.revokeObjectURL(lightboxBlobUrl);
+              setLightboxBlobUrl(null);
+            }
             setLightboxImgError(false);
           }}
         >
@@ -575,17 +626,14 @@ export const TasksTab: React.FC = () => {
                   type="button"
                   onClick={async () => {
                     try {
-                      const res = await fetch(previewImage);
-                      const blob = await res.blob();
-                      const blobUrl = URL.createObjectURL(blob);
+                      const downloadSource = lightboxBlobUrl || previewImage;
                       const a = document.createElement('a');
-                      a.href = blobUrl;
+                      a.href = downloadSource;
                       const cleanName = previewImage.split('/').pop()?.split('?')[0] || 'attachment.png';
                       a.download = cleanName;
                       document.body.appendChild(a);
                       a.click();
                       document.body.removeChild(a);
-                      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
                     } catch {
                       if (window.electronAPI.openExternal) {
                         window.electronAPI.openExternal(previewImage);
@@ -618,6 +666,10 @@ export const TasksTab: React.FC = () => {
                 <button
                   onClick={() => {
                     setPreviewImage(null);
+                    if (lightboxBlobUrl) {
+                      URL.revokeObjectURL(lightboxBlobUrl);
+                      setLightboxBlobUrl(null);
+                    }
                     setLightboxImgError(false);
                   }}
                   style={styles.closeBtn}
@@ -629,7 +681,7 @@ export const TasksTab: React.FC = () => {
             <div style={{ padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)', minHeight: 200 }}>
               {!lightboxImgError ? (
                 <img
-                  src={previewImage}
+                  src={lightboxBlobUrl || previewImage}
                   alt="Preview"
                   style={styles.lightboxImg}
                   onError={() => setLightboxImgError(true)}

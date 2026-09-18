@@ -565,6 +565,12 @@ app.use(express.json({ limit: "15mb", verify: captureRawJsonBody }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 app.use(cookieParser());
 
+// Static serving for uploads (task attachments, images, documents)
+const uploadsStaticPath = path.resolve(__dirname, 'uploads');
+if (fs.existsSync(uploadsStaticPath)) {
+  app.use('/uploads', express.static(uploadsStaticPath, { maxAge: '7d', fallthrough: true }));
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Platform Partner Attribution Window
 // Captures ?partner=CODE on ANY request (most importantly the register page

@@ -209,7 +209,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           : isRunning
           ? 'rgba(56, 189, 248, 0.45)'
           : isCompleted
-          ? 'rgba(255,255,255,0.04)'
+          ? 'var(--border-subtle)'
           : 'var(--border-default)',
         boxShadow: isUrgent && !isCompleted
           ? '0 0 16px rgba(239, 68, 68, 0.15)'
@@ -217,8 +217,8 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           ? '0 0 16px rgba(56, 189, 248, 0.1)'
           : 'none',
         background: isUrgent && !isCompleted
-          ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, #121216 100%)'
-          : '#121216',
+          ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, var(--bg-surface) 100%)'
+          : 'var(--bg-surface)',
       }}
     >
       {/* Main Row */}
@@ -252,7 +252,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 style={{
                   ...cardStyles.taskTitle,
                   textDecoration: isCompleted ? 'line-through' : 'none',
-                  color: isCompleted ? '#a1a1aa' : '#fafafa',
+                  color: isCompleted ? 'var(--text-muted)' : 'var(--text-primary)',
                 }}
               >
                 {task.title}
@@ -930,8 +930,8 @@ const cardStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 4,
-    background: 'var(--border-subtle)',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border-default)',
     borderRadius: 5,
     padding: '3px 8px',
     fontSize: 11,
