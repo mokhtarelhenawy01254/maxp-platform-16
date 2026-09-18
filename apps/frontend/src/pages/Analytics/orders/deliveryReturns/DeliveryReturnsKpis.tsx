@@ -19,6 +19,7 @@ export interface LogisticsSummary {
   inTransitOrders: number;
   closedOrders: number;
   closedDeliveryRate: number;
+  closedReturnRate?: number;
   shippedDeliveryRate: number;
   returnRate: number;
   inTransitRate: number;
@@ -41,11 +42,13 @@ export const DeliveryReturnsKpis: React.FC<Props> = ({ summary }) => {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
 
-  const closedDeliveryRate = summary?.closedDeliveryRate ?? 0;
-  const returnRate = summary?.returnRate ?? 0;
-  const inTransitCount = summary?.inTransitOrders ?? 0;
   const deliveredCount = summary?.deliveredOrders ?? 0;
   const returnedCount = summary?.returnedOrders ?? 0;
+  const closedOrders = summary?.closedOrders ?? (deliveredCount + returnedCount);
+  const closedDeliveryRate = summary?.closedDeliveryRate ?? 0;
+  const closedReturnRate = summary?.closedReturnRate ?? (closedOrders > 0 ? Math.round(((returnedCount / closedOrders) * 100) * 10) / 10 : 0);
+  const returnRate = summary?.returnRate ?? 0;
+  const inTransitCount = summary?.inTransitOrders ?? 0;
   const totalShipped = summary?.totalShipped ?? 0;
 
   return (
@@ -107,16 +110,16 @@ export const DeliveryReturnsKpis: React.FC<Props> = ({ summary }) => {
               {closedDeliveryRate}%
             </p>
             <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500 truncate" title={t("deliveryReturnsReport.closedDeliveryRateHint")}>
-              {deliveredCount} {t("deliveryReturnsReport.delivered")} / {summary?.closedOrders ?? 0} محسوم
+              {deliveredCount} {t("deliveryReturnsReport.delivered")} من {closedOrders} محسوم
             </p>
           </div>
         </div>
 
-        {/* Real Return Rate */}
+        {/* Closed Return Rate */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700/80 shadow-sm border-t-2 border-t-amber-500 flex flex-col justify-between">
           <div className="flex items-start justify-between gap-2">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {t("deliveryReturnsReport.returnRate")}
+              {t("deliveryReturnsReport.closedReturnRate")}
             </span>
             <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 shrink-0">
               <Undo2 className="h-4 w-4" />
@@ -124,10 +127,10 @@ export const DeliveryReturnsKpis: React.FC<Props> = ({ summary }) => {
           </div>
           <div className="mt-2.5">
             <p className="text-2xl font-bold font-mono tracking-tight text-amber-600 dark:text-amber-400 tabular-nums">
-              {returnRate}%
+              {closedReturnRate}%
             </p>
-            <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500 truncate">
-              {returnedCount} {t("deliveryReturnsReport.returned")} من {totalShipped} مشحون
+            <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500 truncate" title={t("deliveryReturnsReport.closedReturnRateHint")}>
+              {returnedCount} {t("deliveryReturnsReport.returned")} من {closedOrders} محسوم ({returnRate}% من المشحون)
             </p>
           </div>
         </div>

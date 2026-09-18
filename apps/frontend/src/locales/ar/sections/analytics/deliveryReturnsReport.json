@@ -14,6 +14,8 @@
   "csvExport": "تصدير CSV",
   "closedDeliveryRate": "نسبة الحسم (تسليم)",
   "closedDeliveryRateHint": "مسلّم ÷ (مسلّم + مرتجع)",
+  "closedReturnRate": "نسبة الحسم (مرتجع)",
+  "closedReturnRateHint": "مرتجع ÷ (مسلّم + مرتجع)",
   "shippedDeliveryRate": "نسبة التسليم من المشحون",
   "returnRate": "نسبة المرتجع من المشحون",
   "totalShipped": "شحنات خرجت للتوصيل",

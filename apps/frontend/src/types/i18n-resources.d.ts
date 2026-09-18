@@ -1143,6 +1143,8 @@ declare module 'react-i18next' {
         csvExport: string;
         closedDeliveryRate: string;
         closedDeliveryRateHint: string;
+        closedReturnRate: string;
+        closedReturnRateHint: string;
         shippedDeliveryRate: string;
         returnRate: string;
         totalShipped: string;

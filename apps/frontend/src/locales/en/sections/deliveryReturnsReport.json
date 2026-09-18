@@ -14,6 +14,8 @@
   "csvExport": "Export CSV",
   "closedDeliveryRate": "Closed Delivery Rate",
   "closedDeliveryRateHint": "Delivered ÷ (Delivered + Returned)",
+  "closedReturnRate": "Closed Return Rate",
+  "closedReturnRateHint": "Returned ÷ (Delivered + Returned)",
   "shippedDeliveryRate": "Delivery Rate of Shipped",
   "returnRate": "Return Rate of Shipped",
   "totalShipped": "Total Shipped",

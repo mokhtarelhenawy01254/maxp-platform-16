@@ -3953,6 +3953,7 @@ const getDeliveryReturnsLogisticsAnalytics = async (req, res) => {
 
     const closedOrders = deliveredOrders + returnedOrders;
     const closedDeliveryRate = pct(deliveredOrders, closedOrders);
+    const closedReturnRate = pct(returnedOrders, closedOrders);
     const shippedDeliveryRate = pct(deliveredOrders, totalShipped);
     const returnRate = pct(returnedOrders, totalShipped);
     const inTransitRate = pct(inTransitOrders, totalShipped);
@@ -3963,6 +3964,7 @@ const getDeliveryReturnsLogisticsAnalytics = async (req, res) => {
       return {
         ...b,
         deliveryRate: pct(b.delivered, closed > 0 ? closed : b.totalShipped),
+        closedReturnRate: pct(b.returned, closed > 0 ? closed : b.totalShipped),
         returnRate: pct(b.returned, b.totalShipped),
         codCollected: round2(b.codCollected),
         lostShipping: round2(b.lostShipping)
@@ -3974,6 +3976,7 @@ const getDeliveryReturnsLogisticsAnalytics = async (req, res) => {
       return {
         ...g,
         deliveryRate: pct(g.delivered, closed > 0 ? closed : g.totalShipped),
+        closedReturnRate: pct(g.returned, closed > 0 ? closed : g.totalShipped),
         returnRate: pct(g.returned, g.totalShipped),
         codCollected: round2(g.codCollected)
       };
@@ -4010,6 +4013,7 @@ const getDeliveryReturnsLogisticsAnalytics = async (req, res) => {
           inTransitOrders,
           closedOrders,
           closedDeliveryRate,
+          closedReturnRate,
           shippedDeliveryRate,
           returnRate,
           inTransitRate,
