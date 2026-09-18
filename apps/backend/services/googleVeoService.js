@@ -74,7 +74,8 @@ class GoogleVeoService {
     referenceImageUrl = null,
     aspectRatio = '9:16',
     durationSeconds = 5,
-    model = 'veo-2.0-generate-001',
+    model = 'veo-3.1-generate-preview',
+    generateAudio = true,
   }) {
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       throw new Error('Prompt is required for video generation');
@@ -89,7 +90,8 @@ class GoogleVeoService {
       referenceImageUrl,
       aspectRatio: ['9:16', '16:9', '1:1'].includes(aspectRatio) ? aspectRatio : '9:16',
       durationSeconds: Number(durationSeconds) || 5,
-      model,
+      model: model || 'veo-3.1-generate-preview',
+      generateAudio: generateAudio !== false,
       status: 'QUEUED', // QUEUED, PROCESSING, COMPLETED, FAILED
       progress: 5,
       videoUrl: null,
@@ -146,14 +148,31 @@ class GoogleVeoService {
           aspectRatio: task.aspectRatio,
           durationSeconds: task.durationSeconds,
           sampleCount: 1,
+          generateAudio: task.generateAudio,
         },
       };
 
       task.progress = 30;
-      const response = await axios.post(endpoint, payload, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 30000,
-      });
+      let response;
+      try {
+        response = await axios.post(endpoint, payload, {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 30000,
+        });
+      } catch (postErr) {
+        // If 3.1 preview is not available on this specific key/region, retry with 2.0
+        if (task.model.includes('3.1') && (postErr.response?.status === 404 || postErr.response?.status === 400)) {
+          console.warn('⚠️ [VEO-SERVICE] Veo 3.1 preview not supported on key. Retrying with Veo 2.0...');
+          task.model = 'veo-2.0-generate-001';
+          const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${task.model}:predictLongRunning?key=${apiKey}`;
+          response = await axios.post(fallbackEndpoint, payload, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 30000,
+          });
+        } else {
+          throw postErr;
+        }
+      }
 
       const operationName = response.data?.name;
       if (!operationName) {
