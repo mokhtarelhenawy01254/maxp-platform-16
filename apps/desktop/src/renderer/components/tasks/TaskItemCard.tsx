@@ -464,25 +464,47 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
                   {/* Submit for Review or Direct Complete */}
                   {canApprove ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        audioAlerts.playTaskComplete();
-                        if (onUpdateStatus) {
-                          onUpdateStatus(task.id, 'COMPLETED');
-                        } else {
-                          onToggleStatus(task.id, task.status);
-                        }
-                      }}
-                      style={cardStyles.quickDoneBtn}
-                      title="اعتماد وإنجاز المهمة مباشرة"
-                      onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-                      onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-                    >
-                      <Check size={11} color="#22c55e" />
-                      <span>إنجاز</span>
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          audioAlerts.playTaskComplete();
+                          if (onUpdateStatus) {
+                            onUpdateStatus(task.id, 'IN_REVIEW');
+                          } else {
+                            onToggleStatus(task.id, 'IN_REVIEW');
+                          }
+                        }}
+                        style={cardStyles.submitReviewBtn}
+                        title="إرسال المهمة للمراجعة والاعتماد (نقلها لقيد الاعتماد)"
+                        onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                      >
+                        <Send size={11} color="#c084fc" />
+                        <span>تسليم للمراجعة</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          audioAlerts.playTaskComplete();
+                          if (onUpdateStatus) {
+                            onUpdateStatus(task.id, 'COMPLETED');
+                          } else {
+                            onToggleStatus(task.id, task.status);
+                          }
+                        }}
+                        style={cardStyles.quickDoneBtn}
+                        title="اعتماد وإنجاز المهمة مباشرة (المكتمل)"
+                        onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                      >
+                        <Check size={11} color="#22c55e" />
+                        <span>إنجاز مباشر</span>
+                      </button>
+                    </div>
                   ) : canRunTask ? (
                     <button
                       type="button"

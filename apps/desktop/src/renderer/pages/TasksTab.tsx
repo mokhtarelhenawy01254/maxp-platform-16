@@ -12,6 +12,7 @@ import {
   Layers,
   Play,
   Pause,
+  Send,
 } from 'lucide-react';
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
@@ -410,19 +411,34 @@ export const TasksTab: React.FC = () => {
               <span>إيقاف مؤقت</span>
             </button>
 
-            {/* Complete Task Button */}
+            {/* Submit for Review Button */}
             <button
               onClick={() => {
                 handleStopTask();
-                handleToggleStatus(activeTask.id, 'PENDING');
+                handleUpdateStatus(activeTask.id, 'IN_REVIEW');
+              }}
+              style={styles.runnerSubmitBtn}
+              title="تسليم المهمة للمراجعة والاعتماد (نقلها لقيد الاعتماد)"
+              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+            >
+              <Send size={12} />
+              <span>تسليم للمراجعة</span>
+            </button>
+
+            {/* Direct Complete Task Button */}
+            <button
+              onClick={() => {
+                handleStopTask();
+                handleUpdateStatus(activeTask.id, 'COMPLETED');
               }}
               style={styles.runnerCompleteBtn}
-              title="إكمال المهمة وتوثيق إنجازها الآن"
+              title="اعتماد وإنجاز المهمة مباشرة (المكتمل)"
               onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
               onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
             >
               <CheckCircle2 size={13} />
-              <span>إكمال المهمة</span>
+              <span>إنجاز مباشر</span>
             </button>
           </div>
         </div>
@@ -721,6 +737,21 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-secondary)',
     borderRadius: 6,
     padding: '5px 10px',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 120ms ease-out',
+  },
+  runnerSubmitBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#7e22ce',
+    border: '1px solid rgba(192, 132, 252, 0.4)',
+    color: '#ffffff',
+    borderRadius: 6,
+    padding: '5px 12px',
     fontSize: 11,
     fontWeight: 600,
     cursor: 'pointer',
