@@ -52,33 +52,37 @@ export const TasksTab: React.FC = () => {
 
   // Ticking stopwatch for active task
   useEffect(() => {
-    if (!activeTask) {
+    if (!activeTask?.startTime) {
       setRunnerSeconds(0);
       return;
     }
 
+    const startTime = Number(activeTask.startTime);
+    const accumulated = Number(activeTask.accumulatedSeconds || 0);
+
     const calc = () => {
       const now = Date.now();
-      const elapsed =
-        (activeTask.accumulatedSeconds || 0) +
-        Math.floor((now - activeTask.startTime) / 1000);
-      setRunnerSeconds(Math.max(0, elapsed));
+      const diff = Math.floor((now - startTime) / 1000);
+      const elapsed = accumulated + (diff > 0 ? diff : 0);
+      setRunnerSeconds(elapsed);
     };
 
     calc();
     const interval = setInterval(calc, 1000);
     return () => clearInterval(interval);
-  }, [activeTask]);
+  }, [activeTask?.id, activeTask?.startTime, activeTask?.accumulatedSeconds]);
 
   const handleStartTask = async (task: any) => {
-    let entryId: string | undefined;
-    try {
-      const timerRes = await window.electronAPI.startTaskTimer(task.id);
-      if (timerRes?.success && timerRes.entry?.id) {
-        entryId = timerRes.entry.id;
-      }
-    } catch (err) {
-      console.warn('[TasksTab] startTaskTimer failed:', err);
+    // If clicking on a task that is ALREADY active, do nothing
+    if (activeTask && activeTask.id === task.id) {
+      return;
+    }
+
+    // If another task was running, stop its timer first
+    if (activeTask?.entryId) {
+      try {
+        await window.electronAPI.stopTaskTimer(activeTask.entryId);
+      } catch {}
     }
 
     const newTask: ActiveTaskState = {
@@ -87,16 +91,25 @@ export const TasksTab: React.FC = () => {
       priority: task.priority || 'MEDIUM',
       startTime: Date.now(),
       accumulatedSeconds: 0,
-      entryId,
     };
     setActiveTask(newTask);
     try {
       localStorage.setItem('maxp_active_task', JSON.stringify(newTask));
     } catch {}
 
-    // Auto-switch status to IN_PROGRESS if currently PENDING
+    try {
+      const timerRes = await window.electronAPI.startTaskTimer(task.id);
+      const entryObj = timerRes?.entry || timerRes?.data;
+      if (entryObj?.id) {
+        setActiveTask((prev) => (prev && prev.id === task.id ? { ...prev, entryId: entryObj.id } : prev));
+      }
+    } catch (err) {
+      console.warn('[TasksTab] startTaskTimer failed:', err);
+    }
+
+    // Auto-switch status to IN_PROGRESS if currently PENDING / TODO
     const norm = String(task.status || '').toUpperCase();
-    if (norm !== 'IN_PROGRESS' && norm !== 'COMPLETED') {
+    if (norm !== 'IN_PROGRESS' && norm !== 'COMPLETED' && norm !== 'IN_REVIEW') {
       handleUpdateStatus(task.id, 'IN_PROGRESS');
     }
   };
@@ -172,22 +185,47 @@ export const TasksTab: React.FC = () => {
               window.electronAPI.stopTaskTimer(rt.id).catch(() => {});
             }
           } else {
-            const startMs = new Date(rt.startTime).getTime();
-            setActiveTask({
-              id: rt.taskId,
-              title: rt.task?.title || 'مهمة جارية',
-              priority: 'MEDIUM',
-              startTime: startMs,
-              accumulatedSeconds: 0,
-              entryId: rt.id,
+            setActiveTask((prev) => {
+              // If the task is ALREADY running locally with the SAME id, preserve local startTime!
+              if (prev && prev.id === rt.taskId) {
+                if (!prev.entryId && rt.id) {
+                  const updated = { ...prev, entryId: rt.id };
+                  try {
+                    localStorage.setItem('maxp_active_task', JSON.stringify(updated));
+                  } catch {}
+                  return updated;
+                }
+                return prev; // Same instance -> ZERO re-triggering of effect!
+              }
+
+              // Otherwise initialize from server timer
+              const serverStart = new Date(rt.startTime).getTime();
+              const safeStart = !isNaN(serverStart) && serverStart <= Date.now() ? serverStart : Date.now();
+              const newTaskState: ActiveTaskState = {
+                id: rt.taskId,
+                title: rt.task?.title || 'مهمة جارية',
+                priority: 'MEDIUM',
+                startTime: safeStart,
+                accumulatedSeconds: 0,
+                entryId: rt.id,
+              };
+              try {
+                localStorage.setItem('maxp_active_task', JSON.stringify(newTaskState));
+              } catch {}
+              return newTaskState;
             });
           }
         } else if (runningRes?.success && !runningRes.runningTimer) {
-          // No timer running on backend, clear any stale activeTask
-          setActiveTask(null);
-          try {
-            localStorage.removeItem('maxp_active_task');
-          } catch {}
+          // Only clear if activeTask was verified on server and now stopped
+          setActiveTask((prev) => {
+            if (prev?.entryId) {
+              try {
+                localStorage.removeItem('maxp_active_task');
+              } catch {}
+              return null;
+            }
+            return prev;
+          });
         }
       } catch {}
     } catch (err) {
@@ -235,8 +273,8 @@ export const TasksTab: React.FC = () => {
     const currentTask = tasks.find((t) => t.id === taskId);
     const prevStatus = currentTask?.status || 'PENDING';
 
-    // If completing the task, immediately stop runner and clear state
-    if (targetStatus === 'COMPLETED') {
+    // If completing the task or submitting for review, stop runner and clear state
+    if (targetStatus === 'COMPLETED' || targetStatus === 'IN_REVIEW') {
       if (activeTask?.id === taskId) {
         const entryId = activeTask?.entryId;
         setActiveTask(null);
@@ -250,10 +288,6 @@ export const TasksTab: React.FC = () => {
             console.warn('[TasksTab] stopTaskTimer on complete failed:', err);
           }
         }
-      }
-    } else if (targetStatus === 'IN_PROGRESS' && currentTask) {
-      if (activeTask?.id !== taskId) {
-        handleStartTask(currentTask);
       }
     }
 

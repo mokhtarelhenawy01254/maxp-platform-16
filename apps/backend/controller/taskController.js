@@ -2506,7 +2506,7 @@ const taskController = {
       const { taskId } = req.params;
       const { description, isBillable, hourlyRate } = req.body;
       const companyId = req.user.companyId;
-      const userId = req.user.userId;
+      const userId = req.user.userId || req.user.id;
 
       const userRole = String(req.user?.role || "").toUpperCase();
       const isManagerOrAdmin = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"].includes(userRole);
@@ -2528,14 +2528,24 @@ const taskController = {
 
       const runningEntry = await getSharedPrismaClient().timeEntry.findFirst({
         where: { userId, companyId, isRunning: true },
+        include: { task: { select: { title: true } } },
       });
       if (runningEntry) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: "يوجد مؤقت يعمل بالفعل. يرجى إيقافه أولاً",
+        if (runningEntry.taskId === taskId) {
+          // Already running for this exact task, return existing entry cleanly
+          return res.json({
+            success: true,
+            data: runningEntry,
+            message: "المؤقت يعمل بالفعل لهذه المهمة",
           });
+        }
+        // If running for another task, gracefully stop it to switch to new task
+        const stopNow = new Date();
+        const dur = Math.max(1, Math.round((stopNow - new Date(runningEntry.startTime)) / 60000));
+        await getSharedPrismaClient().timeEntry.update({
+          where: { id: runningEntry.id },
+          data: { endTime: stopNow, duration: dur, isRunning: false },
+        });
       }
 
       const timeEntry = await getSharedPrismaClient().timeEntry.create({
@@ -2867,7 +2877,7 @@ const taskController = {
   getRunningTimer: async (req, res) => {
     try {
       const companyId = req.user.companyId;
-      const userId = req.user.userId;
+      const userId = req.user.userId || req.user.id;
 
       const runningEntry = await getSharedPrismaClient().timeEntry.findFirst({
         where: { userId, companyId, isRunning: true },
