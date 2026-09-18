@@ -35,3 +35,19 @@
 - **Electron-Updater SemVer Mechanics:** `electron-updater` fetches `https://maxp.online/download/latest.yml` and performs strict semantic comparison (`remoteVersion > localVersion`). If the version is unchanged, it returns `up-to-date` and aborts download, preventing employee and user machines from receiving the update.
 - **Synchronized Tag Push:** Always push the matching git tag (e.g. `git tag -a v1.0.5` + `git push origin refs/tags/v1.0.5`) so GitHub Actions (`release-desktop.yml`) builds the new setup and publishes the updated `latest.yml`.
 - **Ban Ghost Releases:** Never deploy or commit desktop modifications with a static version number. Every desktop release MUST have an incremented version.
+
+## 🎥 AI Video Generation & Creative Studio Engine (Google Flow & Veo Automation)
+
+- **Context & Business Role in MaxP:**
+  - MaxP serves 24 commercial verticals (e-commerce, fashion, food, clinics, etc.). Video generation is a core asset for the Creative Studio & Media Buyer squad to automatically generate high-converting promotional reels (9:16) from real product photos (Image-to-Video).
+- **Google Flow (`flow.google`) Reality & APIs:**
+  - `flow.google` is Google's web studio for filmmakers/creators, combining **Veo**, **Imagen**, and **Gemini**.
+  - **No Official "Google Flow API":** Google does not offer an official public API for the `flow.google` web UI. Unofficial wrappers use reverse-engineered browser automation which is brittle and risks account bans.
+  - **The Official Production Engine:** The underlying generative video model of Flow is **Google Veo**, available programmatically via the **Gemini API (Google AI Studio)** and **Vertex AI**.
+- **MaxP Video Architecture Standard:**
+  - **Backend Service:** `apps/backend/services/googleVeoService.js` handles async LRO polling, API key resolution from `public.ai_keys`, and high-fidelity simulation fallback.
+  - **REST Endpoints:** `/api/v1/ai-video/generate`, `/api/v1/ai-video/status/:taskId`, and `/api/v1/ai-video/history`.
+  - **Agent Tooling:** `apps/ai-service/src/tools/definitions/video_generation.py` auto-discovered by the agent framework (`generate_marketing_video`, `check_video_status`).
+  - **Model Context Protocol (MCP):** FastMCP server in `apps/mcp-servers/video-mcp` (Port `7102`) exposing tools over streamable HTTP for external agents and MCP clients.
+  - **Optional Browser Automation:** For users insisting on driving their personal `flow.google` web subscription directly, use `agent-browser` / Playwright with session cookies.
+
