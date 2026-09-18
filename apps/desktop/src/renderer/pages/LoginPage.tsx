@@ -135,7 +135,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    height: '100vh',
+    height: '100%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

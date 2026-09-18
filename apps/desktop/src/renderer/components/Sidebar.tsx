@@ -293,6 +293,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   nav: {
     flex: 1,
+    minHeight: 0,
     padding: '8px 10px',
     display: 'flex',
     flexDirection: 'column',
@@ -325,6 +326,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderTop: '1px solid var(--border-subtle)',
     display: 'flex',
     gap: 8,
+    flexShrink: 0,
   },
   actionBtn: {
     flex: 1,

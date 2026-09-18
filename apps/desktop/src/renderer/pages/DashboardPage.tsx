@@ -357,8 +357,8 @@ const styles: Record<string, React.CSSProperties> = {
   layout: {
     display: 'flex',
     flexDirection: 'row',
-    height: '100vh',
-    width: '100vw',
+    height: '100%',
+    width: '100%',
     background: 'var(--bg-page)',
     color: 'var(--text-primary)',
     overflow: 'hidden',
