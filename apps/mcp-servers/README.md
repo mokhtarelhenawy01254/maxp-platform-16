@@ -10,6 +10,7 @@ Servers:
 - `catalog-mcp` -> product search, inventory check, product details
   (port 7100, Sprint 1)
 - `skills-mcp` -> skill index + SKILL.md serving (port 7101, Sprint 2)
+- `video-mcp` -> Google Veo video generation & automation (port 7102)
 
 All servers follow the same conventions: hatchling build, `mcp[cli]>=1.2`,
 Pydantic-validated tools, structlog, httpx backend bridge, respx-mocked tests.

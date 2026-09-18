@@ -1105,6 +1105,10 @@ app.use("/api/v1/facebook/status", facebookStatusRoutes);
 const aiImageRoutes = require("./routes/aiImageRoutes");
 app.use("/api/v1/ai-image", aiImageRoutes);
 
+// AI Video Generation (Google Veo / Automation Engine)
+const videoGenerationRoutes = require("./routes/videoGenerationRoutes");
+app.use("/api/v1/ai-video", videoGenerationRoutes);
+
 // Frontend error tracking
 app.use("/api/v1/errors", errorRoutes);
 
