@@ -1147,6 +1147,7 @@ declare module 'react-i18next' {
         closedReturnRateHint: string;
         shippedDeliveryRate: string;
         returnRate: string;
+        returnRateTooltip: string;
         totalShipped: string;
         deliveredOrders: string;
         returnedOrders: string;
@@ -1178,6 +1179,7 @@ declare module 'react-i18next' {
         returned: string;
         inTransit: string;
         closedRate: string;
+        closedRateTooltip: string;
         product: string;
         sku: string;
         items: string;
@@ -1190,6 +1192,18 @@ declare module 'react-i18next' {
         clearSearch: string;
         total: string;
         of: string;
+        deliveredFromShipped: string;
+        returnedFromShipped: string;
+        inTransitFromShipped: string;
+        closedDeliveryRateBadge: string;
+        closedReturnRateBadge: string;
+        fromClosed: string;
+        activeInTransitBadge: string;
+        fromDeliveredShipments: string;
+        onReturnedShipments: string;
+        tableMetricsLegend: string;
+        compositionSubtitle: string;
+        closedSummaryStrip: string;
       };
       dentalPortal: {
         portalName: string;

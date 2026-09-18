@@ -95,43 +95,69 @@ export const DeliveryReturnsKpis: React.FC<Props> = ({ summary }) => {
 
       {/* 5 Operational Logistics KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-        {/* Closed Delivery Rate */}
+        {/* Delivered Shipments */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700/80 shadow-sm border-t-2 border-t-emerald-500 flex flex-col justify-between">
           <div className="flex items-start justify-between gap-2">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {t("deliveryReturnsReport.closedDeliveryRate")}
+              {t("deliveryReturnsReport.deliveredOrders")}
             </span>
             <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 shrink-0">
               <CheckCircle className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-2.5">
-            <p className="text-2xl font-bold font-mono tracking-tight text-gray-900 dark:text-white tabular-nums">
-              {closedDeliveryRate}%
-            </p>
-            <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500 truncate" title={t("deliveryReturnsReport.closedDeliveryRateHint")}>
-              {deliveredCount} {t("deliveryReturnsReport.delivered")} من {closedOrders} محسوم
-            </p>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-2xl font-bold font-mono tracking-tight text-gray-900 dark:text-white tabular-nums">
+                {deliveredCount.toLocaleString()}
+              </span>
+              <span className="text-xs font-mono font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                ({summary?.shippedDeliveryRate ?? 0}% {t("deliveryReturnsReport.deliveredFromShipped")})
+              </span>
+            </div>
+            <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 flex items-center justify-between text-[11px]">
+              <span className="text-gray-400 dark:text-gray-500">
+                {t("deliveryReturnsReport.closedDeliveryRateBadge")}:
+              </span>
+              <span
+                className="font-mono font-bold text-emerald-700 dark:text-emerald-400 tabular-nums bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200/50 dark:border-emerald-800/40"
+                title={`${t("deliveryReturnsReport.closedDeliveryRateHint")} (${deliveredCount} ÷ ${closedOrders})`}
+              >
+                {closedDeliveryRate}% {t("deliveryReturnsReport.fromClosed")}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Closed Return Rate */}
+        {/* Returned Shipments */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700/80 shadow-sm border-t-2 border-t-amber-500 flex flex-col justify-between">
           <div className="flex items-start justify-between gap-2">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {t("deliveryReturnsReport.closedReturnRate")}
+              {t("deliveryReturnsReport.returnedOrders")}
             </span>
             <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 shrink-0">
               <Undo2 className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-2.5">
-            <p className="text-2xl font-bold font-mono tracking-tight text-amber-600 dark:text-amber-400 tabular-nums">
-              {closedReturnRate}%
-            </p>
-            <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500 truncate" title={t("deliveryReturnsReport.closedReturnRateHint")}>
-              {returnedCount} {t("deliveryReturnsReport.returned")} من {closedOrders} محسوم ({returnRate}% من المشحون)
-            </p>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-2xl font-bold font-mono tracking-tight text-amber-600 dark:text-amber-400 tabular-nums">
+                {returnedCount.toLocaleString()}
+              </span>
+              <span className="text-xs font-mono font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
+                ({returnRate}% {t("deliveryReturnsReport.returnedFromShipped")})
+              </span>
+            </div>
+            <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 flex items-center justify-between text-[11px]">
+              <span className="text-gray-400 dark:text-gray-500">
+                {t("deliveryReturnsReport.closedReturnRateBadge")}:
+              </span>
+              <span
+                className="font-mono font-bold text-amber-700 dark:text-amber-400 tabular-nums bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-200/50 dark:border-amber-800/40"
+                title={`${t("deliveryReturnsReport.closedReturnRateHint")} (${returnedCount} ÷ ${closedOrders})`}
+              >
+                {closedReturnRate}% {t("deliveryReturnsReport.fromClosed")}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -146,12 +172,22 @@ export const DeliveryReturnsKpis: React.FC<Props> = ({ summary }) => {
             </div>
           </div>
           <div className="mt-2.5">
-            <p className="text-2xl font-bold font-mono tracking-tight text-blue-600 dark:text-blue-400 tabular-nums">
-              {inTransitCount.toLocaleString()}
-            </p>
-            <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500 truncate">
-              {summary?.inTransitRate ?? 0}% من إجمالي المشحون
-            </p>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-2xl font-bold font-mono tracking-tight text-blue-600 dark:text-blue-400 tabular-nums">
+                {inTransitCount.toLocaleString()}
+              </span>
+              <span className="text-xs font-mono font-semibold text-blue-600 dark:text-blue-400 tabular-nums">
+                ({summary?.inTransitRate ?? 0}% {t("deliveryReturnsReport.inTransitFromShipped")})
+              </span>
+            </div>
+            <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 flex items-center justify-between text-[11px]">
+              <span className="text-gray-400 dark:text-gray-500">
+                {t("deliveryReturnsReport.inTransitHint")}:
+              </span>
+              <span className="font-mono font-medium text-blue-600 dark:text-blue-400 text-[10px] bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-200/50 dark:border-blue-800/40">
+                {t("deliveryReturnsReport.activeInTransitBadge")}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -170,7 +206,7 @@ export const DeliveryReturnsKpis: React.FC<Props> = ({ summary }) => {
               {formatPrice(summary?.codDeliveredRevenue ?? 0)}
             </p>
             <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500 truncate">
-              محصّل فعلياً من العملاء
+              {t("deliveryReturnsReport.fromDeliveredShipments")}
             </p>
           </div>
         </div>
@@ -190,7 +226,7 @@ export const DeliveryReturnsKpis: React.FC<Props> = ({ summary }) => {
               {formatPrice(summary?.lostShippingCost ?? 0)}
             </p>
             <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500 truncate" title={t("deliveryReturnsReport.lostShippingCostHint")}>
-              مصاريف شحن طرود مرتجعة
+              {t("deliveryReturnsReport.onReturnedShipments")}
             </p>
           </div>
         </div>

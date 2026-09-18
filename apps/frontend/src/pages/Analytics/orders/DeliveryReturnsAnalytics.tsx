@@ -294,11 +294,16 @@ const DeliveryReturnsAnalytics: React.FC = () => {
                 {/* Status Donut */}
                 <div className="bg-slate-50/50 dark:bg-gray-900/40 rounded-xl p-4 border border-gray-100 dark:border-gray-700/60 flex flex-col justify-between">
                   <div>
-                    <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-0.5">
-                      {t("deliveryReturnsReport.composition")}
-                    </h4>
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">
-                      توزيع الشحنات التي خرجت للتوصيل
+                    <div className="flex items-center justify-between mb-0.5">
+                      <h4 className="text-xs font-semibold text-gray-900 dark:text-white">
+                        {t("deliveryReturnsReport.composition")}
+                      </h4>
+                      <span className="text-[10px] font-mono font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-200/50 dark:border-blue-800/40">
+                        {summary?.totalShipped ?? 0} {t("deliveryReturnsReport.totalShipped")}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">
+                      {t("deliveryReturnsReport.compositionSubtitle")}
                     </p>
                   </div>
 
@@ -326,17 +331,34 @@ const DeliveryReturnsAnalytics: React.FC = () => {
                   </div>
 
                   <div className="mt-2 grid grid-cols-3 gap-1 pt-2 border-t border-gray-100 dark:border-gray-800 text-[11px]">
-                    {compositionData.map((d) => (
-                      <div key={d.key} className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} />
-                          <span className="text-gray-500 dark:text-gray-400">{d.name}</span>
+                    {compositionData.map((d) => {
+                      const pctOfShipped = summary?.totalShipped
+                        ? Math.round((d.value / summary.totalShipped) * 1000) / 10
+                        : 0;
+                      return (
+                        <div key={d.key} className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} />
+                            <span className="text-gray-500 dark:text-gray-400 truncate text-[10px]">{d.name}</span>
+                          </div>
+                          <p className="font-mono font-bold text-gray-900 dark:text-white mt-0.5 tabular-nums text-xs">
+                            {d.value.toLocaleString()}
+                          </p>
+                          <span className="font-mono text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">
+                            {pctOfShipped}%
+                          </span>
                         </div>
-                        <p className="font-mono font-bold text-gray-900 dark:text-white mt-0.5 tabular-nums">
-                          {d.value.toLocaleString()}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-2.5 pt-2 border-t border-dashed border-gray-200 dark:border-gray-700/60 text-[11px] text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                    <span>
+                      {t("deliveryReturnsReport.fromClosed")}: <b className="font-mono text-gray-800 dark:text-gray-200 tabular-nums">{summary?.closedOrders ?? 0}</b>
+                    </span>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                      {t("deliveryReturnsReport.closedDeliveryRateBadge")}: {summary?.closedDeliveryRate ?? 0}%
+                    </span>
                   </div>
                 </div>
 
