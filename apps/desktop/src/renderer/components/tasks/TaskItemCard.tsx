@@ -206,7 +206,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           ? 'rgba(56, 189, 248, 0.45)'
           : isCompleted
           ? 'rgba(255,255,255,0.04)'
-          : 'rgba(255,255,255,0.08)',
+          : 'var(--border-default)',
         boxShadow: isUrgent && !isCompleted
           ? '0 0 16px rgba(239, 68, 68, 0.15)'
           : isRunning
@@ -259,7 +259,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 <span
                   style={{
                     background: 'rgba(239, 68, 68, 0.18)',
-                    color: '#f87171',
+                    color: 'var(--accent-red-dim)',
                     border: '1px solid rgba(239, 68, 68, 0.45)',
                     padding: '2px 8px',
                     borderRadius: 999,
@@ -385,11 +385,11 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                     <span
                       style={{
                         fontSize: 11,
-                        color: '#71717a',
+                        color: 'var(--text-dim)',
                         background: 'rgba(255,255,255,0.03)',
                         padding: '3px 8px',
                         borderRadius: 6,
-                        border: '1px solid rgba(255,255,255,0.06)',
+                        border: '1px solid var(--border-subtle)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 4,
@@ -487,19 +487,19 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                   ? '#f59e0b'
                   : '#a1a1aa',
                 backgroundColor: isCompleted
-                  ? 'rgba(34, 197, 94, 0.1)'
+                  ? 'var(--accent-green-bg)'
                   : isInProgress
                   ? 'rgba(56, 189, 248, 0.1)'
                   : isOnHold
                   ? 'rgba(245, 158, 11, 0.1)'
-                  : 'rgba(255,255,255,0.05)',
+                  : 'var(--border-subtle)',
                 borderColor: isCompleted
-                  ? 'rgba(34, 197, 94, 0.25)'
+                  ? 'var(--accent-green-border)'
                   : isInProgress
                   ? 'rgba(56, 189, 248, 0.25)'
                   : isOnHold
                   ? 'rgba(245, 158, 11, 0.25)'
-                  : 'rgba(255,255,255,0.08)',
+                  : 'var(--border-default)',
               }}
             >
               {isCompleted
@@ -569,8 +569,8 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 style={{
                   ...cardStyles.duePill,
                   color: isOverdue ? '#f87171' : '#94a3b8',
-                  borderColor: isOverdue ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255,255,255,0.06)',
-                  backgroundColor: isOverdue ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+                  borderColor: isOverdue ? 'rgba(239, 68, 68, 0.3)' : 'var(--border-subtle)',
+                  backgroundColor: isOverdue ? 'var(--accent-red-bg)' : 'transparent',
                 }}
               >
                 <Clock size={11} />
@@ -689,8 +689,8 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
 const cardStyles: Record<string, React.CSSProperties> = {
   card: {
-    backgroundColor: '#121216',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
     borderRadius: 8,
     padding: '12px 14px',
     display: 'flex',
@@ -728,9 +728,9 @@ const cardStyles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
-    border: '1px solid rgba(34, 197, 94, 0.3)',
-    color: '#22c55e',
+    backgroundColor: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
+    color: 'var(--accent-green)',
     fontSize: 11,
     padding: '2px 7px',
     borderRadius: 5,
@@ -739,14 +739,14 @@ const cardStyles: Record<string, React.CSSProperties> = {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    backgroundColor: '#22c55e',
+    backgroundColor: 'var(--accent-green)',
     boxShadow: '0 0 6px rgba(34, 197, 94, 0.9)',
     display: 'inline-block',
   },
   iconBtn: {
     background: 'none',
     border: 'none',
-    color: '#71717a',
+    color: 'var(--text-dim)',
     cursor: 'pointer',
     padding: 3,
     borderRadius: 4,
@@ -758,12 +758,12 @@ const cardStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 4,
     background: 'rgba(255, 255, 255, 0.04)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 5,
     padding: '3px 8px',
     fontSize: 11,
     fontWeight: 500,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
@@ -787,13 +787,13 @@ const cardStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 5,
-    background: 'rgba(34, 197, 94, 0.15)',
-    border: '1px solid rgba(34, 197, 94, 0.4)',
+    background: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
     borderRadius: 5,
     padding: '3px 8px',
     fontSize: 11,
     fontWeight: 600,
-    color: '#22c55e',
+    color: 'var(--accent-green)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
@@ -802,13 +802,13 @@ const cardStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 4,
-    background: 'rgba(34, 197, 94, 0.08)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
+    background: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
     borderRadius: 5,
     padding: '3px 8px',
     fontSize: 11,
     fontWeight: 600,
-    color: '#22c55e',
+    color: 'var(--accent-green)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
@@ -817,13 +817,13 @@ const cardStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 4,
-    background: 'rgba(255, 255, 255, 0.05)',
+    background: 'var(--border-subtle)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
     borderRadius: 5,
     padding: '3px 8px',
     fontSize: 11,
     fontWeight: 500,
-    color: '#d4d4d8',
+    color: 'var(--text-secondary)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
@@ -834,7 +834,7 @@ const cardStyles: Record<string, React.CSSProperties> = {
     backgroundColor: '#0a0a0d',
     borderRadius: 6,
     fontSize: 11,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     lineHeight: 1.5,
     border: '1px solid rgba(255, 255, 255, 0.04)',
   },
@@ -876,9 +876,9 @@ const cardStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 4,
     fontSize: 10,
-    color: '#e4e4e7',
+    color: 'var(--text-secondary)',
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    border: '1px solid var(--border-subtle)',
     padding: '2px 6px',
     borderRadius: 4,
   },
@@ -929,7 +929,7 @@ const cardStyles: Record<string, React.CSSProperties> = {
     gap: 8,
     padding: '4px 8px',
     backgroundColor: '#0a0a0d',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--border-default)',
     borderRadius: 6,
     cursor: 'pointer',
     maxWidth: 220,
@@ -942,7 +942,7 @@ const cardStyles: Record<string, React.CSSProperties> = {
     height: 44,
     borderRadius: 4,
     overflow: 'hidden',
-    backgroundColor: '#18181b',
+    backgroundColor: 'var(--bg-elevated)',
     flexShrink: 0,
   },
   thumbImg: {
@@ -954,7 +954,7 @@ const cardStyles: Record<string, React.CSSProperties> = {
     position: 'absolute',
     bottom: 2,
     right: 2,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'var(--bg-overlay)',
     borderRadius: 3,
     padding: 2,
     display: 'flex',
@@ -965,7 +965,7 @@ const cardStyles: Record<string, React.CSSProperties> = {
     width: 44,
     height: 44,
     borderRadius: 4,
-    backgroundColor: '#18181b',
+    backgroundColor: 'var(--bg-elevated)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -988,7 +988,7 @@ const cardStyles: Record<string, React.CSSProperties> = {
   },
   thumbSize: {
     fontSize: 9,
-    color: '#71717a',
+    color: 'var(--text-dim)',
     fontVariantNumeric: 'tabular-nums',
   },
   overduePill: {
@@ -997,7 +997,7 @@ const cardStyles: Record<string, React.CSSProperties> = {
     gap: 4,
     fontSize: 10,
     fontWeight: 600,
-    color: '#ef4444',
+    color: 'var(--accent-red)',
     backgroundColor: 'rgba(239, 68, 68, 0.12)',
     border: '1px solid rgba(239, 68, 68, 0.3)',
     padding: '2px 7px',
@@ -1010,7 +1010,7 @@ const cardStyles: Record<string, React.CSSProperties> = {
     gap: 4,
     fontSize: 10,
     fontWeight: 600,
-    color: '#f59e0b',
+    color: 'var(--accent-yellow)',
     backgroundColor: 'rgba(245, 158, 11, 0.12)',
     border: '1px solid rgba(245, 158, 11, 0.3)',
     padding: '2px 7px',

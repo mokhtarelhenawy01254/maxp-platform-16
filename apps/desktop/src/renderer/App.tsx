@@ -106,8 +106,8 @@ const App: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#09090b',
-        color: '#71717a',
+        background: 'var(--bg-page)',
+        color: 'var(--text-dim)',
         fontSize: 14,
       }}>
         {'جاري التحميل…'}

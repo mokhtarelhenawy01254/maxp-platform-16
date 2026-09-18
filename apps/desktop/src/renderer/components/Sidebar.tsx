@@ -9,7 +9,10 @@ import {
   LogOut,
   ShieldCheck,
   Lock,
+  Moon,
+  Sun,
 } from 'lucide-react';
+import { useTheme } from '../theme/ThemeContext';
 
 export type TabId = 'cockpit' | 'tasks' | 'apps' | 'attendance' | 'system';
 
@@ -30,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   isOnline = true,
 }) => {
+  const { mode, toggleTheme } = useTheme();
   const roleStr = String(user?.role || '').toUpperCase();
   const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
 
@@ -126,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               style={{
                 ...styles.navItem,
                 background: isActive ? '#1e1e24' : 'transparent',
-                borderColor: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                borderColor: isActive ? 'var(--border-strong)' : 'transparent',
                 color: isActive ? '#fafafa' : '#a1a1aa',
               }}
               onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)'; }}
@@ -168,8 +172,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         <button
+          onClick={toggleTheme}
+          style={styles.actionBtn}
+          title={mode === 'dark' ? 'التبديل للوضع الفاتح' : 'التبديل للوضع الداكن'}
+          onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+          onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+          aria-label="تبديل المظهر"
+        >
+          {mode === 'dark' ? <Sun size={15} color="#eab308" /> : <Moon size={15} color="#6366f1" />}
+        </button>
+
+        <button
           onClick={onLogout}
-          style={{ ...styles.actionBtn, color: '#f87171' }}
+          style={{ ...styles.actionBtn, color: 'var(--accent-red-dim)' }}
           title="تسجيل الخروج"
           onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
           onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
@@ -187,8 +202,8 @@ const styles: Record<string, React.CSSProperties> = {
     width: 240,
     minWidth: 240,
     height: '100%',
-    background: '#0d0d10',
-    borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--bg-sidebar)',
+    borderLeft: '1px solid var(--border-default)',
     display: 'flex',
     flexDirection: 'column',
     userSelect: 'none',
@@ -198,14 +213,14 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 10,
     padding: '16px 14px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+    borderBottom: '1px solid var(--border-subtle)',
   },
   brandIconWrapper: {
     width: 34,
     height: 34,
     borderRadius: 8,
-    background: 'rgba(34, 197, 94, 0.12)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
+    background: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -213,7 +228,7 @@ const styles: Record<string, React.CSSProperties> = {
   brandTitle: {
     fontSize: 14,
     fontWeight: 700,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     letterSpacing: '-0.01em',
   },
   enforcedBadge: {
@@ -221,7 +236,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 6,
     fontSize: 11,
-    color: '#22c55e',
+    color: 'var(--accent-green)',
     fontWeight: 600,
     marginTop: 2,
   },
@@ -229,15 +244,15 @@ const styles: Record<string, React.CSSProperties> = {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    background: '#22c55e',
-    boxShadow: '0 0 6px rgba(34, 197, 94, 0.7)',
+    background: 'var(--accent-green)',
+    boxShadow: '0 0 6px var(--accent-green-dim)',
   },
   userBox: {
     margin: '12px 12px 6px 12px',
     padding: '10px',
     borderRadius: 8,
-    background: '#121216',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-subtle)',
     display: 'flex',
     alignItems: 'center',
     gap: 10,
@@ -246,19 +261,19 @@ const styles: Record<string, React.CSSProperties> = {
     width: 32,
     height: 32,
     borderRadius: 6,
-    background: 'linear-gradient(135deg, #27272a, #3f3f46)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    background: 'var(--avatar-gradient)',
+    border: '1px solid var(--border-strong)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: 12,
     fontWeight: 700,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
   },
   userName: {
     fontSize: 13,
     fontWeight: 600,
-    color: '#e4e4e7',
+    color: 'var(--text-secondary)',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -268,7 +283,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 5,
     fontSize: 11,
-    color: '#71717a',
+    color: 'var(--text-dim)',
     marginTop: 2,
   },
   statusDot: {
@@ -307,7 +322,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   footer: {
     padding: '10px 12px',
-    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+    borderTop: '1px solid var(--border-subtle)',
     display: 'flex',
     gap: 8,
   },
@@ -317,13 +332,13 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    background: '#141417',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
     borderRadius: 6,
     padding: '7px 10px',
     fontSize: 12,
     fontWeight: 500,
-    color: '#d4d4d8',
+    color: 'var(--text-secondary)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',

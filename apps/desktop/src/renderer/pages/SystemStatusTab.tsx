@@ -75,7 +75,7 @@ export const SystemStatusTab: React.FC = () => {
         </div>
         <div style={styles.infoRow}>
           <span style={styles.infoLabel}>التشغيل التلقائي مع ويندوز</span>
-          <span style={{ ...styles.infoValue, color: '#22c55e' }}>مفعل تلقائياً (جاهز دائماً)</span>
+          <span style={{ ...styles.infoValue, color: 'var(--accent-green)' }}>مفعل تلقائياً (جاهز دائماً)</span>
         </div>
       </div>
 
@@ -155,8 +155,8 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 12,
   },
   card: {
-    background: '#121216',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
     borderRadius: 8,
     padding: '14px',
   },
@@ -169,25 +169,25 @@ const styles: Record<string, React.CSSProperties> = {
   cardTitle: {
     fontSize: 13,
     fontWeight: 600,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
   },
   onlineChip: {
     display: 'flex',
     alignItems: 'center',
     gap: 5,
-    background: 'rgba(34, 197, 94, 0.1)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
+    background: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
     borderRadius: 12,
     padding: '2px 8px',
     fontSize: 11,
-    color: '#22c55e',
+    color: 'var(--accent-green)',
     fontWeight: 600,
   },
   greenDot: {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    background: '#22c55e',
+    background: 'var(--accent-green)',
   },
   infoRow: {
     display: 'flex',
@@ -198,21 +198,21 @@ const styles: Record<string, React.CSSProperties> = {
   },
   infoLabel: {
     fontSize: 12,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
   },
   infoValue: {
     fontSize: 12,
     fontWeight: 600,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     fontVariantNumeric: 'tabular-nums',
   },
   syncBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    background: '#27272a',
-    color: '#fafafa',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    background: 'var(--bg-hover)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 6,
     padding: '5px 10px',
     fontSize: 11,
@@ -223,8 +223,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   feedbackAlert: {
     fontSize: 11,
-    color: '#22c55e',
-    background: 'rgba(34, 197, 94, 0.08)',
+    color: 'var(--accent-green)',
+    background: 'var(--accent-green-bg)',
     border: '1px solid rgba(34, 197, 94, 0.2)',
     borderRadius: 6,
     padding: '6px 10px',
@@ -237,8 +237,8 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 8,
   },
   subCard: {
-    background: '#0d0d10',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
+    background: 'var(--bg-sidebar)',
+    border: '1px solid var(--border-subtle)',
     borderRadius: 6,
     padding: '10px',
     textAlign: 'center',
@@ -251,7 +251,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   subCardLabel: {
     fontSize: 10,
-    color: '#71717a',
+    color: 'var(--text-dim)',
     marginTop: 2,
   },
 };

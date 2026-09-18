@@ -321,7 +321,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               <label style={modalStyles.label}>
                 المتابعون والمراقبون ({watchers.length})
               </label>
-              <span style={{ fontSize: 11, color: '#71717a' }}>
+              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
                 يتلقون إشعارات حية بكافة التحديثات
               </span>
             </div>
@@ -387,7 +387,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#f87171',
+                          color: 'var(--accent-red-dim)',
                           cursor: 'pointer',
                           padding: 1,
                           display: 'flex',
@@ -422,7 +422,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     border:
                       estimatedMinutes === m
                         ? '1px solid #38bdf8'
-                        : '1px solid rgba(255,255,255,0.1)',
+                        : '1px solid var(--border-strong)',
                     background:
                       estimatedMinutes === m ? 'rgba(56, 189, 248, 0.15)' : '#18181b',
                     color: estimatedMinutes === m ? '#38bdf8' : '#a1a1aa',
@@ -442,7 +442,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   placeholder="مخصص"
                   style={{ ...modalStyles.input, width: 85, padding: '5px 8px', fontSize: 12, textAlign: 'center' }}
                 />
-                <span style={{ fontSize: 11, color: '#71717a' }}>دقيقة</span>
+                <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>دقيقة</span>
               </div>
             </div>
           </div>
@@ -493,7 +493,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             {/* Existing Attachments */}
             {existingAttachments.length > 0 && (
               <div style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 11, color: '#71717a', marginBottom: 4 }}>المرفقات المحفوظة مسبقاً:</div>
+                <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 4 }}>المرفقات المحفوظة مسبقاً:</div>
                 <div style={modalStyles.attachmentList}>
                   {existingAttachments.map((att: any, i: number) => {
                     const fileUrl = resolveAttachmentUrl(att.filePath || att.fileUrl || att.url || '');
@@ -597,7 +597,7 @@ const modalStyles: Record<string, React.CSSProperties> = {
     width: '100%',
     maxWidth: 540,
     maxHeight: '92vh',
-    background: '#121214',
+    background: 'var(--bg-surface)',
     border: '1px solid rgba(255,255,255,0.12)',
     borderRadius: 12,
     boxShadow: '0 24px 48px rgba(0,0,0,0.5)',
@@ -612,18 +612,18 @@ const modalStyles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     padding: '14px 18px',
     borderBottom: '1px solid rgba(255,255,255,0.07)',
-    background: '#18181b',
+    background: 'var(--bg-elevated)',
     flexShrink: 0,
   },
   title: {
     fontSize: 14,
     fontWeight: 600,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
   },
   closeBtn: {
     background: 'transparent',
     border: 'none',
-    color: '#71717a',
+    color: 'var(--text-dim)',
     cursor: 'pointer',
     padding: 4,
     borderRadius: 4,
@@ -641,28 +641,28 @@ const modalStyles: Record<string, React.CSSProperties> = {
     display: 'block',
     fontSize: 12,
     fontWeight: 500,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     marginBottom: 5,
   },
   input: {
     width: '100%',
-    background: '#09090b',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'var(--bg-page)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 6,
     padding: '8px 12px',
     fontSize: 13,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     outline: 'none',
     boxSizing: 'border-box',
   },
   select: {
     width: '100%',
-    background: '#09090b',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'var(--bg-page)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 6,
     padding: '8px 10px',
     fontSize: 13,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     outline: 'none',
     boxSizing: 'border-box',
   },
@@ -676,10 +676,10 @@ const modalStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 5,
     padding: '4px 9px',
-    background: '#18181b',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 6,
-    color: '#d4d4d8',
+    color: 'var(--text-secondary)',
     fontSize: 11,
     cursor: 'pointer',
     userSelect: 'none',
@@ -694,8 +694,8 @@ const modalStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    background: '#18181b',
-    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border-default)',
     borderRadius: 6,
     padding: '4px 8px',
     fontSize: 11,
@@ -713,21 +713,21 @@ const modalStyles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    color: '#d4d4d8',
+    color: 'var(--text-secondary)',
     fontSize: 11,
   },
   badgeExisting: {
     fontSize: 9,
     padding: '1px 5px',
     borderRadius: 4,
-    background: 'rgba(255,255,255,0.06)',
-    color: '#a1a1aa',
+    background: 'var(--border-subtle)',
+    color: 'var(--text-muted)',
     flexShrink: 0,
   },
   removeAttBtn: {
     background: 'none',
     border: 'none',
-    color: '#ef4444',
+    color: 'var(--accent-red)',
     cursor: 'pointer',
     padding: 2,
     display: 'flex',
@@ -736,8 +736,8 @@ const modalStyles: Record<string, React.CSSProperties> = {
   },
   errorAlert: {
     background: 'rgba(239, 68, 68, 0.12)',
-    borderBottom: '1px solid rgba(239, 68, 68, 0.25)',
-    color: '#f87171',
+    borderBottom: '1px solid var(--accent-red-border)',
+    color: 'var(--accent-red-dim)',
     fontSize: 12,
     padding: '8px 18px',
   },
@@ -747,13 +747,13 @@ const modalStyles: Record<string, React.CSSProperties> = {
     justifyContent: 'flex-end',
     gap: 8,
     paddingTop: 10,
-    borderTop: '1px solid rgba(255,255,255,0.06)',
+    borderTop: '1px solid var(--border-subtle)',
     flexShrink: 0,
   },
   cancelBtn: {
     background: 'transparent',
     border: '1px solid rgba(255,255,255,0.12)',
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     padding: '7px 14px',
     borderRadius: 6,
     fontSize: 13,

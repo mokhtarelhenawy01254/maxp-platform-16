@@ -418,7 +418,7 @@ export const TasksTab: React.FC = () => {
               style={{
                 ...styles.statusFilterBtn,
                 backgroundColor: statusFilter === s ? '#18181b' : 'transparent',
-                borderColor: statusFilter === s ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)',
+                borderColor: statusFilter === s ? 'var(--border-strong)' : 'var(--border-subtle)',
                 color: statusFilter === s ? '#fafafa' : '#71717a',
               }}
             >
@@ -492,7 +492,7 @@ export const TasksTab: React.FC = () => {
         >
           <div style={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
             <div style={styles.lightboxHeader}>
-              <span style={{ fontSize: 13, color: '#fafafa', fontWeight: 600 }}>معاينة المرفق بدقة كاملة</span>
+              <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>معاينة المرفق بدقة كاملة</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <button
                   type="button"
@@ -549,7 +549,7 @@ export const TasksTab: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#09090b', minHeight: 200 }}>
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)', minHeight: 200 }}>
               {!lightboxImgError ? (
                 <img
                   src={previewImage}
@@ -559,7 +559,7 @@ export const TasksTab: React.FC = () => {
                 />
               ) : (
                 <div style={{ textAlign: 'center', padding: 24 }}>
-                  <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 12 }}>تعذر تحميل الصورة مباشرة داخل التطبيق</p>
+                  <p style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 12 }}>تعذر تحميل الصورة مباشرة داخل التطبيق</p>
                   <button
                     type="button"
                     onClick={() => {
@@ -591,8 +591,8 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 12,
   },
   headerCard: {
-    backgroundColor: '#121216',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
     borderRadius: 8,
     padding: '12px 14px',
     display: 'flex',
@@ -615,8 +615,8 @@ const styles: Record<string, React.CSSProperties> = {
     width: 28,
     height: 28,
     borderRadius: 6,
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
-    border: '1px solid rgba(34, 197, 94, 0.3)',
+    backgroundColor: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -630,8 +630,8 @@ const styles: Record<string, React.CSSProperties> = {
     width: 7,
     height: 7,
     borderRadius: '50%',
-    backgroundColor: '#22c55e',
-    boxShadow: '0 0 8px rgba(34, 197, 94, 1)',
+    backgroundColor: 'var(--accent-green)',
+    boxShadow: '0 0 8px var(--accent-green-dim)',
   },
   runnerSubtitle: {
     fontSize: 10,
@@ -642,7 +642,7 @@ const styles: Record<string, React.CSSProperties> = {
   runnerTaskTitle: {
     fontSize: 13,
     fontWeight: 600,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -669,8 +669,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 5,
     backgroundColor: '#1e293b',
-    border: '1px solid rgba(255, 255, 255, 0.15)',
-    color: '#e2e8f0',
+    border: '1px solid var(--border-strong)',
+    color: 'var(--text-secondary)',
     borderRadius: 6,
     padding: '5px 10px',
     fontSize: 11,
@@ -684,7 +684,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 5,
     backgroundColor: '#15803d',
-    border: '1px solid rgba(34, 197, 94, 0.4)',
+    border: '1px solid var(--accent-green-border)',
     color: '#ffffff',
     borderRadius: 6,
     padding: '5px 12px',
@@ -707,21 +707,21 @@ const styles: Record<string, React.CSSProperties> = {
   headerTitle: {
     fontSize: 13,
     fontWeight: 600,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
   },
   cloudBadge: {
     fontSize: 10,
     fontWeight: 600,
-    color: '#22c55e',
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
+    color: 'var(--accent-green)',
+    backgroundColor: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
     borderRadius: 4,
     padding: '1px 6px',
   },
   headerSub: {
     display: 'block',
     fontSize: 10,
-    color: '#71717a',
+    color: 'var(--text-dim)',
     marginTop: 2,
   },
   addBtn: {
@@ -741,7 +741,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   kbdChip: {
     background: 'rgba(0, 0, 0, 0.25)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 3,
     padding: '1px 5px',
     fontSize: 9,
@@ -750,9 +750,9 @@ const styles: Record<string, React.CSSProperties> = {
     marginRight: 2,
   },
   refreshBtn: {
-    backgroundColor: '#1c1c21',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    color: '#fafafa',
+    backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border-default)',
+    color: 'var(--text-primary)',
     borderRadius: 6,
     padding: '6px 8px',
     cursor: 'pointer',
@@ -770,8 +770,8 @@ const styles: Record<string, React.CSSProperties> = {
   segmented: {
     display: 'flex',
     alignItems: 'center',
-    backgroundColor: '#0d0d10',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'var(--bg-sidebar)',
+    border: '1px solid var(--border-subtle)',
     borderRadius: 6,
     padding: 2,
   },
@@ -806,10 +806,10 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
     padding: '36px 16px',
     fontSize: 12,
-    color: '#71717a',
-    backgroundColor: '#0d0d10',
+    color: 'var(--text-dim)',
+    backgroundColor: 'var(--bg-sidebar)',
     borderRadius: 8,
-    border: '1px dashed rgba(255, 255, 255, 0.06)',
+    border: '1px dashed var(--border-subtle)',
     lineHeight: 1.6,
   },
   lightboxOverlay: {
@@ -826,8 +826,8 @@ const styles: Record<string, React.CSSProperties> = {
     backdropFilter: 'blur(5px)',
   },
   lightboxContent: {
-    backgroundColor: '#121216',
-    border: '1px solid rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 8,
     maxWidth: '90vw',
     maxHeight: '85vh',
@@ -841,7 +841,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '8px 14px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+    borderBottom: '1px solid var(--border-default)',
   },
   lightboxImg: {
     maxWidth: '85vw',
@@ -852,7 +852,7 @@ const styles: Record<string, React.CSSProperties> = {
   closeBtn: {
     background: 'none',
     border: 'none',
-    color: '#71717a',
+    color: 'var(--text-dim)',
     cursor: 'pointer',
     padding: 3,
   },

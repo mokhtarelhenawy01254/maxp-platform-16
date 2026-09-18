@@ -127,7 +127,7 @@ export const BreakReasonModal: React.FC<BreakReasonModalProps> = ({
                   }}
                   style={{
                     ...styles.reasonCard,
-                    borderColor: isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.08)',
+                    borderColor: isSelected ? '#38bdf8' : 'var(--border-default)',
                     background: isSelected ? 'rgba(56, 189, 248, 0.08)' : '#16161b',
                   }}
                 >
@@ -154,7 +154,7 @@ export const BreakReasonModal: React.FC<BreakReasonModalProps> = ({
                   onClick={() => setSelectedReason(custom)}
                   style={{
                     ...styles.reasonCard,
-                    borderColor: isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.08)',
+                    borderColor: isSelected ? '#38bdf8' : 'var(--border-default)',
                     background: isSelected ? 'rgba(56, 189, 248, 0.08)' : '#16161b',
                     position: 'relative',
                   }}
@@ -229,8 +229,8 @@ export const BreakReasonModal: React.FC<BreakReasonModalProps> = ({
                   onClick={() => setSelectedDuration(mins)}
                   style={{
                     ...styles.durationBtn,
-                    borderColor: isSelected ? '#22c55e' : 'rgba(255, 255, 255, 0.08)',
-                    background: isSelected ? 'rgba(34, 197, 94, 0.12)' : '#16161b',
+                    borderColor: isSelected ? '#22c55e' : 'var(--border-default)',
+                    background: isSelected ? 'var(--accent-green-bg)' : '#16161b',
                     color: isSelected ? '#22c55e' : '#a1a1aa',
                   }}
                 >
@@ -271,7 +271,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   modal: {
     background: '#101014',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 12,
     width: '100%',
     maxWidth: 460,
@@ -286,7 +286,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingBottom: 12,
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+    borderBottom: '1px solid var(--border-subtle)',
   },
   headerIcon: {
     width: 34,
@@ -301,12 +301,12 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     fontSize: 14,
     fontWeight: 700,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     margin: 0,
   },
   subtitle: {
     fontSize: 11,
-    color: '#71717a',
+    color: 'var(--text-dim)',
     margin: '2px 0 0 0',
   },
   closeBtn: {
@@ -327,7 +327,7 @@ const styles: Record<string, React.CSSProperties> = {
   sectionLabel: {
     fontSize: 11,
     fontWeight: 600,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
   },
   reasonsGrid: {
     display: 'grid',
@@ -340,7 +340,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
     padding: '10px 12px',
     borderRadius: 8,
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--border-default)',
     cursor: 'pointer',
     textAlign: 'right',
     fontFamily: 'inherit',
@@ -365,7 +365,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 6,
     background: 'transparent',
-    border: '1px dashed rgba(255, 255, 255, 0.15)',
+    border: '1px dashed var(--border-strong)',
     borderRadius: 6,
     color: '#38bdf8',
     padding: '7px 10px',
@@ -383,10 +383,10 @@ const styles: Record<string, React.CSSProperties> = {
   input: {
     flex: 1,
     background: '#16161b',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 6,
     padding: '6px 10px',
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     fontSize: 11,
     fontFamily: 'inherit',
     outline: 'none',
@@ -404,8 +404,8 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
   },
   cancelCustomBtn: {
-    background: '#27272a',
-    color: '#a1a1aa',
+    background: 'var(--bg-hover)',
+    color: 'var(--text-muted)',
     border: 'none',
     borderRadius: 6,
     padding: '6px 10px',
@@ -424,7 +424,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 5,
     padding: '6px 10px',
     borderRadius: 6,
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--border-default)',
     fontSize: 11,
     fontFamily: 'inherit',
     cursor: 'pointer',
@@ -437,12 +437,12 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'flex-end',
     gap: 8,
     paddingTop: 8,
-    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+    borderTop: '1px solid var(--border-subtle)',
   },
   cancelBtn: {
     background: '#1c1c22',
-    color: '#a1a1aa',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    color: 'var(--text-muted)',
+    border: '1px solid var(--border-default)',
     borderRadius: 6,
     padding: '8px 14px',
     fontSize: 12,
@@ -453,7 +453,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    background: '#22c55e',
+    background: 'var(--accent-green)',
     color: '#09090b',
     border: 'none',
     borderRadius: 6,

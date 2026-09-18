@@ -280,7 +280,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               <label style={modalStyles.label}>
                 المتابعون والمراقبون ({watchers.length})
               </label>
-              <span style={{ fontSize: 11, color: '#71717a' }}>
+              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
                 يتلقون إشعارات حية بكافة التحديثات
               </span>
             </div>
@@ -346,7 +346,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#f87171',
+                          color: 'var(--accent-red-dim)',
                           cursor: 'pointer',
                           padding: 1,
                           display: 'flex',
@@ -378,7 +378,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     fontSize: 12,
                     fontWeight: 500,
                     cursor: 'pointer',
-                    border: estimatedMinutes === m ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
+                    border: estimatedMinutes === m ? '1px solid #38bdf8' : '1px solid var(--border-strong)',
                     background: estimatedMinutes === m ? 'rgba(56, 189, 248, 0.15)' : '#18181b',
                     color: estimatedMinutes === m ? '#38bdf8' : '#a1a1aa',
                     transition: 'all 0.15s ease',
@@ -397,7 +397,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                   placeholder="مخصص"
                   style={{ ...modalStyles.input, width: 85, padding: '5px 8px', fontSize: 12, textAlign: 'center' }}
                 />
-                <span style={{ fontSize: 11, color: '#71717a' }}>دقيقة</span>
+                <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>دقيقة</span>
               </div>
             </div>
           </div>
@@ -532,8 +532,8 @@ const modalStyles: Record<string, React.CSSProperties> = {
     backdropFilter: 'blur(3px)',
   },
   modal: {
-    backgroundColor: '#121216',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 12,
     width: '92%',
     maxWidth: 580,
@@ -548,17 +548,17 @@ const modalStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '14px 18px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+    borderBottom: '1px solid var(--border-default)',
   },
   title: {
     fontSize: 14,
     fontWeight: 600,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
   },
   closeBtn: {
     background: 'none',
     border: 'none',
-    color: '#71717a',
+    color: 'var(--text-dim)',
     cursor: 'pointer',
     padding: 4,
     borderRadius: 4,
@@ -572,7 +572,7 @@ const modalStyles: Record<string, React.CSSProperties> = {
   label: {
     display: 'block',
     fontSize: 11,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     marginBottom: 4,
   },
   input: {
@@ -580,9 +580,9 @@ const modalStyles: Record<string, React.CSSProperties> = {
     padding: '7px 10px',
     fontSize: 12,
     backgroundColor: '#0a0a0d',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 6,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     fontFamily: 'inherit',
     outline: 'none',
     boxSizing: 'border-box',
@@ -592,9 +592,9 @@ const modalStyles: Record<string, React.CSSProperties> = {
     padding: '7px 10px',
     fontSize: 12,
     backgroundColor: '#0a0a0d',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 6,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     fontFamily: 'inherit',
     outline: 'none',
     boxSizing: 'border-box',
@@ -615,7 +615,7 @@ const modalStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 6,
     fontSize: 12,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
   },
@@ -623,12 +623,12 @@ const modalStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#1c1c21',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 6,
     padding: '4px 8px',
     fontSize: 11,
-    color: '#e4e4e7',
+    color: 'var(--text-secondary)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 120ms ease-out',
@@ -643,14 +643,14 @@ const modalStyles: Record<string, React.CSSProperties> = {
     padding: 6,
     backgroundColor: '#0a0a0d',
     borderRadius: 6,
-    border: '1px solid rgba(255, 255, 255, 0.05)',
+    border: '1px solid var(--border-subtle)',
   },
   attachmentChip: {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#18181b',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border-default)',
     borderRadius: 4,
     padding: '3px 6px',
     fontSize: 11,
@@ -667,13 +667,13 @@ const modalStyles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    color: '#d4d4d8',
+    color: 'var(--text-secondary)',
     fontSize: 10,
   },
   removeAttBtn: {
     background: 'none',
     border: 'none',
-    color: '#ef4444',
+    color: 'var(--accent-red)',
     cursor: 'pointer',
     padding: 1,
   },
@@ -682,13 +682,13 @@ const modalStyles: Record<string, React.CSSProperties> = {
     justifyContent: 'flex-end',
     gap: 8,
     paddingTop: 10,
-    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+    borderTop: '1px solid var(--border-subtle)',
     marginTop: 4,
   },
   cancelBtn: {
-    backgroundColor: '#18181b',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    color: '#a1a1aa',
+    backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border-default)',
+    color: 'var(--text-muted)',
     padding: '7px 14px',
     borderRadius: 6,
     fontSize: 12,
@@ -711,9 +711,9 @@ const modalStyles: Record<string, React.CSSProperties> = {
     transition: 'all 140ms ease-out',
   },
   errorAlert: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    border: '1px solid rgba(239, 68, 68, 0.25)',
-    color: '#f87171',
+    backgroundColor: 'var(--accent-red-bg)',
+    border: '1px solid var(--accent-red-border)',
+    color: 'var(--accent-red-dim)',
     padding: '8px 12px',
     margin: '10px 18px 0',
     borderRadius: 6,

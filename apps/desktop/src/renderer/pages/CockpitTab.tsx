@@ -105,7 +105,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         {/* Active Time Card */}
         <div style={styles.metricCard}>
           <div style={styles.metricHeader}>
-            <div style={{ ...styles.iconBadge, color: '#22c55e', background: 'rgba(34, 197, 94, 0.1)' }}>
+            <div style={{ ...styles.iconBadge, color: 'var(--accent-green)', background: 'var(--accent-green-bg)' }}>
               <Clock size={15} />
             </div>
             <span style={styles.metricLabel}>وقت العمل الفعلي</span>
@@ -119,7 +119,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         {/* Idle Time Card */}
         <div style={styles.metricCard}>
           <div style={styles.metricHeader}>
-            <div style={{ ...styles.iconBadge, color: '#eab308', background: 'rgba(234, 179, 8, 0.1)' }}>
+            <div style={{ ...styles.iconBadge, color: 'var(--accent-yellow)', background: 'var(--accent-yellow-bg)' }}>
               <Coffee size={15} />
             </div>
             <span style={styles.metricLabel}>وقت التوقف والراحة</span>
@@ -184,7 +184,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         ) : (
           <div style={styles.metricCard}>
             <div style={styles.metricHeader}>
-              <div style={{ ...styles.iconBadge, color: '#22c55e', background: 'rgba(34, 197, 94, 0.1)' }}>
+              <div style={{ ...styles.iconBadge, color: 'var(--accent-green)', background: 'var(--accent-green-bg)' }}>
                 <ShieldCheck size={15} />
               </div>
               <span style={styles.metricLabel}>إجمالي المدخلات اليوم</span>
@@ -266,7 +266,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 12,
     background: 'rgba(234, 179, 8, 0.08)',
-    border: '1px solid rgba(234, 179, 8, 0.28)',
+    border: '1px solid var(--accent-yellow-border)',
     borderRadius: 10,
     padding: '12px 14px',
   },
@@ -295,7 +295,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   breakSubtext: {
     fontSize: 11,
-    color: '#d4d4d8',
+    color: 'var(--text-secondary)',
     marginTop: 4,
     lineHeight: 1.4,
   },
@@ -303,7 +303,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 12,
-    background: 'rgba(34, 197, 94, 0.05)',
+    background: 'var(--accent-green-bg)',
     border: '1px solid rgba(34, 197, 94, 0.18)',
     borderRadius: 10,
     padding: '10px 14px',
@@ -312,7 +312,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 32,
     height: 32,
     borderRadius: 8,
-    background: 'rgba(34, 197, 94, 0.12)',
+    background: 'var(--accent-green-bg)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -326,26 +326,26 @@ const styles: Record<string, React.CSSProperties> = {
   bannerTitle: {
     fontSize: 13,
     fontWeight: 600,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
   },
   livePulseChip: {
     display: 'flex',
     alignItems: 'center',
     gap: 5,
-    background: 'rgba(34, 197, 94, 0.15)',
-    border: '1px solid rgba(34, 197, 94, 0.3)',
+    background: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
     borderRadius: 20,
     padding: '2px 8px',
     fontSize: 11,
-    color: '#22c55e',
+    color: 'var(--accent-green)',
     fontWeight: 600,
   },
   pulsingDot: {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    background: '#22c55e',
-    boxShadow: '0 0 8px rgba(34, 197, 94, 0.8)',
+    background: 'var(--accent-green)',
+    boxShadow: '0 0 8px var(--accent-green-dim)',
   },
   grid: {
     display: 'grid',
@@ -353,7 +353,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
   },
   metricCard: {
-    background: '#121216',
+    background: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.07)',
     borderRadius: 10,
     padding: '14px',
@@ -375,13 +375,13 @@ const styles: Record<string, React.CSSProperties> = {
   },
   metricLabel: {
     fontSize: 12,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     fontWeight: 500,
   },
   metricValue: {
     fontSize: 22,
     fontWeight: 700,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     fontVariantNumeric: 'tabular-nums',
     letterSpacing: '-0.02em',
   },
@@ -389,11 +389,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-between',
     fontSize: 11,
-    color: '#71717a',
+    color: 'var(--text-dim)',
     marginTop: 6,
   },
   sectionBox: {
-    background: '#121216',
+    background: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.07)',
     borderRadius: 10,
     padding: '14px',
@@ -407,7 +407,7 @@ const styles: Record<string, React.CSSProperties> = {
   sectionTitle: {
     fontSize: 13,
     fontWeight: 600,
-    color: '#e4e4e7',
+    color: 'var(--text-secondary)',
   },
   ratioPercent: {
     fontSize: 12,
@@ -418,12 +418,12 @@ const styles: Record<string, React.CSSProperties> = {
   progressTrack: {
     height: 8,
     borderRadius: 4,
-    background: '#27272a',
+    background: 'var(--bg-hover)',
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    background: '#22c55e',
+    background: 'var(--accent-green)',
     borderRadius: 4,
     transition: 'width 300ms ease-out',
   },
@@ -432,8 +432,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 4,
     fontSize: 11,
-    color: '#22c55e',
-    background: 'rgba(34, 197, 94, 0.1)',
+    color: 'var(--accent-green)',
+    background: 'var(--accent-green-bg)',
     border: '1px solid rgba(34, 197, 94, 0.2)',
     borderRadius: 6,
     padding: '3px 8px',
@@ -442,15 +442,15 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 10,
-    background: '#0d0d10',
+    background: 'var(--bg-sidebar)',
     padding: '10px 12px',
     borderRadius: 8,
-    border: '1px solid rgba(255, 255, 255, 0.05)',
+    border: '1px solid var(--border-subtle)',
   },
   currentAppName: {
     fontSize: 14,
     fontWeight: 600,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
   },
   currentUrlRow: {
     display: 'flex',
@@ -460,7 +460,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   currentUrlText: {
     fontSize: 11,
-    color: '#71717a',
+    color: 'var(--text-dim)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',

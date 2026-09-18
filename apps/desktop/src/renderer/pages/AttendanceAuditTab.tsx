@@ -57,8 +57,8 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = ({ formatTi
       <div
         style={{
           ...styles.banner,
-          borderColor: hasDelay ? 'rgba(234, 179, 8, 0.25)' : 'rgba(34, 197, 94, 0.25)',
-          background: hasDelay ? 'rgba(234, 179, 8, 0.05)' : 'rgba(34, 197, 94, 0.05)',
+          borderColor: hasDelay ? 'rgba(234, 179, 8, 0.25)' : 'var(--accent-green-border)',
+          background: hasDelay ? 'rgba(234, 179, 8, 0.05)' : 'var(--accent-green-bg)',
         }}
       >
         <div style={styles.bannerIcon}>
@@ -152,11 +152,11 @@ const styles: Record<string, React.CSSProperties> = {
   bannerTitle: {
     fontSize: 13,
     fontWeight: 600,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
   },
   bannerDesc: {
     fontSize: 11,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     marginTop: 2,
   },
   grid: {
@@ -165,8 +165,8 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
   },
   card: {
-    background: '#121216',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
     borderRadius: 8,
     padding: '14px',
   },
@@ -178,23 +178,23 @@ const styles: Record<string, React.CSSProperties> = {
   },
   cardTitle: {
     fontSize: 12,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     fontWeight: 500,
   },
   cardValue: {
     fontSize: 20,
     fontWeight: 700,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     fontVariantNumeric: 'tabular-nums',
   },
   cardDesc: {
     fontSize: 11,
-    color: '#71717a',
+    color: 'var(--text-dim)',
     marginTop: 4,
   },
   policyBox: {
-    background: '#121216',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-subtle)',
     borderRadius: 8,
     padding: '14px',
   },
@@ -207,11 +207,11 @@ const styles: Record<string, React.CSSProperties> = {
   policyTitle: {
     fontSize: 13,
     fontWeight: 600,
-    color: '#e4e4e7',
+    color: 'var(--text-secondary)',
   },
   policyText: {
     fontSize: 12,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     lineHeight: 1.6,
   },
 };

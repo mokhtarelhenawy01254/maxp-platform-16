@@ -66,13 +66,13 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
   const getCategoryMeta = (cat?: string) => {
     switch (cat) {
       case 'productive':
-        return { label: 'مرتبط بالعمل', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' };
+        return { label: 'مرتبط بالعمل', color: 'var(--accent-green)', bg: 'var(--accent-green-bg)' };
       case 'unproductive':
-        return { label: 'تصفح عام / استخدام متنوع', color: '#a1a1aa', bg: 'rgba(255, 255, 255, 0.06)' };
+        return { label: 'تصفح عام / استخدام متنوع', color: 'var(--text-muted)', bg: 'var(--border-subtle)' };
       case 'neutral':
         return { label: 'أدوات مساعدة', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.1)' };
       default:
-        return { label: 'غير مصنف', color: '#71717a', bg: 'rgba(113, 113, 122, 0.1)' };
+        return { label: 'غير مصنف', color: 'var(--text-dim)', bg: 'rgba(113, 113, 122, 0.1)' };
     }
   };
 
@@ -228,8 +228,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    background: '#121216',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
     borderRadius: 8,
     padding: '8px 10px',
   },
@@ -254,8 +254,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    background: '#0d0d10',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--bg-sidebar)',
+    border: '1px solid var(--border-default)',
     borderRadius: 6,
     padding: '4px 10px',
     width: 200,
@@ -264,7 +264,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'transparent',
     border: 'none',
     outline: 'none',
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     fontSize: 12,
     width: '100%',
     fontFamily: 'inherit',
@@ -281,8 +281,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    background: '#121216',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-subtle)',
     borderRadius: 8,
     padding: '10px 14px',
   },
@@ -299,7 +299,7 @@ const styles: Record<string, React.CSSProperties> = {
   itemName: {
     fontSize: 13,
     fontWeight: 600,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -315,7 +315,7 @@ const styles: Record<string, React.CSSProperties> = {
   track: {
     height: 4,
     borderRadius: 2,
-    background: '#27272a',
+    background: 'var(--bg-hover)',
     overflow: 'hidden',
   },
   bar: {
@@ -331,19 +331,19 @@ const styles: Record<string, React.CSSProperties> = {
   timeVal: {
     fontSize: 13,
     fontWeight: 700,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     fontVariantNumeric: 'tabular-nums',
   },
   ratioVal: {
     fontSize: 10,
-    color: '#71717a',
+    color: 'var(--text-dim)',
     fontVariantNumeric: 'tabular-nums',
     marginTop: 2,
   },
   emptyState: {
     textAlign: 'center',
     padding: '40px 10px',
-    color: '#52525b',
+    color: 'var(--text-dimmer)',
     fontSize: 12,
   },
 };

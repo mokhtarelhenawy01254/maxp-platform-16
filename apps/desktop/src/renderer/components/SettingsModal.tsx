@@ -10,7 +10,10 @@ import {
   Download,
   AlertCircle,
   Sparkles,
+  Moon,
+  Sun,
 } from 'lucide-react';
+import { useTheme } from '../theme/ThemeContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -30,6 +33,7 @@ const DEFAULT_PREFS: Prefs = {
 };
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+  const { mode, setTheme } = useTheme();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [saved, setSaved] = useState(false);
 
@@ -233,6 +237,68 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
+          {/* Appearance / Theme Section */}
+          <div style={styles.sectionCard}>
+            <div style={styles.sectionHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {mode === 'dark' ? <Moon size={13} color="var(--accent-blue)" /> : <Sun size={13} color="#eab308" />}
+                <span style={styles.sectionTitle}>المظهر</span>
+              </div>
+            </div>
+            <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => setTheme('dark')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  border: mode === 'dark' ? '1px solid var(--accent-blue)' : '1px solid var(--border-default)',
+                  background: mode === 'dark' ? 'var(--accent-blue-bg)' : 'var(--bg-input)',
+                  color: mode === 'dark' ? 'var(--accent-blue)' : 'var(--text-dim)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'all 140ms ease-out',
+                }}
+                onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+              >
+                <Moon size={14} />
+                <span>داكن</span>
+              </button>
+              <button
+                onClick={() => setTheme('light')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  border: mode === 'light' ? '1px solid #eab308' : '1px solid var(--border-default)',
+                  background: mode === 'light' ? 'rgba(234,179,8,0.08)' : 'var(--bg-input)',
+                  color: mode === 'light' ? '#ca8a04' : 'var(--text-dim)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'all 140ms ease-out',
+                }}
+                onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+              >
+                <Sun size={14} />
+                <span>فاتح</span>
+              </button>
+            </div>
+          </div>
+
           {/* Software Updates Section */}
           <div style={styles.sectionCard}>
             <div style={styles.sectionHeader}>
@@ -280,18 +346,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                       updateResult.status === 'update-available'
                         ? 'rgba(56, 189, 248, 0.1)'
                         : updateResult.status === 'up-to-date' || updateResult.status === 'dev'
-                        ? 'rgba(34, 197, 94, 0.1)'
+                        ? 'var(--accent-green-bg)'
                         : updateResult.status === 'error'
-                        ? 'rgba(239, 68, 68, 0.1)'
-                        : 'rgba(255, 255, 255, 0.05)',
+                        ? 'var(--accent-red-bg)'
+                        : 'var(--border-subtle)',
                     borderColor:
                       updateResult.status === 'update-available'
                         ? 'rgba(56, 189, 248, 0.25)'
                         : updateResult.status === 'up-to-date' || updateResult.status === 'dev'
-                        ? 'rgba(34, 197, 94, 0.25)'
+                        ? 'var(--accent-green-border)'
                         : updateResult.status === 'error'
-                        ? 'rgba(239, 68, 68, 0.25)'
-                        : 'rgba(255, 255, 255, 0.1)',
+                        ? 'var(--accent-red-border)'
+                        : 'var(--border-strong)',
                   }}
                 >
                   {updateResult.status === 'checking' && (
@@ -310,14 +376,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
                   {updateResult.status === 'downloaded' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-green)' }}>
                         <CheckCircle2 size={13} />
                         <span style={{ fontSize: 11, fontWeight: 600 }}>{updateResult.message}</span>
                       </div>
                       <button
                         onClick={() => window.electronAPI.quitAndInstallUpdate()}
                         style={{
-                          background: '#22c55e',
+                          background: 'var(--accent-green)',
                           color: '#09090b',
                           border: 'none',
                           borderRadius: 6,
@@ -339,14 +405,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   )}
 
                   {(updateResult.status === 'up-to-date' || updateResult.status === 'dev') && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-green)' }}>
                       <CheckCircle2 size={13} />
                       <span style={{ fontSize: 11, fontWeight: 500 }}>{updateResult.message}</span>
                     </div>
                   )}
 
                   {updateResult.status === 'error' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f87171' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-red-dim)' }}>
                       <AlertCircle size={13} />
                       <span style={{ fontSize: 11, fontWeight: 500 }}>{updateResult.message}</span>
                     </div>
@@ -407,8 +473,8 @@ const styles: Record<string, React.CSSProperties> = {
   modal: {
     width: '100%',
     maxWidth: 440,
-    background: '#121214',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
     borderRadius: 14,
     padding: 22,
     display: 'flex',
@@ -421,15 +487,15 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+    borderBottom: '1px solid var(--border-subtle)',
     paddingBottom: 14,
   },
   headerIcon: {
     width: 30,
     height: 30,
     borderRadius: 8,
-    background: 'rgba(34, 197, 94, 0.12)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
+    background: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -437,14 +503,14 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     fontSize: 15,
     fontWeight: 700,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     margin: 0,
     letterSpacing: '-0.01em',
   },
   closeBtn: {
     background: 'transparent',
     border: 'none',
-    color: '#71717a',
+    color: 'var(--text-dim)',
     cursor: 'pointer',
     padding: 4,
     display: 'flex',
@@ -459,8 +525,8 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 12,
   },
   sectionCard: {
-    background: '#0c0c0e',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    background: 'var(--bg-topbar)',
+    border: '1px solid var(--border-subtle)',
     borderRadius: 10,
     padding: 14,
   },
@@ -474,14 +540,14 @@ const styles: Record<string, React.CSSProperties> = {
   sectionTitle: {
     fontSize: 12,
     fontWeight: 600,
-    color: '#d4d4d8',
+    color: 'var(--text-secondary)',
   },
   savedBadge: {
     fontSize: 10,
     fontWeight: 600,
-    color: '#a1a1aa',
-    background: 'rgba(255, 255, 255, 0.05)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    color: 'var(--text-muted)',
+    background: 'var(--border-subtle)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 6,
     padding: '2px 6px',
   },
@@ -495,11 +561,11 @@ const styles: Record<string, React.CSSProperties> = {
   toggleTitle: {
     fontSize: 12,
     fontWeight: 500,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
   },
   toggleDesc: {
     fontSize: 11,
-    color: '#71717a',
+    color: 'var(--text-dim)',
     marginTop: 2,
   },
   checkbox: {
@@ -524,13 +590,13 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    background: 'rgba(255, 255, 255, 0.06)',
+    background: 'var(--border-subtle)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
     borderRadius: 7,
     padding: '6px 12px',
     fontSize: 11,
     fontWeight: 600,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     cursor: 'pointer',
     transition: 'all 140ms ease-out',
   },
@@ -548,23 +614,23 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'flex-end',
     gap: 8,
     marginTop: 4,
-    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+    borderTop: '1px solid var(--border-subtle)',
     paddingTop: 12,
   },
   cancelBtn: {
     background: 'transparent',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 8,
     padding: '7px 16px',
     fontSize: 12,
     fontWeight: 500,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
     transition: 'all 140ms ease-out',
   },
   saveBtn: {
-    background: '#fafafa',
-    color: '#09090b',
+    background: 'var(--btn-primary-bg)',
+    color: 'var(--btn-primary-text)',
     border: 'none',
     borderRadius: 8,
     padding: '7px 18px',
