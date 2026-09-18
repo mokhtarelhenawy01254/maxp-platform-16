@@ -5,6 +5,11 @@ const { t } = require('./i18n');
 
 function getTaskStatusLabel(status) {
     const key = String(status || '').toUpperCase();
+    if (key === 'IN_REVIEW' || key === 'PENDING_REVIEW') return 'قيد المراجعة والاعتماد';
+    if (key === 'COMPLETED') return 'مكتملة ومعتمدة';
+    if (key === 'IN_PROGRESS') return 'قيد التنفيذ';
+    if (key === 'TODO' || key === 'PENDING') return 'قيد الانتظار';
+    if (key === 'CANCELLED') return 'ملغاة';
     const result = t('task.status.' + key);
     return result !== 'task.status.' + key ? result : t('task.status.fallback');
 }

@@ -30,7 +30,7 @@ export const TasksTab: React.FC = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'my-tasks' | 'assigned-by-me'>('my-tasks');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'IN_PROGRESS' | 'COMPLETED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'>('ALL');
   const [users, setUsers] = useState<any[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
@@ -280,8 +280,11 @@ export const TasksTab: React.FC = () => {
   };
 
   const filteredTasks = tasks.filter((t) => {
-    const isDone = String(t.status || '').toUpperCase() === 'COMPLETED';
-    if (statusFilter === 'IN_PROGRESS') return !isDone;
+    const raw = String(t.status || '').toUpperCase();
+    const isDone = raw === 'COMPLETED';
+    const isReview = raw === 'IN_REVIEW' || raw === 'PENDING_REVIEW';
+    if (statusFilter === 'IN_PROGRESS') return !isDone && !isReview;
+    if (statusFilter === 'IN_REVIEW') return isReview;
     if (statusFilter === 'COMPLETED') return isDone;
     return true;
   });
@@ -289,6 +292,16 @@ export const TasksTab: React.FC = () => {
   const completedCount = tasks.filter(
     (t) => String(t.status || '').toUpperCase() === 'COMPLETED'
   ).length;
+
+  const inReviewCount = tasks.filter((t) => {
+    const s = String(t.status || '').toUpperCase();
+    return s === 'IN_REVIEW' || s === 'PENDING_REVIEW';
+  }).length;
+
+  const inProgressCount = tasks.filter((t) => {
+    const s = String(t.status || '').toUpperCase();
+    return s !== 'COMPLETED' && s !== 'IN_REVIEW' && s !== 'PENDING_REVIEW';
+  }).length;
 
   return (
     <div style={styles.container}>
@@ -411,19 +424,20 @@ export const TasksTab: React.FC = () => {
 
         {/* Status Filters */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {(['ALL', 'IN_PROGRESS', 'COMPLETED'] as const).map((s) => (
+          {(['ALL', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
               style={{
                 ...styles.statusFilterBtn,
-                backgroundColor: statusFilter === s ? '#18181b' : 'transparent',
+                backgroundColor: statusFilter === s ? 'var(--bg-elevated)' : 'transparent',
                 borderColor: statusFilter === s ? 'var(--border-strong)' : 'var(--border-subtle)',
-                color: statusFilter === s ? '#fafafa' : '#71717a',
+                color: statusFilter === s ? 'var(--text-primary)' : 'var(--text-dim)',
               }}
             >
               {s === 'ALL' && `الكل (${tasks.length})`}
-              {s === 'IN_PROGRESS' && `قيد التنفيذ (${tasks.length - completedCount})`}
+              {s === 'IN_PROGRESS' && `قيد التنفيذ (${inProgressCount})`}
+              {s === 'IN_REVIEW' && `قيد الاعتماد (${inReviewCount})`}
               {s === 'COMPLETED' && `المكتملة (${completedCount})`}
             </button>
           ))}

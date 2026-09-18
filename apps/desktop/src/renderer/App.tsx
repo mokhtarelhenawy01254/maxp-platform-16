@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import TitleBar from './components/TitleBar';
 
 // Type declarations for the Electron API bridge
 declare global {
@@ -40,6 +41,11 @@ declare global {
       addWatcher: (taskId: string, userId: string) => Promise<{ success: boolean; result?: any; error?: string }>;
       removeWatcher: (taskId: string, userId: string) => Promise<{ success: boolean; result?: any; error?: string }>;
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
+      windowMinimize: () => Promise<boolean>;
+      windowToggleMaximize: () => Promise<boolean>;
+      windowClose: () => Promise<boolean>;
+      windowIsMaximized: () => Promise<boolean>;
+      getDeviceInfo: () => Promise<{ hostname: string; platform: string; release: string; appVersion: string }>;
       checkForUpdates: () => Promise<{
         success: boolean;
         status: 'dev' | 'update-available' | 'up-to-date' | 'error';
@@ -101,25 +107,35 @@ const App: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{
-        height: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--bg-page)',
-        color: 'var(--text-dim)',
-        fontSize: 14,
-      }}>
-        {'جاري التحميل…'}
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+        <TitleBar />
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--bg-page)',
+          color: 'var(--text-dim)',
+          fontSize: 14,
+        }}>
+          {'جاري التحميل…'}
+        </div>
       </div>
     );
   }
 
-  if (!isLoggedIn) {
-    return <LoginPage onLogin={handleLogin} />;
-  }
-
-  return <DashboardPage user={user} onLogout={handleLogout} />;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <TitleBar />
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        {!isLoggedIn ? (
+          <LoginPage onLogin={handleLogin} />
+        ) : (
+          <DashboardPage user={user} onLogout={handleLogout} />
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default App;

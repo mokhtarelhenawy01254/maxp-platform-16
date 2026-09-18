@@ -1,5 +1,7 @@
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const { v4: uuidv4 } = require("uuid");
+const fs = require("fs");
+const path = require("path");
 const taskNotificationService = require("../services/taskNotificationService");
 const { queueTaskWebhook } = require("../services/taskWebhookService");
 const taskNotificationHelpers = taskNotificationService.helpers;
@@ -1316,16 +1318,29 @@ const taskController = {
           });
         }
 
-        const normalizedStatus = normalizeStatus(status);
+        let normalizedStatus = normalizeStatus(status);
+        const isAssigneeOnly = !isManagerOrAdmin && existingTask.createdBy !== currentUserId && existingTask.assignedTo === currentUserId;
+
+        // إذا كان المنفذ فقط يحاول إنهاء المهمة ذاتياً، يتم توجيهها لمرحلة المراجعة والاعتماد
+        if (isAssigneeOnly && normalizedStatus === "COMPLETED") {
+          normalizedStatus = "IN_REVIEW";
+        }
+
         const isReopening = existingTask.status === "COMPLETED" && normalizedStatus !== "COMPLETED";
+        const isSubmittingForReview = normalizedStatus === "IN_REVIEW" && existingTask.status !== "IN_REVIEW";
+        const isApproving = existingTask.status === "IN_REVIEW" && normalizedStatus === "COMPLETED";
+        const isReturning = existingTask.status === "IN_REVIEW" && normalizedStatus === "IN_PROGRESS";
+
         const nextProgress =
           normalizedStatus === "COMPLETED"
             ? 100
-            : isReopening
-              ? (existingTask.progress === 100 ? 50 : existingTask.progress)
-              : progress === undefined
-                ? existingTask.progress
-                : clampProgress(progress);
+            : isSubmittingForReview
+              ? 100
+              : isReopening || isReturning
+                ? (existingTask.progress === 100 ? 50 : existingTask.progress)
+                : progress === undefined
+                  ? existingTask.progress
+                  : clampProgress(progress);
         const completedDate =
           normalizedStatus === "COMPLETED" ? new Date() : null;
         const updatedCount = await getSharedPrismaClient().$executeRawUnsafe(
@@ -1354,7 +1369,7 @@ const taskController = {
           });
         }
 
-        if (["COMPLETED", "CANCELLED"].includes(normalizedStatus)) {
+        if (["COMPLETED", "CANCELLED", "IN_REVIEW"].includes(normalizedStatus)) {
           try {
             const runningEntries = await getSharedPrismaClient().timeEntry.findMany({
               where: { taskId: id, companyId, isRunning: true },
@@ -1368,7 +1383,7 @@ const taskController = {
               });
             }
           } catch (e) {
-            console.warn("[taskController] Failed to auto-stop running time entries on completion:", e?.message);
+            console.warn("[taskController] Failed to auto-stop running time entries on completion/review:", e?.message);
           }
         }
 
@@ -1381,22 +1396,37 @@ const taskController = {
           });
         }
 
+        let successMsg = "تم تحديث حالة المهمة بنجاح";
+        let notifTitle = "تحديث حالة المهمة";
+        let notifMsg = `تم تغيير حالة المهمة "${task.title}" إلى ${taskNotificationHelpers.normalizeStatusLabel(normalizedStatus)}`;
+
+        if (isSubmittingForReview) {
+          successMsg = "تم تسليم المهمة بنجاح وهي الآن بانتظار مراجعة واعتماد الإدارة / المكلّف";
+          notifTitle = "تسليم مهمة للمراجعة والاعتماد";
+          notifMsg = `سلّم ${req.user.firstName || "الموظف"} المهمة "${task.title}" للمراجعة والاعتماد`;
+        } else if (isApproving) {
+          successMsg = "تم اعتماد المهمة بنجاح كـ مكتملة";
+          notifTitle = "اعتماد إنجاز المهمة";
+          notifMsg = `اعتمد ${req.user.firstName || "المدير"} إنجاز المهمة "${task.title}" رسمياً`;
+        } else if (isReturning) {
+          successMsg = "تمت إعادة المهمة للعمل مع طلب تعديلات";
+          notifTitle = "طلب تعديلات على المهمة";
+          notifMsg = `أعاد ${req.user.firstName || "المدير"} المهمة "${task.title}" للعمل لمراجعة الملاحظات`;
+        } else if (isReopening) {
+          successMsg = "تم إعادة فتح المهمة بنجاح";
+          notifTitle = "إعادة فتح المهمة";
+          notifMsg = `أعاد ${req.user.firstName || "مستخدم"} فتح المهمة "${task.title}"`;
+        } else if (normalizedStatus === "COMPLETED") {
+          successMsg = "تم إنجاز المهمة بنجاح";
+          notifTitle = "إنجاز المهمة";
+          notifMsg = `أنجز ${req.user.firstName || "مستخدم"} المهمة "${task.title}"`;
+        }
+
         res.json({
           success: true,
           data: task,
-          message: isReopening ? "تم إعادة فتح المهمة بنجاح" : "تم تحديث حالة المهمة بنجاح",
+          message: successMsg,
         });
-
-        const notifTitle = isReopening
-          ? "إعادة فتح المهمة"
-          : normalizedStatus === "COMPLETED"
-            ? "إنجاز المهمة"
-            : "تحديث حالة المهمة";
-        const notifMsg = isReopening
-          ? `أعاد ${req.user.firstName || "مستخدم"} فتح المهمة "${task.title}"`
-          : normalizedStatus === "COMPLETED"
-            ? `أنجز ${req.user.firstName || "مستخدم"} المهمة "${task.title}"`
-            : `تم تغيير حالة المهمة "${task.title}" إلى ${taskNotificationHelpers.normalizeStatusLabel(normalizedStatus)}`;
 
         await taskNotificationService.notifyTaskStakeholders({
           companyId,
@@ -1448,16 +1478,29 @@ const taskController = {
         });
       }
 
-      const normalizedStatus = normalizeStatus(status);
+      let normalizedStatus = normalizeStatus(status);
+      const isAssigneeOnly = !isManagerOrAdmin && existingTask.createdBy !== currentUserId && existingTask.assignedTo === currentUserId;
+
+      // إذا كان المنفذ فقط يحاول إنهاء المهمة ذاتياً، يتم توجيهها لمرحلة المراجعة والاعتماد
+      if (isAssigneeOnly && normalizedStatus === "COMPLETED") {
+        normalizedStatus = "IN_REVIEW";
+      }
+
       const isReopening = existingTask.status === "COMPLETED" && normalizedStatus !== "COMPLETED";
+      const isSubmittingForReview = normalizedStatus === "IN_REVIEW" && existingTask.status !== "IN_REVIEW";
+      const isApproving = existingTask.status === "IN_REVIEW" && normalizedStatus === "COMPLETED";
+      const isReturning = existingTask.status === "IN_REVIEW" && normalizedStatus === "IN_PROGRESS";
+
       const nextProgress =
         normalizedStatus === "COMPLETED"
           ? 100
-          : isReopening
-            ? (existingTask.progress === 100 ? 50 : existingTask.progress)
-            : progress === undefined
-              ? existingTask.progress
-              : clampProgress(progress);
+          : isSubmittingForReview
+            ? 100
+            : isReopening || isReturning
+              ? (existingTask.progress === 100 ? 50 : existingTask.progress)
+              : progress === undefined
+                ? existingTask.progress
+                : clampProgress(progress);
       const completedDate = normalizedStatus === "COMPLETED" ? new Date() : null;
 
       const updateData = {
@@ -1481,7 +1524,7 @@ const taskController = {
         });
       }
 
-      if (["COMPLETED", "CANCELLED"].includes(normalizedStatus)) {
+      if (["COMPLETED", "CANCELLED", "IN_REVIEW"].includes(normalizedStatus)) {
         try {
           const runningEntries = await getSharedPrismaClient().timeEntry.findMany({
             where: { taskId: id, companyId, isRunning: true },
@@ -1499,7 +1542,7 @@ const taskController = {
             });
           }
         } catch (e) {
-          console.warn("[taskController] Failed to auto-stop running time entries on completion:", e?.message);
+          console.warn("[taskController] Failed to auto-stop running time entries on completion/review:", e?.message);
         }
       }
 
@@ -1516,22 +1559,37 @@ const taskController = {
         });
       }
 
+      let successMsg = "تم تحديث حالة المهمة بنجاح";
+      let notifTitle = "تحديث حالة المهمة";
+      let notifMsg = `تم تغيير حالة المهمة "${task.title}" إلى ${taskNotificationHelpers.normalizeStatusLabel(normalizedStatus)}`;
+
+      if (isSubmittingForReview) {
+        successMsg = "تم تسليم المهمة بنجاح وهي الآن بانتظار مراجعة واعتماد الإدارة / المكلّف";
+        notifTitle = "تسليم مهمة للمراجعة والاعتماد";
+        notifMsg = `سلّم ${req.user.firstName || "الموظف"} المهمة "${task.title}" للمراجعة والاعتماد`;
+      } else if (isApproving) {
+        successMsg = "تم اعتماد المهمة بنجاح كـ مكتملة";
+        notifTitle = "اعتماد إنجاز المهمة";
+        notifMsg = `اعتمد ${req.user.firstName || "المدير"} إنجاز المهمة "${task.title}" رسمياً`;
+      } else if (isReturning) {
+        successMsg = "تمت إعادة المهمة للعمل مع طلب تعديلات";
+        notifTitle = "طلب تعديلات على المهمة";
+        notifMsg = `أعاد ${req.user.firstName || "المدير"} المهمة "${task.title}" للعمل لمراجعة الملاحظات`;
+      } else if (isReopening) {
+        successMsg = "تم إعادة فتح المهمة بنجاح";
+        notifTitle = "إعادة فتح المهمة";
+        notifMsg = `أعاد ${req.user.firstName || "مستخدم"} فتح المهمة "${task.title}"`;
+      } else if (normalizedStatus === "COMPLETED") {
+        successMsg = "تم إنجاز المهمة بنجاح";
+        notifTitle = "إنجاز المهمة";
+        notifMsg = `أنجز ${req.user.firstName || "مستخدم"} المهمة "${task.title}"`;
+      }
+
       res.json({
         success: true,
         data: formatTaskSummary(task),
-        message: isReopening ? "تم إعادة فتح المهمة بنجاح" : "تم تحديث حالة المهمة بنجاح",
+        message: successMsg,
       });
-
-      const notifTitle = isReopening
-        ? "إعادة فتح المهمة"
-        : normalizedStatus === "COMPLETED"
-          ? "إنجاز المهمة"
-          : "تحديث حالة المهمة";
-      const notifMsg = isReopening
-        ? `أعاد ${req.user.firstName || "مستخدم"} فتح المهمة "${task.title}"`
-        : normalizedStatus === "COMPLETED"
-          ? `أنجز ${req.user.firstName || "مستخدم"} المهمة "${task.title}"`
-          : `تم تغيير حالة المهمة "${task.title}" إلى ${taskNotificationHelpers.normalizeStatusLabel(normalizedStatus)}`;
 
       // 🔔 ارسال اشعارات بتغيير الحالة للمسؤول والمراقبين
       await taskNotificationService.notifyTaskStakeholders({
@@ -3397,7 +3455,7 @@ const taskController = {
   addAttachment: async (req, res) => {
     try {
       const { taskId } = req.params;
-      const { fileName, originalName, fileSize, fileType, filePath } = req.body;
+      const { fileName, originalName, fileSize, fileType, filePath, base64Data } = req.body;
       const companyId = req.user.companyId;
       const userId = req.user.id || req.user.userId;
 
@@ -3411,15 +3469,39 @@ const taskController = {
           .json({ success: false, error: "المهمة غير موجودة" });
       }
 
+      let finalFilePath = filePath;
+      let finalFileName = fileName || originalName;
+      let finalFileSize = fileSize;
+
+      // Direct base64 support: saves file on disk directly without requiring multipart upload
+      if (base64Data && typeof base64Data === 'string') {
+        try {
+          const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, '');
+          const buffer = Buffer.from(cleanBase64, 'base64');
+          const ext = path.extname(originalName || '') || (String(fileType || '').includes('png') ? '.png' : '.jpg');
+          finalFileName = `task-${uuidv4()}${ext}`;
+          const uploadsDir = path.resolve(__dirname, '../uploads/tasks');
+          if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+          }
+          const diskPath = path.join(uploadsDir, finalFileName);
+          fs.writeFileSync(diskPath, buffer);
+          finalFilePath = `/uploads/tasks/${finalFileName}`;
+          finalFileSize = buffer.length;
+        } catch (saveErr) {
+          console.error('[taskController] Failed to save base64 attachment to disk:', saveErr);
+        }
+      }
+
       const attachment = await getSharedPrismaClient().taskAttachment.create({
         data: {
           taskId,
           userId,
-          fileName,
-          originalName,
-          fileSize,
-          fileType,
-          filePath,
+          fileName: finalFileName,
+          originalName: originalName || finalFileName,
+          fileSize: finalFileSize || 0,
+          fileType: fileType || 'image/png',
+          filePath: finalFilePath,
           companyId,
         },
         include: {

@@ -180,7 +180,7 @@ function createMainWindow(): void {
     minHeight: 560,
     show: true,
     center: true,
-    frame: true,
+    frame: false,
     autoHideMenuBar: true,
     resizable: true,
     skipTaskbar: false,
@@ -746,11 +746,53 @@ function registerIpcHandlers(): void {
     }
   );
 
+  // ── Window Management & Titlebar IPCs ──
+  ipcMain.handle('window:minimize', () => {
+    mainWindow?.minimize();
+    return true;
+  });
+
+  ipcMain.handle('window:toggle-maximize', () => {
+    if (!mainWindow) return false;
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+      return false;
+    } else {
+      mainWindow.maximize();
+      return true;
+    }
+  });
+
+  ipcMain.handle('window:close', () => {
+    mainWindow?.hide();
+    return true;
+  });
+
+  ipcMain.handle('window:is-maximized', () => {
+    return mainWindow?.isMaximized() ?? false;
+  });
+
+  ipcMain.handle('device:get-info', () => {
+    return {
+      hostname: os.hostname(),
+      platform: os.platform(),
+      release: os.release(),
+      appVersion: app.getVersion(),
+    };
+  });
+
   ipcMain.handle('tasks:capture-screen', async () => {
+    const wasVisible = mainWindow && !mainWindow.isMinimized() && mainWindow.isVisible();
     try {
+      if (wasVisible) {
+        mainWindow?.hide();
+        // Allow OS window manager (DWM) compositor to refresh the screen behind the app
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+
       const sources = await desktopCapturer.getSources({
         types: ['screen'],
-        thumbnailSize: { width: 1440, height: 900 },
+        thumbnailSize: { width: 1920, height: 1080 },
       });
       if (sources.length > 0) {
         let selectedSource = sources[0];
@@ -775,6 +817,11 @@ function registerIpcHandlers(): void {
       return { success: false, error: 'لم يتم العثور على شاشة متاحة للالتقاط' };
     } catch (err: any) {
       return { success: false, error: err.message };
+    } finally {
+      if (wasVisible) {
+        mainWindow?.show();
+        mainWindow?.focus();
+      }
     }
   });
 

@@ -83,6 +83,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternal: (url: string) =>
     ipcRenderer.invoke('shell:open-external', url),
 
+  // Window Controls & System
+  windowMinimize: () => ipcRenderer.invoke('window:minimize'),
+  windowToggleMaximize: () => ipcRenderer.invoke('window:toggle-maximize'),
+  windowClose: () => ipcRenderer.invoke('window:close'),
+  windowIsMaximized: () => ipcRenderer.invoke('window:is-maximized'),
+  getDeviceInfo: () => ipcRenderer.invoke('device:get-info'),
+
   // Updates
   checkForUpdates: () =>
     ipcRenderer.invoke('update:check'),

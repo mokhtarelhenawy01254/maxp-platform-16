@@ -20,6 +20,8 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Send,
+  ClipboardCheck,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
 
@@ -60,10 +62,11 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
   const rawStatus = String(task.status || '').toUpperCase();
   const isCompleted = rawStatus === 'COMPLETED';
+  const isInReview = rawStatus === 'IN_REVIEW' || rawStatus === 'PENDING_REVIEW';
   const isInProgress = rawStatus === 'IN_PROGRESS';
   const isOnHold = rawStatus === 'ON_HOLD';
-  const isPending = !isCompleted && !isInProgress && !isOnHold;
-  const isRunning = !isCompleted && activeTaskId === task.id;
+  const isPending = !isCompleted && !isInReview && !isInProgress && !isOnHold;
+  const isRunning = !isCompleted && !isInReview && activeTaskId === task.id;
 
   const attachments = task.taskAttachments || task.attachments || [];
   const watchers = task.taskWatchers || task.watchers || [];
@@ -163,6 +166,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const isCreatedByMe = task.createdBy === currentUserId;
   const canRunTask = isAssignedToMe;
   const canEditTask = isCreatedByMe || isAssignedToMe || isAdmin;
+  const canApprove = isCreatedByMe || isAdmin;
 
   const resolveAttachmentUrl = (rawPath: string) => {
     if (!rawPath) return '';
@@ -186,7 +190,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         normalized = `/uploads/tasks${normalized}`;
       }
     }
-    return `${base}${normalized}`;
+    return `${base}${encodeURI(normalized)}`;
   };
 
   const isImgAttachment = (att: any) => {
@@ -327,6 +331,63 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                   <RotateCcw size={11} />
                   <span>إعادة فتح</span>
                 </button>
+              ) : isInReview ? (
+                <>
+                  {/* Task is under review */}
+                  {canApprove ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          audioAlerts.playTaskComplete();
+                          onUpdateStatus?.(task.id, 'COMPLETED');
+                        }}
+                        style={cardStyles.quickDoneBtn}
+                        title="اعتماد تسليم المهمة وإغلاقها كـ مكتملة ومعتمدة 100%"
+                        onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                      >
+                        <ClipboardCheck size={11} color="#22c55e" />
+                        <span>اعتماد وإنجاز</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          audioAlerts.playTaskReopen();
+                          onUpdateStatus?.(task.id, 'IN_PROGRESS');
+                        }}
+                        style={cardStyles.returnBtn}
+                        title="إعادة المهمة للمنفذ مع طلب تعديلات"
+                        onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                      >
+                        <RotateCcw size={11} color="#f59e0b" />
+                        <span>طلب تعديلات</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: '#c084fc',
+                        background: 'rgba(168, 85, 247, 0.1)',
+                        padding: '3px 8px',
+                        borderRadius: 6,
+                        border: '1px solid rgba(168, 85, 247, 0.3)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                      }}
+                      title="تم تسليم العمل وبانتظار اعتماد المكلّف / الإدارة"
+                    >
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#c084fc' }} />
+                      <span>بانتظار الاعتماد</span>
+                    </span>
+                  )}
+                </>
               ) : (
                 <>
                   {/* Start / Pause Task Runner (Locked if not assigned to me) */}
@@ -401,26 +462,48 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                     </span>
                   )}
 
-                  {/* Fast Complete Button */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      audioAlerts.playTaskComplete();
-                      if (onUpdateStatus) {
-                        onUpdateStatus(task.id, 'COMPLETED');
-                      } else {
-                        onToggleStatus(task.id, task.status);
-                      }
-                    }}
-                    style={cardStyles.quickDoneBtn}
-                    title="تعليم المهمة كمكتملة وتوثيق إنجازها"
-                    onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-                    onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-                  >
-                    <Check size={11} color="#22c55e" />
-                    <span>إنجاز</span>
-                  </button>
+                  {/* Submit for Review or Direct Complete */}
+                  {canApprove ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        audioAlerts.playTaskComplete();
+                        if (onUpdateStatus) {
+                          onUpdateStatus(task.id, 'COMPLETED');
+                        } else {
+                          onToggleStatus(task.id, task.status);
+                        }
+                      }}
+                      style={cardStyles.quickDoneBtn}
+                      title="اعتماد وإنجاز المهمة مباشرة"
+                      onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                      onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                    >
+                      <Check size={11} color="#22c55e" />
+                      <span>إنجاز</span>
+                    </button>
+                  ) : canRunTask ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        audioAlerts.playTaskComplete();
+                        if (onUpdateStatus) {
+                          onUpdateStatus(task.id, 'IN_REVIEW');
+                        } else {
+                          onToggleStatus(task.id, 'IN_REVIEW');
+                        }
+                      }}
+                      style={cardStyles.submitReviewBtn}
+                      title="تسليم العمل للمراجعة والاعتماد من قبل الإدارة / المكلّف"
+                      onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                      onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                    >
+                      <Send size={11} color="#c084fc" />
+                      <span>تسليم للمراجعة</span>
+                    </button>
+                  ) : null}
                 </>
               )}
 
@@ -480,14 +563,18 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               style={{
                 ...cardStyles.statusPill,
                 color: isCompleted
-                  ? '#22c55e'
+                  ? 'var(--accent-green)'
+                  : isInReview
+                  ? '#c084fc'
                   : isInProgress
                   ? '#38bdf8'
                   : isOnHold
                   ? '#f59e0b'
-                  : '#a1a1aa',
+                  : 'var(--text-secondary)',
                 backgroundColor: isCompleted
                   ? 'var(--accent-green-bg)'
+                  : isInReview
+                  ? 'rgba(168, 85, 247, 0.12)'
                   : isInProgress
                   ? 'rgba(56, 189, 248, 0.1)'
                   : isOnHold
@@ -495,6 +582,8 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                   : 'var(--border-subtle)',
                 borderColor: isCompleted
                   ? 'var(--accent-green-border)'
+                  : isInReview
+                  ? 'rgba(168, 85, 247, 0.35)'
                   : isInProgress
                   ? 'rgba(56, 189, 248, 0.25)'
                   : isOnHold
@@ -503,7 +592,9 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               }}
             >
               {isCompleted
-                ? '✓ مكتملة'
+                ? '✓ مكتملة ومعتمدة'
+                : isInReview
+                ? '📋 قيد المراجعة والاعتماد'
                 : isInProgress
                 ? '⚡ قيد التنفيذ'
                 : isOnHold
@@ -824,6 +915,36 @@ const cardStyles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     fontWeight: 500,
     color: 'var(--text-secondary)',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  submitReviewBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'rgba(168, 85, 247, 0.12)',
+    border: '1px solid rgba(168, 85, 247, 0.35)',
+    borderRadius: 5,
+    padding: '3px 8px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#c084fc',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  returnBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'rgba(245, 158, 11, 0.12)',
+    border: '1px solid rgba(245, 158, 11, 0.35)',
+    borderRadius: 5,
+    padding: '3px 8px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#f59e0b',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',

@@ -320,6 +320,32 @@ class MonitorApiClient {
     mimeType: string = 'image/png'
   ): Promise<any> {
     const base = this.serverUrl;
+
+    // 1. Direct atomic upload with base64 (fast, avoids Node multipart boundary issues)
+    try {
+      const res = await axios.post(
+        `${base}/api/v1/tasks/${taskId}/attachments`,
+        {
+          base64Data,
+          originalName: originalName || 'attachment.png',
+          fileType: mimeType,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.authToken}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 25_000,
+        }
+      );
+      if (res.data?.success) {
+        return res.data?.data ?? res.data;
+      }
+    } catch (directErr: any) {
+      console.warn('[apiClient] Direct base64 upload fallback to multipart:', directErr?.message);
+    }
+
+    // 2. Multipart fallback
     const buffer = Buffer.from(
       base64Data.replace(/^data:[^;]+;base64,/, ''),
       'base64'
@@ -328,7 +354,6 @@ class MonitorApiClient {
     const formData = new FormData();
     formData.append('file', blob, originalName || 'screenshot.png');
 
-    // 1. Upload file binary
     const uploadRes = await axios.post(`${base}/api/v1/upload`, formData, {
       headers: {
         Authorization: `Bearer ${this.authToken}`,
@@ -341,7 +366,6 @@ class MonitorApiClient {
       throw new Error(uploadPayload?.error || 'فشل في رفع المرفق');
     }
 
-    // 2. Link attachment to task
     const linkRes = await axios.post(
       `${base}/api/v1/tasks/${taskId}/attachments`,
       {

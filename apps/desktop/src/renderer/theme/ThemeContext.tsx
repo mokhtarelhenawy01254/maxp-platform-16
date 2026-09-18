@@ -52,6 +52,34 @@ function applyTokens(mode: ThemeMode) {
   }
   // also set a data attribute for potential CSS selectors
   root.setAttribute('data-theme', mode);
+
+  // Inject or update global custom scrollbar rules
+  let scrollbarStyle = document.getElementById('maxp-theme-scrollbars') as HTMLStyleElement | null;
+  if (!scrollbarStyle) {
+    scrollbarStyle = document.createElement('style');
+    scrollbarStyle.id = 'maxp-theme-scrollbars';
+    document.head.appendChild(scrollbarStyle);
+  }
+  scrollbarStyle.textContent = `
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-dim);
+    }
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-strong) transparent;
+    }
+  `;
 }
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
