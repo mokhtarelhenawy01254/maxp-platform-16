@@ -105,6 +105,8 @@ class VideoGenerationController {
         error: err.message || 'Internal server error fetching history',
       });
     }
+  }
+
   /**
    * GET /api/v1/ai-video/engine-info
    */
