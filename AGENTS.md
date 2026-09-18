@@ -59,6 +59,11 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 - `trash` > `rm` (recoverable beats gone forever)
 - When in doubt, ask.
 
+## 🔐 Rule: Ban AI Keys in .env (Mandatory Database Storage in public.ai_keys)
+- **Ban AI API Keys in `.env`:** NEVER store, hardcode, suggest, or read AI provider API keys (Google, Gemini, Veo, OpenAI, Anthropic, DeepSeek, OpenRouter, Groq, etc.) from `.env` files. Storing AI keys in `.env` is strictly prohibited.
+- **Mandatory PostgreSQL Storage (`public.ai_keys`):** All AI keys MUST be persisted strictly in the database (`public.ai_keys`) scoped either per tenant (`companyId`) or as a platform-wide central key (`keyType = 'CENTRAL'`).
+- **Dynamic Key Resolution & Safety:** Backend services, agents, and workers must resolve keys exclusively through database queries against `public.ai_keys` (`WHERE isActive = true ORDER BY priority ASC`), enabling real-time key rotation, tenant quota isolation, and eliminating secrets leaking into filesystem, logs, or git.
+
 ## 🧱 Rule: Modular Independent Screens (Ban Monolithic "All-in-One-Page" Aggregation)
 - **Ban Monolithic God-Components**: NEVER combine multiple distinct screens/tabs/domains (such as production bench, barcode kiosk, earnings ledger, alerts, and reports) into a single giant monolithic file. Each functional screen MUST be an independent, modular component in its own file (under 300-400 lines max).
 - **Clarification on Single-Depth**: "Single-Depth" is strictly a CSS visual styling rule for container borders and nested box padding (preventing card-in-card cramping on mobile). It DOES NOT mean cramming every feature onto one page or avoiding dedicated sub-pages.

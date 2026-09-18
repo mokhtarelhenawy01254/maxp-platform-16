@@ -1,5 +1,10 @@
 # MaxP Platform — Project Agent Rules
 
+## Rule: Ban AI Keys in .env (Mandatory Database Storage in public.ai_keys)
+1. **Ban AI API Keys in `.env`:** NEVER store, hardcode, suggest, or read AI provider API keys (Google, Gemini, Veo, OpenAI, Anthropic, DeepSeek, OpenRouter, Groq, etc.) from `.env` files. Storing AI keys in `.env` is strictly prohibited.
+2. **Mandatory PostgreSQL Storage (`public.ai_keys`):** All AI keys MUST be persisted strictly in the database (`public.ai_keys`) scoped either per tenant (`companyId`) or as a platform-wide central key (`keyType = 'CENTRAL'`).
+3. **Dynamic Key Resolution & Safety:** Backend services, agents, and workers must resolve keys exclusively through database queries against `public.ai_keys` (`WHERE isActive = true ORDER BY priority ASC`), enabling real-time key rotation, tenant quota isolation, and eliminating secrets leaking into filesystem, logs, or git.
+
 ## Rule: Structured Parameters for Tools (No Brittle Text Extraction)
 1. **Always Use Explicit Parameters**: All agent tools designed for modifying, creating, or updating data (such as bookings, orders, customer records, inventory adjustments) MUST use explicit, structured parameters with appropriate types (e.g., `patient_name: str`, `appointment_date: str`, etc.).
 2. **Ban Generic Text Request Params**: Never use a single generic text parameter (like `request`, `prompt`, or `message`) to pass unstructured strings containing mixed fields that are parsed using custom regex or NLP backend logic. This is brittle and causes parameter extraction failures.

@@ -23,32 +23,45 @@ class GoogleVeoService {
   }
 
   /**
-   * Resolve Google Gemini / Veo API Key
+   * Resolve Google Gemini / Veo API Key strictly from Database (public.ai_keys)
+   * Storing or loading AI keys from .env is strictly forbidden.
    */
   async resolveApiKey(companyId) {
     try {
       const prisma = getSharedPrismaClient();
-      if (prisma) {
-        const rows = await prisma.$queryRawUnsafe(
+      if (!prisma) return null;
+
+      // 1. Check company-specific active key first
+      if (companyId && companyId !== 'default') {
+        const companyRows = await prisma.$queryRawUnsafe(
           `SELECT "apiKey" FROM public.ai_keys 
            WHERE (provider = 'GOOGLE' OR provider = 'GEMINI') 
+             AND "companyId" = $1 
              AND "isActive" = true 
-           ORDER BY priority ASC LIMIT 1`
+           ORDER BY priority ASC LIMIT 1`,
+          companyId
         );
-        if (rows && rows.length > 0 && rows[0].apiKey) {
-          return rows[0].apiKey;
+        if (companyRows && companyRows.length > 0 && companyRows[0].apiKey) {
+          return companyRows[0].apiKey;
         }
       }
+
+      // 2. Check central platform active key in database
+      const centralRows = await prisma.$queryRawUnsafe(
+        `SELECT "apiKey" FROM public.ai_keys 
+         WHERE (provider = 'GOOGLE' OR provider = 'GEMINI') 
+           AND ("keyType" = 'CENTRAL' OR "companyId" IS NULL) 
+           AND "isActive" = true 
+         ORDER BY priority ASC LIMIT 1`
+      );
+      if (centralRows && centralRows.length > 0 && centralRows[0].apiKey) {
+        return centralRows[0].apiKey;
+      }
     } catch (e) {
-      // Ignore DB read errors and check env
+      console.error('❌ [VEO-SERVICE] Error resolving API key from database:', e.message);
     }
 
-    return (
-      process.env.GOOGLE_VEO_API_KEY ||
-      process.env.GEMINI_API_KEY ||
-      process.env.GOOGLE_API_KEY ||
-      null
-    );
+    return null;
   }
 
   /**

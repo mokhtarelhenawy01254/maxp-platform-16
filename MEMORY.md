@@ -51,3 +51,10 @@
   - **Model Context Protocol (MCP):** FastMCP server in `apps/mcp-servers/video-mcp` (Port `7102`) exposing tools over streamable HTTP for external agents and MCP clients.
   - **Optional Browser Automation:** For users insisting on driving their personal `flow.google` web subscription directly, use `agent-browser` / Playwright with session cookies.
 
+## 🔐 Security & Architecture Law: Ban AI Keys in .env (Mandatory Database Storage)
+
+- **Ban AI API Keys in `.env`:** NEVER store, hardcode, suggest, or read AI provider API keys (Google, Gemini, Veo, OpenAI, Anthropic, DeepSeek, OpenRouter, Groq, etc.) from `.env` files. Storing AI keys in `.env` is strictly prohibited and considered an architectural violation.
+- **Mandatory PostgreSQL Storage (`public.ai_keys`):** All AI keys MUST be persisted strictly in the database table `public.ai_keys` scoped either per tenant (`companyId`) or as a platform-wide central key (`keyType = 'CENTRAL'`).
+- **Dynamic Key Resolution & Zero Secret Leaks:** Backend services, agents, and workers must resolve keys exclusively through database queries against `public.ai_keys` (`WHERE isActive = true ORDER BY priority ASC`), enabling real-time key rotation, tenant quota isolation, and eliminating secrets leaking into the filesystem, logs, or git.
+
+
