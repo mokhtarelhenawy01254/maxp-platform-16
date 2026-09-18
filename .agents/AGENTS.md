@@ -70,3 +70,9 @@ Any design resembling typical LLM-generated output is strictly rejected. Audit a
 9. Ban The Centered Hero Trap.
 10. Ban Dead Unclickable UI Badges.
 
+## Rule: Desktop App Auto-Update & Mandatory Version Bumping
+1. **Mandatory SemVer Increment on ANY Desktop Change:** Whenever any bug fix, UI change, or feature is made in `apps/desktop`, you MUST ALWAYS bump the `version` in `apps/desktop/package.json` (e.g. `1.0.4` → `1.0.5`).
+2. **SemVer Comparison Law (`electron-updater`):** The Electron auto-updater strictly compares the remote version in `latest.yml` against the client's currently installed local version (`package.json`). If `remoteVersion === localVersion`, the updater evaluates the app as "up-to-date" and silently aborts download. For employees and users to receive automatic background updates without manual reinstall, `remoteVersion` MUST BE STRICTLY GREATER than `localVersion` (`remote > local`).
+3. **Synchronized Tag & Release Pipeline:** After bumping the version in `package.json`, create and push the matching git tag (e.g. `git tag -a v1.0.5` + `git push origin refs/tags/v1.0.5`) to trigger the GitHub Actions build workflow (`release-desktop.yml`), which publishes the new installer and `latest.yml` to `https://maxp.online/download/`.
+4. **Ban Ghost Releases:** Never push desktop source code fixes or build installers without bumping the version in `package.json`. Every desktop release MUST have an incremented version.
+
