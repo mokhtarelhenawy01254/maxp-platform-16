@@ -4,6 +4,7 @@ const path = require('path');
 const axios = require('axios');
 const crypto = require('crypto');
 const { getSharedPrismaClient } = require('./sharedDatabase');
+const flowBridgeService = require('./flowBridgeService');
 
 class GoogleVeoService {
   constructor() {
@@ -130,10 +131,71 @@ class GoogleVeoService {
     task.status = 'PROCESSING';
     task.progress = 15;
 
+    const companyDir = path.join(this.uploadDir, String(task.companyId || 'default'));
+    if (!fs.existsSync(companyDir)) {
+      try {
+        await fsPromises.mkdir(companyDir, { recursive: true });
+      } catch (e) {
+        // pass
+      }
+    }
+
+    // 1. Check Flow Bridge availability (utilizes Google Flow account credits)
+    let flowStatus = { authenticated: false };
+    try {
+      flowStatus = await flowBridgeService.checkSessionStatus();
+    } catch (e) {
+      console.warn('⚠️ [VEO-SERVICE] Flow bridge status check error:', e.message);
+    }
+
+    if (flowStatus.authenticated) {
+      console.log(`🎬 [VEO-SERVICE] Generating video via Flow Bridge for company: ${task.companyId}...`);
+      task.progress = 35;
+      try {
+        const flowResult = await flowBridgeService.generateVideo({
+          prompt: task.prompt,
+          aspectRatio: task.aspectRatio,
+          durationSeconds: task.durationSeconds,
+          model: 'veo-fast',
+          outDir: companyDir,
+          taskId: task.id,
+        });
+
+        // Resolve generated file
+        let outputFile = flowResult.result?.output_file;
+        if (!outputFile) {
+          const files = await fsPromises.readdir(companyDir);
+          const mp4Files = files.filter((f) => f.endsWith('.mp4')).sort();
+          if (mp4Files.length > 0) {
+            outputFile = path.join(companyDir, mp4Files[mp4Files.length - 1]);
+          }
+        }
+
+        if (outputFile && fs.existsSync(outputFile)) {
+          const finalFileName = `${task.id}.mp4`;
+          const finalFilePath = path.join(companyDir, finalFileName);
+          if (outputFile !== finalFilePath) {
+            await fsPromises.copyFile(outputFile, finalFilePath);
+          }
+
+          task.status = 'COMPLETED';
+          task.progress = 100;
+          task.provider = 'FLOW_BRIDGE';
+          task.videoUrl = `/uploads/studio_videos/${task.companyId}/${finalFileName}`;
+          task.completedAt = new Date().toISOString();
+          console.log(`✅ [VEO-SERVICE] Video successfully generated via Flow Bridge: ${task.videoUrl}`);
+          return;
+        }
+      } catch (flowErr) {
+        console.warn(`⚠️ [VEO-SERVICE] Flow Bridge generation failed (${flowErr.message}). Falling back to official API...`);
+      }
+    }
+
+    // 2. Check Official Google Gemini / Veo API Key in Database (public.ai_keys)
     const apiKey = await this.resolveApiKey(task.companyId);
 
     if (!apiKey) {
-      console.warn(`⚠️ [VEO-SERVICE] No Google Veo API key configured. Running in high-fidelity simulation mode.`);
+      console.warn(`⚠️ [VEO-SERVICE] No active Google Veo API key or Flow session. Running in high-fidelity simulation mode.`);
       await this.runSimulationMode(task);
       return;
     }
@@ -262,11 +324,12 @@ class GoogleVeoService {
    * High-fidelity simulation mode (for sandbox, demo, or when API key is provisioning)
    */
   async runSimulationMode(task, note = null) {
+    const isTest = process.env.NODE_ENV === 'test' || task.companyId === 'test_company_123';
     const steps = [
-      { progress: 25, delay: 2000 },
-      { progress: 55, delay: 3000 },
-      { progress: 85, delay: 3000 },
-      { progress: 100, delay: 2000 },
+      { progress: 25, delay: isTest ? 50 : 800 },
+      { progress: 55, delay: isTest ? 50 : 1200 },
+      { progress: 85, delay: isTest ? 50 : 1200 },
+      { progress: 100, delay: isTest ? 50 : 800 },
     ];
 
     for (const step of steps) {
@@ -274,8 +337,17 @@ class GoogleVeoService {
       task.progress = step.progress;
     }
 
+    const companyDir = path.join(this.uploadDir, String(task.companyId || 'default'));
+    if (!fs.existsSync(companyDir)) {
+      try {
+        await fsPromises.mkdir(companyDir, { recursive: true });
+      } catch (e) {
+        // pass
+      }
+    }
+
     const fileName = `${task.id}.mp4`;
-    const filePath = path.join(this.uploadDir, fileName);
+    const filePath = path.join(companyDir, fileName);
 
     // Create a lightweight demo video container file if not existing
     try {
@@ -288,7 +360,8 @@ class GoogleVeoService {
 
     task.status = 'COMPLETED';
     task.progress = 100;
-    task.videoUrl = `/uploads/studio_videos/${fileName}`;
+    task.provider = 'SANDBOX';
+    task.videoUrl = `/uploads/studio_videos/${task.companyId || 'default'}/${fileName}`;
     task.note = note || 'Generated via MaxP Veo Engine Sandbox';
     task.completedAt = new Date().toISOString();
   }

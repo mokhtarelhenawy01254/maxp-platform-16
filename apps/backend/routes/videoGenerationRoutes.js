@@ -18,5 +18,8 @@ const optionalOrRequiredAuth = (req, res, next) => {
 router.post('/generate', optionalOrRequiredAuth, (req, res) => videoGenerationController.generateVideo(req, res));
 router.get('/status/:taskId', optionalOrRequiredAuth, (req, res) => videoGenerationController.getVideoStatus(req, res));
 router.get('/history', optionalOrRequiredAuth, (req, res) => videoGenerationController.getHistory(req, res));
+router.get('/engine-info', optionalOrRequiredAuth, (req, res) => videoGenerationController.getEngineInfo(req, res));
+router.post('/admin/trigger-auth', optionalOrRequiredAuth, (req, res) => videoGenerationController.triggerAuthLogin(req, res));
 
 module.exports = router;
+

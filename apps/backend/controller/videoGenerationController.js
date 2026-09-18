@@ -1,4 +1,5 @@
 const googleVeoService = require('../services/googleVeoService');
+const flowBridgeService = require('../services/flowBridgeService');
 
 class VideoGenerationController {
   /**
@@ -104,7 +105,69 @@ class VideoGenerationController {
         error: err.message || 'Internal server error fetching history',
       });
     }
+  /**
+   * GET /api/v1/ai-video/engine-info
+   */
+  async getEngineInfo(req, res) {
+    try {
+      const companyId = req.user?.companyId || req.companyId || 'default';
+      const flowStatus = await flowBridgeService.checkSessionStatus();
+      const apiKey = await googleVeoService.resolveApiKey(companyId);
+
+      let activeProvider = 'SANDBOX';
+      if (flowStatus.authenticated) {
+        activeProvider = 'FLOW_BRIDGE';
+      } else if (apiKey) {
+        activeProvider = 'OFFICIAL_VEO';
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          activeProvider,
+          flowBridge: {
+            installed: flowStatus.installed,
+            authenticated: flowStatus.authenticated,
+            cliPath: flowStatus.cliPath,
+          },
+          officialVeo: {
+            configured: Boolean(apiKey),
+          },
+          tenant: {
+            companyId,
+          },
+        },
+      });
+    } catch (err) {
+      console.error('❌ [VIDEO-CONTROLLER] Engine info error:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: err.message || 'Error fetching engine info',
+      });
+    }
+  }
+
+  /**
+   * POST /api/v1/ai-video/admin/trigger-auth
+   */
+  async triggerAuthLogin(req, res) {
+    try {
+      const { browser = 'chrome' } = req.body || {};
+      const result = await flowBridgeService.triggerAuthLogin(browser);
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (err) {
+      console.error('❌ [VIDEO-CONTROLLER] Trigger auth error:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: err.message || 'Error triggering auth login',
+      });
+    }
   }
 }
 
 module.exports = new VideoGenerationController();
+
