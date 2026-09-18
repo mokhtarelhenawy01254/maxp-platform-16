@@ -73,7 +73,7 @@ class GoogleVeoService {
     prompt,
     referenceImageUrl = null,
     aspectRatio = '9:16',
-    durationSeconds = 5,
+    durationSeconds = 6,
     model = 'veo-3.1-generate-preview',
     generateAudio = true,
   }) {
@@ -82,6 +82,11 @@ class GoogleVeoService {
     }
 
     const taskId = `veo_${crypto.randomBytes(12).toString('hex')}`;
+    let validDuration = Number(durationSeconds) || 6;
+    if (![4, 6, 8].includes(validDuration)) {
+      validDuration = 6;
+    }
+
     const task = {
       id: taskId,
       companyId,
@@ -89,7 +94,7 @@ class GoogleVeoService {
       prompt: prompt.trim(),
       referenceImageUrl,
       aspectRatio: ['9:16', '16:9', '1:1'].includes(aspectRatio) ? aspectRatio : '9:16',
-      durationSeconds: Number(durationSeconds) || 5,
+      durationSeconds: validDuration,
       model: model || 'veo-3.1-generate-preview',
       generateAudio: generateAudio !== false,
       status: 'QUEUED', // QUEUED, PROCESSING, COMPLETED, FAILED
