@@ -270,7 +270,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 16,
   },
   modal: {
-    background: '#101014',
+    background: 'var(--bg-surface)',
     border: '1px solid var(--border-strong)',
     borderRadius: 12,
     width: '100%',
@@ -382,7 +382,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   input: {
     flex: 1,
-    background: '#16161b',
+    background: 'var(--bg-input)',
     border: '1px solid var(--border-strong)',
     borderRadius: 6,
     padding: '6px 10px',
@@ -392,8 +392,8 @@ const styles: Record<string, React.CSSProperties> = {
     outline: 'none',
   },
   saveCustomBtn: {
-    background: '#38bdf8',
-    color: '#09090b',
+    background: '#0284c7',
+    color: '#ffffff',
     border: 'none',
     borderRadius: 6,
     padding: '6px 10px',
@@ -440,7 +440,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderTop: '1px solid var(--border-subtle)',
   },
   cancelBtn: {
-    background: '#1c1c22',
+    background: 'var(--bg-elevated)',
     color: 'var(--text-muted)',
     border: '1px solid var(--border-default)',
     borderRadius: 6,

@@ -354,10 +354,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   metricCard: {
     background: 'var(--bg-surface)',
-    border: '1px solid rgba(255, 255, 255, 0.07)',
+    border: '1px solid var(--border-default)',
     borderRadius: 10,
     padding: '14px',
-    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+    boxShadow: 'var(--shadow-card)',
   },
   metricHeader: {
     display: 'flex',
@@ -394,9 +394,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   sectionBox: {
     background: 'var(--bg-surface)',
-    border: '1px solid rgba(255, 255, 255, 0.07)',
+    border: '1px solid var(--border-default)',
     borderRadius: 10,
     padding: '14px',
+    boxShadow: 'var(--shadow-card)',
   },
   sectionHeader: {
     display: 'flex',

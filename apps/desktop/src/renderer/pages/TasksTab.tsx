@@ -338,6 +338,15 @@ export const TasksTab: React.FC = () => {
     return s !== 'COMPLETED' && s !== 'IN_REVIEW' && s !== 'PENDING_REVIEW';
   }).length;
 
+  const userRole = String(currentUser?.role || '').toUpperCase();
+  const isAdminOrManager = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER'].includes(userRole);
+  const activeTaskObj = tasks.find((t) => t.id === activeTask?.id);
+  const isCreatorOfActive = !!(
+    activeTaskObj &&
+    (activeTaskObj.createdBy === currentUser?.id || activeTaskObj.createdBy === currentUser?.userId)
+  );
+  const canDirectCompleteActive = isAdminOrManager || isCreatorOfActive;
+
   return (
     <div style={styles.container}>
       {/* Top Header Card */}
@@ -411,7 +420,7 @@ export const TasksTab: React.FC = () => {
               <span>إيقاف مؤقت</span>
             </button>
 
-            {/* Submit for Review Button */}
+            {/* Submit for Review Button (Available to all) */}
             <button
               onClick={() => {
                 handleStopTask();
@@ -426,20 +435,22 @@ export const TasksTab: React.FC = () => {
               <span>تسليم للمراجعة</span>
             </button>
 
-            {/* Direct Complete Task Button */}
-            <button
-              onClick={() => {
-                handleStopTask();
-                handleUpdateStatus(activeTask.id, 'COMPLETED');
-              }}
-              style={styles.runnerCompleteBtn}
-              title="اعتماد وإنجاز المهمة مباشرة (المكتمل)"
-              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-            >
-              <CheckCircle2 size={13} />
-              <span>إنجاز مباشر</span>
-            </button>
+            {/* Direct Complete Task Button (Admins & Task Creators Only) */}
+            {canDirectCompleteActive && (
+              <button
+                onClick={() => {
+                  handleStopTask();
+                  handleUpdateStatus(activeTask.id, 'COMPLETED');
+                }}
+                style={styles.runnerCompleteBtn}
+                title="اعتماد وإنجاز المهمة مباشرة (المكتمل) — متاح للإدارة ومنشئ المهمة فقط"
+                onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+              >
+                <CheckCircle2 size={13} />
+                <span>إنجاز مباشر</span>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -451,9 +462,10 @@ export const TasksTab: React.FC = () => {
             onClick={() => setActiveView('my-tasks')}
             style={{
               ...styles.segBtn,
-              backgroundColor: activeView === 'my-tasks' ? '#27272a' : 'transparent',
-              color: activeView === 'my-tasks' ? '#fafafa' : '#a1a1aa',
+              backgroundColor: activeView === 'my-tasks' ? 'var(--bg-elevated)' : 'transparent',
+              color: activeView === 'my-tasks' ? 'var(--text-primary)' : 'var(--text-muted)',
               fontWeight: activeView === 'my-tasks' ? 600 : 400,
+              boxShadow: activeView === 'my-tasks' ? 'var(--shadow-card)' : 'none',
             }}
           >
             <span>مهامي الموكلة إليّ</span>
@@ -462,9 +474,10 @@ export const TasksTab: React.FC = () => {
             onClick={() => setActiveView('assigned-by-me')}
             style={{
               ...styles.segBtn,
-              backgroundColor: activeView === 'assigned-by-me' ? '#27272a' : 'transparent',
-              color: activeView === 'assigned-by-me' ? '#fafafa' : '#a1a1aa',
+              backgroundColor: activeView === 'assigned-by-me' ? 'var(--bg-elevated)' : 'transparent',
+              color: activeView === 'assigned-by-me' ? 'var(--text-primary)' : 'var(--text-muted)',
               fontWeight: activeView === 'assigned-by-me' ? 600 : 400,
+              boxShadow: activeView === 'assigned-by-me' ? 'var(--shadow-card)' : 'none',
             }}
           >
             <Users size={12} />
@@ -664,9 +677,9 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
   },
   runnerDock: {
-    backgroundColor: '#0c131d',
-    border: '1px solid rgba(56, 189, 248, 0.35)',
-    boxShadow: '0 4px 18px rgba(0, 0, 0, 0.35), 0 0 12px rgba(56, 189, 248, 0.1)',
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
+    boxShadow: 'var(--shadow-card)',
     borderRadius: 8,
     padding: '10px 14px',
     display: 'flex',
@@ -699,7 +712,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   runnerSubtitle: {
     fontSize: 10,
-    color: '#38bdf8',
+    color: '#0284c7',
     fontWeight: 500,
     letterSpacing: '-0.01em',
   },
@@ -716,15 +729,15 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(56, 189, 248, 0.12)',
-    border: '1px solid rgba(56, 189, 248, 0.3)',
+    backgroundColor: 'var(--accent-blue-bg)',
+    border: '1px solid var(--accent-blue-border)',
     borderRadius: 6,
     padding: '4px 10px',
   },
   runnerTimerText: {
     fontSize: 13,
     fontWeight: 700,
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     fontVariantNumeric: 'tabular-nums',
     letterSpacing: '0.05em',
   },
@@ -732,7 +745,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#1e293b',
+    backgroundColor: 'var(--bg-elevated)',
     border: '1px solid var(--border-strong)',
     color: 'var(--text-secondary)',
     borderRadius: 6,
@@ -849,8 +862,8 @@ const styles: Record<string, React.CSSProperties> = {
   segmented: {
     display: 'flex',
     alignItems: 'center',
-    backgroundColor: 'var(--bg-sidebar)',
-    border: '1px solid var(--border-subtle)',
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
     borderRadius: 6,
     padding: 2,
   },

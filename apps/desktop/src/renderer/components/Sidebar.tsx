@@ -129,14 +129,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => onSelectTab(item.id)}
               style={{
                 ...styles.navItem,
-                background: isActive ? '#1e1e24' : 'transparent',
+                background: isActive ? 'var(--bg-elevated)' : 'transparent',
                 borderColor: isActive ? 'var(--border-strong)' : 'transparent',
-                color: isActive ? '#fafafa' : '#a1a1aa',
+                color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
               }}
               onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)'; }}
               onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
               onMouseEnter={(e) => {
-                if (!isActive) (e.currentTarget as HTMLElement).style.background = '#141418';
+                if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)';
               }}
               onMouseLeave={(e) => {
                 if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent';
@@ -144,13 +144,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <span style={{
                 ...styles.iconContainer,
-                color: isActive ? '#22c55e' : '#71717a',
+                color: isActive ? 'var(--accent-green)' : 'var(--text-dim)',
               }}>
                 {item.icon}
               </span>
               <span style={{
                 ...styles.navLabel,
-                color: isActive ? '#fafafa' : '#d4d4d8',
+                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                 fontWeight: isActive ? 600 : 500,
               }}>{item.label}</span>
             </button>
