@@ -3630,6 +3630,419 @@ const pct = (part, total) => {
   return Math.round((part / total) * 1000) / 10;
 };
 
+const normalizeGovName = (name) => {
+  if (!name) return 'غير محدد';
+  const n = String(name).trim().toLowerCase();
+  if (n === 'cairo' || n === 'القاهرة') return 'القاهرة';
+  if (n === 'giza' || n === 'الجيزة') return 'الجيزة';
+  if (n === 'alexandria' || n === 'alex' || n === 'الإسكندرية' || n === 'الاسكندرية') return 'الإسكندرية';
+  if (n === 'dakahlia' || n === 'الدقهلية' || n === 'mansoura' || n === 'المنصورة') return 'الدقهلية';
+  if (n === 'sharqia' || n === 'الشرقية' || n === 'zagazig' || n === 'الزقازيق') return 'الشرقية';
+  if (n === 'gharbia' || n === 'الغربية' || n === 'tanta' || n === 'طنطا') return 'الغربية';
+  if (n === 'qalyubia' || n === 'القليوبية') return 'القليوبية';
+  if (n === 'monufia' || n === 'المنوفية') return 'المنوفية';
+  if (n === 'beheira' || n === 'البحيرة') return 'البحيرة';
+  if (n === 'kafr el-sheikh' || n === 'كفر الشيخ') return 'كفر الشيخ';
+  if (n === 'damietta' || n === 'دمياط') return 'دمياط';
+  if (n === 'port said' || n === 'بورسعيد') return 'بورسعيد';
+  if (n === 'ismailia' || n === 'الإسماعيلية') return 'الإسماعيلية';
+  if (n === 'suez' || n === 'السويس') return 'السويس';
+  if (n === 'fayoum' || n === 'الفيوم') return 'الفيوم';
+  if (n === 'beni suef' || n === 'بني سويف') return 'بني سويف';
+  if (n === 'minya' || n === 'المنيا') return 'المنيا';
+  if (n === 'assiut' || n === 'أسيوط') return 'أسيوط';
+  if (n === 'sohag' || n === 'سوهاج') return 'سوهاج';
+  if (n === 'qena' || n === 'قنا') return 'قنا';
+  if (n === 'luxor' || n === 'الأقصر') return 'الأقصر';
+  if (n === 'aswan' || n === 'أسوان') return 'أسوان';
+  if (n === 'red sea' || n === 'البحر الأحمر') return 'البحر الأحمر';
+  if (n === 'matrouh' || n === 'مطروح') return 'مطروح';
+  if (n === 'new valley' || n === 'الوادي الجديد') return 'الوادي الجديد';
+  if (n === 'north sinai' || n === 'شمال سيناء') return 'شمال سيناء';
+  if (n === 'south sinai' || n === 'جنوب سيناء') return 'جنوب سيناء';
+  return String(name).trim();
+};
+
+// 🚚 تحليل أداء التسليم والمرتجعات اللوجستي (الشحنات الفعلية، فروع الشحن، المحافظات، أسباب المرتجع، استرداد المخزون)
+const getDeliveryReturnsLogisticsAnalytics = async (req, res) => {
+  try {
+    const companyId = await resolveAnalyticsCompanyId(req);
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح' });
+    }
+
+    const { startDate, endDate, period } = req.query;
+    const prisma = getSharedPrismaClient();
+    const { start, end } = parseAnalyticsDateRange({ startDate, endDate, period: period || '30' });
+
+    const orders = await prisma.order.findMany({
+      where: {
+        companyId: String(companyId),
+        createdAt: { gte: start, lte: end }
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        customStatusCode: true,
+        metadata: true,
+        total: true,
+        subtotal: true,
+        shipping: true,
+        governorate: true,
+        city: true,
+        turboShipmentId: true,
+        turboShipmentStatus: true,
+        turboTrackingNumber: true,
+        turboBranchName: true,
+        turboCaptainName: true,
+        turboReturnReason: true,
+        turboDelayReason: true,
+        createdAt: true,
+        orderItems: {
+          select: {
+            id: true,
+            productId: true,
+            productName: true,
+            productSku: true,
+            productImage: true,
+            quantity: true,
+            price: true,
+            total: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                mainImage: true
+              }
+            }
+          }
+        },
+        returnRequests: {
+          select: {
+            id: true,
+            status: true,
+            receivedStatus: true,
+            refundAmount: true,
+            returnReason: {
+              select: {
+                reason: true,
+                returnReasonCategory: { select: { name: true } }
+              }
+            }
+          }
+        },
+        shipments: {
+          select: {
+            id: true,
+            status: true,
+            carrierType: true,
+            cost: true,
+            destinationGovernorate: true,
+            shippingCompany: {
+              select: { id: true, name: true }
+            }
+          }
+        }
+      }
+    });
+
+    let totalOrders = orders.length;
+    let preDispatchCancelledCount = 0;
+    let preDispatchPendingCount = 0;
+
+    let totalShipped = 0;
+    let deliveredOrders = 0;
+    let returnedOrders = 0;
+    let inTransitOrders = 0;
+
+    let codDeliveredRevenue = 0;
+    let lostShippingCost = 0;
+    let returnedInventoryValue = 0;
+    let inTransitRevenue = 0;
+
+    let restockedCount = 0;
+    let pendingWithCarrierCount = 0;
+    let restockedValue = 0;
+    let pendingCarrierValue = 0;
+
+    const branchMap = {};
+    const governorateMap = {};
+    const returnReasonMap = {};
+    const productReturnMap = {};
+    const dailyMap = {};
+
+    orders.forEach(order => {
+      const effectiveStatus = computeEffectiveOrderStatus(order);
+      const turboStatus = String(order.turboShipmentStatus || '').toUpperCase().trim();
+      const statusUpper = String(order.status || '').toUpperCase().trim();
+
+      const totalVal = parseFloat(order.total) || 0;
+      const subtotalVal = parseFloat(order.subtotal) || totalVal;
+      const shippingVal = parseFloat(order.shipping) || (order.shipments?.[0]?.cost ? parseFloat(order.shipments[0].cost) : 0) || 0;
+
+      const hasShipment = (order.shipments && order.shipments.length > 0) || Boolean(order.turboShipmentId) || Boolean(order.turboTrackingNumber);
+      const isShippedStage = [
+        'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'PARTIALLY_DELIVERED',
+        'RETURNED', 'PARTIALLY_RETURNED', 'RETURNED_TO_COMPANY',
+        'REFUNDED', 'PARTIALLY_REFUNDED', 'DELAYED_WITH_CAPTAIN', 'LOST'
+      ].includes(effectiveStatus) || [
+        'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'PARTIALLY_DELIVERED',
+        'RETURNED', 'PARTIALLY_RETURNED', 'RETURNED_TO_COMPANY',
+        'REFUNDED', 'PARTIALLY_REFUNDED'
+      ].includes(statusUpper);
+
+      const isDispatched = hasShipment || isShippedStage;
+
+      if (!isDispatched) {
+        if (['CANCELLED', 'DUPLICATE_ORDER', 'TRASH'].includes(effectiveStatus)) {
+          preDispatchCancelledCount += 1;
+        } else {
+          preDispatchPendingCount += 1;
+        }
+        return;
+      }
+
+      // Shipped cohort
+      totalShipped += 1;
+
+      const isDelivered = ['DELIVERED', 'PARTIALLY_DELIVERED'].includes(effectiveStatus) ||
+                          ['DELIVERED', 'PARTIALLY_DELIVERED'].includes(statusUpper) ||
+                          turboStatus.includes('DELIVERED');
+
+      const isReturned = !isDelivered && (
+        ['RETURNED', 'PARTIALLY_RETURNED', 'RETURNED_TO_COMPANY', 'REFUNDED', 'PARTIALLY_REFUNDED'].includes(effectiveStatus) ||
+        ['RETURNED', 'PARTIALLY_RETURNED', 'RETURNED_TO_COMPANY', 'REFUNDED', 'PARTIALLY_REFUNDED'].includes(statusUpper) ||
+        turboStatus.includes('RETURN') ||
+        (order.returnRequests && order.returnRequests.length > 0)
+      );
+
+      const isInTransit = !isDelivered && !isReturned;
+
+      // Branch / Carrier attribution
+      const branchName = (order.turboBranchName || order.shipments?.[0]?.shippingCompany?.name || (order.turboShipmentId ? 'شركة Turbo' : 'شحن داخلي / مناديب')).trim();
+      if (!branchMap[branchName]) {
+        branchMap[branchName] = {
+          name: branchName,
+          totalShipped: 0,
+          delivered: 0,
+          returned: 0,
+          inTransit: 0,
+          codCollected: 0,
+          lostShipping: 0
+        };
+      }
+      branchMap[branchName].totalShipped += 1;
+
+      // Governorate attribution
+      const rawGov = (order.governorate || order.city || 'غير محدد').trim();
+      const govName = normalizeGovName(rawGov);
+      if (!governorateMap[govName]) {
+        governorateMap[govName] = {
+          name: govName,
+          totalShipped: 0,
+          delivered: 0,
+          returned: 0,
+          inTransit: 0,
+          codCollected: 0
+        };
+      }
+      governorateMap[govName].totalShipped += 1;
+
+      // Daily trend
+      const dayKey = order.createdAt ? new Date(order.createdAt).toISOString().split('T')[0] : 'other';
+      if (!dailyMap[dayKey]) {
+        dailyMap[dayKey] = { date: dayKey, shipped: 0, delivered: 0, returned: 0, inTransit: 0 };
+      }
+      dailyMap[dayKey].shipped += 1;
+
+      if (isDelivered) {
+        deliveredOrders += 1;
+        codDeliveredRevenue += totalVal;
+        branchMap[branchName].delivered += 1;
+        branchMap[branchName].codCollected += totalVal;
+        governorateMap[govName].delivered += 1;
+        governorateMap[govName].codCollected += totalVal;
+        dailyMap[dayKey].delivered += 1;
+      } else if (isReturned) {
+        returnedOrders += 1;
+        const estShip = shippingVal > 0 ? shippingVal : 45;
+        lostShippingCost += estShip;
+        returnedInventoryValue += subtotalVal;
+        branchMap[branchName].returned += 1;
+        branchMap[branchName].lostShipping += estShip;
+        governorateMap[govName].returned += 1;
+        dailyMap[dayKey].returned += 1;
+
+        // Reason
+        let foundReason = order.turboReturnReason || order.turboDelayReason;
+        if (!foundReason && order.returnRequests?.length > 0) {
+          foundReason = order.returnRequests[0].returnReason?.reason || order.returnRequests[0].returnReason?.returnReasonCategory?.name;
+        }
+        const reasonKey = (foundReason || 'رفض أو عدم استلام بدون سبب').trim();
+        if (!returnReasonMap[reasonKey]) {
+          returnReasonMap[reasonKey] = { reason: reasonKey, count: 0, lostValue: 0 };
+        }
+        returnReasonMap[reasonKey].count += 1;
+        returnReasonMap[reasonKey].lostValue += totalVal;
+
+        // Physical restock
+        const isBackInWarehouse = effectiveStatus === 'RETURNED_TO_COMPANY' ||
+                                  statusUpper === 'RETURNED_TO_COMPANY' ||
+                                  turboStatus === 'RETURNED_TO_COMPANY' ||
+                                  order.returnRequests?.some(r => r.receivedStatus === 'RECEIVED' || r.receivedStatus === 'RESTOCKED');
+        if (isBackInWarehouse) {
+          restockedCount += 1;
+          restockedValue += subtotalVal;
+        } else {
+          pendingWithCarrierCount += 1;
+          pendingCarrierValue += subtotalVal;
+        }
+
+        // Product level return
+        (order.orderItems || []).forEach(item => {
+          const pKey = item.productId || item.product?.name || item.productName || 'unknown';
+          const pName = item.product?.name || item.productName || 'منتج غير معروف';
+          const pImage = item.product?.mainImage || item.productImage || null;
+          const pSku = item.product?.sku || item.productSku || null;
+
+          if (!productReturnMap[pKey]) {
+            productReturnMap[pKey] = {
+              productId: item.productId,
+              productName: pName,
+              productSku: pSku,
+              productImage: pImage,
+              shippedQuantity: 0,
+              returnedQuantity: 0,
+              lostRevenue: 0
+            };
+          }
+          productReturnMap[pKey].returnedQuantity += (item.quantity || 1);
+          productReturnMap[pKey].lostRevenue += (parseFloat(item.total) || (parseFloat(item.price) || 0) * (item.quantity || 1) || 0);
+        });
+      } else {
+        inTransitOrders += 1;
+        inTransitRevenue += totalVal;
+        branchMap[branchName].inTransit += 1;
+        governorateMap[govName].inTransit += 1;
+        dailyMap[dayKey].inTransit += 1;
+      }
+
+      // Shipped quantity
+      (order.orderItems || []).forEach(item => {
+        const pKey = item.productId || item.product?.name || item.productName || 'unknown';
+        const pName = item.product?.name || item.productName || 'منتج غير معروف';
+        const pImage = item.product?.mainImage || item.productImage || null;
+        const pSku = item.product?.sku || item.productSku || null;
+
+        if (!productReturnMap[pKey]) {
+          productReturnMap[pKey] = {
+            productId: item.productId,
+            productName: pName,
+            productSku: pSku,
+            productImage: pImage,
+            shippedQuantity: 0,
+            returnedQuantity: 0,
+            lostRevenue: 0
+          };
+        }
+        productReturnMap[pKey].shippedQuantity += (item.quantity || 1);
+      });
+    });
+
+    const closedOrders = deliveredOrders + returnedOrders;
+    const closedDeliveryRate = pct(deliveredOrders, closedOrders);
+    const shippedDeliveryRate = pct(deliveredOrders, totalShipped);
+    const returnRate = pct(returnedOrders, totalShipped);
+    const inTransitRate = pct(inTransitOrders, totalShipped);
+    const stockRecoveryRate = pct(restockedCount, returnedOrders);
+
+    const branches = Object.values(branchMap).map(b => {
+      const closed = b.delivered + b.returned;
+      return {
+        ...b,
+        deliveryRate: pct(b.delivered, closed > 0 ? closed : b.totalShipped),
+        returnRate: pct(b.returned, b.totalShipped),
+        codCollected: round2(b.codCollected),
+        lostShipping: round2(b.lostShipping)
+      };
+    }).sort((a, b) => b.totalShipped - a.totalShipped);
+
+    const governorates = Object.values(governorateMap).map(g => {
+      const closed = g.delivered + g.returned;
+      return {
+        ...g,
+        deliveryRate: pct(g.delivered, closed > 0 ? closed : g.totalShipped),
+        returnRate: pct(g.returned, g.totalShipped),
+        codCollected: round2(g.codCollected)
+      };
+    }).sort((a, b) => b.totalShipped - a.totalShipped);
+
+    const returnReasons = Object.values(returnReasonMap).map(r => ({
+      ...r,
+      percentage: pct(r.count, returnedOrders),
+      lostValue: round2(r.lostValue)
+    })).sort((a, b) => b.count - a.count);
+
+    const topReturnedProducts = Object.values(productReturnMap)
+      .filter(p => p.returnedQuantity > 0)
+      .map(p => ({
+        ...p,
+        returnRate: pct(p.returnedQuantity, p.shippedQuantity),
+        lostRevenue: round2(p.lostRevenue)
+      }))
+      .sort((a, b) => b.returnedQuantity - a.returnedQuantity)
+      .slice(0, 10);
+
+    const dailyTrends = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date));
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          totalOrders,
+          preDispatchCancelledCount,
+          preDispatchPendingCount,
+          totalShipped,
+          deliveredOrders,
+          returnedOrders,
+          inTransitOrders,
+          closedOrders,
+          closedDeliveryRate,
+          shippedDeliveryRate,
+          returnRate,
+          inTransitRate,
+          codDeliveredRevenue: round2(codDeliveredRevenue),
+          lostShippingCost: round2(lostShippingCost),
+          returnedInventoryValue: round2(returnedInventoryValue),
+          inTransitRevenue: round2(inTransitRevenue),
+          restockedCount,
+          pendingWithCarrierCount,
+          restockedValue: round2(restockedValue),
+          pendingCarrierValue: round2(pendingCarrierValue),
+          stockRecoveryRate
+        },
+        branches,
+        governorates,
+        returnReasons,
+        restockStatus: {
+          restockedCount,
+          pendingWithCarrierCount,
+          restockedValue: round2(restockedValue),
+          pendingCarrierValue: round2(pendingCarrierValue),
+          stockRecoveryRate
+        },
+        topReturnedProducts,
+        dailyTrends
+      }
+    });
+  } catch (error) {
+    console.error('Error in getDeliveryReturnsLogisticsAnalytics:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب تحليلات التسليم والمرتجعات اللوجستية', error: error.message });
+  }
+};
+
 // Get Team Performance Analytics
 const getTeamPerformanceAnalytics = async (req, res) => {
   try {
@@ -5257,6 +5670,7 @@ module.exports = {
   getReturnAnalytics,
   getReturnReasonsAnalytics,
   getProductFulfillmentAnalytics,
+  getDeliveryReturnsLogisticsAnalytics,
   getProductSalesPerformance,
   getTeamPerformanceAnalytics,
   getFunnelAnalytics,

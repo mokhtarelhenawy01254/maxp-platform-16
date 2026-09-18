@@ -80,6 +80,9 @@ router.get('/returns/reasons', authenticateToken, cacheMiddleware(60000), analyt
 // تحليل تنفيذ المنتجات (تسليم / إلغاء / مرتجع) لكل منتج
 router.get('/product-fulfillment', authenticateToken, cacheMiddleware(60000), analyticsController.getProductFulfillmentAnalytics);
 
+// تحليل أداء التسليم والمرتجعات اللوجستي (الشحنات الفعلية / الفروع / المحافظات / أسباب المرتجع)
+router.get('/delivery-returns', authenticateToken, cacheMiddleware(60000), analyticsController.getDeliveryReturnsLogisticsAnalytics);
+
 // تحليل أداء الفريق
 router.get('/team-performance', authenticateToken, cacheMiddleware(60000), analyticsController.getTeamPerformanceAnalytics);
 

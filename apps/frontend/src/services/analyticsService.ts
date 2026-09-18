@@ -1019,6 +1019,36 @@ class AnalyticsService {
     }
   }
 
+  async getDeliveryReturnsLogisticsAnalytics(
+    period?: string,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    try {
+      const params: AnalyticsQueryParams =
+        period && !startDate
+          ? {
+              startDate: (() => {
+                const start = new Date();
+                start.setDate(start.getDate() - (parseInt(period) || 30));
+                return start.toISOString().split("T")[0];
+              })(),
+              endDate: new Date().toISOString().split("T")[0],
+            }
+          : {
+              ...(startDate ? { startDate } : {}),
+              ...(endDate ? { endDate } : {}),
+            };
+      const response = await apiClient.get("/analytics/delivery-returns", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching delivery returns analytics:", error);
+      throw error;
+    }
+  }
+
   async getProductSalesPerformance(
     period?: string,
     startDate?: string,
