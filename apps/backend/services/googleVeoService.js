@@ -35,7 +35,7 @@ class GoogleVeoService {
       if (companyId && companyId !== 'default') {
         const companyRows = await prisma.$queryRawUnsafe(
           `SELECT "apiKey" FROM public.ai_keys 
-           WHERE (provider = 'GOOGLE' OR provider = 'GEMINI') 
+           WHERE provider = 'GOOGLE' 
              AND "companyId" = $1 
              AND "isActive" = true 
            ORDER BY priority ASC LIMIT 1`,
@@ -49,7 +49,7 @@ class GoogleVeoService {
       // 2. Check central platform active key in database
       const centralRows = await prisma.$queryRawUnsafe(
         `SELECT "apiKey" FROM public.ai_keys 
-         WHERE (provider = 'GOOGLE' OR provider = 'GEMINI') 
+         WHERE provider = 'GOOGLE' 
            AND ("keyType" = 'CENTRAL' OR "companyId" IS NULL) 
            AND "isActive" = true 
          ORDER BY priority ASC LIMIT 1`
