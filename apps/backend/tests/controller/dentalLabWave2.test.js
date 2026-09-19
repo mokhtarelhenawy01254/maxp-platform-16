@@ -379,5 +379,77 @@ describe('dentalLabWave2', () => {
       expect(res.statusCode).toBe(400);
       expect(res.payload.error).toBe('لم يتم رفع أي ملف');
     });
+
+    test('returns AI_QUOTA_EXCEEDED when all keys return 429', async () => {
+      const prisma = createPrisma({
+        aiKey: {
+          findMany: jest.fn().mockResolvedValue([
+            { id: 'k1', provider: 'GOOGLE', apiKey: 'fake-key-1', isActive: true, priority: 1 },
+          ]),
+        },
+      });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        text: jest.fn().mockResolvedValue('{"error":{"code":429,"message":"Resource has been exhausted"}}'),
+      });
+
+      try {
+        const result = await parseScanImage({ base64: 'ZmFrZQ==', mimeType: 'image/jpeg', companyId: 'c1' });
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('AI_QUOTA_EXCEEDED');
+      } finally {
+        global.fetch = originalFetch;
+      }
+    });
+
+    test('falls back to second key if first key returns 429', async () => {
+      const prisma = createPrisma({
+        aiKey: {
+          findMany: jest.fn().mockResolvedValue([
+            { id: 'k1', provider: 'GOOGLE', apiKey: 'fake-key-1', isActive: true, priority: 1 },
+            { id: 'k2', provider: 'GOOGLE', apiKey: 'fake-key-2', isActive: true, priority: 2 },
+          ]),
+        },
+      });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const originalFetch = global.fetch;
+      let callCount = 0;
+      global.fetch = jest.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve({
+            ok: false,
+            status: 429,
+            text: () => Promise.resolve('Resource exhausted'),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            candidates: [
+              {
+                content: {
+                  parts: [{ text: JSON.stringify({ patientName: 'سارة أحمد', teeth: '11,12' }) }],
+                },
+              },
+            ],
+          }),
+        });
+      });
+
+      try {
+        const result = await parseScanImage({ base64: 'ZmFrZQ==', mimeType: 'image/jpeg', companyId: 'c1' });
+        expect(result.success).toBe(true);
+        expect(result.data.patientName).toBe('سارة أحمد');
+        expect(callCount).toBe(2);
+      } finally {
+        global.fetch = originalFetch;
+      }
+    });
   });
 });

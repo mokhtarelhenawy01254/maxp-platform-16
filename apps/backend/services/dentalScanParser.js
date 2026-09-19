@@ -30,8 +30,15 @@ const DEFAULT_MODEL = 'gemini-2.5-flash';
  * @param {object} prisma
  * @param {string|null} companyId
  */
-async function resolveScanAiKey(prisma, companyId) {
-  if (!prisma || !prisma.aiKey || typeof prisma.aiKey.findMany !== 'function') return null;
+/**
+ * يقرأ جميع مفاتيح الذكاء الاصطناعي الصالحة من قاعدة البيانات (جدول ai_keys)
+ * مرتبة حسب الأولوية، مع تفضيل مزود GOOGLE.
+ * @param {object} prisma
+ * @param {string|null} companyId
+ * @returns {Promise<Array<{provider: string, apiKey: string, baseUrl: string, model: string}>>}
+ */
+async function resolveScanAiKeys(prisma, companyId) {
+  if (!prisma || !prisma.aiKey || typeof prisma.aiKey.findMany !== 'function') return [];
   let keys = [];
   try {
     keys = await prisma.aiKey.findMany({
@@ -39,20 +46,30 @@ async function resolveScanAiKey(prisma, companyId) {
       orderBy: { priority: 'asc' },
     });
   } catch (error) {
-    return null;
+    return [];
   }
-  if (!Array.isArray(keys) || keys.length === 0) return null;
+  if (!Array.isArray(keys) || keys.length === 0) return [];
 
-  const google = keys.find((k) => String(k.provider || '').toUpperCase() === 'GOOGLE');
-  const selected = google || keys[0];
-  if (!selected || !selected.apiKey) return null;
+  // ترتيب المفاتيح: Google أولاً ثم البقية، مع استبعاد من لا يملك apiKey
+  const validKeys = keys
+    .filter((k) => Boolean(k && k.apiKey))
+    .map((k) => ({
+      provider: String(k.provider || '').toUpperCase(),
+      apiKey: k.apiKey,
+      baseUrl: k.baseUrl || DEFAULT_BASE_URL,
+      model: k.model || DEFAULT_MODEL,
+    }));
 
-  return {
-    provider: String(selected.provider || '').toUpperCase(),
-    apiKey: selected.apiKey,
-    baseUrl: selected.baseUrl || DEFAULT_BASE_URL,
-    model: selected.model || DEFAULT_MODEL,
-  };
+  validKeys.sort((a, b) => (a.provider === 'GOOGLE' ? -1 : 1) - (b.provider === 'GOOGLE' ? -1 : 1));
+  return validKeys;
+}
+
+/**
+ * للتوافق مع الإصدارات السابقة والاختبارات
+ */
+async function resolveScanAiKey(prisma, companyId) {
+  const keys = await resolveScanAiKeys(prisma, companyId);
+  return keys[0] || null;
 }
 
 function stripCodeFences(text) {
@@ -76,52 +93,83 @@ function parseScanJson(text) {
 }
 
 /**
- * يحلّل صورة سكان/أمر شغل عبر Gemini REST (مفتاح من قاعدة البيانات).
+ * يحلّل صورة سكان/أمر شغل عبر Gemini REST مع تدوير المفاتيح التلقائي عند تجاوز الحصة (429).
  * @param {{ base64: string, mimeType?: string, companyId?: string|null }} opts
  */
 async function parseScanImage({ base64, mimeType, companyId }) {
   const prisma = getSharedPrismaClient();
-  const key = await resolveScanAiKey(prisma, companyId || null);
-  if (!key || !key.apiKey) return { success: false, error: 'AI_NOT_CONFIGURED' };
+  const keys = await resolveScanAiKeys(prisma, companyId || null);
+  if (!keys || keys.length === 0) return { success: false, error: 'AI_NOT_CONFIGURED' };
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 45000);
-  try {
-    const url = `${key.baseUrl}/models/${encodeURIComponent(key.model)}:generateContent?key=${encodeURIComponent(key.apiKey)}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { inlineData: { mimeType: mimeType || 'image/jpeg', data: base64 } },
-              { text: SCAN_PROMPT },
-            ],
-          },
-        ],
-        generationConfig: { temperature: 0, maxOutputTokens: 1024 },
-      }),
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      throw new Error(`AI HTTP ${response.status} ${detail.slice(0, 200)}`);
+  let lastError = null;
+  let quotaExceeded = false;
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 45000);
+
+    try {
+      const url = `${key.baseUrl}/models/${encodeURIComponent(key.model)}:generateContent?key=${encodeURIComponent(key.apiKey)}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { inlineData: { mimeType: mimeType || 'image/jpeg', data: base64 } },
+                { text: SCAN_PROMPT },
+              ],
+            },
+          ],
+          generationConfig: { temperature: 0, maxOutputTokens: 1024 },
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        if (response.status === 429 || detail.includes('RESOURCE_EXHAUSTED') || detail.toLowerCase().includes('quota')) {
+          console.warn(`[dentalScanParser] Key ${i + 1}/${keys.length} (${key.provider}) hit quota 429, trying next key...`);
+          quotaExceeded = true;
+          lastError = new Error('AI_QUOTA_EXCEEDED');
+          continue; // تجربة المفتاح التالي إن وجد
+        }
+        throw new Error(`AI HTTP ${response.status} ${detail.slice(0, 200)}`);
+      }
+
+      const json = await response.json();
+      const text = (json.candidates?.[0]?.content?.parts || [])
+        .map((part) => part.text || '')
+        .join('')
+        .trim();
+      if (!text) throw new Error('AI returned empty response');
+      const data = parseScanJson(text);
+      return { success: true, data };
+    } catch (error) {
+      lastError = error;
+      if (error && error.message === 'AI_QUOTA_EXCEEDED') {
+        quotaExceeded = true;
+      }
+    } finally {
+      clearTimeout(timer);
     }
-    const json = await response.json();
-    const text = (json.candidates?.[0]?.content?.parts || [])
-      .map((part) => part.text || '')
-      .join('')
-      .trim();
-    if (!text) throw new Error('AI returned empty response');
-    const data = parseScanJson(text);
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: error && error.message ? error.message : String(error) };
-  } finally {
-    clearTimeout(timer);
   }
+
+  if (quotaExceeded) {
+    return {
+      success: false,
+      error: 'AI_QUOTA_EXCEEDED',
+      message: 'تم تجاوز حد الاستخدام المسموح لمفتاح الذكاء الاصطناعي (Gemini Quota Exceeded - HTTP 429). يرجى مراجعة الحصة في Google AI Studio أو إضافة مفتاح جديد من لوحة تحكم السوبر أدمن.',
+    };
+  }
+
+  return {
+    success: false,
+    error: lastError && lastError.message ? lastError.message : 'فشل تحليل الصورة بالذكاء الاصطناعي',
+  };
 }
 
-module.exports = { parseScanImage, resolveScanAiKey, SCAN_PROMPT };
+module.exports = { parseScanImage, resolveScanAiKey, resolveScanAiKeys, SCAN_PROMPT };

@@ -1030,6 +1030,9 @@ export const parseScan = async (file: File): Promise<ScanParseResult> => {
     if (msg === "AI_NOT_CONFIGURED") {
       throw new Error("مفتاح الذكاء الاصطناعي مش مضبوط في قاعدة البيانات");
     }
+    if (msg === "AI_QUOTA_EXCEEDED" || msg.includes("429") || msg.toLowerCase().includes("quota") || msg.includes("RESOURCE_EXHAUSTED")) {
+      throw new Error("تم استنفاد حصة استخدام مفتاح الذكاء الاصطناعي (Gemini Quota Exceeded - 429). يرجى إضافة مفتاح جديد أو تفعيل الفوترة في Google AI Studio.");
+    }
     throw new Error(msg);
   }
   return (body["data"] ?? {}) as ScanParseResult;
