@@ -1637,12 +1637,26 @@ const updateCase = async (req, res) => {
     const { id } = req.params;
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
-    const existing = await prisma.dentalLabCase.findFirst({ where: { id, companyId } });
+    const existing = await prisma.dentalLabCase.findFirst({
+      where: { id, companyId },
+      include: { assignments: true, stages: { orderBy: { sortOrder: 'asc' } } },
+    });
     if (!existing) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
-    // RECEPTION لا يعدل الحقول المالية
+    // RECEPTION لا يعدل الحقول المالية إلا إذا تغيرت قيمتها فعلياً
     const financialFields = ['priceSnapshot', 'discount', 'paid', 'doctorId', 'workTypeId', 'workTypeName', 'unitPrice', 'unitsCount'];
-    const hasFinancialChange = financialFields.some((f) => f in body);
+    const hasFinancialChange = financialFields.some((f) => {
+      if (!(f in body)) return false;
+      const newVal = body[f];
+      const oldVal = existing[f];
+      if (newVal === undefined || newVal === null || newVal === '') {
+        return oldVal !== null && oldVal !== undefined && oldVal !== '' && oldVal !== 0;
+      }
+      if (typeof oldVal === 'number' || typeof newVal === 'number') {
+        return Number(newVal) !== Number(oldVal);
+      }
+      return String(newVal).trim() !== String(oldVal || '').trim();
+    });
     if (hasFinancialChange) {
       const teamRolesUpd = await require('../services/dentalRoles').loadTeamRoles(companyId);
       const roleUpd = resolveDentalRole(req.user, teamRolesUpd);
@@ -1765,7 +1779,70 @@ const updateCase = async (req, res) => {
     data.remaining = remaining;
     data.paymentStatus = derivePaymentStatus(total, paid);
 
-    const dentalCase = await prisma.dentalLabCase.update({ where: { id }, data, include: CASE_DETAIL_INCLUDE });
+    let dentalCase = await prisma.dentalLabCase.update({ where: { id }, data, include: CASE_DETAIL_INCLUDE });
+
+    if ('technicianId' in body) {
+      const newTechId = body.technicianId ? String(body.technicianId).trim() : null;
+      const currentAssignment = (existing.assignments || [])[0];
+      const currentTechId = currentAssignment?.technicianId || null;
+
+      if (newTechId !== currentTechId) {
+        if (!newTechId) {
+          await prisma.dentalCaseAssignment.deleteMany({ where: { caseId: id, companyId } });
+          if (currentTechId) {
+            await prisma.dentalCaseStage.updateMany({
+              where: { caseId: id, companyId, assigneeId: currentTechId },
+              data: { assigneeId: null, assigneeName: null },
+            });
+            if (prisma.dentalStageAssignee && typeof prisma.dentalStageAssignee.deleteMany === 'function') {
+              const stageIds = (existing.stages || []).map((s) => s.id);
+              if (stageIds.length > 0) {
+                await prisma.dentalStageAssignee.deleteMany({
+                  where: { stageId: { in: stageIds }, technicianId: currentTechId },
+                });
+              }
+            }
+          }
+        } else {
+          const newTech = await prisma.dentalTechnician.findFirst({ where: { id: newTechId, companyId } });
+          if (newTech) {
+            await prisma.dentalCaseAssignment.deleteMany({ where: { caseId: id, companyId } });
+            await prisma.dentalCaseAssignment.create({
+              data: { companyId, caseId: id, technicianId: newTechId, role: body.technicianRole || 'TECHNICIAN' },
+            });
+            const activeStage = findActiveStage(existing.stages || []);
+            if (activeStage) {
+              if (currentTechId && prisma.dentalStageAssignee && typeof prisma.dentalStageAssignee.deleteMany === 'function') {
+                await prisma.dentalStageAssignee.deleteMany({
+                  where: { stageId: activeStage.id, technicianId: currentTechId },
+                });
+              }
+              if (prisma.dentalStageAssignee && typeof prisma.dentalStageAssignee.upsert === 'function') {
+                await prisma.dentalStageAssignee.upsert({
+                  where: { stageId_technicianId: { stageId: activeStage.id, technicianId: newTechId } },
+                  create: {
+                    companyId,
+                    caseId: id,
+                    stageId: activeStage.id,
+                    technicianId: newTechId,
+                    technicianName: newTech.name,
+                    role: body.technicianRole || 'TECHNICIAN',
+                    sharePercent: 100,
+                  },
+                  update: { role: body.technicianRole || 'TECHNICIAN' },
+                });
+              }
+              await prisma.dentalCaseStage.update({
+                where: { id: activeStage.id },
+                data: { assigneeId: newTechId, assigneeName: newTech.name, startedAt: activeStage.startedAt || new Date() },
+              });
+            }
+          }
+        }
+        dentalCase = await prisma.dentalLabCase.findFirst({ where: { id, companyId }, include: CASE_DETAIL_INCLUDE });
+      }
+    }
+
     res.json({ success: true, data: serializeDentalCaseDetail(dentalCase) });
   } catch (error) {
     console.error('Error updating dental case:', error);
@@ -2311,12 +2388,15 @@ const assignTechnician = async (req, res) => {
             },
           });
         }
-        if (!activeStage.assigneeId) {
-          await tx.dentalCaseStage.update({
-            where: { id: activeStage.id },
-            data: { assigneeId: technicianId, assigneeName: technician.name, startedAt: new Date() },
+        if (activeStage.assigneeId && activeStage.assigneeId !== technicianId && tx.dentalStageAssignee && typeof tx.dentalStageAssignee.deleteMany === 'function') {
+          await tx.dentalStageAssignee.deleteMany({
+            where: { stageId: activeStage.id, technicianId: activeStage.assigneeId },
           });
         }
+        await tx.dentalCaseStage.update({
+          where: { id: activeStage.id },
+          data: { assigneeId: technicianId, assigneeName: technician.name, startedAt: activeStage.startedAt || new Date() },
+        });
       }
     });
 
@@ -2351,7 +2431,31 @@ const removeCaseAssignment = async (req, res) => {
     });
     if (!existing) return res.status(404).json({ success: false, error: 'الإسناد غير موجود' });
 
-    await prisma.dentalCaseAssignment.delete({ where: { id: assignmentId } });
+    const techId = existing.technicianId;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.dentalCaseAssignment.delete({ where: { id: assignmentId } });
+
+      if (techId) {
+        await tx.dentalCaseStage.updateMany({
+          where: { caseId: id, companyId, assigneeId: techId },
+          data: { assigneeId: null, assigneeName: null },
+        });
+
+        if (tx.dentalStageAssignee && typeof tx.dentalStageAssignee.deleteMany === 'function') {
+          const caseStages = await tx.dentalCaseStage.findMany({
+            where: { caseId: id, companyId },
+            select: { id: true },
+          });
+          const stageIds = (caseStages || []).map((s) => s.id);
+          if (stageIds.length > 0) {
+            await tx.dentalStageAssignee.deleteMany({
+              where: { stageId: { in: stageIds }, technicianId: techId },
+            });
+          }
+        }
+      }
+    });
 
     await recordDentalLabStatusHistory(prisma, {
       companyId,
@@ -5015,7 +5119,8 @@ const getDoctorPricing = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
-    const { doctorId } = req.params;
+    const doctorId = req.params.id || req.params.doctorId;
+    if (!doctorId) return res.status(400).json({ success: false, error: 'معرف الطبيب مطلوب' });
     const prisma = getSharedPrismaClient();
     const rows = await prisma.dentalSetting.findMany({ where: { companyId } });
     const merged = mergeSettings(rows);
@@ -5031,7 +5136,8 @@ const setDoctorPricing = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
-    const { doctorId } = req.params;
+    const doctorId = req.params.id || req.params.doctorId;
+    if (!doctorId) return res.status(400).json({ success: false, error: 'معرف الطبيب مطلوب' });
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
     const doctor = await prisma.dentalLabDoctor.findFirst({ where: { id: doctorId, companyId } });

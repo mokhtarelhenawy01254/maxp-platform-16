@@ -72,8 +72,14 @@ const paymentBadge = (status?: string) => {
   return <span className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${meta.color}`}>{meta.label}</span>;
 };
 
+function normalizeWhatsAppPhone(phone: string | undefined): string {
+  let p = (phone || "").replace(/[^0-9]/g, "");
+  if (p.startsWith("0")) p = "2" + p;
+  return p;
+}
+
 function shareInvoiceWhatsApp(inv: DentalInvoice) {
-  const phone = (inv.doctor?.phone || "").replace(/[^0-9]/g, "");
+  const phone = normalizeWhatsAppPhone(inv.doctor?.phone);
   const invNum = inv.invoiceNumber || inv.id.slice(0, 8);
   const patient = inv.patientName || inv.case?.patientName || "—";
   const caseNum = inv.case?.caseNumber ? ` (حالة: ${inv.case.caseNumber})` : "";
@@ -90,7 +96,7 @@ function shareStatementWhatsApp(
   phone: string | undefined,
   totals: { invoiced?: number; paid?: number; remaining?: number; cases?: number }
 ) {
-  const cleanPhone = (phone || "").replace(/[^0-9]/g, "");
+  const cleanPhone = normalizeWhatsAppPhone(phone);
   const text = `مرحباً دكتور ${docName}\nتحية طيبة من إدارة معمل الأسنان 🦷\nمرفق ملخص كشف الحساب:\nعدد الحالات: *${totals.cases || 0} حالة*\nإجمالي المفوتر: *${fmtMoney(totals.invoiced)} ج.م*\nإجمالي المسدد: *${fmtMoney(totals.paid)} ج.م*\n*الرصيد المتبقي المستحق: ${fmtMoney(totals.remaining)} ج.م*\n------------------\nنسعد دائماً بخدمتكم وتوفير أعلى معايير الجودة.`;
 
   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");

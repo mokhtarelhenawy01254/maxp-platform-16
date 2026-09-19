@@ -784,9 +784,11 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
         id: 'asg-1',
         companyId: 'company-1',
         caseId: 'case-1',
+        technicianId: 'tech-1',
         technician: { name: 'أحمد فني' },
       });
       prisma.dentalCaseAssignment.delete.mockResolvedValue({});
+      prisma.dentalCaseStage.updateMany.mockResolvedValue({ count: 1 });
       prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
       getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -798,6 +800,10 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
 
       expect(res.statusCode).toBe(200);
       expect(prisma.dentalCaseAssignment.delete).toHaveBeenCalledWith({ where: { id: 'asg-1' } });
+      expect(prisma.dentalCaseStage.updateMany).toHaveBeenCalledWith({
+        where: { caseId: 'case-1', companyId: 'company-1', assigneeId: 'tech-1' },
+        data: { assigneeId: null, assigneeName: null },
+      });
       expect(prisma.dentalCaseStatusHistory.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ caseId: 'case-1', dimension: 'STAGE', status: 'ASSIGNMENT_REMOVED' }),

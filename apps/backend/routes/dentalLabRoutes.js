@@ -163,7 +163,7 @@ router.post('/monthly-settlements/close', verifyToken.authenticateToken, dentalR
 router.post('/monthly-settlements/:id/reopen', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.reopenMonthlySettlement);
 
 // Doctor pricing (rate sheet)
-router.get('/doctors/:id/pricing', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getDoctorPricing);
+router.get('/doctors/:id/pricing', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'ACCOUNTANT']), controller.getDoctorPricing);
 router.put('/doctors/:id/pricing', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.setDoctorPricing);
 
 // Dashboard

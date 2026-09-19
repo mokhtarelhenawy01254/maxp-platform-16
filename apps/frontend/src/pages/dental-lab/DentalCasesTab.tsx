@@ -8,7 +8,7 @@ import {
 import {
   CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG, PAYMENT_STATUS_MAP,
   DentalLabCase, DentalLabDoctor, DentalTechnician, DentalWorkType, DentalCasePriority, DentalTechnicianRole,
-  fetchCases, fetchDoctors, fetchWorkTypes, fetchTechnicians,
+  fetchCases, fetchDoctors, fetchWorkTypes, fetchTechnicians, fetchDoctorPricing,
   createCase, updateCase, advanceCase, assignCase, removeCaseAssignment, uploadCaseAttachment, uploadCaseAttachments,
   createInvoice, addInvoicePayment, kioskScanCase,
   trashCase, restoreCase, permanentDeleteCase,
@@ -65,14 +65,33 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
   const [priority, setPriority] = useState(initial?.priority ?? "NORMAL");
   const [discount, setDiscount] = useState(initial?.discount ?? 0);
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [doctorPricingMap, setDoctorPricingMap] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (doctorId) {
+      fetchDoctorPricing(doctorId)
+        .then((map) => setDoctorPricingMap(map || {}))
+        .catch(() => setDoctorPricingMap({}));
+    } else {
+      setDoctorPricingMap({});
+    }
+  }, [doctorId]);
+
+  const resolveUnitPrice = (wt: DentalWorkType | undefined) => {
+    if (!wt) return 0;
+    if (doctorPricingMap[wt.id] != null) return Number(doctorPricingMap[wt.id]);
+    return Number(wt.price) || 0;
+  };
+
   const onWorkTypeChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
     setWorkTypeId(id);
     const wt = workTypes.find(w => w.id === id);
     setWorkTypeName(wt?.name ?? "");
-    if (wt && wt.price != null) {
+    if (wt) {
       const cnt = unitsCount > 0 ? unitsCount : 1;
-      setPriceSnapshot(wt.pricingMode === "FLAT" ? wt.price : wt.price * cnt);
+      const unitP = resolveUnitPrice(wt);
+      setPriceSnapshot(wt.pricingMode === "FLAT" ? unitP : unitP * cnt);
     }
   };
 
@@ -82,10 +101,22 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
     setUnitsCount(count);
     setTeeth(arr.join(", "));
     const wt = workTypes.find(w => w.id === workTypeId);
-    if (wt && wt.price != null && wt.pricingMode !== "FLAT") {
-      setPriceSnapshot(Number(wt.price) * count);
+    if (wt && wt.pricingMode !== "FLAT") {
+      const unitP = resolveUnitPrice(wt);
+      setPriceSnapshot(unitP * count);
     }
   };
+
+  useEffect(() => {
+    if (!initial && workTypeId) {
+      const wt = workTypes.find((w) => w.id === workTypeId);
+      if (wt) {
+        const cnt = unitsCount > 0 ? unitsCount : 1;
+        const unitP = resolveUnitPrice(wt);
+        setPriceSnapshot(wt.pricingMode === "FLAT" ? unitP : unitP * cnt);
+      }
+    }
+  }, [doctorPricingMap]);
 
   const save = async () => {
     if (saving) return;
@@ -256,7 +287,14 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
               <input className={inputCls} type="number" min="0" max="20" value={warrantyYears} onChange={e => setWarrantyYears(Number(e.target.value))} />
             </div>
             <div>
-              <label className={labelCls}>{t("dentalLab.cases.priceSnapshot")}</label>
+              <div className="flex items-center justify-between">
+                <label className={labelCls}>{t("dentalLab.cases.priceSnapshot")}</label>
+                {workTypeId && doctorPricingMap[workTypeId] != null && (
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
+                    سعر خاص بالطبيب ({fmtMoney(doctorPricingMap[workTypeId])})
+                  </span>
+                )}
+              </div>
               <input className={inputCls} type="number" value={priceSnapshot} onChange={e => setPriceSnapshot(Number(e.target.value))} />
             </div>
             <div>

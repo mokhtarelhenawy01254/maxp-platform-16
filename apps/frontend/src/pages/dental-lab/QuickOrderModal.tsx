@@ -52,6 +52,7 @@ import {
   fetchDoctors,
   fetchWorkTypes,
   fetchTechnicians,
+  fetchDoctorPricing,
   fetchPanLabelPdf,
   fmtMoney,
   uploadCaseAttachments,
@@ -267,6 +268,17 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   const [showNewDoctor, setShowNewDoctor] = useState(false);
   const [doctorsLoading, setDoctorsLoading] = useState(false);
   const [bypassCreditCheck, setBypassCreditCheck] = useState(false);
+  const [doctorPricingMap, setDoctorPricingMap] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (selectedDoctor?.id) {
+      fetchDoctorPricing(selectedDoctor.id)
+        .then((map) => setDoctorPricingMap(map || {}))
+        .catch(() => setDoctorPricingMap({}));
+    } else {
+      setDoctorPricingMap({});
+    }
+  }, [selectedDoctor?.id]);
 
   // Step 2: Services, Teeth, Shade, Impression & Try-in
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
@@ -465,6 +477,12 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
     });
   };
 
+  const resolveUnitPrice = useCallback((wt: DentalWorkType | undefined) => {
+    if (!wt) return 0;
+    if (doctorPricingMap[wt.id] != null) return Number(doctorPricingMap[wt.id]);
+    return Number(wt.price) || 0;
+  }, [doctorPricingMap]);
+
   // Recalculate price when service, unitsCount, or teeth change
   useEffect(() => {
     if (primaryService) {
@@ -474,10 +492,10 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
       const count = selectedTeeth.length > 0 ? selectedTeeth.length : (primaryService.defaultCrownCount || 1);
       setUnitsCount(count);
       const isPerUnit = (primaryService.pricingMode || "PER_UNIT") === "PER_UNIT";
-      const basePrice = Number(primaryService.price) || 0;
+      const basePrice = resolveUnitPrice(primaryService);
       setPriceSnapshot(isPerUnit ? count * basePrice : basePrice);
     }
-  }, [selectedServiceIds, workTypes]);
+  }, [selectedServiceIds, workTypes, doctorPricingMap, resolveUnitPrice]);
 
   // Handle Tooth Selection from Odontogram
   const handleTeethChange = (teethArr: string[]) => {
@@ -485,7 +503,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
     const count = teethArr.length > 0 ? teethArr.length : 1;
     setUnitsCount(count);
     if (primaryService && (primaryService.pricingMode || "PER_UNIT") === "PER_UNIT") {
-      setPriceSnapshot(count * (Number(primaryService.price) || 0));
+      setPriceSnapshot(count * resolveUnitPrice(primaryService));
     }
   };
 
@@ -493,7 +511,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
     const count = Math.max(1, n);
     setUnitsCount(count);
     if (primaryService && (primaryService.pricingMode || "PER_UNIT") === "PER_UNIT") {
-      setPriceSnapshot(count * (Number(primaryService.price) || 0));
+      setPriceSnapshot(count * resolveUnitPrice(primaryService));
     }
   };
 
@@ -567,7 +585,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
         workTypeId: primaryId,
         workTypeName: primary?.name,
         unitsCount: Math.max(1, Number(unitsCount) || 1),
-        unitPrice: primary ? Number(primary.price) : undefined,
+        unitPrice: primary ? resolveUnitPrice(primary) : undefined,
         teeth: teethStr,
         shade: finalShade,
         material: material.trim() || undefined,
@@ -952,7 +970,14 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                   <input className={inputCls} type="number" min="1" value={unitsCount} onChange={(e) => handleManualUnitsChange(Number(e.target.value))} />
                 </div>
                 <div>
-                  <label className={labelCls}>سعر الطلب (قبل الخصم)</label>
+                  <div className="flex items-center justify-between">
+                    <label className={labelCls}>سعر الطلب (قبل الخصم)</label>
+                    {primaryService && doctorPricingMap[primaryService.id] != null && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                        سعر خاص ({fmtMoney(doctorPricingMap[primaryService.id])})
+                      </span>
+                    )}
+                  </div>
                   <input className={inputCls} type="number" value={priceSnapshot} onChange={(e) => setPriceSnapshot(Number(e.target.value))} />
                 </div>
               </div>
