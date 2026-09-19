@@ -11,6 +11,8 @@ import {
   getStorefrontMarketplaceAppSettings,
   isStorefrontMarketplaceAppEnabled,
 } from "../utils/marketplaceApps";
+import { getActiveQuantityOffers } from "../../utils/quantityOffers";
+import { getProductVolumeDiscounts } from "../utils/volumeDiscounts";
 
 interface QuantityOffersSectionProps {
   section?: {
@@ -121,10 +123,16 @@ const QuantityOffersSection: React.FC<QuantityOffersSectionProps> = ({
     "USD";
   const variant = normalizeQuantityOffersVariant(section?.variant);
 
+  const explicitQuantityOffers = getActiveQuantityOffers(product?.metadata);
+  const productVolumeDiscounts = getProductVolumeDiscounts(product);
+  const hasConfiguredQuantityOffers =
+    explicitQuantityOffers.length > 0 || productVolumeDiscounts.length > 0;
+
   if (
     !product ||
     !quantityOffersEnabled ||
-    quantityOffersModules["renderOnProductPage"] === false
+    quantityOffersModules["renderOnProductPage"] === false ||
+    !hasConfiguredQuantityOffers
   ) {
     return null;
   }

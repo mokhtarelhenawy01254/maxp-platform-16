@@ -205,6 +205,9 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
     const explicitOffers = getActiveQuantityOffers(product?.metadata);
     const baseOffers =
       explicitOffers.length > 0 ? explicitOffers : buildFallbackQuantityOffers(product);
+    if (baseOffers.length === 0) {
+      return [];
+    }
     const singlePieceUnitPrice = Number(
       product?.price ||
         product?.productVariants?.[0]?.price ||
@@ -622,7 +625,7 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
     });
   };
 
-  if (hideWhenSingleOffer && offers.length <= 1) {
+  if (offers.length === 0 || (hideWhenSingleOffer && offers.length <= 1)) {
     return null;
   }
 

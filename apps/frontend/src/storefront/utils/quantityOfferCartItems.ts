@@ -198,6 +198,10 @@ export const ensureSinglePieceQuantityOffer = (
   offers: QuantityOffer[],
   unitPrice: number,
 ): QuantityOffer[] => {
+  if (!offers || offers.length === 0) {
+    return [];
+  }
+
   const normalizedUnitPrice = Number(Math.max(0, unitPrice).toFixed(2));
   if (normalizedUnitPrice <= 0) {
     return offers;

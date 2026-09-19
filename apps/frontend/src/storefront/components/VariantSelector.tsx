@@ -6,6 +6,7 @@ import {
   normalizeStorefrontImageValue,
 } from '../utils/productImages';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
+import { formatStorefrontCurrency } from '../utils/currency';
 
 interface VariantSelectorProps {
   variants: ProductVariant[];
@@ -19,6 +20,7 @@ interface VariantSelectorProps {
     attributeColors?: Record<string, unknown> | null;
   } | null;
   isOpen?: boolean;
+  currency?: string;
 }
 
 interface RgbColor {
@@ -486,6 +488,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
   layout = 'default',
   variantSettings,
   isOpen = true,
+  currency = 'EGP',
 }) => {
   if (!isOpen) return null;
   const { theme } = useStorefrontTheme();
@@ -494,6 +497,59 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
   const prefersArabicCopy = theme.direction === 'rtl';
   const isCompact = density === 'compact';
   const isInlineCompact = isCompact && layout === 'inline-compact';
+
+  const hasDifferentVariantPrices = React.useMemo(() => {
+    if (!variants || variants.length <= 1) return false;
+    const validPrices = variants
+      .map((v) => v.price)
+      .filter((p): p is number => typeof p === 'number' && Number.isFinite(p) && p > 0);
+    if (validPrices.length <= 1) return false;
+    const firstPrice = validPrices[0];
+    return validPrices.some((p) => p !== firstPrice);
+  }, [variants]);
+
+  const getOptionPriceDisplay = React.useCallback(
+    (key: string, option: string) => {
+      if (!hasDifferentVariantPrices) return null;
+
+      // 1. Try to find a matching variant considering currently selected other attributes
+      const matchingVariant = variants.find((variant) => {
+        const vAttrs = getVariantAttributes(variant);
+        if (vAttrs[key] !== option) return false;
+        for (const [k, val] of Object.entries(selectedAttributes)) {
+          if (k !== key && vAttrs[k] && vAttrs[k] !== val) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (matchingVariant && typeof matchingVariant.price === 'number') {
+        return formatStorefrontCurrency(matchingVariant.price, currency);
+      }
+
+      // 2. Otherwise find all variants having this option for this key
+      const matchingVariants = variants.filter((variant) => {
+        const vAttrs = getVariantAttributes(variant);
+        return vAttrs[key] === option && typeof variant.price === 'number';
+      });
+
+      if (matchingVariants.length === 0) return null;
+
+      const prices = matchingVariants.map((v) => v.price as number);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+
+      if (minPrice === maxPrice) {
+        return formatStorefrontCurrency(minPrice, currency);
+      }
+
+      return prefersArabicCopy
+        ? `تبدأ من ${formatStorefrontCurrency(minPrice, currency)}`
+        : `From ${formatStorefrontCurrency(minPrice, currency)}`;
+    },
+    [currency, hasDifferentVariantPrices, prefersArabicCopy, selectedAttributes, variants],
+  );
 
   const [selectedTextColor, setSelectedTextColor] = React.useState<string | null>(
     () => resolveReadableSelectedTextColor(),
@@ -826,6 +882,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                 >
                   {options.map((option) => {
                     const isSelected = selectedAttributes[key] === option;
+                    const optionPrice = getOptionPriceDisplay(key, option);
                     return (
                       <button
                         key={option}
@@ -833,16 +890,23 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                         onClick={() => handleSelect(key, option)}
                         aria-label={
                           prefersArabicCopy
-                            ? `اختر ${displayKey} ${option}`
-                            : `Select ${displayKey} ${option}`
+                            ? `اختر ${displayKey} ${option}${optionPrice ? ` بسعر ${optionPrice}` : ''}`
+                            : `Select ${displayKey} ${option}${optionPrice ? ` for ${optionPrice}` : ''}`
                         }
-                        className={`min-w-[4.8rem] rounded-full border px-4 py-2.5 text-sm font-black transition-all duration-200 ${
+                        className={`min-w-[4.8rem] rounded-full border px-4 py-2.5 text-sm font-black transition-all duration-200 flex items-center justify-center gap-1.5 ${
                           isSelected
                             ? 'border-[#1f4737] bg-[#1f4737] text-white shadow-[0_12px_28px_-18px_rgba(31,71,55,0.55)]'
                             : 'border-[#e0d2c5] bg-white text-[#2d211e] hover:border-[#b79d8e] hover:bg-[#fffaf6]'
                         }`}
                       >
-                        {option}
+                        <span>{option}</span>
+                        {optionPrice ? (
+                          <span className={`text-[11px] font-bold tabular-nums ms-1 ${
+                            isSelected ? 'text-white/90' : 'text-[#8f5c44]'
+                          }`}>
+                            {optionPrice}
+                          </span>
+                        ) : null}
                       </button>
                     );
                   })}
@@ -855,6 +919,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                 >
                   {options.map((option) => {
                     const isSelected = selectedAttributes[key] === option;
+                    const optionPrice = getOptionPriceDisplay(key, option);
                     return (
                       <label
                         key={option}
@@ -883,8 +948,8 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                           onChange={() => handleSelect(key, option)}
                           aria-label={
                             prefersArabicCopy
-                              ? `اختر ${displayKey} ${option}`
-                              : `Select ${displayKey} ${option}`
+                              ? `اختر ${displayKey} ${option}${optionPrice ? ` بسعر ${optionPrice}` : ''}`
+                              : `Select ${displayKey} ${option}${optionPrice ? ` for ${optionPrice}` : ''}`
                           }
                           className={`${isCompact ? 'h-3.5 w-3.5' : 'h-4 w-4'} border-border text-primary focus:ring-primary`}
                         />
@@ -899,6 +964,13 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                         >
                           {option}
                         </span>
+                        {optionPrice ? (
+                          <span className={`text-xs font-bold tabular-nums ms-auto ${
+                            isSelected ? 'text-primary' : 'text-muted-foreground'
+                          }`}>
+                            {optionPrice}
+                          </span>
+                        ) : null}
                       </label>
                     );
                   })}
@@ -931,6 +1003,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                     displayStyle === 'thumbnails' ? optionImages[option] || '' : '';
                   const resolvedColor = isColor ? getOptionColor(key, option) : null;
                   const shouldShowColorFallbackLabel = isColor && !resolvedColor;
+                  const optionPrice = getOptionPriceDisplay(key, option);
 
                   if (displayStyle === 'thumbnails') {
                     return (
@@ -953,8 +1026,8 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                         }
                         aria-label={
                           prefersArabicCopy
-                            ? `اختر ${displayKey} ${option}`
-                            : `Select ${displayKey} ${option}`
+                            ? `اختر ${displayKey} ${option}${optionPrice ? ` بسعر ${optionPrice}` : ''}`
+                            : `Select ${displayKey} ${option}${optionPrice ? ` for ${optionPrice}` : ''}`
                         }
                       >
                         <div className="relative w-full aspect-square sm:aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
@@ -962,21 +1035,21 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                             <img
                               src={thumbnailImage}
                               alt={`${displayKey} ${option}`}
+                              className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
                               loading="lazy"
-                              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                             />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center p-1 text-center text-xs font-bold text-muted-foreground">
+                            <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-muted-foreground">
                               {option}
                             </div>
                           )}
 
                           {isSelected ? (
                             <span
-                              className={`absolute top-1 end-1 z-20 flex items-center justify-center rounded-full text-white shadow-md animate-in zoom-in-75 duration-150 ${
+                              className={`absolute top-1.5 start-1.5 z-20 flex items-center justify-center rounded-full bg-primary font-black text-primary-foreground shadow-md ${
                                 isKhemetLuxeElessi
-                                  ? 'bg-[#1f4737]'
-                                  : 'bg-primary'
+                                  ? 'bg-[#1f4737] text-white'
+                                  : ''
                               } ${
                                 isInlineCompact
                                   ? 'h-3.5 w-3.5 text-[8px]'
@@ -1009,6 +1082,11 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                             >
                               {option}
                             </span>
+                            {optionPrice ? (
+                              <span className="block text-[9.5px] tabular-nums font-semibold text-white/90">
+                                {optionPrice}
+                              </span>
+                            ) : null}
                           </div>
                         </div>
                       </button>
@@ -1049,8 +1127,8 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                         }
                         aria-label={
                           prefersArabicCopy
-                            ? `اختر ${displayKey} ${option}`
-                            : `Select ${displayKey} ${option}`
+                            ? `اختر ${displayKey} ${option}${optionPrice ? ` بسعر ${optionPrice}` : ''}`
+                            : `Select ${displayKey} ${option}${optionPrice ? ` for ${optionPrice}` : ''}`
                         }
                         title={option}
                       >
@@ -1086,8 +1164,12 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                               isInlineCompact
                                 ? 'min-h-[2.4rem] w-full px-1 py-1.5 text-[11px] font-black'
                                 : isCompact
-                                  ? 'min-h-[2.5rem] px-2.5 py-1.5 text-xs font-bold'
-                                  : 'min-h-[2.75rem] px-3.5 py-2 text-sm font-bold'
+                                  ? optionPrice
+                                    ? 'min-h-[2.85rem] px-2.5 py-1 text-xs font-bold'
+                                    : 'min-h-[2.5rem] px-2.5 py-1.5 text-xs font-bold'
+                                  : optionPrice
+                                    ? 'min-h-[3.1rem] px-3.5 py-1.5 text-sm font-bold'
+                                    : 'min-h-[2.75rem] px-3.5 py-2 text-sm font-bold'
                             } ${
                               isSelected
                                 ? 'bg-primary border-primary text-primary-foreground shadow-sm'
@@ -1101,11 +1183,26 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                       }
                       aria-label={
                         prefersArabicCopy
-                          ? `اختر ${displayKey} ${option}`
-                          : `Select ${displayKey} ${option}`
+                          ? `اختر ${displayKey} ${option}${optionPrice ? ` بسعر ${optionPrice}` : ''}`
+                          : `Select ${displayKey} ${option}${optionPrice ? ` for ${optionPrice}` : ''}`
                       }
                     >
-                      {option}
+                      {optionPrice ? (
+                        <div className="flex flex-col items-center justify-center leading-tight py-0.5 w-full">
+                          <span className="font-bold">{option}</span>
+                          <span
+                            className={`text-[10px] sm:text-[10.5px] tabular-nums font-semibold mt-0.5 ${
+                              isSelected
+                                ? 'text-primary-foreground/90'
+                                : 'text-primary'
+                            }`}
+                          >
+                            {optionPrice}
+                          </span>
+                        </div>
+                      ) : (
+                        option
+                      )}
                     </button>
                   );
                 })}

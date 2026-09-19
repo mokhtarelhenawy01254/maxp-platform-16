@@ -77,8 +77,18 @@ const khemetProduct = {
   safeCheckoutItems: [
     'دفع عند الاستلام متاح',
     'تأكيد المقاس واللون قبل التجهيز',
-    'تبديل مقاس خلال 14 يوم',
   ],
+  metadata: {
+    quantityOffers: [
+      {
+        id: 'khemet-offer-2',
+        quantity: 2,
+        unitPrice: 2000,
+        buyText: 'اشتري 2 بـ4000',
+        isActive: true,
+      },
+    ],
+  },
   productVariants: [
     {
       id: 'khemet-sneaker-37',
@@ -270,6 +280,33 @@ describe('KHEMET inline quick-order buybox', () => {
       isLoading: false,
       error: null,
       previewThemeId: null,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/store/products/khemet-cloud-sneaker?companyId=company123']}>
+        <Routes>
+          <Route
+            path="/store/products/:id"
+            element={<ProductInfo section={{ variant: 'elessi-care-buybox' }} />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByTestId('inline-quantity-offers')).not.toBeInTheDocument();
+    expect((await screen.findAllByText('37')).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('أبيض').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('does not render quantity-offers and renders variant selectors when product has no configured quantity offers', async () => {
+    mockUseProduct.mockReturnValue({
+      product: {
+        ...khemetProduct,
+        metadata: {},
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
     });
 
     render(
