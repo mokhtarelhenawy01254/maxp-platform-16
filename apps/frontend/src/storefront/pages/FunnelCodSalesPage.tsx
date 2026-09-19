@@ -41,6 +41,7 @@ import { formatStorefrontCurrency } from "../utils/currency";
 import { getPrimaryProductImage } from "../utils/productImages";
 import { buildStorefrontPath } from "../utils/paths";
 import { persistPurchaseTracking } from "../utils/purchaseTrackingStorage";
+import { captureStorefrontAttribution } from "../utils/orderAttribution";
 import type { CartItem } from "../store/useCartStore";
 
 import CountdownBlock from "../sections/ConversionBlocks/CountdownBlock";
@@ -202,6 +203,12 @@ const FunnelCodSalesPage: React.FC = () => {
     quantity: 1,
   });
   const [submitting, setSubmitting] = useState(false);
+
+  // Ad-campaign measurement: capture UTMs/click-ids at landing entry so the
+  // order attribution snapshot survives navigation before checkout.
+  useEffect(() => {
+    captureStorefrontAttribution();
+  }, []);
 
   // Countdown state
   const [remainingMs, setRemainingMs] = useState<number>(0);

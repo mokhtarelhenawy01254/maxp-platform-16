@@ -298,6 +298,8 @@ const resolveRouteContext = (pathname = "/") => {
     routeSegments.length === 1 && !RESERVED_PAGE_SEGMENTS.has(pageSegment)
       ? decodePathSegment(pageSegment)
       : null;
+  const landingSlug =
+    pageSegment === "lp" && routeSegments[1] ? decodePathSegment(routeSegments[1]) : null;
 
   return {
     normalizedPath,
@@ -308,6 +310,7 @@ const resolveRouteContext = (pathname = "/") => {
     categorySlug,
     articleSlug,
     storePageSlug,
+    landingSlug,
     isHomePage: routeSegments.length === 0,
   };
 };
@@ -322,6 +325,7 @@ const buildStorefrontSeoMetadata = ({
   category = null,
   article = null,
   storePage = null,
+  landing = null,
   reviews = null,
   noIndex = false,
 }) => {
@@ -385,6 +389,74 @@ const buildStorefrontSeoMetadata = ({
     trimToNull(designTokens?.facebookDomainVerification) ||
     trimToNull(templateSeo?.facebookDomainVerification) ||
     null;
+
+  // Product landing pages (/store/lp/:slug): title/description/og-image come
+  // from the landing's own seo field with product-derived fallbacks, and the
+  // canonical URL is the landing URL itself.
+  if (landing) {
+    const landingSeo = parseJsonObject(landing.seo);
+    const landingTitle =
+      trimToNull(landingSeo.title) || trimToNull(landing.title) || storeName;
+    title = trimToNull(landingSeo.title)
+      ? landingTitle
+      : applyTitleTemplate(titleTemplate, landingTitle, storeName);
+    description =
+      trimToNull(landingSeo.description) ||
+      trimToNull(stripHtml(landing.productDescription)) ||
+      fallbackDescription;
+    image =
+      resolveAbsoluteUrl(landingSeo.ogImage, currentUrl) ||
+      resolveAbsoluteUrl(landing.productImage, currentUrl) ||
+      defaultImage;
+    type = "product";
+    canonicalUrl = `${baseUrl}/store/lp/${encodeURIComponent(
+      landing.slug || routeContext.landingSlug || "",
+    )}`;
+
+    const landingPriceNumber = Number(landing.productPrice);
+    price =
+      Number.isFinite(landingPriceNumber) && landingPriceNumber > 0
+        ? landingPriceNumber
+        : null;
+    availability = "https://schema.org/InStock";
+
+    jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: landingTitle,
+      description,
+      image: image ? [image] : [],
+      brand: { "@type": "Brand", name: storeName },
+      offers: {
+        "@type": "Offer",
+        price: price ?? undefined,
+        priceCurrency: landing.currency || company?.currency || "EGP",
+        availability,
+        itemCondition: "https://schema.org/NewCondition",
+        url: canonicalUrl,
+      },
+    };
+
+    return {
+      title,
+      description,
+      image,
+      faviconUrl,
+      siteName: storeName,
+      url: canonicalUrl,
+      type,
+      themeId,
+      direction,
+      routeContext,
+      jsonLd,
+      price,
+      currency: landing.currency || company?.currency || "EGP",
+      availability,
+      noIndex,
+      googleSiteVerification,
+      facebookDomainVerification,
+    };
+  }
 
   if (product) {
     const productWithSeoOverrides = resolveProductSeoOverrides(product);

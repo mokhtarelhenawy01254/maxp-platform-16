@@ -26,6 +26,7 @@ import {
   LandingSection,
   ProductLandingProduct,
   ProductLandingSlice,
+  ProductLandingSeo,
   ProductLandingStatus,
   SectionType,
 } from "../../../services/productLandingPagesService";
@@ -38,6 +39,7 @@ export type {
   ProductLandingProduct,
   ProductLandingSlice,
   LandingStyle,
+  ProductLandingSeo,
 };
 
 export interface EditorState {
@@ -52,6 +54,7 @@ export interface EditorState {
     buttonLabel: string;
   };
   style: LandingStyle;
+  seo: ProductLandingSeo;
   slices: ProductLandingSlice[];
   sections: LandingSection[];
 }
@@ -465,6 +468,7 @@ export const DEFAULT_EDITOR: EditorState = {
     buttonLabel: "تأكيد الطلب الآن",
   },
   style: {},
+  seo: {},
   slices: [],
   sections: [],
 };

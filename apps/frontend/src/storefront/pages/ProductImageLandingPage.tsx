@@ -21,7 +21,38 @@ import {
   ensureLandingStyleFontLoaded,
   resolveLandingStyle,
 } from "../utils/landingStyles";
+import { captureStorefrontAttribution } from "../utils/orderAttribution";
+import useStorefrontFacebookTracking from "../hooks/useStorefrontFacebookTracking";
 import "./ProductImageLandingPage.css";
+
+interface LandingSeoMeta {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+}
+
+/** The seo column arrives as a JSON string (or object) — normalize it. */
+const parseLandingSeo = (value: unknown): LandingSeoMeta => {
+  let parsed: unknown = value;
+  if (typeof parsed === "string" && parsed.trim()) {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      return {};
+    }
+  }
+  if (!parsed || typeof parsed !== "object") return {};
+  const record = parsed as Record<string, unknown>;
+  const str = (key: string) =>
+    typeof record[key] === "string" && record[key].trim()
+      ? (record[key] as string).trim()
+      : undefined;
+  return {
+    title: str("title"),
+    description: str("description"),
+    ogImage: str("ogImage"),
+  };
+};
 
 type LandingSlice = {
   id?: string;
@@ -838,6 +869,108 @@ const ProductImageLandingPage: React.FC = () => {
   useEffect(() => {
     ensureLandingStyleFontLoaded(landingStyle.fontKey);
   }, [landingStyle.fontKey]);
+
+  // Client-side SEO fallback (the backend shell injects the canonical tags;
+  // this keeps the title/OG correct for SPA navigation and preview modes).
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const landingSeo = parseLandingSeo(
+      (activeLanding as { seo?: unknown } | null)?.seo,
+    );
+    const priceText =
+      Number(activeProduct?.price) > 0
+        ? ` — ${formatStorefrontCurrency(Number(activeProduct.price), currency || "EGP")}`
+        : "";
+    const title =
+      landingSeo.title ||
+      activeLanding?.title ||
+      activeProduct?.name ||
+      document.title;
+    const description =
+      landingSeo.description ||
+      (activeProduct?.description
+        ? activeProduct.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160)
+        : "");
+    const ogImage = landingSeo.ogImage || activeProduct?.mainImage || "";
+
+    const previousTitle = document.title;
+    document.title = `${title}${priceText}`;
+
+    const setMeta = (attr: string, key: string, content: string) => {
+      if (!content) return;
+      let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      if (!el.dataset.pilPrevious) el.dataset.pilPrevious = el.content || "";
+      el.content = content;
+    };
+
+    setMeta("name", "description", description);
+    setMeta("property", "og:title", `${title}${priceText}`);
+    setMeta("property", "og:description", description);
+    setMeta("property", "og:image", ogImage);
+    setMeta("property", "og:type", "product");
+
+    return () => {
+      document.title = previousTitle;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activeLanding?.id,
+    activeLanding?.title,
+    activeProduct?.id,
+    activeProduct?.name,
+    activeProduct?.price,
+    activeProduct?.mainImage,
+  ]);
+
+  // Ad-campaign measurement: capture UTMs/click-ids at landing entry so the
+  // order attribution snapshot survives navigation before checkout.
+  useEffect(() => {
+    captureStorefrontAttribution();
+  }, []);
+
+  // Meta pixel funnel events (ViewContent on load, InitiateCheckout on the
+  // first form interaction). Purchase fires via the thank-you page using the
+  // persisted pixelEventId for CAPI dedup.
+  const {
+    trackViewContentEvent,
+    trackInitiateCheckoutEvent,
+  } = useStorefrontFacebookTracking();
+  const hasTrackedViewContentRef = React.useRef<string | null>(null);
+  const hasTrackedInitiateCheckoutRef = React.useRef(false);
+
+  useEffect(() => {
+    if (!activeLanding?.id || !activeProduct?.id || !activeProduct?.name) return;
+    if (hasTrackedViewContentRef.current === activeLanding.id) return;
+    hasTrackedViewContentRef.current = activeLanding.id;
+    trackViewContentEvent({
+      id: activeProduct.id,
+      name: activeProduct.name,
+      price: Number(activeProduct.price) || 0,
+      category: activeProduct.category?.name || undefined,
+      quantity: 1,
+    });
+  }, [activeLanding?.id, activeProduct, trackViewContentEvent]);
+
+  const handleFormFirstInteraction = () => {
+    if (hasTrackedInitiateCheckoutRef.current || !activeProduct?.id) return;
+    hasTrackedInitiateCheckoutRef.current = true;
+    const bundleCount = Math.max(1, Number(activeBundle?.qty || formState.bundleQty || 1));
+    trackInitiateCheckoutEvent({
+      items: [
+        {
+          id: activeProduct.id,
+          quantity: bundleCount,
+          price: Number(activePrice) || 0,
+        },
+      ],
+      total: (Number(activePrice) || 0) * bundleCount,
+    });
+  };
 
   const activeSections: any[] = useMemo(
     () =>
@@ -2168,7 +2301,11 @@ const ProductImageLandingPage: React.FC = () => {
               </div>
             </div>
 
-            <form className="pil-form" onSubmit={handleSubmit}>
+            <form
+              className="pil-form"
+              onSubmit={handleSubmit}
+              onInputCapture={handleFormFirstInteraction}
+            >
               <div className="pil-field">
                 <label htmlFor="pil-customer-name">الاسم</label>
                 <input

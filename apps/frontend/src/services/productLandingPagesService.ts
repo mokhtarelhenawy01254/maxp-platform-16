@@ -3,6 +3,12 @@ import type { LandingStyle } from "../storefront/utils/landingStyles";
 
 export type { LandingStyle };
 
+export interface ProductLandingSeo {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+}
+
 export type ProductLandingStatus = "DRAFT" | "PUBLISHED" | "PAUSED";
 
 export interface ProductLandingSlice {
@@ -144,6 +150,7 @@ export interface ProductLandingPage {
     sections?: LandingSection[];
   };
   style?: LandingStyle;
+  seo?: ProductLandingSeo;
   visits?: number;
   orders?: number;
   publishedAt?: string | null;
@@ -163,6 +170,7 @@ export interface ProductLandingCreatePayload {
   status?: ProductLandingStatus;
   formConfig?: ProductLandingPage["formConfig"];
   style?: LandingStyle;
+  seo?: ProductLandingSeo;
 }
 
 export interface ProductLandingUpdatePayload {
@@ -174,6 +182,7 @@ export interface ProductLandingUpdatePayload {
   sections?: LandingSection[];
   formConfig?: ProductLandingPage["formConfig"];
   style?: LandingStyle;
+  seo?: ProductLandingSeo;
 }
 
 const getResponseData = <T>(response: unknown, fallback: T): T => {

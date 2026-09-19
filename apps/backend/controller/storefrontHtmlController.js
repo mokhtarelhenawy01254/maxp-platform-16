@@ -131,9 +131,10 @@ exports.handleStorefrontShell = async (req, res, next) => {
       !routeContext.productKey &&
       !routeContext.categorySlug &&
       !routeContext.articleSlug &&
-      !routeContext.storePageSlug;
+      !routeContext.storePageSlug &&
+      !routeContext.landingSlug;
 
-    const [template, storefrontSettings, product, category, article, storePage, indexHtml] =
+    const [template, storefrontSettings, product, category, article, storePage, landing, indexHtml] =
       await Promise.all([
         isHomepage
           ? safeQuery(() =>
@@ -244,8 +245,41 @@ exports.handleStorefrontShell = async (req, res, next) => {
               }),
             )
           : Promise.resolve(null),
+        routeContext.landingSlug
+          ? safeQuery(() =>
+              prisma.productLandingPage.findFirst({
+                where: {
+                  companyId: req.companyId,
+                  slug: routeContext.landingSlug,
+                  status: "PUBLISHED",
+                },
+                select: {
+                  slug: true,
+                  title: true,
+                  seo: true,
+                  formConfig: true,
+                  product: {
+                    select: {
+                      name: true,
+                      description: true,
+                      mainImage: true,
+                      images: true,
+                      price: true,
+                      currency: true,
+                    },
+                  },
+                },
+              }),
+            )
+          : Promise.resolve(null),
         loadIndexHtml(),
       ]);
+
+    // A missing/preview-mode landing must NOT hard-404: the merchant preview
+    // flow (?preview=1) loads the same shell for unpublished pages. Instead
+    // the shell is served with noIndex so scrapers skip it while the SPA
+    // renders the preview or its own not-found state.
+    const landingMissing = Boolean(routeContext.landingSlug && !landing);
 
     const isNotFound =
       (routeContext.productKey && !product) ||
@@ -266,6 +300,38 @@ exports.handleStorefrontShell = async (req, res, next) => {
       };
     }
 
+    // Product landing meta for the SEO shell (slug/seo/product-derived
+    // fallbacks). Product.images is a TEXT JSON column.
+    let landingMeta = null;
+    if (landing) {
+      const parseJsonText = (value) => {
+        if (!value) return null;
+        if (typeof value === "object") return value;
+        try {
+          return JSON.parse(value);
+        } catch {
+          return null;
+        }
+      };
+      const productImages = parseJsonText(landing.product?.images);
+      const firstImage = Array.isArray(productImages)
+        ? typeof productImages[0] === "string"
+          ? productImages[0]
+          : productImages[0]?.url
+        : typeof productImages === "string"
+          ? productImages
+          : null;
+      landingMeta = {
+        slug: landing.slug,
+        title: landing.title,
+        seo: parseJsonText(landing.seo) || {},
+        productDescription: landing.product?.description || "",
+        productImage: landing.product?.mainImage || firstImage || null,
+        productPrice: landing.product?.price,
+        currency: landing.product?.currency,
+      };
+    }
+
     const currentUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
     const metadata = buildStorefrontSeoMetadata({
       pathname: req.path,
@@ -277,8 +343,9 @@ exports.handleStorefrontShell = async (req, res, next) => {
       category,
       article,
       storePage,
+      landing: landingMeta,
       reviews,
-      noIndex: isNotFound,
+      noIndex: isNotFound || landingMissing,
     });
 
     let html = injectStorefrontSeoTags(indexHtml, metadata);
@@ -294,6 +361,9 @@ exports.handleStorefrontShell = async (req, res, next) => {
     } else if (article) {
       const escape = (s) => (s ? String(s).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "");
       semanticSnippet = `<div class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" aria-hidden="true"><h1>${escape(metadata.title)}</h1><p>${escape(metadata.description)}</p></div>`;
+    } else if (landingMeta) {
+      const escape = (s) => (s ? String(s).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "");
+      semanticSnippet = `<div class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" aria-hidden="true"><h1>${escape(metadata.title)}</h1><p>${escape(metadata.description)}</p><span>${metadata.price ? `${metadata.price} ${metadata.currency || "EGP"}` : ""}</span></div>`;
     }
 
     if (semanticSnippet && html.includes('<div id="root"></div>')) {
