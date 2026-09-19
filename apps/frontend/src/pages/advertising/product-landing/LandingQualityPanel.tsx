@@ -1,5 +1,5 @@
 import React from "react";
-import { AlertTriangle, CircleAlert, ShieldCheck } from "lucide-react";
+import { AlertCircle, AlertTriangle, ShieldCheck } from "lucide-react";
 import type { LandingQualityIssue } from "./landingQuality";
 
 interface LandingQualityPanelProps {
@@ -36,7 +36,7 @@ export const LandingQualityPanel: React.FC<LandingQualityPanelProps> = ({
       <header className="eo-quality-head">
         <span className={`eo-quality-status ${statusClass}`}>
           {critical.length > 0 ? (
-            <CircleAlert size={14} />
+            <AlertCircle size={14} />
           ) : warnings.length > 0 ? (
             <AlertTriangle size={14} />
           ) : (
@@ -55,7 +55,7 @@ export const LandingQualityPanel: React.FC<LandingQualityPanelProps> = ({
               className={`eo-quality-item ${issue.severity === "critical" ? "is-critical" : "is-warning"}`}
             >
               {issue.severity === "critical" ? (
-                <CircleAlert size={13} />
+                <AlertCircle size={13} />
               ) : (
                 <AlertTriangle size={13} />
               )}
