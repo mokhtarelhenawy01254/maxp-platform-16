@@ -37,7 +37,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-full flex items-center justify-center p-6 bg-slate-950 text-slate-100 select-none">
+    <div className="h-full w-full flex items-center justify-center p-6 bg-slate-950 text-slate-100 select-none">
       <div className="w-full max-w-sm rounded-2xl bg-slate-900/90 border border-white/10 p-7 shadow-2xl backdrop-blur-xl">
         {/* Brand Icon & Title */}
         <div className="flex flex-col items-center text-center mb-6">
