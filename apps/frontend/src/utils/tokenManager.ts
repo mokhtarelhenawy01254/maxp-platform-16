@@ -1,6 +1,40 @@
+import { Preferences } from "@capacitor/preferences";
+
 const ACCESS_TOKEN_KEY = "accessToken";
 const LEGACY_ACCESS_TOKEN_KEY = "token";
 const REFRESH_TOKEN_KEY = "refreshToken";
+
+// Preload & restore native persistent tokens into localStorage/sessionStorage
+let isNativeRestored = false;
+export const restoreNativeTokens = async (): Promise<void> => {
+  if (isNativeRestored || typeof window === "undefined") return;
+  try {
+    const [accessRes, legacyRes, refreshRes] = await Promise.all([
+      Preferences.get({ key: ACCESS_TOKEN_KEY }),
+      Preferences.get({ key: LEGACY_ACCESS_TOKEN_KEY }),
+      Preferences.get({ key: REFRESH_TOKEN_KEY }),
+    ]);
+
+    const activeAccess = accessRes?.value || legacyRes?.value;
+    if (activeAccess && !localStorage.getItem(ACCESS_TOKEN_KEY)) {
+      localStorage.setItem(ACCESS_TOKEN_KEY, activeAccess);
+      sessionStorage.setItem(ACCESS_TOKEN_KEY, activeAccess);
+    }
+
+    if (refreshRes?.value && !localStorage.getItem(REFRESH_TOKEN_KEY)) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, refreshRes.value);
+      sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshRes.value);
+    }
+    isNativeRestored = true;
+  } catch (err) {
+    // Non-blocking fallback if preferences plugin is not ready
+  }
+};
+
+// Auto-restore on startup
+if (typeof window !== "undefined") {
+  void restoreNativeTokens();
+}
 
 const readToken = (key: string): string | null =>
   sessionStorage.getItem(key) || localStorage.getItem(key);
@@ -16,6 +50,8 @@ const clearToken = (key: string): void => {
 };
 
 export const tokenManager = {
+  restoreNativeTokens,
+
   getAccessToken(): string | null {
     const accessToken = readToken(ACCESS_TOKEN_KEY);
     if (accessToken) return accessToken;
@@ -45,6 +81,12 @@ export const tokenManager = {
   setAccessToken(token: string): void {
     writeToken(ACCESS_TOKEN_KEY, token);
     writeToken(LEGACY_ACCESS_TOKEN_KEY, token);
+    try {
+      void Preferences.set({ key: ACCESS_TOKEN_KEY, value: token });
+      void Preferences.set({ key: LEGACY_ACCESS_TOKEN_KEY, value: token });
+    } catch {
+      // safe fallback
+    }
   },
 
   getRefreshToken(): string | null {
@@ -54,6 +96,11 @@ export const tokenManager = {
   setRefreshToken(token: string): void {
     if (token) {
       writeToken(REFRESH_TOKEN_KEY, token);
+      try {
+        void Preferences.set({ key: REFRESH_TOKEN_KEY, value: token });
+      } catch {
+        // safe fallback
+      }
     }
   },
 
@@ -61,7 +108,15 @@ export const tokenManager = {
     clearToken(ACCESS_TOKEN_KEY);
     clearToken(LEGACY_ACCESS_TOKEN_KEY);
     clearToken(REFRESH_TOKEN_KEY);
+    try {
+      void Preferences.remove({ key: ACCESS_TOKEN_KEY });
+      void Preferences.remove({ key: LEGACY_ACCESS_TOKEN_KEY });
+      void Preferences.remove({ key: REFRESH_TOKEN_KEY });
+    } catch {
+      // safe fallback
+    }
   },
 };
 
 export default tokenManager;
+

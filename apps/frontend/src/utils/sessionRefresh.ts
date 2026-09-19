@@ -1,4 +1,4 @@
-import { getApiUrl } from "../config/environment";
+import { getApiUrl, isCapacitorNative } from "../config/environment";
 import { tokenManager } from "./tokenManager";
 
 export type SessionRefreshResult =
@@ -44,6 +44,7 @@ export const refreshSessionTokens = async (
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(isCapacitorNative() ? { "X-Platform": "capacitor" } : {}),
       },
       body: fallbackRefreshToken ? JSON.stringify({ refreshToken: fallbackRefreshToken }) : undefined,
       credentials: "include",

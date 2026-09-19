@@ -1804,13 +1804,29 @@ const AppContent = () => {
     if (typeof win !== "undefined" && win.Capacitor?.isNativePlatform?.() && win.Capacitor?.Plugins?.App) {
       try {
         win.Capacitor.Plugins.App.addListener("backButton", ({ canGoBack }: any) => {
+          // 1. Check if any active modal, dialog, drawer, or sheet is open first
+          const openOverlay = document.querySelector<HTMLElement>(
+            '.business-mobile-overlay[data-open="true"], [role="dialog"][data-open="true"], dialog[open], .app-shell-drawer--open, .modal-overlay, [data-state="open"][role="dialog"]'
+          );
+          if (openOverlay) {
+            const closeBtn = openOverlay.querySelector<HTMLElement>(
+              'button[aria-label*="close" i], button[aria-label*="إغلاق" i], [data-close-button], button.close-btn, button[aria-label*="Close" i]'
+            );
+            if (closeBtn) {
+              closeBtn.click();
+              return;
+            }
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+            return;
+          }
+
           const currentPath = window.location.pathname;
-          if (currentPath === "/dashboard" || currentPath === "/" || currentPath === "/apps") {
+          if (currentPath === "/dashboard" || currentPath === "/" || currentPath === "/apps" || currentPath === "/auth/login") {
             win.Capacitor.Plugins.App.exitApp();
           } else if (canGoBack || window.history.length > 1) {
             navigate(-1);
           } else {
-            navigate("/dashboard");
+            navigate("/apps");
           }
         }).then((listener: any) => {
           removeBackListener = () => listener?.remove?.();
@@ -1914,6 +1930,14 @@ const AppContent = () => {
   ) : (
     <FAQPage />
   );
+
+  // On native mobile app (Capacitor), unauthenticated merchants must go straight to login
+  // instead of the public web marketing landing page
+  if (isCapacitorNative() && !isAuthenticated && !isLoading) {
+    if (currentPath === "/" || currentPath === "/for-merchants" || currentPath.startsWith("/lp/")) {
+      return <Navigate to="/auth/login" replace />;
+    }
+  }
 
   // Only show loading for non-public routes
   if (isLoading && !isPublicRoute) {
@@ -8073,7 +8097,7 @@ const AppContent = () => {
                   path="/admin/*"
                   element={<Navigate to="/auth/login" replace />}
                 />
-                <Route path="/" element={<PlatformLandingPage />} />
+                <Route path="/" element={isCapacitorNative() ? <Navigate to="/auth/login" replace /> : <PlatformLandingPage />} />
                 <Route path="/dental-portal/*" element={<DentalPortalRoutes />} />
                 <Route path="/bot-widget/:companyId" element={<BotWidgetPage />} />
                 <Route

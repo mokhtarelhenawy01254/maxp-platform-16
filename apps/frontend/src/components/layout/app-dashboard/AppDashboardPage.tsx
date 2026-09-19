@@ -228,7 +228,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-8 pb-[calc(3rem+env(safe-area-inset-bottom,20px))]">
         <div className="hidden sm:block mb-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {t('appDashboard.title')}

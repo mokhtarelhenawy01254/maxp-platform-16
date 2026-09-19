@@ -128,9 +128,52 @@ function getContactName(contact: Contact) {
   return getBestContactDisplayName(contact);
 }
 
+function formatMessageSnippet(content: string): string {
+  if (!content) return "";
+  const trimmed = content.trim();
+
+  // Clean raw WhatsApp template identifiers / system tokens (e.g. order_createdmsixfb59msixjaay)
+  if (/^order_created/i.test(trimmed)) {
+    return "📦 تم إنشاء الطلب بنجاح";
+  }
+  if (/^order_confirm/i.test(trimmed)) {
+    return "✅ تأكيد الطلب";
+  }
+  if (/^order_ship/i.test(trimmed)) {
+    return "🚚 تم شحن طلبك";
+  }
+  if (/^order_deliver/i.test(trimmed)) {
+    return "🎉 تم تسليم الطلب";
+  }
+  if (/^order_cancel/i.test(trimmed)) {
+    return "❌ تم إلغاء الطلب";
+  }
+  if (/^abandoned_cart/i.test(trimmed)) {
+    return "🛒 تذكير بالسلة المتروكة";
+  }
+  if (/^welcome/i.test(trimmed)) {
+    return "👋 رسالة ترحيب";
+  }
+  if (/^otp/i.test(trimmed) || /^verification/i.test(trimmed)) {
+    return "🔐 كود التفعيل";
+  }
+
+  // If it's a technical slug with suffix like msix...
+  if (/^[a-z0-9_]{8,}$/i.test(trimmed) && (trimmed.includes("_") || /msix/i.test(trimmed))) {
+    const readable = trimmed
+      .replace(/msix[a-z0-9]+/gi, "")
+      .replace(/_[0-9a-f]{6,}/gi, "")
+      .replace(/_/g, " ")
+      .trim();
+    return readable ? `📋 ${readable}` : "📋 قالب واتساب";
+  }
+
+  return trimmed;
+}
+
 function getLastMessagePreview(contact: Contact) {
   if (contact.lastMessage?.content) {
-    return contact.lastMessage.content;
+    return formatMessageSnippet(contact.lastMessage.content);
   }
 
   switch (contact.lastMessage?.messageType) {
@@ -168,7 +211,8 @@ function getPreviewWithoutOrderCode(
   orderCode: string,
 ): string {
   if (!content) return "";
-  return content.replace(new RegExp(orderCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), "").replace(/\s{2,}/g, " ").trim();
+  const cleaned = content.replace(new RegExp(orderCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), "").replace(/\s{2,}/g, " ").trim();
+  return formatMessageSnippet(cleaned || "📦 طلب جديد");
 }
 
 function escapeRegex(value: string): string {

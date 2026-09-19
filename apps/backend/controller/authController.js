@@ -15,6 +15,19 @@ const { getJwtSecret, getJwtRefreshSecret } = require('../utils/jwtSecret');
 const businessSpecialtyService = require('../services/businessSpecialtyService');
 const normalizeEmail = (value = '') => value.trim().toLowerCase();
 
+const getSessionExpiryConfig = (req) => {
+  const isMobileClient =
+    req.headers['x-platform'] === 'capacitor' ||
+    /Capacitor|Android.*wv|maxp-mobile/i.test(req.headers['user-agent'] || '');
+
+  return {
+    isMobileClient,
+    tokenExpiry: isMobileClient ? '7d' : '8h',
+    refreshTokenExpiry: isMobileClient ? '90d' : '7d',
+    refreshTokenMaxAge: isMobileClient ? 90 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000,
+  };
+};
+
 const ensureUserCompanySlugs = async (user) => {
   if (!user) {
     return user;
@@ -331,6 +344,8 @@ const register = async (req, res) => {
       console.error('[REGISTER] Failed to create employee record:', error);
     }
 
+    const sessionConfig = getSessionExpiryConfig(req);
+
     const token = jwt.sign(
       {
         userId: user.id,
@@ -339,7 +354,7 @@ const register = async (req, res) => {
         companyId: company.id
       },
       getJwtSecret(),
-      { expiresIn: '8h' }
+      { expiresIn: sessionConfig.tokenExpiry }
     );
 
     const refreshToken = jwt.sign(
@@ -349,7 +364,7 @@ const register = async (req, res) => {
         companyId: company.id
       },
       getJwtRefreshSecret(),
-      { expiresIn: '7d' }
+      { expiresIn: sessionConfig.refreshTokenExpiry }
     );
 
     const notificationTasks = [];
@@ -772,6 +787,8 @@ const login = async (req, res) => {
 
     console.log('[AUTH] Password verified successfully');
 
+    const sessionConfig = getSessionExpiryConfig(req);
+
     // Generate JWT token
     const token = jwt.sign(
       {
@@ -781,7 +798,7 @@ const login = async (req, res) => {
         companyId: user.companyId
       },
       getJwtSecret(),
-      { expiresIn: '8h' }
+      { expiresIn: sessionConfig.tokenExpiry }
     );
 
     const refreshToken = jwt.sign(
@@ -791,7 +808,7 @@ const login = async (req, res) => {
         companyId: user.companyId
       },
       getJwtRefreshSecret(),
-      { expiresIn: '7d' }
+      { expiresIn: sessionConfig.refreshTokenExpiry }
     );
 
     // Update last login
@@ -1363,6 +1380,8 @@ const refresh = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid or inactive user' });
     }
 
+    const sessionConfig = getSessionExpiryConfig(req);
+
     // Generate NEW tokens
     const newAccessToken = jwt.sign(
       {
@@ -1372,7 +1391,7 @@ const refresh = async (req, res) => {
         companyId: decoded.companyId || user.companyId
       },
       getJwtSecret(),
-      { expiresIn: '8h' }
+      { expiresIn: sessionConfig.tokenExpiry }
     );
 
     const newRefreshToken = jwt.sign(
@@ -1382,14 +1401,14 @@ const refresh = async (req, res) => {
         companyId: decoded.companyId || user.companyId
       },
       getJwtRefreshSecret(),
-      { expiresIn: '7d' }
+      { expiresIn: sessionConfig.refreshTokenExpiry }
     );
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: sessionConfig.refreshTokenMaxAge,
       path: '/'
     });
 
@@ -1982,6 +2001,8 @@ const switchCompany = async (req, res) => {
     // The primary company (User.companyId) should NEVER change during switch
     // Exception: We can update lastAccessedCompanyId if we add that field later
 
+    const sessionConfig = getSessionExpiryConfig(req);
+
     // Generate new JWT token with the new company
     const newToken = jwt.sign(
       {
@@ -1991,7 +2012,7 @@ const switchCompany = async (req, res) => {
         companyId: companyId  // Use the target company ID
       },
       getJwtSecret(),
-      { expiresIn: '8h' }
+      { expiresIn: sessionConfig.tokenExpiry }
     );
 
     const newRefreshToken = jwt.sign(
@@ -2001,7 +2022,7 @@ const switchCompany = async (req, res) => {
         companyId: companyId
       },
       getJwtRefreshSecret(),
-      { expiresIn: '7d' }
+      { expiresIn: sessionConfig.refreshTokenExpiry }
     );
 
     console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ [SWITCH-COMPANY] Successfully switched to company:', targetCompany.name);

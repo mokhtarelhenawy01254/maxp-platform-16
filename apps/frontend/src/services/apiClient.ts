@@ -12,6 +12,7 @@ import {
   refreshSessionTokens,
   shouldClearSessionOnRefreshFailure,
 } from "../utils/sessionRefresh";
+import { isCapacitorNative } from "../config/environment";
 
 /**
  * API Client
@@ -126,6 +127,11 @@ class ApiClient {
           if (shouldDebugApiLogs) {
             console.debug("🔐 [API] Using real token");
           }
+        }
+
+        // Send X-Platform: capacitor header on native mobile clients for extended sessions
+        if (isCapacitorNative()) {
+          config.headers["X-Platform"] = "capacitor";
         }
 
         // Add subdomain to headers for company isolation (from current URL)
@@ -455,6 +461,18 @@ class ApiClient {
       currentPath.startsWith("/account");
 
     if (isPublicRoute) {
+      return;
+    }
+
+    // Do not clear tokens or force logout if network is disconnected or offline
+    if (
+      typeof window !== "undefined" &&
+      typeof window.navigator !== "undefined" &&
+      !window.navigator.onLine
+    ) {
+      if (import.meta.env.DEV) {
+        console.warn("⏳ [API] Device is offline; preserving session tokens");
+      }
       return;
     }
 

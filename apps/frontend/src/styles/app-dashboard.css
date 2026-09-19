@@ -77,6 +77,18 @@
   }
 }
 
+@media (max-width: 1023px) {
+  body.app-shell-chat-active .app-shell-mobile-header,
+  body:has(.business-inbox-shell--conversation-active) .app-shell-mobile-header,
+  body:has(.whatsapp-workspace--chat-active) .app-shell-mobile-header,
+  body:has([data-chat-active="true"]) .app-shell-mobile-header,
+  .app-shell-root:has(.business-inbox-shell--conversation-active) .app-shell-mobile-header,
+  .app-shell-root:has(.whatsapp-workspace--chat-active) .app-shell-mobile-header,
+  .app-shell-root:has([data-chat-active="true"]) .app-shell-mobile-header {
+    display: none !important;
+  }
+}
+
 .app-shell-mobile-header-button {
   display: inline-flex;
   align-items: center;

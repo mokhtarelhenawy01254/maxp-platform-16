@@ -123,17 +123,20 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
       <div className="elite-auth-form-side">
         <div className={cn("elite-form-container animate-fade-up", wide && "elite-form-container--wide")}>
           <Link to="/" className="elite-brand-logo">
-            {companyLogo ? (
-              <img
-                src={companyLogo}
-                alt={companyName || "logo"}
-                className="logo-img"
-              />
-            ) : (
-              <div className="logo-icon">
-                {(companyName || t("auth.brandName")).charAt(0)}
-              </div>
-            )}
+            <img
+              src={companyLogo || "/logo.png"}
+              alt={companyName || t("auth.brandName")}
+              className="logo-img"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.style.display = "none";
+                const fallback = target.parentElement?.querySelector(".logo-icon") as HTMLElement | null;
+                if (fallback) fallback.style.display = "flex";
+              }}
+            />
+            <div className="logo-icon" style={{ display: "none" }}>
+              {(companyName || t("auth.brandName")).charAt(0)}
+            </div>
             <span className="logo-text">
               {companyName || t("auth.brandName")}
             </span>
