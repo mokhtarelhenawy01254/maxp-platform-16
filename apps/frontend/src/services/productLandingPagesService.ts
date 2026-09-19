@@ -1,4 +1,7 @@
 import { apiClient } from "./apiClient";
+import type { LandingStyle } from "../storefront/utils/landingStyles";
+
+export type { LandingStyle };
 
 export type ProductLandingStatus = "DRAFT" | "PUBLISHED" | "PAUSED";
 
@@ -140,6 +143,7 @@ export interface ProductLandingPage {
     buttonLabel?: string;
     sections?: LandingSection[];
   };
+  style?: LandingStyle;
   visits?: number;
   orders?: number;
   publishedAt?: string | null;
@@ -158,6 +162,7 @@ export interface ProductLandingCreatePayload {
   sections?: LandingSection[];
   status?: ProductLandingStatus;
   formConfig?: ProductLandingPage["formConfig"];
+  style?: LandingStyle;
 }
 
 export interface ProductLandingUpdatePayload {
@@ -168,6 +173,7 @@ export interface ProductLandingUpdatePayload {
   slices?: ProductLandingSlice[];
   sections?: LandingSection[];
   formConfig?: ProductLandingPage["formConfig"];
+  style?: LandingStyle;
 }
 
 const getResponseData = <T>(response: unknown, fallback: T): T => {

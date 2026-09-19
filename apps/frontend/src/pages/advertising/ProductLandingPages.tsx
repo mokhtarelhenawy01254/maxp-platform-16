@@ -25,6 +25,7 @@ import { ElementsSidebarDrawer } from "./product-landing/ElementsSidebarDrawer";
 import { PhoneMockupPreview } from "./product-landing/PhoneMockupPreview";
 import { CreateLandingModal } from "./product-landing/CreateLandingModal";
 import { TemplatesLibraryModal } from "./product-landing/TemplatesLibraryModal";
+import { LandingStylePanel } from "./product-landing/LandingStylePanel";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { buildStoreUrl } from "../../utils/storeUrl";
 import "./ProductLandingPages.css";
@@ -145,6 +146,7 @@ const ProductLandingPages: React.FC = () => {
         },
         slices: Array.isArray(selectedPage.slices) ? selectedPage.slices : [],
         sections: savedSections,
+        style: selectedPage.style || {},
       });
       setActiveSectionId(savedSections[0]?.id || null);
       setIsDirty(false);
@@ -575,6 +577,7 @@ const ProductLandingPages: React.FC = () => {
         },
         sections: editor.sections,
         slices: editor.slices,
+        style: editor.style,
       });
 
       if (!updated) {
@@ -813,6 +816,14 @@ const ProductLandingPages: React.FC = () => {
                 updatingStatus={updatingStatus}
                 onDeletePage={handleDeletePage}
                 deleting={deleting}
+              />
+
+              <LandingStylePanel
+                style={editor.style}
+                onChange={(style) => {
+                  setEditor((c) => ({ ...c, style }));
+                  setIsDirty(true);
+                }}
               />
 
               <SectionsStackEditor

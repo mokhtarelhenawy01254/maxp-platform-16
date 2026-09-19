@@ -17,6 +17,10 @@ import {
   canonicalizeAttributeKey,
   getVariantAttributeLabel,
 } from "../utils/variants";
+import {
+  ensureLandingStyleFontLoaded,
+  resolveLandingStyle,
+} from "../utils/landingStyles";
 import "./ProductImageLandingPage.css";
 
 type LandingSlice = {
@@ -821,6 +825,20 @@ const ProductImageLandingPage: React.FC = () => {
   const activeLanding = landingData?.landing || null;
   const activeProduct =
     landingData?.product || fallbackConfig?.fallbackProduct || null;
+
+  // Style preset + merchant overrides (--pil-* variables on the page root).
+  const landingStyle = useMemo(
+    () =>
+      resolveLandingStyle(
+        (activeLanding as { style?: unknown } | null)?.style ?? null,
+      ),
+    [activeLanding],
+  );
+
+  useEffect(() => {
+    ensureLandingStyleFontLoaded(landingStyle.fontKey);
+  }, [landingStyle.fontKey]);
+
   const activeSections: any[] = useMemo(
     () =>
       (Array.isArray(activeLanding?.sections) && activeLanding!.sections!.length > 0
@@ -3298,7 +3316,11 @@ const ProductImageLandingPage: React.FC = () => {
   };
 
   return (
-    <article className="product-image-landing" dir="rtl">
+    <article
+      className="product-image-landing"
+      dir="rtl"
+      style={landingStyle.cssVars as React.CSSProperties}
+    >
       {sectionsToRender.map((section, idx) => renderDynamicSection(section, idx))}
 
       {/* Sticky Bottom CTA Bar */}

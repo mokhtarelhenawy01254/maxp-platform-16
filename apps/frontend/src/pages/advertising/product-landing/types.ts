@@ -29,6 +29,7 @@ import {
   ProductLandingStatus,
   SectionType,
 } from "../../../services/productLandingPagesService";
+import type { LandingStyle } from "../../../storefront/utils/landingStyles";
 
 export type {
   LandingSection,
@@ -36,6 +37,7 @@ export type {
   ProductLandingStatus,
   ProductLandingProduct,
   ProductLandingSlice,
+  LandingStyle,
 };
 
 export interface EditorState {
@@ -49,6 +51,7 @@ export interface EditorState {
     orderCopy: string;
     buttonLabel: string;
   };
+  style: LandingStyle;
   slices: ProductLandingSlice[];
   sections: LandingSection[];
 }
@@ -461,6 +464,7 @@ export const DEFAULT_EDITOR: EditorState = {
     orderCopy: "املأ البيانات الأساسية وسيتم التواصل معك لتأكيد الطلب.",
     buttonLabel: "تأكيد الطلب الآن",
   },
+  style: {},
   slices: [],
   sections: [],
 };

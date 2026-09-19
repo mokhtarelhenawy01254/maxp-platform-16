@@ -120,6 +120,11 @@ async function ensureProductLandingPagesTable(prisma) {
           ALTER TABLE "product_landing_pages" ADD COLUMN IF NOT EXISTS "sections" TEXT;
         `);
       } catch (_) {}
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE "product_landing_pages" ADD COLUMN IF NOT EXISTS "style" TEXT;
+        `);
+      } catch (_) {}
     })().catch((error) => {
       ensureTablePromise = null;
       throw error;
@@ -451,6 +456,7 @@ function formatLandingPage(landing, { includeProduct = true } = {}) {
     ...formConfigRecord,
   };
   const seo = parseJsonRecord(landing.seo, {});
+  const style = parseJsonRecord(landing.style, {});
   const slices = normalizeSlices(landing.slices);
 
   return {
@@ -470,6 +476,7 @@ function formatLandingPage(landing, { includeProduct = true } = {}) {
     sections,
     formConfig,
     seo,
+    style,
     productSnapshot: parseJsonRecord(landing.productSnapshot, null),
     visits: landing.visits,
     orders: landing.orders,
@@ -870,6 +877,7 @@ router.post('/', async (req, res) => {
         slices: JSON.stringify(slices),
         formConfig: JSON.stringify(formConfigData),
         seo: stringifyNullable(req.body.seo) || JSON.stringify({}),
+        style: stringifyNullable(req.body.style) || JSON.stringify({}),
         productSnapshot: JSON.stringify(buildProductSnapshot(product)),
         publishedAt: status === 'PUBLISHED' ? new Date() : null,
         createdById: req.user.id || null,
@@ -1009,6 +1017,9 @@ router.put('/:id', async (req, res) => {
         : {}),
       ...(formConfigToSave !== undefined ? { formConfig: formConfigToSave } : {}),
       ...(req.body.seo !== undefined ? { seo: stringifyNullable(req.body.seo) } : {}),
+      ...(req.body.style !== undefined
+        ? { style: stringifyNullable(req.body.style) || JSON.stringify({}) }
+        : {}),
       updatedById: req.user.id || null,
     };
 

@@ -335,6 +335,8 @@ model ProductLandingPage {
   slices           String?   @db.Text
   formConfig       String?   @db.Text
   seo              String?   @db.Text
+  /// Landing style preset + overrides as JSON: { preset, brandColor, buttonRadius, headingFont }
+  style            String?   @db.Text
   productSnapshot  String?   @db.Text
   visits           Int       @default(0)
   orders           Int       @default(0)
