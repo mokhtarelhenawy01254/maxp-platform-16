@@ -231,6 +231,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     location.pathname.startsWith("/inventory/studio") ||
     location.pathname.startsWith("/products/studio") ||
     location.pathname.startsWith("/settings/turbo-tickets") ||
+    location.pathname.startsWith("/admin/agent-chat") ||
     location.pathname.startsWith("/admin/agent-profiles") ||
     location.pathname.startsWith("/tickets");
   const resolvedUserLayout = userLayout || (user?.company?.sidebarLayout as SidebarLayoutType);

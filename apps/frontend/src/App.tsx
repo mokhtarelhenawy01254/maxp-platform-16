@@ -1020,6 +1020,9 @@ const AIKnowledgeQuestionsPage = React.lazy(
 const AgentProfilesPage = React.lazy(
   () => import("./pages/admin/agent-profiles/AgentProfilesPage"),
 );
+const AgentChatStudioPage = React.lazy(
+  () => import("./pages/admin/agent-chat/AgentChatStudioPage"),
+);
 const BookingManagementPage = React.lazy(
   () => import("./pages/admin/BookingManagementPage"),
 );
@@ -7794,6 +7797,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <SkillDetailPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/agent-chat"
+                  element={
+                    <Layout fullWidth>
+                      <AgentChatStudioPage />
                     </Layout>
                   }
                 />

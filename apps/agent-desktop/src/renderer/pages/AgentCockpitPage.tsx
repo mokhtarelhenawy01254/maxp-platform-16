@@ -6,20 +6,19 @@ import {
   Sparkles,
   Rocket,
   CheckCircle2,
-  AlertTriangle,
-  RefreshCw,
-  LogOut,
   Package,
-  Layers,
+  Users,
   ChevronDown,
-  Activity,
-  Flame,
-  Volume2,
-  Video,
+  Settings,
   X,
-  ExternalLink,
+  Undo2,
+  Plus,
+  Search,
+  Check,
+  FolderArchive,
 } from 'lucide-react';
 import { AgentInfo, StoreProduct, ChatMessage } from '../../shared/types';
+import { DesktopSettingsModal } from '../components/DesktopSettingsModal';
 
 interface AgentCockpitPageProps {
   user: any;
@@ -27,16 +26,28 @@ interface AgentCockpitPageProps {
 }
 
 export const AgentCockpitPage: React.FC<AgentCockpitPageProps> = ({ user, onLogout }) => {
+  // 1. Agent Fleet State
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<AgentInfo | null>(null);
+  const [isAgentDrawerOpen, setIsAgentDrawerOpen] = useState(false);
+  const [agentSearch, setAgentSearch] = useState('');
+
+  // 2. Product Context State
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
+  const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
 
+  // 3. Settings Modal State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // 4. Chat & Messages State
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [screenSnippet, setScreenSnippet] = useState<string | null>(null);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
+  const [sessionCount, setSessionCount] = useState(1);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -51,16 +62,16 @@ export const AgentCockpitPage: React.FC<AgentCockpitPageProps> = ({ user, onLogo
       const res = await window.electronAPI.getAgents();
       if (res?.success && Array.isArray(res.agents) && res.agents.length > 0) {
         setAgents(res.agents);
-        setSelectedAgent(res.agents[0]);
-        // Initial welcome message from the active agent
+        const first = res.agents[0];
+        setSelectedAgent(first);
         setMessages([
           {
             id: 'init-1',
             sender: 'agent',
-            agentSlug: res.agents[0].slug,
-            text: `مرحباً بك في **MaxP Agent Studio** 🎯\nأنا **${res.agents[0].name}** جاهز لمساعدتك في تحليل الحملات، استهداف المحافظات المصرية، وتوليد مسودات الإعلانات.\n\nاختر المنتج الذي ترغب بالعمل عليه من الأعلى أو اكتب أمرك مباشرة.`,
+            agentSlug: first.slug,
+            text: `مرحباً بك في **MaxP Agent Studio** 🎯\nأنا **${first.name}** (${first.badge || 'فريق الوكلاء'})\n\n${first.description || 'أنا جاهز لمساعدتك في إدارة مهامك بكفاءة.'}\n\nاختر المنتج الذي ترغب بالعمل عليه من الأعلى أو اكتب أمرك مباشرة.`,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            telemetry: { model: res.agents[0].model, latencyMs: 380, tokensUsed: 140 },
+            telemetry: { model: first.model, latencyMs: 380, tokensUsed: 120 },
           },
         ]);
       }
@@ -91,6 +102,48 @@ export const AgentCockpitPage: React.FC<AgentCockpitPageProps> = ({ user, onLogo
     }
   };
 
+  // Switch Active Agent
+  const handleSelectAgent = (agent: AgentInfo) => {
+    setSelectedAgent(agent);
+    setIsAgentDrawerOpen(false);
+    setSessionCount((prev) => prev + 1);
+    setMessages([
+      {
+        id: `agt-switch-${Date.now()}`,
+        sender: 'agent',
+        agentSlug: agent.slug,
+        text: `تم تفعيل **${agent.name}** (${agent.badge || 'فريق الوكلاء'}).\n\n${agent.description || 'كيف يمكنني مساعدتك الآن؟'}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        telemetry: { model: agent.model, latencyMs: 250 },
+      },
+    ]);
+  };
+
+  // New Session
+  const handleNewSession = () => {
+    if (!selectedAgent) return;
+    setSessionCount((prev) => prev + 1);
+    setMessages([
+      {
+        id: `sess-${Date.now()}`,
+        sender: 'agent',
+        agentSlug: selectedAgent.slug,
+        text: `بدأت جلسة جديدة مع **${selectedAgent.name}**. كيف يمكنني مساعدتك؟`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+  };
+
+  // Rewind Last Step
+  const handleRewind = () => {
+    setMessages((prev) => {
+      const lastUserIdx = [...prev].reverse().findIndex((m) => m.sender === 'user');
+      if (lastUserIdx === -1) return prev;
+      const targetIdx = prev.length - 1 - lastUserIdx;
+      return prev.slice(0, targetIdx);
+    });
+  };
+
   // Send Prompt to Agent
   const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
@@ -115,38 +168,43 @@ export const AgentCockpitPage: React.FC<AgentCockpitPageProps> = ({ user, onLogo
         agentSlug: selectedAgent.slug,
         agentId: selectedAgent.id,
         message: text,
-        product: selectedProduct ? {
-          id: selectedProduct.id,
-          name: selectedProduct.name,
-          price: selectedProduct.price,
-          stock: selectedProduct.stock,
-          sku: selectedProduct.sku,
-        } : undefined,
+        product: selectedProduct
+          ? {
+              id: selectedProduct.id,
+              name: selectedProduct.name,
+              price: selectedProduct.price,
+              stock: selectedProduct.stock,
+              sku: selectedProduct.sku,
+            }
+          : undefined,
         productId: selectedProduct?.id,
         screenContext: contextToPass || undefined,
       });
 
       if (res?.success) {
-        const agentMsg: ChatMessage = {
-          id: `agt-${Date.now()}`,
-          sender: 'agent',
-          agentSlug: selectedAgent.slug,
-          text: res.text,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          card: res.card,
-          telemetry: res.telemetry,
-        };
-        setMessages((prev) => [...prev, agentMsg]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `agt-${Date.now()}`,
+            sender: 'agent',
+            agentSlug: selectedAgent.slug,
+            text: res.text,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            card: res.card,
+            telemetry: res.telemetry,
+          },
+        ]);
       } else {
-        const errorMsg: ChatMessage = {
-          id: `err-${Date.now()}`,
-          sender: 'agent',
-          agentSlug: selectedAgent.slug,
-          text: res?.text || 'تعذر تلقي الرد من الوكيل حالياً. يرجى إعادة المحاولة.',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          telemetry: res?.telemetry,
-        };
-        setMessages((prev) => [...prev, errorMsg]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `err-${Date.now()}`,
+            sender: 'agent',
+            agentSlug: selectedAgent.slug,
+            text: res?.text || 'تعذر تلقي الرد من الوكيل حالياً. يرجى إعادة المحاولة.',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
       }
     } catch (err: any) {
       setMessages((prev) => [
@@ -164,364 +222,452 @@ export const AgentCockpitPage: React.FC<AgentCockpitPageProps> = ({ user, onLogo
     }
   };
 
-  const handleTriggerCardAction = async (action: string, payload: any) => {
-    if (window.electronAPI?.triggerAction) {
-      const res = await window.electronAPI.triggerAction({ action, payload });
+  // Publish Draft Action
+  const handlePublishDraft = async (draftId: string) => {
+    try {
+      const res = await window.electronAPI.triggerAction({
+        action: 'publish_meta_draft',
+        payload: { draftId },
+      });
       if (res?.success) {
-        setActionSuccessMsg(res.message || 'تم تطبيق الإجراء بنجاح في المنصة!');
-        setTimeout(() => setActionSuccessMsg(null), 4000);
+        setActionSuccessMsg('تم إطلاق ونشر الحملة بنجاح إلى حساب إعلانات فيسبوك!');
+        setTimeout(() => setActionSuccessMsg(null), 5000);
       }
-    }
+    } catch {}
   };
 
+  const filteredAgents = agents.filter((a) =>
+    a.name.toLowerCase().includes(agentSearch.toLowerCase()) ||
+    (a.badge && a.badge.toLowerCase().includes(agentSearch.toLowerCase()))
+  );
+
+  const filteredProducts = products.filter((p) =>
+    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+    (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase()))
+  );
+
   return (
-    <div className="flex-1 flex flex-col h-[calc(100vh-36px)] bg-slate-950 text-slate-100 overflow-hidden select-none">
-      {/* Top Unified Control Bar (Ergonomic Single-Surface Cockpit) */}
-      <div className="h-12 border-b border-white/10 px-4 flex items-center justify-between gap-3 bg-slate-900/60 backdrop-blur-md flex-shrink-0">
-        {/* Left: Agent & Product Selectors */}
-        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar">
-          {/* Active Agent Dropdown */}
-          <div className="relative flex items-center">
-            <select
-              value={selectedAgent?.slug || ''}
-              onChange={(e) => {
-                const found = agents.find((a) => a.slug === e.target.value);
-                if (found) {
-                  setSelectedAgent(found);
-                  setMessages((prev) => [
-                    ...prev,
-                    {
-                      id: `sw-${Date.now()}`,
-                      sender: 'system',
-                      text: `تم التبديل إلى وكيل: ${found.name}`,
-                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    },
-                  ]);
-                }
-              }}
-              className="bg-slate-800 hover:bg-slate-700/80 text-white text-xs font-bold py-1.5 px-3 rounded-xl border border-white/10 appearance-none pr-8 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              {agents.map((ag) => (
-                <option key={ag.slug} value={ag.slug}>
-                  {ag.icon} {ag.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="absolute left-2.5 pointer-events-none text-slate-400" />
+    <div className="h-full w-full flex flex-col bg-slate-950 text-slate-100 select-none overflow-hidden" dir="rtl">
+      {/* Top Ergonomic Unified Cockpit Header (Identical to Web Platform) */}
+      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md flex-shrink-0 z-10">
+        <div className="flex items-center justify-between gap-3 px-4 py-2">
+          {/* Brand & Connection Status */}
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-xl bg-slate-800 text-white shadow-xs flex-shrink-0">
+              <Bot className="w-4 h-4 text-indigo-400" />
+            </div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xs sm:text-sm font-bold text-white tracking-tight">
+                محادثات الإيجنت
+              </h1>
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-800/40">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                متصل بالمتجر
+              </span>
+            </div>
           </div>
 
-          {/* Product Selector */}
-          <div className="relative flex items-center">
-            <select
-              value={selectedProduct?.id || ''}
-              onChange={(e) => {
-                const prod = products.find((p) => p.id === e.target.value);
-                if (prod) setSelectedProduct(prod);
-              }}
-              className="bg-slate-900 text-slate-300 text-xs py-1.5 px-3 rounded-xl border border-slate-800 appearance-none pr-8 cursor-pointer focus:outline-none focus:border-indigo-500"
+          {/* Central Controls: Entity Picker + Agent Team Switcher + Sessions */}
+          <div className="flex items-center gap-2">
+            {/* Product / Entity Picker */}
+            <button
+              type="button"
+              onClick={() => setIsProductDrawerOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-xs font-bold shadow-xs cursor-pointer"
+              title="تحديد منتج السياق النشط"
             >
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  📦 {p.name} ({p.price} ج.م)
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="absolute left-2.5 pointer-events-none text-slate-500" />
+              <Package className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span className="truncate max-w-[140px] text-slate-200">
+                {selectedProduct ? selectedProduct.name : 'اختر المنتج'}
+              </span>
+              {selectedProduct?.price && (
+                <span className="text-[10px] text-emerald-400 font-bold tabular-nums">
+                  {selectedProduct.price} ج.م
+                </span>
+              )}
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
+
+            {/* Agent Team Switcher */}
+            <button
+              type="button"
+              onClick={() => setIsAgentDrawerOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-indigo-800/80 bg-indigo-950/40 hover:bg-indigo-900/60 text-xs font-bold text-indigo-300 shadow-xs cursor-pointer"
+              title="استعراض وتبديل فريق الوكلاء كاملاً"
+            >
+              <Users className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span className="truncate max-w-[130px]">
+                {selectedAgent?.name || 'فريق الوكلاء'}
+              </span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-900 font-bold tabular-nums">
+                {agents.length}
+              </span>
+              <ChevronDown className="w-3 h-3 text-indigo-400" />
+            </button>
+
+            {/* Rewind */}
+            <button
+              type="button"
+              onClick={handleRewind}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-300 transition cursor-pointer"
+              title="تراجع عن آخر خطوة"
+            >
+              <Undo2 className="w-3.5 h-3.5 text-slate-400" />
+              <span className="hidden xl:inline">تراجع</span>
+            </button>
+
+            {/* New Session */}
+            <button
+              type="button"
+              onClick={handleNewSession}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white transition text-xs font-bold shadow-xs cursor-pointer"
+              title="بدء جلسة جديدة"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>جلسة جديدة</span>
+            </button>
+          </div>
+
+          {/* Right Status / Telemetry & Desktop Settings Button */}
+          <div className="flex items-center gap-2">
+            {selectedAgent && (
+              <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded-xl bg-slate-800 border border-slate-700 text-[10px] font-mono tabular-nums text-slate-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{selectedAgent.model}</span>
+                <span>• SLA &lt; 0.8s</span>
+              </div>
+            )}
+
+            {/* Desktop Settings Gear Button */}
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-1.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition cursor-pointer"
+              title="إعدادات برنامج الديسكتوب"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
           </div>
         </div>
+      </header>
 
-        {/* Right: Telemetry & Actions */}
-        <div className="flex items-center gap-3">
-          {/* Active Model Telemetry */}
-          {selectedAgent && (
-            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-              <span>{selectedAgent.model}</span>
-              <span className="text-slate-600">|</span>
-              <span className="text-emerald-400">P95 &lt; 0.6s</span>
+      {/* Main Chat Feed Workspace */}
+      <main className="flex-1 flex flex-col min-h-0 bg-slate-950 overflow-hidden">
+        {/* Messages Stream */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 max-w-4xl w-full mx-auto">
+          {actionSuccessMsg && (
+            <div className="p-3 rounded-xl bg-emerald-950/70 border border-emerald-800 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{actionSuccessMsg}</span>
             </div>
           )}
 
-          {/* Logout Button */}
-          <button
-            type="button"
-            onClick={onLogout}
-            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-            title="تسجيل الخروج"
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
-      </div>
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex items-start gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}
+            >
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border text-sm ${
+                  msg.sender === 'user'
+                    ? 'bg-indigo-600 border-indigo-500 text-white'
+                    : 'bg-slate-800 border-slate-700 text-indigo-400'
+                }`}
+              >
+                {msg.sender === 'user' ? '👤' : selectedAgent?.icon || '🤖'}
+              </div>
 
-      {/* Success Notification Banner */}
-      {actionSuccessMsg && (
-        <div className="bg-emerald-600 text-white text-xs font-bold py-2 px-4 text-center animate-in slide-in-from-top flex items-center justify-center gap-2">
-          <CheckCircle2 size={16} />
-          <span>{actionSuccessMsg}</span>
+              <div
+                className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed ${
+                  msg.sender === 'user'
+                    ? 'bg-indigo-600 text-white rounded-tr-none'
+                    : 'bg-slate-900 border border-slate-800 text-slate-100 rounded-tl-none shadow-xs'
+                }`}
+              >
+                {/* User Snippet Attachment if exists */}
+                {msg.screenContextSnippet && (
+                  <div className="mb-2 p-1 bg-slate-950/60 rounded-lg border border-white/10">
+                    <img
+                      src={msg.screenContextSnippet}
+                      alt="Screen Snippet"
+                      className="max-h-28 rounded object-cover"
+                    />
+                    <span className="text-[10px] text-slate-400 block mt-1 font-mono">سياق الشاشة الملتقط</span>
+                  </div>
+                )}
+
+                <div className="whitespace-pre-wrap">{msg.text}</div>
+
+                {/* Campaign Draft Action Card if generated */}
+                {msg.card?.type === 'CAMPAIGN_DRAFT' && (
+                  <div className="mt-3 p-3 rounded-xl bg-slate-950 border border-indigo-500/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-indigo-300">مسودة حملة ميتا جاهزة</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-900 text-indigo-200">
+                        {msg.card.data.budgetAmount} ج.م / يوم
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 font-bold">{msg.card.data.headline}</p>
+                    <p className="text-[10px] text-slate-400 font-mono">الاستهداف: {msg.card.data.targetAudience}</p>
+                    <button
+                      type="button"
+                      onClick={() => handlePublishDraft(msg.card?.data.draftId)}
+                      className="w-full mt-1 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5"
+                    >
+                      <Rocket className="w-3.5 h-3.5" />
+                      <span>نشر الحملة في فيسبوك الآن (1-Click Launch)</span>
+                    </button>
+                  </div>
+                )}
+
+                <div className="mt-1 text-[10px] opacity-60 flex items-center justify-between gap-3">
+                  <span>{msg.timestamp}</span>
+                  {msg.telemetry && <span>{msg.telemetry.model}</span>}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {isSending && (
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-sm text-indigo-400">
+                {selectedAgent?.icon || '🤖'}
+              </div>
+              <div className="rounded-2xl rounded-tl-none p-3.5 bg-slate-900 border border-slate-800 text-xs text-slate-400 flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+                <span>جاري معالجة الطلب واستدعاء أدوات الوكيل...</span>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input Bar & Actions */}
+        <div className="p-3 border-t border-slate-800 bg-slate-900/60 flex-shrink-0">
+          <div className="max-w-4xl mx-auto space-y-2">
+            {/* Attached screen snippet banner */}
+            {screenSnippet && (
+              <div className="flex items-center justify-between p-2 rounded-xl bg-indigo-950/40 border border-indigo-800/60 text-xs">
+                <div className="flex items-center gap-2">
+                  <Camera className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>تم التقاط لقطة من الشاشة الحية ومرفقة بالسياق</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setScreenSnippet(null)}
+                  className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            <div className="relative flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCaptureScreen}
+                className="p-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-indigo-400 transition"
+                title="التقاط الشاشة الحية ودمجها بالسياق (Vision)"
+              >
+                <Camera className="w-4 h-4" />
+              </button>
+
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                placeholder={`اكتب أمرك لـ ${selectedAgent?.name || 'الوكيل'}...`}
+                className="flex-1 py-2 px-3 text-xs sm:text-sm bg-slate-900 border border-slate-800 rounded-xl focus:outline-none focus:border-indigo-500 text-white placeholder-slate-500"
+              />
+
+              <button
+                type="button"
+                onClick={() => handleSendMessage()}
+                disabled={!inputText.trim() || isSending}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-bold transition flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>إرسال</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* ── DRAWERS ─────────────────────────────────────────────────── */}
+
+      {/* 1. Complete Agent Fleet Drawer */}
+      {isAgentDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="flex-1 cursor-pointer" onClick={() => setIsAgentDrawerOpen(false)} aria-hidden="true" />
+          <aside className="w-full sm:w-[460px] max-w-full h-full bg-slate-900 border-r sm:border-r-0 sm:border-l border-slate-800 shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-200">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-white">قائمة فريق الوكلاء كاملة</h2>
+                  <p className="text-[11px] text-slate-400">اختر الوكيل للتحدث والتنفيذ المباشر</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAgentDrawerOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 border-b border-slate-800">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute right-3 top-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={agentSearch}
+                  onChange={(e) => setAgentSearch(e.target.value)}
+                  placeholder="ابحث عن وكيل بالاسم أو القسم..."
+                  className="w-full pr-9 pl-3 py-1.5 text-xs rounded-xl border border-slate-700 bg-slate-800 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {filteredAgents.map((agent) => {
+                const isCurrent = agent.id === selectedAgent?.id;
+                return (
+                  <button
+                    key={agent.id}
+                    type="button"
+                    onClick={() => handleSelectAgent(agent)}
+                    className={`w-full text-right p-3 rounded-xl border transition flex items-start gap-3 cursor-pointer ${
+                      isCurrent
+                        ? 'border-indigo-500 bg-indigo-950/40 ring-1 ring-indigo-500/30'
+                        : 'border-slate-800 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-lg shrink-0 border border-slate-700">
+                      {agent.icon || '🤖'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <span className="text-xs font-bold text-white truncate">{agent.name}</span>
+                        {isCurrent && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-600 text-white shrink-0">
+                            النشط
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 line-clamp-1 mb-1">{agent.description}</p>
+                      <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+                        <span>{agent.badge || 'فريق الوكلاء'}</span>
+                        <span>•</span>
+                        <span>{agent.model}</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
         </div>
       )}
 
-      {/* Messages Feed Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-          >
-            {/* Sender Label & Timestamp */}
-            <div className="flex items-center gap-2 mb-1 px-1 text-[11px] text-slate-500">
-              {msg.sender === 'agent' && (
-                <span className="font-bold text-indigo-400 flex items-center gap-1">
-                  <span>{selectedAgent?.name || 'MaxP Agent'}</span>
-                  {msg.telemetry?.model && (
-                    <span className="text-[9px] font-mono px-1 py-0.2 bg-slate-900 border border-slate-800 rounded text-slate-400">
-                      {msg.telemetry.model}
-                    </span>
-                  )}
-                </span>
-              )}
-              {msg.sender === 'user' && <span className="font-medium text-slate-400">أنت</span>}
-              {msg.sender === 'system' && <span className="text-slate-500 italic">نظام المنصة</span>}
-              <span className="text-[10px] font-mono">{msg.timestamp}</span>
+      {/* 2. Product Picker Drawer */}
+      {isProductDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="flex-1 cursor-pointer" onClick={() => setIsProductDrawerOpen(false)} aria-hidden="true" />
+          <aside className="w-full sm:w-[460px] max-w-full h-full bg-slate-900 border-r sm:border-r-0 sm:border-l border-slate-800 shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-200">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
+                  <Package className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-white">كتالوج منتجات المتجر</h2>
+                  <p className="text-[11px] text-slate-400">اختر المنتج لربطه بالسياق</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsProductDrawerOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Message Bubble */}
-            <div
-              className={`max-w-2xl rounded-2xl p-4 text-xs sm:text-sm leading-relaxed ${
-                msg.sender === 'user'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/10'
-                  : msg.sender === 'system'
-                  ? 'bg-slate-900/60 border border-slate-800 text-slate-400 text-center mx-auto text-xs py-2'
-                  : 'bg-slate-900 border border-white/10 text-slate-200 shadow-sm'
-              }`}
-            >
-              {/* Attached Screen Context Thumbnail if sent */}
-              {msg.screenContextSnippet && (
-                <div className="mb-3 rounded-lg overflow-hidden border border-white/15 max-w-xs">
-                  <div className="text-[10px] bg-slate-950 px-2 py-1 text-slate-400 font-mono flex items-center gap-1">
-                    <Camera size={11} />
-                    <span>سياق الشاشة الملتقط</span>
-                  </div>
-                  <img
-                    src={msg.screenContextSnippet}
-                    alt="Screen Context"
-                    className="w-full h-auto object-cover max-h-36"
-                  />
-                </div>
-              )}
-
-              {/* Text content with clean markdown spacing */}
-              <div className="whitespace-pre-wrap font-sans">{msg.text}</div>
-
-              {/* Generative UI Action Cards */}
-              {msg.card && msg.card.type === 'CAMPAIGN_DRAFT' && (
-                <div className="mt-3.5 p-3.5 rounded-xl bg-slate-950 border border-indigo-500/30 text-slate-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-bold text-indigo-400 flex items-center gap-1.5">
-                      <Rocket size={13} />
-                      <span>مسودة حملة Meta Graph API v21</span>
-                    </span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/50 font-bold">
-                      LOWEST_COST
-                    </span>
-                  </div>
-                  <div className="space-y-1.5 text-xs text-slate-300 mb-3">
-                    <div>
-                      <span className="text-slate-500">العنوان: </span>
-                      <span className="font-semibold text-white">{msg.card.data.headline}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">الميزانية اليومية: </span>
-                      <span className="font-mono text-emerald-400 font-bold tabular-nums">
-                        {msg.card.data.budgetAmount} ج.م
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">الاستهداف: </span>
-                      <span>{msg.card.data.targetAudience}</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleTriggerCardAction('publish_meta_draft', msg.card?.data)
-                    }
-                    className="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-indigo-600/20"
-                  >
-                    <Rocket size={13} />
-                    <span>نشر المسودة فوراً على الحساب الإعلاني</span>
-                  </button>
-                </div>
-              )}
-
-              {msg.card && msg.card.type === 'ORDER_ALERT' && (
-                <div className="mt-3.5 p-3.5 rounded-xl bg-slate-950 border border-amber-500/30 text-slate-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-bold text-amber-400 flex items-center gap-1.5">
-                      <Package size={13} />
-                      <span>تأكيد أوردرات الدفع عند الاستلام (COD)</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {msg.card.data.carrier}
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-300 mb-3">
-                    يوجد <span className="font-bold text-amber-400">{msg.card.data.pendingCount} أوردرات</span> معلقة بقيمة إجمالية{' '}
-                    <span className="font-mono text-white font-bold">{msg.card.data.estimatedTotal} ج.م</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleTriggerCardAction('trigger_order_confirmations', msg.card?.data)
-                    }
-                    className="w-full py-2 px-3 bg-amber-600 hover:bg-amber-500 active:scale-[0.98] text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-amber-600/20"
-                  >
-                    <CheckCircle2 size={13} />
-                    <span>إرسال رسائل تأكيد الواتساب الآن</span>
-                  </button>
-                </div>
-              )}
-
-              {msg.card && msg.card.type === 'VIDEO_PREVIEW' && (
-                <div className="mt-3.5 p-3.5 rounded-xl bg-slate-950 border border-purple-500/30 text-slate-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-bold text-purple-400 flex items-center gap-1.5">
-                      <Video size={13} />
-                      <span>توليد فيديو ريلز إعلاني بـ Google Veo 3.1</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-purple-300 flex items-center gap-1">
-                      <Volume2 size={11} />
-                      <span>صوت متزامن</span>
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-300 mb-3">
-                    المقاس: <span className="font-mono text-white">1080x1920 (9:16)</span> • مدعوم بتعليق صوتي تسويقي مصري
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleTriggerCardAction('generate_veo_reel', {
-                        productId: selectedProduct?.id,
-                        productName: selectedProduct?.name,
-                      })
-                    }
-                    className="w-full py-2 px-3 bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-purple-600/20"
-                  >
-                    <Sparkles size={13} />
-                    <span>بدء التوليد عبر Gemini API (Veo 3.1)</span>
-                  </button>
-                </div>
-              )}
+            <div className="p-3 border-b border-slate-800">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute right-3 top-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  placeholder="ابحث عن منتج بالاسم أو SKU..."
+                  className="w-full pr-9 pl-3 py-1.5 text-xs rounded-xl border border-slate-700 bg-slate-800 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
             </div>
-          </div>
-        ))}
 
-        {isSending && (
-          <div className="flex items-center gap-2 text-xs text-indigo-400 px-2 py-1">
-            <span className="w-3 h-3 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-            <span>الوكيل يحلل البيانات ويصيغ التوصية...</span>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Quick Prompt Suggestions */}
-      <div className="px-4 py-2 border-t border-white/5 bg-slate-950/80 flex items-center gap-2 overflow-x-auto no-scrollbar">
-        <span className="text-[10px] text-slate-500 font-bold whitespace-nowrap">مقترحات:</span>
-        <button
-          type="button"
-          onClick={() => handleSendMessage('حلل أداء حملات اليوم وROAS واقترح تعديل الميزانية')}
-          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-300 whitespace-nowrap transition-colors cursor-pointer"
-        >
-          🎯 تحليل ROAS والميزانية
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSendMessage('اقترح زاوية إعلانية ومسودة إعلان كاملة لهذا المنتج')}
-          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-300 whitespace-nowrap transition-colors cursor-pointer"
-        >
-          📝 مسودة إعلان Meta
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSendMessage('ما هي الأوردرات المعلقة التي تحتاج تأكيد قبل شحن تيربو؟')}
-          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-300 whitespace-nowrap transition-colors cursor-pointer"
-        >
-          📦 أوردرات الـ COD المعلقة
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSendMessage('ولد فيديو ريلز 9:16 بـ Veo 3.1 لهذا المنتج')}
-          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-300 whitespace-nowrap transition-colors cursor-pointer"
-        >
-          🎬 إعلان ريلز Veo 3.1
-        </button>
-      </div>
-
-      {/* Bottom Action & Input Bar */}
-      <div className="p-3 sm:p-4 border-t border-white/10 bg-slate-900/90 backdrop-blur-md">
-        {/* Screen Snippet Preview Tag if captured */}
-        {screenSnippet && (
-          <div className="mb-2 flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-indigo-500/40 text-xs">
-            <div className="flex items-center gap-2 text-indigo-300">
-              <Camera size={14} />
-              <span>تم التقاط الشاشة الحالية — سيتم إرسالها كـ Vision Context مع سؤالك</span>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {filteredProducts.map((prod) => (
+                <button
+                  key={prod.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedProduct(prod);
+                    setIsProductDrawerOpen(false);
+                  }}
+                  className={`w-full text-right p-3 rounded-xl border transition flex items-center justify-between gap-3 cursor-pointer ${
+                    selectedProduct?.id === prod.id
+                      ? 'border-indigo-500 bg-indigo-950/40 ring-1 ring-indigo-500/30'
+                      : 'border-slate-800 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0">
+                      {prod.imageUrl ? (
+                        <img src={prod.imageUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="w-4 h-4 text-slate-400" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-white block truncate">{prod.name}</span>
+                      {prod.sku && <span className="text-[10px] text-slate-400 font-mono">SKU: {prod.sku}</span>}
+                    </div>
+                  </div>
+                  <div className="text-left shrink-0">
+                    <span className="text-xs font-bold text-emerald-400 block tabular-nums">{prod.price} ج.م</span>
+                    {typeof prod.stock === 'number' && (
+                      <span className="text-[10px] text-slate-400 tabular-nums">متبقي: {prod.stock}</span>
+                    )}
+                  </div>
+                </button>
+              ))}
             </div>
-            <button
-              type="button"
-              onClick={() => setScreenSnippet(null)}
-              className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2">
-          {/* Capture Screen Context Button */}
-          <button
-            type="button"
-            onClick={handleCaptureScreen}
-            className={`p-2.5 rounded-xl border transition-colors cursor-pointer ${
-              screenSnippet
-                ? 'bg-indigo-600/20 border-indigo-500 text-indigo-400'
-                : 'bg-slate-800 border-slate-700/80 text-slate-400 hover:text-white hover:bg-slate-700'
-            }`}
-            title="التقاط لقطة شاشة وتحليلها بالرؤية الذكية"
-          >
-            <Camera size={16} />
-          </button>
-
-          {/* Text Input */}
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              placeholder={`اطلب من ${selectedAgent?.name || 'الوكيل'} (مثلاً: حلل الـ ROAS، أو صيغ إعلان)...`}
-              className="w-full py-2.5 px-3.5 bg-slate-950 border border-slate-800 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-            />
-          </div>
-
-          {/* Send Button */}
-          <button
-            type="button"
-            onClick={() => handleSendMessage()}
-            disabled={!inputText.trim() || isSending}
-            className="p-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.97] disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-md shadow-indigo-600/20"
-          >
-            <Send size={16} />
-          </button>
+          </aside>
         </div>
-      </div>
+      )}
+
+      {/* 3. Desktop Settings Modal */}
+      <DesktopSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        user={user}
+        onLogout={onLogout}
+      />
     </div>
   );
 };
+
 export default AgentCockpitPage;

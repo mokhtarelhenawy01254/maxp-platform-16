@@ -516,6 +516,7 @@ export const getSidebarConfig = (
             title: t('sidebar.aiOperatorSection'),
             icon: Sparkles,
             items: [
+                { to: '/admin/agent-chat', icon: MessageSquare, label: isEn ? 'Agent Conversations' : 'محادثات الإيجنت' },
                 { to: '/admin/agent-profiles', icon: Users, label: t('sidebar.agentProfiles') },
                 { to: '/marketplace/agents', icon: Bot, label: isEn ? 'Agents Marketplace' : 'سوق الإيجنت' },
                 { to: '/advertising/creative-studio', icon: Palette, label: isEn ? 'AI Creative Studio' : 'استوديو التصاميم الذكي' },
