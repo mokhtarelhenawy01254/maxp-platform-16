@@ -4,6 +4,7 @@ import {
   Apple,
   LucideIcon,
   Laptop,
+  Bot,
 } from "lucide-react";
 
 export interface DownloadFileSpec {
@@ -60,6 +61,68 @@ export interface DownloadPackage {
 }
 
 export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
+  {
+    id: "windows-agent-studio",
+    slug: "maxp-agent-studio",
+    name: "MaxP Agent Studio — غرفة قيادة الوكلاء الذكية",
+    nameEn: "MaxP AI Agent Studio & Media Buyer Cockpit",
+    category: "desktop",
+    categoryLabel: "سطح المكتب (AI)",
+    platform: "ويندوز (Windows 10 / 11 x64)",
+    platformEn: "Windows 64-bit",
+    version: "v1.0.0",
+    releaseDate: "2026-09",
+    icon: Bot,
+    summary: "غرفة قيادة مستقلة للميديا باير وإدارة المتجر، مع اختصار Alt+Space، وتوليد مسودات Meta، وتأكيد أوردرات COD، وفيديوهات Veo 3.1.",
+    primaryActionLabel: "تحميل مثبت استوديو الوكلاء",
+    telemetry: {
+      targetSystem: "Windows 10 / 11 (x64)",
+      primarySize: "84.5 MB",
+      ramConsumption: "< 50 MB RAM",
+    },
+    files: [
+      {
+        id: "agent-setup",
+        label: "مثبت استوديو الوكلاء (Setup .exe)",
+        size: "84.5 MB",
+        url: "https://maxp.online/download/MaxP-Agent-Studio-Setup.exe",
+        extension: ".exe",
+        isPrimary: true,
+      },
+    ],
+    tags: ["windows", "agent", "ai", "copilot", "media-buyer", "veo", "meta", "ذكاء اصطناعي", "وكيل", "إعلانات", "ويندوز"],
+    drawerDetails: {
+      overview: "تطبيق سطح مكتب مستقل وخفيف الوزن صُمم خصيصاً للتجار ومسؤولي الإعلانات لإدارة حملات الميديا باير، ورصد الأداء، وتأكيد الطلبات المعلقة دون الحاجة لفتح المتصفح.",
+      features: [
+        "شريط عائم فوري فوق أي برنامج بنقرة اختصار (Alt + Space).",
+        "تكامل كامل مع Meta Graph API v21 واستهداف المحافظات المصرية وصياغة المسودات.",
+        "توليد ريلز إعلانية وفيديوهات 9:16 بجودة سينمائية وصوت متزامن عبر Google Veo 3.1.",
+        "إشعارات حية وتأكيد أوردرات الدفع عند الاستلام (COD) مع تيربو وبوسطة.",
+        "تشفير كامل للجلسات والتوكن عبر Windows DPAPI مع حماية تامة من تسريب المفاتيح.",
+      ],
+      minRequirements: [
+        "نظام تشغيل Windows 10 أو Windows 11 (x64).",
+        "ذاكرة عشوائية (RAM) فارغة بحجم 150 MB.",
+        "مساحة قرص صلب فارغة بحجم 300 MB.",
+      ],
+      recommendedSpecs: [
+        "Windows 11 x64 أحدث تحديث.",
+        "اتصال إنترنت مستقر للمزامنة الفورية مع وكلاء المنصة.",
+      ],
+      pairingNotes: "سجل الدخول بنفس بريدك وكلمة مرورك في منصة MaxP للوصول الفوري لكافة وكلاء المتجر والكتالوج.",
+      changelog: [
+        {
+          version: "v1.0.0",
+          date: "2026-09",
+          changes: [
+            "الإطلاق الرسمي لتطبيق MaxP Agent Studio لسطح المكتب.",
+            "دعم وكلاء: Facebook Media Buyer, Order Confirmation (منى), Creative Video Studio (Veo 3.1), و Inventory Assistant.",
+            "تفعيل اختصار لوحة المفاتيح العالمي Alt + Space وميزة التقاط الشاشة وتحليلها برؤية الذكاء الاصطناعي.",
+          ],
+        },
+      ],
+    },
+  },
   {
     id: "windows-monitor",
     slug: "maxp-desktop-monitor",

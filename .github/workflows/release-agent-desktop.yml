@@ -1,0 +1,129 @@
+name: Build and Release MaxP Agent Studio Desktop
+
+on:
+  push:
+    tags:
+      - 'agent-v*'
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create GitHub Release'
+        required: false
+        default: true
+        type: boolean
+      deploy_to_server:
+        description: 'Deploy to production download directory'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-agent-desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-agent-desktop-installer:
+    name: Build and Release MaxP Agent Studio Windows Setup
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Agent Desktop Dependencies
+        working-directory: apps/agent-desktop
+        run: npm install
+
+      - name: Build TypeScript Main and Vite Renderer
+        working-directory: apps/agent-desktop
+        run: npm run build
+
+      - name: Package Windows NSIS Installer
+        working-directory: apps/agent-desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win nsis --publish never
+
+      - name: Verify Generated Artifacts
+        shell: pwsh
+        run: |
+          Write-Host "Listing generated release artifacts in apps/agent-desktop/release:"
+          Get-ChildItem -Path apps/agent-desktop/release -Recurse | Select-Object Name, Length, FullName | Format-Table
+          
+          $setupExe = Get-ChildItem -Path apps/agent-desktop/release -Filter "*.exe" | Select-Object -First 1
+          if (-not $setupExe) {
+            Write-Error "No setup .exe generated in apps/agent-desktop/release!"
+            exit 1
+          }
+          Write-Host "Agent Studio installer generated: $($setupExe.FullName)"
+
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MaxP-Agent-Studio-Windows-Installer-${{ github.run_number }}
+          path: |
+            apps/agent-desktop/release/*.exe
+            apps/agent-desktop/release/*.blockmap
+            apps/agent-desktop/release/latest.yml
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: ${{ github.event_name == 'push' || github.event.inputs.create_release != 'false' }}
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "MaxP Agent Studio Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            apps/agent-desktop/release/*.exe
+            apps/agent-desktop/release/*.blockmap
+            apps/agent-desktop/release/latest.yml
+
+      - name: Setup SSH Key for Server Direct Download Deployment
+        if: ${{ github.event.inputs.deploy_to_server != 'false' }}
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
+      - name: Deploy Installer to Production Web Download Route
+        if: ${{ github.event.inputs.deploy_to_server != 'false' }}
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT || '22' }}
+        run: |
+          echo "Publishing MaxP Agent Studio installer to server..."
+          SETUP_FILE=$(find apps/agent-desktop/release/ -name "*.exe" | head -n 1)
+          
+          ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+            "$SERVER_USER@$SERVER_HOST" \
+            "mkdir -p /var/www/frontend2/dist/download /var/www/frontend2/dist/downloads"
+
+          # Upload installer atomically via .tmp
+          scp -4 -i "$HOME/.ssh/maxp_deploy_key" -P "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            "$SETUP_FILE" "$SERVER_USER@$SERVER_HOST:/var/www/frontend2/dist/download/MaxP-Agent-Studio-Setup.exe.tmp"
+
+          # Atomically swap temp installer to production destination
+          ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            "$SERVER_USER@$SERVER_HOST" \
+            "mv -f /var/www/frontend2/dist/download/MaxP-Agent-Studio-Setup.exe.tmp /var/www/frontend2/dist/download/MaxP-Agent-Studio-Setup.exe && cp -f /var/www/frontend2/dist/download/MaxP-Agent-Studio-Setup.exe /var/www/frontend2/dist/downloads/MaxP-Agent-Studio-Setup.exe 2>/dev/null || true"
+
+          echo "MaxP Agent Studio successfully published to https://maxp.online/download/MaxP-Agent-Studio-Setup.exe"
