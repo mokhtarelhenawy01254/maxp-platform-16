@@ -5,11 +5,15 @@
  *
  * Public endpoints used by FunnelCodSalesPage.tsx:
  *   GET  /api/v1/funnels/public/:slug         → funnel + product + company + config
- *   POST /api/v1/funnels/public/:slug/order   → track conversion + create order
+ *   POST  /api/v1/funnels/public/:slug/order   → conversion counter only; the
+ *                                                real order is created through
+ *                                                the standard storefront order
+ *                                                pipeline (storefrontApi.createOrder)
  *
- * The route is intentionally tolerant: if the database is unavailable or the
- * funnel isn't published yet, it falls back to a deterministic demo payload so
- * the storefront page can still render in development / preview / downtime.
+ * Public reads are strict: only PUBLISHED funnels with a live product row are
+ * served. Unknown slugs return 404 and database failures return 503 — never a
+ * demo payload — so paid ad traffic can't silently land on placeholder
+ * content that can't take a real order.
  *
  * Mount:  app.use("/api/v1/funnels", funnelRoutes)
  */
@@ -31,13 +35,6 @@ const DEMO_PRODUCT = {
   price: 249,
   comparePrice: 349,
   images: ["https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?w=1200"],
-};
-
-const DEMO_COMPANY = {
-  id: "demo-company",
-  name: "Swan",
-  slug: "swan",
-  currency: "EGP",
 };
 
 const DEMO_FUNNEL_CONFIG = {
@@ -104,20 +101,6 @@ const DEMO_FUNNEL_CONFIG = {
   orderCopy: "املأ البيانات الأساسية وسيتم التواصل معك لتأكيد الطلب خلال ساعة.",
   buttonLabel: "تأكيد الطلب — كاش عند الاستلام",
 };
-
-const buildDemoResponse = (slug) => ({
-  funnel: {
-    id: `demo-${slug}`,
-    companyId: DEMO_COMPANY.id,
-    productId: DEMO_PRODUCT.id,
-    slug,
-    title: DEMO_PRODUCT.name,
-    status: "PUBLISHED",
-    config: DEMO_FUNNEL_CONFIG,
-  },
-  product: DEMO_PRODUCT,
-  company: DEMO_COMPANY,
-});
 
 /**
  * buildFunnelConfigFromProduct(product, company, overrides)
@@ -326,8 +309,9 @@ function buildFunnelConfigFromProduct(product, company, overrides = {}) {
 
 /**
  * GET /api/v1/funnels/public/:slug
- * Returns the funnel + linked product + company. Falls back to demo payload
- * if the funnel is not found, not published, or DB is unavailable.
+ * Returns the funnel + linked product + company for the public COD page.
+ * Serves PUBLISHED funnels only; unknown slugs 404 and DB failures 503 —
+ * never a demo payload.
  */
 router.get("/public/:slug", extractSubdomainMiddleware, async (req, res) => {
   const slug = String(req.params.slug || "").trim();
@@ -335,35 +319,40 @@ router.get("/public/:slug", extractSubdomainMiddleware, async (req, res) => {
     return res.status(400).json({ error: "Funnel slug is required" });
   }
 
+  let prisma;
   try {
-    const prisma = await getSharedPrismaClientAsync();
+    prisma = await getSharedPrismaClientAsync();
+  } catch (err) {
+    return res.status(503).json({ error: "store_unavailable" });
+  }
 
-    // Look up funnel by slug. Accept PUBLISHED (production) or DRAFT (so
-    // freshly-created funnels from the wizard are viewable before the
-    // wizard's own publish-flip rolls out to every server). The original
-    // intent was PUBLISHED-only, but DRAFT visibility here is harmless —
-    // a draft funnel still has its public URL, the only difference is the
-    // merchant hasn't flipped a toggle in the admin UI yet.
-    const funnel = await prisma.productLandingPage
-      ?.findFirst({
-        where: {
-          slug,
-          status: { in: ["PUBLISHED", "DRAFT"] },
-        },
-      })
-      .catch(() => null);
+  try {
+    // Published funnels only. DRAFT/PAUSED funnels must not serve public
+    // traffic: ad clicks landing on an unpublished or paused page are
+    // wasted spend, and the merchant's preview flows happen through the
+    // wizard/admin endpoints (quick-generate publishes immediately).
+    const funnel = await prisma.productLandingPage?.findFirst({
+      where: {
+        slug,
+        status: "PUBLISHED",
+      },
+    });
 
     if (!funnel) {
-      return res.json(buildDemoResponse(slug));
+      return res.status(404).json({ error: "not_found" });
     }
 
     const product = funnel.productId
-      ? await prisma.product
-          ?.findUnique({
-            where: { id: funnel.productId },
-          })
-          .catch(() => null)
+      ? await prisma.product?.findUnique({
+          where: { id: funnel.productId },
+        })
       : null;
+
+    // A funnel without its live product can neither render real content
+    // nor take an order — treat it as gone instead of serving template copy.
+    if (!product) {
+      return res.status(404).json({ error: "product_unavailable" });
+    }
 
     const company = funnel.companyId
       ? await prisma.company
@@ -374,6 +363,12 @@ router.get("/public/:slug", extractSubdomainMiddleware, async (req, res) => {
           .catch(() => null)
       : null;
 
+    // Always rebuild the public config from the *live* product so the page
+    // shows the real product image, description, and pricing. The stored
+    // formConfig may be stale (e.g. the merchant edited the product after
+    // the funnel was generated).
+    const config = buildFunnelConfigFromProduct(product, company);
+
     // Bump visit counter (best-effort, fire-and-forget)
     prisma.productLandingPage
       ?.update({
@@ -381,16 +376,6 @@ router.get("/public/:slug", extractSubdomainMiddleware, async (req, res) => {
         data: { visits: { increment: 1 } },
       })
       .catch(() => null);
-
-    // Always rebuild the public config from the *live* product so the page
-    // shows the real product image, description, and pricing. The stored
-    // formConfig may be stale (e.g. it was generated against the demo
-    // socks template before the product-aware helper existed) or out of
-    // date with the merchant's latest product edits. We treat formConfig
-    // as a cache that can be ignored if the product is available.
-    const config = product
-      ? buildFunnelConfigFromProduct(product, company)
-      : parseConfig(funnel.formConfig) || DEMO_FUNNEL_CONFIG;
 
     return res.json({
       funnel: {
@@ -402,20 +387,20 @@ router.get("/public/:slug", extractSubdomainMiddleware, async (req, res) => {
         status: funnel.status,
         config,
       },
-      product: product || DEMO_PRODUCT,
-      company: company || DEMO_COMPANY,
+      product,
+      company: company || null,
     });
   } catch (err) {
-    // DB unavailable — return demo payload so the public page still renders.
-    return res.json(buildDemoResponse(slug));
+    return res.status(503).json({ error: "store_unavailable" });
   }
 });
 
 /**
  * POST /api/v1/funnels/public/:slug/order
- * Records a conversion event for the funnel. Re-uses the existing order
- * pipeline by delegating to the standard order creation endpoint when the
- * DB is available, otherwise returns 200 + tracking id (idempotent).
+ * Conversion counter for funnel analytics. The real order is created by the
+ * storefront through the standard order pipeline (FunnelCodSalesPage →
+ * storefrontApi.createOrder); this endpoint only records the event and bumps
+ * the funnel's `orders` counter.
  */
 router.post("/public/:slug/order", express.json(), async (req, res) => {
   const slug = String(req.params.slug || "").trim();
@@ -583,19 +568,6 @@ router.post(
     });
   },
 );
-
-function parseConfig(value) {
-  if (!value) return null;
-  if (typeof value === "object") return value;
-  if (typeof value === "string") {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
 
 /**
  * parseImagesField(value)

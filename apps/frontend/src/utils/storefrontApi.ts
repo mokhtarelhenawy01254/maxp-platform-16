@@ -374,8 +374,9 @@ export const storefrontApi = {
   },
 
   /**
-   * Track an order placed on a COD-Sales funnel. Sends a conversion event
-   * tied to the funnel slug for analytics + order creation.
+   * Track an order placed on a COD-Sales funnel. Bumps the funnel's
+   * conversion counter for analytics — the real order itself is created
+   * through storefrontApi.createOrder (standard order pipeline).
    */
   trackFunnelOrder: async (
     slug: string,

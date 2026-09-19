@@ -29,6 +29,37 @@
   font-weight: 700;
 }
 
+/* Error / not-found state (unknown slug, unpublished funnel, store hiccup) */
+.fcs-error {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  text-align: center;
+}
+.fcs-error-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--fcs-ink);
+}
+.fcs-error-copy {
+  color: var(--fcs-ink-soft);
+  font-size: 15px;
+  max-width: 420px;
+}
+.fcs-error-link {
+  background: var(--fcs-accent);
+  color: white;
+  border-radius: 999px;
+  padding: 10px 26px;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+}
+
 /* Top bar + promo strip */
 .fcs-topbar {
   width: 100%;

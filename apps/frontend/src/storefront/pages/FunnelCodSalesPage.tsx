@@ -31,21 +31,21 @@
  */
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
 import { getCompanyId, storefrontApi } from "../../utils/storefrontApi";
 import type { Product } from "../hooks/useProducts";
+import { buildCheckoutOrderPayload } from "../hooks/useCheckout";
 import { formatStorefrontCurrency } from "../utils/currency";
 import { getPrimaryProductImage } from "../utils/productImages";
+import { buildStorefrontPath } from "../utils/paths";
 import { persistPurchaseTracking } from "../utils/purchaseTrackingStorage";
+import type { CartItem } from "../store/useCartStore";
 
 import CountdownBlock from "../sections/ConversionBlocks/CountdownBlock";
 import LowStockBlock from "../sections/ConversionBlocks/LowStockBlock";
 import SoldCounterBlock from "../sections/ConversionBlocks/SoldCounterBlock";
-import PurchaseFomoBlock from "../sections/ConversionBlocks/PurchaseFomoBlock";
-import { TrustedBadgePanel } from "../components/TrustedBadgePanel";
-import { BackInStockSignupCard } from "../components/BackInStockSignupCard";
 import "./FunnelCodSalesPage.css";
 
 // ────────────────────────────────────────────────────────────
@@ -149,98 +149,15 @@ const DEFAULT_FOMO_POOL = [
   "جنى من شبرا اشترت للتو قطعة واحدة",
 ];
 
-const FALLBACK_CONFIG: FunnelConfig = {
-  heroTitle: "حذاء Swan High Skotch — سنيكرز حريمي نعل منصة بفيلكرو",
-  heroSubtitle: "حذاء رياضي عصري بنعل سميك ومريح جداً للبس اليومي، جلد صناعي ناعم مقاوم للماء، وبألوان ممتازة تليق على كل اللبس.",
-  heroOverline: "🔥 عرض خاص لفترة محدودة — خصم 29%",
-  heroBadge: "الأكثر طلباً ⭐",
-  rating: { value: 4.9, count: 2100, label: "2,100+ رجل مبسوطة" },
-  offerEndsAt: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
-  lowStockCount: 18,
-  soldCount: 1247,
-  fomoMessages: DEFAULT_FOMO_POOL,
-  bundleTiers: [
-    {
-      qty: 1,
-      price: 499,
-      originalPrice: 699,
-      label: "زوج واحد — وفّر 200 EGP",
-    },
-    {
-      qty: 2,
-      price: 898,
-      originalPrice: 1398,
-      label: "زوجين — وفّر 500 EGP",
-      popular: true,
-    },
-    {
-      qty: 3,
-      price: 1198,
-      originalPrice: 2097,
-      label: "3 أزواج — خصم 42% + شحن مجاني 🎁",
-      bestValue: true,
-      freeShipping: true,
-    },
-  ],
-  features: [
-    { title: "نعل منصة سميك ومريح", desc: "تصميم مريح يقلل الإجهاد أثناء المشي والوقوف لفترات طويلة.", icon: "👟" },
-    { title: "إغلاق فيلكرو سريع", desc: "شريط فيلكرو مزدوج لسهولة الارتداء والخلع وتعديل المقاس بدقة.", icon: "🔒" },
-    { title: "جلد صناعي ناعم", desc: "خامة عالية الجودة سهلة التنظيف ومقاومة للماء والأتربة.", icon: "✨" },
-    { title: "شحن سريع لكافة المحافظات", desc: "وصول الطلب خلال 2-3 أيام عمل مع تتبع كامل للطلب.", icon: "🚚" },
-    { title: "دفع عند الاستلام المعاينة أولاً", desc: "ادفع كاش للكابتن بعد استلامك ومعاينتك للمنتج.", icon: "💵" },
-    { title: "ضمان الاستبدال والاسترجاع", desc: "حق الاستبدال أو الإرجاع خلال 14 يوماً بسهولة.", icon: "🔁" },
-  ],
-  reviews: [
-    {
-      name: "نورهان حاتم",
-      text: "الحذاء تحفة ومريح جداً في اللبس والوقوف! خامة الجلود ممتازة والنعل ثابت جداً. شحن سريع وتغليف ممتاز.",
-      rating: 5,
-      verified: true,
-    },
-    {
-      name: "سارة محمود",
-      text: "المقاس مضبوط جداً، والألوان أبيض×أسود تليق على أي طقم. عجبني جداً إن الفيلكرو بيثبت الرجل كويس.",
-      rating: 5,
-      verified: true,
-    },
-    {
-      name: "دينا فاروق",
-      text: "طلبته ووصلني في يومين، وعاينت المنتج قبل ما أدفع الكاش. تجربة شراء ممتازة وأنصح بـ Swan جداً.",
-      rating: 5,
-      verified: true,
-    },
-  ],
-  trustBadges: [
-    { icon: "🚚", title: "شحن سريع لكافة المحافظات", desc: "وصول خلال 2-3 أيام عمل" },
-    { icon: "✅", title: "معاينة قبل الدفع", desc: "افحص الحذاء قبل دفع الكاش" },
-    { icon: "💵", title: "دفع عند الاستلام COD", desc: "بدون أي دفع مسبق" },
-    { icon: "🔁", title: "ضمان استبدال 14 يوم", desc: "استبدال المقاس مجاناً" },
-  ],
-  orderKicker: "نموذج الطلب السريع",
-  orderTitle: "اطلبي Swan High Skotch الآن",
-  orderCopy: "املئي البيانات الأساسية واختاري المقاس، وسيتم التواصل معك هاتفياً أو عبر الواتساب لتأكيد الشحن فوراً.",
-  buttonLabel: "تأكيد الطلب الآن — دفع عند الاستلام 🚚",
-};
-
-const FALLBACK_PRODUCT: Product = {
-  id: "d3e043e2-b581-45cd-93eb-2ef0617d1c07",
-  name: "Swan High Skotch",
-  slug: "swan-high-skotch",
-  description: "Swan High Skotch حذاء رياضي حريمي بفيلكرو، نعل منصة سميك، جلد صناعي ناعم، وألوان متعددة للبس اليومي.",
-  price: 499,
-  images: [
-    "https://swan.maxp.online/uploads/products/product-fbd3d1f7-2d8d-4653-a313-0be09dc968a6.JPG",
-    "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=1200",
-    "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=1200",
-  ],
-};
-
-const FALLBACK_COMPANY = {
-  id: "swan-store",
-  name: "Swan",
-  slug: "swan",
+const DEFAULT_COMPANY = {
+  id: "",
+  name: "",
+  slug: "",
   currency: "EGP",
 };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const initials = (name: string): string => {
   const parts = name.trim().split(/\s+/);
@@ -268,9 +185,11 @@ const computeRemaining = (endAt: string | undefined): number => {
 
 const FunnelCodSalesPage: React.FC = () => {
   const { slug = "" } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [funnel, setFunnel] = useState<PublicFunnel | null>(null);
-  const [product, setProduct] = useState<Product>(FALLBACK_PRODUCT);
-  const [company, setCompany] = useState(FALLBACK_COMPANY);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [company, setCompany] = useState(DEFAULT_COMPANY);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -295,59 +214,35 @@ const FunnelCodSalesPage: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // Declared outside try so the catch block can use it for the
-      // demo-fallback (otherwise `const companyId` inside try is block-scoped
-      // and the catch can't see it — throws "companyId is not defined").
-      let resolvedCompanyId: string | null = null;
       try {
         setLoading(true);
         setError(null);
-        resolvedCompanyId = getCompanyId();
-        const isCustomLandingSlug = ["ultra-9-watch", "d3e043e2-b581-45cd-93eb-2ef0617d1c07", "easyorders", "watch", "smartwatch", "offer"].includes(slug?.toLowerCase());
-        
-        if (isCustomLandingSlug) {
-          setFunnel({
-            id: "custom-watch-funnel",
-            companyId: "maxp-store",
-            productId: FALLBACK_PRODUCT.id,
-            slug,
-            title: FALLBACK_PRODUCT.name,
-            status: "PUBLISHED",
-            config: FALLBACK_CONFIG,
-          });
-          setProduct(FALLBACK_PRODUCT);
-          setCompany(FALLBACK_COMPANY);
-        } else {
-          const res = await storefrontApi.getFunnel?.(slug, {
-            companyId: resolvedCompanyId ?? undefined,
-          });
-          if (cancelled) return;
-          if (res) {
-            setFunnel(res.funnel);
-            setProduct(res.product ?? FALLBACK_PRODUCT);
-            if (res.company) {
-              setCompany({
-                id: res.company.id,
-                name: res.company.name || FALLBACK_COMPANY.name,
-                slug: res.company.slug || FALLBACK_COMPANY.slug,
-                currency: res.company.currency || FALLBACK_COMPANY.currency,
-              });
-            }
+        const resolvedCompanyId = getCompanyId();
+        const res = (await storefrontApi.getFunnel?.(slug, {
+          companyId: resolvedCompanyId ?? undefined,
+        })) as FunnelResponse | null;
+        if (cancelled) return;
+        if (res?.funnel && res?.product) {
+          setFunnel(res.funnel);
+          setProduct(res.product);
+          if (res.company) {
+            setCompany({
+              id: res.company.id,
+              name: res.company.name || "",
+              slug: res.company.slug || "",
+              currency: res.company.currency || "EGP",
+            });
           }
+        } else {
+          setError("not_found");
         }
       } catch (err) {
-        // Graceful fallback to demo data — funnel is publicly viewable
+        // No demo fallback: a 404 means the slug is wrong/unpublished, and
+        // anything else is a transient store error. Ad traffic must never
+        // land on placeholder content.
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "fallback");
-          setFunnel({
-            id: "demo",
-            companyId: resolvedCompanyId ?? "demo",
-            productId: FALLBACK_PRODUCT.id,
-            slug,
-            title: FALLBACK_PRODUCT.name,
-            status: "PUBLISHED",
-            config: FALLBACK_CONFIG,
-          });
+          const status = (err as { status?: number } | null)?.status;
+          setError(status === 404 ? "not_found" : "unavailable");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -362,18 +257,16 @@ const FunnelCodSalesPage: React.FC = () => {
     if (typeof window === "undefined" || !company?.slug) return;
     const hostname = window.location.hostname.toLowerCase();
     if (hostname === "maxp.online" || hostname === "www.maxp.online") {
-      if (company.slug !== "swan-store" && company.slug !== "demo-company") {
-        const targetUrl = `https://${company.slug}.maxp.online${window.location.pathname}${window.location.search}`;
-        window.location.replace(targetUrl);
-      }
+      const targetUrl = `https://${company.slug}.maxp.online${window.location.pathname}${window.location.search}`;
+      window.location.replace(targetUrl);
     }
   }, [company]);
 
-  const config = funnel?.config ?? FALLBACK_CONFIG;
+  const config = funnel?.config ?? null;
 
   // Sync document.title and meta tags for dynamic COD Funnel landing page
   useEffect(() => {
-    const pageTitle = funnel?.title || product?.name || config.heroTitle;
+    const pageTitle = funnel?.title || product?.name || config?.heroTitle;
     const storeName = company?.name || "MaxP";
     const fullTitle = pageTitle ? `${pageTitle} | ${storeName}` : `عرض خاص | ${storeName}`;
     const previousTitle = document.title;
@@ -381,7 +274,7 @@ const FunnelCodSalesPage: React.FC = () => {
 
     const metaDesc = document.querySelector('meta[name="description"]');
     const previousDesc = metaDesc?.getAttribute("content");
-    const newDesc = config.heroSubtitle || product?.description || "اطلب الآن بأفضل سعر مع شحن سريع ودفع عند الاستلام";
+    const newDesc = config?.heroSubtitle || product?.description || "اطلب الآن بأفضل سعر مع شحن سريع ودفع عند الاستلام";
     if (metaDesc) {
       metaDesc.setAttribute("content", newDesc);
     }
@@ -392,15 +285,15 @@ const FunnelCodSalesPage: React.FC = () => {
         metaDesc.setAttribute("content", previousDesc);
       }
     };
-  }, [funnel?.title, product?.name, product?.description, config.heroTitle, config.heroSubtitle, company?.name]);
+  }, [funnel?.title, product?.name, product?.description, config?.heroTitle, config?.heroSubtitle, company?.name]);
 
   // Countdown timer
   useEffect(() => {
-    const tick = () => setRemainingMs(computeRemaining(config.offerEndsAt));
+    const tick = () => setRemainingMs(computeRemaining(config?.offerEndsAt));
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [config.offerEndsAt]);
+  }, [config?.offerEndsAt]);
 
   // FOMO rotation
   useEffect(() => {
@@ -420,25 +313,28 @@ const FunnelCodSalesPage: React.FC = () => {
   }, []);
 
   const fomoMessages = useMemo(
-    () => (config.fomoMessages && config.fomoMessages.length ? config.fomoMessages : DEFAULT_FOMO_POOL),
-    [config.fomoMessages],
+    () => (config?.fomoMessages && config.fomoMessages.length ? config.fomoMessages : DEFAULT_FOMO_POOL),
+    [config?.fomoMessages],
   );
 
   const heroImage = useMemo(
     () =>
-      config.heroImage ||
-      getPrimaryProductImage(product.images) ||
+      config?.heroImage ||
+      (product ? getPrimaryProductImage(product.images) : "") ||
       "https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?w=1200",
-    [config.heroImage, product.images],
+    [config?.heroImage, product],
   );
 
   // Active tier
   const activeTier = useMemo(
-    () => config.bundleTiers.find((t) => t.qty === form.quantity) ?? config.bundleTiers[0],
-    [config.bundleTiers, form.quantity],
+    () => config?.bundleTiers.find((t) => t.qty === form.quantity) ?? config?.bundleTiers[0] ?? null,
+    [config?.bundleTiers, form.quantity],
   );
 
-  const subtotal = activeTier ? activeTier.price * form.quantity : 0;
+  // A bundle tier's price is the TOTAL for the tier's quantity (e.g.
+  // { qty: 3, price: 717 } = 717 EGP for all three pieces) — never multiply
+  // it by the quantity again.
+  const subtotal = activeTier ? activeTier.price : Number(product?.price || 0);
 
   const handleChange = <K extends keyof OrderFormState>(key: K, value: OrderFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -446,46 +342,130 @@ const FunnelCodSalesPage: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!funnel) return;
+    if (!funnel || !product) return;
     if (!form.customerName.trim() || !form.phone.trim() || !form.governorate.trim() || !form.address.trim()) {
       toast.error("من فضلك أكمل البيانات المطلوبة");
       return;
     }
     try {
       setSubmitting(true);
-      // The funnel backend only needs the minimum: who is buying, what
-      // product, how many, and where to ship. We bypass the standard
-      // buildCheckoutOrderPayload (cart-based) because this page is a
-      // single-product COD flow that doesn't use the cart.
-      const subtotal = activeTier ? activeTier.price * form.quantity : 0;
-      await storefrontApi.trackFunnelOrder?.(funnel.slug, {
-        companyId: funnel.companyId,
-        productId: funnel.productId,
-        productName: product.name,
-        productImage: heroImage,
-        quantity: form.quantity,
-        unitPrice: activeTier?.price ?? product.price ?? 0,
-        subtotal,
-        currency: company.currency ?? "EGP",
-        customerName: form.customerName,
+      // Create a REAL order through the same storefront pipeline the cart
+      // checkout and ProductImageLandingPage use. The funnel order endpoint
+      // is only a conversion counter — it never persisted customer data,
+      // which used to silently drop every order placed on this page.
+      const tierTotal = activeTier ? activeTier.price : Number(product.price || 0);
+      const quantity = Math.max(1, form.quantity || activeTier?.qty || 1);
+      const unitPrice = Math.round((tierTotal / quantity) * 100) / 100;
+
+      const pixelEventId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      const landingAttribution = {
+        source: "cod_funnel",
+        landingPageId: funnel.id || null,
+        landingPageSlug: funnel.slug,
+        generationMode: "QUICK_FUNNEL",
+      };
+
+      const items: CartItem[] = [
+        {
+          id: `${product.id}-funnel`,
+          productId: product.id,
+          name: product.name,
+          price: unitPrice,
+          basePrice: Number(product.price || 0),
+          quantity,
+          imageUrl: heroImage,
+          attributes: {},
+        },
+      ];
+
+      const payload = buildCheckoutOrderPayload(
+        {
+          customerName: form.customerName.trim(),
+          email: "",
+          phone: form.phone.replace(/\s+/g, ""),
+          address: form.address.trim(),
+          city: form.area.trim() || form.governorate.trim(),
+          governorate: form.governorate.trim(),
+          notes: [
+            form.notes?.trim() ? `ملاحظات العميل: ${form.notes.trim()}` : "",
+            activeTier ? `عرض الباقة: ${activeTier.label} (${quantity} قطع)` : "",
+            `Funnel Slug: ${funnel.slug}`,
+            funnel.id ? `Funnel ID: ${funnel.id}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n\n"),
+          paymentMethod: "cod",
+          shippingCost: 0,
+          subtotal: tierTotal,
+          total: tierTotal,
+        },
+        items,
+        tierTotal,
+        funnel.companyId || getCompanyId() || undefined,
+        pixelEventId,
+      ) as Record<string, unknown>;
+
+      const payloadItems = Array.isArray(payload["items"]) ? payload["items"] : [];
+      payload["items"] = payloadItems.map((payloadItem) =>
+        isRecord(payloadItem)
+          ? {
+              ...payloadItem,
+              metadata: {
+                ...(isRecord(payloadItem["metadata"]) ? payloadItem["metadata"] : {}),
+                landingPage: landingAttribution,
+              },
+            }
+          : payloadItem,
+      );
+      payload["attribution"] = {
+        ...(isRecord(payload["attribution"]) ? payload["attribution"] : {}),
+        landingPage: landingAttribution,
+      };
+
+      const response = await storefrontApi.createOrder(payload);
+      if (!response?.success) {
+        throw new Error(response?.message || "تعذر إرسال الطلب الآن.");
+      }
+
+      const orderId = response?.data?.orderNumber || response?.data?.id || "success";
+
+      // Best-effort conversion counter (same funnel row).
+      storefrontApi
+        .trackFunnelOrder?.(funnel.slug, { orderId })
+        .catch(() => undefined);
+
+      const purchaseTracking = {
+        eventId: pixelEventId,
+        orderNumber: String(orderId),
+        total: Number(response?.data?.finalTotal ?? response?.data?.total ?? tierTotal),
         phone: form.phone,
-        governorate: form.governorate,
-        area: form.area,
-        address: form.address,
-        notes: form.notes,
-        landingSlug: funnel.slug,
-      });
-      toast.success("تم استلام طلبك! هنتواصل معاك خلال ساعة.");
-      setForm({
-        customerName: "",
-        phone: "",
-        governorate: "",
-        area: "",
-        address: "",
-        quantity: 1,
+        customerName: form.customerName,
+        paymentMethod: "cod" as const,
+        items: items.map((it) => ({
+          id: it.id,
+          productId: it.productId,
+          variantId: it.variantId || undefined,
+          name: it.name,
+          quantity: it.quantity,
+          price: it.price,
+          imageUrl: it.imageUrl,
+          attributes: it.attributes || {},
+        })),
+      };
+      persistPurchaseTracking(purchaseTracking);
+
+      toast.success("تم إرسال طلبك بنجاح!");
+      const thankYouPath = buildStorefrontPath(
+        location.pathname,
+        `/thank-you?orderId=${encodeURIComponent(String(orderId))}`,
+        location.search,
+      );
+      navigate(thankYouPath, {
+        state: { purchaseTracking },
       });
     } catch (err) {
-      toast.error("حصل مشكلة، حاول تاني.");
+      const message = err instanceof Error ? err.message : "حصل مشكلة، حاول تاني.";
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -495,6 +475,30 @@ const FunnelCodSalesPage: React.FC = () => {
     return (
       <div className="fcs-root" dir="rtl">
         <div className="fcs-loading">جاري تحميل الصفحة…</div>
+      </div>
+    );
+  }
+
+  if (error || !funnel || !product || !config) {
+    const isNotFound = error === "not_found";
+    return (
+      <div className="fcs-root" dir="rtl">
+        <div className="fcs-error">
+          <h1 className="fcs-error-title">
+            {isNotFound ? "الصفحة غير متاحة" : "الصفحة غير متاحة مؤقتًا"}
+          </h1>
+          <p className="fcs-error-copy">
+            {isNotFound
+              ? "الرابط غير صحيح أو صفحة الهبوط دي مش منشورة."
+              : "حصلت مشكلة مؤقتة في المتجر، جرّب تاني بعد شوية."}
+          </p>
+          <Link
+            className="fcs-error-link"
+            to={buildStorefrontPath(location.pathname, "/", location.search)}
+          >
+            الرجوع للمتجر
+          </Link>
+        </div>
       </div>
     );
   }
