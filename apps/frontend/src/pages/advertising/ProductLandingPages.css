@@ -2897,3 +2897,66 @@
   color: #94a3b8;
   font-size: 12px;
 }
+
+/* ── Landing quality panel (pre-publish checks) ── */
+.eo-quality-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.eo-quality-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eo-quality-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.eo-quality-status.is-clean {
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+.eo-quality-status.is-warning {
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+.eo-quality-status.is-critical {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+.eo-quality-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.eo-quality-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.eo-quality-item.is-critical {
+  color: #b91c1c;
+}
+.eo-quality-item.is-warning {
+  color: #92400e;
+}
+.eo-quality-item svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}

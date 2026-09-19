@@ -1319,7 +1319,9 @@ const ProductImageLandingPage: React.FC = () => {
     }
 
     const updateSticky = () => {
-      setIsStickyReady(window.scrollY > 300);
+      // Ready from first paint so the price + CTA bar covers the mobile
+      // above-the-fold gap (MOB-052); it hides once the form is in view.
+      setIsStickyReady(true);
       const orderEl = document.getElementById("order");
       if (orderEl) {
         const rect = orderEl.getBoundingClientRect();
@@ -2628,7 +2630,7 @@ const ProductImageLandingPage: React.FC = () => {
               <button className="pil-submit" type="submit" disabled={isSubmitting}>
                 {isSubmitting
                   ? "جاري إرسال الطلب..."
-                  : `${activeConfig.buttonLabel} — ${formatPrice(orderFinalTotal, currency)} 🚚`}
+                  : `${activeConfig.buttonLabel} — ${formatPrice(orderFinalTotal, currency)}`}
               </button>
 
               {whatsappPhone ? (

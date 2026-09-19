@@ -103,7 +103,17 @@ sync_frontend_dist() {
   sudo mkdir -p /var/www/frontend2/dist
 
   # Publish immutable hashed assets FIRST (never index.html yet).
-  sudo rsync -a --exclude 'index.html' \
+  # Entrypoint precompressed variants (.br/.gz) are excluded at the source:
+  # rsyncing them re-creates stale-shadow races with concurrent deploys —
+  # the explicit rm below is the legacy-file hygiene pass only.
+  sudo rsync -a \
+    --exclude 'index.html' \
+    --exclude 'index.html.br' \
+    --exclude 'index.html.gz' \
+    --exclude 'sw.js.br' \
+    --exclude 'sw.js.gz' \
+    --exclude 'sw-v4.js.br' \
+    --exclude 'sw-v4.js.gz' \
     "$source_dir/" /var/www/frontend2/dist/
   sudo rm -rf /var/www/frontend2/dist/products
   sudo chown -R $USER:$USER /var/www/frontend2/dist

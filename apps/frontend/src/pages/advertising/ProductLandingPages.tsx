@@ -33,6 +33,11 @@ import { TemplatesLibraryModal } from "./product-landing/TemplatesLibraryModal";
 import { LandingStylePanel } from "./product-landing/LandingStylePanel";
 import { LandingSeoPanel } from "./product-landing/LandingSeoPanel";
 import { LandingLivePreview } from "./product-landing/LandingLivePreview";
+import { LandingQualityPanel } from "./product-landing/LandingQualityPanel";
+import {
+  getLandingQualityIssues,
+  hasCriticalLandingIssues,
+} from "./product-landing/landingQuality";
 import {
   useEditorHistory,
   useUndoKeyboardShortcuts,
@@ -85,8 +90,7 @@ const ProductLandingPages: React.FC = () => {
   const customDomain = user?.company?.customDomain || "";
   const companyId = user?.companyId || user?.company?.id || selectedPage?.companyId;
 
-  const customerUrl = useMemo(() => {
-    if (!liveSlug) return "";
+  const customerUrl = useMemo(() => {    if (!liveSlug) return "";
     return buildStoreUrl(
       companySlug,
       `/store/lp/${liveSlug}`,
@@ -660,8 +664,17 @@ const ProductLandingPages: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [editor, isDirty, selectedPage]);
 
+  // Pre-publish quality report (critical issues also enforced server-side).
+  const qualityIssues = useMemo(() => getLandingQualityIssues(editor), [editor]);
+
   const handleUpdateStatus = async (status: ProductLandingStatus) => {
     if (!selectedPage) return;
+
+    if (status === "PUBLISHED" && hasCriticalLandingIssues(qualityIssues)) {
+      const blocker = qualityIssues.find((i) => i.severity === "critical");
+      toast.error(`ممنوع النشر: ${blocker?.label ?? "محتوى غير صالح"}`);
+      return;
+    }
 
     try {
       setUpdatingStatus(true);
@@ -885,6 +898,8 @@ const ProductLandingPages: React.FC = () => {
                 onDeletePage={handleDeletePage}
                 deleting={deleting}
               />
+
+              <LandingQualityPanel issues={qualityIssues} />
 
               <LandingStylePanel
                 style={editor.style}

@@ -424,6 +424,42 @@ function createRouteError(statusCode, message) {
   return error;
 }
 
+const STOCK_VIDEO_DOMAIN_PATTERN = /(mixkit|pexels|unsplash|coverr|videvo|pixabay|storyblocks)\./i;
+
+/**
+ * Landing content quality gate — blocks objectively broken sections from
+ * reaching paying traffic. These specific issues were found live on
+ * production landings (identical before/after images, stock placeholder
+ * videos) and silently destroy buyer trust.
+ */
+function ensureLandingContentQuality(sections) {
+  for (const section of sections || []) {
+    if (section?.enabled === false) continue;
+    const content = isRecord(section?.content) ? section.content : {};
+
+    if (section?.type === 'BEFORE_AFTER') {
+      const before = normalizeText(content.beforeImage, 1000);
+      const after = normalizeText(content.afterImage, 1000);
+      if (before && after && before === after) {
+        throw createRouteError(
+          400,
+          'قسم "قبل وبعد" يستخدم نفس الصورة في الجهتين — ارفع صورتين مختلفتين حقيقيتين (مشكلة السوق مقابل منتجك) قبل النشر',
+        );
+      }
+    }
+
+    if (section?.type === 'VIDEO_REEL') {
+      const videoUrl = normalizeText(content.videoUrl, 1000);
+      if (videoUrl && STOCK_VIDEO_DOMAIN_PATTERN.test(videoUrl)) {
+        throw createRouteError(
+          400,
+          'فيديو القسم من مكتبة جاهزة (stock) — ارفع فيديو حقيقي لمنتجك قبل النشر، الفيديوهات الجاهزة بتضرب ثقة العملاء',
+        );
+      }
+    }
+  }
+}
+
 async function ensurePublishReady(prisma, { companyId, productId, slices, sections }) {
   const normalizedSlices = normalizeSlices(slices);
   const normalizedSections = parseJsonArray(sections, []);
@@ -431,6 +467,8 @@ async function ensurePublishReady(prisma, { companyId, productId, slices, sectio
   if (normalizedSlices.length === 0 && normalizedSections.length === 0) {
     throw createRouteError(400, 'لا يمكن نشر صفحة الهبوط بدون صور أو أقسام محتوى');
   }
+
+  ensureLandingContentQuality(normalizedSections);
 
   const product = await getCompanyProduct(prisma, productId, companyId);
   if (!product) {

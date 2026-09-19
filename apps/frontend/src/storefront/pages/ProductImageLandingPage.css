@@ -54,10 +54,14 @@
 
 .pil-pure-media-img {
   width: 100%;
+  /* Reserve the box before the image loads — without it the layout jumps
+   * while scrolling (CLS) because height collapses to 0 then expands. */
+  aspect-ratio: 4 / 5;
   max-height: 560px;
   object-fit: contain;
   display: block;
   border-radius: 14px;
+  background: var(--pil-soft, #f8fafc);
 }
 
 @media (max-width: 640px) {
@@ -471,6 +475,7 @@
   color: oklch(98% 0.006 220);
   cursor: pointer;
   font-family: var(--pil-display);
+  text-wrap: balance;
   font-size: 17px;
   font-weight: 900;
   transition: transform 160ms ease-out, background 160ms ease-out;
@@ -2724,10 +2729,12 @@
 
 .pil-carousel-img {
   width: 100%;
-  height: auto;
+  /* Reserved box prevents layout shift while the slice image loads. */
+  aspect-ratio: 4 / 5;
   max-height: 480px;
   object-fit: cover;
   display: block;
+  background: var(--pil-soft, #f8fafc);
   transition: opacity 0.3s ease;
 }
 
