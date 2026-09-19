@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/utils";
+import { envConfig } from "../../config/environment";
 import "../../pages/auth/authRedesign.css";
 
 const THEME_OVERRIDES: Record<string, Record<string, string>> = {
@@ -124,14 +125,24 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
         <div className={cn("elite-form-container animate-fade-up", wide && "elite-form-container--wide")}>
           <Link to="/" className="elite-brand-logo">
             <img
-              src={companyLogo || "/logo.png"}
+              src={
+                companyLogo
+                  ? companyLogo.startsWith("http://") || companyLogo.startsWith("https://") || companyLogo.startsWith("data:")
+                    ? companyLogo
+                    : `${envConfig.backendUrl}${companyLogo.startsWith("/") ? "" : "/"}${companyLogo}`
+                  : "/logo.png"
+              }
               alt={companyName || t("auth.brandName")}
               className="logo-img"
               onError={(e) => {
                 const target = e.currentTarget;
-                target.style.display = "none";
-                const fallback = target.parentElement?.querySelector(".logo-icon") as HTMLElement | null;
-                if (fallback) fallback.style.display = "flex";
+                if (!target.src.endsWith("/logo.png")) {
+                  target.src = "/logo.png";
+                } else {
+                  target.style.display = "none";
+                  const fallback = target.parentElement?.querySelector(".logo-icon") as HTMLElement | null;
+                  if (fallback) fallback.style.display = "flex";
+                }
               }}
             />
             <div className="logo-icon" style={{ display: "none" }}>

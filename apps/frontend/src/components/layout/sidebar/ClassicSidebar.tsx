@@ -137,6 +137,10 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
   setSearchQuery,
 }) => {
   const { user, logout } = useAuth();
+  const currentCompany = useMemo(
+    () => (user?.companies ?? []).find((c) => c.isCurrent) || user?.company,
+    [user],
+  );
   const navigate = useNavigate();
   const searchInputId = useId();
   const prefetch = useRoutePrefetch();
@@ -338,20 +342,20 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
           {!isCollapsed && (
             <Link to="/company-dashboard" className="flex items-center flex-1 no-underline" onMouseEnter={() => prefetch("/company-dashboard")}>
               <CompanyLogo
-                src={user?.company?.logo}
-                alt={user?.company?.name}
+                src={currentCompany?.logo}
+                alt={currentCompany?.name}
                 className="h-12 w-12 rounded-xl object-cover me-3 shadow-lg border-2 border-gray-200 dark:border-gray-600"
-                companyName={user?.company?.name}
+                companyName={currentCompany?.name}
               >
                 <div className="h-12 w-12 bg-gradient-to-r from-primary-500 to-violet-600 rounded-xl me-3 shadow-lg flex items-center justify-center">
                   <span className="text-white font-bold text-xl">
-                    {user?.company?.name?.charAt(0) || "M"}
+                    {currentCompany?.name?.charAt(0) || "M"}
                   </span>
                 </div>
               </CompanyLogo>
               <div>
                 <h1 className="text-lg font-extrabold text-gray-900 dark:text-white leading-tight">
-                  {user?.company?.name || t("sidebar.platformName")}
+                  {currentCompany?.name || t("sidebar.platformName")}
                 </h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {t("sidebar.platformName")}
@@ -375,17 +379,17 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
         {isCollapsed && (
           <Link to="/company-dashboard" className="mt-4 flex justify-center" onMouseEnter={() => prefetch("/company-dashboard")}>
             <CompanyLogo
-              src={user?.company?.logo}
-              alt={user?.company?.name}
+              src={currentCompany?.logo}
+              alt={currentCompany?.name}
               className="h-10 w-10 rounded-xl object-cover shadow-lg border-2 border-gray-200 dark:border-gray-600"
-              companyName={user?.company?.name}
+              companyName={currentCompany?.name}
             >
               <div
                 className="h-10 w-10 bg-gradient-to-r from-primary-500 to-violet-600 rounded-xl shadow-lg flex items-center justify-center"
-                title={user?.company?.name}
+                title={currentCompany?.name}
               >
                 <span className="text-white font-bold text-lg">
-                  {user?.company?.name?.charAt(0) || "M"}
+                  {currentCompany?.name?.charAt(0) || "M"}
                 </span>
               </div>
             </CompanyLogo>

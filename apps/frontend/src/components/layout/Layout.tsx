@@ -40,6 +40,7 @@ import TemplateSlot from "../../templates/TemplateSlot";
 import { buildStoreUrl } from "../../utils/storeUrl";
 import { hasStoreApp } from "../../utils/storeShortcut";
 import HeaderWalletShortcut from "../wallet/HeaderWalletShortcut";
+import { envConfig } from "../../config/environment";
 
 const SuperAdminLayout = React.lazy(() => import("./SuperAdminLayout"));
 const AppDashboardPage = React.lazy(() => import("./app-dashboard/AppDashboardPage"));
@@ -124,6 +125,20 @@ const resolveDashboardTitle = (pathname: string): string => {
 const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
+  const currentCompany = useMemo(
+    () => (user?.companies ?? []).find((c) => c.isCurrent) || user?.company,
+    [user],
+  );
+
+  const resolveLogoUrl = useCallback((src: string | null | undefined): string => {
+    if (!src) return "/logo.png";
+    if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:")) {
+      return src;
+    }
+    const cleanPath = src.startsWith("/") ? src : `/${src}`;
+    return `${envConfig.backendUrl}${cleanPath}`;
+  }, []);
+
   const { currentTheme } = useVisualTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -643,21 +658,21 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             >
               <Bars3Icon className="h-5 w-5" />
             </button>
-            {isMobile && (
-              <Link to="/apps" className="flex items-center gap-2 select-none min-w-0">
+            {(isMobile || location.pathname === '/apps') && (
+              <Link to="/apps" className="flex items-center gap-2 select-none min-w-0" aria-label="Apps">
                 <img
-                  src={user?.company?.logo || "/logo.png"}
-                  alt={user?.company?.name || "MaxP"}
-                  className="h-7 w-7 sm:h-8 sm:w-8 object-contain rounded-lg shrink-0"
+                  src={resolveLogoUrl(currentCompany?.logo)}
+                  alt={currentCompany?.name || "MaxP"}
+                  className="h-8 xs:h-9 sm:h-10 w-auto max-w-[110px] xs:max-w-[140px] sm:max-w-[160px] object-contain rounded-md shrink-0 drop-shadow-sm transition-transform active:scale-95"
                   onError={(e) => {
                     const target = e.currentTarget;
-                    if (target.src !== `${window.location.origin}/logo.png`) {
+                    if (!target.src.endsWith("/logo.png")) {
                       target.src = "/logo.png";
                     }
                   }}
                 />
-                <span className="font-extrabold text-sm tracking-tight text-gray-900 dark:text-white truncate max-w-[130px] xs:max-w-[170px]">
-                  {user?.company?.name || "MaxP"}
+                <span className="font-extrabold text-xs xs:text-sm tracking-tight text-gray-900 dark:text-white truncate max-w-[100px] xs:max-w-[140px] sm:max-w-[180px]">
+                  {currentCompany?.name || "MaxP"}
                 </span>
               </Link>
             )}

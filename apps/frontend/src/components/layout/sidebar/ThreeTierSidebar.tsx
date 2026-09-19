@@ -41,6 +41,10 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
   setSearchQuery,
 }) => {
   const { user, logout } = useAuth();
+  const currentCompany = useMemo(
+    () => (user?.companies ?? []).find((c) => c.isCurrent) || user?.company,
+    [user],
+  );
   const navigate = useNavigate();
   const searchInputId = useId();
   const prefetch = useRoutePrefetch();
@@ -334,21 +338,21 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
           <div className="business-sidebar-brand-block">
             <Link to="/company-dashboard" className="block" onMouseEnter={() => prefetch("/company-dashboard")}>
               <CompanyLogo
-                src={user?.company?.logo}
-                alt={user?.company?.name || "Logo"}
+                src={currentCompany?.logo}
+                alt={currentCompany?.name || "Logo"}
                 className="business-sidebar-logo"
-                title={user?.company?.name || t("sidebar.platformName")}
-                companyName={user?.company?.name}
+                title={currentCompany?.name || t("sidebar.platformName")}
+                companyName={currentCompany?.name}
               >
                 <div 
                   className="business-brand-glyph" 
-                  title={user?.company?.name || t("sidebar.platformName")}
+                  title={currentCompany?.name || t("sidebar.platformName")}
                   data-admin={user?.role === "SUPER_ADMIN" ? "true" : "false"}
                 >
                   {user?.role === "SUPER_ADMIN" ? (
                     <ShieldCheckIcon className="h-6 w-6 text-white" />
                   ) : (
-                    user?.company?.name?.charAt(0) || "M"
+                    currentCompany?.name?.charAt(0) || "M"
                   )}
                 </div>
               </CompanyLogo>
@@ -396,19 +400,19 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
           <div className="business-sidebar-company">
             <Link to="/company-dashboard" className="flex items-center gap-3 no-underline" onMouseEnter={() => prefetch("/company-dashboard")}>
               <CompanyLogo
-                src={user?.company?.logo}
-                alt={user?.company?.name}
+                src={currentCompany?.logo}
+                alt={currentCompany?.name}
                 className="business-sidebar-company-logo"
-                companyName={user?.company?.name}
+                companyName={currentCompany?.name}
               >
                 <div className="business-brand-glyph business-brand-glyph--small">
-                  {user?.company?.name?.charAt(0) || "M"}
+                  {currentCompany?.name?.charAt(0) || "M"}
                 </div>
               </CompanyLogo>
 
               <div className="business-sidebar-company-copy">
                 <h2 className="text-foreground">
-                  {user?.company?.name || (user?.role === "SUPER_ADMIN" ? "التحكم الذكي" : t("sidebar.company"))}
+                  {currentCompany?.name || (user?.role === "SUPER_ADMIN" ? "التحكم الذكي" : t("sidebar.company"))}
               </h2>
               <p>
                 {activeSection?.title || (user?.role === "SUPER_ADMIN" ? "نظام الإدارة المركزية" : "")}

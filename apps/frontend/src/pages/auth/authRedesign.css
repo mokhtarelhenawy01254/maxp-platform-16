@@ -179,10 +179,11 @@
 }
 
 .logo-img {
-  width: 56px;
-  height: 56px;
+  width: auto;
+  max-width: 150px;
+  height: 48px;
   object-fit: contain;
-  border-radius: 14px;
+  border-radius: 12px;
   display: inline-block;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.12));
 }
@@ -593,10 +594,11 @@
     font-size: 1.5rem;
   }
   .logo-img {
-    width: 52px;
-    height: 52px;
+    width: auto;
+    max-width: 130px;
+    height: 42px;
     object-fit: contain;
-    border-radius: 12px;
+    border-radius: 10px;
   }
   .logo-text {
     font-size: 1.35rem;

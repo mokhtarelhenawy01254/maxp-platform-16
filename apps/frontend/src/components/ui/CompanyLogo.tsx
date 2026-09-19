@@ -14,7 +14,10 @@ export function CompanyLogo({ src, alt = "", className = "", title, companyName,
   const [erred, setErred] = useState(false);
 
   if (src && !erred) {
-    const imgUrl = src.startsWith("http") ? src : `${envConfig.backendUrl}${src}`;
+    const isFullUrl = src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:");
+    const imgUrl = isFullUrl
+      ? src
+      : `${envConfig.backendUrl}${src.startsWith("/") ? "" : "/"}${src}`;
     return (
       <img
         src={imgUrl}

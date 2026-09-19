@@ -288,4 +288,94 @@ describe("Layout mobile account visibility", () => {
     expect(menu).toHaveClass("left-0");
     expect(menu).not.toHaveClass("right-0");
   });
+
+  it("renders company logo with resolved backend url and company name on mobile header", async () => {
+    mockUseAuth.mockReturnValue({
+      user: {
+        id: "user-1",
+        firstName: "Test",
+        lastName: "Owner",
+        email: "test@example.com",
+        role: "OWNER",
+        companyId: "company-1",
+        company: {
+          id: "company-1",
+          name: "Acme Store",
+          logo: "/uploads/companies/acme.png",
+          sidebarLayout: "three-tier",
+          activeApps: ["ecommerce-basic"],
+        },
+        companies: [
+          {
+            id: "company-1",
+            name: "Acme Store",
+            logo: "/uploads/companies/acme.png",
+            role: "OWNER",
+            isCurrent: true,
+            sidebarLayout: "three-tier",
+            activeApps: ["ecommerce-basic"],
+          },
+        ],
+      },
+      logout: jest.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/apps"]}>
+        <Layout>
+          <div>Apps content</div>
+        </Layout>
+      </MemoryRouter>,
+    );
+
+    const logoImg = screen.getByRole("img", { name: "Acme Store" });
+    expect(logoImg).toBeInTheDocument();
+    expect(logoImg).toHaveAttribute("src", "http://localhost:3000/uploads/companies/acme.png");
+    expect(screen.getByText("Acme Store")).toBeInTheDocument();
+  });
+
+  it("falls back to /logo.png when company has no custom logo", async () => {
+    mockUseAuth.mockReturnValue({
+      user: {
+        id: "user-1",
+        firstName: "Test",
+        lastName: "Owner",
+        email: "test@example.com",
+        role: "OWNER",
+        companyId: "company-1",
+        company: {
+          id: "company-1",
+          name: "NoLogo Store",
+          logo: null,
+          sidebarLayout: "three-tier",
+          activeApps: ["ecommerce-basic"],
+        },
+        companies: [
+          {
+            id: "company-1",
+            name: "NoLogo Store",
+            logo: null,
+            role: "OWNER",
+            isCurrent: true,
+            sidebarLayout: "three-tier",
+            activeApps: ["ecommerce-basic"],
+          },
+        ],
+      },
+      logout: jest.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/apps"]}>
+        <Layout>
+          <div>Apps content</div>
+        </Layout>
+      </MemoryRouter>,
+    );
+
+    const logoImg = screen.getByRole("img", { name: "NoLogo Store" });
+    expect(logoImg).toBeInTheDocument();
+    expect(logoImg).toHaveAttribute("src", "/logo.png");
+    expect(screen.getByText("NoLogo Store")).toBeInTheDocument();
+  });
 });
