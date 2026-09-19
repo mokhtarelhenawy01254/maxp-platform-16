@@ -93,7 +93,7 @@ function buildDbAppPayloadFromCatalog(catalogApp) {
     ),
     unitPrice,
     unitName: catalogApp?.unitName || null,
-    ppuBillingMethod: catalogApp?.ppuBillingMethod || "PER_ORDER",
+    ppuBillingMethod: catalogApp?.ppuBillingMethod || null,
     features: normalizeJsonObject(catalogApp?.features, {}),
     isActive: catalogApp?.isActive !== false,
     isPublic: catalogApp?.isPublic !== false,

@@ -478,7 +478,7 @@ function buildDbAppPayloadFromCatalog(catalogApp) {
     pricingModel: String(catalogApp?.pricingModel || (monthlyPrice === 0 ? 'FREE' : 'SUBSCRIPTION')).toUpperCase(),
     unitPrice: unitPriceRaw === null || unitPriceRaw === undefined ? null : toSafeNumber(unitPriceRaw, 0),
     unitName: catalogApp?.unitName || null,
-    ppuBillingMethod: catalogApp?.ppuBillingMethod || "PER_ORDER",
+    ppuBillingMethod: catalogApp?.ppuBillingMethod || null,
     features: catalogApp?.features && typeof catalogApp.features === 'object' ? catalogApp.features : {},
     isActive: catalogApp?.isActive !== false,
     isPublic: catalogApp?.isPublic !== false,

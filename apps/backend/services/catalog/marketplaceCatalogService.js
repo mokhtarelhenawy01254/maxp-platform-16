@@ -101,7 +101,7 @@ class MarketplaceCatalogService {
       yearlyPrice: Number(app.yearlyPrice || 0),
       unitPrice: app.unitPrice === null || app.unitPrice === undefined ? null : Number(app.unitPrice),
       unitName: app.unitName || null,
-      ppuBillingMethod: app.ppuBillingMethod || "PER_ORDER",
+      ppuBillingMethod: app.ppuBillingMethod || null,
       trialDays: Number(app.trialDays || 0),
       requiredApps: Array.isArray(app.requiredApps) ? app.requiredApps : [],
       features: app.features && typeof app.features === "object" ? app.features : {},

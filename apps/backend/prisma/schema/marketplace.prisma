@@ -11,7 +11,7 @@ model MarketplaceApp {
   pricingModel  PricingModel     @default(SUBSCRIPTION)
   unitPrice     Decimal?         @db.Decimal(10, 2)
   unitName      String?
-  ppuBillingMethod String?       @default("PER_ORDER")
+  ppuBillingMethod String?
   features      Json?
   isActive      Boolean          @default(true)
   isPublic      Boolean          @default(true)

@@ -112,7 +112,7 @@ async function processPendingUsageCharges(companyId, opts = {}) {
                       metadata: {
                         orderNumber: order.orderNumber,
                         orderTotal,
-                        ppuBillingMethod: appItem.method || 'PER_ORDER',
+                        ppuBillingMethod: appItem.method || null,
                         appSlug: appItem.appSlug || '',
                         appName: appItem.appName || '',
                         releasedFromHold: true,

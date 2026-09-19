@@ -484,7 +484,7 @@ function buildDbAppPayloadFromCatalog(catalogApp) {
     pricingModel: normalizePricingModel(catalogApp?.pricingModel, monthlyPrice === 0 ? 'FREE' : 'SUBSCRIPTION'),
     unitPrice,
     unitName: catalogApp?.unitName || null,
-    ppuBillingMethod: catalogApp?.ppuBillingMethod || "PER_ORDER",
+    ppuBillingMethod: catalogApp?.ppuBillingMethod || null,
     features: normalizeJsonObject(catalogApp?.features, {}),
     isActive: catalogApp?.isActive !== false,
     isPublic: catalogApp?.isPublic !== false,

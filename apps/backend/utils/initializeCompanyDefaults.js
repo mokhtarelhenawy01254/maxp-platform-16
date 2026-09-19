@@ -180,11 +180,16 @@ async function initializeDefaultApps(companyId, options = {}) {
       const specialtyApps = specialtyAppSlugs.map((slug) => appsBySlug.get(slug)).filter(Boolean);
 
       for (const app of specialtyApps) {
+        // 🛡️ Safety: Non-store apps with PAY_PER_USE catalog pricing must be FREE during onboarding
+        const resolvedPricingModel = (app.pricingModel === 'PAY_PER_USE' && app.slug !== 'store')
+          ? 'FREE'
+          : (app.pricingModel || 'SUBSCRIPTION');
+
         await prisma.companyApp.upsert({
           where: { companyId_appId: { companyId, appId: app.id } },
           update: {
             status: 'ACTIVE',
-            activePricingModel: app.pricingModel || 'SUBSCRIPTION',
+            activePricingModel: resolvedPricingModel,
             settings: {
               onboarding: {
                 source: options.source || 'signup-specialty',
@@ -196,7 +201,7 @@ async function initializeDefaultApps(companyId, options = {}) {
             companyId,
             appId: app.id,
             status: 'ACTIVE',
-            activePricingModel: app.pricingModel || 'SUBSCRIPTION',
+            activePricingModel: resolvedPricingModel,
             settings: {
               onboarding: {
                 source: options.source || 'signup-specialty',

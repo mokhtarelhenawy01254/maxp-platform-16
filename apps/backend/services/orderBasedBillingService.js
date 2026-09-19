@@ -17,6 +17,10 @@ const parseOrderMetadata = (raw) => {
   return {};
 };
 
+// 🔒 Strict Whitelist: Only approved e-commerce / order-based applications can be billed per order.
+// Non-order apps (AI, HR, Communication, Marketing, etc.) must NEVER be billed on orders.
+const ALLOWED_ORDER_PPU_SLUGS = new Set(['store']);
+
 /**
  * حساب تكلفة تطبيقات الدفع حسب الاستخدام (PPU) لشركة على طلب معين.
  * Returns: { apps: [{ companyAppId, appSlug, appName, cost, quantity, method }], totalCost }
@@ -39,6 +43,7 @@ async function computePpuCosts({ companyId, orderTotal, itemsCount }) {
           unitPrice: true,
           unitName: true,
           ppuBillingMethod: true,
+          category: true,
         },
       },
     },
@@ -48,8 +53,25 @@ async function computePpuCosts({ companyId, orderTotal, itemsCount }) {
 
   for (const companyApp of companyApps) {
     const app = companyApp.app;
+    if (!app) continue;
+
+    // 🛡️ Safety Guard 1: Strict Whitelist check
+    if (!ALLOWED_ORDER_PPU_SLUGS.has(app.slug)) {
+      continue;
+    }
+
+    // 🛡️ Safety Guard 2: Category and Unit Name check
+    if (app.category !== 'ECOMMERCE' || app.unitName !== 'طلب') {
+      continue;
+    }
+
+    // 🛡️ Safety Guard 3: Explicit billing method required (NO toxic fallback to PER_ORDER!)
+    const method = app.ppuBillingMethod;
+    if (!method) {
+      continue;
+    }
+
     const unitPrice = Number(app.unitPrice || 0);
-    const method = app.ppuBillingMethod || 'PER_ORDER';
     const nItems = Number(itemsCount) || 0;
     const nTotal = Number(orderTotal) || 0;
 
@@ -72,8 +94,7 @@ async function computePpuCosts({ companyId, orderTotal, itemsCount }) {
         quantity = 1;
         break;
       default:
-        cost = unitPrice;
-        quantity = 1;
+        continue;
     }
 
     cost = Math.round(cost * 100) / 100;
