@@ -899,6 +899,7 @@ const ProductLandingPages: React.FC = () => {
                 deleting={deleting}
               />
 
+              {/* فحص الجودة قبل النشر — المانعات بتتقفل هنا وفي بوابة الباكند */}
               <LandingQualityPanel issues={qualityIssues} />
 
               <LandingStylePanel
