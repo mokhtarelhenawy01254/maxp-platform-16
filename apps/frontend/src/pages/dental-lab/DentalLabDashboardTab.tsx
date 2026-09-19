@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Coins,
   ExternalLink,
+  Layers,
   Loader2,
   PackageCheck,
   RefreshCw,
@@ -38,16 +39,34 @@ export default function DentalLabDashboardTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const byStatus = data?.byStatus ?? {};
+  const topDoctors = data?.topDoctors ?? [];
+  const topDebtors = data?.topDebtors ?? [];
+  const totalCases = Object.values(byStatus).reduce((a, b) => a + (Number(b) || 0), 0);
+  const activeCasesCount = data?.activeCasesCount ?? data?.activeCount ?? Object.entries(byStatus)
+    .filter(([st]) => !["DELIVERED", "CLOSED"].includes(st))
+    .reduce((sum, [, cnt]) => sum + (Number(cnt) || 0), 0);
+
   const cards = [
     {
       id: "todayReceived",
-      label: t("dentalLab.dashboard.todayReceived"),
+      label: "وارد اليوم (مستلم)",
       value: data?.todayReceived ?? "—",
       icon: <PackageCheck className="w-5 h-5" />,
       tone: "text-blue-600 dark:text-blue-400",
       bg: "bg-blue-50 dark:bg-blue-900/20",
-      tooltip: "عرض حالات اليوم المستلمة",
-      onClick: () => navigate("/dental-lab/cases?dateRange=today"),
+      tooltip: "عرض الحالات التي تم استلامها وتسجيلها اليوم",
+      onClick: () => navigate("/dental-lab/cases?dateRange=received_today"),
+    },
+    {
+      id: "activeCases",
+      label: "الحالات الجارية (نشطة)",
+      value: activeCasesCount,
+      icon: <Layers className="w-5 h-5" />,
+      tone: "text-indigo-600 dark:text-indigo-400",
+      bg: "bg-indigo-50 dark:bg-indigo-900/20",
+      tooltip: "عرض كافة الحالات قيد التشغيل في المعمل",
+      onClick: () => navigate("/dental-lab/cases?tab=ACTIVE"),
     },
     {
       id: "readyCount",
@@ -91,11 +110,6 @@ export default function DentalLabDashboardTab() {
     },
   ];
 
-  const byStatus = data?.byStatus ?? {};
-  const topDoctors = data?.topDoctors ?? [];
-  const topDebtors = data?.topDebtors ?? [];
-  const totalCases = Object.values(byStatus).reduce((a, b) => a + (Number(b) || 0), 0);
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -125,7 +139,7 @@ export default function DentalLabDashboardTab() {
       ) : (
         <>
           {/* KPI Cards — Clickable with Drill-Down */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {cards.map((c) => (
               <div
                 key={c.id}

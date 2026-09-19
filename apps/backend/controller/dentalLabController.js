@@ -1260,6 +1260,8 @@ const listCases = async (req, res) => {
       technicianId,
       dueDateFrom,
       dueDateTo,
+      receivedDateFrom,
+      receivedDateTo,
     } = req.query;
     const where = { companyId };
 
@@ -1304,6 +1306,24 @@ const listCases = async (req, res) => {
         if (dt) {
           dt.setHours(23, 59, 59, 999);
           where.dueDate.lte = dt;
+        }
+      }
+    }
+
+    if (receivedDateFrom || receivedDateTo) {
+      where.receivedDate = where.receivedDate || {};
+      if (receivedDateFrom) {
+        const rf = parseDate(receivedDateFrom);
+        if (rf) {
+          rf.setHours(0, 0, 0, 0);
+          where.receivedDate.gte = rf;
+        }
+      }
+      if (receivedDateTo) {
+        const rt = parseDate(receivedDateTo);
+        if (rt) {
+          rt.setHours(23, 59, 59, 999);
+          where.receivedDate.lte = rt;
         }
       }
     }
@@ -3592,8 +3612,11 @@ prisma.dentalInvoice.groupBy({
     for (const row of statusRows || []) {
       statusCounts[row.status] = row._count._all || 0;
     }
+    const activeCasesCount = Object.entries(statusCounts)
+      .filter(([s]) => !['DELIVERED', 'CLOSED'].includes(s))
+      .reduce((acc, [, c]) => acc + (Number(c) || 0), 0);
 
-const doctorIds = (topDoctorRows || []).map((row) => row.doctorId).filter(Boolean);
+    const doctorIds = (topDoctorRows || []).map((row) => row.doctorId).filter(Boolean);
     const doctors = doctorIds.length
       ? await prisma.dentalLabDoctor.findMany({ where: { id: { in: doctorIds } }, select: { id: true, name: true } })
       : [];
@@ -3621,13 +3644,15 @@ const doctorIds = (topDoctorRows || []).map((row) => row.doctorId).filter(Boolea
         statusCounts,
         byStatus: statusCounts,
         todayReceived,
+        activeCasesCount,
+        activeCount: activeCasesCount,
         readyForDelivery: readyCount,
         readyCount,
         overdue: overdueCount,
         overdueCount,
         totalRevenue: round2(revenueAgg._sum.paid || 0),
         revenue: round2(revenueAgg._sum.paid || 0),
-outstanding: round2(outstandingAgg._sum.remaining || 0),
+        outstanding: round2(outstandingAgg._sum.remaining || 0),
         topDoctors,
         topDebtors,
       },

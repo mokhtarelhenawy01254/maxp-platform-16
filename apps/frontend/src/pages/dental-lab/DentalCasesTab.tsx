@@ -3,7 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  AlertTriangle, ArrowRightCircle, Check, CheckCircle2, CheckSquare, Clock, Columns3, CreditCard, ExternalLink, Eye, Filter, FilterX, Flame, Layers, List, Loader2, Pencil, Printer, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
+  AlertTriangle, ArrowRightCircle, Check, CheckCircle2, CheckSquare, Clock, Columns3, CreditCard, ExternalLink, Eye, Filter, FilterX, Flame, Layers, List, Loader2, PackageCheck, Pencil, Printer, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
 } from "lucide-react";
 import {
   CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG, PAYMENT_STATUS_MAP,
@@ -825,7 +825,12 @@ export default function DentalCasesTab() {
   const [priority, setPriority] = useState(() => searchParams.get("priority") || "");
   const [paymentStatus, setPaymentStatus] = useState(() => searchParams.get("paymentStatus") || "");
   const [technicianId, setTechnicianId] = useState(() => searchParams.get("technicianId") || "");
-  const [dateRangePreset, setDateRangePreset] = useState(() => searchParams.get("dateRange") || "ALL");
+  const [dateRangePreset, setDateRangePreset] = useState(() => {
+    const dr = searchParams.get("dateRange");
+    if (dr) return dr;
+    if (searchParams.get("filter") === "received_today") return "received_today";
+    return "ALL";
+  });
   const [search, setSearch] = useState(() => searchParams.get("search") || "");
   const [searchInput, setSearchInput] = useState(() => searchParams.get("search") || "");
   const [page, setPage] = useState(1);
@@ -989,10 +994,16 @@ export default function DentalCasesTab() {
     try {
       let dueDateFrom: string | undefined = undefined;
       let dueDateTo: string | undefined = undefined;
-      if (dateRangePreset === "today") {
-        const todayStr = new Date().toISOString().split("T")[0];
+      let receivedDateFrom: string | undefined = undefined;
+      let receivedDateTo: string | undefined = undefined;
+      const todayStr = new Date().toISOString().split("T")[0];
+
+      if (dateRangePreset === "today" || dateRangePreset === "due_today") {
         dueDateFrom = todayStr;
         dueDateTo = todayStr;
+      } else if (dateRangePreset === "received_today") {
+        receivedDateFrom = todayStr;
+        receivedDateTo = todayStr;
       } else if (dateRangePreset === "this_week") {
         const now = new Date();
         const startOfWeek = new Date(now);
@@ -1013,6 +1024,8 @@ export default function DentalCasesTab() {
         technicianId: technicianId || undefined,
         dueDateFrom,
         dueDateTo,
+        receivedDateFrom,
+        receivedDateTo,
         search: search.trim() || undefined,
         trash: viewMode === "TRASH",
         overdueOnly: viewMode === "OVERDUE",
@@ -1300,6 +1313,14 @@ export default function DentalCasesTab() {
           </button>
           <button
             type="button"
+            onClick={() => { setViewMode("ACTIVE"); setPriority(""); setDateRangePreset("received_today"); setTechnicianId(""); setStatus(""); setPage(1); }}
+            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${dateRangePreset === "received_today" ? "bg-blue-600 text-white shadow-sm" : "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 border border-blue-200 dark:border-blue-900"}`}
+          >
+            <PackageCheck className="w-3.5 h-3.5 text-blue-500" />
+            <span>وارد اليوم (مستلم)</span>
+          </button>
+          <button
+            type="button"
             onClick={() => { setViewMode("OVERDUE"); setPage(1); }}
             className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${viewMode === "OVERDUE" ? "bg-rose-600 text-white shadow-sm" : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 border border-rose-200 dark:border-rose-900"}`}
           >
@@ -1406,9 +1427,10 @@ export default function DentalCasesTab() {
             className={`${filterCls} text-xs`}
             value={dateRangePreset}
             onChange={e => { setDateRangePreset(e.target.value); setPage(1); }}
-            title="فلترة بموعد التسليم والاستحقاق"
+            title="فلترة بموعد الاستلام أو التسليم"
           >
             <option value="ALL">كل المواعيد</option>
+            <option value="received_today">وارد اليوم (مستلم اليوم)</option>
             <option value="today">تسليم اليوم</option>
             <option value="this_week">تسليم هذا الأسبوع</option>
           </select>

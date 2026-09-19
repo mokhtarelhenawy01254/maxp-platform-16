@@ -564,6 +564,8 @@ export interface DentalLabSettings {
 export interface DashboardData {
   byStatus?: Record<string, number>;
   todayReceived?: number;
+  activeCasesCount?: number;
+  activeCount?: number;
   readyCount?: number;
   overdueCount?: number;
   revenue?: number;
@@ -849,6 +851,8 @@ export const fetchCases = async (params?: {
   technicianId?: string;
   dueDateFrom?: string;
   dueDateTo?: string;
+  receivedDateFrom?: string;
+  receivedDateTo?: string;
   page?: number;
   limit?: number;
 }): Promise<CasesListResult> => {
