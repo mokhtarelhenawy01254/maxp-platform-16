@@ -79,6 +79,7 @@ import {
 } from "./utils/marketplaceApps";
 import ProductImageLandingPage from "./pages/ProductImageLandingPage";
 import FunnelCodSalesPage from "./pages/FunnelCodSalesPage";
+import RedLineProductPage from "./pages/RedLineProductPage";
 import ReturnsPage from "./pages/ReturnsPage";
 import PostPurchaseOfferPage from "./pages/PostPurchaseOfferPage";
 import StorefrontNotFound from "./components/StorefrontNotFound";
@@ -1316,6 +1317,14 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         <Route
           path={scopedPath("p/:slug")}
           element={<FunnelCodSalesPage />}
+        />
+        <Route
+          path={scopedPath("red-line")}
+          element={<RedLineProductPage />}
+        />
+        <Route
+          path={scopedPath("redline")}
+          element={<RedLineProductPage />}
         />
         <Route
           path={scopedPath("shop/products/:id")}
