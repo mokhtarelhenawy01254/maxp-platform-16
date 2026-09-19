@@ -324,7 +324,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                         followup_messages.append({
                             "role": "tool",
                             "tool_call_id": tc.get("id", f"call_{current_round}_{idx}"),
-                            "content": json.dumps(result_content, ensure_ascii=False, cls=DecimalEncoder),
+                            "content": json.dumps(result_content, ensure_ascii=False, cls=DecimalEncoder, default=str),
                         })
                 else:
                     break
@@ -337,7 +337,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             ctx.final_reply = final_response.text or _format_fallback_reply(ctx, executed)
             ctx.llm_response = final_response.text or ""
         except Exception as e:
-            logger.error("skills_pipeline_followup_failed", error=str(e))
+            logger.error("skills_pipeline_followup_failed", error=str(e), exc_info=True)
             ctx.final_reply = _format_fallback_reply(ctx, executed)
     elif provider_response.text:
         ctx.final_reply = provider_response.text
@@ -693,7 +693,7 @@ async def _build_followup_messages(
         is_last = (idx == len(tool_calls) - 1)
 
         if status == "success":
-            content_str = json.dumps(result, ensure_ascii=False, cls=DecimalEncoder)
+            content_str = json.dumps(result, ensure_ascii=False, cls=DecimalEncoder, default=str)
             if is_last and followup_directive:
                 content_str += f"\n\n[Directive]: {followup_directive}"
             messages.append(
@@ -705,7 +705,7 @@ async def _build_followup_messages(
             )
         else:
             err_dict = {"error": error or "Execution failed"}
-            err_str = json.dumps(err_dict, ensure_ascii=False, cls=DecimalEncoder)
+            err_str = json.dumps(err_dict, ensure_ascii=False, cls=DecimalEncoder, default=str)
             if is_last and followup_directive:
                 err_str += f"\n\n[Directive]: {followup_directive}"
             messages.append(

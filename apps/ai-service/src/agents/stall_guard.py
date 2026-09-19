@@ -27,11 +27,11 @@ class ToolLoopGuard:
         if isinstance(args, str):
             try:
                 parsed = json.loads(args)
-                return json.dumps(parsed, sort_keys=True)
+                return json.dumps(parsed, sort_keys=True, default=str)
             except Exception:
                 return args.strip()
         if isinstance(args, dict):
-            return json.dumps(args, sort_keys=True)
+            return json.dumps(args, sort_keys=True, default=str)
         return str(args)
 
     def check_call(self, tool_name: str, args: Any) -> tuple[bool, str | None]:
@@ -74,7 +74,10 @@ class ToolLoopGuard:
         if not isinstance(result, (dict, list, str)):
             return result
 
-        raw_str = json.dumps(result, ensure_ascii=False) if not isinstance(result, str) else result
+        try:
+            raw_str = json.dumps(result, ensure_ascii=False, default=str) if not isinstance(result, str) else result
+        except Exception:
+            raw_str = str(result)
         if len(raw_str) < 250:
             return result  # Short results don't waste tokens
 
