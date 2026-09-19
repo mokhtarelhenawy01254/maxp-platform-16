@@ -492,6 +492,18 @@ async function sendFacebookMessage(recipientId, messageContent, messageType = 'T
     if (result.success) {
       console.log(`✅ [FACEBOOK-SEND] Message sent successfully: ${result.messageId} (Type: ${messageType})`);
 
+      try {
+        const { recordSystemSentFacebookMessage } = require('./facebookMessageTracker');
+        if (result.messageId) {
+          recordSystemSentFacebookMessage(result.messageId, {
+            isAi: false,
+            source: 'send_facebook_message'
+          });
+        }
+      } catch (trackErr) {
+        // silent
+      }
+
       // إضافة للكاش لمنع التكرار
       facebookSentCache.add(messageHash);
       if (messageType === 'IMAGE') {
@@ -2521,6 +2533,15 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                   if (fbResult.success) {
                     console.log(`✅ [AI-AUTOREPLY] AI text reply sent successfully to Facebook.`);
                     if (fbResult.messageId) {
+                      try {
+                        const { recordSystemSentFacebookMessage } = require('./facebookMessageTracker');
+                        recordSystemSentFacebookMessage(fbResult.messageId, {
+                          isAi: true,
+                          source: 'ai_reply',
+                          conversationId: first.conversationId
+                        });
+                      } catch (trackErr) {}
+
                       await safeQuery(async () => {
                         return await prisma.message.update({
                           where: { id: savedReply.id },
@@ -2548,6 +2569,70 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                           const imgResult = await sendFacebookMessage(first.senderId, att.url, 'IMAGE', first.messagePageId, first.fbMessageId);
                           if (imgResult.success) {
                             console.log(`✅ [FB-AI-ATTACHMENT] AI image attachment sent to Facebook.`);
+                            if (imgResult.messageId) {
+                              try {
+                                const { recordSystemSentFacebookMessage } = require('./facebookMessageTracker');
+                                recordSystemSentFacebookMessage(imgResult.messageId, {
+                                  isAi: true,
+                                  source: 'ai_reply',
+                                  conversationId: first.conversationId,
+                                  url: att.url
+                                });
+                              } catch (trackErr) {}
+                            }
+
+                            // 📸 CRITICAL FIX: Persist the AI image attachment into the database as an AI reply!
+                            // This ensures the database and frontend have the exact image, and prevents Meta's
+                            // Echo Webhook from misinterpreting this as a manual human staff reply (which would pause the AI).
+                            const imgReplyId = require('crypto').randomUUID();
+                            const savedImgReply = await safeQuery(async () => {
+                              return await prisma.message.create({
+                                data: {
+                                  id: imgReplyId,
+                                  content: att.url,
+                                  type: 'IMAGE',
+                                  conversationId: first.conversationId,
+                                  isFromCustomer: false,
+                                  senderId: null,
+                                  attachments: JSON.stringify([{ type: 'image', payload: { url: att.url } }]),
+                                  metadata: JSON.stringify({
+                                    platform: 'facebook',
+                                    source: 'ai_reply',
+                                    isFacebookReply: true,
+                                    facebookMessageId: imgResult.messageId || null,
+                                    sentToFacebook: true,
+                                    timestamp: new Date()
+                                  }),
+                                  createdAt: new Date(),
+                                  updatedAt: new Date()
+                                }
+                              });
+                            }, 3);
+
+                            // Emit the AI image message to socket so frontend chat updates live
+                            if (io && savedImgReply) {
+                              try {
+                                const imgSocketData = proxySocketMessageData({
+                                  id: savedImgReply.id,
+                                  conversationId: savedImgReply.conversationId,
+                                  content: savedImgReply.content,
+                                  type: 'image',
+                                  isFromCustomer: false,
+                                  timestamp: savedImgReply.createdAt,
+                                  metadata: JSON.parse(savedImgReply.metadata),
+                                  senderId: null,
+                                  senderName: 'الذكاء الاصطناعي',
+                                  lastMessageIsFromCustomer: false,
+                                  lastCustomerMessageIsUnread: false,
+                                  companyId: first.companyId,
+                                  platform: 'facebook',
+                                  channel: 'FACEBOOK'
+                                }, { messageId: savedImgReply.id });
+                                io.to(`company_${first.companyId}`).emit('new_message', imgSocketData);
+                              } catch (sockErr) {
+                                console.warn('[FB-AI-ATTACHMENT] Failed to emit socket data for image:', sockErr.message);
+                              }
+                            }
                           } else {
                             console.error(`❌ [FB-AI-ATTACHMENT] Failed to send image:`, imgResult.error || imgResult.message);
                           }

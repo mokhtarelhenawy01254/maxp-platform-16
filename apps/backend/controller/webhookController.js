@@ -550,6 +550,14 @@ async function handlePageReply(webhookEvent, pageId = null) {
     const messageText = webhookEvent.message?.text || '';
     const hasAttachments = webhookEvent.message?.attachments && webhookEvent.message.attachments.length > 0;
 
+    // 🤖 Identify if this echo belongs to our system or AI agent
+    const {
+      isSystemSentFacebookMessage,
+      isAiSentFacebookMessage,
+      isRecentAiSentImageUrl
+    } = require('../utils/facebookMessageTracker');
+    const isAiMessage = isAiSentFacebookMessage(messageId);
+    const isSystemMessage = isSystemSentFacebookMessage(messageId);
 
     // ⚡ CRITICAL: Check if this echo message was already processed
     if (processedMessages.has(messageId)) {
@@ -1005,6 +1013,14 @@ async function handlePageReply(webhookEvent, pageId = null) {
         });
       }
 
+      // Determine if this echo is an AI message
+      const isAiEcho = isAiMessage ||
+        isRecentAiSentImageUrl(messageContent) ||
+        (hasAttachments && webhookEvent.message?.attachments?.some(a => a.payload?.url && isRecentAiSentImageUrl(a.payload.url)));
+      const echoSource = isAiEcho ? 'ai_reply' : 'page_reply';
+      const resolvedSenderId = isAiEcho ? null : senderUserId;
+      const resolvedSenderName = isAiEcho ? 'الذكاء الاصطناعي' : senderUserName;
+
       // If not found, create new (Standard behavior for manual replies or business suite)
       return await prisma.message.create({
         data: {
@@ -1013,14 +1029,14 @@ async function handlePageReply(webhookEvent, pageId = null) {
           type: messageType,
           conversationId: conversation.id,
           isFromCustomer: false, // This is from the page, not the customer
-          senderId: senderUserId, // 🆕 FIX: حفظ معرف الموظف الذي أرسل الرسالة
+          senderId: resolvedSenderId, // 🆕 FIX: حفظ معرف الموظف الذي أرسل الرسالة
           attachments: hasAttachments ? JSON.stringify(webhookEvent.message.attachments) : null,
           metadata: JSON.stringify({
             platform: 'facebook',
-            source: 'page_reply',
+            source: echoSource,
             senderId: pageSenderId, // Facebook page ID
-            employeeId: senderUserId, // 🆕 معرف الموظف
-            employeeName: senderUserName, // 🆕 اسم الموظف
+            employeeId: resolvedSenderId, // 🆕 معرف الموظف
+            employeeName: resolvedSenderName, // 🆕 اسم الموظف
             recipientId: recipientId,
             isFacebookReply: true, // Mark as Facebook page reply
             facebookMessageId: messageId, // Store the Facebook message ID
@@ -1056,40 +1072,60 @@ async function handlePageReply(webhookEvent, pageId = null) {
     // 🆕 Update lastMessageIsFromCustomer (this is a page reply, so false)
     await updateConversationLastMessageStatus(conversation.id, false);
 
-    // 🛡️ Human Handover Protocol: Automatically pause AI agent when human staff replies
-    try {
-      let convMetadata = {};
+    // 🛡️ Human Handover Protocol: Automatically pause AI agent ONLY when real human staff replies
+    // NEVER pause AI when:
+    // 1. The message was sent by AI (recorded in facebookMessageTracker)
+    // 2. The message was sent by our system via Send API (matches our app_id or system tracker)
+    // 3. The message metadata indicates source: 'ai_reply'
+    // 4. The message contains an image URL recently sent by our AI
+    const isAiReply = isAiMessage ||
+      isRecentAiSentImageUrl(messageContent) ||
+      (hasAttachments && webhookEvent.message?.attachments?.some(a => a.payload?.url && isRecentAiSentImageUrl(a.payload.url))) ||
+      (pageReplyMessage?.metadata && (
+        typeof pageReplyMessage.metadata === 'string' ? pageReplyMessage.metadata.includes('"source":"ai_reply"') : pageReplyMessage.metadata?.source === 'ai_reply'
+      ));
+
+    const { DEFAULT_FACEBOOK_APP_ID } = require('../config/facebookAppConfig');
+    const webhookAppId = webhookEvent.message?.app_id ? String(webhookEvent.message.app_id) : null;
+    const isOurAppEcho = !!(webhookAppId && (webhookAppId === DEFAULT_FACEBOOK_APP_ID || webhookAppId === process.env.FACEBOOK_APP_ID));
+
+    if (isAiReply || isSystemMessage || isOurAppEcho) {
+      console.log(`🤖 [HUMAN-HANDOVER] Skipped handover pause for msg ${messageId}: sent by AI/System (isAi=${isAiReply}, isSystem=${isSystemMessage}, isOurApp=${isOurAppEcho})`);
+    } else {
       try {
-        if (conversation.metadata) {
-          convMetadata = JSON.parse(conversation.metadata);
-        }
-      } catch (parseError) {
-        convMetadata = {};
-      }
-
-      if (senderUserId) {
-        delete convMetadata.lastSenderId;
-        delete convMetadata.lastSenderName;
-      }
-
-      // Auto-pause AI agent for 2 hours on staff handover
-      const pauseDurationHours = 2;
-      convMetadata.aiPausedUntil = new Date(Date.now() + pauseDurationHours * 60 * 60 * 1000).toISOString();
-      convMetadata.lastHumanReplyAt = new Date().toISOString();
-      convMetadata.lastHumanSenderName = senderUserName || 'موظف الصفحة';
-
-      await safeQuery(async () => {
-        const prisma = getPrisma();
-        return await prisma.conversation.update({
-          where: { id: conversation.id },
-          data: {
-            metadata: JSON.stringify(convMetadata)
+        let convMetadata = {};
+        try {
+          if (conversation.metadata) {
+            convMetadata = JSON.parse(conversation.metadata);
           }
-        });
-      }, 3);
-      console.log(`🛡️ [HUMAN-HANDOVER] AI agent paused for ${pauseDurationHours}h on conversation ${conversation.id} due to staff reply`);
-    } catch (e) {
-      console.warn(`⚠️ [HUMAN-HANDOVER] Failed to update conversation pause metadata:`, e.message);
+        } catch (parseError) {
+          convMetadata = {};
+        }
+
+        if (senderUserId) {
+          delete convMetadata.lastSenderId;
+          delete convMetadata.lastSenderName;
+        }
+
+        // Auto-pause AI agent for 2 hours on real staff handover
+        const pauseDurationHours = 2;
+        convMetadata.aiPausedUntil = new Date(Date.now() + pauseDurationHours * 60 * 60 * 1000).toISOString();
+        convMetadata.lastHumanReplyAt = new Date().toISOString();
+        convMetadata.lastHumanSenderName = senderUserName || 'موظف الصفحة';
+
+        await safeQuery(async () => {
+          const prisma = getPrisma();
+          return await prisma.conversation.update({
+            where: { id: conversation.id },
+            data: {
+              metadata: JSON.stringify(convMetadata)
+            }
+          });
+        }, 3);
+        console.log(`🛡️ [HUMAN-HANDOVER] AI agent paused for ${pauseDurationHours}h on conversation ${conversation.id} due to staff reply`);
+      } catch (e) {
+        console.warn(`⚠️ [HUMAN-HANDOVER] Failed to update conversation pause metadata:`, e.message);
+      }
     }
 
     // ⚡ Emit confirmation Socket.IO event (الرسالة اتحفظت بنجاح)
@@ -1473,4 +1509,4 @@ async function handleReadReceipt(webhookEvent, pageId) {
   }
 }
 
-module.exports = { getWebhook, postWebhook, handleReadReceipt };
+module.exports = { getWebhook, postWebhook, handleReadReceipt, handlePageReply };
