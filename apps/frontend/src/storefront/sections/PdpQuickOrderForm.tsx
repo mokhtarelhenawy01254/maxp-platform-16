@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Car } from "lucide-react";
+import { Car, FileText } from "lucide-react";
 import QuantitySelector from "../components/QuantitySelector";
 import { useCheckoutStore } from "../store/useCheckoutStore";
 import { usePdpSelectionStore } from "../store/usePdpSelectionStore";
@@ -228,6 +228,14 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const [walletTransferRef, setWalletTransferRef] = useState("");
   const walletFileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const storePdpQuickOrderSettings = useMemo(() => {
+    const rawTokens =
+      storefrontSettings?.storefront?.settings?.designTokens ||
+      storefrontSettings?.designTokens ||
+      null;
+    return getPdpQuickOrderSettingsFromDesignTokens(rawTokens);
+  }, [storefrontSettings]);
+
   const customAttributes = useMemo(() => {
     let meta = (product as any)?.metadata;
     if (typeof meta === "string") {
@@ -237,15 +245,40 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         meta = null;
       }
     }
-    if (!meta) return [];
-    if (Array.isArray(meta.customAttributes)) {
-      return meta.customAttributes;
+    const productAttrs =
+      meta && Array.isArray(meta.customAttributes)
+        ? meta.customAttributes
+        : meta && Array.isArray(meta.customFields)
+        ? meta.customFields
+        : [];
+
+    if (productAttrs.length > 0) {
+      return productAttrs;
     }
-    if (Array.isArray(meta.customFields)) {
-      return meta.customFields;
+
+    // Fallback to store-level custom field if enabled in store settings
+    const storeCustomField = storePdpQuickOrderSettings?.customField;
+    if (storeCustomField?.enabled) {
+      return [
+        {
+          key: "storeCustomField",
+          label:
+            storeCustomField.label ||
+            (prefersArabicCopy
+              ? "نوع وموديل وسنة صنع السيارة / مواصفات خاصة"
+              : "Vehicle model / specifications"),
+          placeholder:
+            storeCustomField.placeholder ||
+            (prefersArabicCopy
+              ? "اكتب المواصفات هنا..."
+              : "Enter specifications here..."),
+          required: Boolean(storeCustomField.required),
+        },
+      ];
     }
+
     return [];
-  }, [product]);
+  }, [product, storePdpQuickOrderSettings, prefersArabicCopy]);
 
   const [customAttributeValues, setCustomAttributeValues] = useState<Record<string, string>>({});
 
@@ -1732,7 +1765,11 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     <label key={attr.key} className={fieldStackClassName}>
                       <span className={fieldLabelClassName}>
                         <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
-                          <Car className="h-4 w-4 text-primary" />
+                          {attr.label?.includes("سيار") || attr.key?.toLowerCase().includes("car") ? (
+                            <Car className="h-4 w-4 text-primary" />
+                          ) : (
+                            <FileText className="h-4 w-4 text-primary" />
+                          )}
                           {attr.label}
                           {attr.required && <span className="text-red-500 font-bold">*</span>}
                         </span>

@@ -2027,6 +2027,8 @@ export const ProductNewFinal: React.FC = () => {
                 setUpsellProducts={setUpsellProducts}
                 crossSellProducts={crossSellProducts}
                 setCrossSellProducts={setCrossSellProducts}
+                productMetadata={productMetadata}
+                setProductMetadata={setProductMetadata}
               />
             )}
           </div>

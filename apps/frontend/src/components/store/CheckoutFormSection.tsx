@@ -79,6 +79,39 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
     });
   };
 
+  const handleQuickOrderCustomFieldChange = (
+    key: "enabled" | "required" | "label" | "placeholder",
+    value: boolean | string,
+  ) => {
+    if (!pdpQuickOrderSettings || !onPdpQuickOrderSettingsChange) {
+      return;
+    }
+
+    const currentCustomField =
+      pdpQuickOrderSettings.customField ||
+      DEFAULT_PDP_QUICK_ORDER_SETTINGS.customField ||
+      {
+        enabled: false,
+        required: false,
+        label: "نوع وموديل وسنة صنع السيارة / مواصفات خاصة",
+        placeholder: "اكتب المواصفات هنا...",
+      };
+
+    const nextCustomField = {
+      ...currentCustomField,
+      [key]: value,
+    };
+
+    if (key === "enabled" && !value) {
+      nextCustomField.required = false;
+    }
+
+    onPdpQuickOrderSettingsChange({
+      ...pdpQuickOrderSettings,
+      customField: nextCustomField,
+    });
+  };
+
   const SectionHeader = ({ icon: Icon, title, description }: { icon: React.ComponentType<React.SVGProps<SVGSVGElement>>, title: string, description: string }) => (
     <div className="flex items-center gap-4 mb-6">
       <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-500/20">
@@ -351,6 +384,90 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
                 fieldKey="alternatePhone"
                 description={t("storeCheckout.pdpAlternatePhoneDesc")}
               />
+
+              <div className="group bg-white dark:bg-gray-800/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-700/50 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all duration-300">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">
+                        {pdpQuickOrderSettings?.customField?.label || "حقل مخصص عام (مثل: نوع وموديل السيارة)"}
+                      </span>
+                      <span className="px-2 py-0.5 text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded font-semibold">
+                        على مستوى المتجر
+                      </span>
+                      {pdpQuickOrderSettings?.customField?.enabled && pdpQuickOrderSettings?.customField?.required ? (
+                        <span className="px-1.5 py-0.5 text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md font-bold uppercase tracking-wider">
+                          {t("storeCheckout.required")}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      حقل مخصص إضافي يظهر في نموذج الطلب السريع لجمع مواصفات إضافية من العميل (مثل موديل وسنة صنع السيارة).
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-6 bg-gray-50 dark:bg-gray-900/40 p-2 px-4 rounded-xl shrink-0">
+                    <ToggleSetting
+                      label={t("storeCheckout.enable")}
+                      value={pdpQuickOrderSettings?.customField?.enabled ?? false}
+                      onChange={(value) =>
+                        handleQuickOrderCustomFieldChange("enabled", value)
+                      }
+                      disabled={loading}
+                    />
+
+                    {pdpQuickOrderSettings?.customField?.enabled ? (
+                      <div className="w-px h-8 bg-gray-200 dark:bg-gray-700 mx-2" />
+                    ) : null}
+
+                    {pdpQuickOrderSettings?.customField?.enabled ? (
+                      <ToggleSetting
+                        label={t("storeCheckout.mandatory")}
+                        value={pdpQuickOrderSettings?.customField?.required ?? false}
+                        onChange={(value) =>
+                          handleQuickOrderCustomFieldChange("required", value)
+                        }
+                        disabled={loading}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+
+                {pdpQuickOrderSettings?.customField?.enabled && (
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700/60 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                        تسمية الحقل (عنوان الحقل الظاهر للعميل)
+                      </label>
+                      <input
+                        type="text"
+                        value={pdpQuickOrderSettings?.customField?.label ?? ""}
+                        onChange={(e) =>
+                          handleQuickOrderCustomFieldChange("label", e.target.value)
+                        }
+                        placeholder="مثال: نوع وموديل وسنة صنع السيارة"
+                        className="w-full text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 p-2.5 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                        disabled={loading}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                        نص توضيحي داخل الحقل (Placeholder)
+                      </label>
+                      <input
+                        type="text"
+                        value={pdpQuickOrderSettings?.customField?.placeholder ?? ""}
+                        onChange={(e) =>
+                          handleQuickOrderCustomFieldChange("placeholder", e.target.value)
+                        }
+                        placeholder="مثال: اكتب موديل وسنة صنع السيارة..."
+                        className="w-full text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 p-2.5 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </section>
         </>

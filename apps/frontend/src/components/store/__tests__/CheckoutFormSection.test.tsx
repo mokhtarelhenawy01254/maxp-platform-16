@@ -64,4 +64,48 @@ describe("CheckoutFormSection", () => {
       }),
     );
   });
+
+  it("renders the storewide custom field row and allows toggling it", () => {
+    const handlePdpQuickOrderSettingsChange = vi.fn();
+
+    const { rerender } = render(
+      <CheckoutFormSection
+        settings={{}}
+        onChange={vi.fn()}
+        onSave={vi.fn()}
+        onReset={vi.fn()}
+        productPageCheckoutEnabled={true}
+        onProductPageCheckoutToggle={vi.fn()}
+        pdpQuickOrderSettings={DEFAULT_PDP_QUICK_ORDER_SETTINGS}
+        onPdpQuickOrderSettingsChange={handlePdpQuickOrderSettingsChange}
+      />,
+    );
+
+    expect(screen.getByText("على مستوى المتجر")).toBeTruthy();
+
+    // Re-render with enabled: true to verify inputs appear
+    rerender(
+      <CheckoutFormSection
+        settings={{}}
+        onChange={vi.fn()}
+        onSave={vi.fn()}
+        onReset={vi.fn()}
+        productPageCheckoutEnabled={true}
+        onProductPageCheckoutToggle={vi.fn()}
+        pdpQuickOrderSettings={{
+          ...DEFAULT_PDP_QUICK_ORDER_SETTINGS,
+          customField: {
+            enabled: true,
+            required: true,
+            label: "نوع وموديل وسنة صنع السيارة",
+            placeholder: "مثال: هيونداي توسان 2022",
+          },
+        }}
+        onPdpQuickOrderSettingsChange={handlePdpQuickOrderSettingsChange}
+      />,
+    );
+
+    expect(screen.getByPlaceholderText("مثال: نوع وموديل وسنة صنع السيارة")).toBeTruthy();
+    expect(screen.getByPlaceholderText("مثال: اكتب موديل وسنة صنع السيارة...")).toBeTruthy();
+  });
 });

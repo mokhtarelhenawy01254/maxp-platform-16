@@ -23,6 +23,8 @@ interface AdvancedTabProps {
   setUpsellProducts: (val: string[]) => void;
   crossSellProducts: string[];
   setCrossSellProducts: (val: string[]) => void;
+  productMetadata?: Record<string, any>;
+  setProductMetadata?: React.Dispatch<React.SetStateAction<Record<string, any>>>;
 }
 
 export const AdvancedTab: React.FC<AdvancedTabProps> = ({
@@ -39,7 +41,87 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
   setUpsellProducts,
   crossSellProducts,
   setCrossSellProducts,
+  productMetadata,
+  setProductMetadata,
 }) => {
+  const customAttributesList: Array<{
+    key: string;
+    label: string;
+    placeholder?: string;
+    required?: boolean;
+  }> = React.useMemo(() => {
+    if (!productMetadata) return [];
+    if (Array.isArray(productMetadata.customAttributes)) {
+      return productMetadata.customAttributes;
+    }
+    if (Array.isArray(productMetadata.customFields)) {
+      return productMetadata.customFields;
+    }
+    return [];
+  }, [productMetadata]);
+
+  const hasCustomFields = customAttributesList.length > 0;
+
+  const toggleCustomFields = () => {
+    if (!setProductMetadata) return;
+    if (hasCustomFields) {
+      setProductMetadata((prev) => {
+        const next = { ...prev };
+        delete next.customAttributes;
+        delete next.customFields;
+        return next;
+      });
+    } else {
+      setProductMetadata((prev) => ({
+        ...prev,
+        customAttributes: [
+          {
+            key: "carModel",
+            label: "نوع وموديل وسنة صنع السيارة",
+            placeholder: "مثال: هيونداي توسان 2022",
+            required: true,
+          },
+        ],
+      }));
+    }
+  };
+
+  const addCustomField = () => {
+    if (!setProductMetadata) return;
+    const newField = {
+      key: `field_${Date.now()}`,
+      label: "تفاصيل أو مواصفات إضافية",
+      placeholder: "اكتب التفاصيل هنا...",
+      required: false,
+    };
+    setProductMetadata((prev) => ({
+      ...prev,
+      customAttributes: [...customAttributesList, newField],
+    }));
+  };
+
+  const updateCustomField = (
+    index: number,
+    field: string,
+    value: any,
+  ) => {
+    if (!setProductMetadata) return;
+    const updated = [...customAttributesList];
+    updated[index] = { ...updated[index], [field]: value };
+    setProductMetadata((prev) => ({
+      ...prev,
+      customAttributes: updated,
+    }));
+  };
+
+  const removeCustomField = (index: number) => {
+    if (!setProductMetadata) return;
+    const updated = customAttributesList.filter((_, i) => i !== index);
+    setProductMetadata((prev) => ({
+      ...prev,
+      customAttributes: updated,
+    }));
+  };
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-3.5 sm:p-6 space-y-6 animate-fade-in">
       <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -449,6 +531,133 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
               </svg>
               <span>دليل المقاسات غير مفعل لهذا المنتج. لن يظهر زر &quot;دليل المقاسات&quot; في صفحة المنتج بالمتجر.</span>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Custom Checkout Fields for this product */}
+      <div className="space-y-4 border-b border-gray-200 dark:border-gray-700 pb-6">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-800/40 p-4 transition-all">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📝</span>
+              <div>
+                <label
+                  htmlFor="advancedCustomFieldsToggle"
+                  className="block text-sm font-bold text-gray-900 dark:text-gray-100 cursor-pointer"
+                >
+                  حقول مخصصة لطلب هذا المنتج (Custom Checkout Fields)
+                </label>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  (مثل: نوع وموديل وسنة صنع السيارة لمنتجات السيارات، أو اسم للنقش، أو مقاسات خاصة)
+                </span>
+              </div>
+            </div>
+
+            {/* Toggle Switch */}
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs font-bold ${
+                  hasCustomFields
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-gray-400"
+                }`}
+              >
+                {hasCustomFields ? "مفعل" : "غير مفعل"}
+              </span>
+              <button
+                id="advancedCustomFieldsToggle"
+                type="button"
+                role="switch"
+                aria-checked={hasCustomFields}
+                onClick={toggleCustomFields}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                  hasCustomFields
+                    ? "bg-indigo-600"
+                    : "bg-gray-300 dark:bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    hasCustomFields ? "translate-x-0" : "-translate-x-5"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          {hasCustomFields ? (
+            <div className="mt-4 space-y-3">
+              {customAttributesList.map((attr, idx) => (
+                <div
+                  key={attr.key || idx}
+                  className="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-700 dark:text-gray-200">
+                      الحقل رقم {idx + 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeCustomField(idx)}
+                      className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 font-semibold"
+                    >
+                      حذف الحقل
+                    </button>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                        تسمية الحقل (العنوان الظاهر للعميل)
+                      </label>
+                      <input
+                        type="text"
+                        value={attr.label || ""}
+                        onChange={(e) => updateCustomField(idx, "label", e.target.value)}
+                        placeholder="مثال: نوع وموديل وسنة صنع السيارة"
+                        className="w-full text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 p-2.5 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                        نص توضيحي (Placeholder)
+                      </label>
+                      <input
+                        type="text"
+                        value={attr.placeholder || ""}
+                        onChange={(e) => updateCustomField(idx, "placeholder", e.target.value)}
+                        placeholder="مثال: كيا سبورتاج 2023"
+                        className="w-full text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40 p-2.5 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id={`attr_required_${idx}`}
+                      checked={Boolean(attr.required)}
+                      onChange={(e) => updateCustomField(idx, "required", e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <label htmlFor={`attr_required_${idx}`} className="text-xs font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                      حقل إجباري (يجب على العميل ملؤه لإتمام الطلب)
+                    </label>
+                  </div>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={addCustomField}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-indigo-300 dark:border-indigo-700 text-xs font-semibold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition"
+              >
+                + إضافة حقل إضافي آخر
+              </button>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              الحقول المخصصة غير مفعلة لهذا المنتج. سيتم استخدام حقول المتجر العامة فقط في نموذج الطلب.
+            </p>
           )}
         </div>
       </div>

@@ -287,6 +287,14 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                               <span>{orderItemsSummary.primaryLabel}</span>
                             </div>
                           )}
+                          {order.notes && (
+                            <div
+                              className="inline-flex items-center gap-1 max-w-[240px] truncate rounded border border-indigo-200/80 bg-indigo-50/80 px-1.5 py-0.5 text-[11px] font-medium text-indigo-900 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-200"
+                              title={order.notes}
+                            >
+                              <span className="truncate">{order.notes}</span>
+                            </div>
+                          )}
                         </div>
                       </td>
                     )}

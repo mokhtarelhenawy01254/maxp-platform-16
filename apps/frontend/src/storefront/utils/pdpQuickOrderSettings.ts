@@ -13,6 +13,13 @@ export interface PdpQuickOrderFieldSettings {
   required: boolean;
 }
 
+export interface PdpQuickOrderCustomFieldSettings {
+  enabled: boolean;
+  required: boolean;
+  label?: string;
+  placeholder?: string;
+}
+
 export interface PdpQuickOrderSettings {
   placement: PdpQuickOrderPlacement;
   surfaceMode: PdpQuickOrderSurfaceMode;
@@ -20,6 +27,7 @@ export interface PdpQuickOrderSettings {
   showOrderSummary: boolean;
   autoSelectVariants: boolean;
   fields: Record<PdpQuickOrderFieldKey, PdpQuickOrderFieldSettings>;
+  customField?: PdpQuickOrderCustomFieldSettings;
 }
 
 export const DEFAULT_PDP_QUICK_ORDER_SETTINGS: PdpQuickOrderSettings = {
@@ -34,6 +42,12 @@ export const DEFAULT_PDP_QUICK_ORDER_SETTINGS: PdpQuickOrderSettings = {
     governorate: { enabled: true, required: true },
     address: { enabled: true, required: true },
     alternatePhone: { enabled: true, required: false },
+  },
+  customField: {
+    enabled: false,
+    required: false,
+    label: "نوع وموديل وسنة صنع السيارة / مواصفات خاصة",
+    placeholder: "اكتب المواصفات هنا...",
   },
 };
 
@@ -119,6 +133,35 @@ export const normalizePdpQuickOrderSettings = (
         DEFAULT_PDP_QUICK_ORDER_SETTINGS.fields.alternatePhone,
       ),
     },
+    customField: (() => {
+      const rawCustom = isRecord(candidate["customField"])
+        ? candidate["customField"]
+        : {};
+      const fallback = DEFAULT_PDP_QUICK_ORDER_SETTINGS.customField!;
+      const enabled =
+        typeof rawCustom["enabled"] === "boolean"
+          ? rawCustom["enabled"]
+          : fallback.enabled;
+      const required =
+        enabled && typeof rawCustom["required"] === "boolean"
+          ? rawCustom["required"]
+          : false;
+      const label =
+        typeof rawCustom["label"] === "string" && rawCustom["label"].trim()
+          ? rawCustom["label"].trim()
+          : fallback.label;
+      const placeholder =
+        typeof rawCustom["placeholder"] === "string"
+          ? rawCustom["placeholder"].trim()
+          : fallback.placeholder;
+
+      return {
+        enabled,
+        required,
+        label,
+        placeholder,
+      };
+    })(),
   };
 };
 

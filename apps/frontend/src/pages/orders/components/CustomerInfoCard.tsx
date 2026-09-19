@@ -8,6 +8,7 @@ import {
   ArrowPathIcon,
   NoSymbolIcon,
   CheckCircleIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { OrderDetailsType, Government, Area } from "../types";
 import { GovernorateAreaSearch } from "../../../components/ui/GovernorateAreaSearch";
@@ -504,6 +505,40 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
             </div>
           )}
         </div>
+
+        {/* Customer / Order Notes & Custom Specifications */}
+        {((order.notes && order.notes.trim()) || (isEditing && editForm)) ? (
+          <div>
+            <label className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-1">
+              {t("orderDetails.customerNotes", "تفاصيل وملاحظات الطلب ومواصفات السيارة")}
+            </label>
+            {isEditing ? (
+              <textarea
+                value={editForm.notes || ""}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, notes: e.target.value })
+                }
+                className="w-full border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-100"
+                rows={3}
+                placeholder="تفاصيل ومواصفات الطلب (مثل نوع وموديل السيارة)..."
+              />
+            ) : (
+              <div className="rounded-xl border border-amber-200/90 bg-amber-50/80 p-3.5 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200 shadow-xs">
+                <div className="flex items-start gap-2.5">
+                  <DocumentTextIcon className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1 w-full">
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 block">
+                      مواصفات وتفاصيل مدخلة بواسطة العميل:
+                    </span>
+                    <p className="whitespace-pre-wrap font-medium leading-relaxed">
+                      {order.notes}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
         </div>
       </div>
 
