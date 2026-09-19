@@ -30,7 +30,7 @@ async def generate_marketing_video(input_data: GenerateMarketingVideoInput) -> d
     try:
         settings = get_settings()
         api_url = settings.maxp_api_url.rstrip("/")
-        if "mokhtarelhenawy.online" in api_url or "localhost" in api_url:
+        if "maxp.online" in api_url or "mokhtarelhenawy.online" in api_url or "localhost" in api_url or "127.0.0.1" in api_url:
             api_url = "http://127.0.0.1:3007"
 
         url = f"{api_url}/api/v1/ai-video/generate"
@@ -77,7 +77,7 @@ async def check_video_status(input_data: CheckVideoStatusInput) -> dict[str, Any
     try:
         settings = get_settings()
         api_url = settings.maxp_api_url.rstrip("/")
-        if "mokhtarelhenawy.online" in api_url or "localhost" in api_url:
+        if "maxp.online" in api_url or "mokhtarelhenawy.online" in api_url or "localhost" in api_url or "127.0.0.1" in api_url:
             api_url = "http://127.0.0.1:3007"
 
         url = f"{api_url}/api/v1/ai-video/status/{input_data.task_id}"

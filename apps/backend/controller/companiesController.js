@@ -2991,7 +2991,7 @@ const sendUserInvitation = async (req, res) => {
                     inviterName: `${invitation.inviter.firstName} ${invitation.inviter.lastName}`,
                     role: role,
                     expiresAt: expiresAt.toISOString(),
-                    invitationLink: `${process.env.FRONTEND_URL || "https://www.mokhtarelhenawy.online"}/auth/accept-invitation?token=${token}`,
+                    invitationLink: `${process.env.FRONTEND_URL || "https://maxp.online"}/auth/accept-invitation?token=${token}`,
                   }),
                   updatedAt: new Date(),
                 },
@@ -3022,7 +3022,7 @@ const sendUserInvitation = async (req, res) => {
     }
 
     // Generate invitation link
-    const invitationLink = `${process.env.FRONTEND_URL || "https://www.mokhtarelhenawy.online"}/auth/accept-invitation?token=${token}`;
+    const invitationLink = `${process.env.FRONTEND_URL || "https://maxp.online"}/auth/accept-invitation?token=${token}`;
 
     // Send email if SMTP is configured
     let emailSent = false;
@@ -3309,7 +3309,7 @@ const resendInvitation = async (req, res) => {
     });
 
     // Generate new invitation link
-    const invitationLink = `${process.env.FRONTEND_URL || "https://www.mokhtarelhenawy.online"}/auth/accept-invitation?token=${newToken}`;
+    const invitationLink = `${process.env.FRONTEND_URL || "https://maxp.online"}/auth/accept-invitation?token=${newToken}`;
 
     // Send email if SMTP is configured
     let emailSent = false;
@@ -3526,12 +3526,13 @@ const updateCompanySlug = async (req, res) => {
     invalidateCompanySettingsCache(companyId);
     invalidateCompanyDashboardCache(companyId);
 
+    const mainDomain = process.env.MAIN_DOMAIN || "maxp.online";
     res.json({
       success: true,
       message: "تم تحديث رابط المتجر بنجاح",
       data: {
         company: updatedCompany,
-        url: `https://${sanitizedSlug}.mokhtarelhenawy.online`,
+        url: `https://${sanitizedSlug}.${mainDomain}`,
       },
     });
   } catch (error) {
@@ -3544,17 +3545,14 @@ const updateCompanySlug = async (req, res) => {
 };
 
 /**
- * 📊 Get Users Statistics
- * Returns statistics for all users in a company including conversations and messages count
+ * 🔍 Verify Custom Domain DNS
  */
 const verifyCompanyDNS = async (req, res) => {
   try {
     const { companyId } = req.params;
 
-    // Get company from database
     const company = await getSharedPrismaClient().company.findUnique({
       where: { id: companyId },
-      select: { customDomain: true },
     });
 
     if (!company) {
@@ -3572,7 +3570,7 @@ const verifyCompanyDNS = async (req, res) => {
     }
 
     // Target domain to verify against
-    const expectedTarget = process.env.MAIN_DOMAIN || "mokhtarelhenawy.online";
+    const expectedTarget = process.env.MAIN_DOMAIN || "maxp.online";
 
     // Perform DNS verification
     let result = await verifyDomainDNS(company.customDomain, expectedTarget);
@@ -3903,11 +3901,12 @@ const checkSlugAvailability = async (req, res) => {
       where: whereCondition,
     });
 
+    const mainDomain = process.env.MAIN_DOMAIN || "maxp.online";
     res.json({
       success: true,
       available: !existingCompany,
       slug: sanitizedSlug,
-      url: `https://${sanitizedSlug}.mokhtarelhenawy.online`,
+      url: `https://${sanitizedSlug}.${mainDomain}`,
     });
   } catch (error) {
     console.error("❌ Error checking slug availability:", error);

@@ -63,6 +63,19 @@ def sanitize_model_reply(reply: Any) -> str:
     if THINK_TAG_RE.search(text):
         text = THINK_TAG_RE.split(text, maxsplit=1)[0].strip()
 
+    # Humanize output: strip markdown asterisks (**bold** / *italic*)
+    text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+    text = re.sub(r"(?<!\w)\*([^*]+)\*(?!\w)", r"\1", text)
+
+    # Strip robotic list bullets at line starts
+    text = re.sub(r"^\s*[-*•]\s+", "", text, flags=re.MULTILINE)
+
+    # Strip marketing/bot spam emojis
+    text = re.sub(r"[💰👇🛍️✨🔥🚀🎯🛒📦]", "", text)
+
+    # Clean multiple consecutive blank lines
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+
     return text
 
 

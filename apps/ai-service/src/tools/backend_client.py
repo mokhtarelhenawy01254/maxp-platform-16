@@ -39,7 +39,7 @@ class BackendClient:
     def __init__(self) -> None:
         settings = get_settings()
         api_url = settings.maxp_api_url.rstrip("/")
-        if "mokhtarelhenawy.online" in api_url or "localhost" in api_url:
+        if "maxp.online" in api_url or "mokhtarelhenawy.online" in api_url or "localhost" in api_url or "127.0.0.1" in api_url:
             api_url = "http://127.0.0.1:3007"
         self.base_url = api_url
         self.token = settings.maxp_service_token

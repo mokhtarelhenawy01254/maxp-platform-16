@@ -927,4 +927,13 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
     except Exception as hook_err:
         logger.warning("validate_reply_final_attachment_strip_failed", error=str(hook_err))
 
+    # Anti-AI slop: strip markdown asterisks, robotic bullets, and marketing emojis from final customer reply
+    if ctx.final_reply:
+        txt = ctx.final_reply
+        txt = re.sub(r"\*\*([^*]+)\*\*", r"\1", txt)
+        txt = re.sub(r"(?<!\w)\*([^*]+)\*(?!\w)", r"\1", txt)
+        txt = re.sub(r"^\s*[-*•]\s+", "", txt, flags=re.MULTILINE)
+        txt = re.sub(r"[💰👇🛍️✨🔥🚀🎯🛒📦]", "", txt)
+        ctx.final_reply = txt.strip()
+
     return ctx

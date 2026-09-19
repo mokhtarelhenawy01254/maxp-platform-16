@@ -59,7 +59,10 @@ export const adaptUrlForEnvironment = (url: string): string => {
     return url
       .replace("https://www.mokhtarelhenawy.online/api/v1", envConfig.apiUrl)
       .replace("https://www.mokhtarelhenawy.online", envConfig.appUrl)
-      .replace("wss://mokhtarelhenawy.online", envConfig.wsUrl);
+      .replace("wss://mokhtarelhenawy.online", envConfig.wsUrl)
+      .replace("https://maxp.online/api/v1", envConfig.apiUrl)
+      .replace("https://maxp.online", envConfig.appUrl)
+      .replace("wss://maxp.online", envConfig.wsUrl);
   } else {
     // تحويل روابط التطوير إلى الإنتاج
     return url

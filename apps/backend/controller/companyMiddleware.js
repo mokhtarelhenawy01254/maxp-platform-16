@@ -185,9 +185,9 @@ const addPublicCORS = (req, res, next) => {
     if (origin) {
       // Check if origin is allowed
       const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
-      const isMokhtarDomain = origin.includes('mokhtarelhenawy.online');
+      const isAllowedDomain = origin.includes('maxp.online') || origin.includes('mokhtarelhenawy.online');
 
-      if (isLocalhost || isMokhtarDomain) {
+      if (isLocalhost || isAllowedDomain) {
         res.header('Access-Control-Allow-Origin', origin);
         res.header('Access-Control-Allow-Credentials', 'true');
       }

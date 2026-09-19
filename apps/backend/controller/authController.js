@@ -1498,7 +1498,8 @@ const forgotPassword = async (req, res) => {
     console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ [FORGOT-PASSWORD] Token saved to database');
 
     // Create reset link
-    const resetLink = `https://mokhtarelhenawy.online/auth/reset-password?token=${resetToken}`;
+    const resetBaseUrl = process.env.FRONTEND_URL || 'https://maxp.online';
+    const resetLink = `${resetBaseUrl}/auth/reset-password?token=${resetToken}`;
 
     // Send email if SMTP is configured
     let emailSent = false;

@@ -4,22 +4,17 @@ import { envConfig } from "../config/environment";
 export const convertToPublicUrl = (url: string): string => {
   if (!url) return url;
 
-  // التحقق من وجود localhost في الرابط
-  if (url.includes("https://www.mokhtarelhenawy.online")) {
-    // استخدام الإعدادات من نظام البيئة
-    const ngrokUrl =
-      import.meta.env["VITE_NGROK_URL"] || "https://www.mokhtarelhenawy.online"; // رابط احتياطي
+  // التحقق من وجود mokhtarelhenawy.online في الرابط واستبداله بـ maxp.online أو النفق
+  if (
+    url.includes("https://www.mokhtarelhenawy.online") ||
+    url.includes("https://mokhtarelhenawy.online")
+  ) {
+    const targetDomain =
+      import.meta.env["VITE_NGROK_URL"] || envConfig.appUrl || "https://maxp.online";
 
-    const convertedUrl = url.replace(
-      "https://www.mokhtarelhenawy.online",
-      ngrokUrl,
-    );
-
-    console.log("🔄 [URL-CONVERTER] Converting localhost to public URL:", {
-      original: url,
-      converted: convertedUrl,
-      ngrokUrl: ngrokUrl,
-    });
+    const convertedUrl = url
+      .replace("https://www.mokhtarelhenawy.online", targetDomain)
+      .replace("https://mokhtarelhenawy.online", targetDomain);
 
     return convertedUrl;
   }
@@ -34,7 +29,8 @@ export const processImageMessage = (message: any) => {
   // معالجة رابط المحتوى
   if (
     processedMessage.content &&
-    processedMessage.content.includes("https://www.mokhtarelhenawy.online")
+    (processedMessage.content.includes("https://www.mokhtarelhenawy.online") ||
+      processedMessage.content.includes("https://mokhtarelhenawy.online"))
   ) {
     processedMessage.content = convertToPublicUrl(processedMessage.content);
   }
@@ -42,7 +38,8 @@ export const processImageMessage = (message: any) => {
   // معالجة fileUrl
   if (
     processedMessage.fileUrl &&
-    processedMessage.fileUrl.includes("https://www.mokhtarelhenawy.online")
+    (processedMessage.fileUrl.includes("https://www.mokhtarelhenawy.online") ||
+      processedMessage.fileUrl.includes("https://mokhtarelhenawy.online"))
   ) {
     processedMessage.fileUrl = convertToPublicUrl(processedMessage.fileUrl);
   }
@@ -86,7 +83,10 @@ export const getImageUrl = (message: any): string => {
 
     // إضافة معالجة خاصة للصور - استخدام proxy لجميع الصور من المخدم
     if (
+      imageUrl.startsWith("https://maxp.online/") ||
+      imageUrl.startsWith("https://www.maxp.online/") ||
       imageUrl.startsWith("https://www.mokhtarelhenawy.online/") ||
+      imageUrl.startsWith("https://mokhtarelhenawy.online/") ||
       imageUrl.startsWith("https://files.easy-orders.net/") ||
       imageUrl.startsWith("https://scontent.") ||
       imageUrl.startsWith("https://platform-lookaside.fbsbx.com/") ||

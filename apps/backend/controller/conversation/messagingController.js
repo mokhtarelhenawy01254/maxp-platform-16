@@ -691,7 +691,7 @@ const uploadFile = async (req, res) => {
         // Development: Use production domain for Facebook API access
         // Note: Files must be accessible from production domain for Facebook to access them
         // In development, you may need to sync files or use a tunnel (ngrok) for testing
-        const productionDomain = 'https://www.mokhtarelhenawy.online';
+        const productionDomain = process.env.APP_URL || 'https://maxp.online';
         fullUrl = `${productionDomain}${fileUrl}`;
 
         // ⚠️ WARNING: In development, files uploaded locally won't be accessible from production domain
@@ -724,8 +724,8 @@ const uploadFile = async (req, res) => {
         mimeType: currentMimetype
       };
 
-      // Get main domain from env or default to mokhtarelhenawy.online
-      const MAIN_DOMAIN = process.env.MAIN_DOMAIN || 'mokhtarelhenawy.online';
+      // Get main domain from env or default to maxp.online
+      const MAIN_DOMAIN = process.env.MAIN_DOMAIN || 'maxp.online';
       // Get user info for sender
       const senderId = req.user?.userId || req.user?.id;
       let senderName = 'موظف';
