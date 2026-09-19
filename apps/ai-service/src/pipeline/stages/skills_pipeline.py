@@ -331,16 +331,14 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
             if not final_response.text:
                 logger.warning("skills_pipeline_followup_empty_retrying")
-                final_response = await _raw_llm_call(ctx, followup_messages, tools=[], tool_choice="none")
-                if not final_response.text:
-                    text_messages = _strip_tool_messages(followup_messages, executed)
-                    final_response = await _raw_llm_call(ctx, text_messages, tools=[], tool_choice=None)
+                text_messages = _strip_tool_messages(followup_messages, executed)
+                final_response = await _raw_llm_call(ctx, text_messages, tools=None, tool_choice=None)
 
-            ctx.final_reply = final_response.text or _format_tool_results(executed)
+            ctx.final_reply = final_response.text or _format_fallback_reply(ctx, executed)
             ctx.llm_response = final_response.text or ""
         except Exception as e:
             logger.error("skills_pipeline_followup_failed", error=str(e))
-            ctx.final_reply = _format_tool_results(executed)
+            ctx.final_reply = _format_fallback_reply(ctx, executed)
     elif provider_response.text:
         ctx.final_reply = provider_response.text
         ctx.llm_response = provider_response.text
@@ -439,49 +437,6 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
         except Exception as e:
             logger.error("no_llm_client_available", error=str(e))
             raise
-
-    # If message has images but current model doesn't support vision:
-    # Use Gemini ONLY for image description, then keep DeepSeek for tool calling
-    has_images = bool(ctx.attachments)
-    if has_images:
-        from src.llm.model_capabilities import supports_vision
-
-        client_model = getattr(client, "model", None)
-        client_provider = getattr(client, "provider", None)
-        if not supports_vision(client_model, client_provider):
-            try:
-                from src.llm.model_manager import model_manager
-
-                vision_model = "gemini-2.5-flash"
-                routing = await model_manager.get_next_key(vision_model, ctx.company_id)
-                vision_client = LLMClient(
-                    provider=routing.provider,
-                    model=routing.model,
-                    api_key=routing.api_key,
-                    base_url=routing.base_url,
-                )
-                # Call Gemini WITHOUT tools just for image description
-                vision_msgs = [
-                    {"role": "system", "content": "صف المنتجات في الصورة بالتفصيل بالعربي: نوع المنتج، اللون، الشكل، أي نصوص أو علامات تجارية."},
-                    {"role": "user", "content": user_content},
-                ]
-                desc_response = await vision_client.generate(messages=vision_msgs, tools=None, temperature=0.1)
-                if desc_response.text:
-                    desc = desc_response.text.strip()
-                    logger.info("vision_description_extracted", chars=len(desc))
-                    # Inject description into user message for tool-calling LLM (DeepSeek)
-                    base_text = ctx.message
-                    for att in (ctx.attachments or []):
-                        url = ""
-                        if att.get("type") == "image_url" and isinstance(att.get("image_url"), dict):
-                            url = att["image_url"].get("url", "")
-                        if url and url.startswith(("http://", "https://")):
-                            base_text += "\n[image_url: " + url + "]"
-                    base_text += "\n[وصف الصورة: " + desc + "]"
-                    messages[-1] = {"role": "user", "content": base_text}
-                logger.info("vision_two_step", original_model=client_model, vision=vision_model)
-            except Exception as e:
-                logger.warning("vision_description_failed", error=str(e))
 
     tool_dicts = _build_skill_tool_dicts(skills, ctx)
 
@@ -612,6 +567,20 @@ def _build_skill_tool_dicts(skills: list, ctx: PipelineContext) -> list[dict]:
                     tool_dicts.append(spec)
 
     return tool_dicts
+
+
+def _format_fallback_reply(ctx: PipelineContext, executed: list[dict]) -> str:
+    """Format safe, human-like Arabic fallback response for customer-facing channels."""
+    channel = str(getattr(ctx, "channel", "") or "").lower()
+    customer_channels = {"chat", "facebook", "facebook_messenger", "messenger", "whatsapp", "telegram"}
+    if channel in customer_channels:
+        tool_names = {item.get("tool", "") for item in executed}
+        if any("product" in t or "search" in t or "catalog" in t for t in tool_names):
+            return "معاك يا فندم، راجعتلك الموديلات المتاحة أهو وبشوفلك أنسب حاجة تناسب طلبك 😊 تحب تسأل عن مقاس معين أو ألوان تانية؟"
+        if any("order" in t for t in tool_names):
+            return "معاك يا فندم، راجعتلك تفاصيل الطلب مع النظام وهأكد لحضرتك الميعاد والتفاصيل فوراً 🙏"
+        return "معاك يا فندم وتحت أمرك في أي استفسار، تحب أساعدك في إيه بالظبط؟ 😊"
+    return _format_tool_results(executed)
 
 
 def _format_tool_results(executed: list[dict]) -> str:

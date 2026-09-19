@@ -30,6 +30,12 @@ def image_attachment_to_openai_part(attachment: dict[str, Any]) -> dict[str, Any
     # Pass-through: already in OpenAI image_url format
     if attachment.get("type") == "image_url" and isinstance(attachment.get("image_url"), dict):
         url = str(attachment["image_url"].get("url") or "").strip()
+        if url.startswith("data:image/"):
+            return attachment
+        if url.startswith(("http://", "https://")):
+            converted = _image_url({"url": url})
+            if converted:
+                return {"type": "image_url", "image_url": {"url": converted}}
         if url:
             return attachment
     if not _is_image_attachment(attachment):
@@ -67,17 +73,6 @@ def _image_url(attachment: dict[str, Any]) -> str | None:
     if data_url.startswith("data:image/"):
         return data_url
 
-    url = str(
-        attachment.get("url")
-        or attachment.get("image_url")
-        or attachment.get("imageUrl")
-        or attachment.get("file_url")
-        or attachment.get("fileUrl")
-        or ""
-    ).strip()
-    if url.startswith(("http://", "https://", "data:image/")):
-        return url
-
     base64_data = str(
         attachment.get("base64_data")
         or attachment.get("base64Data")
@@ -94,6 +89,37 @@ def _image_url(attachment: dict[str, Any]) -> str | None:
             or DEFAULT_IMAGE_MIME
         ).strip() or DEFAULT_IMAGE_MIME
         return f"data:{mime};base64,{base64_data}"
+
+    url = str(
+        attachment.get("url")
+        or attachment.get("image_url")
+        or attachment.get("imageUrl")
+        or attachment.get("file_url")
+        or attachment.get("fileUrl")
+        or ""
+    ).strip()
+    if url.startswith("data:image/"):
+        return url
+
+    if url.startswith(("http://", "https://")):
+        # Auto-convert external HTTP/CDN URLs to inline Base64 data URLs!
+        # This prevents DeepSeek and other vision models from failing with 400 Bad Request
+        # (e.g. .messages[X].image[0]: Failed to download image from https://...)
+        import base64
+        import httpx
+        try:
+            resp = httpx.get(url, timeout=10.0, verify=False)
+            if resp.status_code == 200 and resp.content:
+                ct = resp.headers.get("content-type", DEFAULT_IMAGE_MIME).split(";")[0].strip()
+                if not ct.startswith("image/"):
+                    ct = DEFAULT_IMAGE_MIME
+                b64_str = base64.b64encode(resp.content).decode("utf-8")
+                b64_url = f"data:{ct};base64,{b64_str}"
+                attachment["data_url"] = b64_url
+                return b64_url
+        except Exception:
+            pass
+        return url
 
     return None
 

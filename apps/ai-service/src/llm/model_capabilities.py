@@ -43,9 +43,9 @@ def supports_vision(model: str | None, provider: str | None = None) -> bool:
         return True
     if provider_name == "OPENROUTER" and any(marker in name for marker in ("llava", "qwen-vl", "pixtral")):
         return True
-    if provider_name == "DEEPSEEK" and any(marker in name for marker in ("deepseek-flash", "deepseek-v4", "deepseek-v4.1", "deepseek-vl")):
+    if provider_name == "DEEPSEEK" and any(marker in name for marker in ("deepseek-flash", "deepseek-v4", "deepseek-v4.1", "deepseek-vl", "deepseek-chat")):
         return True
-    if any(marker in name for marker in ("deepseek-flash", "deepseek-v4.1")):
+    if any(marker in name for marker in ("deepseek-flash", "deepseek-v4", "deepseek-v4.1", "deepseek-chat")):
         return True
     return False
 

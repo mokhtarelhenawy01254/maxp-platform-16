@@ -2353,6 +2353,29 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 }
               }
 
+              // Pre-fetch fresh Facebook image attachments into Base64 data URLs
+              // to prevent DeepSeek and vision providers from failing on external CDN downloads
+              for (const att of combinedAttachments) {
+                if ((att.type === 'image' || att.type === 'photo') && att.url && !att.data_url) {
+                  try {
+                    const axios = require('axios');
+                    const imgResp = await axios.get(att.url, {
+                      responseType: 'arraybuffer',
+                      timeout: 7000,
+                      headers: { 'User-Agent': 'Mozilla/5.0' }
+                    });
+                    if (imgResp.status === 200 && imgResp.data) {
+                      const ct = imgResp.headers['content-type'] || 'image/jpeg';
+                      const b64 = Buffer.from(imgResp.data).toString('base64');
+                      att.data_url = `data:${ct};base64,${b64}`;
+                      console.log(`📸 [FB-AI-ATTACHMENT] Successfully pre-fetched image into Base64 (${Math.round(b64.length / 1024)} KB)`);
+                    }
+                  } catch (imgErr) {
+                    console.warn(`⚠️ [FB-AI-ATTACHMENT] Failed to pre-fetch image URL: ${imgErr.message}`);
+                  }
+                }
+              }
+
               // 3. Process through Python AI service
               const aiSdkClient = require('../services/aiSdkClient');
               const result = await aiSdkClient.sendChatMessage({
@@ -2364,7 +2387,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 attachments: combinedAttachments.length > 0 ? combinedAttachments : undefined,
               });
 
-              // Silent Escalation
+              // Silent Escalation with Polite Customer Reassurance
               if (result && (result.status === 'escalated' || (result.escalation && !result.reply))) {
                 const { flagThreadForHumanTakeover } = require('../services/silentEscalationService');
                 await flagThreadForHumanTakeover({
@@ -2375,6 +2398,34 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                   customerMessage: combinedMessage,
                   channel: 'FACEBOOK',
                 });
+
+                if (accessToken) {
+                  const handoverNotice = 'ثواني بس هحول حضرتك لأحد زملائنا في خدمة العملاء عشان يتابع معاك ويفيدك بالتفصيل فوراً 🙏';
+                  try {
+                    await sendFacebookMessage(first.senderId, handoverNotice, 'TEXT', first.messagePageId, first.fbMessageId);
+                    const prisma = getSharedPrismaClient();
+                    await prisma.message.create({
+                      data: {
+                        id: require('crypto').randomUUID(),
+                        content: handoverNotice,
+                        type: 'TEXT',
+                        conversationId: first.conversationId,
+                        isFromCustomer: false,
+                        senderId: null,
+                        metadata: JSON.stringify({
+                          platform: 'facebook',
+                          source: 'handover_reassurance',
+                          isFacebookReply: true,
+                          timestamp: new Date()
+                        }),
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                      }
+                    }).catch(() => {});
+                  } catch (e) {
+                    console.error('❌ [AI-AUTOREPLY] Failed to send handover reassurance:', e.message);
+                  }
+                }
                 return;
               }
 
