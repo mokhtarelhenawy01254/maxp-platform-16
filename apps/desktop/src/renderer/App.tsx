@@ -11,9 +11,12 @@ declare global {
       toggleTracking: () => Promise<boolean>;
       pauseTracking: (reason?: string) => Promise<void>;
       resumeTracking: () => Promise<void>;
-      getDailySummary: () => Promise<any>;
-      getAppsSummary: () => Promise<{ appName: string; durationSeconds: number; category: string }[]>;
-      getWebsitesSummary: () => Promise<{ domain: string; durationSeconds: number; category: string }[]>;
+      endShift: () => Promise<{ success: boolean; error?: string; message?: string }>;
+      startShift: () => Promise<{ success: boolean; error?: string }>;
+      getDailySummary: (date?: string) => Promise<any>;
+      getAppsSummary: (date?: string) => Promise<{ appName: string; durationSeconds: number; category: string }[]>;
+      getWebsitesSummary: (date?: string) => Promise<{ domain: string; durationSeconds: number; category: string }[]>;
+      getAllDailyStatsKeys: () => Promise<string[]>;
       getSystemInfo: () => Promise<any>;
       syncNow: () => Promise<{ success: boolean; error?: string }>;
       getAttendanceAudit: () => Promise<any>;
@@ -59,6 +62,8 @@ declare global {
       onNotification: (callback: (data: any) => void) => (() => void);
       onTaskAssigned: (callback: (task: any) => void) => (() => void);
       onTasksRefresh: (callback: (data?: any) => void) => (() => void);
+      onDayRollover: (callback: (data: any) => void) => (() => void);
+      onInactivityReturn: (callback: (data: any) => void) => (() => void);
     };
   }
 }

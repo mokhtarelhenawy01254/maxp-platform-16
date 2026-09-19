@@ -31,9 +31,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toggleTracking: () => ipcRenderer.invoke(CHANNELS.TOGGLE_TRACKING),
   pauseTracking: (reason?: string) => ipcRenderer.invoke(CHANNELS.PAUSE_TRACKING, reason),
   resumeTracking: () => ipcRenderer.invoke(CHANNELS.RESUME_TRACKING),
-  getDailySummary: () => ipcRenderer.invoke(CHANNELS.GET_DAILY_SUMMARY),
-  getAppsSummary: () => ipcRenderer.invoke(CHANNELS.GET_APPS_SUMMARY),
-  getWebsitesSummary: () => ipcRenderer.invoke(CHANNELS.GET_WEBSITES_SUMMARY),
+  endShift: () => ipcRenderer.invoke('tracker:end-shift'),
+  startShift: () => ipcRenderer.invoke('tracker:start-shift'),
+  getDailySummary: (date?: string) => ipcRenderer.invoke(CHANNELS.GET_DAILY_SUMMARY, date),
+  getAppsSummary: (date?: string) => ipcRenderer.invoke(CHANNELS.GET_APPS_SUMMARY, date),
+  getWebsitesSummary: (date?: string) => ipcRenderer.invoke(CHANNELS.GET_WEBSITES_SUMMARY, date),
+  getAllDailyStatsKeys: () => ipcRenderer.invoke('tracker:get-all-daily-keys'),
   getSystemInfo: () => ipcRenderer.invoke(CHANNELS.GET_SYSTEM_INFO),
   syncNow: () => ipcRenderer.invoke(CHANNELS.SYNC_NOW),
   getAttendanceAudit: () => ipcRenderer.invoke(CHANNELS.GET_ATTENDANCE_AUDIT),
@@ -121,6 +124,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const listener = (_: any, data: any) => callback(data);
     ipcRenderer.on('tasks:refresh', listener);
     return () => ipcRenderer.removeListener('tasks:refresh', listener);
+  },
+  onDayRollover: (callback: (data: any) => void) => {
+    const listener = (_: any, data: any) => callback(data);
+    ipcRenderer.on('tracker:day-rollover', listener);
+    return () => ipcRenderer.removeListener('tracker:day-rollover', listener);
+  },
+  onInactivityReturn: (callback: (data: any) => void) => {
+    const listener = (_: any, data: any) => callback(data);
+    ipcRenderer.on('tracker:inactivity-return', listener);
+    return () => ipcRenderer.removeListener('tracker:inactivity-return', listener);
   },
 });
 

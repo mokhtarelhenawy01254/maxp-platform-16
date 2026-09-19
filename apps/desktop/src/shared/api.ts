@@ -499,6 +499,51 @@ class MonitorApiClient {
       return { success: false };
     }
   }
+
+  async clockOut(): Promise<{ success: boolean; attendance?: any; error?: string }> {
+    try {
+      const base = this.serverUrl;
+      let res;
+      try {
+        res = await axios.post(
+          `${base}/api/v1/hr/attendance/check-out`,
+          {
+            method: 'desktop_workspace',
+            workMode: 'office',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${this.authToken}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 10_000,
+          }
+        );
+      } catch (err: any) {
+        if (err.response?.status === 404) {
+          res = await axios.post(
+            `${base}/api/hr/attendance/check-out`,
+            {
+              method: 'desktop_workspace',
+              workMode: 'office',
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${this.authToken}`,
+                'Content-Type': 'application/json',
+              },
+              timeout: 10_000,
+            }
+          );
+        } else {
+          throw err;
+        }
+      }
+      return { success: true, attendance: res.data?.attendance ?? res.data?.data ?? res.data };
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.error || err.message };
+    }
+  }
 }
 
 export const apiClient = new MonitorApiClient();

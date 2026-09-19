@@ -5,7 +5,7 @@ import os from 'os';
 import { activityTracker } from '../tracker/activityTracker';
 import { windowTracker } from '../tracker/windowTracker';
 import { syncEngine } from '../tracker/syncEngine';
-import { localDb } from '../db/localDb';
+import { localDb, getLocalDateString } from '../db/localDb';
 import { apiClient } from '../shared/api';
 import { IPC_CHANNELS } from '../shared/types';
 import { autoUpdater } from 'electron-updater';
@@ -53,6 +53,13 @@ let currentBreakReason = '';
 let sessionStartedAt: string | null = null;
 let idleReminderTimer: ReturnType<typeof setInterval> | null = null;
 let remindedForThisIdleEpisode = false;
+
+// ── Shift & Day Lifecycle State ───────────────────────────────
+let shiftEnded = false;
+let shiftEndedAt: string | null = null;
+let systemSuspendedAt: number | null = null;
+let lastDayRolloverDate = '';
+let midnightWatcherInterval: ReturnType<typeof setInterval> | null = null;
 
 // ── Auth token storage (DPAPI-encrypted via safeStorage) ──────
 
@@ -126,6 +133,12 @@ app.whenReady().then(async () => {
 
   // Create system tray
   createTray();
+
+  // Register OS power and lock-screen hooks
+  registerPowerMonitorHooks();
+
+  // Start midnight / day rollover watcher
+  startMidnightRolloverWatcher();
 
   // Register IPC handlers
   registerIpcHandlers();
@@ -291,7 +304,13 @@ function updateTrayMenu(): void {
   if (!tray) return;
 
   const isLoggedIn = apiClient.isConfigured;
-  const statusLabel = !isLoggedIn ? 'غير متصل' : (isPaused ? 'استراحة رسمية' : 'جلسة العمل موثقة');
+  const statusLabel = !isLoggedIn
+    ? 'غير متصل'
+    : shiftEnded
+    ? 'انتهت الوردية اليوم'
+    : isPaused
+    ? 'استراحة رسمية'
+    : 'جلسة العمل موثقة';
 
   const contextMenu = Menu.buildFromTemplate([
     { label: `MaxP Workspace — ${statusLabel}`, enabled: false },
@@ -302,13 +321,13 @@ function updateTrayMenu(): void {
     },
     { type: 'separator' as const },
     ...(isLoggedIn ? [
-      {
+      ...(!shiftEnded ? [{
         label: isPaused ? 'استئناف العمل' : 'بدء استراحة رسمية',
         click: async () => {
           if (isPaused) await resumeTracking();
           else pauseTracking();
         },
-      },
+      }] : []),
       {
         label: 'تسجيل الخروج',
         click: () => logout(),
@@ -426,12 +445,15 @@ function logout(): void {
 
 function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.GET_TRACKER_STATE, () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const stored = localDb.getDailyStats(today);
-    const live = isTracking && !isPaused ? activityTracker.getCurrentIntervalStats() : null;
+    const live = isTracking && !isPaused && !shiftEnded ? activityTracker.getCurrentIntervalStats() : null;
     return {
       isTracking,
       isPaused,
+      shiftEnded,
+      shiftEndedAt,
+      currentDate: today,
       breakReason: currentBreakReason,
       currentApp: windowTracker.currentAppName,
       currentUrl: windowTracker.currentUrl,
@@ -456,22 +478,85 @@ function registerIpcHandlers(): void {
     await resumeTracking();
   });
 
-  ipcMain.handle('tracker:get-apps-summary', () => {
+  ipcMain.handle('tracker:end-shift', async () => {
     try {
-      const { apps, websites } = windowTracker.flushRecords();
-      for (const a of apps) localDb.queueAppUsage(a);
-      for (const w of websites) localDb.queueWebUsage(w);
-    } catch {}
-    return localDb.getTodayAppsSummary();
+      console.log('[Main] Ending shift for today...');
+      // 1. Flush any active interval and sync
+      syncEngine.flushAndCaptureNow();
+
+      const today = getLocalDateString();
+      shiftEnded = true;
+      shiftEndedAt = new Date().toISOString();
+      localDb.markShiftEnded(today, shiftEndedAt);
+
+      // 2. Pause trackers to freeze live counters
+      isTracking = false;
+      activityTracker.stop();
+      windowTracker.stop();
+      stopIdleReminder();
+
+      // 3. Inform server / HR attendance check-out
+      let checkoutRes: any = null;
+      try {
+        checkoutRes = await apiClient.clockOut();
+      } catch (err: any) {
+        console.warn('[Main] Clock-out API call error:', err?.message);
+      }
+
+      updateTrayMenu();
+      sendStateToRenderer();
+      showNotification('MaxP Workspace', 'تم إنهاء وردية العمل وتسجيل الانصراف بنجاح.');
+
+      return {
+        success: true,
+        attendance: checkoutRes?.attendance,
+        shiftEndedAt,
+        message: 'تم إنهاء وردية العمل وتوثيق الانصراف بنجاح.',
+      };
+    } catch (err: any) {
+      console.error('[Main] Failed to end shift:', err);
+      return { success: false, error: err?.message || 'تعذر إنهاء الوردية' };
+    }
   });
 
-  ipcMain.handle('tracker:get-websites-summary', () => {
+  ipcMain.handle('tracker:start-shift', async () => {
+    try {
+      console.log('[Main] Starting new shift...');
+      shiftEnded = false;
+      shiftEndedAt = null;
+      sessionStartedAt = new Date().toISOString();
+      await startTracking();
+      try {
+        await apiClient.autoClockIn();
+      } catch {}
+      sendStateToRenderer();
+      showNotification('MaxP Workspace', 'تم بدء وردية عمل جديدة وتوثيق الحضور بنجاح.');
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message };
+    }
+  });
+
+  ipcMain.handle('tracker:get-apps-summary', (_, targetDate?: string) => {
     try {
       const { apps, websites } = windowTracker.flushRecords();
       for (const a of apps) localDb.queueAppUsage(a);
       for (const w of websites) localDb.queueWebUsage(w);
     } catch {}
-    return localDb.getTodayWebsitesSummary();
+    return localDb.getTodayAppsSummary(targetDate);
+  });
+
+  ipcMain.handle('tracker:get-websites-summary', (_, targetDate?: string) => {
+    try {
+      const { apps, websites } = windowTracker.flushRecords();
+      for (const a of apps) localDb.queueAppUsage(a);
+      for (const w of websites) localDb.queueWebUsage(w);
+    } catch {}
+    return localDb.getTodayWebsitesSummary(targetDate);
+  });
+
+  ipcMain.handle('tracker:get-all-daily-keys', () => {
+    return localDb.getAllDailyStatsKeys();
   });
 
   ipcMain.handle('tracker:get-system-info', () => {
@@ -499,9 +584,9 @@ function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('tracker:get-attendance-audit', async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const localDaily = localDb.getDailyStats(today);
-    const live = isTracking && !isPaused ? activityTracker.getCurrentIntervalStats() : null;
+    const live = isTracking && !isPaused && !shiftEnded ? activityTracker.getCurrentIntervalStats() : null;
 
     let serverDaily: any = null;
     try {
@@ -542,24 +627,30 @@ function registerIpcHandlers(): void {
     };
   });
 
-  ipcMain.handle(IPC_CHANNELS.GET_DAILY_SUMMARY, () => {
-    const today = new Date().toISOString().split('T')[0];
-    const stored = localDb.getDailyStats(today) || {
-      date: today,
+  ipcMain.handle(IPC_CHANNELS.GET_DAILY_SUMMARY, (_, targetDate?: string) => {
+    const today = getLocalDateString();
+    const dateToQuery = targetDate || today;
+    const stored = localDb.getDailyStats(dateToQuery) || {
+      date: dateToQuery,
       first_activity: null,
       last_activity: null,
       total_active_seconds: 0,
       total_idle_seconds: 0,
       total_mouse_events: 0,
       total_keyboard_events: 0,
+      shift_ended_at: null,
     };
-    const live = isTracking && !isPaused ? activityTracker.getCurrentIntervalStats() : null;
+    const isToday = dateToQuery === today;
+    const live = isToday && isTracking && !isPaused && !shiftEnded ? activityTracker.getCurrentIntervalStats() : null;
     return {
       ...stored,
       total_active_seconds: stored.total_active_seconds + (live?.activeSeconds || 0),
       total_idle_seconds: stored.total_idle_seconds + (live?.idleSeconds || 0),
       total_mouse_events: stored.total_mouse_events + (live?.mouseEvents || 0),
       total_keyboard_events: stored.total_keyboard_events + (live?.keyboardEvents || 0),
+      isHistorical: !isToday,
+      shiftEnded: isToday ? shiftEnded : Boolean(stored.shift_ended_at),
+      shiftEndedAt: isToday ? shiftEndedAt : stored.shift_ended_at,
     };
   });
 
@@ -892,12 +983,126 @@ function registerIpcHandlers(): void {
 // ── Utilities ─────────────────────────────────────────────────
 
 function sendStateToRenderer(): void {
-  if (!mainWindow) return;
+  if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.webContents.send(IPC_CHANNELS.TRACKER_STATE_UPDATE, {
     isTracking,
     isPaused,
     breakReason: currentBreakReason,
+    shiftEnded,
+    shiftEndedAt,
+    currentDate: getLocalDateString(),
   });
+}
+
+// ── OS Power & Lock Screen Event Handlers ─────────────────────
+
+function registerPowerMonitorHooks(): void {
+  try {
+    powerMonitor.on('suspend', () => {
+      console.log('[PowerMonitor] System suspend / sleep detected — freezing accumulator');
+      handleSystemSuspend('suspend');
+    });
+
+    powerMonitor.on('lock-screen', () => {
+      console.log('[PowerMonitor] Screen lock detected — pausing activity accumulator');
+      handleSystemSuspend('lock-screen');
+    });
+
+    powerMonitor.on('resume', () => {
+      console.log('[PowerMonitor] System resume detected — re-evaluating session duration');
+      handleSystemResume('resume');
+    });
+
+    powerMonitor.on('unlock-screen', () => {
+      console.log('[PowerMonitor] Screen unlock detected');
+      handleSystemResume('unlock-screen');
+    });
+  } catch (err: any) {
+    console.warn('[PowerMonitor] Could not register power monitor hooks:', err?.message);
+  }
+}
+
+function handleSystemSuspend(reason: string): void {
+  systemSuspendedAt = Date.now();
+  if (isTracking && !isPaused && !shiftEnded) {
+    try {
+      syncEngine.flushAndCaptureNow();
+      syncEngine.setSuspended(true);
+    } catch (err) {
+      console.warn('[Main] Error during suspend flush:', err);
+    }
+  }
+}
+
+function handleSystemResume(reason: string): void {
+  const suspendedTime = systemSuspendedAt;
+  systemSuspendedAt = null;
+  syncEngine.setSuspended(false);
+
+  const currentLocal = getLocalDateString();
+  if (lastDayRolloverDate && currentLocal !== lastDayRolloverDate) {
+    handleDayRollover(currentLocal);
+  } else {
+    // Reset interval start so sleep time is not counted as idle
+    activityTracker.resetSession();
+  }
+
+  // If away for more than 2 hours (e.g. overnight or lengthy absence), prompt renderer
+  if (suspendedTime && (Date.now() - suspendedTime > 2 * 3600 * 1000)) {
+    const elapsedSec = Math.floor((Date.now() - suspendedTime) / 1000);
+    console.log(`[Main] Prolonged away episode detected: ${elapsedSec}s`);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('tracker:inactivity-return', {
+        elapsedSec,
+        suspendedAt: suspendedTime,
+        returnTime: Date.now(),
+      });
+    }
+  }
+
+  sendStateToRenderer();
+}
+
+// ── Midnight / Day Rollover Watcher ───────────────────────────
+
+function startMidnightRolloverWatcher(): void {
+  lastDayRolloverDate = getLocalDateString();
+  if (midnightWatcherInterval) clearInterval(midnightWatcherInterval);
+
+  midnightWatcherInterval = setInterval(() => {
+    const currentLocal = getLocalDateString();
+    if (lastDayRolloverDate && currentLocal !== lastDayRolloverDate) {
+      handleDayRollover(currentLocal);
+    }
+  }, 30_000); // Check every 30s
+}
+
+function handleDayRollover(newDate: string): void {
+  const previousDate = lastDayRolloverDate;
+  lastDayRolloverDate = newDate;
+  console.log(`[Main] ── Day Rollover Activated: ${previousDate} -> ${newDate} ──`);
+
+  try {
+    // 1. Flush previous day's data so it is archived cleanly
+    syncEngine.flushAndCaptureNow();
+
+    // 2. Reset shift status for the fresh day
+    shiftEnded = false;
+    shiftEndedAt = null;
+    activityTracker.resetSession();
+  } catch (err) {
+    console.warn('[Main] Error handling day rollover:', err);
+  }
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('tracker:day-rollover', {
+      newDate,
+      previousDate,
+    });
+  }
+
+  sendStateToRenderer();
+  showNotification('MaxP Workspace', `بدأ يوم عمل جديد (${newDate}). تم أرشفة إحصائيات الأمس وفصل العداد.`);
 }
 
 function showNotification(title: string, body: string, respectSoundPref: boolean = true): void {

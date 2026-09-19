@@ -235,7 +235,7 @@ export class WindowTracker {
 
       if (!resolvedPath) return null;
 
-      const { stdout } = await execFileAsync(resolvedPath, { timeout: 2000, encoding: 'utf8' });
+      const { stdout } = await (execFileAsync as any)(resolvedPath, [], { timeout: 2000, encoding: 'utf8' });
       const out = (stdout || '').trim();
       if (out && out.includes('|||')) {
         const parts = out.split('|||');

@@ -31,10 +31,27 @@ class MonitorService {
   }
 
   async updateDailySummaryFromActivity(companyId, employeeId, activities) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    if (!activities || !activities.length) return;
+
+    // Use the actual interval timestamp rather than server's current arrival time
+    const firstIntervalStart = activities[0].intervalStart ? new Date(activities[0].intervalStart) : new Date();
+    const targetDate = isNaN(firstIntervalStart.getTime()) ? new Date() : new Date(firstIntervalStart);
+    targetDate.setHours(0, 0, 0, 0);
 
     const totalActive = activities.reduce((sum, a) => sum + (Number(a.activeSeconds) || 0), 0);
+
+    // Calculate total idle seconds for this batch (clamped to max 300s per interval)
+    const totalIdle = activities.reduce((sum, a) => {
+      const startMs = a.intervalStart ? new Date(a.intervalStart).getTime() : 0;
+      const endMs = a.intervalEnd ? new Date(a.intervalEnd).getTime() : 0;
+      const active = Number(a.activeSeconds) || 0;
+      if (startMs && endMs && endMs > startMs) {
+        const intervalSec = Math.min(300, Math.max(1, Math.floor((endMs - startMs) / 1000)));
+        return sum + Math.max(0, intervalSec - active);
+      }
+      return sum;
+    }, 0);
+
     const avgScore = activities.reduce((sum, a) => sum + (Number(a.activityScore) || 0), 0) / activities.length;
 
     await this.prisma.monitorDailySummary.upsert({
@@ -42,11 +59,12 @@ class MonitorService {
         companyId_employeeId_date: {
           companyId,
           employeeId,
-          date: today,
+          date: targetDate,
         },
       },
       update: {
         totalActiveSeconds: { increment: totalActive },
+        totalIdleSeconds: { increment: totalIdle },
         lastActivityTime: new Date(),
         avgActivityScore: avgScore,
         productivityScore: Math.round(avgScore),
@@ -54,11 +72,11 @@ class MonitorService {
       create: {
         companyId,
         employeeId,
-        date: today,
+        date: targetDate,
         firstActivityTime: new Date(),
         lastActivityTime: new Date(),
         totalActiveSeconds: totalActive,
-        totalIdleSeconds: 0,
+        totalIdleSeconds: totalIdle,
         productivityScore: Math.round(avgScore),
         avgActivityScore: avgScore,
       },

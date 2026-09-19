@@ -7,6 +7,10 @@ import {
   AlertTriangle,
   MinusCircle,
   HelpCircle,
+  Calendar,
+  ChevronRight,
+  ChevronLeft,
+  Clock,
 } from 'lucide-react';
 
 interface AppItem {
@@ -26,23 +30,27 @@ interface AppsTimelineTabProps {
 }
 
 export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) => {
+  const getTodayLocal = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getTodayLocal();
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [activeSubTab, setActiveSubTab] = useState<'apps' | 'sites'>('apps');
   const [searchTerm, setSearchTerm] = useState('');
   const [apps, setApps] = useState<AppItem[]>([]);
   const [sites, setSites] = useState<WebItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 15_000);
-    return () => clearInterval(interval);
-  }, []);
-
   const loadData = async () => {
     try {
       const [appList, siteList] = await Promise.all([
-        window.electronAPI.getAppsSummary(),
-        window.electronAPI.getWebsitesSummary(),
+        window.electronAPI.getAppsSummary(selectedDate),
+        window.electronAPI.getWebsitesSummary(selectedDate),
       ]);
       setApps(appList || []);
       setSites(siteList || []);
@@ -51,6 +59,12 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 15_000);
+    return () => clearInterval(interval);
+  }, [selectedDate]);
 
   const totalAppSeconds = apps.reduce((acc, a) => acc + a.durationSeconds, 0);
   const totalSiteSeconds = sites.reduce((acc, s) => acc + s.durationSeconds, 0);
@@ -78,6 +92,81 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
 
   return (
     <div style={styles.container}>
+      {/* Date Navigation Bar */}
+      <div style={styles.dateNavBar}>
+        <div style={styles.dateNavControls}>
+          <button
+            onClick={() => {
+              const d = new Date(selectedDate);
+              d.setDate(d.getDate() - 1);
+              setSelectedDate(
+                `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+              );
+            }}
+            style={styles.dateNavBtn}
+            title="اليوم السابق"
+            onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+            onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+          >
+            <ChevronRight size={14} />
+            <span>اليوم السابق</span>
+          </button>
+
+          <button
+            onClick={() => setSelectedDate(todayStr)}
+            style={{
+              ...styles.dateNavPill,
+              background: selectedDate === todayStr ? 'var(--accent-green-bg)' : 'transparent',
+              borderColor: selectedDate === todayStr ? 'var(--accent-green-border)' : 'var(--border-default)',
+              color: selectedDate === todayStr ? 'var(--accent-green)' : 'var(--text-secondary)',
+            }}
+          >
+            <Calendar size={13} />
+            <span>اليوم</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (selectedDate >= todayStr) return;
+              const d = new Date(selectedDate);
+              d.setDate(d.getDate() + 1);
+              setSelectedDate(
+                `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+              );
+            }}
+            disabled={selectedDate === todayStr}
+            style={{
+              ...styles.dateNavBtn,
+              opacity: selectedDate === todayStr ? 0.35 : 1,
+              cursor: selectedDate === todayStr ? 'not-allowed' : 'pointer',
+            }}
+            title="اليوم التالي"
+            onMouseDown={(e) => { if (selectedDate !== todayStr) (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+            onMouseUp={(e) => { if (selectedDate !== todayStr) (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+          >
+            <span>اليوم التالي</span>
+            <ChevronLeft size={14} />
+          </button>
+        </div>
+
+        <div style={styles.dateDisplayBadge}>
+          <Clock size={13} color="#38bdf8" />
+          <span>
+            {new Date(selectedDate).toLocaleDateString('ar-EG', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </span>
+          {selectedDate !== todayStr && (
+            <span style={styles.archivedTag}>
+              مؤرشف
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Top Bar: Subtabs & Search */}
       <div style={styles.topBar}>
         <div style={styles.subtabs}>
@@ -222,6 +311,74 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 12,
+  },
+  dateNavBar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 10,
+    padding: '8px 12px',
+    boxShadow: 'var(--shadow-card)',
+  },
+  dateNavControls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dateNavBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border-strong)',
+    borderRadius: 7,
+    padding: '4px 10px',
+    fontSize: 11,
+    fontWeight: 500,
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  dateNavPill: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 20,
+    border: '1px solid',
+    padding: '4px 12px',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  dateDisplayBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+    background: 'var(--bg-sidebar)',
+    padding: '4px 12px',
+    borderRadius: 8,
+    border: '1px solid var(--border-subtle)',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  archivedTag: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 10,
+    color: '#38bdf8',
+    background: 'rgba(56, 189, 248, 0.12)',
+    border: '1px solid rgba(56, 189, 248, 0.3)',
+    borderRadius: 12,
+    padding: '2px 7px',
+    fontWeight: 700,
   },
   topBar: {
     display: 'flex',

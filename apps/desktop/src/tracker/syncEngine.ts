@@ -1,4 +1,4 @@
-import { localDb } from '../db/localDb';
+import { localDb, getLocalDateString } from '../db/localDb';
 import { apiClient } from '../shared/api';
 import { activityTracker } from './activityTracker';
 import { windowTracker } from './windowTracker';
@@ -16,6 +16,7 @@ export class SyncEngine {
   private activityCaptureInterval: ReturnType<typeof setInterval> | null = null;
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
   private isSyncing = false;
+  private isSuspended = false;
 
   private readonly SYNC_INTERVAL_MS = 60_000;           // Sync every 60 seconds
   private readonly HEARTBEAT_INTERVAL_MS = 120_000;      // Heartbeat every 2 minutes
@@ -24,8 +25,9 @@ export class SyncEngine {
 
   start(): void {
     console.log('[SyncEngine] Starting...');
+    this.isSuspended = false;
 
-    // Capture activity intervals every 10 minutes
+    // Capture activity intervals every 2 minutes
     this.activityCaptureInterval = setInterval(() => {
       this.captureActivityInterval();
     }, this.ACTIVITY_CAPTURE_MS);
@@ -49,6 +51,16 @@ export class SyncEngine {
     this.sendHeartbeat();
   }
 
+  setSuspended(suspended: boolean): void {
+    this.isSuspended = suspended;
+  }
+
+  public flushAndCaptureNow(): void {
+    this.captureActivityInterval();
+    this.flushWindowData();
+    this.sync();
+  }
+
   stop(): void {
     if (this.syncInterval) clearInterval(this.syncInterval);
     if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
@@ -66,16 +78,20 @@ export class SyncEngine {
   }
 
   /** Capture the current activity interval and store locally */
-  private captureActivityInterval(): void {
+  public captureActivityInterval(): void {
+    if (this.isSuspended) return;
     try {
       const interval = activityTracker.captureInterval();
       localDb.queueActivity(interval);
 
-      // Update local daily stats
-      const today = new Date().toISOString().split('T')[0];
+      // Update local daily stats using local date
+      const today = getLocalDateString();
       const startMs = new Date(interval.intervalStart).getTime();
       const endMs = new Date(interval.intervalEnd).getTime();
-      const intervalSec = Math.max(1, Math.floor((endMs - startMs) / 1000));
+      // Cap interval duration to prevent huge sleep jumps from registering as thousands of idle seconds
+      const maxAllowedSec = Math.max(300, Math.floor(this.ACTIVITY_CAPTURE_MS / 1000) * 2);
+      const rawIntervalSec = Math.max(1, Math.floor((endMs - startMs) / 1000));
+      const intervalSec = Math.min(rawIntervalSec, maxAllowedSec);
       const idleSeconds = Math.max(0, intervalSec - interval.activeSeconds);
 
       localDb.updateDailyStats(
@@ -86,7 +102,7 @@ export class SyncEngine {
         interval.keyboardEvents
       );
 
-      console.log(`[SyncEngine] Captured interval: active=${interval.activeSeconds}s, idle=${idleSeconds}s, score=${interval.activityScore}%`);
+      console.log(`[SyncEngine] Captured interval (${today}): active=${interval.activeSeconds}s, idle=${idleSeconds}s, score=${interval.activityScore}%`);
     } catch (err) {
       console.error('[SyncEngine] Failed to capture activity interval:', err);
     }

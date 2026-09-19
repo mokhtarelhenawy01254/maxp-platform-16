@@ -10,6 +10,13 @@ import {
   Activity,
   CheckCircle2,
   CheckSquare,
+  Calendar,
+  ChevronRight,
+  ChevronLeft,
+  Archive,
+  History,
+  Play,
+  LogOut,
 } from 'lucide-react';
 
 interface CockpitTabProps {
@@ -17,6 +24,8 @@ interface CockpitTabProps {
   dailySummary: any;
   formatTime: (sec: number) => string;
   onToggleBreak?: () => void;
+  onEndShift?: () => Promise<void>;
+  onStartShift?: () => Promise<void>;
   user?: any;
   isAdmin?: boolean;
 }
@@ -26,9 +35,55 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
   dailySummary,
   formatTime,
   onToggleBreak,
+  onEndShift,
+  onStartShift,
   user,
   isAdmin = false,
 }) => {
+  const getTodayLocal = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = trackerState?.currentDate || getTodayLocal();
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const [historicalSummary, setHistoricalSummary] = useState<any>(null);
+  const [loadingDate, setLoadingDate] = useState(false);
+
+  // Sync selectedDate when today changes due to rollover
+  useEffect(() => {
+    if (selectedDate === todayStr || !selectedDate) {
+      setSelectedDate(todayStr);
+    }
+  }, [todayStr]);
+
+  // Load historical summary when another date is selected
+  useEffect(() => {
+    if (selectedDate === todayStr) {
+      setHistoricalSummary(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingDate(true);
+    window.electronAPI
+      .getDailySummary(selectedDate)
+      .then((data: any) => {
+        if (!cancelled) {
+          setHistoricalSummary(data);
+          setLoadingDate(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoadingDate(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDate, todayStr]);
+
   const [taskStats, setTaskStats] = useState<{ total: number; completed: number }>({
     total: 0,
     completed: 0,
@@ -51,22 +106,166 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
     const interval = setInterval(fetchTasks, 20_000);
     return () => clearInterval(interval);
   }, []);
-  const activeSeconds = dailySummary?.total_active_seconds ?? 0;
-  const idleSeconds = dailySummary?.total_idle_seconds ?? 0;
-  const totalTracked = activeSeconds + idleSeconds;
-  const activeRatio = totalTracked > 0 ? Math.round((activeSeconds / totalTracked) * 100) : 100;
 
-  const mouseEvents = dailySummary?.total_mouse_events ?? 0;
-  const keyboardEvents = dailySummary?.total_keyboard_events ?? 0;
+  const isToday = selectedDate === todayStr;
+  const effectiveSummary = isToday ? dailySummary : (historicalSummary || {});
+  const activeSeconds = effectiveSummary?.total_active_seconds ?? 0;
+  const idleSeconds = effectiveSummary?.total_idle_seconds ?? 0;
+  const totalTracked = activeSeconds + idleSeconds;
+  const activeRatio = totalTracked > 0 ? Math.round((activeSeconds / totalTracked) * 100) : (isToday ? 100 : 0);
+
+  const mouseEvents = effectiveSummary?.total_mouse_events ?? 0;
+  const keyboardEvents = effectiveSummary?.total_keyboard_events ?? 0;
 
   const currentApp = trackerState?.currentApp || 'سطح المكتب / مستكشف ويندوز';
   const currentUrl = trackerState?.currentUrl;
   const isPaused = trackerState?.isPaused ?? false;
+  const isTracking = trackerState?.isTracking ?? false;
+  const shiftEnded = isToday ? (trackerState?.shiftEnded ?? false) : Boolean(effectiveSummary?.shift_ended_at);
+  const shiftEndedAt = isToday ? trackerState?.shiftEndedAt : effectiveSummary?.shift_ended_at;
+
+  const handlePrevDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 1);
+    const prev = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    setSelectedDate(prev);
+  };
+
+  const handleNextDay = () => {
+    if (selectedDate >= todayStr) return;
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 1);
+    const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    setSelectedDate(next);
+  };
+
+  const handleGoToday = () => {
+    setSelectedDate(todayStr);
+  };
+
+  const formatClockTime = (iso?: string | null) => {
+    if (!iso) return null;
+    try {
+      return new Date(iso).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return null;
+    }
+  };
 
   return (
     <div style={styles.container}>
-      {/* Top Banner: Active or Break Mode */}
-      {isPaused ? (
+      {/* Date & Shift Navigator Bar */}
+      <div style={styles.dateNavBar}>
+        <div style={styles.dateNavControls}>
+          <button
+            onClick={handlePrevDay}
+            style={styles.dateNavBtn}
+            title="اليوم السابق"
+            onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+            onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+          >
+            <ChevronRight size={15} />
+            <span>اليوم السابق</span>
+          </button>
+
+          <button
+            onClick={handleGoToday}
+            style={{
+              ...styles.dateNavPill,
+              background: isToday ? 'var(--accent-green-bg)' : 'transparent',
+              borderColor: isToday ? 'var(--accent-green-border)' : 'var(--border-default)',
+              color: isToday ? 'var(--accent-green)' : 'var(--text-secondary)',
+            }}
+          >
+            <Calendar size={13} />
+            <span>اليوم (الوردية النشطة)</span>
+          </button>
+
+          <button
+            onClick={handleNextDay}
+            disabled={isToday}
+            style={{
+              ...styles.dateNavBtn,
+              opacity: isToday ? 0.35 : 1,
+              cursor: isToday ? 'not-allowed' : 'pointer',
+            }}
+            title="اليوم التالي"
+            onMouseDown={(e) => { if (!isToday) (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+            onMouseUp={(e) => { if (!isToday) (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+          >
+            <span>اليوم التالي</span>
+            <ChevronLeft size={15} />
+          </button>
+        </div>
+
+        <div style={styles.dateDisplayBadge}>
+          <Clock size={13} color="#38bdf8" />
+          <span style={styles.dateDisplayText}>
+            {new Date(selectedDate).toLocaleDateString('ar-EG', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </span>
+          {!isToday && (
+            <span style={styles.archivedTag}>
+              <Archive size={11} />
+              مؤرشف وموثق
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Top Banner: Shift Mode & State */}
+      {!isToday ? (
+        <div style={styles.archivedBanner}>
+          <div style={styles.archivedIconBox}>
+            <History size={18} color="#38bdf8" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={styles.bannerTitleRow}>
+              <span style={styles.archivedTitle}>
+                سجل إنجاز وأنشطة يوم {selectedDate} (مؤرشف)
+              </span>
+              <span style={styles.archivedChip}>سجل نهائي معتمد</span>
+            </div>
+            <div style={styles.archivedSubtext}>
+              تم توثيق إجمالي عمل فعلي: {formatTime(activeSeconds)} — واستراحات وتوقف: {formatTime(idleSeconds)}.
+            </div>
+          </div>
+        </div>
+      ) : shiftEnded ? (
+        <div style={styles.shiftEndedBanner}>
+          <div style={styles.shiftEndedIconBox}>
+            <CheckCircle2 size={18} color="#22c55e" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={styles.bannerTitleRow}>
+              <span style={styles.shiftEndedTitle}>
+                تم إنهاء وردية عمل اليوم وتسجيل الانصراف بنجاح
+                {shiftEndedAt && ` (${formatClockTime(shiftEndedAt)})`}
+              </span>
+              <span style={styles.shiftEndedChip}>الوردية مغلقة</span>
+            </div>
+            <div style={styles.shiftEndedSubtext}>
+              تم توثيق ساعات الوردية بالكامل في السحابة المركزية. إجمالي العمل الفعلي: {formatTime(activeSeconds)}.
+            </div>
+          </div>
+          {onStartShift && (
+            <button
+              onClick={onStartShift}
+              style={styles.startNewShiftBtn}
+              title="بدء وردية جديدة أو عمل إضافي"
+              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+            >
+              <Play size={13} fill="#09090b" color="#09090b" />
+              <span>بدء وردية جديدة</span>
+            </button>
+          )}
+        </div>
+      ) : isPaused ? (
         <div style={styles.breakBanner}>
           <div style={styles.breakIconBox}>
             <Coffee size={18} color="#eab308" />
@@ -90,7 +289,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
           </div>
           <div style={{ flex: 1 }}>
             <div style={styles.bannerTitleRow}>
-              <span style={styles.bannerTitle}>جلسة العمل موثقة ونشطة في السحابة المركزية</span>
+              <span style={styles.bannerTitle}>وردية العمل موثقة ونشطة في السحابة المركزية</span>
               <span style={styles.livePulseChip}>
                 <span style={styles.pulsingDot} />
                 <span>مباشر</span>
@@ -100,7 +299,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         </div>
       )}
 
-      {/* Main Grid: Live Telemetry */}
+      {/* Main Grid: Telemetry */}
       <div style={styles.grid}>
         {/* Active Time Card */}
         <div style={styles.metricCard}>
@@ -112,7 +311,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
           </div>
           <div style={styles.metricValue}>{formatTime(activeSeconds)}</div>
           <div style={styles.metricSubtext}>
-            <span>معدل النشاط المستمر</span>
+            <span>{isToday ? 'معدل النشاط المستمر لليوم' : 'إجمالي الساعات المسجلة'}</span>
           </div>
         </div>
 
@@ -141,7 +340,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
             </div>
             <div style={styles.metricValue}>{mouseEvents.toLocaleString()}</div>
             <div style={styles.metricSubtext}>
-              <span>إجمالي الحركات والنقرات اليوم</span>
+              <span>إجمالي الحركات والنقرات الموثقة</span>
             </div>
           </div>
         ) : (
@@ -167,36 +366,19 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
           </div>
         )}
 
-        {/* Card 4: Break Allowance (Employee) vs Keyboard Telemetry (Admin) */}
-        {isAdmin ? (
-          <div style={styles.metricCard}>
-            <div style={styles.metricHeader}>
-              <div style={{ ...styles.iconBadge, color: '#a855f7', background: 'rgba(168, 85, 247, 0.1)' }}>
-                <Keyboard size={15} />
-              </div>
-              <span style={styles.metricLabel}>ضربات لوحة المفاتيح</span>
+        {/* Card 4: Inputs / Keyboard */}
+        <div style={styles.metricCard}>
+          <div style={styles.metricHeader}>
+            <div style={{ ...styles.iconBadge, color: '#a855f7', background: 'rgba(168, 85, 247, 0.1)' }}>
+              <Keyboard size={15} />
             </div>
-            <div style={styles.metricValue}>{keyboardEvents.toLocaleString()}</div>
-            <div style={styles.metricSubtext}>
-              <span>إجمالي المدخلات الموثقة</span>
-            </div>
+            <span style={styles.metricLabel}>ضربات لوحة المفاتيح</span>
           </div>
-        ) : (
-          <div style={styles.metricCard}>
-            <div style={styles.metricHeader}>
-              <div style={{ ...styles.iconBadge, color: 'var(--accent-green)', background: 'var(--accent-green-bg)' }}>
-                <ShieldCheck size={15} />
-              </div>
-              <span style={styles.metricLabel}>إجمالي المدخلات اليوم</span>
-            </div>
-            <div style={styles.metricValue}>{keyboardEvents.toLocaleString()}</div>
-            <div style={styles.metricSubtext}>
-              <span style={{ color: isPaused ? '#eab308' : '#a1a1aa' }}>
-                {isPaused ? 'أنت في وضع استراحة معتمد الآن' : 'مدخلاتك الموثقة في السحابة'}
-              </span>
-            </div>
+          <div style={styles.metricValue}>{keyboardEvents.toLocaleString()}</div>
+          <div style={styles.metricSubtext}>
+            <span>إجمالي المدخلات الموثقة لليوم</span>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Ratio Bar */}
@@ -204,7 +386,9 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         <div style={styles.sectionHeader}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Activity size={15} color="#38bdf8" />
-            <span style={styles.sectionTitle}>مؤشر الإنتاجية التراكمي لليوم</span>
+            <span style={styles.sectionTitle}>
+              {isToday ? 'مؤشر الإنتاجية التراكمي لليوم' : `مؤشر الإنتاجية ليوم ${selectedDate}`}
+            </span>
           </div>
           <span style={styles.ratioPercent}>{activeRatio}% نشط</span>
         </div>
@@ -218,39 +402,43 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         </div>
       </div>
 
-      {/* Current Focus Window */}
-      <div style={styles.sectionBox}>
-        <div style={styles.sectionHeader}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <AppWindow size={15} color="#22c55e" />
-            <span style={styles.sectionTitle}>التطبيق النشط حالياً</span>
+      {/* Current Focus Window (Live Only) */}
+      {isToday && !shiftEnded && isTracking && (
+        <div style={styles.sectionBox}>
+          <div style={styles.sectionHeader}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <AppWindow size={15} color="#22c55e" />
+              <span style={styles.sectionTitle}>التطبيق النشط حالياً</span>
+            </div>
+            <span style={styles.activePill}>
+              <CheckCircle2 size={12} />
+              قيد التسجيل
+            </span>
           </div>
-          <span style={styles.activePill}>
-            <CheckCircle2 size={12} />
-            قيد التسجيل
-          </span>
-        </div>
 
-        <div style={styles.appRow}>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={styles.currentAppName}>{currentApp}</div>
-            {currentUrl && (
-              <div style={styles.currentUrlRow}>
-                <ExternalLink size={12} color="#71717a" />
-                <span style={styles.currentUrlText}>
-                  {isAdmin ? currentUrl : (() => {
-                    try {
-                      return new URL(currentUrl).hostname;
-                    } catch {
-                      return currentUrl.split('?')[0].split('#')[0];
-                    }
-                  })()}
-                </span>
-              </div>
-            )}
+          <div style={styles.appRow}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={styles.currentAppName}>{currentApp}</div>
+              {currentUrl && (
+                <div style={styles.currentUrlRow}>
+                  <ExternalLink size={12} color="#71717a" />
+                  <span style={styles.currentUrlText}>
+                    {isAdmin
+                      ? currentUrl
+                      : (() => {
+                          try {
+                            return new URL(currentUrl).hostname;
+                          } catch {
+                            return currentUrl.split('?')[0].split('#')[0];
+                          }
+                        })()}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -260,6 +448,168 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 14,
+  },
+  dateNavBar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 10,
+    padding: '8px 12px',
+    boxShadow: 'var(--shadow-card)',
+  },
+  dateNavControls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dateNavBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border-strong)',
+    borderRadius: 7,
+    padding: '4px 10px',
+    fontSize: 11,
+    fontWeight: 500,
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  dateNavPill: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 20,
+    border: '1px solid',
+    padding: '4px 12px',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  dateDisplayBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+    background: 'var(--bg-sidebar)',
+    padding: '4px 12px',
+    borderRadius: 8,
+    border: '1px solid var(--border-subtle)',
+  },
+  dateDisplayText: {
+    fontVariantNumeric: 'tabular-nums',
+  },
+  archivedTag: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 10,
+    color: '#38bdf8',
+    background: 'rgba(56, 189, 248, 0.12)',
+    border: '1px solid rgba(56, 189, 248, 0.3)',
+    borderRadius: 12,
+    padding: '2px 7px',
+    fontWeight: 700,
+  },
+  archivedBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    background: 'rgba(56, 189, 248, 0.08)',
+    border: '1px solid rgba(56, 189, 248, 0.25)',
+    borderRadius: 10,
+    padding: '12px 14px',
+  },
+  archivedIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    background: 'rgba(56, 189, 248, 0.15)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  archivedTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#38bdf8',
+  },
+  archivedChip: {
+    background: 'rgba(56, 189, 248, 0.15)',
+    border: '1px solid rgba(56, 189, 248, 0.35)',
+    borderRadius: 20,
+    padding: '2px 8px',
+    fontSize: 10,
+    color: '#38bdf8',
+    fontWeight: 600,
+  },
+  archivedSubtext: {
+    fontSize: 11,
+    color: 'var(--text-secondary)',
+    marginTop: 4,
+    lineHeight: 1.4,
+  },
+  shiftEndedBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    background: 'rgba(34, 197, 94, 0.08)',
+    border: '1px solid var(--accent-green-border)',
+    borderRadius: 10,
+    padding: '12px 14px',
+  },
+  shiftEndedIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    background: 'var(--accent-green-bg)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shiftEndedTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: 'var(--accent-green)',
+  },
+  shiftEndedChip: {
+    background: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
+    borderRadius: 20,
+    padding: '2px 8px',
+    fontSize: 10,
+    color: 'var(--accent-green)',
+    fontWeight: 600,
+  },
+  shiftEndedSubtext: {
+    fontSize: 11,
+    color: 'var(--text-secondary)',
+    marginTop: 4,
+    lineHeight: 1.4,
+  },
+  startNewShiftBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'var(--accent-green)',
+    color: '#09090b',
+    border: 'none',
+    borderRadius: 8,
+    padding: '6px 14px',
+    fontSize: 11,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+    whiteSpace: 'nowrap',
   },
   breakBanner: {
     display: 'flex',

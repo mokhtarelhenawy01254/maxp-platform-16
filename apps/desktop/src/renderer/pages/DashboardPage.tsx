@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Coffee, Play, Clock, CheckCircle2, Sparkles } from 'lucide-react';
+import { Coffee, Play, Clock, CheckCircle2, Sparkles, LogOut, Calendar } from 'lucide-react';
 import Sidebar, { TabId } from '../components/Sidebar';
 import CockpitTab from './CockpitTab';
 import TasksTab from './TasksTab';
@@ -46,6 +46,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
   const [showSettings, setShowSettings] = useState(false);
   const [showBreakModal, setShowBreakModal] = useState(false);
   const [breakLoading, setBreakLoading] = useState(false);
+  const [shiftLoading, setShiftLoading] = useState(false);
+  const [inactivityNotice, setInactivityNotice] = useState<{ elapsedHours: number; returnTime: string } | null>(null);
   const [clockInDisplay, setClockInDisplay] = useState<string | null>(null);
   const [updateBanner, setUpdateBanner] = useState<{
     stage: 'available' | 'downloading' | 'downloaded';
@@ -137,6 +139,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
     }
   };
 
+  const handleEndShift = async () => {
+    if (window.confirm('هل ترغب في إنهاء وردية عمل اليوم وتسجيل الانصراف؟ سيتوقف احتساب الساعات لحين بدء وردية جديدة.')) {
+      setShiftLoading(true);
+      try {
+        await window.electronAPI.endShift();
+        await refreshState();
+      } catch (err) {
+        console.error('End shift error:', err);
+      } finally {
+        setShiftLoading(false);
+      }
+    }
+  };
+
+  const handleStartShift = async () => {
+    setShiftLoading(true);
+    try {
+      await window.electronAPI.startShift();
+      await refreshState();
+    } catch (err) {
+      console.error('Start shift error:', err);
+    } finally {
+      setShiftLoading(false);
+    }
+  };
+
   useEffect(() => {
     refreshState();
     const interval = setInterval(refreshState, 10_000); // 10s poll
@@ -145,9 +173,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
       setTrackerState((prev: any) => ({ ...prev, ...state }));
     });
 
+    const unsubRollover = window.electronAPI.onDayRollover?.((data) => {
+      console.log('Day rollover received:', data);
+      refreshState();
+    });
+
+    const unsubInactivity = window.electronAPI.onInactivityReturn?.((data: any) => {
+      const hours = Math.round((data.elapsedSec / 3600) * 10) / 10;
+      setInactivityNotice({
+        elapsedHours: hours,
+        returnTime: new Date(data.returnTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+      });
+      refreshState();
+    });
+
     return () => {
       clearInterval(interval);
       unsubscribe?.();
+      unsubRollover?.();
+      unsubInactivity?.();
     };
   }, [refreshState]);
 
@@ -207,7 +251,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
               </div>
             )}
 
-            {isPaused ? (
+            {trackerState?.shiftEnded ? (
+              <div style={styles.breakStatusGroup}>
+                <div style={styles.shiftEndedActiveChip} title="تم إنهاء وردية عمل اليوم وتسجيل الانصراف بنجاح">
+                  <CheckCircle2 size={13} color="#22c55e" />
+                  <span>انتهت وردية اليوم</span>
+                </div>
+                <button
+                  onClick={handleStartShift}
+                  disabled={shiftLoading}
+                  style={styles.resumeWorkBtn}
+                  title="بدء وردية جديدة أو عمل إضافي"
+                  onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                  onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                >
+                  <Play size={13} fill="#22c55e" color="#22c55e" />
+                  <span>بدء وردية جديدة</span>
+                </button>
+              </div>
+            ) : isPaused ? (
               <div style={styles.breakStatusGroup}>
                 <div style={styles.breakActiveChip} title={`السبب الموثق: ${trackerState?.breakReason || 'استراحة رسمية'}`}>
                   <Coffee size={13} color="#eab308" />
@@ -229,7 +291,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
               <div style={styles.breakStatusGroup}>
                 <div style={styles.enforcedChip}>
                   <span style={styles.greenDot} />
-                  <span>جلسة العمل موثقة ونشطة</span>
+                  <span>الوردية نشطة وموثقة</span>
                 </div>
                 <button
                   onClick={handleToggleBreak}
@@ -240,12 +302,41 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
                   onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                 >
                   <Coffee size={13} color="#a1a1aa" />
-                  <span>استراحة رسمية</span>
+                  <span>استراحة</span>
+                </button>
+                <button
+                  onClick={handleEndShift}
+                  disabled={shiftLoading}
+                  style={styles.endShiftBtn}
+                  title="إنهاء وردية العمل الحالية وتسجيل الانصراف"
+                  onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                  onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                >
+                  <LogOut size={13} color="#ef4444" />
+                  <span>إنهاء الوردية</span>
                 </button>
               </div>
             )}
           </div>
         </header>
+
+        {/* Inactivity Return Notice Banner */}
+        {inactivityNotice && (
+          <div style={styles.inactivityBanner}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Clock size={15} color="#38bdf8" />
+              <span>
+                مرحباً بعودتك! لاحظنا ابتعادك عن الجهاز لمدة {inactivityNotice.elapsedHours} ساعة. تم تدوير وحفظ إحصائيات الأمس بدقة وفصل عداد اليوم الجديد.
+              </span>
+            </div>
+            <button
+              onClick={() => setInactivityNotice(null)}
+              style={styles.dismissNoticeBtn}
+            >
+              حسناً
+            </button>
+          </div>
+        )}
 
         {/* Global Update Notification Banner */}
         {updateBanner && (
@@ -318,6 +409,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
               dailySummary={dailySummary}
               formatTime={formatTime}
               onToggleBreak={handleToggleBreak}
+              onEndShift={handleEndShift}
+              onStartShift={handleStartShift}
               user={user}
               isAdmin={isAdmin}
             />
@@ -431,6 +524,18 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--accent-yellow)',
     fontWeight: 600,
   },
+  shiftEndedActiveChip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'rgba(34, 197, 94, 0.12)',
+    border: '1px solid rgba(34, 197, 94, 0.25)',
+    borderRadius: 20,
+    padding: '4px 10px',
+    fontSize: 11,
+    color: '#22c55e',
+    fontWeight: 600,
+  },
   startBreakBtn: {
     display: 'flex',
     alignItems: 'center',
@@ -445,6 +550,42 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
+  },
+  endShiftBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    background: 'rgba(239, 68, 68, 0.08)',
+    border: '1px solid rgba(239, 68, 68, 0.25)',
+    borderRadius: 8,
+    padding: '5px 10px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#ef4444',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  inactivityBanner: {
+    background: 'rgba(56, 189, 248, 0.12)',
+    borderBottom: '1px solid rgba(56, 189, 248, 0.25)',
+    padding: '8px 20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontSize: 12,
+    color: '#38bdf8',
+    animation: 'fadeIn 200ms ease-out',
+  },
+  dismissNoticeBtn: {
+    background: '#38bdf8',
+    color: '#09090b',
+    border: 'none',
+    borderRadius: 6,
+    padding: '3px 10px',
+    fontSize: 11,
+    fontWeight: 700,
+    cursor: 'pointer',
   },
   resumeWorkBtn: {
     display: 'flex',

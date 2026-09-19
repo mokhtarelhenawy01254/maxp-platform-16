@@ -68,13 +68,21 @@ export class ActivityTracker {
     this.listener = null;
   }
 
+  public resetSession(): void {
+    this.resetCounters();
+    this.intervalStart = new Date();
+    this.lastInputTime = Date.now();
+  }
+
   /**
    * Capture the current interval and reset counters.
-   * Runs every 10 minutes (or on shutdown).
+   * Runs every 2 minutes (or on shutdown/shift end).
    */
   captureInterval(): ActivityInterval {
     const now = new Date();
-    const intervalSeconds = Math.max(1, Math.floor((now.getTime() - this.intervalStart.getTime()) / 1000));
+    const rawIntervalSeconds = Math.max(1, Math.floor((now.getTime() - this.intervalStart.getTime()) / 1000));
+    // Clamp to 300 seconds max to prevent sleep/lock transitions from generating giant idle durations
+    const intervalSeconds = Math.min(rawIntervalSeconds, 300);
 
     // Calculate active seconds from discrete buckets
     let activeSeconds = Math.min(intervalSeconds, this.activeBuckets.size * this.BUCKET_SIZE_SEC);
@@ -129,7 +137,8 @@ export class ActivityTracker {
     activityScore: number;
   } {
     const now = new Date();
-    const intervalSeconds = Math.max(1, Math.floor((now.getTime() - this.intervalStart.getTime()) / 1000));
+    const rawIntervalSeconds = Math.max(1, Math.floor((now.getTime() - this.intervalStart.getTime()) / 1000));
+    const intervalSeconds = Math.min(rawIntervalSeconds, 300);
     let activeSeconds = Math.min(intervalSeconds, this.activeBuckets.size * this.BUCKET_SIZE_SEC);
     if (this.isMeeting) {
       activeSeconds = Math.max(activeSeconds, Math.floor(intervalSeconds * 0.85));

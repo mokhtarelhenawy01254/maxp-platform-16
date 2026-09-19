@@ -10,6 +10,13 @@ interface QueueItem<T> {
   synced: number;
 }
 
+export function getLocalDateString(d: Date = new Date()): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 /**
  * Local file-based database for offline caching.
  * Stores activity data locally in userData before syncing to server.
@@ -186,6 +193,7 @@ class LocalDatabase {
       total_idle_seconds: 0,
       total_mouse_events: 0,
       total_keyboard_events: 0,
+      shift_ended_at: null,
       updated_at: now,
     };
 
@@ -200,19 +208,39 @@ class LocalDatabase {
     this.saveToDisk();
   }
 
+  markShiftEnded(date: string, endIso: string = new Date().toISOString()): void {
+    const stat = this.dailyStatsMap[date];
+    if (stat) {
+      stat.shift_ended_at = endIso;
+      stat.updated_at = new Date().toISOString();
+      this.saveToDisk();
+    }
+  }
+
   getDailyStats(date: string): any {
     return this.dailyStatsMap[date] || null;
   }
 
+  getAllDailyStatsKeys(): string[] {
+    return Object.keys(this.dailyStatsMap).sort().reverse();
+  }
+
   // ── Aggregated Stats for UI ──────────────────────────────────
 
-  getTodayAppsSummary(): { appName: string; durationSeconds: number; category: string }[] {
-    const today = new Date().toISOString().split('T')[0];
+  getTodayAppsSummary(targetDate?: string): { appName: string; durationSeconds: number; category: string }[] {
+    const dateToMatch = targetDate || getLocalDateString();
     const map: Record<string, { durationSeconds: number; category: string }> = {};
 
     for (const item of this.appsQueue) {
-      const itemDate = item.data.startedAt ? item.data.startedAt.split('T')[0] : '';
-      if (itemDate === today || !itemDate) {
+      let itemDate = '';
+      if (item.data.startedAt) {
+        try {
+          itemDate = getLocalDateString(new Date(item.data.startedAt));
+        } catch {
+          itemDate = item.data.startedAt.split('T')[0];
+        }
+      }
+      if (itemDate === dateToMatch || !itemDate) {
         const name = item.data.appName || 'Unknown App';
         const dur = item.data.durationSeconds || 0;
         const cat = item.data.category || 'unrated';
@@ -229,13 +257,20 @@ class LocalDatabase {
       .sort((a, b) => b.durationSeconds - a.durationSeconds);
   }
 
-  getTodayWebsitesSummary(): { domain: string; durationSeconds: number; category: string }[] {
-    const today = new Date().toISOString().split('T')[0];
+  getTodayWebsitesSummary(targetDate?: string): { domain: string; durationSeconds: number; category: string }[] {
+    const dateToMatch = targetDate || getLocalDateString();
     const map: Record<string, { durationSeconds: number; category: string }> = {};
 
     for (const item of this.websitesQueue) {
-      const itemDate = item.data.startedAt ? item.data.startedAt.split('T')[0] : '';
-      if (itemDate === today || !itemDate) {
+      let itemDate = '';
+      if (item.data.startedAt) {
+        try {
+          itemDate = getLocalDateString(new Date(item.data.startedAt));
+        } catch {
+          itemDate = item.data.startedAt.split('T')[0];
+        }
+      }
+      if (itemDate === dateToMatch || !itemDate) {
         const dom = item.data.domain || 'Direct / Internal';
         const dur = item.data.durationSeconds || 0;
         const cat = item.data.category || 'unrated';
