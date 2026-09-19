@@ -289,12 +289,19 @@ exports.handleStorefrontShell = async (req, res, next) => {
                       mainImage: true,
                       images: true,
                       price: true,
-                      currency: true,
                     },
                   },
                 },
               }),
-            )
+            ).catch((error) => {
+              // Landing meta must never break the page shell — degrade to
+              // the no-meta version (the SPA renders its own state anyway).
+              console.warn(
+                "[STOREFRONT-HTML] Landing meta query failed:",
+                error?.message || error,
+              );
+              return null;
+            })
           : Promise.resolve(null),
         loadIndexHtml(),
       ]);
@@ -352,7 +359,6 @@ exports.handleStorefrontShell = async (req, res, next) => {
         productDescription: landing.product?.description || "",
         productImage: landing.product?.mainImage || firstImage || null,
         productPrice: landing.product?.price,
-        currency: landing.product?.currency,
       };
     }
 
