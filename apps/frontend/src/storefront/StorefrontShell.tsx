@@ -268,9 +268,34 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
     layoutRouteSegments[0] === "store"
       ? layoutRouteSegments.slice(1)
       : layoutRouteSegments;
+  const isRedLineContext = useMemo(() => {
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname.toLowerCase();
+      if (hostname.includes("red-line") || hostname.includes("redline")) {
+        return true;
+      }
+    }
+    const slug = settings?.company?.slug?.toLowerCase();
+    if (slug === "red-line" || slug === "redline") {
+      return true;
+    }
+    const name = settings?.company?.name?.toLowerCase();
+    if (name?.includes("red line") || name?.includes("redline")) {
+      return true;
+    }
+    if (
+      layoutStorefrontSegments[0] === "red-line" ||
+      layoutStorefrontSegments[0] === "redline"
+    ) {
+      return true;
+    }
+    return false;
+  }, [layoutStorefrontSegments, settings?.company?.name, settings?.company?.slug]);
+
   const isProductImageLandingPage =
     layoutStorefrontSegments[0] === "lp" ||
-    layoutStorefrontSegments[0] === "landing";
+    layoutStorefrontSegments[0] === "landing" ||
+    isRedLineContext;
   const isFunnelPage =
     layoutStorefrontSegments[0] === "funnel" ||
     layoutStorefrontSegments[0] === "p";
@@ -826,7 +851,9 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       </div>
     </div>
   );
-  const homePageElement = (
+  const homePageElement = isRedLineContext ? (
+    <RedLineProductPage />
+  ) : (
     <PageComposer
       key={`home:${routePageKey}`}
       pageConfig={theme.pages.home}
