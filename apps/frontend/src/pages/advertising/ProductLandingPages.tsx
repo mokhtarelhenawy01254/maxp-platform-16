@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Plus, Layers, Eye } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -22,11 +28,15 @@ import { ProductLandingHeader } from "./product-landing/ProductLandingHeader";
 import { ProductSummaryCard } from "./product-landing/ProductSummaryCard";
 import { SectionsStackEditor } from "./product-landing/SectionsStackEditor";
 import { ElementsSidebarDrawer } from "./product-landing/ElementsSidebarDrawer";
-import { PhoneMockupPreview } from "./product-landing/PhoneMockupPreview";
 import { CreateLandingModal } from "./product-landing/CreateLandingModal";
 import { TemplatesLibraryModal } from "./product-landing/TemplatesLibraryModal";
 import { LandingStylePanel } from "./product-landing/LandingStylePanel";
 import { LandingSeoPanel } from "./product-landing/LandingSeoPanel";
+import { LandingLivePreview } from "./product-landing/LandingLivePreview";
+import {
+  useEditorHistory,
+  useUndoKeyboardShortcuts,
+} from "./product-landing/useEditorHistory";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { buildStoreUrl } from "../../utils/storeUrl";
 import "./ProductLandingPages.css";
@@ -35,7 +45,16 @@ const ProductLandingPages: React.FC = () => {
   const [pages, setPages] = useState<ProductLandingPage[]>([]);
   const [products, setProducts] = useState<ProductLandingProduct[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
-  const [editor, setEditor] = useState<EditorState>(DEFAULT_EDITOR);
+  const {
+    editor,
+    updateEditor,
+    undo,
+    redo,
+    resetEditor,
+    canUndo,
+    canRedo,
+  } = useEditorHistory<EditorState>(DEFAULT_EDITOR);
+  useUndoKeyboardShortcuts(undo, redo);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
   const [loadingPages, setLoadingPages] = useState(true);
@@ -78,6 +97,31 @@ const ProductLandingPages: React.FC = () => {
     if (!customerUrl) return "";
     return selectedPage?.status === "PUBLISHED" ? customerUrl : `${customerUrl}?preview=1`;
   }, [customerUrl, selectedPage?.status]);
+
+  // Live preview reload signal: editor snapshot + save counter, so refreshes
+  // land after the autosave has persisted the change.
+  const previewRefreshToken = useMemo(
+    () =>
+      `${saveTick}::${JSON.stringify([
+        editor.title,
+        editor.slug,
+        editor.status,
+        editor.style,
+        editor.seo,
+        editor.formConfig,
+        editor.sections?.map((s) => [s.id, s.enabled, s.variant, s.title]),
+      ])}`,
+    [
+      saveTick,
+      editor.title,
+      editor.slug,
+      editor.status,
+      editor.style,
+      editor.seo,
+      editor.formConfig,
+      editor.sections,
+    ],
+  );
 
   // Load landing pages list
   const loadPages = useCallback(async () => {
@@ -127,7 +171,7 @@ const ProductLandingPages: React.FC = () => {
             ? selectedPage.formConfig!.sections!
             : buildDefaultSectionsForProduct(selectedPage.product);
 
-      setEditor({
+      resetEditor({
         title: selectedPage.title || "",
         slug: selectedPage.slug || "",
         status: selectedPage.status || "DRAFT",
@@ -396,7 +440,7 @@ const ProductLandingPages: React.FC = () => {
       },
     };
 
-    setEditor((current) => ({
+    updateEditor((current) => ({
       ...current,
       sections: [...current.sections, newSec],
     }));
@@ -409,7 +453,7 @@ const ProductLandingPages: React.FC = () => {
     const targetIndex = index + direction;
     if (targetIndex < 0 || targetIndex >= editor.sections.length) return;
 
-    setEditor((current) => {
+    updateEditor((current) => {
       const nextSections = [...current.sections];
       const temp = nextSections[index];
       nextSections[index] = nextSections[targetIndex];
@@ -430,7 +474,7 @@ const ProductLandingPages: React.FC = () => {
       return;
     }
 
-    setEditor((current) => {
+    updateEditor((current) => {
       const nextSections = [...current.sections];
       const [moved] = nextSections.splice(sourceIndex, 1);
       nextSections.splice(targetIndex, 0, moved);
@@ -451,14 +495,14 @@ const ProductLandingPages: React.FC = () => {
     const index = editor.sections.findIndex((s) => s.id === id);
     const next = [...editor.sections];
     next.splice(index + 1, 0, duplicated);
-    setEditor((current) => ({ ...current, sections: next }));
+    updateEditor((current) => ({ ...current, sections: next }));
     setActiveSectionId(duplicated.id);
     setIsDirty(true);
     toast.success(`تم تكرار قسم: ${sec.title}`);
   };
 
   const handleToggleSectionEnabled = (id: string) => {
-    setEditor((current) => ({
+    updateEditor((current) => ({
       ...current,
       sections: current.sections.map((sec) =>
         sec.id === id ? { ...sec, enabled: sec.enabled === false ? true : false } : sec,
@@ -468,7 +512,7 @@ const ProductLandingPages: React.FC = () => {
   };
 
   const handleRemoveSection = (id: string) => {
-    setEditor((current) => ({
+    updateEditor((current) => ({
       ...current,
       sections: current.sections.filter((sec) => sec.id !== id),
     }));
@@ -507,7 +551,7 @@ const ProductLandingPages: React.FC = () => {
           toast.error("الملف لا يحتوي على أي أقسام صالحة");
           return;
         }
-        setEditor((current) => ({
+        updateEditor((current) => ({
           ...current,
           title: imported.title || current.title,
           slug: imported.slug || current.slug,
@@ -528,7 +572,7 @@ const ProductLandingPages: React.FC = () => {
 
   const handleApplyTemplate = (template: LandingTemplate) => {
     const newSections = template.buildSections(selectedProduct);
-    setEditor((current) => ({
+    updateEditor((current) => ({
       ...current,
       sections: newSections,
     }));
@@ -543,7 +587,7 @@ const ProductLandingPages: React.FC = () => {
     id: string,
     updatedContent: LandingSection["content"],
   ) => {
-    setEditor((current) => ({
+    updateEditor((current) => ({
       ...current,
       sections: current.sections.map((sec) =>
         sec.id === id ? { ...sec, content: updatedContent } : sec,
@@ -553,7 +597,7 @@ const ProductLandingPages: React.FC = () => {
   };
 
   const handleUpdateSectionVariant = (id: string, variant: string) => {
-    setEditor((current) => ({
+    updateEditor((current) => ({
       ...current,
       sections: current.sections.map((sec) =>
         sec.id === id ? { ...sec, variant } : sec,
@@ -563,8 +607,10 @@ const ProductLandingPages: React.FC = () => {
   };
 
   // Actions
-  const handleSave = async () => {
-    if (!selectedPage) return;
+  const [saveTick, setSaveTick] = useState(0);
+
+  const handleSave = async (silent = false) => {
+    if (!selectedPage || saving) return;
 
     try {
       setSaving(true);
@@ -591,13 +637,28 @@ const ProductLandingPages: React.FC = () => {
         current.map((item) => (item.id === updated.id ? updated : item)),
       );
       setIsDirty(false);
-      toast.success("تم حفظ كافة أقسام وبيانات الصفحة بنجاح! 🎉");
+      setSaveTick((tick) => tick + 1);
+      if (!silent) {
+        toast.success("تم حفظ كافة أقسام وبيانات الصفحة بنجاح! 🎉");
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر حفظ الصفحة");
     } finally {
       setSaving(false);
     }
   };
+
+  // Autosave: persist edits shortly after the last change so the live
+  // preview (and safety net) track the merchant without manual saves.
+  const handleSaveRef = useRef(handleSave);
+  handleSaveRef.current = handleSave;
+  useEffect(() => {
+    if (!isDirty || !selectedPage) return;
+    const timer = window.setTimeout(() => {
+      void handleSaveRef.current(true);
+    }, 2500);
+    return () => window.clearTimeout(timer);
+  }, [editor, isDirty, selectedPage]);
 
   const handleUpdateStatus = async (status: ProductLandingStatus) => {
     if (!selectedPage) return;
@@ -616,7 +677,7 @@ const ProductLandingPages: React.FC = () => {
       setPages((current) =>
         current.map((item) => (item.id === updated.id ? updated : item)),
       );
-      setEditor((current) => ({ ...current, status: updated.status }));
+      updateEditor((current) => ({ ...current, status: updated.status }));
       toast.success(
         status === "PUBLISHED"
           ? "تم نشر صفحة الهبوط بنجاح! 🚀"
@@ -723,8 +784,12 @@ const ProductLandingPages: React.FC = () => {
         selectedId={selectedId}
         onSelectPage={setSelectedId}
         onRefresh={loadPages}
-        onSave={handleSave}
+        onSave={() => void handleSave()}
         saving={saving}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
         onOpenCreateModal={() => setIsCreateModalOpen(true)}
         onOpenTemplatesModal={() => setIsTemplatesModalOpen(true)}
         onExportJson={handleExportJson}
@@ -806,12 +871,12 @@ const ProductLandingPages: React.FC = () => {
                 product={selectedProduct}
                 title={editor.title}
                 onChangeTitle={(val) => {
-                  setEditor((c) => ({ ...c, title: val }));
+                  updateEditor((c) => ({ ...c, title: val }));
                   setIsDirty(true);
                 }}
                 slug={editor.slug}
                 onChangeSlug={(val) => {
-                  setEditor((c) => ({ ...c, slug: val }));
+                  updateEditor((c) => ({ ...c, slug: val }));
                   setIsDirty(true);
                 }}
                 status={editor.status}
@@ -824,7 +889,7 @@ const ProductLandingPages: React.FC = () => {
               <LandingStylePanel
                 style={editor.style}
                 onChange={(style) => {
-                  setEditor((c) => ({ ...c, style }));
+                  updateEditor((c) => ({ ...c, style }));
                   setIsDirty(true);
                 }}
               />
@@ -833,7 +898,7 @@ const ProductLandingPages: React.FC = () => {
                 seo={editor.seo}
                 productImage={selectedProduct?.mainImage || ""}
                 onChange={(seo) => {
-                  setEditor((c) => ({ ...c, seo }));
+                  updateEditor((c) => ({ ...c, seo }));
                   setIsDirty(true);
                 }}
               />
@@ -867,17 +932,14 @@ const ProductLandingPages: React.FC = () => {
               </div>
             </section>
 
-            {/* Left: Phone Live Preview Frame */}
+            {/* Left: Live Preview of the REAL storefront page */}
             <aside
               className={`eo-builder-preview-col ${mobileTab === "editor" ? "eo-hide-on-mobile" : ""} ${!showPhonePreview ? "eo-hide-on-desktop" : ""}`}
             >
-              <PhoneMockupPreview
-                title={editor.title}
-                product={selectedProduct}
-                sections={editor.sections}
-                formConfig={editor.formConfig}
-                previewUrl={previewUrl}
+              <LandingLivePreview
                 customerUrl={customerUrl}
+                companyId={companyId || undefined}
+                refreshToken={previewRefreshToken}
                 isMobileView={mobileTab === "preview"}
               />
             </aside>

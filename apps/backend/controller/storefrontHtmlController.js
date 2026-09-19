@@ -94,6 +94,30 @@ exports.handleStorefrontShell = async (req, res, next) => {
     return next();
   }
 
+  // The landing builder embeds the live storefront page as an iframe.
+  // Frame protection stays on, scoped to the platform admin origin
+  // instead of hard-deny, so only the merchant's own editor can embed.
+  const platformAdminOrigin =
+    process.env.PLATFORM_ADMIN_ORIGIN || "https://maxp.online";
+  res.removeHeader("X-Frame-Options");
+  const existingCsp = res.getHeader("Content-Security-Policy");
+  const adjustedCsp = (Array.isArray(existingCsp)
+    ? existingCsp
+    : existingCsp
+      ? [String(existingCsp)]
+      : []
+  ).map((csp) =>
+    csp.includes("frame-ancestors")
+      ? csp.replace(
+          /frame-ancestors[^;]*/i,
+          `frame-ancestors 'self' ${platformAdminOrigin}`,
+        )
+      : csp,
+  );
+  if (adjustedCsp.length) {
+    res.setHeader("Content-Security-Policy", adjustedCsp);
+  }
+
   const cacheKey = `${req.companyId}:${req.path}`;
   const cached = htmlPageCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < HTML_CACHE_TTL_MS) {

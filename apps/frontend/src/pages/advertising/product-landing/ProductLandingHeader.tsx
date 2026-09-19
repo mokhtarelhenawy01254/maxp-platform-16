@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import {
   Copy,
   Eye,
-  ExternalLink,
   Loader2,
   Plus,
+  Redo2,
   RefreshCw,
   Save,
   Search,
@@ -12,6 +12,7 @@ import {
   Sparkles,
   LayoutTemplate,
   Download,
+  Undo2,
   Upload,
   MoreVertical,
   X,
@@ -37,6 +38,10 @@ interface ProductLandingHeaderProps {
   onTogglePhonePreview?: () => void;
   showPhonePreview?: boolean;
   isDirty?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }
 
 export const ProductLandingHeader: React.FC<ProductLandingHeaderProps> = ({
@@ -58,6 +63,10 @@ export const ProductLandingHeader: React.FC<ProductLandingHeaderProps> = ({
   onTogglePhonePreview,
   showPhonePreview,
   isDirty,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }) => {
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const isBusy = saving || generatingAi;
@@ -232,13 +241,33 @@ export const ProductLandingHeader: React.FC<ProductLandingHeaderProps> = ({
       {/* Desktop Actions (Right side in RTL) */}
       <div className="eo-header-actions eo-desktop-only">
         <button
+          className="eo-btn eo-btn-history"
+          type="button"
+          onClick={onUndo}
+          disabled={!canUndo || isBusy}
+          title="تراجع (Ctrl+Z)"
+          aria-label="تراجع"
+        >
+          <Undo2 size={15} />
+        </button>
+        <button
+          className="eo-btn eo-btn-history"
+          type="button"
+          onClick={onRedo}
+          disabled={!canRedo || isBusy}
+          title="إعادة (Ctrl+Shift+Z)"
+          aria-label="إعادة"
+        >
+          <Redo2 size={15} />
+        </button>
+        <button
           className={`eo-btn eo-btn-save ${isDirty ? "is-dirty" : ""}`}
           type="button"
           onClick={onSave}
           disabled={isBusy || !selectedId}
           title={
             isDirty
-              ? "توجد تغييرات غير محفوظة — اضغط لحفظ الصفحة"
+              ? "توجد تغييرات غير محفوظة — اضغط لحفظ الصفحة (الحفظ التلقائي شغال خلال ثواني)"
               : "حفظ التعديلات في قاعدة البيانات"
           }
         >
