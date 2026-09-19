@@ -37,10 +37,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: apps/agent-desktop/package-lock.json
 
       - name: Install Agent Desktop Dependencies
         working-directory: apps/agent-desktop
-        run: npm install --include=dev
+        run: npm ci
 
       - name: Build TypeScript Main and Vite Renderer
         working-directory: apps/agent-desktop
