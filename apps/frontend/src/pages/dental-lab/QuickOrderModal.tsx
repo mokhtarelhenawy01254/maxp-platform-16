@@ -25,7 +25,6 @@ import {
   Loader2,
   Package,
   Plus,
-  ScanLine,
   Search,
   Sparkles,
   Stethoscope,
@@ -48,7 +47,6 @@ import {
   DentalTechnicianRole,
   ROLE_CONFIG,
   PRIORITY_CONFIG,
-  ScanParseResult,
   createCase,
   createDoctor,
   fetchDoctors,
@@ -56,7 +54,6 @@ import {
   fetchTechnicians,
   fetchPanLabelPdf,
   fmtMoney,
-  parseScan,
   uploadCaseAttachments,
   MODAL_CONTENT_CLS,
   MODAL_INPUT_CLS,
@@ -294,7 +291,6 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submittingAndPrint, setSubmittingAndPrint] = useState(false);
-  const [parseMsg, setParseMsg] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -515,25 +511,6 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
     e.preventDefault();
     setDragOver(false);
     if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
-  };
-
-  const handleParseFile = async (f: File) => {
-    try {
-      setParseMsg("جاري فحص وتفسير الملف بالذكاء الاصطناعي...");
-      const res: ScanParseResult = await parseScan(f);
-      if (res.patientName && !patientName) setPatientName(res.patientName);
-      if (res.teeth && selectedTeeth.length === 0) {
-        const parts = res.teeth.split(/[,،\s]+/).filter(Boolean);
-        handleTeethChange(parts);
-      }
-      if (res.shade && !shade) setShade(res.shade);
-      if (res.material && !material) setMaterial(res.material);
-      setParseMsg("تم استخراج بيانات الحالة من الملف بنجاح!");
-      setTimeout(() => setParseMsg(""), 4000);
-    } catch {
-      setParseMsg("تعذر القراءة الآلية، يرجى ملء الحقول يدوياً");
-      setTimeout(() => setParseMsg(""), 3500);
-    }
   };
 
   // Submit Quick Order
@@ -1101,7 +1078,6 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                   />
                   <Upload className="w-6 h-6 mx-auto text-blue-600 mb-1" />
                   <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">انقر لاختيار ملفات الـ STL، صور الكاميرا الفموية، أو الـ PDF</p>
-                  {parseMsg && <p className="text-xs text-emerald-600 mt-1">{parseMsg}</p>}
                 </div>
 
                 {files.length > 0 && (
@@ -1119,23 +1095,13 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                             {st === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />}
                             {st === "uploading" && <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />}
                             {!submitting && (
-                              <>
-                                <button
-                                  type="button"
-                                  title="قراءة ذكية"
-                                  onClick={(e) => { e.stopPropagation(); handleParseFile(f); }}
-                                  className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
-                                >
-                                  <ScanLine className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
-                                  className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                                className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             )}
                           </div>
                         </li>

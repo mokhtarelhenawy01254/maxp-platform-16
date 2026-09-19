@@ -9,7 +9,7 @@ import {
   CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG, PAYMENT_STATUS_MAP,
   DentalLabCase, DentalLabDoctor, DentalTechnician, DentalWorkType, DentalCasePriority, DentalTechnicianRole,
   fetchCases, fetchDoctors, fetchWorkTypes, fetchTechnicians,
-  createCase, updateCase, advanceCase, assignCase, removeCaseAssignment, uploadCaseAttachment, uploadCaseAttachments, parseScan,
+  createCase, updateCase, advanceCase, assignCase, removeCaseAssignment, uploadCaseAttachment, uploadCaseAttachments,
   createInvoice, addInvoicePayment, kioskScanCase,
   trashCase, restoreCase, permanentDeleteCase,
   bulkAdvanceCases, bulkAssignTechnician, bulkUpdatePriority, bulkTrashCases, bulkRestoreCases,
@@ -65,50 +65,6 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
   const [priority, setPriority] = useState(initial?.priority ?? "NORMAL");
   const [discount, setDiscount] = useState(initial?.discount ?? 0);
   const [notes, setNotes] = useState(initial?.notes ?? "");
-  const [scanParsing, setScanParsing] = useState(false);
-  const [scanMsg, setScanMsg] = useState("");
-  const scanInputRef = useRef<HTMLInputElement>(null);
-
-  const handleScanFile = async (file: File) => {
-    if (!file || scanParsing) return;
-    setScanParsing(true);
-    setScanMsg("");
-    try {
-      const result = await parseScan(file);
-      if (result.patientName) setPatientName(result.patientName);
-      if (result.teeth) {
-        setTeeth(result.teeth);
-        const parsed = result.teeth.split(/[,،\s]+/).filter(Boolean);
-        setSelectedTeeth(parsed);
-        if (parsed.length > 0) setUnitsCount(parsed.length);
-      }
-      if (result.shade) setShade(result.shade);
-      if (result.material) setMaterial(result.material);
-      if (result.notes) setNotes(result.notes);
-      if (result.workTypeHint) {
-        const matched = workTypes.find(w =>
-          w.name && result.workTypeHint &&
-          w.name.toLowerCase().includes(result.workTypeHint.toLowerCase())
-        );
-        if (matched) {
-          setWorkTypeId(matched.id);
-          setWorkTypeName(matched.name);
-          if (matched.price != null) {
-            const cnt = unitsCount > 0 ? unitsCount : 1;
-            setPriceSnapshot(matched.pricingMode === "FLAT" ? matched.price : matched.price * cnt);
-          }
-        }
-      }
-      setScanMsg(t("dentalLab.cases.scanDone"));
-      toast.success(t("dentalLab.cases.scanDone"));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("dentalLab.cases.scanFailed"));
-    } finally {
-      setScanParsing(false);
-      if (scanInputRef.current) scanInputRef.current.value = "";
-    }
-  };
-
   const onWorkTypeChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
     setWorkTypeId(id);
@@ -216,26 +172,6 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
 
         {/* Scrollable Form Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-          <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 p-3.5 flex flex-wrap items-center gap-3 bg-gray-50/50 dark:bg-gray-800/40">
-            <input
-              ref={scanInputRef}
-              type="file"
-              accept="image/*,.pdf"
-              className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleScanFile(f); }}
-            />
-            <button
-              type="button"
-              onClick={() => scanInputRef.current?.click()}
-              disabled={scanParsing}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50 font-medium shadow-xs"
-            >
-              {scanParsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
-              {t("dentalLab.cases.scanParse")}
-            </button>
-            <span className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.cases.scanHint")}</span>
-            {scanMsg ? <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{scanMsg}</span> : null}
-          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
