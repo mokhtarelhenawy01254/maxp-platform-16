@@ -40,7 +40,7 @@ jobs:
 
       - name: Install Agent Desktop Dependencies
         working-directory: apps/agent-desktop
-        run: npm install
+        run: npm install --include=dev
 
       - name: Build TypeScript Main and Vite Renderer
         working-directory: apps/agent-desktop
@@ -92,7 +92,7 @@ jobs:
             apps/agent-desktop/release/latest.yml
 
       - name: Setup SSH Key for Server Direct Download Deployment
-        if: ${{ github.event.inputs.deploy_to_server != 'false' }}
+        if: ${{ github.event_name == 'push' || github.event.inputs.deploy_to_server != 'false' }}
         uses: ./.github/actions/setup-ssh
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -100,7 +100,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
 
       - name: Deploy Installer to Production Web Download Route
-        if: ${{ github.event.inputs.deploy_to_server != 'false' }}
+        if: ${{ github.event_name == 'push' || github.event.inputs.deploy_to_server != 'false' }}
         shell: bash
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
