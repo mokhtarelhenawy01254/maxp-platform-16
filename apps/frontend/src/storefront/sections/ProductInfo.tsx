@@ -4146,7 +4146,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         selectedAttributes={selectedAttributes}
         onChange={setSelectedAttributes}
         variantSettings={variantSettings}
-        currency={currency}
       />
   </div>
   );
@@ -4205,7 +4204,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         density="compact"
         variantSettings={elessiVariantSettings}
         isOpen={product.productVariants && product.productVariants.length > 0}
-        currency={currency}
       />
       {fitNote ? (
         <div className="mt-2.5 flex items-center gap-2 rounded-[0.8rem] border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-900 dark:text-amber-200">
@@ -4591,7 +4589,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
             density="compact"
             layout="inline-compact"
             variantSettings={variantSettings}
-            currency={currency}
           />
         </div>
       ) : null;
@@ -5543,7 +5540,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         selectedAttributes={selectedAttributes}
         onChange={setSelectedAttributes}
         variantSettings={variantSettings}
-        currency={currency}
       />
     </div>
   ) : null;
@@ -8344,7 +8340,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
                 selectedAttributes={selectedAttributes}
                 onChange={setSelectedAttributes}
                 variantSettings={variantSettings}
-                currency={currency}
               />
             </div>
           )}
