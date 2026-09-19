@@ -50,8 +50,13 @@ function applyTokens(mode: ThemeMode) {
   for (const [key, value] of Object.entries(tokens)) {
     root.style.setProperty(key, value);
   }
-  // also set a data attribute for potential CSS selectors
+  // also set a data attribute and class for CSS selectors & Tailwind
   root.setAttribute('data-theme', mode);
+  if (mode === 'dark') {
+    root.classList.add('dark');
+  } else {
+    root.classList.remove('dark');
+  }
 
   // Inject or update global custom scrollbar rules
   let scrollbarStyle = document.getElementById('maxp-theme-scrollbars') as HTMLStyleElement | null;

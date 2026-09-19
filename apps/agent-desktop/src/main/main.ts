@@ -667,6 +667,73 @@ ipcMain.handle(IPC_CHANNELS.TRIGGER_ACTION, async (_, { action, payload }) => {
 });
 
 // Auto-Updater Handlers
+function initAutoUpdater() {
+  try {
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.setFeedURL({
+      provider: 'generic',
+      url: 'https://maxp.online/download/',
+    });
+
+    autoUpdater.on('checking-for-update', () => {
+      console.log('[AgentStudioUpdater] Checking for updates...');
+      mainWindow?.webContents.send('update:status', { stage: 'checking' });
+    });
+
+    autoUpdater.on('update-available', (info) => {
+      console.log('[AgentStudioUpdater] Update available:', info.version);
+      mainWindow?.webContents.send('update:status', {
+        stage: 'available',
+        version: info.version,
+      });
+    });
+
+    autoUpdater.on('download-progress', (progressObj) => {
+      mainWindow?.webContents.send('update:status', {
+        stage: 'downloading',
+        percent: Math.round(progressObj.percent),
+        bytesPerSecond: progressObj.bytesPerSecond,
+        total: progressObj.total,
+        transferred: progressObj.transferred,
+      });
+    });
+
+    autoUpdater.on('update-not-available', () => {
+      console.log('[AgentStudioUpdater] App is up to date.');
+      mainWindow?.webContents.send('update:status', {
+        stage: 'up-to-date',
+        version: app.getVersion(),
+      });
+    });
+
+    autoUpdater.on('error', (err) => {
+      console.warn('[AgentStudioUpdater] Error:', err?.message || err);
+      mainWindow?.webContents.send('update:status', {
+        stage: 'error',
+        message: err?.message || 'تعذر التحقق من التحديثات',
+      });
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+      console.log('[AgentStudioUpdater] Update downloaded successfully:', info.version);
+      mainWindow?.webContents.send('update:status', {
+        stage: 'downloaded',
+        version: info.version,
+      });
+    });
+
+    // Check after 5s in packaged production
+    setTimeout(() => {
+      if (app.isPackaged) {
+        autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+      }
+    }, 5000);
+  } catch (err: any) {
+    console.warn('[AgentStudioUpdater] Failed to init updater:', err?.message);
+  }
+}
+
 ipcMain.handle(IPC_CHANNELS.CHECK_FOR_UPDATES, async () => {
   try {
     const res = await autoUpdater.checkForUpdates();
@@ -683,6 +750,7 @@ ipcMain.handle(IPC_CHANNELS.QUIT_AND_INSTALL, () => {
 // App Lifecycle
 app.whenReady().then(() => {
   createWindow();
+  initAutoUpdater();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

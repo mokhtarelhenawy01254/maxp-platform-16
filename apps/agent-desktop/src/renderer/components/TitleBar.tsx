@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Minus, Square, Copy, X, Bot, Sparkles, Command } from 'lucide-react';
+import { Minus, Square, Copy, X, Bot, Sparkles, Command, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../theme/ThemeContext';
 
 interface TitleBarProps {
   storeName?: string;
@@ -10,6 +11,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   storeName = 'متجر سوان',
   isLoggedIn = false,
 }) => {
+  const { mode, toggleTheme } = useTheme();
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   };
 
   return (
-    <header className="h-9 flex items-center justify-between px-3 select-none bg-slate-950 border-b border-white/10 text-slate-200 z-50">
+    <header className="h-9 flex items-center justify-between px-3 select-none bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 z-50 transition-colors">
       {/* Draggable Title / Brand Region */}
       <div
         className="flex items-center gap-3 flex-1 h-full cursor-grab active:cursor-grabbing"
@@ -74,6 +76,17 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         className="flex items-center gap-1 h-full"
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
+        {/* Theme Toggle Button */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="w-7 h-7 flex items-center justify-center rounded hover:bg-black/10 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+          title={mode === 'dark' ? 'التحويل إلى الوضع النهاري (Light Mode)' : 'التحويل إلى الوضع الليلي (Dark Mode)'}
+          aria-label="Toggle Theme"
+        >
+          {mode === 'dark' ? <Sun size={13} className="text-amber-400" /> : <Moon size={13} className="text-indigo-600" />}
+        </button>
+
         <button
           type="button"
           onClick={handleMinimize}
