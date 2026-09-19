@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Car } from "lucide-react";
 import QuantitySelector from "../components/QuantitySelector";
 import { useCheckoutStore } from "../store/useCheckoutStore";
 import { usePdpSelectionStore } from "../store/usePdpSelectionStore";
@@ -79,12 +80,18 @@ const buildQuickOrderNote = ({
   alternatePhone,
   attributeSummary,
   quantityOfferLabel,
+  customAttributesSummary,
 }: {
   alternatePhone: string;
   attributeSummary: string;
   quantityOfferLabel: string;
+  customAttributesSummary?: string;
 }) => {
   const blocks: string[] = [];
+
+  if (customAttributesSummary && customAttributesSummary.trim()) {
+    blocks.push(`تفاصيل الطلب: ${customAttributesSummary.trim()}`);
+  }
 
   if (alternatePhone.trim()) {
     blocks.push(`رقم هاتف بديل: ${alternatePhone.trim()}`);
@@ -220,6 +227,38 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const [walletProofUploading, setWalletProofUploading] = useState(false);
   const [walletTransferRef, setWalletTransferRef] = useState("");
   const walletFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const customAttributes = useMemo(() => {
+    let meta = (product as any)?.metadata;
+    if (typeof meta === "string") {
+      try {
+        meta = JSON.parse(meta);
+      } catch {
+        meta = null;
+      }
+    }
+    if (!meta) return [];
+    if (Array.isArray(meta.customAttributes)) {
+      return meta.customAttributes;
+    }
+    if (Array.isArray(meta.customFields)) {
+      return meta.customFields;
+    }
+    return [];
+  }, [product]);
+
+  const [customAttributeValues, setCustomAttributeValues] = useState<Record<string, string>>({});
+
+  const handleCustomAttributeChange = (key: string, value: string) => {
+    setCustomAttributeValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const customAttributesSummary = useMemo(() => {
+    return customAttributes
+      .filter((attr: any) => customAttributeValues[attr.key]?.trim())
+      .map((attr: any) => `${attr.label}: ${customAttributeValues[attr.key].trim()}`)
+      .join(" - ");
+  }, [customAttributes, customAttributeValues]);
 
   const handleWalletProofFile = async (file?: File | null) => {
     if (!file) return;
@@ -676,6 +715,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
           alternatePhone: resolvedAlternatePhone,
           attributeSummary,
           quantityOfferLabel: activeQuantityOffer?.offerLabel || "",
+          customAttributesSummary,
         }),
         paymentMethod: "cod",
         shippingCost,
@@ -870,6 +910,16 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       );
     }
 
+    customAttributes.forEach((attr: any) => {
+      if (attr.required && !customAttributeValues[attr.key]?.trim()) {
+        errors.push(
+          prefersArabicCopy
+            ? `يرجى إدخال ${attr.label}.`
+            : `Please enter ${attr.label}.`,
+        );
+      }
+    });
+
     return errors;
   };
 
@@ -980,6 +1030,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                 : "",
             attributeSummary,
             quantityOfferLabel: activeQuantityOffer?.offerLabel || "",
+            customAttributesSummary,
           }),
           paymentMethod,
           shippingCost,
@@ -1672,6 +1723,32 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                       />
                     </label>
                   ) : null}
+                </div>
+              ) : null}
+
+              {customAttributes && customAttributes.length > 0 ? (
+                <div className="space-y-3">
+                  {customAttributes.map((attr: any) => (
+                    <label key={attr.key} className={fieldStackClassName}>
+                      <span className={fieldLabelClassName}>
+                        <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+                          <Car className="h-4 w-4 text-primary" />
+                          {attr.label}
+                          {attr.required && <span className="text-red-500 font-bold">*</span>}
+                        </span>
+                      </span>
+                      <input
+                        type="text"
+                        value={customAttributeValues[attr.key] || ""}
+                        onChange={(e) => handleCustomAttributeChange(attr.key, e.target.value)}
+                        className={resolvedInputClassName}
+                        placeholder={
+                          attr.placeholder ||
+                          (prefersArabicCopy ? "اكتب هنا..." : "Enter details...")
+                        }
+                      />
+                    </label>
+                  ))}
                 </div>
               ) : null}
 

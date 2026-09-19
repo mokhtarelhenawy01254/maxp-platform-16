@@ -14,13 +14,8 @@ const StorePages = React.lazy(() => import('../pages/settings/StorePages'));
 const StorefrontClaritySettings = React.lazy(() => import('../pages/settings/StorefrontClaritySettings'));
 const CodDepositSettings = React.lazy(() => import('../pages/settings/CodDepositSettings'));
 const PostPurchaseOfferBuilderPage = React.lazy(() => import('../pages/marketing/PostPurchaseOfferBuilderPage'));
-const RedLineProductPage = React.lazy(() => import('../storefront/pages/RedLineProductPage'));
 
 export const StorefrontRoutes = [
-  <Route key="red-line-root" path="/red-line" element={<RedLineProductPage />} />,
-  <Route key="redline-root" path="/redline" element={<RedLineProductPage />} />,
-  <Route key="red-line-preview" path="/preview/red-line" element={<RedLineProductPage />} />,
-  <Route key="red-line-pdp" path="/store/red-line" element={<RedLineProductPage />} />,
   <Route key="store-settings-redir" path="/store-settings" element={<Navigate to="/settings/store?tab=branches" replace />} />,
   <Route key="settings-store" path="/settings/store" element={<Layout><StoreSettings /></Layout>} />,
   <Route key="settings-post-purchase-offer" path="/settings/post-purchase-offer" element={<Layout><PostPurchaseOfferBuilderPage /></Layout>} />,
