@@ -70,6 +70,8 @@ const ProductLandingPages: React.FC = () => {
   const [showPhonePreview, setShowPhonePreview] = useState(true);
   const [mobileTab, setMobileTab] = useState<"editor" | "preview">("editor");
   const [isElementsDrawerOpen, setIsElementsDrawerOpen] = useState(false);
+  // بيزيد مع كل حفظ ناجح — جزء من إشارة تحديث المعاينة الحية
+  const [saveTick, setSaveTick] = useState(0);
 
   const { user } = useAuth();
   const selectedPage = useMemo(
@@ -607,8 +609,6 @@ const ProductLandingPages: React.FC = () => {
   };
 
   // Actions
-  const [saveTick, setSaveTick] = useState(0);
-
   const handleSave = async (silent = false) => {
     if (!selectedPage || saving) return;
 
