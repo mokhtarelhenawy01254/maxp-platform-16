@@ -70,6 +70,7 @@ const PdpCheckout: React.FC<PdpCheckoutProps> = ({ section }) => {
   return (
     <PdpQuickOrderPanel
       product={{
+        ...product,
         id: product.id,
         name: product.name,
         slug: product.slug || id,
@@ -79,6 +80,7 @@ const PdpCheckout: React.FC<PdpCheckoutProps> = ({ section }) => {
         images: product.images,
         productVariants: product.productVariants,
         hasVariants: Boolean(product.productVariants?.length),
+        metadata: (product as any)?.metadata,
       }}
       sectionSettings={
         {

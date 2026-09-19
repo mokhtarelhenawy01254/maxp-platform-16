@@ -70,7 +70,7 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     categoryLabel: "سطح المكتب (AI)",
     platform: "ويندوز (Windows 10 / 11 x64)",
     platformEn: "Windows 64-bit",
-    version: "v1.0.3",
+    version: "v1.0.4",
     releaseDate: "2026-09",
     icon: Bot,
     summary: "غرفة قيادة مستقلة للميديا باير وإدارة المتجر، مع اختصار Alt+Space، وتوليد مسودات Meta، وتأكيد أوردرات COD، وفيديوهات Veo 3.1.",

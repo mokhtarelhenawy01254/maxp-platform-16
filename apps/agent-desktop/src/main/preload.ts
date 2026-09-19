@@ -21,7 +21,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke(IPC_CHANNELS.GET_AGENTS),
   getProducts: () =>
     ipcRenderer.invoke(IPC_CHANNELS.GET_PRODUCTS),
-  sendAgentMessage: (data: { agentSlug: string; message: string; productId?: string; screenContext?: string }) =>
+  sendAgentMessage: (data: { agentSlug: string; agentId?: string; message: string; product?: any; productId?: string; screenContext?: string }) =>
     ipcRenderer.invoke(IPC_CHANNELS.SEND_AGENT_MESSAGE, data),
   triggerAction: (actionData: { action: string; payload: any }) =>
     ipcRenderer.invoke(IPC_CHANNELS.TRIGGER_ACTION, actionData),

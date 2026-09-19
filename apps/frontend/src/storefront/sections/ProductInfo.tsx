@@ -3368,6 +3368,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     ? PDP_CHECKOUT_SECTION_ID
     : STOREFRONT_BUYBOX_ID;
   const inlineQuickOrderProduct = {
+    ...product,
     id: product.id,
     name: product.name,
     slug: product.slug || id,
@@ -3380,6 +3381,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     productVariants: product.productVariants,
     hasVariants: Boolean(product.productVariants?.length),
     showAddToCartButton: product.showAddToCartButton,
+    metadata: (product as any)?.metadata,
   };
   const resolvedEmbeddedPdpCheckoutSettings = {
     ...(embeddedPdpCheckoutSettings || {}),

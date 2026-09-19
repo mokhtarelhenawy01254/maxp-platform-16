@@ -113,7 +113,15 @@ export const AgentCockpitPage: React.FC<AgentCockpitPageProps> = ({ user, onLogo
     try {
       const res = await window.electronAPI.sendAgentMessage({
         agentSlug: selectedAgent.slug,
+        agentId: selectedAgent.id,
         message: text,
+        product: selectedProduct ? {
+          id: selectedProduct.id,
+          name: selectedProduct.name,
+          price: selectedProduct.price,
+          stock: selectedProduct.stock,
+          sku: selectedProduct.sku,
+        } : undefined,
         productId: selectedProduct?.id,
         screenContext: contextToPass || undefined,
       });
@@ -129,6 +137,16 @@ export const AgentCockpitPage: React.FC<AgentCockpitPageProps> = ({ user, onLogo
           telemetry: res.telemetry,
         };
         setMessages((prev) => [...prev, agentMsg]);
+      } else {
+        const errorMsg: ChatMessage = {
+          id: `err-${Date.now()}`,
+          sender: 'agent',
+          agentSlug: selectedAgent.slug,
+          text: res?.text || 'تعذر تلقي الرد من الوكيل حالياً. يرجى إعادة المحاولة.',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          telemetry: res?.telemetry,
+        };
+        setMessages((prev) => [...prev, errorMsg]);
       }
     } catch (err: any) {
       setMessages((prev) => [
@@ -136,7 +154,8 @@ export const AgentCockpitPage: React.FC<AgentCockpitPageProps> = ({ user, onLogo
         {
           id: `err-${Date.now()}`,
           sender: 'agent',
-          text: 'تعذر تلقي الرد من الوكيل حالياً. يرجى إعادة المحاولة.',
+          agentSlug: selectedAgent.slug,
+          text: `تعذر الاتصال بالخادم: ${err.message || 'خطأ غير متوقع'}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);

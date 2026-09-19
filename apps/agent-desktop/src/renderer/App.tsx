@@ -12,7 +12,7 @@ declare global {
       getAuthToken: () => Promise<{ token: string }>;
       getAgents: () => Promise<{ success: boolean; agents: any[] }>;
       getProducts: () => Promise<{ success: boolean; products: any[] }>;
-      sendAgentMessage: (data: { agentSlug: string; message: string; productId?: string; screenContext?: string }) => Promise<{ success: boolean; text: string; card?: any; telemetry?: any }>;
+      sendAgentMessage: (data: { agentSlug: string; agentId?: string; message: string; product?: any; productId?: string; screenContext?: string }) => Promise<{ success: boolean; text: string; card?: any; telemetry?: any }>;
       triggerAction: (actionData: { action: string; payload: any }) => Promise<{ success: boolean; result?: any; message?: string }>;
       captureScreen: () => Promise<{ success: boolean; dataUrl?: string; error?: string }>;
       getActiveWindow: () => Promise<{ success: boolean; title?: string; owner?: string }>;

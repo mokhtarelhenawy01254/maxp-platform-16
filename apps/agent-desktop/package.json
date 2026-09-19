@@ -1,6 +1,6 @@
 {
   "name": "maxp-agent-studio",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "MaxP Agent Studio — Dedicated desktop cockpit for AI Agents (Media Buyer, Order Confirmation, Creative Studio)",
   "main": "dist/main/main/main.js",
   "author": "MaxP",

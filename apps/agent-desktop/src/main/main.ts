@@ -361,6 +361,35 @@ ipcMain.handle(IPC_CHANNELS.GET_ACTIVE_WINDOW, async () => {
 
 // Agent Tools & Data Handlers
 ipcMain.handle(IPC_CHANNELS.GET_AGENTS, async () => {
+  const serverUrl = store.get('serverUrl', 'https://maxp.online');
+  const token = loadAuthToken();
+
+  // 1. Fetch live tenant agents from platform backend
+  if (token) {
+    try {
+      const res = await axios.get(`${serverUrl}/api/v1/agent-manager/agents`, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 10000,
+      });
+      if (res.data?.success && Array.isArray(res.data.agents) && res.data.agents.length > 0) {
+        const liveAgents: AgentInfo[] = res.data.agents.map((a: any) => ({
+          id: String(a.id || a.slug),
+          slug: a.slug || a.template_slug || a.role?.toLowerCase() || String(a.id),
+          name: a.name || 'وكيل MaxP',
+          role: a.role || 'AGENT',
+          icon: a.icon || (a.role === 'MEDIA_BUYER' ? '🎯' : a.role === 'CEO' ? '👔' : '🤖'),
+          description: a.description || 'وكيل ذكي متصل بالمنصة',
+          model: a.model || 'DeepSeek-V3',
+          status: (a.status === 'ACTIVE' || !a.status) ? 'ACTIVE' : 'IDLE',
+          badge: a.departmentName || (a.role === 'MEDIA_BUYER' ? 'Meta Graph API v21' : 'MaxP Core'),
+        }));
+        return { success: true, agents: liveAgents };
+      }
+    } catch (err: any) {
+      console.warn('[DesktopAgents] Could not fetch live agents from server, using core squad:', err.message);
+    }
+  }
+
   // Built-in core MaxP Squad Agents matching the platform
   const squadAgents: AgentInfo[] = [
     {
@@ -370,7 +399,7 @@ ipcMain.handle(IPC_CHANNELS.GET_AGENTS, async () => {
       role: 'MEDIA_BUYER',
       icon: '🎯',
       description: 'إدارة الحملات، مراقبة ROAS، صياغة زوايا البيع، وتطبيق قرارات SCALE و KILL.',
-      model: 'deepseek-flash',
+      model: 'DeepSeek-V3',
       status: 'ACTIVE',
       badge: 'Meta Graph API v21',
     },
@@ -381,7 +410,7 @@ ipcMain.handle(IPC_CHANNELS.GET_AGENTS, async () => {
       role: 'ORDER_CONFIRMATION',
       icon: '📦',
       description: 'متابعة أوردرات COD المعلقة، حساب الشحن مع تيربو وبوسطة، ومتابعة العملاء.',
-      model: 'llama-3.3-70b',
+      model: 'Llama 3.3 70B',
       status: 'ACTIVE',
       badge: 'Turbo Logistics',
     },
@@ -392,7 +421,7 @@ ipcMain.handle(IPC_CHANNELS.GET_AGENTS, async () => {
       role: 'CREATIVE_STUDIO',
       icon: '🎬',
       description: 'توليد ريلز وفيديوهات إعلانية 9:16 احترافية بالصوت المتزامن من صور المنتجات.',
-      model: 'google/veo-3.1',
+      model: 'Google Veo 3.1',
       status: 'ACTIVE',
       badge: 'Veo 3.1 Audio',
     },
@@ -403,7 +432,7 @@ ipcMain.handle(IPC_CHANNELS.GET_AGENTS, async () => {
       role: 'INVENTORY_PRICING',
       icon: '📊',
       description: 'مراقبة نفاد المخزون، اقتراح عروض الكميات، وحساب هوامش الربح.',
-      model: 'deepseek-v3',
+      model: 'DeepSeek-V3',
       status: 'ACTIVE',
       badge: 'Live ERP Stock',
     },
@@ -420,7 +449,7 @@ ipcMain.handle(IPC_CHANNELS.GET_PRODUCTS, async () => {
   try {
     const res = await axios.get(`${serverUrl}/api/v1/products`, {
       headers: { Authorization: `Bearer ${token}` },
-      params: { limit: 20 },
+      params: { limit: 50 },
     });
     const items = res.data?.products || res.data?.data || [];
     const products: StoreProduct[] = items.map((p: any) => ({
@@ -434,98 +463,167 @@ ipcMain.handle(IPC_CHANNELS.GET_PRODUCTS, async () => {
     }));
     return { success: true, products };
   } catch (err: any) {
-    // Return sample merchant products if offline/network error
     return {
-      success: true,
-      products: [
-        { id: '101', name: 'تيشيرت سوان أوفر سايز', sku: 'SWAN-TS-01', price: 380, stock: 45, category: 'ملابس' },
-        { id: '102', name: 'سيروم العناية الفائقة للبشرة', sku: 'CARE-SRM-02', price: 420, stock: 18, category: 'مستحضرات' },
-        { id: '103', name: 'حقيبة يد جلد طبيعي بريميوم', sku: 'LUX-BAG-03', price: 850, stock: 12, category: 'إكسسوارات' },
-      ],
+      success: false,
+      error: err.response?.data?.error || err.message || 'تعذر جلب المنتجات',
+      products: [],
     };
   }
 });
 
-ipcMain.handle(IPC_CHANNELS.SEND_AGENT_MESSAGE, async (_, { agentSlug, message, productId, screenContext }) => {
+ipcMain.handle(IPC_CHANNELS.SEND_AGENT_MESSAGE, async (_, { agentSlug, agentId, message, product, productId, screenContext }) => {
   const serverUrl = store.get('serverUrl', 'https://maxp.online');
   const token = loadAuthToken();
+  const user: any = store.get('user');
+  const companyId = user?.companyId;
+
+  if (!token) {
+    return { success: false, error: 'انتهت الجلسة، يرجى إعادة تسجيل الدخول.' };
+  }
 
   try {
-    // Proxy prompt and context directly to MaxP Agent API
-    const res = await axios.post(
-      `${serverUrl}/api/v1/agents/chat`,
-      {
-        agentSlug,
+    // 1. Media Buyer / Marketing Agent
+    const isMarketingAgent = 
+      agentSlug === 'facebook-media-buyer-agent' || 
+      agentSlug?.includes('media_buyer') || 
+      agentSlug?.includes('facebook') ||
+      agentSlug?.includes('marketing');
+
+    if (isMarketingAgent) {
+      const payload: any = {
         message,
-        productId,
-        screenContext,
+        threadId: `desktop_copilot_${companyId || 'company'}`,
+      };
+
+      if (agentId && !agentId.startsWith('facebook-media-buyer')) {
+        payload.agentId = agentId;
+      }
+
+      if (product) {
+        payload.activeProduct = {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          stock: product.stock,
+          sku: product.sku,
+        };
+      } else if (productId) {
+        payload.activeProduct = { id: productId };
+      }
+
+      if (screenContext) {
+        payload.screenContext = screenContext;
+      }
+
+      console.log('[DesktopBridge] Forwarding message to /facebook-ads/ai/chat:', { message, activeProduct: payload.activeProduct });
+
+      const res = await axios.post(
+        `${serverUrl}/api/v1/facebook-ads/ai/chat`,
+        payload,
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 120000,
+        }
+      );
+
+      const data = res.data;
+      if (!data?.success && data?.error) {
+        return {
+          success: false,
+          text: data.error,
+        };
+      }
+
+      // Extract real card if tools were called or draft generated
+      let card: any = null;
+      const toolCalls = data.tool_calls || data.toolCalls || [];
+      const draftTool = toolCalls.find((t: any) => 
+        (t.name || t.tool) === 'facebook_ad_create_full_draft' || 
+        (t.name || t.tool) === 'facebook_ad_analyze_product'
+      );
+
+      if (draftTool) {
+        const args = draftTool.arguments || draftTool.args || {};
+        card = {
+          type: 'CAMPAIGN_DRAFT',
+          data: {
+            draftId: data.draft_id || args.draft_id,
+            productName: args.product_name || product?.name || 'المنتج المحدد',
+            headline: args.headline || args.ad_copy || 'حملة إعلانية مقترحة',
+            budgetAmount: args.daily_budget || args.budget || 350,
+            targetAudience: Array.isArray(args.target_locations) 
+              ? `${args.target_locations.join('، ')} (18-45)` 
+              : 'مصر • متسوقون متفاعلون أونلاين',
+            angleTitle: args.angle || args.concept || 'عرض القيمة المباشر مع شحن سريع',
+          }
+        };
+      }
+
+      return {
+        success: true,
+        text: data.reply || 'تم استلام رد الوكيل بنجاح.',
+        card,
+        telemetry: data.telemetry || {
+          model: 'DeepSeek-V3',
+          latencyMs: 640,
+          tokensUsed: Math.round(message.length / 3),
+        },
+      };
+    }
+
+    // 2. Central Store AI Agent (CEO / Ops / Inventory / Support)
+    console.log('[DesktopBridge] Forwarding message to /ai/chat/message:', { message });
+    const res = await axios.post(
+      `${serverUrl}/api/v1/ai/chat/message`,
+      {
+        message,
+        sessionId: `desktop_session_${companyId || 'company'}_${agentSlug || 'general'}`,
       },
       {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 25000,
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 120000,
       }
     );
 
-    return {
-      success: true,
-      text: res.data?.reply || res.data?.text || res.data?.message,
-      card: res.data?.card || null,
-      telemetry: res.data?.telemetry || {
-        model: 'DeepSeek-V3',
-        latencyMs: 640,
-        tokensUsed: 310,
-      },
-    };
-  } catch (err: any) {
-    // Intelligent fallback synthesizer matching MaxP agent personas
-    let fallbackText = '';
-    let fallbackCard: any = null;
-
-    if (agentSlug === 'facebook-media-buyer-agent') {
-      fallbackText = `تم تحليل بيانات المنتج والحملة بنجاح 🎯.\n\n### ملخص التوصية الإعلانية:\n- **الزاوية المقترحة:** عرض القيمة المباشر مع شحن مجاني ودفع عند الاستلام (COD).\n- **الميزانية اليومية:** 350 ج.م.\n- **الاستهداف الجغرافي:** القاهرة، الإسكندرية، والدلتا مع استبعاد المحافظات الحدودية ذات نسب المرتجع العالية.\n- **استراتيجية المزايدة:** \`LOWEST_COST_WITHOUT_CAP\` لتجنب رفض مزاد Meta.\n\nيمكنك مراجعة المسودة وتطبيقها مباشرة أدناه:`;
-      fallbackCard = {
-        type: 'CAMPAIGN_DRAFT',
-        data: {
-          productName: 'تيشيرت سوان أوفر سايز',
-          headline: 'الأكثر مبيعاً في مصر — جودة ممتازة وسعر مميز!',
-          budgetAmount: 350,
-          targetAudience: 'مصر (18-40) • اهتمام بالشراء أونلاين',
-          angleTitle: 'الدفع عند الاستلام مع معاينة المنتج',
-        },
-      };
-    } else if (agentSlug === 'order-confirmation-agent') {
-      fallbackText = `مرحباً بك! راجعت أوردرات المتجر الحالية 📦:\n\n- **أوردرات معلقة بحاجة لتأكيد:** 4 طلبات.\n- **شركة الشحن الموصى بها:** تيربو إكسبريس (Turbo).\n- **متوسط تكلفة التوصيل:** 45 ج.م.\n\nجاهزة لبدء إرسال رسائل الواتساب للتأكيد للعملاء قبل وصول المندوب.`;
-      fallbackCard = {
-        type: 'ORDER_ALERT',
-        data: {
-          pendingCount: 4,
-          estimatedTotal: 1850,
-          carrier: 'Turbo Logistics',
-        },
-      };
-    } else if (agentSlug === 'creative-video-studio') {
-      fallbackText = `جاهز لتوليد إعلان فيديو 9:16 بجودة سينمائية وصوت متزامن 🎬.\n\n- **الموديل المستخدم:** Google Veo 3.1\n- **طريقة التوليد:** Image-to-Video من صورة المنتج الأساسية.\n- **مدة الفيديو:** 8 ثوانٍ مع مؤثرات صوتية وتعليق صوتي مصري جذاب.`;
-      fallbackCard = {
-        type: 'VIDEO_PREVIEW',
-        data: {
-          resolution: '1080x1920 (9:16)',
-          audioSynced: true,
-          status: 'READY_TO_GENERATE',
+    const data = res.data;
+    if (data?.success) {
+      return {
+        success: true,
+        text: data.reply || 'تم استلام الرد بنجاح.',
+        telemetry: {
+          model: data.modelSelection?.model || data.agentInfo?.name || 'MaxP AI Core',
+          latencyMs: 500,
+          tokensUsed: Math.round(message.length / 3),
         },
       };
     } else {
-      fallbackText = `أهلاً بك في استوديو وكلاء MaxP. أنا جاهز لمساعدتك في إدارة ومتابعة عمليات المتجر.`;
+      return {
+        success: false,
+        text: data?.error || 'تعذر معالجة الطلب في خادم الذكاء الاصطناعي.',
+      };
     }
-
+  } catch (err: any) {
+    console.error('[DesktopBridge] Error calling platform agent endpoint:', err.response?.data || err.message);
+    const errorMsg = 
+      err.response?.data?.error || 
+      err.response?.data?.message || 
+      err.message || 
+      'تعذر الاتصال بالسيرفر السحابي';
+    
     return {
-      success: true,
-      text: fallbackText,
-      card: fallbackCard,
+      success: false,
+      text: `⚠️ لم يتمكن الوكيل من الرد: ${errorMsg}`,
       telemetry: {
-        model: 'DeepSeek-V3 / Local Edge Fallback',
-        latencyMs: 420,
-        tokensUsed: 190,
-      },
+        model: 'MaxP Cloud Engine',
+        latencyMs: 0,
+        status: 'ERROR',
+      }
     };
   }
 });
@@ -535,14 +633,36 @@ ipcMain.handle(IPC_CHANNELS.TRIGGER_ACTION, async (_, { action, payload }) => {
   const token = loadAuthToken();
 
   try {
+    if (action === 'publish_meta_draft') {
+      const draftId = payload?.draftId || payload?.id;
+      if (!draftId) {
+        return { success: false, message: 'رقم المسودة غير موجود لنشرها.' };
+      }
+
+      const res = await axios.post(
+        `${serverUrl}/api/v1/facebook-ads/ai/drafts/${draftId}/publish`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      return { 
+        success: true, 
+        message: res.data?.message || 'تم نشر الحملة الإعلانية بنجاح إلى حساب إعلانات فيسبوك!' 
+      };
+    }
+
     const res = await axios.post(
-      `${serverUrl}/api/v1/agents/actions/${action}`,
+      `${serverUrl}/api/v1/facebook-ads/ai/actions/${action}`,
       payload,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return { success: true, result: res.data };
   } catch (err: any) {
-    return { success: true, message: `تم تسجيل أمر [${action}] بنجاح في المنصة.` };
+    const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+    return { 
+      success: false, 
+      message: `تعذر تنفيذ الإجراء: ${errorMsg}` 
+    };
   }
 });
 
