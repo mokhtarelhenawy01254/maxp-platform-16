@@ -9,6 +9,7 @@ import {
 } from "./utils/merchantAccess";
 import { saveLastPath } from "./utils/postAuthRouting";
 import { pushNotificationService } from "./services/pushNotificationService";
+import { isCapacitorNative } from "./config/environment";
 // fallback for old deployed bundles that reference undefined getStatusText
 // (injected as inline script in index.html instead to avoid tree-shaking)
 
