@@ -143,19 +143,23 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
     return rows;
   })();
 
-  // Build social links: merge theme social links with footerSettings links (user settings override)
-  // Only known social platforms are picked up — footerSettings also carries
-  // non-social string fields (aboutStore/email/phone/copyrightText/address).
-  const mergedFooterSocialLinks = {
-    ...(theme.footer?.socialLinks || {}),
-    ...normalizeSocialLinks(footerSettings?.socialLinks || footerSettings, [
+  // Build social links: only the user's footer settings links are collected here
+  // so they can take priority when merged in `socialIcons` below. Theme defaults
+  // are spread first there — previously they were also included here and, being
+  // spread last, silently overrode the store's real links (facebook/instagram/
+  // whatsapp stayed on demo values while tiktok worked). footerSettings also
+  // carries non-social string fields (aboutStore/email/phone/copyrightText/
+  // address) which the allow-list filters out.
+  const mergedFooterSocialLinks = normalizeSocialLinks(
+    footerSettings?.socialLinks || footerSettings,
+    [
       'facebook', 'instagram', 'whatsapp', 'messenger', 'x', 'twitter',
       'youtube', 'tiktok', 'snapchat', 'linkedin', 'telegram', 'pinterest',
       'ticktok', 'snap', 'x.com', 'twitter.com', 'instagram.com',
       'facebook.com', 'whatsapp.com', 'wa.me', 'tiktok.com', 'youtube.com',
       'linkedin.com', 'telegram.com', 'pinterest.com',
-    ]),
-  };
+    ],
+  );
 
   const runtimeStorefrontSettings =
     settings?.storefront?.settings && typeof settings.storefront.settings === 'object'

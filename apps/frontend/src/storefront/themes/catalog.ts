@@ -504,6 +504,12 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "dental-lab",
     "معمل ومختبر أسنان رقمي 3D",
   ),
+  "redline-auto": createThemeCategoryMeta(
+    "automotive",
+    "سيارات",
+    "car-accessories",
+    "ستائر وإكسسوارات سيارات",
+  ),
 };
 
 const getStorefrontThemeCategoryMeta = (
@@ -513,6 +519,8 @@ const getStorefrontThemeCategoryMeta = (
   DEFAULT_STOREFRONT_THEME_CATEGORY;
 
 export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
+  "redline-auto":
+    "Red Line Auto — قالب مخصص وفائق التحويل لستائر وإكسسوارات السيارات: تفصيل بالمللي، عزل حراري 98%، معاينة وتجربة قبل الدفع وشراء مباشر سريع.",
   "dental-lab-elite":
     "Dental Lab Elite — قالب بريميوم فائق التطور لمعامل ومختبرات الأسنان الرقمية: سرد تفاعلي ثلاثي الأبعاد 3D لمراحل CAD/CAM، ومحاكي درجات الألوان VITA، وسلايدر قبل وبعد، ومهيأ لتصدر بحث جوجل والظهور المحلي لجذب عيادات وأطباء الأسنان.",
   "creative-portfolio":
@@ -718,13 +726,15 @@ const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
   "zen-organic":
     "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&q=80&w=1400",
   "baladi-market-eg":
-    "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1600&q=80",
+    "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&q=80&w=1600&q=80",
   "butcher-shop-eg":
     "https://images.unsplash.com/photo-1603048297172-c92544798d5e?auto=format&fit=crop&w=1600&q=80",
   "soft-graceful":
     "https://cdn.shopify.com/theme-store/kgt7iqquyknadz55jw25b59gbxc6.jpg",
   "allure":
     "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600",
+  "redline-auto":
+    "https://cdn.shopify.com/s/files/1/0721/6640/8252/files/80_2437ebe3-f884-4c9b-911f-7e65d195688f.png?v=1787709797",
 };
 
 const RASTER_THEME_PREVIEW_PATTERN =
@@ -732,7 +742,10 @@ const RASTER_THEME_PREVIEW_PATTERN =
 const VECTOR_THEME_PREVIEW_PATTERN = /\.svg(?:[?#].*)?$/i;
 const LOCAL_THEME_PREVIEW_PATTERN = /\/assets\/themes\//i;
 const PLACEHOLDER_THEME_PREVIEW_PATTERN = /\/placeholders\//i;
-const KNOWN_REMOTE_THEME_PREVIEW_HOSTS = ["images.unsplash.com"];
+const KNOWN_REMOTE_THEME_PREVIEW_HOSTS = [
+  "images.unsplash.com",
+  "cdn.shopify.com",
+];
 
 const hasTextValue = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;

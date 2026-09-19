@@ -60,6 +60,7 @@ export const DYNAMIC_THEME_REGISTRY: Record<string, ThemeLoaderFn> = {
   "allure": () => import("./allure.json"),
   "anjella-boutique": () => import("./anjella-boutique.json"),
   "dental-lab-elite": () => import("./dental-lab-elite.json"),
+  "redline-auto": () => import("./redline-auto.json"),
 };
 
 const THEME_CACHE = new Map<string, StorefrontTheme>();

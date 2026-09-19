@@ -55,6 +55,7 @@ import allureData from "./allure.json";
 import anjellaBoutiqueData from "./anjella-boutique.json";
 import creativePortfolioData from "./creative-portfolio.json";
 import dentalLabEliteData from "./dental-lab-elite.json";
+import redlineAutoData from "./redline-auto.json";
 import { ELESSI_PACK_THEME_PRESETS } from "./elessiPack";
 import {
   StorefrontPageConfig,
@@ -719,6 +720,7 @@ export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
   "anjella-boutique": asStorefrontTheme(anjellaBoutiqueData),
   "creative-portfolio": asStorefrontTheme(creativePortfolioData),
   "dental-lab-elite": asStorefrontTheme(dentalLabEliteData),
+  "redline-auto": asStorefrontTheme(redlineAutoData),
   ...ELESSI_PACK_THEME_PRESETS,
 };
 

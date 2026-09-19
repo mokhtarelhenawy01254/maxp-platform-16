@@ -227,7 +227,7 @@
           }
         },
         {
-          "type": "dental-sample-kit",
+          "type": "info-content",
           "settings": {
             "badge": "خدمة حصرية للأطباء والعيادات",
             "title": "طلب كيت عينات مجاني للعيادة 📦",
@@ -237,7 +237,7 @@
       ]
     },
     "shop": {
-      "layoutHint": "portfolio-catalog",
+      "layoutHint": "commerce-3col",
       "pageGoal": "discovery",
       "sections": [
         {
@@ -303,7 +303,7 @@
           }
         },
         {
-          "type": "dental-sample-kit",
+          "type": "info-content",
           "settings": {
             "badge": "خدمة حصرية للأطباء والعيادات",
             "title": "طلب كيت عينات مجاني للعيادة 📦",

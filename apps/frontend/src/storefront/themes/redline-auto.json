@@ -1,0 +1,343 @@
+{
+  "id": "redline-auto",
+  "name": "Red Line Auto",
+  "description": "قالب مخصص وفائق التحويل لمنتجات وإكسسوارات السيارات مع التركيز على ستائر السيارات العازلة للحرارة والشمس، بدعم كامل للشراء المباشر بضغطة واحدة والمعاينة قبل الاستلام.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "0 84% 50%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "220 14% 10%",
+      "secondaryForeground": "220 8% 85%",
+      "accent": "0 84% 50%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 98%",
+      "foreground": "220 18% 12%",
+      "muted": "220 10% 93%",
+      "mutedForeground": "220 8% 40%",
+      "border": "220 12% 85%",
+      "card": "0 0% 100%",
+      "cardForeground": "220 18% 12%",
+      "ring": "0 84% 50%"
+    },
+    "typography": {
+      "headingFont": "\"Cairo\", \"Alexandria\", sans-serif",
+      "bodyFont": "\"Cairo\", \"Tajawal\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.75rem",
+      "buttonRadius": "0.5rem"
+    },
+    "productCard": {
+      "borderRadius": "0.75rem",
+      "boxShadow": "0 10px 30px -10px rgba(0, 0, 0, 0.1)",
+      "hoverShadow": "0 16px 40px -12px rgba(225, 29, 72, 0.15)",
+      "badgeRadius": "0.375rem",
+      "buttonRadius": "0.5rem",
+      "surfaceOpacity": "1"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Red Line Car Accessories",
+    "description": "ستائر شبابيك سيارات عازلة للحرارة والشمس 98% تفصيل بالمللي لموديل سيارتك كبس وجرار — عزل حراري، خصوصية VIP، والزجاج بينزل ويطلع عادي. اطلب الآن والدفع بعد المعاينة."
+  },
+  "preview": {
+    "imageUrl": "https://cdn.shopify.com/s/files/1/0721/6640/8252/files/80_2437ebe3-f884-4c9b-911f-7e65d195688f.png?v=1787709797",
+    "colors": [
+      "#E11D48",
+      "#111827",
+      "#FFFFFF"
+    ]
+  },
+  "header": {
+    "variant": "floating-dark",
+    "brandName": "RED LINE",
+    "showSearch": false,
+    "showCart": true,
+    "announcementText": "خصم لفترة محدودة + معاينة وتجربة قبل الدفع مع التوصيل السريع لكل مصر",
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "تفاصيل الستائر والمقاسات", "to": "/product/car-sunshades" },
+      { "label": "الأسئلة الشائعة", "to": "#faq" },
+      { "label": "اطلب الآن", "to": "#order" }
+    ]
+  },
+  "footer": {
+    "variant": "signature-panel",
+    "description": "Red Line — المتخصص الأول في مصر في ستائر شبابيك السيارات العازلة للحرارة بنسبة 98%، تفصيل بالمللي لمقاس حلق الباب الفابريقة مع تثبيت كبس بدون مسامير والمعاينة قبل الاستلام.",
+    "copyrightText": "© 2026 Red Line Auto. جميع الحقوق محفوظة.",
+    "contactRows": [
+      { "label": "واتساب", "value": "+20 15 00073277", "href": "https://wa.me/201500073277" },
+      { "label": "الدعم الفني", "value": "abdallahwaleed@gmail.com", "href": "mailto:abdallahwaleed@gmail.com" }
+    ],
+    "socialLinks": {
+      "facebook": "https://www.facebook.com/profile.php?id=61593922131836",
+      "whatsapp": "https://wa.me/201500073277"
+    },
+    "navigation": [
+      {
+        "title": "المنتج والمقاسات",
+        "links": [
+          { "label": "ستائر سيارات عازلة للحرارة", "to": "/product/car-sunshades" },
+          { "label": "طقم سيدان 5 قطع", "to": "/product/car-sunshades" },
+          { "label": "طقم SUV جيب 7 قطع", "to": "/product/car-sunshades" }
+        ]
+      },
+      {
+        "title": "الضمان والسياسات",
+        "links": [
+          { "label": "سياسة المعاينة قبل الاستلام", "to": "/shipping" },
+          { "label": "ضمان الاستبدال الفوري", "to": "/returns" },
+          { "label": "الشروط والأحكام", "to": "/terms" }
+        ]
+      }
+    ],
+    "legalLinks": [
+      { "label": "الخصوصية", "to": "/privacy" },
+      { "label": "الشروط", "to": "/terms" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "متاح لجميع موديلات السيارات",
+            "message": "تفصيل مخصوص بالمللي على مقاس عربيتك • معاينة وتجربة قبل الدفع • استبدال فوري إن لم تطابق الفابريقة",
+            "saleLabel": "خصم مباشر",
+            "shippingLabel": "توصيل سريع",
+            "returnLabel": "معاينة قبل الدفع",
+            "ctaText": "اطلب ستارتك الآن",
+            "ctaLink": "#order"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "speed-banner",
+          "settings": {
+            "eyebrow": "RED LINE • ORIGINAL SUNSHADES",
+            "title": "ستائر شبابيك سيارات عازلة للحرارة 98% — تفصيل بالمللي لموديل عربيتك",
+            "subtitle": "انسى حرارة الصيف والتابلوه الساخن: عزل حراري فوري، خصوصية VIP كاملة، تثبيت كبس بدون أي مسامير، والزجاج بينزل ويطلع بحرية تامة.",
+            "ctaText": "اطلب الآن — الدفع بعد المعاينة",
+            "ctaLink": "/product/car-sunshades",
+            "secondaryCtaText": "مميزات الستارة",
+            "secondaryCtaLink": "#features"
+          }
+        },
+        {
+          "type": "features-bar",
+          "settings": {
+            "title": "ليه ستائر Red Line هي الاختيار رقم 1 في مصر؟",
+            "subtitle": "مصممة هندسياً لحماية سيارتك وراحتك في أصعب درجات حرارة الصيف.",
+            "items": [
+              {
+                "icon": "Sun",
+                "title": "عزل حراري تام 98%",
+                "description": "قماش معالج بتقنية النانو لحجب الأشعة فوق البنفسجية وخفض حرارة الصالون فوراً."
+              },
+              {
+                "icon": "CheckBadge",
+                "title": "تفصيل بالمللي لموديل سيارتك",
+                "description": "مطابقة تامة لحلق الباب فابريقة بدون أي فراغات أو مساحات تهوية للشمس."
+              },
+              {
+                "icon": "ArrowDownOnSquare",
+                "title": "الزجاج بينزل ويطلع بحرية",
+                "description": "تقدر تفتح وتقفل زجاج العربية بالكامل بحرية والستارة ثابتة مكانها تماماً."
+              },
+              {
+                "icon": "WrenchScrewdriver",
+                "title": "تثبيت كبس بدون مسامير",
+                "description": "تركيب في 30 ثانية بدون أي تخريم أو لصق أو فك لفرش الباب الأصلي."
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "standard",
+          "settings": {
+            "title": "الستائر العازلة الأكثر طلباً (كبس وجرار)",
+            "subtitle": "اختر عدد القطع والنوع المناسب لسيارتك واطلبها في دقيقة.",
+            "limit": 4
+          }
+        },
+        {
+          "type": "offer-bento",
+          "settings": {
+            "badge": "دليل الباقات والمقاسات",
+            "title": "اختر الطقم الأنسب لسيارتك",
+            "subtitle": "كل طقم مفصل بالمللي حسب موديل وسنة صنع سيارتك.",
+            "cards": [
+              {
+                "label": "الأكثر مبيعاً",
+                "title": "طقم 5 قطع (سيدان وهاتشباك)",
+                "subtitle": "4 شبابيك جانبية + الزجاج الخلفي لحماية كاملة للصالون والتابلوه.",
+                "ctaText": "اطلب طقم 5 قطع",
+                "link": "/product/car-sunshades",
+                "tone": "primary",
+                "stat": "400 - 480 ج.م"
+              },
+              {
+                "label": "حماية كاملة VIP",
+                "title": "طقم 7 قطع (جيب و SUV)",
+                "subtitle": "تغطية شاملة لكل الشبابيك بما فيها شبابيك الشنطة والمثلثات الخلفية.",
+                "ctaText": "اطلب طقم 7 قطع",
+                "link": "/product/car-sunshades",
+                "tone": "accent",
+                "stat": "550 - 700 ج.م"
+              },
+              {
+                "label": "اقتصادي سريع",
+                "title": "طقم 2 قطع (الشبابيك الأمامية أو الخلفية)",
+                "subtitle": "مناسب لعزل مقاعد السائق والراكب الأمامي أو راحة الأطفال في الخلف.",
+                "ctaText": "اطلب طقم 2 قطع",
+                "link": "/product/car-sunshades",
+                "tone": "slate",
+                "stat": "150 - 180 ج.م"
+              }
+            ]
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "تجارب حقيقية لعملاء Red Line",
+            "subtitle": "آراء أصحاب السيارات بعد تجربة عزل الستائر ومطابقة المقاس الفابريقة.",
+            "verifiedLabel": "طلب موثق ومعاين",
+            "reviewLimit": 4
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "الأسئلة الشائعة حول ستائر Red Line",
+            "subtitle": "إجابات سريعة على أهم الاستفسارات قبل تأكيد طلبك.",
+            "faqs": [
+              {
+                "question": "هل الستائر متوفرة لجميع أنواع وموديلات السيارات؟",
+                "answer": "نعم، لدينا مقاسات وحلقات أبواب جميع السيارات الملاكي والـ SUV في مصر (كوري، ياباني، أوروبي، صيني) من أقدم الموديلات حتى 2026."
+              },
+              {
+                "question": "إزاي الستارة بتثبت وهل بتحتاج مسامير؟",
+                "answer": "تثبيت كبس محكم جداً على حلق الباب الداخلي مباشرة بدون أي مسامير أو لزق أو تخريم، وثابتة تماماً حتى مع المطبات وسرعات السفر."
+              },
+              {
+                "question": "هل أقدر أنزل زجاج الباب والستارة راكبة؟",
+                "answer": "بالتأكيد! الزجاج ينزل ويطلع بكامل حريته والستارة ثابتة مكانها، وده بيوفر لك تهوية ممتازة مع حماية تامة من الشمس والأتربة والحشرات."
+              },
+              {
+                "question": "إيه الفرق بين الستائر الثابتة والجرار؟",
+                "answer": "الستارة الثابتة تغطي الشباك بالكامل وتُثبت كبس، أما الجرار فتتميز بوجود سحاب داخلي يمكنك من فتح جزء من الستارة يدوياً لدفع الكارتة أو التحدث بدون فك الستارة."
+              },
+              {
+                "question": "إيه نظام الدفع والاستلام؟",
+                "answer": "الدفع عند الاستلام بعد ما تعاين الستارة وتتأكد من خاماتها ومقاسها على باب عربيتك."
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "speed-banner",
+          "settings": {
+            "eyebrow": "RED LINE SHOP",
+            "title": "ستائر السيارات العازلة الأصلية",
+            "subtitle": "اختر المقاس والنوع المناسب لسيارتك واطلب توصيل سريع.",
+            "ctaText": "اطلب الآن",
+            "ctaLink": "/product/car-sunshades"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": {
+            "title": "منتجات الستائر المتاحة",
+            "limit": 12
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        { "type": "product-gallery", "variant": "standard" },
+        {
+          "type": "product-info",
+          "variant": "specs-grid",
+          "settings": {
+            "descriptionTitle": "المواصفات ومميزات العزل",
+            "shippingTitle": "الشحن والمعاينة",
+            "shippingText": "تجهيز وشحن فوري لكل المحافظات خلال 48 ساعة مع المعاينة والتجربة قبل الدفع.",
+            "guaranteesTitle": "ضمانات Red Line",
+            "guaranteeStyle": "grid",
+            "guaranteeItems": "عزل حراري 98%|حماية أكيدة من حرارة وشمس الصيف.\nمعاينة قبل الدفع|جرب المقاس على باب عربيتك قبل الاستلام.\nاستبدال فوري|في حالة عدم تطابق الموديل بالمللي."
+          }
+        },
+        { "type": "conversion-stack", "variant": "minimal" },
+        { "type": "delivery-proof", "variant": "minimal" },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "تقييمات وتجارب العملاء",
+            "verifiedLabel": "مشتري موثق",
+            "reviewLimit": 6
+          }
+        }
+      ]
+    },
+    "cart": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "سلة الطلبات",
+            "continueShoppingText": "العودة لتفاصيل الستارة"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "تأكيد الطلب — الدفع عند الاستلام",
+            "showTrustRow": true,
+            "showFreeShippingProgress": true
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        {
+          "type": "checkout-form",
+          "variant": "compact",
+          "settings": {
+            "contactTitle": "بيانات التواصل وموديل السيارة",
+            "shippingTitle": "عنوان التوصيل (المحافظة والمدينة)"
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "cards",
+          "settings": {
+            "title": "طريقة الدفع",
+            "confirmOrderText": "تأكيد الطلب — الدفع عند الاستلام",
+            "codLabel": "دفع عند الاستلام (بعد المعاينة والتجربة)",
+            "cardLabel": "بطاقة بنكية"
+          }
+        }
+      ]
+    }
+  }
+}
