@@ -379,7 +379,7 @@ async function seedMarketplace() {
         "icon": "⏰"
       },
       {
-        "slug": "store-basic",
+        "slug": "store",
         "name": "المتجر",
         "description": "متجر إلكتروني كامل: منتجات وطلبات وسلة تسوق ومتجر إلكتروني. مناسب للمشاريع الصغيرة والمتوسطة.",
         "logo": null,
@@ -1253,7 +1253,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ECOMMERCE",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "🖥️"
       },
@@ -1274,7 +1274,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "MARKETING",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "🎟️"
       },
@@ -1295,7 +1295,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "INTEGRATION",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "🛒"
       },
@@ -1337,7 +1337,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "🔀"
       },
@@ -1358,7 +1358,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "✍️"
       },
@@ -1379,7 +1379,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "⚡"
       },
@@ -1400,7 +1400,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "🔍"
       },
@@ -1421,7 +1421,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "🛡️"
       },
@@ -1442,7 +1442,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "📋"
       },
@@ -1463,7 +1463,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "🔁"
       },
@@ -1484,7 +1484,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ANALYTICS",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "📊"
       },
@@ -1505,7 +1505,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "⚙️"
       },
@@ -1526,7 +1526,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "ORDER_OPS",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "🔀"
       },
@@ -1568,7 +1568,7 @@ async function seedMarketplace() {
         "isFeatured": false,
         "isPopular": false,
         "category": "MARKETING",
-        "requiredApps": "[\"store-basic\"]",
+        "requiredApps": "[\"store\"]",
         "trialDays": 14,
         "icon": "🏷️"
       }

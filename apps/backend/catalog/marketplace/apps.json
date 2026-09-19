@@ -673,17 +673,17 @@
     "updatedAt": "2026-09-10T20:50:02.650Z"
   },
   {
-    "id": "cat-app-store-basic",
-    "slug": "store-basic",
+    "id": "cat-app-store",
+    "slug": "store",
     "name": "المتجر",
     "nameEn": "Store",
     "description": "متجر إلكتروني كامل: منتجات وطلبات وسلة تسوق ومتجر إلكتروني. مناسب للمشاريع الصغيرة والمتوسطة.",
     "category": "ECOMMERCE",
-    "pricingModel": "SUBSCRIPTION",
+    "pricingModel": "PAY_PER_USE",
     "monthlyPrice": 249,
     "yearlyPrice": 2490,
-    "unitPrice": null,
-    "unitName": null,
+    "unitPrice": 1,
+    "unitName": "طلب",
     "trialDays": 14,
     "requiredApps": [],
     "positioning": {
@@ -738,7 +738,8 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-08-12T00:00:00.000Z"
+    "updatedAt": "2026-08-12T00:00:00.000Z",
+    "ppuBillingMethod": "PER_ORDER"
   },
   {
     "id": "cat-app-crm-lite",
@@ -798,7 +799,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي عندها زيارات وتريد رفع التحويل.",
@@ -850,7 +851,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي تبيع باقات أو ترغب في تكبير السلة.",
@@ -902,7 +903,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي تحتاج ثقة اجتماعية أقوى قبل الشراء.",
@@ -954,7 +955,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي تحتاج سيناريوهات بيع أكثر مرونة.",
@@ -1062,7 +1063,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي تريد تشغيل أفليت أو دروب شيبنج من داخل المنصة.",
@@ -1121,7 +1122,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي تريد كسب عمولات من كتالوج أمازون بدون مخزون أو شحن أو خدمة عملاء.",
@@ -1229,7 +1230,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "الشركات التي تحتاج معرفة مصدر كل طلب داخل التشغيل اليومي.",
@@ -1275,7 +1276,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "فرق التسويق التي تحتاج ربط الطلبات بالحملات الإعلانية.",
@@ -1321,7 +1322,7 @@
     "unitName": null,
     "trialDays": 0,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "فرق التأكيد والتوزيع التي تدير الطلبات داخلياً.",
@@ -2242,7 +2243,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "فرق التأكيد والمتابعة الداخلية التي تدير الطلبات الواردة.",
@@ -2391,7 +2392,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي تعتمد على الكوبونات والعروض لزيادة المبيعات.",
@@ -2443,7 +2444,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي تستخدم WooCommerce وتريد مزامنة بياناتها مع MaxP.",
@@ -2547,7 +2548,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "الشركات التي تتلقى طلبات من عدة قنوات وتريد معرفة أداء كل قناة مالياً.",
@@ -2599,7 +2600,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "الفرق التي تنشئ الطلبات يدوياً للعملاء عبر الهاتف أو واتساب أو في المعرض.",
@@ -2651,7 +2652,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المتاجر التي تعالج أعداد كبيرة من الطلبات وتريد تقليل العمل اليدوي.",
@@ -2785,7 +2786,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "فرق المعالجة التي تتعامل مع مئات الطلبات يومياً وترغب في تسريع العمليات.",
@@ -2869,7 +2870,7 @@
     "unitName": null,
     "trialDays": 14,
     "requiredApps": [
-      "store-basic"
+      "store"
     ],
     "positioning": {
       "audience": "المدراء وفرق المتابعة التي تحتاج رؤية فورية لأحجام الطلبات حسب الحالة.",
