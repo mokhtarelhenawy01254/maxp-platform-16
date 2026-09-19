@@ -154,7 +154,31 @@ class TurboApiClient {
         });
       }, 2);
 
-      return company?.turboSenderNumber || null;
+      if (company?.turboSenderNumber) {
+        return company.turboSenderNumber;
+      }
+
+      const carrier = await safeQuery(async () => {
+        return await prisma.shippingCompany.findFirst({
+          where: {
+            companyId: this.companyId,
+            providerKey: 'TURBO',
+            isActive: true,
+          },
+        });
+      }, 2);
+
+      if (carrier?.settings) {
+        let s = {};
+        try {
+          s = typeof carrier.settings === 'string' ? JSON.parse(carrier.settings) : carrier.settings;
+        } catch {}
+        if (s.senderNumber || s.phone || s.senderPhone) {
+          return s.senderNumber || s.phone || s.senderPhone;
+        }
+      }
+
+      return null;
     } catch (error) {
       console.error('❌ [TURBO] Error fetching sender_number:', error);
       return null;

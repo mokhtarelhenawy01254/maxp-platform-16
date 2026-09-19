@@ -407,9 +407,23 @@ router.post('/', verifyToken.authenticateToken, async (req, res) => {
     }
 
     if (providerFields.providerKey === 'TURBO' && apiKey) {
+      const parsedSettings = shippingProviderService.safeJsonParse(providerFields.settings, {});
+      const autoCreate = parsedSettings.autoCreateShipments !== undefined
+        ? Boolean(parsedSettings.autoCreateShipments)
+        : false;
+      const clientCode = parsedSettings.mainClientCode || parsedSettings.clientCode || parsedSettings.customerId;
+      const parsedClientCode = clientCode ? parseInt(String(clientCode).replace(/\D/g, ''), 10) : undefined;
+      const senderNum = parsedSettings.senderNumber || parsedSettings.phone || parsedSettings.senderPhone || undefined;
+
       await prisma.company.update({
         where: { id: companyId },
-        data: { turboApiKey: apiKey, turboEnabled: isActive !== undefined ? isActive : true },
+        data: {
+          turboApiKey: apiKey,
+          turboEnabled: isActive !== undefined ? isActive : true,
+          turboAutoCreate: autoCreate,
+          ...(parsedClientCode && !isNaN(parsedClientCode) ? { turboMainClientCode: parsedClientCode } : {}),
+          ...(senderNum ? { turboSenderNumber: String(senderNum) } : {}),
+        },
       }).catch(err => console.warn('Non-blocking turbo sync error:', err.message));
     }
 
@@ -508,11 +522,25 @@ router.put('/:id', verifyToken.authenticateToken, async (req, res) => {
     if (providerFields.providerKey === 'TURBO' || existing.providerKey === 'TURBO') {
       const activeKey = apiKey !== undefined ? apiKey : existing.apiKey;
       const activeStatus = isActive !== undefined ? isActive : existing.isActive;
+      const parsedSettings = shippingProviderService.safeJsonParse(
+        providerFields.settings !== undefined ? providerFields.settings : existing.settings,
+        {}
+      );
+      const autoCreate = parsedSettings.autoCreateShipments !== undefined
+        ? Boolean(parsedSettings.autoCreateShipments)
+        : undefined;
+      const clientCode = parsedSettings.mainClientCode || parsedSettings.clientCode || parsedSettings.customerId;
+      const parsedClientCode = clientCode ? parseInt(String(clientCode).replace(/\D/g, ''), 10) : undefined;
+      const senderNum = parsedSettings.senderNumber || parsedSettings.phone || parsedSettings.senderPhone || undefined;
+
       await prisma.company.update({
         where: { id: companyId },
         data: {
           turboApiKey: activeKey || undefined,
           turboEnabled: Boolean(activeStatus && activeKey),
+          ...(autoCreate !== undefined ? { turboAutoCreate: autoCreate } : {}),
+          ...(parsedClientCode && !isNaN(parsedClientCode) ? { turboMainClientCode: parsedClientCode } : {}),
+          ...(senderNum ? { turboSenderNumber: String(senderNum) } : {}),
         },
       }).catch(err => console.warn('Non-blocking turbo sync error:', err.message));
     }

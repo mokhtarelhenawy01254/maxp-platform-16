@@ -1364,9 +1364,40 @@ class OrderService {
       // All other operations (Turbo, Returns, Commissions, Notifications) happen in the background
       (async () => {
         try {
-          // 🚚 Turbo Integration
+          let shouldAutoCreateTurbo = Boolean(
+            order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey
+          );
+          let turboApiKey = order.company?.turboApiKey;
 
-          if (status === 'CONFIRMED' && order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey && !order.turboShipmentId) {
+          // 🛡️ Fallback: Check ShippingCompany table if autoCreate not enabled on Company directly
+          if (!shouldAutoCreateTurbo && status === 'CONFIRMED' && !order.turboShipmentId) {
+            try {
+              const prisma = this.getPrisma();
+              const turboCarrier = await prisma.shippingCompany.findFirst({
+                where: {
+                  companyId: order.companyId,
+                  providerKey: 'TURBO',
+                  isActive: true
+                }
+              });
+              if (turboCarrier) {
+                let s = {};
+                try {
+                  s = typeof turboCarrier.settings === 'string' ? JSON.parse(turboCarrier.settings) : (turboCarrier.settings || {});
+                } catch {}
+                const carrierKey = turboCarrier.apiKey || s.apiKey || order.company?.turboApiKey;
+                const carrierAutoCreate = Boolean(s.autoCreateShipments);
+                if (carrierKey && carrierAutoCreate) {
+                  shouldAutoCreateTurbo = true;
+                  turboApiKey = carrierKey;
+                }
+              }
+            } catch (carrierErr) {
+              console.warn('⚠️ [TURBO] Non-blocking fallback carrier check error:', carrierErr.message);
+            }
+          }
+
+          if (status === 'CONFIRMED' && shouldAutoCreateTurbo && turboApiKey && !order.turboShipmentId) {
             const existingActiveShipment = await this.checkDuplicateActiveTurboShipment(order.companyId, order);
             if (existingActiveShipment) {
               console.warn(`⚠️ [TURBO] Skipping automatic shipment creation for order ${order.orderNumber}: Customer already has active Turbo shipment ${existingActiveShipment.turboShipmentId} on order ${existingActiveShipment.orderNumber}`);
@@ -1382,7 +1413,7 @@ class OrderService {
               } catch (e) {}
             } else {
               const TurboService = require('./turboService');
-              const turboService = new TurboService(order.company.turboApiKey, order.companyId);
+              const turboService = new TurboService(turboApiKey, order.companyId);
               const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
 
               const shipmentResult = await turboService.createShipment(orderData);
@@ -1967,7 +1998,39 @@ class OrderService {
       }, 5);
 
       // 🚚 Turbo Integration: إنشاء شحنة تلقائياً إذا كان مفعّل
-      if (order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey && !order.turboShipmentId) {
+      let shouldAutoCreateTurbo = Boolean(
+        order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey
+      );
+      let turboApiKey = order.company?.turboApiKey;
+
+      if (!shouldAutoCreateTurbo && !order.turboShipmentId) {
+        try {
+          const prisma = this.getPrisma();
+          const turboCarrier = await prisma.shippingCompany.findFirst({
+            where: {
+              companyId: order.companyId,
+              providerKey: 'TURBO',
+              isActive: true
+            }
+          });
+          if (turboCarrier) {
+            let s = {};
+            try {
+              s = typeof turboCarrier.settings === 'string' ? JSON.parse(turboCarrier.settings) : (turboCarrier.settings || {});
+            } catch {}
+            const carrierKey = turboCarrier.apiKey || s.apiKey || order.company?.turboApiKey;
+            const carrierAutoCreate = Boolean(s.autoCreateShipments);
+            if (carrierKey && carrierAutoCreate) {
+              shouldAutoCreateTurbo = true;
+              turboApiKey = carrierKey;
+            }
+          }
+        } catch (carrierErr) {
+          console.warn('⚠️ [TURBO] Non-blocking fallback carrier check error in confirmOrder:', carrierErr.message);
+        }
+      }
+
+      if (shouldAutoCreateTurbo && turboApiKey && !order.turboShipmentId) {
         try {
           const existingActiveShipment = await this.checkDuplicateActiveTurboShipment(order.companyId, order);
           if (existingActiveShipment) {
@@ -1984,7 +2047,7 @@ class OrderService {
             } catch (e) {}
           } else {
             const TurboService = require('./turboService');
-            const turboService = new TurboService(order.company.turboApiKey, order.companyId);
+            const turboService = new TurboService(turboApiKey, order.companyId);
 
             // تحضير بيانات الطلب
             const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
