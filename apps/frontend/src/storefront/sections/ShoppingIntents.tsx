@@ -442,7 +442,7 @@ const ShoppingIntents: React.FC<ShoppingIntentsProps> = ({ settings }) => {
                 item.link.startsWith('/') ? item.link : `/${item.link}`,
                 location.search,
               );
-              const examples = item.chip ? [] : resolveIntentExamples(item, index);
+              const examples = resolveIntentExamples(item, index);
               const isSixItems = items.length === 6;
 
               return (
