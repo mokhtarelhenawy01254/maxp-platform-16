@@ -338,10 +338,16 @@ exports.toggleUserStatus = async (req, res) => {
     // Toggle if no explicit value provided
     const nextIsActive = typeof isActive === 'boolean' ? isActive : !user.isActive;
 
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: { isActive: nextIsActive }
-    });
+    const [updated] = await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { isActive: nextIsActive }
+      }),
+      prisma.userCompany.updateMany({
+        where: { userId },
+        data: { isActive: nextIsActive }
+      })
+    ]);
 
     res.json({
       success: true,

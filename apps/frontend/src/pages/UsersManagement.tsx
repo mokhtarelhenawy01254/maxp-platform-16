@@ -118,6 +118,8 @@ type UserRecord = {
   roleId?: string | null;
   roleName?: string | null;
   isActive: boolean;
+  accountIsActive?: boolean;
+  activityStatus?: string | null;
   isEmailVerified?: boolean;
   avatar?: string | null;
   lastLoginAt?: string | null;
@@ -357,21 +359,79 @@ const getEmployeeStatusLabel = (status?: string | null) => {
   }
 };
 
-const getEmployeeStatusClassName = (status?: string | null) => {
-  switch (status) {
-    case "ACTIVE":
-      return "border-emerald-200 bg-emerald-500/10 text-emerald-700";
-    case "ON_LEAVE":
-      return "border-amber-200 bg-amber-500/10 text-amber-700";
-    case "SUSPENDED":
-    case "TERMINATED":
-      return "border-rose-200 bg-rose-500/10 text-rose-700";
-    case "RESIGNED":
-      return "border-slate-200 bg-slate-500/10 text-slate-700";
-    default:
-      return "border-border bg-muted text-foreground";
-  }
+const formatRelativeLoginTime = (value?: string | null) => {
+  if (!value) return "لم يسجل الدخول بعد";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "لم يسجل الدخول بعد";
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMinutes < 5) return "متصل الآن أو مؤخراً";
+  if (diffMinutes < 60) return `منذ ${diffMinutes} دقيقة`;
+  if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+  if (diffDays === 1) return "أمس";
+  if (diffDays < 30) return `منذ ${diffDays} يوم`;
+
+  return date.toLocaleDateString("ar-EG", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 };
+
+const renderUserActivityBadge = (entry: UserRecord) => {
+  const hrStatus = entry.employee?.status;
+
+  if (hrStatus === "RESIGNED") {
+    return (
+      <Badge variant="outline" className="gap-1.5 rounded-full border-slate-300 bg-slate-500/10 text-slate-700 dark:border-slate-700 dark:text-slate-300">
+        <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+        مستقيل
+      </Badge>
+    );
+  }
+  if (hrStatus === "TERMINATED") {
+    return (
+      <Badge variant="outline" className="gap-1.5 rounded-full border-rose-200 bg-rose-500/10 text-rose-700 dark:border-rose-900/40 dark:text-rose-400">
+        <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+        منتهي الخدمة
+      </Badge>
+    );
+  }
+  if (hrStatus === "SUSPENDED") {
+    return (
+      <Badge variant="outline" className="gap-1.5 rounded-full border-rose-200 bg-rose-500/10 text-rose-700 dark:border-rose-900/40 dark:text-rose-400">
+        <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+        موقوف
+      </Badge>
+    );
+  }
+  if (!entry.isActive) {
+    return (
+      <Badge variant="outline" className="gap-1.5 rounded-full border-slate-300 bg-slate-500/10 text-slate-700 dark:border-slate-700 dark:text-slate-300">
+        <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+        غير نشط (معطل)
+      </Badge>
+    );
+  }
+  if (!entry.lastLoginAt) {
+    return (
+      <Badge variant="outline" className="gap-1.5 rounded-full border-amber-300 bg-amber-500/10 text-amber-700 dark:border-amber-700 dark:text-amber-300">
+        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+        لم يسجل دخول بعد
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="outline" className="gap-1.5 rounded-full border-emerald-200 bg-emerald-500/10 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300">
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+      نشط
+    </Badge>
+  );
+};
+
 
 interface FormFieldProps {
   label: string;
@@ -436,15 +496,17 @@ const UsersManagement: React.FC = () => {
     employeeStatus: "",
   });
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  type TabValue = "all" | "active" | "inactive" | "invitations";
+  type TabValue = "all" | "active" | "never_logged_in" | "inactive" | "invitations";
   const [activeTab, setActiveTab] = useState<TabValue>("all");
   const [statusCounts, setStatusCounts] = useState<{
     total: number;
     active: number;
+    neverLoggedIn: number;
     inactive: number;
   }>({
     total: 0,
     active: 0,
+    neverLoggedIn: 0,
     inactive: 0,
   });
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -531,7 +593,7 @@ const UsersManagement: React.FC = () => {
       const payload = await requestApi<{
         users: UserRecord[];
         pagination?: { totalPages?: number; total?: number };
-        counts?: { total: number; active: number; inactive: number };
+        counts?: { total: number; active: number; neverLoggedIn?: number; inactive: number };
       }>(`companies/${user.companyId}/users?${queryParams.toString()}`);
 
       if (!mountedRef.current || requestId !== usersRequestRef.current) {
@@ -543,16 +605,12 @@ const UsersManagement: React.FC = () => {
         setTotalPages(payload.data.pagination?.totalPages || 0);
         setTotalCount(payload.data.pagination?.total || 0);
         if (payload.data.counts) {
-          setStatusCounts(payload.data.counts);
-        } else {
-          const currentTotal = payload.data.pagination?.total ?? payload.data.users.length;
-          const currentActive = payload.data.users.filter((entry) => entry.isActive).length;
-          const currentInactive = payload.data.users.filter((entry) => !entry.isActive).length;
-          setStatusCounts((prev) => ({
-            total: filters.isActive === "" ? currentTotal : (prev.total || currentTotal),
-            active: filters.isActive === "true" ? currentTotal : (filters.isActive === "" ? currentActive : prev.active),
-            inactive: filters.isActive === "false" ? currentTotal : (filters.isActive === "" ? currentInactive : prev.inactive),
-          }));
+          setStatusCounts({
+            total: payload.data.counts.total ?? 0,
+            active: payload.data.counts.active ?? 0,
+            neverLoggedIn: payload.data.counts.neverLoggedIn ?? 0,
+            inactive: payload.data.counts.inactive ?? 0,
+          });
         }
         setError(null);
       } else {
@@ -691,17 +749,25 @@ const UsersManagement: React.FC = () => {
       },
       {
         id: "active" as const,
-        title: "المستخدمون النشطون",
+        title: "النشطون فعلياً",
         value: statusCounts.active,
-        subtitle: "الحسابات المفعلة والمتاحة للعمل",
+        subtitle: "سجلوا دخول ويستخدمون النظام",
         tone: "success",
         icon: UserCheck,
+      },
+      {
+        id: "never_logged_in" as const,
+        title: "لم يسجلوا الدخول",
+        value: statusCounts.neverLoggedIn,
+        subtitle: "حسابات مضافة لم تسجل دخول بعد",
+        tone: "warning",
+        icon: AlertTriangle,
       },
       {
         id: "inactive" as const,
         title: "غير النشطين",
         value: statusCounts.inactive,
-        subtitle: "الحسابات المعطلة أو الموقوفة",
+        subtitle: "حسابات معطلة أو مستقيلة",
         tone: "danger",
         icon: UserX,
       },
@@ -710,7 +776,7 @@ const UsersManagement: React.FC = () => {
         title: "الدعوات المعلقة",
         value: invitations.length,
         subtitle: "دعوات بانتظار القبول أو الإلغاء",
-        tone: "warning",
+        tone: "secondary",
         icon: MailPlus,
       },
     ],
@@ -724,7 +790,10 @@ const UsersManagement: React.FC = () => {
       labels.push(`الدور: ${roles[filters.role]?.name || filters.role}`);
     }
     if (filters.isActive) {
-      labels.push(filters.isActive === "true" ? "نشط فقط" : "غير نشط فقط");
+      if (filters.isActive === "active") labels.push("النشطون فعلياً");
+      else if (filters.isActive === "never_logged_in") labels.push("لم يسجلوا الدخول");
+      else if (filters.isActive === "inactive" || filters.isActive === "false") labels.push("غير النشطين فقط");
+      else labels.push(filters.isActive === "true" ? "نشط فقط" : "غير نشط فقط");
     }
     if (filters.employeeStatus) {
       const foundStatus = EMPLOYEE_STATUS_OPTIONS.find(
@@ -1048,9 +1117,11 @@ const UsersManagement: React.FC = () => {
 
     let nextIsActive = "";
     if (nextTab === "active") {
-      nextIsActive = "true";
+      nextIsActive = "active";
+    } else if (nextTab === "never_logged_in") {
+      nextIsActive = "never_logged_in";
     } else if (nextTab === "inactive") {
-      nextIsActive = "false";
+      nextIsActive = "inactive";
     }
 
     setFilters((current) => {
@@ -1065,9 +1136,11 @@ const UsersManagement: React.FC = () => {
     setPage(1);
     setSelectedUsers([]);
     if (field === "isActive") {
-      if (value === "true") {
+      if (value === "active" || value === "true") {
         setActiveTab("active");
-      } else if (value === "false") {
+      } else if (value === "never_logged_in") {
+        setActiveTab("never_logged_in");
+      } else if (value === "inactive" || value === "false") {
         setActiveTab("inactive");
       } else if (activeTab !== "invitations") {
         setActiveTab("all");
@@ -1435,14 +1508,15 @@ const UsersManagement: React.FC = () => {
           </Alert>
         ) : null}
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {metrics.map((m, idx) => {
             const Icon = m.icon;
             const tones: Record<string, { bar: string; icon: string }> = {
               primary: { bar: "from-violet-500 to-indigo-500", icon: "text-violet-600 dark:text-violet-300 bg-violet-500/10 dark:bg-violet-500/20" },
               success: { bar: "from-emerald-500 to-teal-500", icon: "text-emerald-600 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/20" },
-              danger: { bar: "from-rose-500 to-red-500", icon: "text-rose-600 dark:text-rose-300 bg-rose-500/10 dark:bg-rose-500/20" },
               warning: { bar: "from-amber-500 to-orange-500", icon: "text-amber-600 dark:text-amber-300 bg-amber-500/10 dark:bg-amber-500/20" },
+              danger: { bar: "from-rose-500 to-red-500", icon: "text-rose-600 dark:text-rose-300 bg-rose-500/10 dark:bg-rose-500/20" },
+              secondary: { bar: "from-sky-500 to-blue-500", icon: "text-sky-600 dark:text-sky-300 bg-sky-500/10 dark:bg-sky-500/20" },
             };
             const t = tones[m.tone] || tones.primary;
             const isCurrent = activeTab === m.id;
@@ -1495,9 +1569,16 @@ const UsersManagement: React.FC = () => {
             </TabsTrigger>
             <TabsTrigger value="active" className="min-w-[8.5rem] rounded-xl gap-2">
               <UserCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
-              <span>المستخدمين النشطين</span>
+              <span>النشطون فعلياً</span>
               <span className="rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
                 {statusCounts.active}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="never_logged_in" className="min-w-[8.5rem] rounded-xl gap-2">
+              <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
+              <span>لم يسجلوا الدخول</span>
+              <span className="rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+                {statusCounts.neverLoggedIn}
               </span>
             </TabsTrigger>
             <TabsTrigger value="inactive" className="min-w-[8.5rem] rounded-xl gap-2">
@@ -1508,10 +1589,10 @@ const UsersManagement: React.FC = () => {
               </span>
             </TabsTrigger>
             <TabsTrigger value="invitations" className="min-w-[8.5rem] rounded-xl gap-2">
-              <MailPlus className="size-4 text-amber-600 dark:text-amber-400" />
+              <MailPlus className="size-4 text-sky-600 dark:text-sky-400" />
               <span>الدعوات المعلقة</span>
               {invitations.length > 0 ? (
-                <span className="rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+                <span className="rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
                   {invitations.length}
                 </span>
               ) : (
@@ -1601,8 +1682,9 @@ const UsersManagement: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent align="end">
                     <SelectItem value={null}> {t("users.filters.all")} </SelectItem>
-                    <SelectItem value="true">{t("users.filters.active")}</SelectItem>
-                    <SelectItem value="false">{t("users.filters.inactive")}</SelectItem>
+                    <SelectItem value="active">النشطون فعلياً</SelectItem>
+                    <SelectItem value="never_logged_in">لم يسجلوا الدخول بعد</SelectItem>
+                    <SelectItem value="inactive">غير النشطين / المعطلين</SelectItem>
                   </SelectContent>
                 </Select>
               </FormField>
@@ -1644,17 +1726,21 @@ const UsersManagement: React.FC = () => {
                 <div className="space-y-1">
                   <CardTitle>
                     {activeTab === "active"
-                      ? `المستخدمون النشطون (${totalCount})`
-                      : activeTab === "inactive"
-                        ? `المستخدمون غير النشطين (${totalCount})`
-                        : t("users.userList", { count: totalCount })}
+                      ? `النشطون فعلياً (${totalCount})`
+                      : activeTab === "never_logged_in"
+                        ? `مستخدمون لم يسجلوا الدخول بعد (${totalCount})`
+                        : activeTab === "inactive"
+                          ? `المستخدمون غير النشطين (${totalCount})`
+                          : t("users.userList", { count: totalCount })}
                   </CardTitle>
                   <CardDescription>
                     {activeTab === "active"
-                      ? "عرض وإدارة حسابات الفريق المفعلة والمتاحة للعمل حاليًا."
-                      : activeTab === "inactive"
-                        ? "عرض وإدارة حسابات الفريق المعطلة أو الموقوفة مع إمكانية إعادة التفعيل."
-                        : t("users.userListDescription")}
+                      ? "عرض وإدارة حسابات الفريق المفعلة والتي سجلت دخول للمنصة."
+                      : activeTab === "never_logged_in"
+                        ? "حسابات تم إنشاؤها أو دعوتها لكنها لم تسجل الدخول للمنصة حتى الآن."
+                        : activeTab === "inactive"
+                          ? "عرض وإدارة حسابات الفريق المعطلة أو المستقيلة مع إمكانية إعادة التفعيل."
+                          : t("users.userListDescription")}
                   </CardDescription>
                 </div>
                 <Button type="button" variant="outline" className="h-10 rounded-2xl" onClick={() => void fetchUsers()}>
@@ -1707,6 +1793,18 @@ const UsersManagement: React.FC = () => {
                                   <div className="space-y-1">
                                     <p className="font-semibold text-foreground">{entry.firstName} {entry.lastName}</p>
                                     <p className="text-xs text-muted-foreground">{entry.email}</p>
+                                    <div className="flex items-center gap-1.5 text-[11px]">
+                                      {!entry.lastLoginAt ? (
+                                        <span className="inline-flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
+                                          <AlertTriangle className="size-3" />
+                                          لم يسجل دخول بعد
+                                        </span>
+                                      ) : (
+                                        <span className="text-muted-foreground tabular-nums">
+                                          آخر ظهور: {formatRelativeLoginTime(entry.lastLoginAt)}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </TableCell>
@@ -1728,9 +1826,7 @@ const UsersManagement: React.FC = () => {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Badge className={cn("rounded-full border", getAccountStatusClassName(entry.isActive))}>
-                                  {entry.isActive ? t("users.filters.active") : t("users.filters.inactive")}
-                                </Badge>
+                                {renderUserActivityBadge(entry)}
                               </TableCell>
                               <TableCell>
                                 <div className="flex justify-end">
@@ -1817,6 +1913,18 @@ const UsersManagement: React.FC = () => {
                                   <div className="min-w-0">
                                     <p className="truncate text-base font-semibold text-foreground">{entry.firstName} {entry.lastName}</p>
                                     <p className="truncate text-sm text-muted-foreground">{entry.email}</p>
+                                    <div className="flex items-center gap-1.5 text-[11px] mt-0.5">
+                                      {!entry.lastLoginAt ? (
+                                        <span className="inline-flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
+                                          <AlertTriangle className="size-3" />
+                                          لم يسجل دخول بعد
+                                        </span>
+                                      ) : (
+                                        <span className="text-muted-foreground tabular-nums">
+                                          آخر ظهور: {formatRelativeLoginTime(entry.lastLoginAt)}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -1863,9 +1971,7 @@ const UsersManagement: React.FC = () => {
                                   <Badge className={cn("rounded-full border", getRoleBadgeClassName(entry.role))}>
                                     {getRoleDisplayName(entry.role, entry)}
                                   </Badge>
-                                  <Badge className={cn("rounded-full border", getAccountStatusClassName(entry.isActive))}>
-                                    {entry.isActive ? "نشط" : "غير نشط"}
-                                  </Badge>
+                                  {renderUserActivityBadge(entry)}
                                   {entry.isEmailVerified ? (
                                     <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-500/10 text-emerald-700">
                                       البريد موثق
@@ -1874,6 +1980,12 @@ const UsersManagement: React.FC = () => {
                                 </div>
 
                                 <div className="grid gap-2 rounded-[1.25rem] bg-muted/40 p-3 text-sm">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-muted-foreground">آخر دخول</span>
+                                    <span className={!entry.lastLoginAt ? "text-amber-600 dark:text-amber-400 font-medium" : "tabular-nums"}>
+                                      {formatRelativeLoginTime(entry.lastLoginAt)}
+                                    </span>
+                                  </div>
                                   <div className="flex items-center justify-between gap-3">
                                     <span className="text-muted-foreground">الهاتف</span>
                                     <span>{entry.phone || "-"}</span>

@@ -1109,19 +1109,31 @@ const getCompanyUsers = async (req, res) => {
     const limitNum = Math.min(parseInt(limit), 100);
     const skip = (pageNum - 1) * limitNum;
 
-    // Get users from UserCompany table (multi-company support)
-    const userCompanyWhere = {
-      companyId: companyId,
-    };
-
-    // Add role filter if specified
-    if (role) {
-      userCompanyWhere.role = role;
-    }
-
-    // Add isActive filter if specified
-    if (isActive !== "") {
-      userCompanyWhere.isActive = isActive === "true";
+    // Self-healing: ensure any direct company user has a UserCompany record
+    try {
+      const missingUsers = await getSharedPrismaClient().user.findMany({
+        where: {
+          companyId,
+          userCompanies: { none: { companyId } },
+        },
+        select: { id: true, role: true, isActive: true },
+        take: 100,
+      });
+      if (missingUsers.length > 0) {
+        const VALID_ROLES = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'AGENT', 'AFFILIATE'];
+        await getSharedPrismaClient().userCompany.createMany({
+          data: missingUsers.map((u) => ({
+            userId: u.id,
+            companyId,
+            role: VALID_ROLES.includes(u.role) ? u.role : 'AGENT',
+            isActive: u.isActive ?? true,
+            isDefault: true,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    } catch (syncErr) {
+      console.warn('⚠️ [GET-USERS] Self-healing sync warning:', syncErr.message);
     }
 
     // Build user search filter
@@ -1134,17 +1146,43 @@ const getCompanyUsers = async (req, res) => {
       ];
     }
 
-    // Note: Employee Status filter will be applied after fetching data
-    // to handle the NO_EMPLOYEE case properly with include
+    // Get users from UserCompany table (multi-company support)
+    const userCompanyWhere = {
+      companyId: companyId,
+    };
+
+    // Add role filter if specified
+    if (role) {
+      userCompanyWhere.role = role;
+    }
+
+    // Add isActive / activity filter
+    if (isActive === "true") {
+      userCompanyWhere.isActive = true;
+      userSearchWhere.isActive = true;
+    } else if (isActive === "false" || isActive === "inactive") {
+      userCompanyWhere.OR = [
+        { isActive: false },
+        { user: { isActive: false } },
+      ];
+    } else if (isActive === "never_logged_in") {
+      userCompanyWhere.isActive = true;
+      userSearchWhere.isActive = true;
+      userSearchWhere.lastLoginAt = null;
+    } else if (isActive === "active") {
+      userCompanyWhere.isActive = true;
+      userSearchWhere.isActive = true;
+      userSearchWhere.lastLoginAt = { not: null };
+    }
 
     const baseCountWhere = {
       companyId: companyId,
       ...(role ? { role } : {}),
-      user: userSearchWhere,
+      user: search ? userSearchWhere : undefined,
     };
 
-    // ✅ FIX: Fetch users through UserCompany relationship with Employee data
-    const [userCompanies, totalCount, activeCount, inactiveCount] = await Promise.all([
+    // ✅ Fetch users through UserCompany relationship with Employee data
+    const [userCompanies, totalCount, activeCount, neverLoggedInCount, inactiveCount] = await Promise.all([
       getSharedPrismaClient().userCompany.findMany({
         where: {
           ...userCompanyWhere,
@@ -1174,6 +1212,17 @@ const getCompanyUsers = async (req, res) => {
               baseSalary: true,
               departmentId: true,
               positionId: true,
+              employees: {
+                select: {
+                  id: true,
+                  status: true,
+                  employeeNumber: true,
+                  terminationDate: true,
+                  terminationReason: true,
+                  department: { select: { id: true, name: true, color: true } },
+                  position: { select: { id: true, title: true } },
+                },
+              },
               departmentRelation: {
                 select: {
                   id: true,
@@ -1190,17 +1239,17 @@ const getCompanyUsers = async (req, res) => {
               },
             },
           },
-        roleRef: { select: { name: true } },
-      },
-      orderBy: (() => {
-        const safeSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'desc';
-        const validSortFields = ['createdAt', 'firstName', 'lastName', 'email', 'isActive'];
-        if (sortBy === 'createdAt') return { createdAt: safeSortOrder };
-        if (sortBy === 'role') return { role: safeSortOrder };
-        if (sortBy === 'name') return { user: { firstName: safeSortOrder } };
-        if (validSortFields.includes(sortBy)) return { user: { [sortBy]: safeSortOrder } };
-        return { createdAt: safeSortOrder };
-      })(),
+          roleRef: { select: { name: true } },
+        },
+        orderBy: (() => {
+          const safeSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'desc';
+          const validSortFields = ['createdAt', 'firstName', 'lastName', 'email', 'isActive'];
+          if (sortBy === 'createdAt') return { createdAt: safeSortOrder };
+          if (sortBy === 'role') return { role: safeSortOrder };
+          if (sortBy === 'name') return { user: { firstName: safeSortOrder } };
+          if (validSortFields.includes(sortBy)) return { user: { [sortBy]: safeSortOrder } };
+          return { createdAt: safeSortOrder };
+        })(),
       }),
       getSharedPrismaClient().userCompany.count({
         where: {
@@ -1212,12 +1261,29 @@ const getCompanyUsers = async (req, res) => {
         where: {
           ...baseCountWhere,
           isActive: true,
+          user: {
+            isActive: true,
+            lastLoginAt: { not: null },
+          },
         },
       }),
       getSharedPrismaClient().userCompany.count({
         where: {
           ...baseCountWhere,
-          isActive: false,
+          isActive: true,
+          user: {
+            isActive: true,
+            lastLoginAt: null,
+          },
+        },
+      }),
+      getSharedPrismaClient().userCompany.count({
+        where: {
+          ...baseCountWhere,
+          OR: [
+            { isActive: false },
+            { user: { isActive: false } },
+          ],
         },
       }),
     ]);
@@ -1231,7 +1297,7 @@ const getCompanyUsers = async (req, res) => {
       if (employeeStatus === "NO_EMPLOYEE") {
         // Filter for users without Employee data (no employeeNumber)
         filteredUserCompanies = userCompanies.filter(
-          (uc) => !uc.user.employeeNumber,
+          (uc) => !uc.user.employeeNumber && !uc.user.employees,
         );
         // Recalculate total count for NO_EMPLOYEE case
         try {
@@ -1240,6 +1306,7 @@ const getCompanyUsers = async (req, res) => {
             user: {
               ...userSearchWhere,
               employeeNumber: null,
+              employees: null,
             },
           };
           actualTotalCount = await getSharedPrismaClient().userCompany.count({
@@ -1250,45 +1317,20 @@ const getCompanyUsers = async (req, res) => {
           actualTotalCount = filteredUserCompanies.length;
         }
       } else {
-        // Filter for users with Employee data and specific contractType
-        // Note: status is not in User model, so we filter by contractType or isActive
         filteredUserCompanies = userCompanies.filter((uc) => {
-          if (!uc.user.employeeNumber) return false;
+          const hasEmployee = uc.user.employeeNumber || uc.user.employees;
+          if (!hasEmployee) return false;
+          const status = uc.user.employees?.status || (uc.user.isActive ? "ACTIVE" : "INACTIVE");
           if (employeeStatus === "ACTIVE") {
-            return uc.user.isActive === true;
+            return status === "ACTIVE" && uc.user.isActive === true;
           } else if (employeeStatus === "INACTIVE") {
-            return uc.user.isActive === false;
-          } else if (employeeStatus && uc.user.contractType) {
-            return uc.user.contractType === employeeStatus;
+            return status !== "ACTIVE" || uc.user.isActive === false;
+          } else if (employeeStatus) {
+            return status === employeeStatus || uc.user.contractType === employeeStatus;
           }
           return true;
         });
-        // Recalculate total count
-        const countQuery = {
-          ...userCompanyWhere,
-          user: {
-            ...userSearchWhere,
-            employeeNumber: { not: null },
-            ...(employeeStatus === "ACTIVE"
-              ? { isActive: true }
-              : employeeStatus === "INACTIVE"
-                ? { isActive: false }
-                : employeeStatus
-                  ? { contractType: employeeStatus }
-                  : {}),
-          },
-        };
-        try {
-          actualTotalCount = await getSharedPrismaClient().userCompany.count({
-            where: countQuery,
-          });
-        } catch (countError) {
-          console.warn(
-            "⚠️ [GET-USERS] Error counting with employee filter, using filtered count:",
-            countError.message,
-          );
-          actualTotalCount = filteredUserCompanies.length;
-        }
+        actualTotalCount = filteredUserCompanies.length;
       }
     }
 
@@ -1296,55 +1338,72 @@ const getCompanyUsers = async (req, res) => {
       `✅ [GET-USERS] Found ${filteredUserCompanies.length} users (total: ${actualTotalCount})`,
     );
 
-    // ✅ FIX: Transform the data to include Employee (HR) information
-    const users = filteredUserCompanies.map((uc) => ({
-      id: uc.user.id,
-      firstName: uc.user.firstName,
-      lastName: uc.user.lastName,
-      email: uc.user.email,
-      phone: uc.user.phone,
-      avatar: uc.user.avatar,
-      role: uc.role,
-      roleId: uc.roleId || null,
-      roleName: uc.roleRef?.name || (uc.role ? getRoleDisplayName(uc.role) : null),
-      isActive: uc.isActive, // isActive from UserCompany table
-      isEmailVerified: uc.user.isEmailVerified,
-      lastLoginAt: uc.user.lastLoginAt,
-      createdAt: uc.user.createdAt,
-      updatedAt: uc.user.updatedAt,
-      defaultPage: (() => {
-        try {
-          if (uc.user.settings) {
-            const parsed = JSON.parse(uc.user.settings);
-            return parsed.defaultPage || "/apps";
-          }
-        } catch { /* ignore */ }
-        return "/apps";
-      })(),
-      // ✅ Parse settings for assignedApps (per-user app access restriction)
-      assignedApps: (() => {
-        try {
-          if (uc.user.settings) {
-            const parsed = JSON.parse(uc.user.settings);
-            return Array.isArray(parsed.assignedApps) ? parsed.assignedApps : [];
-          }
-        } catch { /* ignore */ }
-        return [];
-      })(),
-      // ✅ Include Employee (HR) data from User fields
-      employee: uc.user.employeeNumber
-        ? {
-            id: uc.user.id, // Use user.id as employee id
-            employeeNumber: uc.user.employeeNumber,
-            status: uc.user.isActive ? "ACTIVE" : "INACTIVE", // Map isActive to status
-            contractType: uc.user.contractType,
-            hireDate: uc.user.hireDate,
-            baseSalary: uc.user.baseSalary,
-            department: uc.user.departmentRelation,
-            position: uc.user.positionRelation,
-          }
-        : null,
-    }));
+    // ✅ FIX: Transform the data to include Employee (HR) information & Activity
+    const users = filteredUserCompanies.map((uc) => {
+      const hrStatus = uc.user.employees?.status;
+      const isHrInactive = hrStatus === 'TERMINATED' || hrStatus === 'RESIGNED' || hrStatus === 'SUSPENDED';
+      const effectiveIsActive = Boolean(uc.isActive && uc.user.isActive && !isHrInactive);
+
+      let activityStatus = 'ACTIVE';
+      if (!effectiveIsActive) {
+        activityStatus = isHrInactive ? (hrStatus === 'SUSPENDED' ? 'SUSPENDED' : 'INACTIVE') : 'INACTIVE';
+      } else if (!uc.user.lastLoginAt) {
+        activityStatus = 'NEVER_LOGGED_IN';
+      } else {
+        activityStatus = 'ACTIVE';
+      }
+
+      return {
+        id: uc.user.id,
+        firstName: uc.user.firstName,
+        lastName: uc.user.lastName,
+        email: uc.user.email,
+        phone: uc.user.phone,
+        avatar: uc.user.avatar,
+        role: uc.role,
+        roleId: uc.roleId || null,
+        roleName: uc.roleRef?.name || (uc.role ? getRoleDisplayName(uc.role) : null),
+        isActive: effectiveIsActive, // Effective activity
+        accountIsActive: Boolean(uc.isActive && uc.user.isActive),
+        activityStatus, // 'ACTIVE' | 'NEVER_LOGGED_IN' | 'INACTIVE' | 'SUSPENDED'
+        isEmailVerified: uc.user.isEmailVerified,
+        lastLoginAt: uc.user.lastLoginAt,
+        createdAt: uc.user.createdAt,
+        updatedAt: uc.user.updatedAt,
+        defaultPage: (() => {
+          try {
+            if (uc.user.settings) {
+              const parsed = JSON.parse(uc.user.settings);
+              return parsed.defaultPage || "/apps";
+            }
+          } catch { /* ignore */ }
+          return "/apps";
+        })(),
+        // ✅ Parse settings for assignedApps (per-user app access restriction)
+        assignedApps: (() => {
+          try {
+            if (uc.user.settings) {
+              const parsed = JSON.parse(uc.user.settings);
+              return Array.isArray(parsed.assignedApps) ? parsed.assignedApps : [];
+            }
+          } catch { /* ignore */ }
+          return [];
+        })(),
+        // ✅ Include Employee (HR) data from User fields and Employee relation
+        employee: (uc.user.employees || uc.user.employeeNumber)
+          ? {
+              id: uc.user.employees?.id || uc.user.id,
+              employeeNumber: uc.user.employees?.employeeNumber || uc.user.employeeNumber,
+              status: uc.user.employees?.status || (effectiveIsActive ? "ACTIVE" : "INACTIVE"),
+              contractType: uc.user.contractType,
+              hireDate: uc.user.hireDate,
+              baseSalary: uc.user.baseSalary,
+              department: uc.user.employees?.department || uc.user.departmentRelation,
+              position: uc.user.employees?.position || uc.user.positionRelation,
+            }
+          : null,
+      };
+    });
 
     // حساب معلومات التصفح (استخدام actualTotalCount بعد الفلترة)
     const totalPages = Math.ceil(actualTotalCount / limitNum);
@@ -1365,8 +1424,9 @@ const getCompanyUsers = async (req, res) => {
           hasPrev,
         },
         counts: {
-          total: activeCount + inactiveCount,
+          total: activeCount + neverLoggedInCount + inactiveCount,
           active: activeCount,
+          neverLoggedIn: neverLoggedInCount,
           inactive: inactiveCount,
         },
       },
