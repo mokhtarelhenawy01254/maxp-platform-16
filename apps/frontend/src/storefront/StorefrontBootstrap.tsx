@@ -36,8 +36,7 @@ import { preloadRuntimeStorefrontTheme } from "./engine/runtimeThemeResolver";
 import { Toaster } from "sonner";
 
 
-const storefrontShellPromise = import("./StorefrontShell");
-const StorefrontShell = React.lazy(() => storefrontShellPromise);
+const StorefrontShell = React.lazy(() => import("./StorefrontShell"));
 const STOREFRONT_TOASTER_IDLE_DELAY_MS = 8000;
 const STOREFRONT_TOASTER_INTENT_EVENTS = [
   "click",
