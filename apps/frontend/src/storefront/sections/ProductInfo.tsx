@@ -7126,6 +7126,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
               ) : null}
               {!isKhemetInlineQuickOrderBuybox ? elessiLowStockNotice : null}
               {!isKhemetInlineQuickOrderBuybox &&
+              !isRedlineAuto &&
               (!safeDescription ||
               !isKhemetLuxeTheme ||
               shouldHideDuplicateDescriptionSection) ? (
@@ -7136,7 +7137,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
               {brandSubtitle ? (
                 <p className="text-sm leading-6 text-[#8f5c44]">{brandSubtitle}</p>
               ) : null}
-              {shouldHideDuplicateDescriptionSection || isKhemetInlineQuickOrderBuybox ? null : (
+              {shouldHideDuplicateDescriptionSection || isKhemetInlineQuickOrderBuybox || isRedlineAuto ? null : (
                 <button
                   type="button"
                   onClick={() => {

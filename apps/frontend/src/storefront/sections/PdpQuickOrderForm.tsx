@@ -262,6 +262,31 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         ? meta.customFields
         : [];
 
+    if (isRedlineAutoQuickOrder) {
+      const hasCarAttr = productAttrs.some(
+        (a: any) =>
+          a.key === "car_model" ||
+          a.key?.toLowerCase().includes("car") ||
+          a.label?.includes("سيار"),
+      );
+      if (!hasCarAttr) {
+        return [
+          ...productAttrs,
+          {
+            key: "car_model",
+            label: prefersArabicCopy
+              ? "نوع وموديل وسنة صنع السيارة"
+              : "Car make, model & year",
+            placeholder: prefersArabicCopy
+              ? "مثال: هيونداي إلنترا CN7 موديل 2022، كيا سبورتاج 2020"
+              : "e.g. Hyundai Elantra 2022, Kia Sportage 2020",
+            required: true,
+          },
+        ];
+      }
+      return productAttrs;
+    }
+
     if (productAttrs.length > 0) {
       return productAttrs;
     }
@@ -288,7 +313,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     }
 
     return [];
-  }, [product, storePdpQuickOrderSettings, prefersArabicCopy]);
+  }, [product, storePdpQuickOrderSettings, prefersArabicCopy, isRedlineAutoQuickOrder]);
 
   const [customAttributeValues, setCustomAttributeValues] = useState<Record<string, string>>({});
 
@@ -658,6 +683,15 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       trackingItem.price,
     ].join(":");
   }, [activeQuantityOffer, product.id, trackingItem]);
+
+  useEffect(() => {
+    if (effectiveGovernorateField.enabled && !formData.governorate) {
+      updateFormData({
+        governorate: "Cairo",
+        city: formData.city || "Cairo",
+      });
+    }
+  }, [effectiveGovernorateField.enabled, formData.governorate, formData.city, updateFormData]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1597,9 +1631,10 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     ? "grid gap-3"
     : isCompactMergedQuickOrder
       ? "grid grid-cols-2 gap-2.5"
-      : "space-y-4";
-  const shouldRenderInlineTotalRow = !shouldShowMobileStickySubmitBar;
-  const shouldShowInlineSubmitButton = !shouldShowMobileStickySubmitBar;
+  const shouldRenderInlineTotalRow =
+    isRedlineAutoQuickOrder || !shouldShowMobileStickySubmitBar;
+  const shouldShowInlineSubmitButton =
+    isRedlineAutoQuickOrder || !shouldShowMobileStickySubmitBar;
   const shouldRenderActionArea = showAddToCartButton || shouldShowInlineSubmitButton;
 
   useEffect(() => {
@@ -1880,11 +1915,6 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                                 : "e.g. Hyundai Tucson 2022, Kia Sportage 2020")
                             }
                           />
-                          <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-                            {prefersArabicCopy
-                              ? "يتم ثني وتفصيل شاسيه الستارة بالمللي طبقاً لباترون فابريقة باب سيارتك."
-                              : "The sunshade frame is custom bent and tailored to your exact car door model."}
-                          </p>
                         </div>
                       );
                     }
@@ -2229,23 +2259,6 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                       : minimumOrderSubmitLabel}
                   </button>
                 ) : null}
-              </div>
-            ) : null}
-
-            {isRedlineAutoQuickOrder && shouldRenderActionArea ? (
-              <div className="mt-3.5 grid grid-cols-3 gap-1.5 rounded-xl border border-slate-200/80 bg-slate-50/70 p-2.5 text-center text-[10px] sm:text-[11px] font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
-                <div className="flex flex-col items-center justify-center gap-1">
-                  <span className="text-sm">🛡️</span>
-                  <span>{prefersArabicCopy ? "معاينة قبل الدفع" : "Inspect first"}</span>
-                </div>
-                <div className="flex flex-col items-center justify-center gap-1 border-x border-slate-200 dark:border-slate-800">
-                  <span className="text-sm">🔄</span>
-                  <span>{prefersArabicCopy ? "استبدال 14 يوم" : "14d Exchange"}</span>
-                </div>
-                <div className="flex flex-col items-center justify-center gap-1">
-                  <span className="text-sm">⚡</span>
-                  <span>{prefersArabicCopy ? "شحن 24-48 ساعة" : "Fast shipping"}</span>
-                </div>
               </div>
             ) : null}
 

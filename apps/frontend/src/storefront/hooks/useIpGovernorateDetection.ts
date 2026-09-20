@@ -22,14 +22,15 @@ export const useIpGovernorateDetection = (): void => {
 
     const runDetection = () => {
       void detectGovernorateByIp().then(({ governorate, city }) => {
-        if (!active || !governorate) return;
+        if (!active) return;
 
         const current = useCheckoutStore.getState().formData;
-        if (current.governorate?.trim()) return;
+        if (current.governorate?.trim() && current.governorate !== "Cairo") return;
 
+        const targetGov = governorate || "Cairo";
         updateFormData({
-          governorate,
-          ...(city ? { city } : {}),
+          governorate: targetGov,
+          city: city || current.city || targetGov,
         });
       });
     };
