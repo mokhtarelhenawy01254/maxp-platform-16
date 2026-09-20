@@ -2743,6 +2743,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { value: "kids-guarantee", label: "ضمان الأطفال (مرح)" },
       { value: "store-advantages-pastel", label: "مزايا المتجر الباستيل" },
       { value: "vela-store-advantages", label: "مزايا متجر Vela" },
+      { value: "automotive-bento", label: "مواصفات هندسية Bento (2026)" },
     ],
     fields: [
       {
@@ -3349,6 +3350,40 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { key: "subtitle", label: "الوصف", type: "textarea" },
       { key: "ctaText", label: "نص زر الإجراء", type: "text", placeholder: "طلب كيت عينات للعيادة 📦" },
       { key: "ctaLink", label: "رابط زر الإجراء", type: "url", placeholder: "/contact" },
+    ],
+  },
+  "car-model-matcher": {
+    label: "مطابقة موديل السيارة (Car Model Matcher)",
+    component: "car-model-matcher",
+    note: "أداة بحث تفاعلية لمطابقة موديل وسنة صنع السيارة والتأكد من توافق باترون الفابريقة.",
+    pages: ["home", "shop", "pdp"],
+    variants: [
+      { value: "standard", label: "قياسي" },
+    ],
+    fields: [
+      { key: "badge", label: "الشارة", type: "text", placeholder: "تطابق فابريقة 100%" },
+      { key: "title", label: "العنوان", type: "text", placeholder: "تأكد من مطابقة الستارة لموديل سيارتك" },
+      { key: "subtitle", label: "الوصف", type: "textarea" },
+      { key: "placeholder", label: "نص خانة البحث", type: "text" },
+      { key: "fitMessage", label: "رسالة التطابق", type: "text" },
+      { key: "customNoteMessage", label: "رسالة التفصيل المخصص", type: "text" },
+      { key: "ctaText", label: "نص زر الإجراء", type: "text", placeholder: "اختيار الباقة والمتابعة" },
+      { key: "ctaLink", label: "رابط زر الإجراء", type: "url", placeholder: "#pdp-buybox" },
+    ],
+  },
+  "automotive-bento": {
+    label: "مواصفات هندسية Bento (Automotive Spec Bento)",
+    component: "automotive-bento",
+    note: "شبكة بينتو هندسية بمواصفات تقنية وتيليمتري حراري للسيارات بمعايير 2026.",
+    pages: ["home", "shop", "pdp", "about"],
+    variants: [
+      { value: "standard", label: "قياسي" },
+      { value: "automotive-bento", label: "بينتو هندسي" },
+    ],
+    fields: [
+      { key: "badge", label: "الشارة", type: "text", placeholder: "المواصفات الفنية والهندسية المعتمدة" },
+      { key: "title", label: "العنوان", type: "text", placeholder: "هندسة فائقة مصممة لتحمل حرارة الصيف القاسية" },
+      { key: "subtitle", label: "الوصف", type: "textarea" },
     ],
   },
 } as const satisfies Record<string, StorefrontSectionManifestEntry>;

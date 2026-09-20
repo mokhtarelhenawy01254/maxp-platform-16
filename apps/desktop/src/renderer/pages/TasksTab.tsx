@@ -151,7 +151,16 @@ export const TasksTab: React.FC = () => {
       const timerRes = await window.electronAPI.startTaskTimer(task.id);
       const entryObj = timerRes?.entry || timerRes?.data;
       if (entryObj?.id) {
-        setActiveTask((prev) => (prev && prev.id === task.id ? { ...prev, entryId: entryObj.id } : prev));
+        setActiveTask((prev) => {
+          if (prev && prev.id === task.id) {
+            const updated = { ...prev, entryId: entryObj.id };
+            try {
+              localStorage.setItem('maxp_active_task', JSON.stringify(updated));
+            } catch {}
+            return updated;
+          }
+          return prev;
+        });
       }
     } catch (err) {
       console.warn('[TasksTab] startTaskTimer failed:', err);
@@ -165,7 +174,15 @@ export const TasksTab: React.FC = () => {
   };
 
   const handleStopTask = async () => {
-    const entryId = activeTask?.entryId;
+    let entryId = activeTask?.entryId;
+    if (!entryId) {
+      try {
+        const runningRes = await window.electronAPI.getRunningTaskTimer();
+        if (runningRes?.success && runningRes.runningTimer?.id) {
+          entryId = runningRes.runningTimer.id;
+        }
+      } catch {}
+    }
     if (entryId) {
       try {
         await window.electronAPI.stopTaskTimer(entryId);
@@ -319,6 +336,9 @@ export const TasksTab: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [loadData]);
 
+  const userRole = String(currentUser?.role || '').toUpperCase();
+  const isAdminOrManager = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER'].includes(userRole);
+
   const handleUpdateStatus = async (taskId: string, targetStatus: string) => {
     const currentTask = tasks.find((t) => t.id === taskId);
     const prevStatus = currentTask?.status || 'PENDING';
@@ -326,11 +346,19 @@ export const TasksTab: React.FC = () => {
     // If completing the task or submitting for review, stop runner and clear state
     if (targetStatus === 'COMPLETED' || targetStatus === 'IN_REVIEW') {
       if (activeTask?.id === taskId) {
-        const entryId = activeTask?.entryId;
+        let entryId = activeTask?.entryId;
         setActiveTask(null);
         try {
           localStorage.removeItem('maxp_active_task');
         } catch {}
+        if (!entryId) {
+          try {
+            const runningRes = await window.electronAPI.getRunningTaskTimer();
+            if (runningRes?.success && runningRes.runningTimer?.id) {
+              entryId = runningRes.runningTimer.id;
+            }
+          } catch {}
+        }
         if (entryId) {
           try {
             await window.electronAPI.stopTaskTimer(entryId);
@@ -359,8 +387,28 @@ export const TasksTab: React.FC = () => {
 
   const handleToggleStatus = async (taskId: string, currentStatus: string) => {
     const isCompleted = String(currentStatus || '').toUpperCase() === 'COMPLETED';
-    const nextStatus = isCompleted ? 'PENDING' : 'COMPLETED';
-    handleUpdateStatus(taskId, nextStatus);
+    const isReview =
+      String(currentStatus || '').toUpperCase() === 'IN_REVIEW' ||
+      String(currentStatus || '').toUpperCase() === 'PENDING_REVIEW';
+
+    if (isCompleted || isReview) {
+      handleUpdateStatus(taskId, 'PENDING');
+      return;
+    }
+
+    const taskObj = tasks.find((t) => t.id === taskId);
+    const isCreator = !!(
+      taskObj &&
+      (taskObj.createdBy === currentUser?.id || taskObj.createdBy === currentUser?.userId)
+    );
+    const canDirectComplete = isAdminOrManager || isCreator;
+
+    if (canDirectComplete) {
+      handleUpdateStatus(taskId, 'COMPLETED');
+    } else {
+      // Non-admin assignee submits task for review and approval
+      handleUpdateStatus(taskId, 'IN_REVIEW');
+    }
   };
 
   const filteredTasks = tasks.filter((t) => {
@@ -386,8 +434,6 @@ export const TasksTab: React.FC = () => {
     return s !== 'COMPLETED' && s !== 'IN_REVIEW' && s !== 'PENDING_REVIEW';
   }).length;
 
-  const userRole = String(currentUser?.role || '').toUpperCase();
-  const isAdminOrManager = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER'].includes(userRole);
   const activeTaskObj = tasks.find((t) => t.id === activeTask?.id);
   const isCreatorOfActive = !!(
     activeTaskObj &&

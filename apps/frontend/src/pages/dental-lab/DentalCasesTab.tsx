@@ -61,6 +61,7 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
   const [lotNumber, setLotNumber] = useState(initial?.lotNumber ?? "");
   const [materialBrand, setMaterialBrand] = useState(initial?.materialBrand ?? "");
   const [warrantyYears, setWarrantyYears] = useState(initial?.warrantyYears ?? 0);
+  const [receivedDate, setReceivedDate] = useState(initial?.receivedDate ? initial.receivedDate.slice(0, 10) : new Date().toISOString().split("T")[0]);
   const [dueDate, setDueDate] = useState(initial?.dueDate ? initial.dueDate.slice(0, 10) : "");
   const [priority, setPriority] = useState(initial?.priority ?? "NORMAL");
   const [discount, setDiscount] = useState(initial?.discount ?? 0);
@@ -139,6 +140,7 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
         warrantyYears: Number(warrantyYears) >= 0 ? Number(warrantyYears) : 0,
         priceSnapshot: Number(priceSnapshot) || 0,
         discount: Number(discount) || 0,
+        receivedDate: receivedDate || undefined,
         dueDate: dueDate || undefined,
         priority,
         notes: notes.trim() || undefined,
@@ -300,6 +302,10 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
             <div>
               <label className={labelCls}>{t("dentalLab.cases.discount")}</label>
               <input className={inputCls} type="number" value={discount} onChange={e => setDiscount(Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>تاريخ الدخول / الاستلام</label>
+              <input className={inputCls} type="date" value={receivedDate} onChange={e => setReceivedDate(e.target.value)} />
             </div>
             <div>
               <label className={labelCls}>{t("dentalLab.cases.dueDate")}</label>

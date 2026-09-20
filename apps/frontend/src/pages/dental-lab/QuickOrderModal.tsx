@@ -56,6 +56,7 @@ import {
   fetchPanLabelPdf,
   fmtMoney,
   uploadCaseAttachments,
+  inferAttachmentKind,
   MODAL_CONTENT_CLS,
   MODAL_INPUT_CLS,
   VITA_SHADES,
@@ -295,6 +296,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   // Step 3: Patient, Due Date, Priority, Notes & Files
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
+  const [receivedDate, setReceivedDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<"NORMAL" | "URGENT" | "STAT">("NORMAL");
   const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
@@ -336,6 +338,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
           if (d.discount) setDiscount(d.discount);
           if (d.patientName) setPatientName(d.patientName);
           if (d.patientPhone) setPatientPhone(d.patientPhone);
+          if (d.receivedDate) setReceivedDate(d.receivedDate);
           if (d.dueDate) setDueDate(d.dueDate);
           if (d.priority) setPriority(d.priority);
           if (d.notes) setNotes(d.notes);
@@ -368,6 +371,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
             discount,
             patientName,
             patientPhone,
+            receivedDate,
             dueDate,
             priority,
             notes,
@@ -384,7 +388,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   }, [
     selectedDoctor, selectedServiceIds, selectedTeeth, unitsCount, shade, customShade,
     material, impressionType, caseIntent, priceSnapshot, discount, patientName, patientPhone,
-    dueDate, priority, notes, selectedTechnicianId, selectedTechnicianRole,
+    receivedDate, dueDate, priority, notes, selectedTechnicianId, selectedTechnicianRole,
   ]);
 
   const clearDraft = () => {
@@ -404,6 +408,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
       setDiscount(0);
       setPatientName("");
       setPatientPhone("");
+      setReceivedDate(new Date().toISOString().split("T")[0]);
       setDueDate("");
       setPriority("NORMAL");
       setNotes("");
@@ -591,6 +596,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
         material: material.trim() || undefined,
         priceSnapshot: Number(priceSnapshot) || 0,
         discount: Number(discount) || 0,
+        receivedDate: receivedDate || undefined,
         dueDate: dueDate || undefined,
         priority,
         notes: finalNotes,
@@ -615,6 +621,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
           for (const f of files) {
             const fd = new FormData();
             fd.append("files", f);
+            fd.append("kinds", inferAttachmentKind(f.name));
             setUpStatus((p) => ({ ...p, [f.name]: "uploading" }));
             try {
               await apiClient.post(`/dental-lab/cases/${created.id}/attachments`, fd, {
@@ -997,10 +1004,14 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                   <input className={inputCls} placeholder="01xxxxxxxxx" value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} dir="ltr" />
                 </div>
                 <div>
+                  <label className={labelCls}>تاريخ الدخول / الاستلام</label>
+                  <input className={inputCls} type="date" value={receivedDate} onChange={(e) => setReceivedDate(e.target.value)} />
+                </div>
+                <div>
                   <label className={labelCls}>تاريخ التسليم المطلوب</label>
                   <input className={inputCls} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                 </div>
-                <div>
+                <div className="sm:col-span-2">
                   <label className={labelCls}>الأولوية والاستعجال</label>
                   <select className={inputCls} value={priority} onChange={(e) => setPriority(e.target.value as "NORMAL" | "URGENT" | "STAT")}>
                     {(Object.keys(PRIORITY_CONFIG) as Array<keyof typeof PRIORITY_CONFIG>).map((k) => (

@@ -70,6 +70,7 @@ const CartDrawer: React.FC = () => {
   const isCafeDemo = theme.id === 'cafe-demo';
   const isPharmacy = isPharmacyThemeId(theme.id);
   const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
+  const isRedlineAuto = theme.id === 'redline-auto';
   const scrollRegionRef = React.useRef<HTMLDivElement | null>(null);
 
   const onClose = React.useCallback(() => setIsOpen(false), [setIsOpen]);
@@ -152,7 +153,7 @@ const CartDrawer: React.FC = () => {
     0,
   );
   const showKhemetFreeShippingProgress =
-    isKhemetLuxe &&
+    (isKhemetLuxe || isRedlineAuto) &&
     conversionEnabled &&
     conversionModules['freeShippingBar'] !== false &&
     freeShippingThreshold > 0;
@@ -387,10 +388,16 @@ const CartDrawer: React.FC = () => {
         {/* Items */}
         <div className={cartContentClassName}>
           {showKhemetFreeShippingProgress ? (
-            <div className="rounded-xl border border-[#e0d2bd]/80 bg-[#fffaf2] p-3 shadow-xs">
+            <div className={`rounded-xl border p-3 shadow-xs ${
+              isRedlineAuto
+                ? 'border-neutral-800 bg-[#121418] text-white'
+                : 'border-[#e0d2bd]/80 bg-[#fffaf2]'
+            }`}>
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#173f31]">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#173f31]">
+                <div className={`flex items-center gap-1.5 text-xs font-bold ${
+                  isRedlineAuto ? 'text-neutral-200' : 'text-[#173f31]'
+                }`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 ${isRedlineAuto ? 'text-red-500' : 'text-[#173f31]'}`}>
                     <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
                     <path d="M15 18H9" />
                     <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
@@ -400,20 +407,28 @@ const CartDrawer: React.FC = () => {
                   <span>
                     {freeShippingRemaining > 0
                       ? theme.direction === 'rtl'
-                        ? `أضيفي ${formatStorefrontCurrency(freeShippingRemaining, currency)} للشحن المجاني`
+                        ? isRedlineAuto
+                          ? `أضف ${formatStorefrontCurrency(freeShippingRemaining, currency)} للشحن المجاني`
+                          : `أضيفي ${formatStorefrontCurrency(freeShippingRemaining, currency)} للشحن المجاني`
                         : `Add ${formatStorefrontCurrency(freeShippingRemaining, currency)} for free shipping`
                       : theme.direction === 'rtl'
                         ? 'مبروك! شحن مجاني مفعّل لطلبك 🎉'
                         : 'Congratulations! Free shipping unlocked 🎉'}
                   </span>
                 </div>
-                <span className="shrink-0 text-[11px] font-black text-[#173f31]">
+                <span className={`shrink-0 text-[11px] font-black tabular-nums ${
+                  isRedlineAuto ? 'text-red-400' : 'text-[#173f31]'
+                }`}>
                   {Math.round(freeShippingProgress)}%
                 </span>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#eadfcf]">
+              <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${
+                isRedlineAuto ? 'bg-white/10' : 'bg-[#eadfcf]'
+              }`}>
                 <div
-                  className="h-full rounded-full bg-[#173f31] transition-[width] duration-500"
+                  className={`h-full rounded-full transition-[width] duration-500 ${
+                    isRedlineAuto ? 'bg-red-600' : 'bg-[#173f31]'
+                  }`}
                   style={{ width: `${freeShippingProgress}%` }}
                 />
               </div>

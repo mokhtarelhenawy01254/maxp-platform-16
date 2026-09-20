@@ -194,20 +194,30 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const fieldOverrideMap = isRecord(sectionSettings?.fields)
     ? sectionSettings.fields
     : {};
+  const isRedlineAutoQuickOrder =
+    theme.id === "redline-auto" || configuredFormVariant === "redline-auto";
   const isSoleaFemmeQuickOrder =
-    theme.id === "solea-femme" || configuredFormVariant === "solea-femme";
+    (theme.id === "solea-femme" || configuredFormVariant === "solea-femme") &&
+    !isRedlineAutoQuickOrder;
   const isMenShoesQuickOrder =
-    theme.id === "men-shoes-eg" ||
-    theme.id === "women-fashion-eg" ||
-    isSoleaFemmeQuickOrder ||
-    configuredFormVariant === "men-shoes-eg" ||
-    configuredFormVariant === "women-fashion-eg";
+    (theme.id === "men-shoes-eg" ||
+      theme.id === "women-fashion-eg" ||
+      isSoleaFemmeQuickOrder ||
+      configuredFormVariant === "men-shoes-eg" ||
+      configuredFormVariant === "women-fashion-eg") &&
+    !isRedlineAutoQuickOrder;
   const isWomenFashionQuickOrder =
-    theme.id === "women-fashion-eg" || configuredFormVariant === "women-fashion-eg";
+    (theme.id === "women-fashion-eg" ||
+      configuredFormVariant === "women-fashion-eg") &&
+    !isRedlineAutoQuickOrder;
   const isKhemetLuxeQuickOrder =
-    theme.id === "khemet-luxe-eg" || configuredFormVariant === "khemet-luxe-eg";
+    (theme.id === "khemet-luxe-eg" ||
+      configuredFormVariant === "khemet-luxe-eg") &&
+    !isRedlineAutoQuickOrder;
   const isVelaFashionQuickOrder =
-    theme.id === "vela-fashion-eg" || configuredFormVariant === "vela-fashion-eg";
+    (theme.id === "vela-fashion-eg" ||
+      configuredFormVariant === "vela-fashion-eg") &&
+    !isRedlineAutoQuickOrder;
   const isMergedBuyboxSurface = configuredSurfaceMode === "merged-buybox";
   const isKhemetMergedBuyboxQuickOrder =
     isKhemetLuxeQuickOrder && isMergedBuyboxSurface;
@@ -252,6 +262,31 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         ? meta.customFields
         : [];
 
+    if (isRedlineAutoQuickOrder) {
+      const hasCarAttr = productAttrs.some(
+        (a: any) =>
+          a.key === "car_model" ||
+          a.key?.toLowerCase().includes("car") ||
+          a.label?.includes("سيار"),
+      );
+      if (!hasCarAttr) {
+        return [
+          ...productAttrs,
+          {
+            key: "car_model",
+            label: prefersArabicCopy
+              ? "نوع وموديل وسنة صنع السيارة"
+              : "Car make, model & year",
+            placeholder: prefersArabicCopy
+              ? "مثال: هيونداي إلنترا CN7 موديل 2022، كيا سبورتاج 2020"
+              : "e.g. Hyundai Elantra 2022, Kia Sportage 2020",
+            required: true,
+          },
+        ];
+      }
+      return productAttrs;
+    }
+
     if (productAttrs.length > 0) {
       return productAttrs;
     }
@@ -278,13 +313,42 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     }
 
     return [];
-  }, [product, storePdpQuickOrderSettings, prefersArabicCopy]);
+  }, [product, storePdpQuickOrderSettings, prefersArabicCopy, isRedlineAutoQuickOrder]);
 
   const [customAttributeValues, setCustomAttributeValues] = useState<Record<string, string>>({});
 
   const handleCustomAttributeChange = (key: string, value: string) => {
     setCustomAttributeValues((prev) => ({ ...prev, [key]: value }));
   };
+
+  useEffect(() => {
+    const handleCarModelSelect = (event: Event) => {
+      const customEvent = event as CustomEvent<{ carModel?: string }>;
+      const carModel = customEvent.detail?.carModel;
+      if (carModel && typeof carModel === "string") {
+        setCustomAttributeValues((prev) => {
+          const matchedAttr = customAttributes.find(
+            (a: any) =>
+              a.key === "car_model" ||
+              a.key?.toLowerCase().includes("car") ||
+              a.label?.includes("سيار"),
+          );
+          const carKey = matchedAttr?.key || "car_model";
+          return { ...prev, [carKey]: carModel };
+        });
+      }
+    };
+    window.addEventListener(
+      "maxp:storefront:select-car-model",
+      handleCarModelSelect,
+    );
+    return () => {
+      window.removeEventListener(
+        "maxp:storefront:select-car-model",
+        handleCarModelSelect,
+      );
+    };
+  }, [customAttributes]);
 
   const customAttributesSummary = useMemo(() => {
     return customAttributes
@@ -619,6 +683,15 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       trackingItem.price,
     ].join(":");
   }, [activeQuantityOffer, product.id, trackingItem]);
+
+  useEffect(() => {
+    if (effectiveGovernorateField.enabled && !formData.governorate) {
+      updateFormData({
+        governorate: "Cairo",
+        city: formData.city || "Cairo",
+      });
+    }
+  }, [effectiveGovernorateField.enabled, formData.governorate, formData.city, updateFormData]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1286,7 +1359,12 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   };
 
   const title =
-    isKhemetMergedBuyboxQuickOrder
+    isRedlineAutoQuickOrder
+      ? configuredTitle ||
+        (prefersArabicCopy
+          ? "بيانات الشحن وتأكيد الطلب"
+          : "Shipping & Order Confirmation")
+      : isKhemetMergedBuyboxQuickOrder
       ? prefersArabicCopy
         ? "أكملي بياناتك وسنأكد طلبك"
         : "Add your details & we'll confirm"
@@ -1311,7 +1389,12 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         ? "يرجى إدخال معلوماتك لإكمال الطلب"
         : "Please enter your details to complete the order");
   const subtitle =
-    isKhemetMergedBuyboxQuickOrder
+    isRedlineAutoQuickOrder
+      ? configuredSubtitle ||
+        (prefersArabicCopy
+          ? "استلم وجرب الستارة على حلق باب عربيتك وتأكد من المقاس الفابريقة قبل دفع أي قرش."
+          : "Inspect on your car door frame before paying.")
+      : isKhemetMergedBuyboxQuickOrder
       ? ""
       : configuredSubtitle ||
     (isSoleaFemmeQuickOrder
@@ -1332,23 +1415,31 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     : prefersArabicCopy
       ? "عدد القطع"
       : "Quantity";
-  const fullNameLabel = isMenShoesQuickOrder || isVelaFashionQuickOrder || isKhemetLuxeQuickOrder
+  const fullNameLabel = isRedlineAutoQuickOrder
+    ? prefersArabicCopy ? "الاسم بالكامل" : "Full Name"
+    : isMenShoesQuickOrder || isVelaFashionQuickOrder || isKhemetLuxeQuickOrder
     ? prefersArabicCopy
       ? "الاسم"
       : "Name"
     : prefersArabicCopy
       ? "الاسم بالكامل"
       : "Full name";
-  const phoneLabel = prefersArabicCopy ? "رقم الهاتف" : "Phone number";
+  const phoneLabel = isRedlineAutoQuickOrder
+    ? prefersArabicCopy ? "رقم الموبايل (للتواصل والشحن)" : "Mobile Phone"
+    : prefersArabicCopy ? "رقم الهاتف" : "Phone number";
   const governorateLabel = prefersArabicCopy ? "المحافظة" : "Governorate";
-  const addressLabel = isMenShoesQuickOrder || isKhemetLuxeQuickOrder
+  const addressLabel = isRedlineAutoQuickOrder
+    ? prefersArabicCopy ? "عنوان التوصيل بالتفصيل (المحافظة / المركز / الشارع)" : "Detailed Address"
+    : isMenShoesQuickOrder || isKhemetLuxeQuickOrder
     ? prefersArabicCopy
       ? "العنوان"
       : "Address"
     : prefersArabicCopy
       ? "العنوان بالتفصيل"
       : "Detailed address";
-  const alternatePhoneLabel = prefersArabicCopy
+  const alternatePhoneLabel = isRedlineAutoQuickOrder
+    ? prefersArabicCopy ? "رقم موبايل بديل (اختياري)" : "Alternate Phone (Optional)"
+    : prefersArabicCopy
     ? "رقم هاتف بديل"
     : "Alternate phone";
   const shippingLabel = prefersArabicCopy ? "تكلفة الشحن" : "Shipping";
@@ -1448,11 +1539,17 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const shouldShowQuantityOfferSummaryHelper =
     Boolean(activeQuantityOffer) && !activeQuantityOffer?.isReady;
   const shouldEnableMobileStickySubmitBar =
-    (isWomenMergedBuyboxQuickOrder || isSoleaMergedBuyboxQuickOrder) &&
+    (isWomenMergedBuyboxQuickOrder ||
+      isSoleaMergedBuyboxQuickOrder ||
+      isRedlineAutoQuickOrder) &&
     !shouldCollapseFormUntilSelectionReady;
   const shouldShowMobileStickySubmitBar =
     shouldEnableMobileStickySubmitBar && isStickySubmitVisible;
-  const shellClassName = isSoleaFemmeQuickOrder
+  const shellClassName = isRedlineAutoQuickOrder
+    ? isMergedBuyboxSurface
+      ? "space-y-4 rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-[0_12px_40px_-16px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.04)] ring-1 ring-slate-900/5 dark:border-slate-800 dark:bg-slate-950/60 dark:ring-white/10"
+      : "space-y-4 rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-[0_12px_40px_-16px_rgba(0,0,0,0.08)] ring-1 ring-slate-900/5 dark:border-slate-800 dark:bg-slate-950/60 dark:ring-white/10"
+    : isSoleaFemmeQuickOrder
     ? isSoleaMergedBuyboxQuickOrder
       ? "border-t border-[#ead8cf] pt-3.5"
       : "rounded-[1.6rem] border border-[#ead8cf] bg-[linear-gradient(180deg,#fffdf9_0%,#fff8f3_100%)] p-4 shadow-[0_24px_60px_-52px_rgba(47,35,45,0.2)] sm:p-5"
@@ -1469,7 +1566,9 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     : isVelaFashionQuickOrder
       ? "rounded-[1.45rem] border border-[#efd9df] bg-[linear-gradient(180deg,#fffefe_0%,#fff7f9_100%)] p-4 shadow-[0_20px_60px_-52px_rgba(176,125,139,0.18)] sm:p-5"
     : "rounded-[1.85rem] border border-border/70 bg-background p-5 shadow-[0_34px_100px_-78px_rgba(15,23,42,0.38)] sm:p-6";
-  const quantitySurfaceClassName = isSoleaFemmeQuickOrder
+  const quantitySurfaceClassName = isRedlineAutoQuickOrder
+    ? "flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 dark:border-slate-800 dark:bg-slate-900/40"
+    : isSoleaFemmeQuickOrder
     ? "flex items-center justify-between gap-3 rounded-[1rem] border border-[#ead8cf] bg-[#fffaf5] px-3 py-2.5"
     : isKhemetMergedBuyboxQuickOrder
     ? "hidden items-center justify-between gap-3 rounded-[1rem] border border-[#eadfd9] bg-[#fffaf6] px-3 py-2.5 sm:flex"
@@ -1480,7 +1579,9 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     : isVelaFashionQuickOrder
       ? "flex items-center justify-between gap-3 rounded-[1rem] border border-[#efd9df] bg-white px-4 py-3"
     : "flex items-start justify-between gap-4 rounded-[1.15rem] border border-border/70 bg-secondary/15 px-4 py-4";
-  const addToCartButtonClassName = isSoleaFemmeQuickOrder
+  const addToCartButtonClassName = isRedlineAutoQuickOrder
+    ? "min-h-[3.4rem] rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-800 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+    : isSoleaFemmeQuickOrder
     ? "min-h-[3.4rem] rounded-[1rem] border border-[#d8b28a] bg-white px-4 text-sm font-black text-[#6f5448] transition hover:border-[#2f232d]/20 hover:bg-[#fff8f1]"
     : isKhemetLuxeQuickOrder
     ? "min-h-[3.4rem] rounded-[1rem] border border-[#d7c5b8] bg-white px-4 text-sm font-black text-[#4a352e] transition hover:border-[#1f4c3b]/15 hover:bg-[#fffaf6]"
@@ -1489,7 +1590,9 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     : isVelaFashionQuickOrder
       ? "min-h-[3.4rem] rounded-[1rem] border border-[#d7b4bf] bg-white px-4 text-sm font-black text-[#7a5260] transition hover:bg-[#fff7fa]"
     : "min-h-[3.65rem] rounded-[1.05rem] border border-border bg-background px-4 text-sm font-black text-foreground transition hover:border-primary/30 hover:text-primary";
-  const submitButtonClassName = isSoleaFemmeQuickOrder
+  const submitButtonClassName = isRedlineAutoQuickOrder
+    ? "min-h-[3.6rem] w-full rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-600 bg-[length:200%_auto] px-5 py-3.5 text-sm sm:text-base font-black text-white shadow-[0_8px_25px_-5px_rgba(225,29,72,0.45)] transition-all hover:bg-[position:right_center] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
+    : isSoleaFemmeQuickOrder
     ? "min-h-[3.4rem] rounded-[1rem] bg-[#2f232d] px-4 text-sm font-black text-white transition hover:bg-[#241a22] disabled:cursor-not-allowed disabled:opacity-60"
     : isKhemetLuxeQuickOrder
     ? "min-h-[3.5rem] rounded-[1rem] bg-[#1f4c3b] px-4 text-sm font-black text-[#fbf5ee] transition hover:bg-[#173a2d] disabled:cursor-not-allowed disabled:opacity-60"
@@ -1498,7 +1601,9 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     : isVelaFashionQuickOrder
       ? "min-h-[3.4rem] rounded-[1rem] border border-[#7a5260] bg-[#7a5260] px-4 text-sm font-black text-white transition hover:bg-[#946777] disabled:cursor-not-allowed disabled:opacity-60"
     : "min-h-[3.65rem] rounded-[1.05rem] bg-black px-4 text-sm font-black text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
-  const resolvedInputClassName = isSoleaMergedBuyboxQuickOrder
+  const resolvedInputClassName = isRedlineAutoQuickOrder
+    ? "w-full rounded-xl border border-slate-300/80 bg-slate-50/50 px-3.5 py-2.5 sm:py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white dark:focus:border-red-500"
+    : isSoleaMergedBuyboxQuickOrder
       ? "w-full rounded-[0.95rem] border border-[#ead8cf] bg-white px-3.5 py-2.5 text-sm text-[#3f2432] outline-none transition focus:border-[#d8b28a] focus:ring-2 focus:ring-[#d8b28a]/15"
     : isKhemetMergedBuyboxQuickOrder
       ? "w-full rounded-[0.95rem] border border-[#eadfd9] bg-white px-3.5 py-2.5 text-sm text-[#4a352e] outline-none transition focus:border-[#1f4c3b]/18 focus:ring-2 focus:ring-[#1f4c3b]/10"
@@ -1510,21 +1615,26 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const shouldShowQuantityOfferSummary =
     Boolean(activeQuantityOffer) &&
     !(isVelaFashionQuickOrder && activeQuantityOffer?.offerQuantity === 1);
-  const fieldStackClassName = isWomenMergedBuyboxQuickOrder
+  const fieldStackClassName = isRedlineAutoQuickOrder
+    ? "block space-y-1.5"
+    : isWomenMergedBuyboxQuickOrder
     ? "block space-y-1.5"
     : isKhemetMergedBuyboxQuickOrder
       ? "block space-y-1.5"
     : "block space-y-2";
-  const fieldLabelClassName = isWomenMergedBuyboxQuickOrder || isKhemetMergedBuyboxQuickOrder
+  const fieldLabelClassName = isRedlineAutoQuickOrder
+    ? "text-[13px] font-bold text-slate-900 dark:text-slate-100"
+    : isWomenMergedBuyboxQuickOrder || isKhemetMergedBuyboxQuickOrder
     ? "text-[13px] font-semibold text-foreground"
     : "text-sm font-semibold text-foreground";
   const contactFieldsGridClassName = isKhemetMergedBuyboxQuickOrder
     ? "grid gap-3"
     : isCompactMergedQuickOrder
       ? "grid grid-cols-2 gap-2.5"
-      : "space-y-4";
-  const shouldRenderInlineTotalRow = !shouldShowMobileStickySubmitBar;
-  const shouldShowInlineSubmitButton = !shouldShowMobileStickySubmitBar;
+  const shouldRenderInlineTotalRow =
+    isRedlineAutoQuickOrder || !shouldShowMobileStickySubmitBar;
+  const shouldShowInlineSubmitButton =
+    isRedlineAutoQuickOrder || !shouldShowMobileStickySubmitBar;
   const shouldRenderActionArea = showAddToCartButton || shouldShowInlineSubmitButton;
 
   useEffect(() => {
@@ -1761,31 +1871,82 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
 
               {customAttributes && customAttributes.length > 0 ? (
                 <div className="space-y-3">
-                  {customAttributes.map((attr: any) => (
-                    <label key={attr.key} className={fieldStackClassName}>
-                      <span className={fieldLabelClassName}>
-                        <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
-                          {attr.label?.includes("سيار") || attr.key?.toLowerCase().includes("car") ? (
-                            <Car className="h-4 w-4 text-primary" />
-                          ) : (
+                  {customAttributes.map((attr: any) => {
+                    const isCarAttr =
+                      attr.label?.includes("سيار") ||
+                      attr.key?.toLowerCase().includes("car") ||
+                      attr.key === "car_model" ||
+                      isRedlineAutoQuickOrder;
+
+                    if (isCarAttr) {
+                      return (
+                        <div
+                          key={attr.key}
+                          className="rounded-xl border border-red-200/90 bg-red-50/40 p-3.5 dark:border-red-900/40 dark:bg-red-950/20 space-y-2 shadow-xs transition-colors focus-within:border-red-500 focus-within:bg-red-50/60"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="inline-flex items-center gap-1.5 text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white">
+                              <Car className="h-4 w-4 text-red-600 shrink-0" />
+                              <span>
+                                {attr.label ||
+                                  (prefersArabicCopy
+                                    ? "نوع وموديل وسنة صنع السيارة"
+                                    : "Car Model & Year")}
+                              </span>
+                              {attr.required && (
+                                <span className="text-red-500 font-bold">*</span>
+                              )}
+                            </span>
+                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-extrabold text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                              {prefersArabicCopy ? "تفصيل بالمللي" : "Custom fit"}
+                            </span>
+                          </div>
+                          <input
+                            type="text"
+                            value={customAttributeValues[attr.key] || ""}
+                            onChange={(e) =>
+                              handleCustomAttributeChange(attr.key, e.target.value)
+                            }
+                            className={`${resolvedInputClassName} bg-white dark:bg-slate-900 font-medium`}
+                            placeholder={
+                              attr.placeholder ||
+                              (prefersArabicCopy
+                                ? "مثال: هيونداي توسان 2022، كيا سبورتاج 2020، إلنترا CN7"
+                                : "e.g. Hyundai Tucson 2022, Kia Sportage 2020")
+                            }
+                          />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <label key={attr.key} className={fieldStackClassName}>
+                        <span className={fieldLabelClassName}>
+                          <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
                             <FileText className="h-4 w-4 text-primary" />
-                          )}
-                          {attr.label}
-                          {attr.required && <span className="text-red-500 font-bold">*</span>}
+                            {attr.label}
+                            {attr.required && (
+                              <span className="text-red-500 font-bold">*</span>
+                            )}
+                          </span>
                         </span>
-                      </span>
-                      <input
-                        type="text"
-                        value={customAttributeValues[attr.key] || ""}
-                        onChange={(e) => handleCustomAttributeChange(attr.key, e.target.value)}
-                        className={resolvedInputClassName}
-                        placeholder={
-                          attr.placeholder ||
-                          (prefersArabicCopy ? "اكتب هنا..." : "Enter details...")
-                        }
-                      />
-                    </label>
-                  ))}
+                        <input
+                          type="text"
+                          value={customAttributeValues[attr.key] || ""}
+                          onChange={(e) =>
+                            handleCustomAttributeChange(attr.key, e.target.value)
+                          }
+                          className={resolvedInputClassName}
+                          placeholder={
+                            attr.placeholder ||
+                            (prefersArabicCopy
+                              ? "اكتب هنا..."
+                              : "Enter details...")
+                          }
+                        />
+                      </label>
+                    );
+                  })}
                 </div>
               ) : null}
 
@@ -1907,9 +2068,21 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                   </div>
                 ) : null}
                 {shouldRenderInlineTotalRow ? (
-                  <div className="flex items-center justify-between gap-4 text-base font-black">
+                  <div
+                    className={`flex items-center justify-between gap-4 text-base font-black ${
+                      isRedlineAutoQuickOrder
+                        ? "rounded-xl border border-red-200/80 bg-red-50/40 px-3.5 py-2.5 dark:border-red-900/30 dark:bg-red-950/20"
+                        : ""
+                    }`}
+                  >
                     <span className="text-foreground">{totalLabel}</span>
-                    <span className="text-foreground">
+                    <span
+                      className={
+                        isRedlineAutoQuickOrder
+                          ? "text-lg font-black text-red-600 dark:text-red-400 tabular-nums"
+                          : "text-foreground"
+                      }
+                    >
                       {formatStorefrontCurrency(total, currency)}
                     </span>
                   </div>
@@ -2111,8 +2284,10 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
               <div className="sm:hidden">
                 <div className="h-20" aria-hidden="true" />
                 <div
-                  className={`fixed inset-x-0 bottom-0 z-40 border-t px-4 pt-3 shadow-[0_-18px_40px_-28px_rgba(107,33,49,0.28)] backdrop-blur ${
-                    isSoleaMergedBuyboxQuickOrder
+                  className={`fixed inset-x-0 bottom-0 z-40 border-t px-4 pt-3 shadow-[0_-18px_40px_-28px_rgba(0,0,0,0.2)] backdrop-blur ${
+                    isRedlineAutoQuickOrder
+                      ? "border-slate-200 bg-white/95 supports-[backdrop-filter]:bg-white/88 dark:border-slate-800 dark:bg-slate-950/95"
+                      : isSoleaMergedBuyboxQuickOrder
                       ? "border-[#ead8cf] bg-[#fffdfb]/95 supports-[backdrop-filter]:bg-[#fffdfb]/88"
                       : "border-[#ead8cf] bg-white/95 supports-[backdrop-filter]:bg-white/88"
                   }`}
@@ -2121,7 +2296,9 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     <div className="min-w-0 flex-1">
                       <p
                         className={`text-[11px] font-semibold ${
-                          isSoleaMergedBuyboxQuickOrder
+                          isRedlineAutoQuickOrder
+                            ? "text-slate-500 dark:text-slate-400"
+                            : isSoleaMergedBuyboxQuickOrder
                             ? "text-[#8d6a66]"
                             : "text-[#8d6a66]"
                         }`}
@@ -2130,7 +2307,9 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                       </p>
                       <p
                         className={`truncate text-sm font-black ${
-                          isSoleaMergedBuyboxQuickOrder
+                          isRedlineAutoQuickOrder
+                            ? "text-red-600 dark:text-red-400 tabular-nums"
+                            : isSoleaMergedBuyboxQuickOrder
                             ? "text-[#2f232d]"
                             : "text-[#3f2432]"
                         }`}

@@ -1,4 +1,5 @@
 import { Preferences } from "@capacitor/preferences";
+import { isCapacitorNative } from "../config/environment";
 
 const ACCESS_TOKEN_KEY = "accessToken";
 const LEGACY_ACCESS_TOKEN_KEY = "token";
@@ -7,7 +8,7 @@ const REFRESH_TOKEN_KEY = "refreshToken";
 // Preload & restore native persistent tokens into localStorage/sessionStorage
 let isNativeRestored = false;
 export const restoreNativeTokens = async (): Promise<void> => {
-  if (isNativeRestored || typeof window === "undefined") return;
+  if (isNativeRestored || typeof window === "undefined" || !isCapacitorNative()) return;
   try {
     const [accessRes, legacyRes, refreshRes] = await Promise.all([
       Preferences.get({ key: ACCESS_TOKEN_KEY }),
@@ -81,11 +82,13 @@ export const tokenManager = {
   setAccessToken(token: string): void {
     writeToken(ACCESS_TOKEN_KEY, token);
     writeToken(LEGACY_ACCESS_TOKEN_KEY, token);
-    try {
-      void Preferences.set({ key: ACCESS_TOKEN_KEY, value: token });
-      void Preferences.set({ key: LEGACY_ACCESS_TOKEN_KEY, value: token });
-    } catch {
-      // safe fallback
+    if (isCapacitorNative()) {
+      try {
+        void Preferences.set({ key: ACCESS_TOKEN_KEY, value: token });
+        void Preferences.set({ key: LEGACY_ACCESS_TOKEN_KEY, value: token });
+      } catch {
+        // safe fallback
+      }
     }
   },
 
@@ -96,10 +99,12 @@ export const tokenManager = {
   setRefreshToken(token: string): void {
     if (token) {
       writeToken(REFRESH_TOKEN_KEY, token);
-      try {
-        void Preferences.set({ key: REFRESH_TOKEN_KEY, value: token });
-      } catch {
-        // safe fallback
+      if (isCapacitorNative()) {
+        try {
+          void Preferences.set({ key: REFRESH_TOKEN_KEY, value: token });
+        } catch {
+          // safe fallback
+        }
       }
     }
   },
@@ -108,12 +113,14 @@ export const tokenManager = {
     clearToken(ACCESS_TOKEN_KEY);
     clearToken(LEGACY_ACCESS_TOKEN_KEY);
     clearToken(REFRESH_TOKEN_KEY);
-    try {
-      void Preferences.remove({ key: ACCESS_TOKEN_KEY });
-      void Preferences.remove({ key: LEGACY_ACCESS_TOKEN_KEY });
-      void Preferences.remove({ key: REFRESH_TOKEN_KEY });
-    } catch {
-      // safe fallback
+    if (isCapacitorNative()) {
+      try {
+        void Preferences.remove({ key: ACCESS_TOKEN_KEY });
+        void Preferences.remove({ key: LEGACY_ACCESS_TOKEN_KEY });
+        void Preferences.remove({ key: REFRESH_TOKEN_KEY });
+      } catch {
+        // safe fallback
+      }
     }
   },
 };

@@ -1489,6 +1489,7 @@ const createCase = async (req, res) => {
             orderStatus: 'PENDING',
             priority,
             dueDate,
+            receivedDate: (body.receivedDate && parseDate(body.receivedDate)) || new Date(),
             source: 'MANUAL',
             priceSnapshot,
             discount,
@@ -1628,7 +1629,7 @@ const getCaseDetail = async (req, res) => {
   }
 };
 
-const CASE_UPDATE_FIELDS = ['patientName', 'patientPhone', 'teeth', 'shade', 'material', 'lotNumber', 'materialBrand', 'warrantyYears', 'priority', 'notes', 'dueDate', 'unitsCount', 'unitPrice'];
+const CASE_UPDATE_FIELDS = ['patientName', 'patientPhone', 'teeth', 'shade', 'material', 'lotNumber', 'materialBrand', 'warrantyYears', 'priority', 'notes', 'dueDate', 'receivedDate', 'unitsCount', 'unitPrice'];
 
 const updateCase = async (req, res) => {
   try {
@@ -1679,6 +1680,7 @@ const updateCase = async (req, res) => {
     if ('warrantyYears' in data) data.warrantyYears = Number(data.warrantyYears) >= 0 ? Number(data.warrantyYears) : 0;
     if ('notes' in data) data.notes = data.notes ? String(data.notes) : null;
     if ('dueDate' in data) data.dueDate = parseDate(data.dueDate);
+    if ('receivedDate' in data) data.receivedDate = parseDate(data.receivedDate) || existing.receivedDate;
     if ('priority' in data) {
       const priority = String(data.priority).toUpperCase();
       if (!['NORMAL', 'URGENT', 'STAT'].includes(priority)) {
@@ -2693,32 +2695,35 @@ const uploadCaseAttachment = async (req, res) => {
       }
     }
 
-    // رفع مراجعة التصميم (HTML من exocad) لمالك/مدير فقط
+    // التعرف التلقائي على ملفات HTML (Exocad 3D Web Viewer) كـ DESIGN_REVIEW
+    const isHtmlFile = (f) => {
+      const ext = path.extname(f.originalname || f.filename || '').toLowerCase();
+      const mime = String(f.mimetype || '').toLowerCase();
+      return ext === '.html' || ext === '.htm' || mime === 'text/html';
+    };
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      if (isHtmlFile(f) && perFileKinds[i] !== 'DESIGN_REVIEW') {
+        perFileKinds[i] = 'DESIGN_REVIEW';
+      }
+    }
+
+    // رفع مراجعة التصميم (HTML من exocad) لفريق عمل المعمل المصرح لهم
     if (perFileKinds.includes('DESIGN_REVIEW')) {
       const teamRoles = await require('../services/dentalRoles').loadTeamRoles(companyId);
       const role = resolveDentalRole(req.user, teamRoles);
-      if (!['OWNER', 'MANAGER'].includes(role)) {
+      if (!['OWNER', 'MANAGER', 'TECHNICIAN', 'RECEPTION'].includes(role)) {
         for (const f of files) { if (f && f.path) fs.unlink(f.path, () => {}); }
         return res.status(403).json({ success: false, error: 'غير مصرح برفع مراجعة التصميم' });
       }
     }
 
-    // رفع مراجعة التصميم يجب أن يكون ملف HTML واحد على الأقل، والملفات غير HTML مسموحة فقط للأنواع الأخرى.
-    const isHtmlFile = (f) => {
-      const ext = path.extname(f.originalname || f.filename || '').toLowerCase();
-      const mime = String(f.mimetype || '').toLowerCase();
-      return ext === '.html' || mime === 'text/html';
-    };
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       const k = perFileKinds[i];
       if (k === 'DESIGN_REVIEW' && !isHtmlFile(f)) {
         for (const ff of files) { if (ff && ff.path) fs.unlink(ff.path, () => {}); }
         return res.status(400).json({ success: false, error: 'مراجعة التصميم يجب أن تكون ملف HTML من exocad' });
-      }
-      if (k !== 'DESIGN_REVIEW' && isHtmlFile(f)) {
-        for (const ff of files) { if (ff && ff.path) fs.unlink(ff.path, () => {}); }
-        return res.status(400).json({ success: false, error: 'ملفات HTML مسموحة فقط لمراجعة التصميم (DESIGN_REVIEW)' });
       }
     }
 
@@ -3686,10 +3691,18 @@ const getDashboard = async (req, res) => {
     const startOfToday = getStartOfDayInTimezone(now);
     const endOfToday = getEndOfDayInTimezone(now);
 
-    const [statusRows, todayReceived, readyCount, overdueCount, revenueAgg, outstandingAgg, topDoctorRows, topDebtorRows] =
+    const [statusRows, todayReceived, todayDue, readyCount, overdueCount, revenueAgg, outstandingAgg, topDoctorRows, topDebtorRows] =
       await Promise.all([
         prisma.dentalLabCase.groupBy({ by: ['status'], where: { companyId, isDeleted: false }, _count: { _all: true } }),
         prisma.dentalLabCase.count({ where: { companyId, isDeleted: false, receivedDate: { gte: startOfToday, lte: endOfToday } } }),
+        prisma.dentalLabCase.count({
+          where: {
+            companyId,
+            isDeleted: false,
+            dueDate: { gte: startOfToday, lte: endOfToday },
+            status: { notIn: ['CLOSED'] },
+          },
+        }),
         prisma.dentalLabCase.count({ where: { companyId, isDeleted: false, status: 'READY' } }),
         prisma.dentalLabCase.count({
           where: { companyId, isDeleted: false, dueDate: { lt: now }, status: { notIn: ['DELIVERED', 'CLOSED'] } },
@@ -3748,6 +3761,7 @@ prisma.dentalInvoice.groupBy({
         statusCounts,
         byStatus: statusCounts,
         todayReceived,
+        todayDue,
         activeCasesCount,
         activeCount: activeCasesCount,
         readyForDelivery: readyCount,

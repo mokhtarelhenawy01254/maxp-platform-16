@@ -89,4 +89,22 @@ describe('ProductCard storefront navigation', () => {
     expect(productLink).toBeInTheDocument();
     expect(productLink).toHaveAttribute('data-reload-document', 'false');
   });
+
+  it('renders modern automotive card for redline-auto theme without emoji slop', () => {
+    const queryClient = createQueryClient();
+
+    const { getByText, queryByText } = render(
+      <QueryClientProvider client={queryClient}>
+        <StorefrontThemeProvider initialTheme={{ themeId: 'redline-auto' }}>
+          <ProductCard product={product} variant="boutique-air" />
+        </StorefrontThemeProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(getByText('تفصيل فابريقة بالمللي')).toBeInTheDocument();
+    expect(getByText('معاينة قبل الدفع')).toBeInTheDocument();
+    expect(getByText('تحديد السيارة والطلب')).toBeInTheDocument();
+    expect(queryByText(/⚡/)).toBeNull();
+  });
 });
+

@@ -11,6 +11,8 @@ interface ShoppingIntentItem {
   link: string;
   tone?: string;
   chip?: string;
+  tags?: string[];
+  image?: string;
 }
 
 interface ShoppingIntentsProps {
@@ -20,6 +22,7 @@ interface ShoppingIntentsProps {
     subtitle?: string;
     items?: unknown;
     contentAlign?: string;
+    ctaText?: string;
     [key: string]: unknown;
   };
 }
@@ -76,13 +79,13 @@ const DISTRICT_MARKET_SERVICE_POINTS = [
 
 const TONE_CLASS_MAP: Record<string, string> = {
   primary:
-    'border-primary/12 bg-[linear-gradient(135deg,hsl(var(--primary)/0.14),hsl(var(--background))_55%,hsl(var(--secondary)/0.85))] text-foreground shadow-[0_26px_80px_-56px_hsl(var(--primary)/0.5)]',
+    'border-border/80 bg-card text-foreground shadow-sm hover:border-primary/50 hover:shadow-[0_16px_36px_-16px_hsl(var(--primary)/0.22)]',
   accent:
-    'border-amber-200 bg-[linear-gradient(135deg,rgba(255,201,107,0.28),rgba(255,255,255,1)_48%,rgba(255,241,220,0.88))] text-foreground shadow-[0_24px_70px_-56px_rgba(217,119,6,0.45)]',
+    'border-border/80 bg-card text-foreground shadow-sm hover:border-primary/40 hover:shadow-md',
   emerald:
-    'border-emerald-200 bg-[linear-gradient(135deg,rgba(16,185,129,0.18),rgba(255,255,255,1)_50%,rgba(236,253,245,0.92))] text-foreground shadow-[0_24px_70px_-56px_rgba(5,150,105,0.42)]',
+    'border-border/80 bg-card text-foreground shadow-sm hover:border-emerald-500/40 hover:shadow-md',
   slate:
-    'border-slate-200 bg-[linear-gradient(135deg,rgba(15,23,42,0.08),rgba(255,255,255,1)_50%,rgba(241,245,249,0.92))] text-foreground shadow-[0_24px_70px_-56px_rgba(15,23,42,0.35)]',
+    'border-border/80 bg-card text-foreground shadow-sm hover:border-slate-400/40 hover:shadow-md',
 };
 
 const isIntentItem = (value: unknown): value is ShoppingIntentItem =>
@@ -102,6 +105,10 @@ const parseIntentItems = (value: unknown): ShoppingIntentItem[] => {
       link: item.link.trim(),
       tone: item.tone?.trim(),
       chip: item.chip?.trim(),
+      image: (item as any).image?.trim() || undefined,
+      tags: Array.isArray((item as any).tags)
+        ? (item as any).tags.filter(Boolean)
+        : undefined,
     }));
     if (parsed.length > 0) {
       return parsed;
@@ -113,13 +120,20 @@ const parseIntentItems = (value: unknown): ShoppingIntentItem[] => {
       .split(/\r?\n/)
       .map((line) => line.split('|').map((part) => part.trim()))
       .filter((parts) => parts.some(Boolean))
-      .map(([eyebrow, title, subtitle, link, tone, chip]) => ({
+      .map(([eyebrow, title, subtitle, link, tone, chip, tagsRaw, image]) => ({
         eyebrow: eyebrow || undefined,
         title: title || '',
         subtitle: subtitle || '',
         link: link || '/shop',
         tone: tone || undefined,
         chip: chip || undefined,
+        tags: tagsRaw
+          ? tagsRaw
+              .split(',')
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : undefined,
+        image: image || undefined,
       }))
       .filter((item) => item.title && item.subtitle && item.link);
 
@@ -136,11 +150,52 @@ const normalizeIntentText = (value: string): string =>
 
 const resolveIntentExamples = (
   item: ShoppingIntentItem,
-  index: number,
+  _index?: number,
 ): string[] => {
+  // 1. Explicit tags take top priority
+  if (item.tags && item.tags.length > 0) {
+    return item.tags;
+  }
+
   const content = normalizeIntentText(
     `${item.eyebrow || ''} ${item.title} ${item.subtitle}`,
   );
+
+  // 2. Automotive / Car Accessories detection
+  if (
+    content.includes('ستار') ||
+    content.includes('سيار') ||
+    content.includes('عربيت') ||
+    content.includes('سيدان') ||
+    content.includes('suv') ||
+    content.includes('جيب') ||
+    content.includes('شباك') ||
+    content.includes('زجاج') ||
+    content.includes('كبس') ||
+    content.includes('جرار') ||
+    content.includes('سحاب') ||
+    content.includes('صالون')
+  ) {
+    if (content.includes('سيدان') || content.includes('5 قطع') || content.includes('خمس قطع')) {
+      return ['4 أبواب + خلفي', 'عزل حراري 98%', 'كبس فابريقة'];
+    }
+    if (content.includes('suv') || content.includes('جيب') || content.includes('7 قطع') || content.includes('سبع قطع')) {
+      return ['تغطية صالون كاملة', '4 أبواب + 2 مثلث + خلفي', 'حماية VIP'];
+    }
+    if (content.includes('2 قطعة') || content.includes('قطعتين') || content.includes('أمامي')) {
+      return ['حماية السائق والمرافق', 'تركيب في ثوانٍ', 'توفير عملي'];
+    }
+    if (content.includes('جرار') || content.includes('سحاب')) {
+      return ['سحاب معدني سلس', 'دفع كارتة بدون فك', 'تهوية سهلة'];
+    }
+    if (content.includes('خلفي') || content.includes('كنبة')) {
+      return ['حماية الكنبة الخلفية', 'منع وهج الشمس', 'شاسيه مرن'];
+    }
+    if (content.includes('معاين') || content.includes('دفع') || content.includes('ضمان') || content.includes('استلام')) {
+      return ['تجربة على حلق الباب', 'الدفع بعد التأكد 100%', 'ضمان استبدال 14 يوم'];
+    }
+    return ['تفصيل بالمللي', 'عزل حراري 98%', 'معاينة وتجربة قبل الدفع'];
+  }
 
   if (
     content.includes('سنيكر') ||
@@ -154,7 +209,7 @@ const resolveIntentExamples = (
     return ['ارتفاع موضح', 'ثبات أفضل', 'مناسبات'];
   }
 
-  if (content.includes('صندل') || content.includes('صيف')) {
+  if (content.includes('صندل')) {
     return ['لبس سريع', 'خفة أعلى', 'خروج نهاري'];
   }
 
@@ -171,7 +226,7 @@ const resolveIntentExamples = (
   }
 
   if (content.includes('هدية') || content.includes('هدايا')) {
-    return ['تغليف جاهز', 'بطاقة معايدة', 'من 39 ج.م'];
+    return ['تغليف جاهز', 'بطاقة معايدة', 'اختيار راقي'];
   }
 
   if (
@@ -180,15 +235,18 @@ const resolveIntentExamples = (
     content.includes('وفر') ||
     content.includes('اليوم')
   ) {
-    return ['أقل من 299 ج.م', 'خصومات متجددة', 'عدد محدود'];
+    return ['خصومات مميزة', 'توفير حقيقي', 'كميات محدودة'];
   }
 
+  // Safe check for home goods — never trigger on automotive text containing "عربيتك"
   if (
-    content.includes('بيت') ||
-    content.includes('تنظيم') ||
-    content.includes('عائلة')
+    !content.includes('عربيت') &&
+    !content.includes('سيار') &&
+    (content.includes('تنظيم') ||
+      content.includes('ديكور') ||
+      /(?:^|\s)(?:بيت|البيت|منزل|المنزل)(?:$|\s)/.test(content))
   ) {
-    return ['سلال تخزين', 'منظمات مكتب', 'حلول للبيت'];
+    return ['خيارات متعددة', 'قرار أسهل', 'متوفر الآن'];
   }
 
   if (
@@ -196,12 +254,69 @@ const resolveIntentExamples = (
     content.includes('أساسيات') ||
     content.includes('سريع')
   ) {
-    return ['علب تخزين', 'منظمات أدراج', 'شحن سريع'];
+    return ['جودة مضمونة', 'شحن سريع', 'طلب مباشر'];
   }
 
-  return index === 0
-    ? ['الأكثر طلبًا', 'من 79 ج.م', 'شحن خلال 48 ساعة']
-    : ['منتجات عملية', 'قرار أسرع', 'طلب مباشر'];
+  return ['مواصفات دقيقة', 'جودة مضمونة', 'طلب مباشر'];
+};
+
+const resolveIntentImage = (
+  item: ShoppingIntentItem,
+  index: number,
+): string | undefined => {
+  if (item.image && item.image.trim()) {
+    return item.image.trim();
+  }
+
+  const content = normalizeIntentText(
+    `${item.eyebrow || ''} ${item.title} ${item.subtitle} ${item.chip || ''}`,
+  );
+
+  // 1. Automotive / Car Window Curtains (Red Line Auto)
+  if (
+    content.includes('ستار') ||
+    content.includes('سيار') ||
+    content.includes('عربيت') ||
+    content.includes('سيدان') ||
+    content.includes('suv') ||
+    content.includes('جيب') ||
+    content.includes('شباك') ||
+    content.includes('زجاج') ||
+    content.includes('كبس') ||
+    content.includes('جرار') ||
+    content.includes('سحاب') ||
+    content.includes('صالون')
+  ) {
+    if (content.includes('سيدان') || content.includes('5 قطع') || content.includes('خمس قطع')) {
+      return '/assets/stores/red-line/full-kit-80.png';
+    }
+    if (content.includes('suv') || content.includes('جيب') || content.includes('7 قطع') || content.includes('سبع قطع')) {
+      return '/assets/stores/red-line/redline-exterior-view.jpg';
+    }
+    if (content.includes('2 قطعة') || content.includes('قطعتين') || content.includes('أمامي')) {
+      return '/assets/stores/red-line/tint-80-fixed.png';
+    }
+    if (content.includes('جرار') || content.includes('سحاب')) {
+      return '/assets/stores/red-line/tint-80-movable.png';
+    }
+    if (content.includes('خلفي') || content.includes('كنبة')) {
+      return '/assets/stores/red-line/rear-windshield-80.png';
+    }
+    if (content.includes('معاين') || content.includes('دفع') || content.includes('ضمان') || content.includes('استلام')) {
+      return '/assets/stores/red-line/redline-installation-detail.jpg';
+    }
+    const autoFallbacks = [
+      '/assets/stores/red-line/full-kit-80.png',
+      '/assets/stores/red-line/redline-exterior-view.jpg',
+      '/assets/stores/red-line/tint-80-fixed.png',
+      '/assets/stores/red-line/tint-80-movable.png',
+      '/assets/stores/red-line/rear-windshield-80.png',
+      '/assets/stores/red-line/redline-installation-detail.jpg',
+    ];
+    return autoFallbacks[index % autoFallbacks.length];
+  }
+
+  return undefined;
 };
 
 const resolveDistrictMarketIntentCellClass = (
@@ -245,6 +360,7 @@ const ShoppingIntents: React.FC<ShoppingIntentsProps> = ({ settings }) => {
   const subtitle =
     settings?.subtitle ||
     'اختر المسار الأقرب لطلبك: منتجات يومية، عروض، ركنة البيت، أو هدية جاهزة بدون لف طويل داخل المتجر.';
+  const ctaText = settings?.ctaText || 'افتح هذا القسم';
   const items = useMemo(() => parseIntentItems(settings?.items), [settings?.items]);
   const contentAlign = resolveSectionContentAlign(
     settings?.contentAlign,
@@ -315,7 +431,9 @@ const ShoppingIntents: React.FC<ShoppingIntentsProps> = ({ settings }) => {
                     item.link.startsWith('/') ? item.link : `/${item.link}`,
                     location.search,
                   );
-                  const examples = resolveIntentExamples(item, index).slice(0, 2);
+                  const examples = item.chip
+                    ? []
+                    : resolveIntentExamples(item, index).slice(0, 2);
 
                   return (
                     <Link
@@ -371,7 +489,15 @@ const ShoppingIntents: React.FC<ShoppingIntentsProps> = ({ settings }) => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div
+            className={`grid grid-cols-1 gap-4.5 sm:gap-5 ${
+              items.length === 6
+                ? 'md:grid-cols-2 lg:grid-cols-3'
+                : items.length % 4 === 0
+                ? 'md:grid-cols-2 xl:grid-cols-4'
+                : 'md:grid-cols-2 lg:grid-cols-3'
+            }`}
+          >
             {items.map((item, index) => {
               const href = buildStorefrontPath(
                 location.pathname,
@@ -379,82 +505,119 @@ const ShoppingIntents: React.FC<ShoppingIntentsProps> = ({ settings }) => {
                 location.search,
               );
               const examples = resolveIntentExamples(item, index);
+              const isSixItems = items.length === 6;
+              const imageUrl = resolveIntentImage(item, index);
+              const isCutout =
+                Boolean(imageUrl) &&
+                (imageUrl.toLowerCase().endsWith('.png') ||
+                  imageUrl.toLowerCase().includes('.png?'));
 
               return (
                 <Link
                   key={`${item.title}-${index}`}
                   to={href}
-                  className={`group relative overflow-hidden border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_90px_-60px_hsl(var(--primary)/0.48)] ${
-                    TONE_CLASS_MAP[item.tone || 'primary'] || TONE_CLASS_MAP.primary
-                  } ${index === 0 ? 'xl:col-span-2' : ''} rounded-[1.6rem]`}
+                  className={`group relative flex flex-col justify-between overflow-hidden rounded-[1.25rem] border transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl ${
+                    TONE_CLASS_MAP[item.tone || 'primary'] ||
+                    TONE_CLASS_MAP['primary']
+                  } ${
+                    index === 0 && !isSixItems && items.length < 5
+                      ? 'xl:col-span-2'
+                      : ''
+                  }`}
                 >
-                  <div
-                    className="absolute inset-y-0 end-0 w-32 translate-x-6 bg-[radial-gradient(circle_at_center,hsl(var(--primary)/0.18),transparent_70%)] opacity-80 transition-transform duration-300 group-hover:translate-x-0"
-                  />
-                  <div
-                    className={`relative z-10 flex h-full flex-col justify-between gap-6 ${
-                      isCentered ? 'items-center text-center' : ''
-                    }`}
-                  >
-                    <div
-                      className={`flex gap-3 ${
-                        isCentered
-                          ? 'flex-col items-center text-center'
-                          : 'items-start justify-between'
-                      }`}
-                    >
-                      <div className="space-y-3">
-                        <div
-                          className={`flex flex-wrap items-center gap-2 ${
-                            isCentered ? 'justify-center' : ''
-                          }`}
-                        >
-                          <span className="inline-flex rounded-full border border-white/60 bg-background/82 px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-primary backdrop-blur">
-                            {item.eyebrow || `مسار 0${index + 1}`}
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-20" />
+
+                  {imageUrl ? (
+                    <div className="relative w-full aspect-[16/10] overflow-hidden bg-gradient-to-b from-slate-100 via-slate-50 to-muted/30 dark:from-slate-900/60 dark:via-slate-900/40 dark:to-card border-b border-border/50">
+                      <img
+                        src={imageUrl}
+                        alt={item.title}
+                        loading="lazy"
+                        className={`w-full h-full transition-transform duration-500 ease-out group-hover:scale-105 ${
+                          isCutout
+                            ? 'object-contain p-4 drop-shadow-[0_10px_20px_rgba(0,0,0,0.12)]'
+                            : 'object-cover'
+                        }`}
+                      />
+                      {!isCutout && (
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
+                      )}
+
+                      {/* Badges floating on image */}
+                      <div className="absolute inset-x-3.5 top-3.5 flex items-center justify-between gap-2 z-10 pointer-events-none">
+                        <span className="inline-flex items-center rounded-full border border-primary/25 bg-background/95 px-2.5 py-0.5 text-[10.5px] font-bold tracking-wide text-primary shadow-sm backdrop-blur-md">
+                          {item.eyebrow || `باقة 0${index + 1}`}
+                        </span>
+
+                        {item.chip ? (
+                          <span className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-[10.5px] font-bold tracking-wide text-white shadow-md">
+                            {item.chip}
                           </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className={`relative z-10 flex flex-1 flex-col justify-between gap-4.5 ${imageUrl ? 'p-5 sm:p-6' : 'p-5'}`}>
+                    <div className="space-y-3">
+                      {!imageUrl && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-0.5 text-[11px] font-bold tracking-wide text-primary">
+                            {item.eyebrow || `باقة 0${index + 1}`}
+                          </span>
+
+                          {item.chip ? (
+                            <span className="inline-flex items-center rounded-full border border-foreground/10 bg-foreground/90 px-2.5 py-0.5 text-[10.5px] font-bold tracking-wide text-background shadow-sm">
+                              {item.chip}
+                            </span>
+                          ) : null}
                         </div>
-                        <h3 className="font-heading text-2xl font-black tracking-tight text-foreground">
+                      )}
+
+                      <div
+                        className={`space-y-1.5 ${
+                          isCentered ? 'text-center' : 'text-start'
+                        }`}
+                      >
+                        <h3 className="font-heading text-xl font-bold tracking-tight text-foreground transition-colors group-hover:text-primary sm:text-[1.3rem]">
                           {item.title}
                         </h3>
-                        <p
-                          className={`max-w-md text-sm leading-7 text-muted-foreground ${
-                            isCentered ? 'mx-auto' : ''
-                          }`}
-                        >
+                        <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm line-clamp-2">
                           {item.subtitle}
                         </p>
                       </div>
-
-                      {item.chip ? (
-                        <span className="inline-flex rounded-full bg-foreground px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-background">
-                          {item.chip}
-                        </span>
-                      ) : null}
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-4 pt-1">
                       <div
-                        className={`flex flex-wrap gap-2 ${
-                          isCentered ? 'justify-center' : ''
+                        className={`flex flex-wrap gap-1.5 ${
+                          isCentered ? 'justify-center' : 'justify-start'
                         }`}
                       >
                         {examples.map((example) => (
                           <span
                             key={`${item.title}-${example}`}
-                            className="inline-flex rounded-full border border-primary/10 bg-background/88 px-3 py-1 text-[11px] font-bold text-foreground shadow-sm"
+                            className="inline-flex items-center gap-1.5 rounded-md border border-border/80 bg-muted/60 px-2.5 py-1 text-[11px] font-medium text-foreground/80 transition-colors group-hover:border-primary/20 group-hover:bg-primary/5"
                           >
-                            {example}
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary/70 shrink-0" />
+                            <span>{example}</span>
                           </span>
                         ))}
                       </div>
+
                       <div
-                        className={`inline-flex items-center gap-2 text-sm font-black text-primary ${
-                          isCentered ? 'mx-auto' : ''
+                        className={`flex items-center justify-between border-t border-border/50 pt-3 text-xs font-bold text-primary ${
+                          isCentered ? 'justify-center gap-2' : ''
                         }`}
                       >
-                        افتح هذا القسم
-                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-primary/15 bg-background/75 text-base transition-transform duration-300 group-hover:-translate-x-1">
-                          ←
+                        <span className="inline-flex items-center gap-1.5 font-heading">
+                          <span>{ctaText || 'تحديد الباقة والمعاينة'}</span>
+                          <span className="inline-block text-sm transition-transform duration-300 group-hover:-translate-x-1">
+                            ←
+                          </span>
+                        </span>
+                        <span className="text-[11px] font-normal text-muted-foreground">
+                          معاينة وتجربة
                         </span>
                       </div>
                     </div>

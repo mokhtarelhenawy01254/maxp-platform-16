@@ -1,4 +1,4 @@
-﻿// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import {
   canonicalizeAttributeKey,
@@ -22,7 +22,9 @@ describe('Variant Attribute Canonicalization and Labeling', () => {
     expect(getVariantAttributeLabel('اللون :', true)).toBe('اللون');
     expect(getVariantAttributeLabel('اللون_:', true)).toBe('اللون');
     expect(getVariantAttributeLabel('shoe_size', true)).toBe('المقاس');
-    expect(getVariantAttributeLabel('custom_attr:', true)).toBe('custom_attr');
+    expect(getVariantAttributeLabel('عدد_القطع', true)).toBe('عدد القطع');
+    expect(getVariantAttributeLabel('عدد القطع', true)).toBe('عدد القطع');
+    expect(getVariantAttributeLabel('custom_attr:', true)).toBe('custom attr');
   });
 
   it('extracts normalized attributes from variant objects with complex keys', () => {

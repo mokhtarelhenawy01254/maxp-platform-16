@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
+  Clock,
   Coins,
   ExternalLink,
   Layers,
@@ -57,6 +58,16 @@ export default function DentalLabDashboardTab() {
       bg: "bg-blue-50 dark:bg-blue-900/20",
       tooltip: "عرض الحالات التي تم استلامها وتسجيلها اليوم",
       onClick: () => navigate("/dental-lab/cases?dateRange=received_today"),
+    },
+    {
+      id: "todayDue",
+      label: "خارج اليوم (تسليمات اليوم)",
+      value: data?.todayDue ?? "—",
+      icon: <Clock className="w-5 h-5" />,
+      tone: "text-amber-600 dark:text-amber-400",
+      bg: "bg-amber-50 dark:bg-amber-900/20",
+      tooltip: "عرض الحالات المطلوب خروجها وتسليمها اليوم للعيادات",
+      onClick: () => navigate("/dental-lab/cases?dateRange=due_today"),
     },
     {
       id: "activeCases",
@@ -139,7 +150,7 @@ export default function DentalLabDashboardTab() {
       ) : (
         <>
           {/* KPI Cards — Clickable with Drill-Down */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
             {cards.map((c) => (
               <div
                 key={c.id}

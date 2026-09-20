@@ -135,5 +135,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('tracker:inactivity-return', listener);
     return () => ipcRenderer.removeListener('tracker:inactivity-return', listener);
   },
+  onAuthLoggedOut: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('auth:logged-out', listener);
+    return () => ipcRenderer.removeListener('auth:logged-out', listener);
+  },
 });
 

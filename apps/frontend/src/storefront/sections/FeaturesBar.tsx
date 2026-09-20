@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { getDefaultRegisteredVariantId, hasRegisteredVariant } from '../variants';
+import AutomotiveBento from './AutomotiveBento';
 /* ────────────── types ────────────── */
 
 interface FeatureItem {
@@ -96,7 +97,8 @@ type FeaturesBarVariant =
   | 'store-advantages-pastel'
   | 'system-assurance'
   | 'butcher-proof-board'
-  | 'vela-store-advantages';
+  | 'vela-store-advantages'
+  | 'automotive-bento';
 
 const FEATURES_BAR_FAMILY = 'FeaturesBar';
 const FEATURES_BAR_DEFAULT =
@@ -114,11 +116,15 @@ const normalizeFeaturesBarVariant = (rawVariant: unknown): FeaturesBarVariant =>
       value === 'store-advantages-pastel' ||
       value === 'system-assurance' ||
       value === 'butcher-proof-board' ||
-      value === 'vela-store-advantages'
+      value === 'vela-store-advantages' ||
+      value === 'automotive-bento'
     ) &&
     hasRegisteredVariant(FEATURES_BAR_FAMILY, value)
   ) {
     return value as FeaturesBarVariant;
+  }
+  if (value === 'automotive-bento') {
+    return 'automotive-bento';
   }
   return FEATURES_BAR_DEFAULT;
 };
@@ -134,6 +140,10 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
   const isButcherProofBoard = variant === 'butcher-proof-board';
   const isPastelAdvantages = variant === 'store-advantages-pastel';
   const isVelaStoreAdvantages = variant === 'vela-store-advantages';
+
+  if (variant === 'automotive-bento') {
+    return <AutomotiveBento section={section} settings={settings as any} />;
+  }
 
   const title = settings?.title || (isZenOrganic ? 'لماذا تختارنا' : isSmartBazaar ? 'Smart Bazaar System' : 'مميزاتنا');
   const subtitle = settings?.subtitle || '';

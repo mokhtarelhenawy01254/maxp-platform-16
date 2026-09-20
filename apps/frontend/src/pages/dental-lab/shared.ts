@@ -564,6 +564,7 @@ export interface DentalLabSettings {
 export interface DashboardData {
   byStatus?: Record<string, number>;
   todayReceived?: number;
+  todayDue?: number;
   activeCasesCount?: number;
   activeCount?: number;
   readyCount?: number;
@@ -946,11 +947,12 @@ export const bulkRestoreCases = async (caseIds: string[]): Promise<{ count: numb
 // Infer attachment kind from filename. Used as default when the user
 // doesn't pick one explicitly. Matches the ATTACHMENT_KINDS enum in the
 // backend (apps/backend/controller/dentalLabController.js).
-export const inferAttachmentKind = (filename: string): "SCAN" | "PHOTO" | "XRAY" | "PRESCRIPTION" | "WORK_ORDER" | "OTHER" => {
+export const inferAttachmentKind = (filename: string): "SCAN" | "PHOTO" | "XRAY" | "PRESCRIPTION" | "WORK_ORDER" | "DESIGN_REVIEW" | "OTHER" => {
   const ext = (filename.split(".").pop() || "").toLowerCase();
   if (["stl", "ply", "obj", "dcm"].includes(ext)) return "SCAN";
   if (["jpg", "jpeg", "png", "webp", "bmp", "tiff", "heic"].includes(ext)) return "PHOTO";
   if (ext === "pdf") return "PRESCRIPTION";
+  if (["html", "htm"].includes(ext)) return "DESIGN_REVIEW";
   return "OTHER";
 };
 

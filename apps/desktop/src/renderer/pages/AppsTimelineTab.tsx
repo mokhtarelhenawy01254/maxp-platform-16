@@ -38,6 +38,18 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
     return `${year}-${month}-${day}`;
   };
 
+  const parseLocalDate = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d, 12, 0, 0);
+  };
+
+  const formatLocalDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const todayStr = getTodayLocal();
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [activeSubTab, setActiveSubTab] = useState<'apps' | 'sites'>('apps');
@@ -97,11 +109,9 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
         <div style={styles.dateNavControls}>
           <button
             onClick={() => {
-              const d = new Date(selectedDate);
+              const d = parseLocalDate(selectedDate);
               d.setDate(d.getDate() - 1);
-              setSelectedDate(
-                `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-              );
+              setSelectedDate(formatLocalDate(d));
             }}
             style={styles.dateNavBtn}
             title="اليوم السابق"
@@ -128,11 +138,10 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
           <button
             onClick={() => {
               if (selectedDate >= todayStr) return;
-              const d = new Date(selectedDate);
+              const d = parseLocalDate(selectedDate);
               d.setDate(d.getDate() + 1);
-              setSelectedDate(
-                `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-              );
+              const next = formatLocalDate(d);
+              setSelectedDate(next > todayStr ? todayStr : next);
             }}
             disabled={selectedDate === todayStr}
             style={{
@@ -152,7 +161,7 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
         <div style={styles.dateDisplayBadge}>
           <Clock size={13} color="#38bdf8" />
           <span>
-            {new Date(selectedDate).toLocaleDateString('ar-EG', {
+            {parseLocalDate(selectedDate).toLocaleDateString('ar-EG', {
               weekday: 'short',
               day: 'numeric',
               month: 'short',

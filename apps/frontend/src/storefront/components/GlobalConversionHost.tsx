@@ -122,6 +122,7 @@ const GlobalConversionHost: React.FC = () => {
   const isBiteRush = theme.id === "restaurant-demo";
   const isCafeDemo = theme.id === "cafe-demo";
   const isPharmacy = isPharmacyThemeId(theme.id);
+  const isRedlineAuto = theme.id === "redline-auto";
   const subtotal = useCartStore((state) =>
     state.items.reduce((total, item) => total + item.price * item.quantity, 0),
   );
@@ -662,8 +663,92 @@ const GlobalConversionHost: React.FC = () => {
     showExitPopup,
   ]);
 
-  const renderFreeShippingBar = useMemo(() =>
-    freeShippingBarEnabled && thresholdAmount > 0 ? (
+  const renderFreeShippingBar = useMemo(() => {
+    if (!freeShippingBarEnabled || thresholdAmount <= 0) {
+      return null;
+    }
+
+    if (isRedlineAuto) {
+      // 2026 UX Rule: Never pollute or push down the product page hero above the fold when cart is empty
+      if (isProductPage && subtotal === 0) {
+        return null;
+      }
+
+      return (
+        <div
+          className={`w-full border-b border-red-600/30 bg-[#0c0d10] text-white shadow-xs ${
+            barPosition === "bottom"
+              ? "fixed inset-x-4 bottom-4 z-[70] rounded-xl border border-red-500/30 px-4 py-2.5 shadow-2xl md:inset-x-auto md:right-6 md:w-[420px]"
+              : shouldOffsetTopUtilityBarForHeader
+                ? "pt-24"
+                : ""
+          }`}
+        >
+          <div className="mx-auto max-w-6xl px-3 py-2 md:px-6">
+            <div className="flex items-center justify-between gap-3 text-xs">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-red-600/20 text-red-400 p-1">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+                    <path d="M15 18H9" />
+                    <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
+                    <circle cx="17" cy="18.5" r="2.5" />
+                    <circle cx="7" cy="18.5" r="2.5" />
+                  </svg>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium text-neutral-200">
+                      {subtotal > 0
+                        ? freeShippingMessage
+                        : prefersArabicCopy
+                          ? `شحن مجاني لكافة محافظات مصر للطلبات من ${formatStorefrontCurrency(thresholdAmount, currency)}`
+                          : `Free shipping on all orders over ${formatStorefrontCurrency(thresholdAmount, currency)}`}
+                    </span>
+                  </div>
+                  {subtotal > 0 && (
+                    <div className="mt-1 h-1 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-red-500 transition-[width] duration-500"
+                        style={{ width: `${freeShippingProgress}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-bold tabular-nums text-neutral-300">
+                  {subtotal > 0
+                    ? formatStorefrontCurrency(subtotal, currency)
+                    : formatStorefrontCurrency(thresholdAmount, currency)}
+                </span>
+                {subtotal > 0 && (
+                  <Link
+                    to={cartPath}
+                    className="inline-flex items-center rounded-full bg-red-600 px-3 py-1 text-[11px] font-bold text-white transition hover:bg-red-700"
+                  >
+                    {prefersArabicCopy ? "السلة" : "Cart"}
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
       <div
         className={`w-full animate-conversion-card ${
           isBiteRush
@@ -704,7 +789,7 @@ const GlobalConversionHost: React.FC = () => {
                       ? "bg-[#0f766e]/10 text-[#0f766e]"
                       : "bg-white/15"
                 }`}>
-                  {isBiteRush || isPharmacy ? "توصيل" : isCafeDemo ? "قهوة" : "FS"}
+                  {isBiteRush || isPharmacy ? "توصيل" : isCafeDemo ? "قهوة" : "شحن"}
                 </span>
                 <span className="truncate">{freeShippingMessage}</span>
               </div>
@@ -788,25 +873,28 @@ const GlobalConversionHost: React.FC = () => {
           </div>
         </div>
       </div>
-    ) : null,
-    [
-      freeShippingBarEnabled,
-      thresholdAmount,
-      isBiteRush,
-      isCafeDemo,
-      isPharmacy,
-      barPosition,
-      shouldOffsetTopUtilityBarForHeader,
-      isCompactMarketplacePreviewChrome,
-      freeShippingMessage,
-      freeShippingProgress,
-      freeShippingSupportNote,
-      freeShippingPrimaryCtaLabel,
-      freeShippingCtaPath,
-      subtotal,
-      currency,
-    ],
-  );
+    );
+  }, [
+    freeShippingBarEnabled,
+    thresholdAmount,
+    isBiteRush,
+    isCafeDemo,
+    isPharmacy,
+    isRedlineAuto,
+    isProductPage,
+    barPosition,
+    shouldOffsetTopUtilityBarForHeader,
+    isCompactMarketplacePreviewChrome,
+    freeShippingMessage,
+    freeShippingProgress,
+    freeShippingSupportNote,
+    freeShippingPrimaryCtaLabel,
+    freeShippingCtaPath,
+    subtotal,
+    currency,
+    cartPath,
+    prefersArabicCopy,
+  ]);
 
   if (!shouldRenderShellMount) {
     return null;

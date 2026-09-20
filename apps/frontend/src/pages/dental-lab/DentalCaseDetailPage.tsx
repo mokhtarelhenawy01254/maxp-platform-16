@@ -853,7 +853,7 @@ export default function DentalCaseDetailPage() {
   // Max file size (50MB) — matches backend upload limit. Hard cap to
   // stop users picking 200MB STL files that would silently 502.
   const MAX_FILE_SIZE = 50 * 1024 * 1024;
-  const ACCEPT_ATTR = ".stl,.ply,.obj,.jpg,.jpeg,.png,.webp,.pdf,.dcm";
+  const ACCEPT_ATTR = ".stl,.ply,.obj,.jpg,.jpeg,.png,.webp,.pdf,.dcm,.html,.htm";
   // WebP compression: only worth doing on photos larger than 200KB
   // (smaller files already compressed enough; canvas re-encode would
   // just lose quality). The quality 0.85 is the sweet spot — visually
@@ -1104,6 +1104,7 @@ export default function DentalCaseDetailPage() {
     { label: "رقم التشغيلة (Lot #)", value: c.lotNumber ? <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{c.lotNumber}</span> : "—" },
     { label: "مدة الضمان", value: c.warrantyYears ? <span className="text-emerald-600 font-bold">{c.warrantyYears} سنوات</span> : "بدون ضمان" },
     { label: "حالة البروفة", value: c.isTryIn ? <span className="text-amber-600 font-bold">في بروفة ({c.tryInStage})</span> : (c.tryInCount ? `تمت (${c.tryInCount} بروفة)` : "لا يوجد") },
+    { label: "تاريخ الدخول", value: c.receivedDate ? <span className="flex items-center gap-1"><Calendar className="w-4 h-4 text-blue-500" />{fmtDate(c.receivedDate)}</span> : "—" },
     { label: t("dentalLab.cases.dueDate"), value: c.dueDate ? <span className="flex items-center gap-1"><Calendar className="w-4 h-4" />{fmtDate(c.dueDate)}</span> : "—" },
     { label: t("dentalLab.cases.priceSnapshot"), value: fmtMoney(c.priceSnapshot) },
     { label: t("dentalLab.cases.discount"), value: fmtMoney(c.discount) },
@@ -1737,7 +1738,7 @@ export default function DentalCaseDetailPage() {
                 {uploadDragOver ? "إفلت الملفات هنا" : "اسحب الملفات هنا أو اضغط للاختيار"}
               </p>
               <p className="text-xs text-gray-400 text-center">
-                STL, PLY, OBJ, JPG, PNG, PDF, DCM — حد أقصى 50MB للملف
+                STL, PLY, OBJ, HTML (Exocad 3D), JPG, PNG, PDF, DCM — حد أقصى 50MB للملف
               </p>
             </div>
 
@@ -2460,6 +2461,7 @@ function EditCaseModal({ caseData, doctors, workTypes, onClose, onSaved }: EditC
   const [unitPrice, setUnitPrice] = useState<number>(caseData.unitPrice || 0);
   const [priceSnapshot, setPriceSnapshot] = useState<number>(caseData.priceSnapshot || 0);
   const [discount, setDiscount] = useState<number>(caseData.discount || 0);
+  const [receivedDate, setReceivedDate] = useState(caseData.receivedDate ? caseData.receivedDate.slice(0, 10) : "");
   const [dueDate, setDueDate] = useState(caseData.dueDate ? caseData.dueDate.slice(0, 10) : "");
   const [priority, setPriority] = useState<DentalCasePriority>((caseData.priority as DentalCasePriority) || "NORMAL");
   const [status, setStatus] = useState<DentalCaseStatus>((caseData.status as DentalCaseStatus) || "RECEIVED");
@@ -2525,6 +2527,7 @@ function EditCaseModal({ caseData, doctors, workTypes, onClose, onSaved }: EditC
         unitPrice: Math.max(0, Number(unitPrice) || 0),
         priceSnapshot: Math.max(0, Number(priceSnapshot) || 0),
         discount: Math.max(0, Number(discount) || 0),
+        receivedDate: receivedDate || undefined,
         dueDate: dueDate || undefined,
         priority: priority as DentalCasePriority,
         teeth: teeth.trim() || undefined,
@@ -2688,6 +2691,10 @@ function EditCaseModal({ caseData, doctors, workTypes, onClose, onSaved }: EditC
                   value={discount}
                   onChange={e => setDiscount(Number(e.target.value))}
                 />
+              </div>
+              <div>
+                <label className={labelCls}>تاريخ الدخول / الاستلام</label>
+                <input className={MODAL_INPUT_CLS} type="date" value={receivedDate} onChange={e => setReceivedDate(e.target.value)} />
               </div>
               <div>
                 <label className={labelCls}>تاريخ التسليم المتوقع</label>

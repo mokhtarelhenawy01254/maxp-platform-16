@@ -576,6 +576,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const isElessiPlantBuybox = variant === 'elessi-plant-buybox';
   const isElessiBikeBuybox = variant === 'elessi-bike-buybox';
   const isElessiDigitalBuybox = variant === 'elessi-digital-buybox';
+  const isRedlineAuto = theme.id === 'redline-auto';
   const isAnyElessiBuybox =
     isElessiBuybox ||
     isElessiSpecBuybox ||
@@ -6803,10 +6804,11 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           ]
     ).slice(0, 3);
     const shouldUseInlineOrderFormOnly =
-      isKhemetInlineQuickOrderBuybox && Boolean(mergedInlinePdpQuickOrder);
+      (isKhemetInlineQuickOrderBuybox || isRedlineAuto) && Boolean(mergedInlinePdpQuickOrder);
     const showStickyMobileAddToCart =
       isStickyAddToCartEnabled &&
       isElessiCareBuybox &&
+      !isRedlineAuto &&
       shouldRenderPrimaryBuyBox &&
       !externalOnlyProduct &&
       !isGalleryZoomOpen &&
@@ -7125,6 +7127,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
               ) : null}
               {!isKhemetInlineQuickOrderBuybox ? elessiLowStockNotice : null}
               {!isKhemetInlineQuickOrderBuybox &&
+              !isRedlineAuto &&
               (!safeDescription ||
               !isKhemetLuxeTheme ||
               shouldHideDuplicateDescriptionSection) ? (
@@ -7135,7 +7138,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
               {brandSubtitle ? (
                 <p className="text-sm leading-6 text-[#8f5c44]">{brandSubtitle}</p>
               ) : null}
-              {shouldHideDuplicateDescriptionSection || isKhemetInlineQuickOrderBuybox ? null : (
+              {shouldHideDuplicateDescriptionSection || isKhemetInlineQuickOrderBuybox || isRedlineAuto ? null : (
                 <button
                   type="button"
                   onClick={() => {
@@ -7186,41 +7189,45 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
               ) : null}
             </div>
 
-            <div className="space-y-4 border-b border-[#ead8ca] pb-5">
+            <div className={`space-y-4 pb-5 border-b ${isRedlineAuto ? 'border-slate-200 dark:border-slate-800' : 'border-[#ead8ca]'}`}>
               {!isPrimaryQuantityOffersDecision ? (
                 <div>{elessiVariantSelector}</div>
               ) : null}
               {elessiPersonalizationPanel ? (
-                <div className='border-t border-[#efe0d4] pt-3 sm:pt-4'>
+                <div className={`pt-3 sm:pt-4 border-t ${isRedlineAuto ? 'border-slate-200 dark:border-slate-800' : 'border-[#efe0d4]'}`}>
                   {elessiPersonalizationPanel}
                 </div>
               ) : null}
               {inlineQuantityOffers ? (
                 <div
                   id={hasEmbeddedPdpCheckout && isPrimaryQuantityOffersDecision ? STOREFRONT_BUYBOX_ID : undefined}
-                  className={!isPrimaryQuantityOffersDecision && product.productVariants?.length ? 'border-t border-[#efe0d4] pt-3 sm:pt-4' : ''}
+                  className={!isPrimaryQuantityOffersDecision && product.productVariants?.length ? `pt-3 sm:pt-4 border-t ${isRedlineAuto ? 'border-slate-200 dark:border-slate-800' : 'border-[#efe0d4]'}` : ''}
                 >
                   {inlineQuantityOffers}
                 </div>
               ) : null}
-              <div className='border-t border-[#efe0d4] pt-3 sm:pt-4'>
+              <div className={`pt-3 sm:pt-4 border-t ${isRedlineAuto ? 'border-slate-200 dark:border-slate-800' : 'border-[#efe0d4]'}`}>
                 {elessiPrimaryActionsWithRef}
                 {mergedInlinePdpQuickOrder ? (
                   <div className={shouldUseInlineOrderFormOnly ? "" : "pt-3 sm:pt-4"}>
                     {mergedInlinePdpQuickOrder}
                   </div>
                 ) : null}
-                <div className="mt-3.5 flex flex-wrap items-center justify-around gap-2 rounded-[0.95rem] border border-[#ead8ca]/70 bg-[#fffdfa] px-3 py-2.5 text-[11px] font-bold text-[#6f5a54] sm:text-xs">
+                <div className={`mt-3.5 flex flex-wrap items-center justify-around gap-2 rounded-xl border px-3 py-2.5 text-[11px] font-bold sm:text-xs ${
+                  isRedlineAuto
+                    ? 'border-slate-200 bg-slate-50/80 text-slate-700 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300'
+                    : 'border-[#ead8ca]/70 bg-[#fffdfa] text-[#6f5a54]'
+                }`}>
                   <div className="flex items-center gap-1.5">
-                    <Truck className="h-3.5 w-3.5 text-[#8f5c44]" />
+                    <Truck className={`h-3.5 w-3.5 ${isRedlineAuto ? 'text-red-600' : 'text-[#8f5c44]'}`} />
                     <span>{prefersArabicCopy ? 'شحن 48 ساعة' : '48h Shipping'}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="h-3.5 w-3.5 text-[#8f5c44]" />
+                    <ShieldCheck className={`h-3.5 w-3.5 ${isRedlineAuto ? 'text-red-600' : 'text-[#8f5c44]'}`} />
                     <span>{prefersArabicCopy ? 'معاينة وقياس مع المندوب' : 'Inspect before paying'}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <RotateCcw className="h-3.5 w-3.5 text-[#8f5c44]" />
+                    <RotateCcw className={`h-3.5 w-3.5 ${isRedlineAuto ? 'text-red-600' : 'text-[#8f5c44]'}`} />
                     <span>{prefersArabicCopy ? 'استبدال 14 يوم' : '14-Day Exchange'}</span>
                   </div>
                 </div>

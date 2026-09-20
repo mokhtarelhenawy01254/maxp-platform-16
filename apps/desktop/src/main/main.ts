@@ -160,8 +160,25 @@ app.whenReady().then(async () => {
   const savedServer = store.get('serverUrl') as string | undefined;
   if (savedToken && savedServer) {
     apiClient.configure(savedServer, savedToken);
-    startTracking();
-    setTimeout(() => { triggerAutoClockIn(); }, 3000);
+    apiClient.setOnUnauthorized(() => {
+      console.warn('[Main] Auth token expired / invalid — forcing clean logout');
+      logout();
+    });
+
+    // Pre-flight session validation: ensure credentials are still valid on server
+    apiClient.validateToken().then(({ valid, user }) => {
+      if (valid) {
+        if (user) store.set('user', user);
+        startTracking();
+        setTimeout(() => { triggerAutoClockIn(); }, 3000);
+      } else {
+        console.warn('[Main] Saved session is no longer valid on server — clearing session');
+        logout();
+      }
+    }).catch(() => {
+      // In case of network errors, still allow local tracking
+      startTracking();
+    });
   }
 });
 
@@ -438,6 +455,9 @@ function logout(): void {
   apiClient.configure('', '');
   resetTaskPollerState();
   updateTrayMenu();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('auth:logged-out');
+  }
   createMainWindow();
 }
 
@@ -537,22 +557,56 @@ function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle('tracker:get-apps-summary', (_, targetDate?: string) => {
+  ipcMain.handle('tracker:get-apps-summary', async (_, targetDate?: string) => {
     try {
       const { apps, websites } = windowTracker.flushRecords();
       for (const a of apps) localDb.queueAppUsage(a);
       for (const w of websites) localDb.queueWebUsage(w);
     } catch {}
-    return localDb.getTodayAppsSummary(targetDate);
+
+    const localApps = localDb.getTodayAppsSummary(targetDate);
+    const today = getLocalDateString();
+    const isToday = !targetDate || targetDate === today;
+
+    if (!isToday && localApps.length === 0 && apiClient.isConfigured) {
+      try {
+        const timeline = await apiClient.getTimeline(targetDate);
+        if (timeline && Array.isArray(timeline.apps) && timeline.apps.length > 0) {
+          return timeline.apps.map((a: any) => ({
+            appName: a.appName || 'Unknown App',
+            durationSeconds: a.durationSeconds || a.totalSeconds || 0,
+            category: a.category || 'unrated',
+          }));
+        }
+      } catch {}
+    }
+    return localApps;
   });
 
-  ipcMain.handle('tracker:get-websites-summary', (_, targetDate?: string) => {
+  ipcMain.handle('tracker:get-websites-summary', async (_, targetDate?: string) => {
     try {
       const { apps, websites } = windowTracker.flushRecords();
       for (const a of apps) localDb.queueAppUsage(a);
       for (const w of websites) localDb.queueWebUsage(w);
     } catch {}
-    return localDb.getTodayWebsitesSummary(targetDate);
+
+    const localWeb = localDb.getTodayWebsitesSummary(targetDate);
+    const today = getLocalDateString();
+    const isToday = !targetDate || targetDate === today;
+
+    if (!isToday && localWeb.length === 0 && apiClient.isConfigured) {
+      try {
+        const timeline = await apiClient.getTimeline(targetDate);
+        if (timeline && Array.isArray(timeline.websites) && timeline.websites.length > 0) {
+          return timeline.websites.map((w: any) => ({
+            domain: w.domain || 'Direct / Internal',
+            durationSeconds: w.durationSeconds || w.totalSeconds || 0,
+            category: w.category || 'unrated',
+          }));
+        }
+      } catch {}
+    }
+    return localWeb;
   });
 
   ipcMain.handle('tracker:get-all-daily-keys', () => {
@@ -627,10 +681,36 @@ function registerIpcHandlers(): void {
     };
   });
 
-  ipcMain.handle(IPC_CHANNELS.GET_DAILY_SUMMARY, (_, targetDate?: string) => {
+  ipcMain.handle(IPC_CHANNELS.GET_DAILY_SUMMARY, async (_, targetDate?: string) => {
     const today = getLocalDateString();
     const dateToQuery = targetDate || today;
-    const stored = localDb.getDailyStats(dateToQuery) || {
+    let stored = localDb.getDailyStats(dateToQuery);
+
+    const isToday = dateToQuery === today;
+
+    // Stale-While-Revalidate Cloud Fallback for past dates:
+    if (!isToday && (!stored || stored.total_active_seconds === 0) && apiClient.isConfigured) {
+      try {
+        const serverSummary: any = await apiClient.getDailySummary(dateToQuery);
+        if (serverSummary && (serverSummary.totalActiveSeconds > 0 || serverSummary.totalIdleSeconds > 0)) {
+          localDb.updateDailyStats(
+            dateToQuery,
+            serverSummary.totalActiveSeconds || 0,
+            serverSummary.totalIdleSeconds || 0,
+            serverSummary.totalMouseEvents || 0,
+            serverSummary.totalKeyboardEvents || 0
+          );
+          if (serverSummary.shiftEndedAt) {
+            localDb.markShiftEnded(dateToQuery, serverSummary.shiftEndedAt);
+          }
+          stored = localDb.getDailyStats(dateToQuery);
+        }
+      } catch (err: any) {
+        console.warn('[Main] Cloud summary fallback notice for', dateToQuery, err.message);
+      }
+    }
+
+    stored = stored || {
       date: dateToQuery,
       first_activity: null,
       last_activity: null,
@@ -640,7 +720,7 @@ function registerIpcHandlers(): void {
       total_keyboard_events: 0,
       shift_ended_at: null,
     };
-    const isToday = dateToQuery === today;
+
     const live = isToday && isTracking && !isPaused && !shiftEnded ? activityTracker.getCurrentIntervalStats() : null;
     return {
       ...stored,
@@ -686,6 +766,10 @@ function registerIpcHandlers(): void {
       store.set('serverUrl', serverUrl);
       store.set('user', user);
       apiClient.configure(serverUrl, token);
+      apiClient.setOnUnauthorized(() => {
+        console.warn('[Main] Auth token expired / invalid — forcing clean logout');
+        logout();
+      });
       resetTaskPollerState();
       await startTracking();
       updateTrayMenu();

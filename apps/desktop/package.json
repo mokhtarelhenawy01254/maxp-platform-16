@@ -1,9 +1,9 @@
 {
   "name": "maxp-desktop-monitor",
-  "version": "1.0.11",
-  "description": "MaxP Employee Monitor — Desktop activity tracking agent",
+  "version": "1.0.12",
+  "description": "MaxP Workspace — Enterprise desktop productivity & tasks cockpit",
   "main": "dist/main/main/main.js",
-  "author": "MaxP",
+  "author": "MaxP Cloud",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
@@ -53,26 +53,18 @@
       "dist/**/*",
       "assets/**/*"
     ],
-    "extraResources": [
-      {
-        "from": "bin",
-        "to": "bin"
-      }
-    ],
-    "asarUnpack": [
-      "bin/**/*"
-    ],
     "publish": {
       "provider": "generic",
       "url": "https://maxp.online/download/"
     },
     "win": {
-      "target": ["nsis", "dir"]
+      "target": ["nsis", "dir"],
+      "legalTrademarks": "MaxP Cloud"
     },
     "nsis": {
       "oneClick": true,
       "perMachine": false,
-      "allowElevation": true,
+      "allowElevation": false,
       "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,

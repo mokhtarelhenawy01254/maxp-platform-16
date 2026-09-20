@@ -159,7 +159,8 @@ export interface StorefrontFooterConfig {
     | 'digital-command'
     | 'butcher-atelier'
     | 'legacy-default-old'
-    | 'vela-fashion';
+    | 'vela-fashion'
+    | 'automotive-chassis';
   description?: string;
   copyrightText?: string;
   addressText?: string;
