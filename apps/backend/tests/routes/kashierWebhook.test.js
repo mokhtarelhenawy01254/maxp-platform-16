@@ -148,7 +148,7 @@ describe('Kashier Webhook Route', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           orderId: 'order-uuid-1',
-          note: expect.stringContaining('TX-4643658418'),
+          content: expect.stringContaining('TX-4643658418'),
         }),
       })
     );

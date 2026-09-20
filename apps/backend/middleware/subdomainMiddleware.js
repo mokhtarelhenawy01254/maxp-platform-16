@@ -209,6 +209,7 @@ const extractSubdomainMiddleware = async (req, res, next) => {
     // 2️⃣ إذا لم يتم العثور على الشركة من subdomain، جرب query parameter أو header X-Company-Id
     const fallbackCompanyId =
       req.query.companyId ||
+      req.body?.companyId ||
       req.headers['x-company-id'] ||
       req.headers['X-Company-Id'];
 

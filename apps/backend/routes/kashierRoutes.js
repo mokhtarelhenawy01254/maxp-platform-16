@@ -16,7 +16,7 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
       guestName, guestEmail, guestPhone,
       shippingAddress, items, notes,
       subtotal, shippingCost, total,
-      couponCode,
+      couponCode, cartId, pixelEventId, attribution,
     } = req.body;
 
     if (!guestPhone || !guestName || !shippingAddress) {
@@ -53,14 +53,38 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
     // Generate order number
     const orderNumber = await orderService.generateOrderNumber(companyId);
 
-    // Prepare order items
-    const orderItemsData = (items || []).map((item) => {
+    // Prepare order items safely checking FK existence
+    const orderItemsData = await Promise.all((items || []).map(async (item) => {
       const price = Number(item.price) || 0;
       const quantity = Number(item.quantity) || 1;
       const image = item.image || item.productImage || null;
+
+      let validProductId = null;
+      let validVariantId = null;
+
+      if (item.productId) {
+        const productExists = await prisma.product.findFirst({
+          where: { id: item.productId, companyId },
+          select: { id: true },
+        }).catch(() => null);
+
+        if (productExists) {
+          validProductId = productExists.id;
+          if (item.variantId) {
+            const variantExists = await prisma.productVariant.findFirst({
+              where: { id: item.variantId, productId: productExists.id },
+              select: { id: true },
+            }).catch(() => null);
+            if (variantExists) {
+              validVariantId = variantExists.id;
+            }
+          }
+        }
+      }
+
       return {
-        productId: item.productId || null,
-        variantId: item.variantId || null,
+        productId: validProductId,
+        variantId: validVariantId,
         productName: item.name || 'Product',
         productImage: image,
         price,
@@ -74,15 +98,22 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
           image,
         }),
       };
-    });
+    }));
 
     const orderSubtotal = Number(subtotal) || orderItemsData.reduce((sum, i) => sum + i.price * i.quantity, 0);
     const orderShipping = Number(shippingCost) || 0;
     const orderTotal = Number(total) || (orderSubtotal + orderShipping);
+    const orderDiscount = Math.max(0, Math.round(((orderSubtotal + orderShipping) - orderTotal) * 100) / 100);
 
-    // Create Kashier session
+    // Create Kashier session with store origin redirect
     const baseDomain = process.env.MAIN_DOMAIN || 'maxp.online';
-    const redirectUrl = `https://${baseDomain}/storefront/thank-you?orderNumber=${orderNumber}`;
+    let storeOrigin = req.get('origin') || (req.get('referer') ? (() => { try { return new URL(req.get('referer')).origin; } catch { return null; } })() : null);
+    if (!storeOrigin || (storeOrigin.includes('localhost') && process.env.NODE_ENV === 'production')) {
+      storeOrigin = company.customDomain
+        ? `https://${company.customDomain}`
+        : (company.slug ? `https://${company.slug}.${baseDomain}` : `https://${baseDomain}`);
+    }
+    const redirectUrl = `${storeOrigin}/thank-you?orderId=${encodeURIComponent(orderNumber)}&orderNumber=${encodeURIComponent(orderNumber)}`;
     const webhookUrl = `https://${baseDomain}/api/v1/payment/kashier/webhook`;
 
     const session = await KashierService.createPaymentSession(
@@ -104,7 +135,7 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
       });
     }
 
-    // Create order
+    // Create order with valid schema values
     const order = await prisma.order.create({
       data: {
         orderNumber,
@@ -119,7 +150,7 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
         governorate: shippingAddress?.governorate || '',
         subtotal: orderSubtotal,
         shipping: orderShipping,
-        discount: 0,
+        discount: orderDiscount,
         total: orderTotal,
         currency: 'EGP',
         status: 'PENDING',
@@ -128,11 +159,14 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
         notes: notes || '',
         sourceType: 'storefront',
         extractionMethod: 'storefront',
-        orderSource: 'STOREFRONT',
+        orderSource: 'REGULAR',
         isViewed: false,
         metadata: JSON.stringify({
           kashierSessionId: session.sessionId,
-          kashierMode: process.env.KASHIER_MODE || 'test',
+          kashierMode: session.mode || process.env.KASHIER_MODE || 'live',
+          cartId: cartId || null,
+          pixelEventId: pixelEventId || null,
+          attribution: attribution || null,
           ...(couponCode ? { couponCode } : {}),
         }),
         orderItems: {
@@ -141,12 +175,19 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
       },
     });
 
-    // Decrement stock
-    for (const item of items || []) {
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: { stock: { decrement: Number(item.quantity) || 1 } },
-      }).catch(() => {});
+    // Clean up guestCart if provided
+    if (cartId) {
+      await prisma.guestCart.delete({ where: { cartId } }).catch(() => {});
+    }
+
+    // Decrement stock for valid products
+    for (const item of orderItemsData) {
+      if (item.productId) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: Number(item.quantity) || 1 } },
+        }).catch(() => {});
+      }
       if (item.variantId) {
         await prisma.productVariant.update({
           where: { id: item.variantId },
@@ -480,8 +521,8 @@ router.post('/kashier/webhook', async (req, res) => {
         await prisma.orderNote.create({
           data: {
             orderId: order.id,
-            note: noteText,
-            isInternal: true,
+            content: noteText,
+            authorName: 'Kashier Gateway',
           },
         });
       } catch (noteErr) {

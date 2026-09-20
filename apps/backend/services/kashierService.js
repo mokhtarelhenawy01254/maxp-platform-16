@@ -232,6 +232,7 @@ class KashierService {
         sessionUrl,
         paymentParams: data.paymentParams,
         status: data.status,
+        mode: effectiveMode,
       };
     } catch (error) {
       const errMsg = error.response?.data?.message || error.message;

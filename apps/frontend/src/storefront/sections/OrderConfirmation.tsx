@@ -439,7 +439,7 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
   const trackedPurchaseRef = useRef('');
   const locationState = location.state as { purchaseTracking?: PurchaseTrackingState } | null;
   const submittedPurchaseTracking = locationState?.purchaseTracking || null;
-  const orderQueryParam = searchParams.get('orderId') || '';
+  const orderQueryParam = searchParams.get('orderId') || searchParams.get('orderNumber') || '';
   const isOfferAccepted = searchParams.get('offerAccepted') === '1' || Boolean((location.state as any)?.offerAccepted);
   const storedPurchaseTracking = useMemo<PurchaseTrackingState | null>(
     () => getStoredPurchaseTracking(orderQueryParam) as PurchaseTrackingState | null,
