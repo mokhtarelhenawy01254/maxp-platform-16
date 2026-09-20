@@ -53,7 +53,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke(CHANNELS.UPDATE_SETTINGS, settings),
 
   // Tasks Engine
-  getTasks: (type?: 'my-tasks' | 'assigned-by-me') =>
+  getTasks: (type?: 'my-tasks' | 'assigned-by-me' | 'all') =>
     ipcRenderer.invoke('tasks:get', type),
   getCompanyUsers: () =>
     ipcRenderer.invoke('tasks:get-users'),

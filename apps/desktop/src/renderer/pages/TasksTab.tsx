@@ -30,7 +30,7 @@ interface ActiveTaskState {
 export const TasksTab: React.FC = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'my-tasks' | 'assigned-by-me'>('my-tasks');
+  const [activeView, setActiveView] = useState<'my-tasks' | 'assigned-by-me' | 'all'>('my-tasks');
   const [statusFilter, setStatusFilter] = useState<'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'>('IN_PROGRESS');
   const [users, setUsers] = useState<any[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -549,7 +549,7 @@ export const TasksTab: React.FC = () => {
         </div>
       )}
 
-      {/* Main View Switcher (Assigned to Me vs Assigned by Me) */}
+      {/* Main View Switcher (Assigned to Me vs Assigned by Me vs All Team Tasks) */}
       <div style={styles.viewRow}>
         <div style={styles.segmented}>
           <button
@@ -576,6 +576,19 @@ export const TasksTab: React.FC = () => {
           >
             <Users size={12} />
             <span>مهام أنشأتها للزملاء</span>
+          </button>
+          <button
+            onClick={() => setActiveView('all')}
+            style={{
+              ...styles.segBtn,
+              backgroundColor: activeView === 'all' ? 'var(--bg-elevated)' : 'transparent',
+              color: activeView === 'all' ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: activeView === 'all' ? 600 : 400,
+              boxShadow: activeView === 'all' ? 'var(--shadow-card)' : 'none',
+            }}
+          >
+            <Layers size={12} />
+            <span>كل مهام الفريق</span>
           </button>
         </div>
 
@@ -606,7 +619,29 @@ export const TasksTab: React.FC = () => {
           <div style={styles.emptyState}>جاري جلب المهام من السيرفر السحابي…</div>
         ) : filteredTasks.length === 0 ? (
           <div style={styles.emptyState}>
-            لا توجد مهام في هذا التصنيف حالياً. يمكنك إضافة مهمة جديدة لأحد زملائك في العمل بالضغط على "تكليف مهمة جديدة".
+            <div>لا توجد مهام في هذا التصنيف حالياً.</div>
+            {activeView === 'my-tasks' && (
+              <button
+                onClick={() => setActiveView('all')}
+                style={{
+                  marginTop: 10,
+                  padding: '6px 14px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-elevated)',
+                  color: '#38bdf8',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Layers size={13} />
+                <span>عرض جميع مهام الفريق والشركة</span>
+              </button>
+            )}
           </div>
         ) : (
           filteredTasks.map((t) => (

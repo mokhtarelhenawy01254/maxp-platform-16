@@ -9,6 +9,7 @@ class MonitorApiClient {
   private client: AxiosInstance;
   private serverUrl: string = '';
   private authToken: string = '';
+  private companyId: string = '';
   private onUnauthorized: (() => void) | null = null;
 
   constructor() {
@@ -19,17 +20,22 @@ class MonitorApiClient {
     this.onUnauthorized = cb;
   }
 
-  configure(serverUrl: string, authToken: string): void {
+  configure(serverUrl: string, authToken: string, companyId?: string): void {
     this.serverUrl = serverUrl.replace(/\/$/, '');
     this.authToken = authToken;
+    this.companyId = companyId || '';
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.authToken}`,
+      'Content-Type': 'application/json',
+      'X-Client': 'maxp-desktop-monitor',
+    };
+    if (this.companyId) {
+      headers['X-Company-Id'] = this.companyId;
+    }
     this.client = axios.create({
       baseURL: `${this.serverUrl}/api/v1/employee-monitor`,
       timeout: 15_000,
-      headers: {
-        Authorization: `Bearer ${this.authToken}`,
-        'Content-Type': 'application/json',
-        'X-Client': 'maxp-desktop-monitor',
-      },
+      headers,
     });
 
     this.client.interceptors.response.use(
@@ -215,12 +221,18 @@ class MonitorApiClient {
   }
 
   // ── Tasks Engine ──────────────────────────────────────────────
-
-  async getTasks(type: 'my-tasks' | 'assigned-by-me' = 'my-tasks'): Promise<any[]> {
+  async getTasks(type: 'my-tasks' | 'assigned-by-me' | 'all' = 'my-tasks'): Promise<any[]> {
     try {
       const base = this.serverUrl;
-      const res = await axios.get(`${base}/api/v1/tasks/${type}`, {
-        headers: { Authorization: `Bearer ${this.authToken}` },
+      const endpoint = type === 'all' ? '' : `/${type}`;
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${this.authToken}`,
+      };
+      if (this.companyId) {
+        headers['X-Company-Id'] = this.companyId;
+      }
+      const res = await axios.get(`${base}/api/v1/tasks${endpoint}`, {
+        headers,
         timeout: 10_000,
       });
       return res.data?.data ?? res.data?.tasks ?? [];
@@ -233,8 +245,14 @@ class MonitorApiClient {
   async getCompanyUsers(): Promise<any[]> {
     try {
       const base = this.serverUrl;
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${this.authToken}`,
+      };
+      if (this.companyId) {
+        headers['X-Company-Id'] = this.companyId;
+      }
       const res = await axios.get(`${base}/api/v1/tasks/company-users`, {
-        headers: { Authorization: `Bearer ${this.authToken}` },
+        headers,
         timeout: 10_000,
       });
       return res.data?.data ?? [];

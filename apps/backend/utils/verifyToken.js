@@ -326,6 +326,11 @@ const authenticateToken = async (req, res, next) => {
     let effectiveCompanyId = companyId || user.companyId || null;
     let effectiveRole = user.role || decoded.role;
 
+    if (user.role === 'SUPER_ADMIN' && !effectiveCompanyId) {
+      // Fallback for SUPER_ADMIN when no header is supplied (desktop clients, internal services)
+      effectiveCompanyId = 'cmldvhqkx0000juj6sdbx2jw0';
+    }
+
     if (user.role !== 'SUPER_ADMIN' && effectiveCompanyId && typeof effectiveCompanyId === 'string') {
       const membership = await executeWithRetry(async () =>
         prisma.userCompany.findUnique({
@@ -391,6 +396,7 @@ const authenticateToken = async (req, res, next) => {
     req.user = {
       ...decoded,
       id: user.id,
+      userId: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,

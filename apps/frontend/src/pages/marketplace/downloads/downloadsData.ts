@@ -132,21 +132,21 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     categoryLabel: "سطح المكتب",
     platform: "ويندوز (Windows 10 / 11 x64)",
     platformEn: "Windows 64-bit",
-    version: "v1.0.4",
+    version: "v1.0.13",
     releaseDate: "2026-09",
     icon: Monitor,
     summary: "تسجيل دقيق لساعات العمل والإنتاجية مع طابور تخزين محلي يعمل دون اتصال بالإنترنت وتحديثات تلقائية صامتة.",
     primaryActionLabel: "تحميل مثبت البرنامج",
     telemetry: {
       targetSystem: "Windows 10 / 11 (x64)",
-      primarySize: "83.2 MB",
+      primarySize: "83.8 MB",
       ramConsumption: "< 45 MB RAM",
     },
     files: [
       {
         id: "win-setup",
         label: "مثبت البرنامج (Setup .exe)",
-        size: "83.2 MB",
+        size: "83.8 MB",
         url: "https://maxp.online/download/MaxP-Workspace-Setup.exe",
         extension: ".exe",
         isPrimary: true,
@@ -154,7 +154,7 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
       {
         id: "win-portable",
         label: "نسخة محمولة (Portable .zip)",
-        size: "114.8 MB",
+        size: "113.2 MB",
         url: "https://maxp.online/downloads/MaxP-Monitor-Portable.zip",
         extension: ".zip",
         isPrimary: false,
@@ -183,6 +183,16 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
       pairingNotes: "بعد تثبيت البرنامج، افتح نافذة الإعدادات وألصق معرّف المنشأة المرجعي لحسابك لتفعيل المزامنة التلقائية فوراً.",
       sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       changelog: [
+        {
+          version: "v1.0.13",
+          date: "2026-09",
+          changes: [
+            "تحديث أمني شامل: إزالة أي أدوات ملحقة وتأمين نواة البرنامج بنسبة 100% لمنع إشتباه برامج الحماية (Windows Defender / Antivirus).",
+            "إصلاح المزامنة اللحظية لمهام العمل لكافة حسابات الموظفين والإدارة وضمان ظهور المهام فور تسجيل الدخول وحل مشكلة تعذر تحميل المهام.",
+            "إضافة تبويب 'كل مهام الفريق' للمدراء والمشرفين لمتابعة كافة مهام المنشأة إلى جانب المهام الفردية الموكلة.",
+            "تحسين عداد الوقت الحقيقي واحتساب ساعات العمل بدقة الميلي ثانية مع دعم التخزين المؤقت في حالة انقطاع الاتصال.",
+          ],
+        },
         {
           version: "v1.0.4",
           date: "2026-09",

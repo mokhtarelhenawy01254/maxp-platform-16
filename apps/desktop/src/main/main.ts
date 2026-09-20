@@ -159,7 +159,8 @@ app.whenReady().then(async () => {
   const savedToken = loadAuthToken();
   const savedServer = store.get('serverUrl') as string | undefined;
   if (savedToken && savedServer) {
-    apiClient.configure(savedServer, savedToken);
+    const savedUser = store.get('user', null) as any;
+    apiClient.configure(savedServer, savedToken, savedUser?.companyId);
     apiClient.setOnUnauthorized(() => {
       console.warn('[Main] Auth token expired / invalid — forcing clean logout');
       logout();
@@ -765,7 +766,7 @@ function registerIpcHandlers(): void {
       saveAuthToken(token);
       store.set('serverUrl', serverUrl);
       store.set('user', user);
-      apiClient.configure(serverUrl, token);
+      apiClient.configure(serverUrl, token, user?.companyId);
       apiClient.setOnUnauthorized(() => {
         console.warn('[Main] Auth token expired / invalid — forcing clean logout');
         logout();
@@ -796,7 +797,7 @@ function registerIpcHandlers(): void {
   });
 
   // ── Tasks Engine Handlers ──
-  ipcMain.handle('tasks:get', async (_, type?: 'my-tasks' | 'assigned-by-me') => {
+  ipcMain.handle('tasks:get', async (_, type?: 'my-tasks' | 'assigned-by-me' | 'all') => {
     try {
       const tasks = await apiClient.getTasks(type || 'my-tasks');
       return { success: true, tasks };

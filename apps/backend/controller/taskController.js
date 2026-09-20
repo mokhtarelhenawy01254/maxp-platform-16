@@ -616,8 +616,39 @@ async function validateGoalLink(companyId, goalId) {
   });
 }
 
+async function resolveCompanyContext(req) {
+  let companyId =
+    req.user?.companyId ||
+    req.headers?.["x-company-id"] ||
+    req.headers?.["X-Company-Id"] ||
+    req.query?.companyId;
+
+  if (!companyId && req.user?.role === "SUPER_ADMIN") {
+    try {
+      const prisma = getSharedPrismaClient();
+      const userComp = await prisma.userCompany.findFirst({
+        where: { userId: req.user?.userId || req.user?.id, isActive: true },
+        select: { companyId: true },
+      });
+      if (userComp?.companyId) {
+        companyId = userComp.companyId;
+      } else {
+        const h2m = await prisma.company.findFirst({
+          where: { id: "cmldvhqkx0000juj6sdbx2jw0" },
+          select: { id: true },
+        });
+        companyId = h2m
+          ? h2m.id
+          : (await prisma.company.findFirst({ select: { id: true } }))?.id;
+      }
+    } catch (e) {
+      console.warn("[taskController] resolveCompanyContext fallback error:", e?.message);
+    }
+  }
+  return companyId;
+}
+
 const taskController = {
-  // Get all tasks with filtering
   // Get all tasks with filtering
   getAllTasks: async (req, res) => {
     try {
@@ -635,7 +666,7 @@ const taskController = {
       const parsedPage = Math.max(1, parseInt(page));
       const parsedLimit = Math.max(1, parseInt(limit));
       const skip = (parsedPage - 1) * parsedLimit;
-      const companyId = req.user.companyId;
+      const companyId = await resolveCompanyContext(req);
 
       if (!companyId) {
         return res.status(403).json({
@@ -751,8 +782,8 @@ const taskController = {
         watchers = [],
       } = req.body;
 
-      const companyId = req.user?.companyId;
-      const createdBy = req.user?.userId;
+      const companyId = await resolveCompanyContext(req);
+      const createdBy = req.user?.userId || req.user?.id;
 
       if (!companyId) {
         return res.status(403).json({
@@ -987,7 +1018,7 @@ const taskController = {
   getTaskById: async (req, res) => {
     try {
       const { id } = req.params;
-      const companyId = req.user.companyId;
+      const companyId = await resolveCompanyContext(req);
 
       if (await shouldUseLegacyTaskQueries()) {
         const task = await fetchLegacyTaskById(companyId, id);
@@ -1057,7 +1088,7 @@ const taskController = {
         metricTargetValue,
         metricCurrentValue,
       } = req.body;
-      const companyId = req.user.companyId;
+      const companyId = await resolveCompanyContext(req);
 
       // Fetch the existing task to check if assignedTo changes
       const existingTask = await getSharedPrismaClient().task.findFirst({
@@ -1295,7 +1326,7 @@ const taskController = {
     try {
       const { id } = req.params;
       const { status, progress } = req.body;
-      const companyId = req.user.companyId;
+      const companyId = await resolveCompanyContext(req);
 
       const userRole = String(req.user?.role || "").toUpperCase();
       const isManagerOrAdmin = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"].includes(userRole);
@@ -1672,7 +1703,7 @@ const taskController = {
   deleteTask: async (req, res) => {
     try {
       const { id } = req.params;
-      const companyId = req.user.companyId;
+      const companyId = await resolveCompanyContext(req);
 
       const existingTask = await getSharedPrismaClient().task.findFirst({
         where: { id, companyId },
@@ -1689,7 +1720,7 @@ const taskController = {
         existingTask,
         {
           companyId,
-          actorUserId: req.user.userId,
+          actorUserId: req.user?.userId || req.user?.id,
           includeAssignee: true,
           includeCreator: true,
           includeWatchers: true,
@@ -1764,8 +1795,8 @@ const taskController = {
       const parsedPage = Math.max(1, parseInt(page));
       const parsedLimit = Math.max(1, parseInt(limit));
       const skip = (parsedPage - 1) * parsedLimit;
-      const companyId = req.user.companyId;
-      const userId = req.user.userId;
+      const companyId = await resolveCompanyContext(req);
+      const userId = req.user?.userId || req.user?.id;
 
       if (!companyId) {
         return res.status(403).json({
@@ -1800,14 +1831,20 @@ const taskController = {
         });
       }
 
-      // Build filter conditions
+      // Build filter conditions — include tasks assigned to user OR where user is a watcher
       const where = {
         companyId,
-        assignedTo: userId,
         ...(projectId && { projectId }),
         ...(status && { status }),
         ...(priority && { priority }),
       };
+
+      if (userId) {
+        where.OR = [
+          { assignedTo: userId },
+          { taskWatchers: { some: { userId } } },
+        ];
+      }
 
       // Get tasks with project and user information
       const [tasks, totalTasks] = await Promise.all([
@@ -1863,8 +1900,8 @@ const taskController = {
       const parsedPage = Math.max(1, parseInt(page));
       const parsedLimit = Math.max(1, parseInt(limit));
       const skip = (parsedPage - 1) * parsedLimit;
-      const companyId = req.user.companyId;
-      const userId = req.user.userId;
+      const companyId = await resolveCompanyContext(req);
+      const userId = req.user?.userId || req.user?.id;
 
       if (!companyId) {
         return res.status(403).json({
@@ -1927,7 +1964,6 @@ const taskController = {
       // Format response
       const formattedTasks = tasks.map(formatTaskSummary);
 
-
       res.json({
         success: true,
         data: formattedTasks,
@@ -1950,7 +1986,7 @@ const taskController = {
   // Get company users (for task assignment)
   getCompanyUsers: async (req, res) => {
     try {
-      const companyId = req.user.companyId;
+      const companyId = await resolveCompanyContext(req);
 
       if (!companyId) {
         return res.status(403).json({
@@ -2006,8 +2042,8 @@ const taskController = {
   // Get dashboard statistics
   getDashboardStats: async (req, res) => {
     try {
-      const companyId = req.user.companyId;
-      const userId = req.user.userId;
+      const companyId = await resolveCompanyContext(req);
+      const userId = req.user?.userId || req.user?.id;
       const prisma = getSharedPrismaClient();
 
       if (!companyId) {
@@ -2876,7 +2912,7 @@ const taskController = {
 
   getRunningTimer: async (req, res) => {
     try {
-      const companyId = req.user.companyId;
+      const companyId = await resolveCompanyContext(req);
       const userId = req.user.userId || req.user.id;
 
       const runningEntry = await getSharedPrismaClient().timeEntry.findFirst({
