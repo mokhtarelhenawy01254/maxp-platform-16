@@ -66,7 +66,7 @@ const STOREFRONT_THEME_PRESET_MODULE_PATTERN = /\/src\/storefront\/themes\//;
 const STOREFRONT_THEME_DEFAULTS_MODULE_PATTERN =
   /\/src\/storefront\/engine\/themeDefaults\.ts$/;
 const STOREFRONT_RUNTIME_THEME_MODULE_PATTERN =
-  /\/src\/storefront\/themes\/(?:modern-minimal|khemet-luxe-eg|khemet-luxe-v2|khemet-fashion-eg)\.json(?:\?url)?$/;
+  /\/src\/storefront\/themes\/[^/]+\.json(?:\?url)?$/;
 const APP_UI_PRIMITIVES_MODULE_PATTERN =
   /\/src\/(?:components\/ui\/|components\/theme-provider\.tsx?$|hooks\/useTheme\.tsx?$|lib\/utils\.ts$)/;
 

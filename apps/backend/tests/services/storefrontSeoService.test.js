@@ -338,6 +338,7 @@ describe("storefrontSeoService", () => {
 
     expect(updated).toContain('<link rel="preconnect" href="https://cdn.images.net" crossorigin />');
     expect(updated).toContain('<link rel="dns-prefetch" href="https://cdn.images.net" />');
+    expect(updated).toContain('<link rel="preload" href="/api/v1/public/storefront/settings" as="fetch" crossorigin="use-credentials" />');
   });
 
   test("injects dynamic html lang and dir matching theme direction (LTR/RTL)", () => {

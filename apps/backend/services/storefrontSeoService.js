@@ -889,7 +889,7 @@ const injectStorefrontSeoTags = (html, metadata) => {
   nextHtml = upsertTag(
     nextHtml,
     /<link[^>]+rel=["']preload["'][^>]+as=["']fetch["'][^>]*>/i,
-    `<link rel="preload" href="/api/v1/public/storefront/settings" as="fetch" crossorigin="anonymous" />`,
+    `<link rel="preload" href="/api/v1/public/storefront/settings" as="fetch" crossorigin="use-credentials" />`,
   );
 
   // Verification tags

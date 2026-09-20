@@ -19,8 +19,124 @@ const DEFAULT_ACCOUNTS = [
   { name: "محفظة إلكترونية / InstaPay", type: "WALLET", isDefault: false, description: "المدفوعات الإلكترونية السريعة" },
 ];
 
+let tablesEnsured = false;
+
+// DDL Statements executed individually for multi-statement driver safety
+const DDL_STATEMENTS = [
+  `CREATE TABLE IF NOT EXISTS "treasury_accounts" (
+    "id" TEXT PRIMARY KEY,
+    "companyId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "type" TEXT NOT NULL DEFAULT 'CASH',
+    "balance" DECIMAL(12, 2) NOT NULL DEFAULT 0.0,
+    "currency" TEXT NOT NULL DEFAULT 'EGP',
+    "accountNumber" TEXT,
+    "bankName" TEXT,
+    "holderName" TEXT,
+    "description" TEXT,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE TABLE IF NOT EXISTS "capital_transactions" (
+    "id" TEXT PRIMARY KEY,
+    "companyId" TEXT NOT NULL,
+    "treasuryAccountId" TEXT NOT NULL,
+    "amount" DECIMAL(12, 2) NOT NULL,
+    "type" TEXT NOT NULL DEFAULT 'CAPITAL_INJECTION',
+    "investorName" TEXT,
+    "referenceNumber" TEXT,
+    "notes" TEXT,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE TABLE IF NOT EXISTS "expense_categories" (
+    "id" TEXT PRIMARY KEY,
+    "companyId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "nameEn" TEXT,
+    "type" TEXT NOT NULL DEFAULT 'OPEX',
+    "color" TEXT DEFAULT '#3b82f6',
+    "icon" TEXT DEFAULT 'Tag',
+    "isSystem" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE TABLE IF NOT EXISTS "company_expenses" (
+    "id" TEXT PRIMARY KEY,
+    "companyId" TEXT NOT NULL,
+    "expenseNumber" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "amount" DECIMAL(12, 2) NOT NULL,
+    "categoryId" TEXT,
+    "treasuryAccountId" TEXT NOT NULL,
+    "type" TEXT NOT NULL DEFAULT 'OPEX',
+    "beneficiary" TEXT,
+    "invoiceNumber" TEXT,
+    "receiptUrl" TEXT,
+    "paymentDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "isRecurring" BOOLEAN NOT NULL DEFAULT false,
+    "recurringInterval" TEXT,
+    "nextDueDate" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'PAID',
+    "notes" TEXT,
+    "createdById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE TABLE IF NOT EXISTS "treasury_transactions" (
+    "id" TEXT PRIMARY KEY,
+    "companyId" TEXT NOT NULL,
+    "treasuryAccountId" TEXT NOT NULL,
+    "amount" DECIMAL(12, 2) NOT NULL,
+    "type" TEXT NOT NULL,
+    "runningBalance" DECIMAL(12, 2) NOT NULL,
+    "referenceType" TEXT,
+    "referenceId" TEXT,
+    "description" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE INDEX IF NOT EXISTS "treasury_accounts_companyId_idx" ON "treasury_accounts"("companyId")`,
+  `CREATE INDEX IF NOT EXISTS "treasury_accounts_type_idx" ON "treasury_accounts"("type")`,
+  `CREATE INDEX IF NOT EXISTS "treasury_accounts_isActive_idx" ON "treasury_accounts"("isActive")`,
+  `CREATE INDEX IF NOT EXISTS "capital_transactions_companyId_idx" ON "capital_transactions"("companyId")`,
+  `CREATE INDEX IF NOT EXISTS "capital_transactions_treasuryAccountId_idx" ON "capital_transactions"("treasuryAccountId")`,
+  `CREATE INDEX IF NOT EXISTS "capital_transactions_date_idx" ON "capital_transactions"("date")`,
+  `CREATE INDEX IF NOT EXISTS "expense_categories_companyId_idx" ON "expense_categories"("companyId")`,
+  `CREATE INDEX IF NOT EXISTS "company_expenses_companyId_idx" ON "company_expenses"("companyId")`,
+  `CREATE INDEX IF NOT EXISTS "company_expenses_treasuryAccountId_idx" ON "company_expenses"("treasuryAccountId")`,
+  `CREATE INDEX IF NOT EXISTS "company_expenses_categoryId_idx" ON "company_expenses"("categoryId")`,
+  `CREATE INDEX IF NOT EXISTS "company_expenses_paymentDate_idx" ON "company_expenses"("paymentDate")`,
+  `CREATE INDEX IF NOT EXISTS "company_expenses_type_idx" ON "company_expenses"("type")`,
+  `CREATE INDEX IF NOT EXISTS "treasury_transactions_companyId_idx" ON "treasury_transactions"("companyId")`,
+  `CREATE INDEX IF NOT EXISTS "treasury_transactions_treasuryAccountId_idx" ON "treasury_transactions"("treasuryAccountId")`,
+  `CREATE INDEX IF NOT EXISTS "treasury_transactions_date_idx" ON "treasury_transactions"("date")`
+];
+
+// Helper: Self-healing DDL bootstrap for treasury & expenses tables
+async function ensureTablesExist(prisma) {
+  if (tablesEnsured) return;
+  try {
+    for (const stmt of DDL_STATEMENTS) {
+      await prisma.$executeRawUnsafe(stmt).catch((err) => {
+        console.warn('[treasury] DDL stmt warning:', err.message);
+      });
+    }
+    tablesEnsured = true;
+  } catch (err) {
+    console.warn('[treasury] ensureTablesExist notice:', err.message);
+  }
+}
+
 // Helper: Ensure default accounts and categories exist for tenant
 async function ensureDefaults(prisma, companyId) {
+  await ensureTablesExist(prisma);
+
   const accountCount = await prisma.treasuryAccount.count({ where: { companyId } });
   if (accountCount === 0) {
     for (const acc of DEFAULT_ACCOUNTS) {
@@ -172,6 +288,42 @@ exports.createAccount = async (req, res) => {
   } catch (error) {
     console.error('[treasury] createAccount error:', error);
     return res.status(500).json({ success: false, message: 'فشل إنشاء الحساب/الخزينة' });
+  }
+};
+
+exports.updateAccount = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { id } = req.params;
+    const { name, accountNumber, bankName, holderName, description, isActive, isDefault } = req.body;
+
+    const prisma = getSharedPrismaClient();
+
+    const existing = await prisma.treasuryAccount.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'الخزينة أو الحساب غير موجود' });
+    }
+
+    const updated = await prisma.treasuryAccount.update({
+      where: { id },
+      data: {
+        name: name !== undefined && name.trim() ? name.trim() : existing.name,
+        accountNumber: accountNumber !== undefined ? (accountNumber ? accountNumber.trim() : null) : existing.accountNumber,
+        bankName: bankName !== undefined ? (bankName ? bankName.trim() : null) : existing.bankName,
+        holderName: holderName !== undefined ? (holderName ? holderName.trim() : null) : existing.holderName,
+        description: description !== undefined ? (description ? description.trim() : null) : existing.description,
+        isActive: isActive !== undefined ? Boolean(isActive) : existing.isActive,
+        isDefault: isDefault !== undefined ? Boolean(isDefault) : existing.isDefault,
+      }
+    });
+
+    return res.json({ success: true, message: 'تم تحديث بيانات الحساب بنجاح', data: updated });
+  } catch (error) {
+    console.error('[treasury] updateAccount error:', error);
+    return res.status(500).json({ success: false, message: 'فشل تحديث بيانات الحساب' });
   }
 };
 
@@ -496,6 +648,7 @@ exports.getExpenses = async (req, res) => {
     } = req.query;
 
     const prisma = getSharedPrismaClient();
+    await ensureDefaults(prisma, companyId);
     const where = { companyId };
 
     if (search && search.trim()) {
@@ -602,13 +755,15 @@ exports.createExpense = async (req, res) => {
         throw new Error('الخزينة المختارة غير موجودة أو غير نشطة');
       }
 
-      if (Number(account.balance) < expenseAmount) {
+      const isPaid = (status || 'PAID') === 'PAID';
+
+      if (isPaid && Number(account.balance) < expenseAmount) {
         throw new Error(`رصيد الخزينة المحددة (${account.name}) غير كافٍ لإتمام الصرف. الرصيد المتاح: ${Number(account.balance).toLocaleString()} ${account.currency}`);
       }
 
       // 2. Generate expense number
       const expenseNumber = await generateExpenseNumber(tx, companyId);
-      const newBalance = Number(account.balance) - expenseAmount;
+      const newBalance = isPaid ? Number(account.balance) - expenseAmount : Number(account.balance);
       const txDate = paymentDate ? new Date(paymentDate) : new Date();
 
       // Determine OPEX vs CAPEX
@@ -635,7 +790,7 @@ exports.createExpense = async (req, res) => {
           isRecurring: Boolean(isRecurring),
           recurringInterval: isRecurring ? (recurringInterval || 'MONTHLY') : null,
           nextDueDate: isRecurring && nextDueDate ? new Date(nextDueDate) : null,
-          status: 'PAID',
+          status: isPaid ? 'PAID' : 'PENDING',
           notes: notes ? notes.trim() : null,
           createdById: userId,
         },
@@ -645,27 +800,29 @@ exports.createExpense = async (req, res) => {
         }
       });
 
-      // 4. Deduct from Treasury Account
-      await tx.treasuryAccount.update({
-        where: { id: treasuryAccountId },
-        data: { balance: newBalance }
-      });
+      if (isPaid) {
+        // 4. Deduct from Treasury Account
+        await tx.treasuryAccount.update({
+          where: { id: treasuryAccountId },
+          data: { balance: newBalance }
+        });
 
-      // 5. Create Treasury Transaction running ledger
-      await tx.treasuryTransaction.create({
-        data: {
-          companyId,
-          treasuryAccountId,
-          amount: -expenseAmount,
-          type: 'EXPENSE',
-          runningBalance: newBalance,
-          referenceType: 'EXPENSE',
-          referenceId: expense.id,
-          description: `صرف نفقة [${expenseNumber}]: ${title.trim()} (${beneficiary ? 'المستفيد: ' + beneficiary : 'نقداً'})`,
-          date: txDate,
-          createdById: userId,
-        }
-      });
+        // 5. Create Treasury Transaction running ledger
+        await tx.treasuryTransaction.create({
+          data: {
+            companyId,
+            treasuryAccountId,
+            amount: -expenseAmount,
+            type: 'EXPENSE',
+            runningBalance: newBalance,
+            referenceType: 'EXPENSE',
+            referenceId: expense.id,
+            description: `صرف نفقة [${expenseNumber}]: ${title.trim()} (${beneficiary ? 'المستفيد: ' + beneficiary : 'نقداً'})`,
+            date: txDate,
+            createdById: userId,
+          }
+        });
+      }
 
       return {
         expense,
@@ -673,10 +830,136 @@ exports.createExpense = async (req, res) => {
       };
     });
 
-    return res.status(201).json({ success: true, message: 'تم تسجيل النفقة وخصمها من الخزينة بنجاح', data: result });
+    return res.status(201).json({ success: true, message: 'تم تسجيل النفقة بنجاح', data: result });
   } catch (error) {
     console.error('[treasury] createExpense error:', error);
     return res.status(400).json({ success: false, message: error.message || 'فشل تسجيل النفقة' });
+  }
+};
+
+exports.updateExpense = async (req, res) => {
+  try {
+    const { companyId, id: userId } = req.user;
+    const { id } = req.params;
+    const {
+      title,
+      amount,
+      categoryId,
+      treasuryAccountId,
+      type,
+      beneficiary,
+      invoiceNumber,
+      receiptUrl,
+      paymentDate,
+      isRecurring,
+      recurringInterval,
+      nextDueDate,
+      notes,
+      status
+    } = req.body;
+
+    const prisma = getSharedPrismaClient();
+
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.companyExpense.findFirst({
+        where: { id, companyId },
+        include: { treasuryAccount: true }
+      });
+
+      if (!existing) {
+        throw new Error('النفقة غير موجودة');
+      }
+
+      const targetAmount = amount !== undefined ? parseFloat(amount) : Number(existing.amount);
+      if (isNaN(targetAmount) || targetAmount <= 0) {
+        throw new Error('مبلغ النفقة غير صالح');
+      }
+
+      const targetAccountId = treasuryAccountId || existing.treasuryAccountId;
+      const targetStatus = status || existing.status;
+      const prevAmount = Number(existing.amount);
+      const prevStatus = existing.status;
+      const prevAccountId = existing.treasuryAccountId;
+
+      // Reverse previous paid deduction if needed
+      if (prevStatus === 'PAID') {
+        const prevAcc = await tx.treasuryAccount.findFirst({
+          where: { id: prevAccountId, companyId }
+        });
+        if (prevAcc) {
+          await tx.treasuryAccount.update({
+            where: { id: prevAccountId },
+            data: { balance: Number(prevAcc.balance) + prevAmount }
+          });
+        }
+      }
+
+      // If new status is PAID, deduct from target account
+      if (targetStatus === 'PAID') {
+        const targetAcc = await tx.treasuryAccount.findFirst({
+          where: { id: targetAccountId, companyId, isActive: true }
+        });
+        if (!targetAcc) {
+          throw new Error('الخزينة المحددة غير موجودة أو غير نشطة');
+        }
+        const availableBalance = Number(targetAcc.balance);
+        if (availableBalance < targetAmount) {
+          throw new Error(`رصيد الخزينة (${targetAcc.name}) غير كافٍ. المتاح: ${availableBalance.toLocaleString()} ${targetAcc.currency}`);
+        }
+        const updatedTargetBalance = availableBalance - targetAmount;
+        await tx.treasuryAccount.update({
+          where: { id: targetAccountId },
+          data: { balance: updatedTargetBalance }
+        });
+
+        // Record adjustment in ledger
+        await tx.treasuryTransaction.create({
+          data: {
+            companyId,
+            treasuryAccountId: targetAccountId,
+            amount: -targetAmount,
+            type: 'EXPENSE',
+            runningBalance: updatedTargetBalance,
+            referenceType: 'EXPENSE',
+            referenceId: existing.id,
+            description: `تعديل نفقة [${existing.expenseNumber}]: ${(title || existing.title).trim()}`,
+            date: paymentDate ? new Date(paymentDate) : existing.paymentDate,
+            createdById: userId,
+          }
+        });
+      }
+
+      const updated = await tx.companyExpense.update({
+        where: { id },
+        data: {
+          title: title !== undefined ? title.trim() : existing.title,
+          amount: targetAmount,
+          categoryId: categoryId !== undefined ? (categoryId || null) : existing.categoryId,
+          treasuryAccountId: targetAccountId,
+          type: type || existing.type,
+          beneficiary: beneficiary !== undefined ? (beneficiary ? beneficiary.trim() : null) : existing.beneficiary,
+          invoiceNumber: invoiceNumber !== undefined ? (invoiceNumber ? invoiceNumber.trim() : null) : existing.invoiceNumber,
+          receiptUrl: receiptUrl !== undefined ? (receiptUrl || null) : existing.receiptUrl,
+          paymentDate: paymentDate ? new Date(paymentDate) : existing.paymentDate,
+          isRecurring: isRecurring !== undefined ? Boolean(isRecurring) : existing.isRecurring,
+          recurringInterval: isRecurring ? (recurringInterval || existing.recurringInterval || 'MONTHLY') : null,
+          nextDueDate: isRecurring && nextDueDate ? new Date(nextDueDate) : existing.nextDueDate,
+          status: targetStatus,
+          notes: notes !== undefined ? (notes ? notes.trim() : null) : existing.notes,
+        },
+        include: {
+          category: true,
+          treasuryAccount: { select: { id: true, name: true, type: true, currency: true } }
+        }
+      });
+
+      return updated;
+    });
+
+    return res.json({ success: true, message: 'تم تحديث النفقة بنجاح', data: result });
+  } catch (error) {
+    console.error('[treasury] updateExpense error:', error);
+    return res.status(400).json({ success: false, message: error.message || 'فشل تحديث النفقة' });
   }
 };
 
@@ -834,6 +1117,7 @@ exports.getLedger = async (req, res) => {
     const { treasuryAccountId, type, startDate, endDate, page = 1, limit = 50 } = req.query;
 
     const prisma = getSharedPrismaClient();
+    await ensureDefaults(prisma, companyId);
     const where = { companyId };
 
     if (treasuryAccountId) where.treasuryAccountId = treasuryAccountId;

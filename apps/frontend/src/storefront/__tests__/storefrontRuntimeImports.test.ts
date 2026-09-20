@@ -88,7 +88,7 @@ describe("storefront runtime imports", () => {
     const viteConfigSource = readSource("vite.config.ts");
 
     expect(indexHtml).not.toContain("Inter:wght@400;500;600;700");
-    expect(indexHtml).not.toContain("IBM+Plex+Sans+Arabic:wght@400;500;600;700");
+    expect(indexHtml).not.toContain("Cinzel:wght@400;700");
     expect(mainSource).toContain("ADMIN_CRITICAL_GOOGLE_FONTS_ID");
     expect(themeProviderSource).toContain("STOREFRONT_THEME_FONT_WEIGHTS = '400;600;700;900'");
     expect(themeProviderSource).toContain("STOREFRONT_THEME_FONT_DISPLAY = 'swap'");

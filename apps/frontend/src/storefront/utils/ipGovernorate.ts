@@ -202,15 +202,25 @@ const fetchBackendGeo = async (): Promise<GeoPayload | null> => {
   }
 };
 
+let ipwhoCooldownUntil = 0;
+
 const fetchGeo = async (): Promise<GeoPayload | null> => {
+  if (Date.now() < ipwhoCooldownUntil) {
+    return null;
+  }
+
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 4000);
+  const timeout = setTimeout(() => controller.abort(), 3000);
 
   try {
     const response = await fetch(GEO_API_URL, {
       signal: controller.signal,
       headers: { Accept: "application/json" },
     });
+    if (response.status === 429) {
+      ipwhoCooldownUntil = Date.now() + 10 * 60 * 1000; // 10m cooldown
+      return null;
+    }
     if (!response.ok) return null;
     const data = (await response.json()) as GeoPayload;
     if (data.success === false) return null;

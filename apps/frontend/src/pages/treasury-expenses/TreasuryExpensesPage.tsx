@@ -118,6 +118,7 @@ export default function TreasuryExpensesPage() {
                 accounts={accounts}
                 categories={categories}
                 onAccountsUpdated={loadInitialData}
+                onCategoriesUpdated={loadInitialData}
               />
             </TabErrorBoundary>
           )}

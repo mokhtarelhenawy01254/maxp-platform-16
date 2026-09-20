@@ -32,6 +32,7 @@ import {
 } from "./utils/productImages";
 import { getStorefrontScope } from "../utils/storefrontApi";
 import { useIpGovernorateDetection } from "./hooks/useIpGovernorateDetection";
+import { preloadRuntimeStorefrontTheme } from "./engine/runtimeThemeResolver";
 import { Toaster } from "sonner";
 
 
@@ -267,11 +268,21 @@ export const prefetchStorefrontBootstrapData = async (): Promise<void> => {
     : null;
 
   // Run settings prefetch and product prefetch concurrently
-  const settingsPromise = queryClient.prefetchQuery({
-    queryKey: initialSettingsQueryKey,
-    queryFn: () => fetchStorefrontSettings(previewThemeId, previewSource),
-    staleTime: 5 * 60 * 1000,
-  });
+  const settingsPromise = queryClient
+    .prefetchQuery({
+      queryKey: initialSettingsQueryKey,
+      queryFn: () => fetchStorefrontSettings(previewThemeId, previewSource),
+      staleTime: 5 * 60 * 1000,
+    })
+    .then(() => {
+      const prefetchedSettings =
+        queryClient.getQueryData<StorefrontSettings>(initialSettingsQueryKey);
+      const themeId =
+        resolveThemeIdFromSettings(prefetchedSettings) || previewThemeId;
+      if (themeId) {
+        void preloadRuntimeStorefrontTheme(themeId);
+      }
+    });
 
   const productPromise = productPathKey && productQueryKey
     ? queryClient.prefetchQuery({

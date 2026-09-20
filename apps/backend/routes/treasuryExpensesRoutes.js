@@ -9,6 +9,7 @@ router.use(verifyToken.authenticateToken);
 // 1. Treasury Accounts & Vaults
 router.get('/accounts', controller.getAccounts);
 router.post('/accounts', controller.createAccount);
+router.put('/accounts/:id', controller.updateAccount);
 router.post('/transfer', controller.transferBetweenAccounts);
 
 // 2. Capital & Injections
@@ -23,6 +24,7 @@ router.post('/categories', controller.createCategory);
 router.get('/expenses', controller.getExpenses);
 router.get('/expenses/stats', controller.getExpenseStats);
 router.post('/expenses', controller.createExpense);
+router.put('/expenses/:id', controller.updateExpense);
 router.delete('/expenses/:id', controller.deleteExpense);
 
 // 5. Ledger (Running balance history)

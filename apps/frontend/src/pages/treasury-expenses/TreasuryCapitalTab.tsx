@@ -13,6 +13,9 @@ import {
   RefreshCw,
   TrendingUp,
   ShieldCheck,
+  Edit2,
+  Download,
+  Calendar,
 } from "lucide-react";
 import {
   TreasuryAccount,
@@ -21,8 +24,14 @@ import {
   fetchCapitalStats,
   fetchLedger,
   formatMoney,
+  exportToCsv,
 } from "./shared";
-import { DepositCapitalModal, TransferModal, CreateAccountModal } from "./TreasuryModals";
+import {
+  DepositCapitalModal,
+  TransferModal,
+  CreateAccountModal,
+  EditAccountModal,
+} from "./TreasuryModals";
 
 interface TreasuryCapitalTabProps {
   accounts: TreasuryAccount[];
@@ -37,6 +46,9 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
   // Ledger filters
   const [selectedAccountId, setSelectedAccountId] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [datePreset, setDatePreset] = useState<"all" | "today" | "this_week" | "this_month" | "custom">("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -45,6 +57,32 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<TreasuryAccount | null>(null);
+
+  const handlePresetChange = (preset: "all" | "today" | "this_week" | "this_month" | "custom") => {
+    setDatePreset(preset);
+    setPage(1);
+    const now = new Date();
+    if (preset === "all") {
+      setStartDate("");
+      setEndDate("");
+    } else if (preset === "today") {
+      const todayStr = now.toISOString().split("T")[0];
+      setStartDate(todayStr);
+      setEndDate(todayStr);
+    } else if (preset === "this_week") {
+      const d = new Date(now);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(d.setDate(diff));
+      setStartDate(monday.toISOString().split("T")[0]);
+      setEndDate(new Date().toISOString().split("T")[0]);
+    } else if (preset === "this_month") {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      setStartDate(firstDay.toISOString().split("T")[0]);
+      setEndDate(new Date().toISOString().split("T")[0]);
+    }
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -54,6 +92,8 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
         fetchLedger({
           treasuryAccountId: selectedAccountId || undefined,
           type: typeFilter || undefined,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
           page,
           limit: 25,
         }),
@@ -68,7 +108,7 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
     } finally {
       setLoading(false);
     }
-  }, [selectedAccountId, typeFilter, page]);
+  }, [selectedAccountId, typeFilter, startDate, endDate, page]);
 
   useEffect(() => {
     loadData();
@@ -77,6 +117,40 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
   const handleActionSuccess = () => {
     loadData();
     onAccountsUpdated();
+  };
+
+  const handleExportCsv = () => {
+    if (ledger.length === 0) return;
+    const typeLabel = (t: string) => {
+      switch (t) {
+        case "DEPOSIT":
+          return "إيداع رأس مال";
+        case "EXPENSE":
+          return "سحب نفقة";
+        case "TRANSFER_IN":
+          return "تحويل وارد";
+        case "TRANSFER_OUT":
+          return "تحويل صادر";
+        default:
+          return t;
+      }
+    };
+    const rows = ledger.map((tx) => ({
+      date: tx.date ? new Date(tx.date).toLocaleDateString("ar-EG") : "",
+      account: tx.treasuryAccount?.name || "الخزينة",
+      type: typeLabel(tx.type),
+      description: tx.description || "",
+      amount: tx.amount,
+      runningBalance: tx.runningBalance,
+    }));
+    exportToCsv("كشف_حساب_الخزينة_الموحد", rows, [
+      { key: "date", label: "التاريخ والوقت" },
+      { key: "account", label: "الخزينة / الحساب" },
+      { key: "type", label: "نوع الحركة" },
+      { key: "description", label: "البيان والتفاصيل" },
+      { key: "amount", label: "مبلغ الحركة" },
+      { key: "runningBalance", label: "الرصيد بعد الحركة" },
+    ]);
   };
 
   const getAccountIcon = (type: string) => {
@@ -204,10 +278,24 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
                       )}
                     </h4>
                     <span className="text-[11px] text-zinc-400">
-                      {acc.type === "BANK" ? `بنك ${acc.bankName || "رسمي"}` : acc.type === "WALLET" ? "محفظة إلكترونية" : acc.type === "CUSTODY" ? "عهدة نقدية" : "خزينة كاش"}
+                      {acc.type === "BANK"
+                        ? `بنك ${acc.bankName || "رسمي"}`
+                        : acc.type === "WALLET"
+                        ? "محفظة إلكترونية"
+                        : acc.type === "CUSTODY"
+                        ? "عهدة نقدية"
+                        : "خزينة كاش"}
                     </span>
                   </div>
                 </div>
+
+                <button
+                  onClick={() => setEditingAccount(acc)}
+                  title="تعديل بيانات الحساب"
+                  className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
               </div>
 
               {acc.accountNumber && (
@@ -241,18 +329,26 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={selectedAccountId}
-              onChange={(e) => { setSelectedAccountId(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setSelectedAccountId(e.target.value);
+                setPage(1);
+              }}
               className="px-2.5 py-1.5 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none"
             >
               <option value="">جميع الخزائن</option>
               {accounts.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
               ))}
             </select>
 
             <select
               value={typeFilter}
-              onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
+                setPage(1);
+              }}
               className="px-2.5 py-1.5 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none"
             >
               <option value="">كافة أنواع الحركات</option>
@@ -262,12 +358,95 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
               <option value="TRANSFER_OUT">تحويلات صادرة</option>
             </select>
 
+            {/* Date Preset Filter */}
+            <div className="inline-flex p-0.5 bg-zinc-100 dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 text-xs">
+              <button
+                type="button"
+                onClick={() => handlePresetChange("all")}
+                className={`px-2 py-1 rounded-lg transition-all ${
+                  datePreset === "all"
+                    ? "bg-white dark:bg-zinc-900 font-semibold text-zinc-900 dark:text-zinc-100 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                }`}
+              >
+                الكل
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePresetChange("today")}
+                className={`px-2 py-1 rounded-lg transition-all ${
+                  datePreset === "today"
+                    ? "bg-white dark:bg-zinc-900 font-semibold text-zinc-900 dark:text-zinc-100 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                }`}
+              >
+                اليوم
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePresetChange("this_month")}
+                className={`px-2 py-1 rounded-lg transition-all ${
+                  datePreset === "this_month"
+                    ? "bg-white dark:bg-zinc-900 font-semibold text-zinc-900 dark:text-zinc-100 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                }`}
+              >
+                هذا الشهر
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePresetChange("custom")}
+                className={`px-2 py-1 rounded-lg transition-all ${
+                  datePreset === "custom"
+                    ? "bg-white dark:bg-zinc-900 font-semibold text-zinc-900 dark:text-zinc-100 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                }`}
+              >
+                مخصص
+              </button>
+            </div>
+
+            {/* Custom Dates if selected */}
+            {datePreset === "custom" && (
+              <div className="flex items-center gap-1">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setPage(1);
+                  }}
+                  className="px-2 py-1 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl"
+                />
+                <span className="text-zinc-400 text-xs">-</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setPage(1);
+                  }}
+                  className="px-2 py-1 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl"
+                />
+              </div>
+            )}
+
+            <button
+              onClick={handleExportCsv}
+              disabled={ledger.length === 0}
+              title="تصدير كشف الحساب إلى ملف CSV"
+              className="flex items-center gap-1 px-2.5 py-1.5 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-xs disabled:opacity-40"
+            >
+              <Download className="w-3.5 h-3.5 text-zinc-500" />
+              <span>تصدير CSV</span>
+            </button>
+
             <button
               onClick={loadData}
               title="تحديث كشف الحساب"
               className="p-1.5 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
@@ -305,21 +484,31 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
                     return (
                       <tr key={tx.id} className="hover:bg-zinc-50/70 dark:hover:bg-zinc-800/40 transition-colors">
                         <td className="py-3 px-4 font-mono text-zinc-500 dark:text-zinc-400 text-[11px]">
-                          {tx.date ? new Date(tx.date).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                          {tx.date
+                            ? new Date(tx.date).toLocaleDateString("ar-EG", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "—"}
                         </td>
                         <td className="py-3 px-4 font-semibold text-zinc-800 dark:text-zinc-200">
                           {tx.treasuryAccount?.name || "الخزينة"}
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                            tx.type === "DEPOSIT"
-                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                              : tx.type === "EXPENSE"
-                              ? "bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300"
-                              : tx.type === "TRANSFER_IN"
-                              ? "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
-                              : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
-                          }`}>
+                          <span
+                            className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                              tx.type === "DEPOSIT"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                : tx.type === "EXPENSE"
+                                ? "bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300"
+                                : tx.type === "TRANSFER_IN"
+                                ? "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
+                                : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                            }`}
+                          >
                             {tx.type === "DEPOSIT"
                               ? "إيداع تمويل +"
                               : tx.type === "EXPENSE"
@@ -332,11 +521,13 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
                         <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 max-w-xs truncate">
                           {tx.description}
                         </td>
-                        <td className={`py-3 px-4 text-left font-mono font-bold tabular-nums text-xs ${
-                          isPositive
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-red-600 dark:text-red-400"
-                        }`}>
+                        <td
+                          className={`py-3 px-4 text-left font-mono font-bold tabular-nums text-xs ${
+                            isPositive
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : "text-red-600 dark:text-red-400"
+                          }`}
+                        >
                           {isPositive ? `+${formatMoney(tx.amount)}` : formatMoney(tx.amount)}
                         </td>
                         <td className="py-3 px-4 text-left font-mono font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
@@ -397,6 +588,13 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
         isOpen={isCreateAccountOpen}
         onClose={() => setIsCreateAccountOpen(false)}
         onSuccess={handleActionSuccess}
+      />
+
+      <EditAccountModal
+        isOpen={!!editingAccount}
+        onClose={() => setEditingAccount(null)}
+        onSuccess={handleActionSuccess}
+        account={editingAccount}
       />
     </div>
   );

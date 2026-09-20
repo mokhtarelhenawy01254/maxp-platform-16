@@ -107,7 +107,34 @@ export interface ExpenseStats {
 export function formatMoney(amount: number | string, currency = "ج.م"): string {
   const n = typeof amount === "number" ? amount : parseFloat(String(amount || 0));
   if (isNaN(n)) return `0 ${currency}`;
-  return `${n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${currency}`;
+  const isNeg = n < 0;
+  const abs = Math.abs(n);
+  const formatted = abs.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  return isNeg ? `-${formatted} ${currency}` : `${formatted} ${currency}`;
+}
+
+// Export data to CSV
+export function exportToCsv(filename: string, rows: Array<Record<string, any>>, headers: Array<{ key: string; label: string }>) {
+  if (!rows || rows.length === 0) return;
+  const headerLine = headers.map((h) => `"${h.label.replace(/"/g, '""')}"`).join(",");
+  const rowLines = rows.map((row) => {
+    return headers
+      .map((h) => {
+        const val = row[h.key] ?? "";
+        return `"${String(val).replace(/"/g, '""')}"`;
+      })
+      .join(",");
+  });
+  const csvContent = "\uFEFF" + [headerLine, ...rowLines].join("\r\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `${filename}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // API functions
@@ -118,6 +145,11 @@ export async function fetchAccounts(): Promise<{ accounts: TreasuryAccount[]; to
 
 export async function createAccount(data: Partial<TreasuryAccount> & { initialBalance?: number }): Promise<TreasuryAccount> {
   const res = await apiClient.post("/api/v1/treasury/accounts", data);
+  return (res as any)?.data?.data;
+}
+
+export async function updateAccount(id: string, data: Partial<TreasuryAccount>): Promise<TreasuryAccount> {
+  const res = await apiClient.put(`/api/v1/treasury/accounts/${id}`, data);
   return (res as any)?.data?.data;
 }
 
@@ -181,6 +213,7 @@ export async function fetchExpenses(params?: {
   type?: string;
   startDate?: string;
   endDate?: string;
+  status?: string;
   page?: number;
   limit?: number;
 }): Promise<{
@@ -221,9 +254,33 @@ export async function createExpense(payload: {
   isRecurring?: boolean;
   recurringInterval?: string;
   nextDueDate?: string;
+  status?: string;
   notes?: string;
 }): Promise<{ expense: CompanyExpense; updatedBalance: number }> {
   const res = await apiClient.post("/api/v1/treasury/expenses", payload);
+  return (res as any)?.data?.data;
+}
+
+export async function updateExpense(
+  id: string,
+  payload: {
+    title?: string;
+    amount?: number;
+    categoryId?: string;
+    treasuryAccountId?: string;
+    type?: string;
+    beneficiary?: string;
+    invoiceNumber?: string;
+    receiptUrl?: string;
+    paymentDate?: string;
+    isRecurring?: boolean;
+    recurringInterval?: string;
+    nextDueDate?: string;
+    status?: string;
+    notes?: string;
+  }
+): Promise<{ expense: CompanyExpense; updatedBalance: number }> {
+  const res = await apiClient.put(`/api/v1/treasury/expenses/${id}`, payload);
   return (res as any)?.data?.data;
 }
 

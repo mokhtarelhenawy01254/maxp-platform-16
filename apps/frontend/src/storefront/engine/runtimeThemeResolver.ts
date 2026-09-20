@@ -16,29 +16,62 @@ const RUNTIME_THEME_ASSET_LOADERS: Record<string, () => Promise<string>> = {
     import('../themes/khemet-luxe-eg.json?url').then((module) => module.default),
   'khemet-fashion-eg': () =>
     import('../themes/khemet-fashion-eg.json?url').then((module) => module.default),
+  'redline-auto': () =>
+    import('../themes/redline-auto.json?url').then((module) => module.default),
 };
+
+const ALL_THEME_URL_LOADERS = import.meta.glob<string>('../themes/*.json', {
+  query: '?url',
+  import: 'default',
+});
 
 const cloneThemePresetData = <T,>(value: T): T =>
   JSON.parse(JSON.stringify(value)) as T;
 
+const themeAssetPromiseCache = new Map<string, Promise<StorefrontTheme>>();
+
 const loadThemeJsonAsset = async (assetUrl: string): Promise<StorefrontTheme> => {
-  const response = await fetch(assetUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to load storefront theme asset: ${response.status}`);
+  const existing = themeAssetPromiseCache.get(assetUrl);
+  if (existing) {
+    return cloneThemePresetData(await existing);
   }
 
-  return cloneThemePresetData((await response.json()) as StorefrontTheme);
+  const fetchPromise = (async () => {
+    const response = await fetch(assetUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to load storefront theme asset: ${response.status}`);
+    }
+    return (await response.json()) as StorefrontTheme;
+  })();
+
+  themeAssetPromiseCache.set(assetUrl, fetchPromise);
+  return cloneThemePresetData(await fetchPromise);
+};
+
+const resolveThemeAssetLoader = (
+  themeId: string,
+): (() => Promise<string>) | null => {
+  const normalizedThemeId =
+    typeof themeId === 'string' && themeId.trim()
+      ? themeId.trim()
+      : DEFAULT_STOREFRONT_THEME_ID;
+
+  if (RUNTIME_THEME_ASSET_LOADERS[normalizedThemeId]) {
+    return RUNTIME_THEME_ASSET_LOADERS[normalizedThemeId];
+  }
+
+  const globKey = `../themes/${normalizedThemeId}.json`;
+  if (ALL_THEME_URL_LOADERS[globKey]) {
+    return ALL_THEME_URL_LOADERS[globKey];
+  }
+
+  return null;
 };
 
 const loadRuntimeThemePreset = async (
   themeId: string,
 ): Promise<StorefrontTheme | null> => {
-  const normalizedThemeId =
-    typeof themeId === 'string' && themeId.trim()
-      ? themeId.trim()
-      : DEFAULT_STOREFRONT_THEME_ID;
-  const loadAssetUrl = RUNTIME_THEME_ASSET_LOADERS[normalizedThemeId];
-
+  const loadAssetUrl = resolveThemeAssetLoader(themeId);
   if (!loadAssetUrl) {
     return null;
   }
@@ -47,7 +80,17 @@ const loadRuntimeThemePreset = async (
 };
 
 export const hasRuntimeStorefrontThemePreset = (themeId: string): boolean =>
-  Boolean(RUNTIME_THEME_ASSET_LOADERS[themeId]);
+  Boolean(resolveThemeAssetLoader(themeId));
+
+export const preloadRuntimeStorefrontTheme = async (
+  themeId: string,
+): Promise<void> => {
+  try {
+    await loadRuntimeThemePreset(themeId);
+  } catch {
+    // Ignore preload failures; runtime resolver will fall back cleanly
+  }
+};
 
 export const resolveRuntimeStorefrontTheme = async (
   input?: StorefrontThemeInput,
