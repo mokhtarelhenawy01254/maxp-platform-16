@@ -1,5 +1,6 @@
-import React from 'react';
-import { Laptop, CheckCircle2, MinusCircle, AlertTriangle, HelpCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Laptop, CheckCircle2, MinusCircle, AlertTriangle, HelpCircle, ChevronDown, Check } from 'lucide-react';
+import api from '../../../../services/api';
 
 export interface AppUsageItem {
   appName: string;
@@ -12,9 +13,18 @@ export interface AppUsageItem {
 interface AppUsageListProps {
   apps: AppUsageItem[];
   totalWorkSeconds?: number;
+  onCategoryChange?: (appName: string, newCategory: string) => void;
 }
 
-export const AppUsageList: React.FC<AppUsageListProps> = ({ apps = [], totalWorkSeconds = 0 }) => {
+export const AppUsageList: React.FC<AppUsageListProps> = ({
+  apps = [],
+  totalWorkSeconds = 0,
+  onCategoryChange,
+}) => {
+  const [localCategories, setLocalCategories] = useState<Record<string, string>>({});
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [savingApp, setSavingApp] = useState<string | null>(null);
+
   const maxDuration = Math.max(...apps.map((a) => a.durationSeconds), 1);
   const totalDuration = apps.reduce((acc, a) => acc + (a.durationSeconds || 0), 0) || totalWorkSeconds || 1;
 
@@ -25,33 +35,106 @@ export const AppUsageList: React.FC<AppUsageListProps> = ({ apps = [], totalWork
     return `${m} د`;
   };
 
-  const getCategoryBadge = (cat?: string) => {
-    switch (cat) {
-      case 'productive':
-        return (
-          <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
-            <CheckCircle2 className="h-2.5 w-2.5" /> منتج
-          </span>
-        );
-      case 'unproductive':
-        return (
-          <span className="inline-flex items-center gap-1 rounded bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-medium text-rose-400 ring-1 ring-inset ring-rose-500/20">
-            <AlertTriangle className="h-2.5 w-2.5" /> غير منتج
-          </span>
-        );
-      case 'neutral':
-        return (
-          <span className="inline-flex items-center gap-1 rounded bg-zinc-500/10 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400 ring-1 ring-inset ring-zinc-500/20">
-            <MinusCircle className="h-2.5 w-2.5" /> محايد
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 rounded bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium text-sky-400 ring-1 ring-inset ring-sky-500/20">
-            <HelpCircle className="h-2.5 w-2.5" /> غير مصنف
-          </span>
-        );
+  const handleUpdateCategory = async (appName: string, category: string) => {
+    setSavingApp(appName);
+    try {
+      await api.put('/employee-monitor/categories', {
+        name: appName,
+        type: 'app',
+        category,
+      });
+      setLocalCategories((prev) => ({ ...prev, [appName]: category }));
+      if (onCategoryChange) onCategoryChange(appName, category);
+    } catch (err) {
+      console.warn('[AppUsageList] Category update error:', err);
+    } finally {
+      setSavingApp(null);
+      setActiveDropdown(null);
     }
+  };
+
+  const renderCategoryBadge = (appName: string, cat?: string) => {
+    const currentCat = localCategories[appName] || cat || 'unrated';
+    const isDropdownOpen = activeDropdown === appName;
+
+    return (
+      <div className="relative inline-block text-right">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setActiveDropdown(isDropdownOpen ? null : appName);
+          }}
+          className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium transition active:scale-95 ${
+            currentCat === 'productive'
+              ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-inset ring-emerald-500/30 hover:bg-emerald-500/25'
+              : currentCat === 'unproductive'
+              ? 'bg-rose-500/15 text-rose-400 ring-1 ring-inset ring-rose-500/30 hover:bg-rose-500/25'
+              : currentCat === 'neutral'
+              ? 'bg-zinc-500/15 text-zinc-300 ring-1 ring-inset ring-zinc-500/30 hover:bg-zinc-500/25'
+              : 'bg-sky-500/15 text-sky-400 ring-1 ring-inset ring-sky-500/30 hover:bg-sky-500/25'
+          }`}
+          title="انقر لتغيير تصنيف إنتاجية هذا التطبيق"
+        >
+          {currentCat === 'productive' && <CheckCircle2 className="h-3 w-3" />}
+          {currentCat === 'unproductive' && <AlertTriangle className="h-3 w-3" />}
+          {currentCat === 'neutral' && <MinusCircle className="h-3 w-3" />}
+          {currentCat === 'unrated' && <HelpCircle className="h-3 w-3" />}
+          <span>
+            {currentCat === 'productive'
+              ? 'منتج'
+              : currentCat === 'unproductive'
+              ? 'غير منتج'
+              : currentCat === 'neutral'
+              ? 'محايد'
+              : 'غير مصنف'}
+          </span>
+          <ChevronDown className="h-2.5 w-2.5 opacity-60" />
+        </button>
+
+        {/* Dropdown Menu */}
+        {isDropdownOpen && (
+          <div
+            className="absolute left-0 z-30 mt-1 w-32 rounded-lg border border-border/60 bg-zinc-950 p-1 shadow-xl backdrop-blur-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground border-b border-border/30">
+              تغيير التصنيف:
+            </div>
+            <button
+              onClick={() => handleUpdateCategory(appName, 'productive')}
+              disabled={savingApp === appName}
+              className="flex w-full items-center justify-between rounded px-2 py-1 text-right text-xs text-emerald-400 hover:bg-emerald-500/10"
+            >
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3 w-3" /> منتج
+              </span>
+              {currentCat === 'productive' && <Check className="h-3 w-3" />}
+            </button>
+            <button
+              onClick={() => handleUpdateCategory(appName, 'neutral')}
+              disabled={savingApp === appName}
+              className="flex w-full items-center justify-between rounded px-2 py-1 text-right text-xs text-zinc-300 hover:bg-zinc-800"
+            >
+              <span className="flex items-center gap-1.5">
+                <MinusCircle className="h-3 w-3" /> محايد
+              </span>
+              {currentCat === 'neutral' && <Check className="h-3 w-3" />}
+            </button>
+            <button
+              onClick={() => handleUpdateCategory(appName, 'unproductive')}
+              disabled={savingApp === appName}
+              className="flex w-full items-center justify-between rounded px-2 py-1 text-right text-xs text-rose-400 hover:bg-rose-500/10"
+            >
+              <span className="flex items-center gap-1.5">
+                <AlertTriangle className="h-3 w-3" /> غير منتج
+              </span>
+              {currentCat === 'unproductive' && <Check className="h-3 w-3" />}
+            </button>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -75,6 +158,7 @@ export const AppUsageList: React.FC<AppUsageListProps> = ({ apps = [], totalWork
       ) : (
         <div className="space-y-2.5">
           {apps.slice(0, 10).map((app, idx) => {
+            const currentCat = localCategories[app.appName] || app.category || 'unrated';
             const pct = Math.min(100, Math.round((app.durationSeconds / totalDuration) * 100));
             const barWidth = Math.min(100, Math.round((app.durationSeconds / maxDuration) * 100));
 
@@ -88,7 +172,7 @@ export const AppUsageList: React.FC<AppUsageListProps> = ({ apps = [], totalWork
                     <span className="font-semibold text-foreground truncate max-w-[200px] sm:max-w-[320px]">
                       {app.appName}
                     </span>
-                    {getCategoryBadge(app.category)}
+                    {renderCategoryBadge(app.appName, currentCat)}
                   </div>
                   <div className="flex items-center gap-2 tabular-nums">
                     <span className="font-medium text-foreground">
@@ -109,10 +193,12 @@ export const AppUsageList: React.FC<AppUsageListProps> = ({ apps = [], totalWork
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${
-                      app.category === 'productive'
+                      currentCat === 'productive'
                         ? 'bg-emerald-500'
-                        : app.category === 'unproductive'
+                        : currentCat === 'unproductive'
                         ? 'bg-rose-500'
+                        : currentCat === 'neutral'
+                        ? 'bg-zinc-500'
                         : 'bg-sky-500'
                     }`}
                     style={{ width: `${barWidth}%` }}

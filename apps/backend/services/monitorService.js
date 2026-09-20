@@ -668,7 +668,7 @@ class MonitorService {
   }
 
   async updateCategory(companyId, categoryData) {
-    return this.prisma.monitorAppCategory.upsert({
+    const res = await this.prisma.monitorAppCategory.upsert({
       where: {
         companyId_name_type_departmentId: {
           companyId,
@@ -680,6 +680,24 @@ class MonitorService {
       update: { category: categoryData.category },
       create: { ...categoryData, companyId }
     });
+
+    try {
+      if (categoryData.type === 'app') {
+        await this.prisma.monitorAppUsage.updateMany({
+          where: { companyId, appName: categoryData.name },
+          data: { category: categoryData.category }
+        });
+      } else {
+        await this.prisma.monitorWebUsage.updateMany({
+          where: { companyId, domain: categoryData.name },
+          data: { category: categoryData.category }
+        });
+      }
+    } catch (e) {
+      console.warn('[MonitorService] Failed to cascade category update:', e.message);
+    }
+
+    return res;
   }
 
   async recalculateDailySummary(companyId, employeeId, date) {

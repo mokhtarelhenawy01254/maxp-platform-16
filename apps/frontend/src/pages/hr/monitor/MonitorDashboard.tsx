@@ -15,6 +15,11 @@ import {
   Calendar,
   Sparkles,
   ShieldAlert,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  ChevronRight,
+  ChevronLeft,
 } from 'lucide-react';
 import api from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuthSimple';
@@ -35,6 +40,8 @@ export interface TeamMemberSummary {
   completedTasksCount?: number;
 }
 
+type SortField = 'employeeName' | 'totalActiveSeconds' | 'totalIdleSeconds' | 'productivityScore' | 'completedTasksCount';
+
 export const MonitorDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -48,6 +55,8 @@ export const MonitorDashboard: React.FC = () => {
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'idle' | 'offline'>('all');
+  const [sortField, setSortField] = useState<SortField>('totalActiveSeconds');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [teamMembers, setTeamMembers] = useState<TeamMemberSummary[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
 
@@ -61,6 +70,28 @@ export const MonitorDashboard: React.FC = () => {
     totalHoursTracked: 0,
     totalTasksCompleted: 0,
   });
+
+  const handleDateStep = (daysOffset: number) => {
+    const current = new Date(selectedDate);
+    current.setDate(current.getDate() + daysOffset);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (current <= today) {
+      setSelectedDate(current.toISOString().split('T')[0]);
+    }
+  };
+
+  const isToday = selectedDate === new Date().toISOString().split('T')[0];
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'desc' ? 'asc' : 'desc'));
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
 
   const fetchData = useCallback(async () => {
     if (!isManagerOrHR) {
@@ -151,16 +182,25 @@ export const MonitorDashboard: React.FC = () => {
     return `${h} س ${m} د`;
   };
 
-  const filteredMembers = teamMembers.filter((m) => {
-    if (statusFilter !== 'all' && m.status !== statusFilter) return false;
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      (m.employeeName && m.employeeName.toLowerCase().includes(q)) ||
-      (m.departmentName && m.departmentName.toLowerCase().includes(q)) ||
-      (m.topApp && m.topApp.toLowerCase().includes(q))
-    );
+  const sortedMembers = [...filteredMembers].sort((a, b) => {
+    let valA: any = a[sortField] ?? 0;
+    let valB: any = b[sortField] ?? 0;
+    if (typeof valA === 'string') {
+      return sortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    }
+    return sortDirection === 'asc' ? valA - valB : valB - valA;
   });
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-3 w-3 opacity-40 group-hover:opacity-100" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="h-3 w-3 text-sky-400" />
+    ) : (
+      <ArrowDown className="h-3 w-3 text-sky-400" />
+    );
+  };
 
   if (!isManagerOrHR) {
     return (
@@ -180,6 +220,11 @@ export const MonitorDashboard: React.FC = () => {
       <EmployeeMonitorDetails
         employeeIdProp={selectedEmployeeId}
         onBackProp={() => setSelectedEmployeeId(null)}
+        teamMembersProp={teamMembers.map((m) => ({
+          employeeId: m.employeeId,
+          employeeName: m.employeeName,
+        }))}
+        onSelectEmployeeProp={(id) => setSelectedEmployeeId(id)}
       />
     );
   }
@@ -208,8 +253,8 @@ export const MonitorDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Date Selector, Search & Sync */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Date Selector, Quick Chips & Fast Stepper */}
+        <div className="flex flex-wrap items-center gap-1.5">
           {/* Search Filter */}
           <div className="relative flex items-center">
             <Search className="absolute right-2.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -218,19 +263,58 @@ export const MonitorDashboard: React.FC = () => {
               placeholder="بحث بالاسم أو القسم…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 w-44 rounded-lg border border-border/40 bg-zinc-900/60 pr-8 pl-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none sm:w-56"
+              className="h-8 w-40 rounded-lg border border-border/40 bg-zinc-900/60 pr-8 pl-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none sm:w-52"
             />
           </div>
 
-          {/* Date Picker */}
-          <div className="flex items-center gap-1.5 rounded-lg border border-border/40 bg-zinc-900/60 px-2.5 py-1 text-xs">
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent text-xs text-foreground focus:outline-none"
-            />
+          {/* Quick Date Chips */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              className={`rounded-md px-2 py-1 text-xs font-medium transition ${
+                isToday ? 'bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30' : 'text-muted-foreground hover:bg-zinc-800 hover:text-foreground'
+              }`}
+            >
+              اليوم
+            </button>
+            <button
+              onClick={() => setSelectedDate(yesterdayStr)}
+              className={`rounded-md px-2 py-1 text-xs font-medium transition ${
+                selectedDate === yesterdayStr ? 'bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30' : 'text-muted-foreground hover:bg-zinc-800 hover:text-foreground'
+              }`}
+            >
+              أمس
+            </button>
+          </div>
+
+          {/* Stepper with Native Picker */}
+          <div className="flex items-center rounded-lg border border-border/40 bg-zinc-900/60 p-0.5 text-xs">
+            <button
+              onClick={() => handleDateStep(-1)}
+              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-zinc-800 hover:text-foreground active:scale-95"
+              title="اليوم السابق"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+
+            <div className="flex items-center gap-1.5 px-2">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-transparent text-xs text-foreground focus:outline-none"
+              />
+            </div>
+
+            <button
+              onClick={() => handleDateStep(1)}
+              disabled={isToday}
+              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-zinc-800 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent active:scale-95"
+              title="اليوم التالي"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
           </div>
 
           <button
@@ -240,7 +324,7 @@ export const MonitorDashboard: React.FC = () => {
             title="تحديث البيانات لحظياً"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>تحديث</span>
+            <span className="hidden sm:inline">تحديث</span>
           </button>
         </div>
       </div>
@@ -321,11 +405,11 @@ export const MonitorDashboard: React.FC = () => {
         onTriggerArchive={handleTriggerArchive}
       />
 
-      {/* Team Roster Grid Table */}
+      {/* Team Roster Grid Table with Click-to-Sort & Mobile Responsive Cards */}
       <div className="overflow-hidden rounded-xl border border-border/40 bg-card/60 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 px-4 py-3">
           <h2 className="text-sm font-semibold text-foreground">
-            سجل نشاط وإنتاجية الفريق ({filteredMembers.length})
+            سجل نشاط وإنتاجية الفريق ({sortedMembers.length})
           </h2>
 
           {/* Status Filter Chips */}
@@ -378,122 +462,222 @@ export const MonitorDashboard: React.FC = () => {
             <RefreshCw className="h-4 w-4 animate-spin ml-2 text-sky-400" />
             <span>جاري استرداد بيانات النشاط السحابية…</span>
           </div>
-        ) : filteredMembers.length === 0 ? (
+        ) : sortedMembers.length === 0 ? (
           <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
             لا توجد أجهزة مطابقة للبحث المسجل لهذا اليوم
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-right text-xs">
-              <thead className="border-b border-border/40 bg-zinc-950/40 text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">الموظف / القسم</th>
-                  <th className="px-4 py-3 font-semibold">الحالة اللحظية</th>
-                  <th className="px-4 py-3 font-semibold">وقت العمل الفعلي</th>
-                  <th className="px-4 py-3 font-semibold">وقت التوقف / الاستراحة</th>
-                  <th className="px-4 py-3 font-semibold">معدل الإنتاجية</th>
-                  <th className="px-4 py-3 font-semibold">المهام المنجزة اليوم</th>
-                  <th className="px-4 py-3 font-semibold">البرنامج الأبرز</th>
-                  <th className="px-4 py-3 text-left font-semibold">الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/20">
-                {filteredMembers.map((m) => (
-                  <tr
-                    key={m.employeeId}
-                    className="transition-colors hover:bg-zinc-900/40"
-                  >
-                    {/* Employee info */}
-                    <td className="px-4 py-3">
-                      <div className="font-semibold text-foreground">
-                        {m.employeeName}
+          <>
+            {/* Desktop Full Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-right text-xs">
+                <thead className="border-b border-border/40 bg-zinc-950/40 text-muted-foreground">
+                  <tr>
+                    <th
+                      onClick={() => handleSort('employeeName')}
+                      className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>الموظف / القسم</span>
+                        {renderSortIcon('employeeName')}
                       </div>
-                      <div className="text-[11px] text-muted-foreground">
-                        {m.departmentName} • {m.jobTitle}
+                    </th>
+                    <th className="px-4 py-3 font-semibold">الحالة اللحظية</th>
+                    <th
+                      onClick={() => handleSort('totalActiveSeconds')}
+                      className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>وقت العمل الفعلي</span>
+                        {renderSortIcon('totalActiveSeconds')}
                       </div>
-                    </td>
+                    </th>
+                    <th
+                      onClick={() => handleSort('totalIdleSeconds')}
+                      className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>وقت التوقف / الاستراحة</span>
+                        {renderSortIcon('totalIdleSeconds')}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('productivityScore')}
+                      className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>معدل الإنتاجية</span>
+                        {renderSortIcon('productivityScore')}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('completedTasksCount')}
+                      className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>المهام المنجزة اليوم</span>
+                        {renderSortIcon('completedTasksCount')}
+                      </div>
+                    </th>
+                    <th className="px-4 py-3 font-semibold">البرنامج الأبرز</th>
+                    <th className="px-4 py-3 text-left font-semibold">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/20">
+                  {sortedMembers.map((m) => (
+                    <tr
+                      key={m.employeeId}
+                      className="transition-colors hover:bg-zinc-900/40"
+                    >
+                      {/* Employee info */}
+                      <td className="px-4 py-3">
+                        <div className="font-semibold text-foreground">
+                          {m.employeeName}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {m.departmentName} • {m.jobTitle}
+                        </div>
+                      </td>
 
+                      {/* Status */}
+                      <td className="px-4 py-3">
+                        {m.status === 'active' && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                            <CheckCircle2 className="h-3 w-3" /> نشط الآن
+                          </span>
+                        )}
+                        {m.status === 'idle' && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
+                            <PauseCircle className="h-3 w-3" /> استراحة / خمول
+                          </span>
+                        )}
+                        {m.status === 'offline' && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
+                            <XCircle className="h-3 w-3" /> غير متصل
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Active Time */}
+                      <td className="px-4 py-3 font-medium text-foreground tabular-nums">
+                        {formatSeconds(m.totalActiveSeconds)}
+                      </td>
+
+                      {/* Idle Time */}
+                      <td className="px-4 py-3 text-muted-foreground tabular-nums">
+                        {formatSeconds(m.totalIdleSeconds)}
+                      </td>
+
+                      {/* Productivity Score Bar */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-zinc-800">
+                            <div
+                              className={`h-full rounded-full ${
+                                m.productivityScore >= 75
+                                  ? 'bg-emerald-500'
+                                  : m.productivityScore >= 50
+                                  ? 'bg-sky-500'
+                                  : 'bg-amber-500'
+                              }`}
+                              style={{ width: `${Math.min(100, m.productivityScore)}%` }}
+                            />
+                          </div>
+                          <span className="font-semibold text-foreground tabular-nums">
+                            {m.productivityScore}%
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Completed Tasks */}
+                      <td className="px-4 py-3 font-semibold text-emerald-400 tabular-nums">
+                        {m.completedTasksCount || 0} مهام
+                      </td>
+
+                      {/* Top App */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5 text-zinc-300">
+                          <Laptop className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                          <span className="truncate max-w-[130px] font-medium" title={m.topApp || 'سطح المكتب'}>
+                            {m.topApp || 'سطح المكتب'}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-3 text-left">
+                        <button
+                          onClick={() => setSelectedEmployeeId(m.employeeId)}
+                          className="inline-flex items-center gap-1 rounded-md border border-border/40 bg-zinc-900 px-2.5 py-1 text-xs font-medium text-sky-400 transition hover:bg-sky-500/10 hover:border-sky-500/30 active:scale-95"
+                          title="عرض المخطط الزمني والبرامج والمواقع لهذا الموظف"
+                        >
+                          <span>التفاصيل</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Responsive Cards View */}
+            <div className="block divide-y divide-border/20 md:hidden">
+              {sortedMembers.map((m) => (
+                <div key={m.employeeId} className="p-3.5 space-y-2.5 transition-colors hover:bg-zinc-900/30">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-foreground text-sm">{m.employeeName}</div>
+                      <div className="text-xs text-muted-foreground">{m.departmentName} • {m.jobTitle}</div>
+                    </div>
                     {/* Status */}
-                    <td className="px-4 py-3">
+                    <div>
                       {m.status === 'active' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
-                          <CheckCircle2 className="h-3 w-3" /> نشط الآن
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                          <CheckCircle2 className="h-2.5 w-2.5" /> نشط
                         </span>
                       )}
                       {m.status === 'idle' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
-                          <PauseCircle className="h-3 w-3" /> استراحة / خمول
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
+                          <PauseCircle className="h-2.5 w-2.5" /> استراحة
                         </span>
                       )}
                       {m.status === 'offline' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
-                          <XCircle className="h-3 w-3" /> غير متصل
+                        <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
+                          <XCircle className="h-2.5 w-2.5" /> غير متصل
                         </span>
                       )}
-                    </td>
+                    </div>
+                  </div>
 
-                    {/* Active Time */}
-                    <td className="px-4 py-3 font-medium text-foreground tabular-nums">
-                      {formatSeconds(m.totalActiveSeconds)}
-                    </td>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded bg-zinc-900/60 p-2">
+                      <span className="text-muted-foreground block text-[10px]">عمل فعلي:</span>
+                      <span className="font-semibold text-foreground tabular-nums">{formatSeconds(m.totalActiveSeconds)}</span>
+                    </div>
+                    <div className="rounded bg-zinc-900/60 p-2">
+                      <span className="text-muted-foreground block text-[10px]">توقف وخمول:</span>
+                      <span className="font-semibold text-muted-foreground tabular-nums">{formatSeconds(m.totalIdleSeconds)}</span>
+                    </div>
+                  </div>
 
-                    {/* Idle Time */}
-                    <td className="px-4 py-3 text-muted-foreground tabular-nums">
-                      {formatSeconds(m.totalIdleSeconds)}
-                    </td>
-
-                    {/* Productivity Score Bar */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-zinc-800">
-                          <div
-                            className={`h-full rounded-full ${
-                              m.productivityScore >= 75
-                                ? 'bg-emerald-500'
-                                : m.productivityScore >= 50
-                                ? 'bg-sky-500'
-                                : 'bg-amber-500'
-                            }`}
-                            style={{ width: `${Math.min(100, m.productivityScore)}%` }}
-                          />
-                        </div>
-                        <span className="font-semibold text-foreground tabular-nums">
-                          {m.productivityScore}%
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Completed Tasks */}
-                    <td className="px-4 py-3 font-semibold text-emerald-400 tabular-nums">
-                      {m.completedTasksCount || 0} مهام
-                    </td>
-
-                    {/* Top App */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 text-zinc-300">
-                        <Laptop className="h-3.5 w-3.5 text-sky-400 shrink-0" />
-                        <span className="truncate max-w-[130px] font-medium" title={m.topApp || 'سطح المكتب'}>
-                          {m.topApp || 'سطح المكتب'}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-4 py-3 text-left">
-                      <button
-                        onClick={() => setSelectedEmployeeId(m.employeeId)}
-                        className="inline-flex items-center gap-1 rounded-md border border-border/40 bg-zinc-900 px-2.5 py-1 text-xs font-medium text-sky-400 transition hover:bg-sky-500/10 hover:border-sky-500/30 active:scale-95"
-                        title="عرض المخطط الزمني والبرامج والمواقع لهذا الموظف"
-                      >
-                        <span>التفاصيل</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <div className="flex items-center gap-3 tabular-nums">
+                      <span className="text-emerald-400 font-semibold">{m.completedTasksCount || 0} مهام</span>
+                      <span className="text-sky-400 font-semibold">{m.productivityScore}% إنتاجية</span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedEmployeeId(m.employeeId)}
+                      className="inline-flex items-center gap-1 rounded-md border border-border/40 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-sky-400 transition hover:bg-sky-500/10 active:scale-95"
+                    >
+                      <span>عرض التفاصيل</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

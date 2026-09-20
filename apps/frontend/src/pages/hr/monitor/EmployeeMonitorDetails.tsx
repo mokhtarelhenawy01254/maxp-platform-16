@@ -14,6 +14,12 @@ import {
   Activity,
   Laptop,
   Globe,
+  ChevronRight,
+  ChevronLeft,
+  ChevronDown,
+  ListTodo,
+  History,
+  Grid,
 } from 'lucide-react';
 import api from '../../../services/api';
 import ActivityTimelineBar from './components/ActivityTimelineBar';
@@ -25,16 +31,21 @@ import BreakDetailsCard from './components/BreakDetailsCard';
 interface EmployeeMonitorDetailsProps {
   employeeIdProp?: string;
   onBackProp?: () => void;
+  teamMembersProp?: { employeeId: string; employeeName?: string }[];
+  onSelectEmployeeProp?: (id: string) => void;
 }
 
 export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
   employeeIdProp,
   onBackProp,
+  teamMembersProp = [],
+  onSelectEmployeeProp,
 }) => {
   const params = useParams<{ employeeId: string }>();
   const navigate = useNavigate();
-  const employeeId = employeeIdProp || params.employeeId;
+  const currentEmployeeId = employeeIdProp || params.employeeId;
 
+  const [activeTab, setActiveTab] = useState<'tasks' | 'timeline' | 'apps'>('tasks');
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
@@ -54,11 +65,11 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
   });
 
   const fetchDetails = useCallback(async () => {
-    if (!employeeId) return;
+    if (!currentEmployeeId) return;
     setLoading(true);
     try {
       const res: any = await api.get(
-        `/employee-monitor/timeline/${employeeId}?date=${selectedDate}`
+        `/employee-monitor/timeline/${currentEmployeeId}?date=${selectedDate}`
       );
       if (res?.data?.data) {
         setData({
@@ -76,11 +87,39 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [employeeId, selectedDate]);
+  }, [currentEmployeeId, selectedDate]);
 
   useEffect(() => {
     fetchDetails();
   }, [fetchDetails]);
+
+  // Fast Date Stepper Logic
+  const handleDateStep = (daysOffset: number) => {
+    const current = new Date(selectedDate);
+    current.setDate(current.getDate() + daysOffset);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    if (current <= today) {
+      setSelectedDate(current.toISOString().split('T')[0]);
+    }
+  };
+
+  const isToday = selectedDate === new Date().toISOString().split('T')[0];
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+  // Employee Switcher Navigation Logic
+  const currentMemberIndex = teamMembersProp.findIndex((m) => m.employeeId === currentEmployeeId);
+  const hasPrevMember = currentMemberIndex > 0;
+  const hasNextMember = currentMemberIndex >= 0 && currentMemberIndex < teamMembersProp.length - 1;
+
+  const handleSwitchEmployee = (targetId: string) => {
+    if (onSelectEmployeeProp) {
+      onSelectEmployeeProp(targetId);
+    } else {
+      navigate(`/hr/monitor/${targetId}`);
+    }
+  };
 
   const handleBack = () => {
     if (onBackProp) {
@@ -123,9 +162,10 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
 
   return (
     <div className="min-h-full space-y-4 p-3 sm:p-6" dir="rtl">
-      {/* Top Header Chassis */}
+      {/* Top Header Chassis with Employee & Date Switchers */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/40 bg-card/60 p-4 shadow-sm backdrop-blur-md">
-        <div className="flex items-center gap-3">
+        {/* Left/Start side: Back + Employee Identity + Switcher */}
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleBack}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/40 bg-zinc-900/60 text-muted-foreground transition hover:bg-zinc-800 hover:text-foreground active:scale-95"
@@ -133,6 +173,7 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
           >
             <ArrowRight className="h-4 w-4" />
           </button>
+
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
@@ -146,18 +187,87 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
               {jobTitle} • توثيق النشاط وسجلات البرامج وتطابق الحضور
             </p>
           </div>
+
+          {/* Next / Previous Employee Fast Switcher */}
+          {teamMembersProp.length > 1 && currentMemberIndex >= 0 && (
+            <div className="flex items-center gap-1 rounded-lg border border-border/40 bg-zinc-900/60 p-1 text-xs">
+              <button
+                onClick={() => handleSwitchEmployee(teamMembersProp[currentMemberIndex - 1].employeeId)}
+                disabled={!hasPrevMember}
+                className="flex h-7 items-center gap-1 rounded px-2 font-medium text-muted-foreground transition hover:bg-zinc-800 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
+                title={hasPrevMember ? `الانتقال إلى: ${teamMembersProp[currentMemberIndex - 1].employeeName}` : ''}
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">السابق</span>
+              </button>
+
+              <span className="px-1 text-[11px] text-muted-foreground tabular-nums">
+                {currentMemberIndex + 1} / {teamMembersProp.length}
+              </span>
+
+              <button
+                onClick={() => handleSwitchEmployee(teamMembersProp[currentMemberIndex + 1].employeeId)}
+                disabled={!hasNextMember}
+                className="flex h-7 items-center gap-1 rounded px-2 font-medium text-muted-foreground transition hover:bg-zinc-800 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
+                title={hasNextMember ? `الانتقال إلى: ${teamMembersProp[currentMemberIndex + 1].employeeName}` : ''}
+              >
+                <span className="hidden sm:inline">التالي</span>
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Date Selector & Refresh */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-lg border border-border/40 bg-zinc-900/60 px-2.5 py-1 text-xs">
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent text-xs text-foreground focus:outline-none"
-            />
+        {/* Right side: Fast Date Navigation */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {/* Quick Date Chips */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              className={`rounded-md px-2 py-1 text-xs font-medium transition ${
+                isToday ? 'bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30' : 'text-muted-foreground hover:bg-zinc-800 hover:text-foreground'
+              }`}
+            >
+              اليوم
+            </button>
+            <button
+              onClick={() => setSelectedDate(yesterdayStr)}
+              className={`rounded-md px-2 py-1 text-xs font-medium transition ${
+                selectedDate === yesterdayStr ? 'bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30' : 'text-muted-foreground hover:bg-zinc-800 hover:text-foreground'
+              }`}
+            >
+              أمس
+            </button>
+          </div>
+
+          {/* Stepper Controls with Native Picker */}
+          <div className="flex items-center rounded-lg border border-border/40 bg-zinc-900/60 p-0.5 text-xs">
+            <button
+              onClick={() => handleDateStep(-1)}
+              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-zinc-800 hover:text-foreground active:scale-95"
+              title="اليوم السابق"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+
+            <div className="flex items-center gap-1.5 px-2">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-transparent text-xs text-foreground focus:outline-none"
+              />
+            </div>
+
+            <button
+              onClick={() => handleDateStep(1)}
+              disabled={isToday}
+              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-zinc-800 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent active:scale-95"
+              title="اليوم التالي"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
           </div>
 
           <button
@@ -166,12 +276,12 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
             className="flex h-8 items-center gap-1.5 rounded-lg border border-border/40 bg-zinc-900/60 px-3 text-xs font-medium text-muted-foreground transition hover:bg-zinc-800 hover:text-foreground active:scale-95"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>تحديث</span>
+            <span className="hidden sm:inline">تحديث</span>
           </button>
         </div>
       </div>
 
-      {/* 4 KPI Telemetry Cards */}
+      {/* 4 Primary Bento Telemetry Cards (Unified Dynamic Data) */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {/* Active Time */}
         <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
@@ -238,24 +348,78 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
         </div>
       </div>
 
-      {/* Task Performance Analysis */}
-      <TaskPerformanceCard
-        taskPerformance={data.taskPerformance}
-        totalActiveSeconds={totalActive}
-        totalIdleSeconds={totalIdle}
-      />
+      {/* Ergonomic Tabs Bar — Bans Vertical Scroll Fatigue */}
+      <div className="flex items-center gap-2 border-b border-border/40 pb-1 text-xs">
+        <button
+          onClick={() => setActiveTab('tasks')}
+          className={`flex items-center gap-1.5 rounded-t-lg border-b-2 px-3 py-2 font-semibold transition ${
+            activeTab === 'tasks'
+              ? 'border-emerald-400 text-emerald-400 bg-emerald-500/5'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-zinc-800/40'
+          }`}
+        >
+          <ListTodo className="h-4 w-4" />
+          <span>المهام واستغلال الوقت</span>
+          <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.2 text-[10px] font-bold text-emerald-400 tabular-nums">
+            {data.taskPerformance?.tasksCompletedCount || 0}
+          </span>
+        </button>
 
-      {/* 24-Hour Visual Activity Heat Timeline */}
-      <ActivityTimelineBar activities={data.activities} />
+        <button
+          onClick={() => setActiveTab('timeline')}
+          className={`flex items-center gap-1.5 rounded-t-lg border-b-2 px-3 py-2 font-semibold transition ${
+            activeTab === 'timeline'
+              ? 'border-sky-400 text-sky-400 bg-sky-500/5'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-zinc-800/40'
+          }`}
+        >
+          <History className="h-4 w-4" />
+          <span>المخطط الزمني وفترات الاستراحة</span>
+          {data.breaksSummary?.totalBreaksCount ? (
+            <span className="rounded-full bg-amber-500/15 px-1.5 py-0.2 text-[10px] font-bold text-amber-400 tabular-nums">
+              {data.breaksSummary.totalBreaksCount} بريك
+            </span>
+          ) : null}
+        </button>
 
-      {/* Detailed Breaks Analysis */}
-      <BreakDetailsCard breaksSummary={data.breaksSummary} />
-
-      {/* Apps & Web Usage Split Bento Grid */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AppUsageList apps={data.apps} totalWorkSeconds={totalActive} />
-        <WebUsageList websites={data.websites} totalWorkSeconds={totalActive} />
+        <button
+          onClick={() => setActiveTab('apps')}
+          className={`flex items-center gap-1.5 rounded-t-lg border-b-2 px-3 py-2 font-semibold transition ${
+            activeTab === 'apps'
+              ? 'border-purple-400 text-purple-400 bg-purple-500/5'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-zinc-800/40'
+          }`}
+        >
+          <Grid className="h-4 w-4" />
+          <span>البرامج والمواقع المستخدمة</span>
+          <span className="rounded-full bg-purple-500/15 px-1.5 py-0.2 text-[10px] font-bold text-purple-400 tabular-nums">
+            {(data.apps?.length || 0) + (data.websites?.length || 0)}
+          </span>
+        </button>
       </div>
+
+      {/* Tab Panels with Isolated Scope */}
+      {activeTab === 'tasks' && (
+        <TaskPerformanceCard
+          taskPerformance={data.taskPerformance}
+          totalActiveSeconds={totalActive}
+          totalIdleSeconds={totalIdle}
+        />
+      )}
+
+      {activeTab === 'timeline' && (
+        <div className="space-y-4">
+          <ActivityTimelineBar activities={data.activities} />
+          <BreakDetailsCard breaksSummary={data.breaksSummary} />
+        </div>
+      )}
+
+      {activeTab === 'apps' && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <AppUsageList apps={data.apps} totalWorkSeconds={totalActive} />
+          <WebUsageList websites={data.websites} totalWorkSeconds={totalActive} />
+        </div>
+      )}
     </div>
   );
 };
