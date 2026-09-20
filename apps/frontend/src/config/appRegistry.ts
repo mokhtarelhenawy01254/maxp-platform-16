@@ -694,6 +694,20 @@ export const APP_REGISTRY: AppDefinition[] = [
     displayName: 'إدارة المهام والمشاريع',
     displayDescription: 'تنظيم ومتابعة مهام الفريق، المشاريع، والأهداف',
   },
+  {
+    id: 'treasury-expenses',
+    nameKey: 'sidebar.treasuryExpenses',
+    descriptionKey: 'appDashboard.app.treasuryExpenses.description',
+    icon: BanknotesIcon,
+    color: 'emerald',
+    bgGradient: 'from-emerald-600 to-teal-700',
+    sectionIds: ['treasury-expenses'],
+    category: 'operations',
+    requiredApps: ['treasury-expenses-pro'],
+    displayName: 'الخزينة والنفقات ورأس المال',
+    displayDescription: 'إدارة نفقات ومصروفات الشركة، تتبع الخزائن النقدية والحسابات البنكية، وضخ رأس المال',
+    route: '/treasury-expenses',
+  },
 ];
 
 export const getAppById = (id: string): AppDefinition | undefined => {

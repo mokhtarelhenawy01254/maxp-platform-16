@@ -649,6 +649,22 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     action: "تم ربط المحفظة بـ wallet-system، مع بقاء الاشتراك الأساسي Core لأنه لازم لتشغيل الحساب.",
   },
   {
+    id: "treasury-expenses",
+    area: "finance",
+    label: "الخزينة والنفقات ورأس المال",
+    description: "إدارة نفقات ومصروفات الشركة، تتبع الخزائن النقدية والحسابات، وضخ رأس المال وكشف الحساب الموحد.",
+    status: "covered",
+    appSlug: "treasury-expenses-pro",
+    appLabel: "الخزينة والنفقات ورأس المال",
+    currentGate: "treasury-expenses-pro",
+    routes: [
+      { path: "/treasury-expenses", label: "الخزينة والنفقات" },
+      { path: "/expenses", label: "سجل النفقات" },
+      { path: "/treasury", label: "الخزائن ورأس المال" },
+    ],
+    action: "تطبيق مستقل لإدارة النفقات والخزائن ورأس المال بدقة FinOps ومنع السحب على المكشوف.",
+  },
+  {
     id: "procurement",
     area: "procurement",
     label: "المشتريات والموردين",

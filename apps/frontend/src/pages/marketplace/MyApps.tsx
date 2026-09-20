@@ -104,6 +104,7 @@ export const APP_ROUTE_MAP: Record<string, string> = {
   "executable-mindmap": "/mindmap",
   "order-preparation": "/orders/preparation",
   "order-preparation-hold": "/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP",
+  "treasury-expenses-pro": "/treasury-expenses",
 };
 
 export function getAppDestination(app: { slug: string; mainRoute?: string | null }): string {

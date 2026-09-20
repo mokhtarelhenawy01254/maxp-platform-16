@@ -4114,5 +4114,68 @@
     "engineCompatibility": null,
     "createdAt": "2026-09-04T00:00:00Z",
     "updatedAt": "2026-09-04T00:00:00Z"
+  },
+  {
+    "id": "cat-app-treasury-expenses",
+    "slug": "treasury-expenses-pro",
+    "name": "الخزينة والنفقات ورأس المال",
+    "nameEn": "Treasury & Expenses Pro",
+    "description": "إدارة نفقات ومصروفات الشركة، تتبع الخزائن النقدية والحسابات البنكية والمحافظ، ضخ رأس المال، والربط المحاسبي المباشر اللحظي مع منع السحب على المكشوف.",
+    "descriptionEn": "Manage company expenses and cash outflows, multi-vault cash reserves, bank accounts, capital injections, and real-time ledger with overdraft protection.",
+    "category": "FINANCE",
+    "pricingModel": "FREE",
+    "monthlyPrice": null,
+    "yearlyPrice": null,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب الشركات والمدراء الماليين الذين يرغبون في ضبط نفقات الشركة والخزائن ورأس المال بدقة متناهية.",
+      "surface": "داخل قسم الخزينة والنفقات — نظام FinOps متكامل بربط ذري لحظي.",
+      "outcome": "السيطرة التامة على سيولة الشركة ومعدل الحرق وصافي الأرباح دون فقدان أي قرش."
+    },
+    "features": {
+      "expensesTracking": {
+        "enabled": true,
+        "name": "تتبع النفقات والمصروفات",
+        "description": "تسجيل فوري للمصروفات مع التمييز بين التشغيلي (OPEX) والأصول (CAPEX).",
+        "access": "FREE"
+      },
+      "treasuryManagement": {
+        "enabled": true,
+        "name": "إدارة الخزائن والحسابات المتعددة",
+        "description": "تتبع رصيد الخزينة الكاش، الحسابات البنكية، والمحافظ مع التحويل البيني.",
+        "access": "FREE"
+      },
+      "capitalInjections": {
+        "enabled": true,
+        "name": "إيداع رأس المال وضخ السيولة",
+        "description": "إثبات رأس المال التأسيسي وزيادات التمويل وسلف الشركاء.",
+        "access": "FREE"
+      },
+      "auditLedger": {
+        "enabled": true,
+        "name": "كشف حساب الخزائن الموحد",
+        "description": "سجل تراكمي لحظي لكل حركة مالية مع الرصيد بعد الحركة (Running Balance).",
+        "access": "FREE"
+      },
+      "overdraftGuard": {
+        "enabled": true,
+        "name": "صمام منع السحب على المكشوف",
+        "description": "حظر الصرف في حال عدم كفاية رصيد الخزينة للحفاظ على التوازن المحاسبي.",
+        "access": "FREE"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": true,
+    "icon": "landmark",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-20T00:00:00Z",
+    "updatedAt": "2026-09-20T00:00:00Z"
   }
 ]
