@@ -1,23 +1,23 @@
 {
   "id": "redline-auto",
   "name": "Red Line Auto",
-  "description": "قالب مخصص وفائق التحويل لمنتجات وإكسسوارات السيارات مع التركيز على ستائر السيارات العازلة للحرارة والشمس، بدعم كامل للشراء المباشر بضغطة واحدة والمعاينة قبل الاستلام.",
+  "description": "قالب فاخر مخصص لستائر وإكسسوارات سيارات Red Line: مستنسخ من معمارية KHEMET MARKET الأقوى تحويلاً — عزل حراري 98%، تفصيل فابريقة بالمللي، وشراء فوري مع المعاينة والتجربة قبل الدفع.",
   "direction": "rtl",
   "tokens": {
     "colors": {
       "primary": "0 84% 50%",
       "primaryForeground": "0 0% 100%",
-      "secondary": "220 14% 10%",
-      "secondaryForeground": "220 8% 85%",
+      "secondary": "222 47% 11%",
+      "secondaryForeground": "210 40% 98%",
       "accent": "0 84% 50%",
       "accentForeground": "0 0% 100%",
       "background": "0 0% 98%",
-      "foreground": "220 18% 12%",
-      "muted": "220 10% 93%",
-      "mutedForeground": "220 8% 40%",
-      "border": "220 12% 85%",
+      "foreground": "222 47% 11%",
+      "muted": "220 14% 96%",
+      "mutedForeground": "220 9% 46%",
+      "border": "220 13% 88%",
       "card": "0 0% 100%",
-      "cardForeground": "220 18% 12%",
+      "cardForeground": "222 47% 11%",
       "ring": "0 84% 50%"
     },
     "typography": {
@@ -27,50 +27,77 @@
       "direction": "rtl"
     },
     "shape": {
-      "borderRadius": "0.75rem",
-      "buttonRadius": "0.5rem"
+      "borderRadius": "0.8rem",
+      "buttonRadius": "999px"
     },
     "productCard": {
-      "borderRadius": "0.75rem",
-      "boxShadow": "0 10px 30px -10px rgba(0, 0, 0, 0.1)",
-      "hoverShadow": "0 16px 40px -12px rgba(225, 29, 72, 0.15)",
-      "badgeRadius": "0.375rem",
-      "buttonRadius": "0.5rem",
+      "borderRadius": "0.8rem",
+      "boxShadow": "0 20px 45px -35px rgba(0, 0, 0, 0.2)",
+      "hoverShadow": "0 25px 50px -30px rgba(225, 29, 72, 0.25)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
       "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "center"
     }
   },
   "seo": {
-    "titleTemplate": "%s | Red Line Car Accessories",
-    "description": "ستائر شبابيك سيارات عازلة للحرارة والشمس 98% تفصيل بالمللي لموديل سيارتك كبس وجرار — عزل حراري، خصوصية VIP، والزجاج بينزل ويطلع عادي. اطلب الآن والدفع بعد المعاينة."
+    "titleTemplate": "%s | Red Line Auto — ستائر سيارات تفصيل بالمللي",
+    "description": "ستائر شبابيك سيارات عازلة للحرارة والشمس 98% تفصيل بالمللي لموديل سيارتك كبس وجرار بدون مسامير — خصوصية VIP والزجاج بينزل ويطلع بحرية. معاينة وتجربة قبل الدفع وتوصيل لكل مصر."
   },
   "preview": {
     "imageUrl": "https://cdn.shopify.com/s/files/1/0721/6640/8252/files/80_2437ebe3-f884-4c9b-911f-7e65d195688f.png?v=1787709797",
     "colors": [
-      "#E11D48",
-      "#111827",
-      "#FFFFFF"
+      "0 84% 50%",
+      "222 47% 11%",
+      "0 0% 98%"
     ]
   },
   "header": {
     "variant": "floating-dark",
+    "transparentOnHome": true,
     "brandName": "RED LINE",
     "showSearch": false,
     "showCart": true,
-    "announcementText": "خصم لفترة محدودة + معاينة وتجربة قبل الدفع مع التوصيل السريع لكل مصر",
     "navigation": [
-      { "label": "الرئيسية", "to": "/" },
-      { "label": "تفاصيل الستائر والمقاسات", "to": "/product/car-sunshades" },
-      { "label": "الأسئلة الشائعة", "to": "#faq" },
-      { "label": "اطلب الآن", "to": "#order" }
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "ستائر شبابيك السيارات",
+        "to": "/product/car-sunshades"
+      },
+      {
+        "label": "الأطقم والباقات",
+        "to": "/collections"
+      },
+      {
+        "label": "دليل المقاسات والباقات",
+        "to": "/size-guide"
+      },
+      {
+        "label": "المعاينة والضمان",
+        "to": "/shipping"
+      }
     ]
   },
   "footer": {
     "variant": "signature-panel",
-    "description": "Red Line — المتخصص الأول في مصر في ستائر شبابيك السيارات العازلة للحرارة بنسبة 98%، تفصيل بالمللي لمقاس حلق الباب الفابريقة مع تثبيت كبس بدون مسامير والمعاينة قبل الاستلام.",
+    "description": "Red Line Auto — المتخصص الأول في مصر في ستائر شبابيك السيارات العازلة للحرارة والشمس بنسبة 98%. تفصيل وثني شاسيه حديد مرن بالمللي لكل موديل سيارة مع تثبيت كبس بدون مسامير والمعاينة والتجربة قبل الدفع.",
     "copyrightText": "© 2026 Red Line Auto. جميع الحقوق محفوظة.",
     "contactRows": [
-      { "label": "واتساب", "value": "+20 15 00073277", "href": "https://wa.me/201500073277" },
-      { "label": "الدعم الفني", "value": "abdallahwaleed@gmail.com", "href": "mailto:abdallahwaleed@gmail.com" }
+      {
+        "label": "واتساب",
+        "value": "+20 15 00073277",
+        "href": "https://wa.me/201500073277"
+      },
+      {
+        "label": "الدعم الفني",
+        "value": "abdallahwaleed@gmail.com",
+        "href": "mailto:abdallahwaleed@gmail.com"
+      }
     ],
     "socialLinks": {
       "facebook": "https://www.facebook.com/profile.php?id=61593922131836",
@@ -78,263 +105,708 @@
     },
     "navigation": [
       {
-        "title": "المنتج والمقاسات",
+        "title": "الخدمة والضمان",
         "links": [
-          { "label": "ستائر سيارات عازلة للحرارة", "to": "/product/car-sunshades" },
-          { "label": "طقم سيدان 5 قطع", "to": "/product/car-sunshades" },
-          { "label": "طقم SUV جيب 7 قطع", "to": "/product/car-sunshades" }
+          {
+            "label": "المعاينة والتجربة قبل الدفع",
+            "to": "/shipping"
+          },
+          {
+            "label": "ضمان الاستبدال الفوري 14 يوم",
+            "to": "/shipping"
+          },
+          {
+            "label": "سياسة الخصوصية",
+            "to": "/privacy"
+          },
+          {
+            "label": "الشروط والأحكام",
+            "to": "/terms"
+          }
         ]
       },
       {
-        "title": "الضمان والسياسات",
+        "title": "الباقات والموديلات",
         "links": [
-          { "label": "سياسة المعاينة قبل الاستلام", "to": "/shipping" },
-          { "label": "ضمان الاستبدال الفوري", "to": "/returns" },
-          { "label": "الشروط والأحكام", "to": "/terms" }
+          {
+            "label": "طقم 5 قطع سيدان",
+            "to": "/product/car-sunshades"
+          },
+          {
+            "label": "طقم 7 قطع جيب و SUV",
+            "to": "/product/car-sunshades"
+          },
+          {
+            "label": "طقم 2 قطعة أمامي/خلفي",
+            "to": "/product/car-sunshades"
+          },
+          {
+            "label": "دليل اختيار الموديل",
+            "to": "/size-guide"
+          }
         ]
       }
     ],
     "legalLinks": [
-      { "label": "الخصوصية", "to": "/privacy" },
-      { "label": "الشروط", "to": "/terms" }
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
     ]
   },
   "pages": {
     "home": {
       "sections": [
         {
-          "type": "promo-strip",
-          "settings": {
-            "badge": "متاح لجميع موديلات السيارات",
-            "message": "تفصيل مخصوص بالمللي على مقاس عربيتك • معاينة وتجربة قبل الدفع • استبدال فوري إن لم تطابق الفابريقة",
-            "saleLabel": "خصم مباشر",
-            "shippingLabel": "توصيل سريع",
-            "returnLabel": "معاينة قبل الدفع",
-            "ctaText": "اطلب ستارتك الآن",
-            "ctaLink": "#order"
-          }
-        },
-        {
           "type": "hero-banner",
-          "variant": "speed-banner",
+          "variant": "cinematic-plinth",
           "settings": {
-            "eyebrow": "RED LINE • ORIGINAL SUNSHADES",
-            "title": "ستائر شبابيك سيارات عازلة للحرارة 98% — تفصيل بالمللي لموديل عربيتك",
-            "subtitle": "انسى حرارة الصيف والتابلوه الساخن: عزل حراري فوري، خصوصية VIP كاملة، تثبيت كبس بدون أي مسامير، والزجاج بينزل ويطلع بحرية تامة.",
-            "ctaText": "اطلب الآن — الدفع بعد المعاينة",
+            "eyebrow": "تفصيل بالمللي لموديل سيارتك • معاينة وتجربة قبل الدفع",
+            "title": "ستائر سيارات عازلة للحرارة 98%",
+            "subtitle": "تفصيل يدوي دقيق لشاسيه مرن غير قابل للكسر يركب كبس في ثوانٍ بدون مسامير أو لزق — والزجاج بينزل ويطلع بحرية تامة مع خصوصية VIP كاملة.",
+            "ctaText": "اطلب ستارتك الآن (الدفع بعد المعاينة)",
             "ctaLink": "/product/car-sunshades",
-            "secondaryCtaText": "مميزات الستارة",
-            "secondaryCtaLink": "#features"
-          }
-        },
-        {
-          "type": "features-bar",
-          "settings": {
-            "title": "ليه ستائر Red Line هي الاختيار رقم 1 في مصر؟",
-            "subtitle": "مصممة هندسياً لحماية سيارتك وراحتك في أصعب درجات حرارة الصيف.",
-            "items": [
+            "secondaryCtaText": "دليل الباقات والمقاسات",
+            "secondaryCtaLink": "/size-guide",
+            "backgroundImage": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=85&w=1920",
+            "highlights": [
               {
-                "icon": "Sun",
-                "title": "عزل حراري تام 98%",
-                "description": "قماش معالج بتقنية النانو لحجب الأشعة فوق البنفسجية وخفض حرارة الصالون فوراً."
+                "label": "عزل حراري",
+                "value": "98% حماية من الشمس و UV"
               },
               {
-                "icon": "CheckBadge",
-                "title": "تفصيل بالمللي لموديل سيارتك",
-                "description": "مطابقة تامة لحلق الباب فابريقة بدون أي فراغات أو مساحات تهوية للشمس."
+                "label": "تثبيت كبس",
+                "value": "فابريقة بدون مسامير أو لزق"
               },
               {
-                "icon": "ArrowDownOnSquare",
-                "title": "الزجاج بينزل ويطلع بحرية",
-                "description": "تقدر تفتح وتقفل زجاج العربية بالكامل بحرية والستارة ثابتة مكانها تماماً."
-              },
-              {
-                "icon": "WrenchScrewdriver",
-                "title": "تثبيت كبس بدون مسامير",
-                "description": "تركيب في 30 ثانية بدون أي تخريم أو لصق أو فك لفرش الباب الأصلي."
+                "label": "المعاينة",
+                "value": "تفتح وتجرب قبل ما تدفع"
               }
             ]
           }
         },
         {
-          "type": "featured-products",
-          "variant": "standard",
+          "type": "shopping-intents",
           "settings": {
-            "title": "الستائر العازلة الأكثر طلباً (كبس وجرار)",
-            "subtitle": "اختر عدد القطع والنوع المناسب لسيارتك واطلبها في دقيقة.",
+            "badge": "اختر باقة سيارتك",
+            "title": "باقات تناسب جميع موديلات السيارات",
+            "subtitle": "اختر الباقة الأنسب لاحتياجك وموديل عربيتك مع إمكانية اختيار الستائر كبس ثابتة أو جرار بالسحاب.",
+            "contentAlign": "center",
+            "items": "طقم سيدان 5 قطع|طقم سيدان 5 قطع|4 شبابيك جانبية + زجاج خلفي كامل لعزل الصالون بالكامل.|/product/car-sunshades|primary|الأكثر طلباً\nطقم SUV جيب 7 قطع|طقم SUV جيب 7 قطع|تغطية VIP شاملة لـ 4 أبواب + 2 هواية مثلث + الزجاج الخلفي.|/product/car-sunshades|accent|عزل كامل\nطقم 2 قطعة أمامي/خلفي|طقم 2 قطعة|حماية مركزة للسائق والمرافق أو للمقاعد الخلفية.|/product/car-sunshades|slate|توفير\nستائر جرار بسحاب|ستائر جرار بسحاب|حرية فتح الستارة جزئياً لدفع الكارتة أو التهوية بدون فك الستارة.|/product/car-sunshades|primary|جديد\nستارة خلفية فقط|ستارة خلفية فقط|حماية الأطفال وركاب الكنبة الخلفية من وهج الشمس المباشر.|/product/car-sunshades|accent|حماية\nمعاينة قبل الدفع|معاينة قبل الدفع|تستلم وتجرب على حلق باب عربيتك الأول وتدفع بعد التأكد 100%.|/shipping|slate|ضمان"
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "boutique-rail",
+          "settings": {
+            "eyebrow": "الأكثر طلباً",
+            "title": "ستائر السيارات الأكثر طلباً في مصر",
+            "subtitle": "تفصيل فابريقة بالمللي لأكثر من 500 موديل سيارة (كوري، ياباني، صيني، ألماني).",
+            "ctaText": "عرض كل الباقات",
+            "ctaLink": "/shop",
             "limit": 4
           }
         },
         {
           "type": "offer-bento",
+          "variant": "editorial-columns",
           "settings": {
-            "badge": "دليل الباقات والمقاسات",
-            "title": "اختر الطقم الأنسب لسيارتك",
-            "subtitle": "كل طقم مفصل بالمللي حسب موديل وسنة صنع سيارتك.",
+            "badge": "عروض الوفر",
+            "title": "وفر مع باقات الأطقم الكاملة",
+            "subtitle": "احصل على أعلى نسبة خصم عند طلب الطقم الكامل لسيارتك مع شحن سريع ومعاينة قبل الدفع.",
             "cards": [
               {
                 "label": "الأكثر مبيعاً",
-                "title": "طقم 5 قطع (سيدان وهاتشباك)",
-                "subtitle": "4 شبابيك جانبية + الزجاج الخلفي لحماية كاملة للصالون والتابلوه.",
-                "ctaText": "اطلب طقم 5 قطع",
+                "title": "طقم سيدان 5 قطع كبس",
+                "subtitle": "حماية متكاملة لـ 4 شبابيك جانبية + شباك خلفي بخصم خاص.",
+                "ctaText": "اطلب الطقم الآن",
                 "link": "/product/car-sunshades",
                 "tone": "primary",
-                "stat": "400 - 480 ج.م"
+                "stat": "وفر 200 ج"
               },
               {
-                "label": "حماية كاملة VIP",
-                "title": "طقم 7 قطع (جيب و SUV)",
-                "subtitle": "تغطية شاملة لكل الشبابيك بما فيها شبابيك الشنطة والمثلثات الخلفية.",
-                "ctaText": "اطلب طقم 7 قطع",
+                "label": "أصحاب الجيب و SUV",
+                "title": "طقم 7 قطع كامل",
+                "subtitle": "تغطية صالون كاملة لـ 4 أبواب و 2 هواية مثلثة وشباك خلفي.",
+                "ctaText": "اطلب طقم SUV",
                 "link": "/product/car-sunshades",
                 "tone": "accent",
-                "stat": "550 - 700 ج.م"
+                "stat": "تغطية 100%"
               },
               {
-                "label": "اقتصادي سريع",
-                "title": "طقم 2 قطع (الشبابيك الأمامية أو الخلفية)",
-                "subtitle": "مناسب لعزل مقاعد السائق والراكب الأمامي أو راحة الأطفال في الخلف.",
-                "ctaText": "اطلب طقم 2 قطع",
+                "label": "راحة إضافية",
+                "title": "ستائر جرار بالسحاب",
+                "subtitle": "مزودة بسحاب معدني عملي لدفع الكارتات والتهوية دون الحاجة لفك الستارة.",
+                "ctaText": "اختر الجرار",
                 "link": "/product/car-sunshades",
                 "tone": "slate",
-                "stat": "150 - 180 ج.م"
+                "stat": "سحاب ذكي"
               }
             ]
-          }
-        },
-        {
-          "type": "reviews",
-          "variant": "compact",
-          "settings": {
-            "title": "تجارب حقيقية لعملاء Red Line",
-            "subtitle": "آراء أصحاب السيارات بعد تجربة عزل الستائر ومطابقة المقاس الفابريقة.",
-            "verifiedLabel": "طلب موثق ومعاين",
-            "reviewLimit": 4
-          }
-        },
-        {
-          "type": "info-content",
-          "settings": {
-            "title": "الأسئلة الشائعة حول ستائر Red Line",
-            "subtitle": "إجابات سريعة على أهم الاستفسارات قبل تأكيد طلبك.",
-            "faqs": [
-              {
-                "question": "هل الستائر متوفرة لجميع أنواع وموديلات السيارات؟",
-                "answer": "نعم، لدينا مقاسات وحلقات أبواب جميع السيارات الملاكي والـ SUV في مصر (كوري، ياباني، أوروبي، صيني) من أقدم الموديلات حتى 2026."
-              },
-              {
-                "question": "إزاي الستارة بتثبت وهل بتحتاج مسامير؟",
-                "answer": "تثبيت كبس محكم جداً على حلق الباب الداخلي مباشرة بدون أي مسامير أو لزق أو تخريم، وثابتة تماماً حتى مع المطبات وسرعات السفر."
-              },
-              {
-                "question": "هل أقدر أنزل زجاج الباب والستارة راكبة؟",
-                "answer": "بالتأكيد! الزجاج ينزل ويطلع بكامل حريته والستارة ثابتة مكانها، وده بيوفر لك تهوية ممتازة مع حماية تامة من الشمس والأتربة والحشرات."
-              },
-              {
-                "question": "إيه الفرق بين الستائر الثابتة والجرار؟",
-                "answer": "الستارة الثابتة تغطي الشباك بالكامل وتُثبت كبس، أما الجرار فتتميز بوجود سحاب داخلي يمكنك من فتح جزء من الستارة يدوياً لدفع الكارتة أو التحدث بدون فك الستارة."
-              },
-              {
-                "question": "إيه نظام الدفع والاستلام؟",
-                "answer": "الدفع عند الاستلام بعد ما تعاين الستارة وتتأكد من خاماتها ومقاسها على باب عربيتك."
-              }
-            ]
-          }
-        }
-      ]
-    },
-    "shop": {
-      "layoutHint": "commerce-3col",
-      "sections": [
-        {
-          "type": "hero-banner",
-          "variant": "speed-banner",
-          "settings": {
-            "eyebrow": "RED LINE SHOP",
-            "title": "ستائر السيارات العازلة الأصلية",
-            "subtitle": "اختر المقاس والنوع المناسب لسيارتك واطلب توصيل سريع.",
-            "ctaText": "اطلب الآن",
-            "ctaLink": "/product/car-sunshades"
           }
         },
         {
           "type": "product-grid",
-          "variant": "standard",
+          "variant": "boutique-shelf",
           "settings": {
-            "title": "منتجات الستائر المتاحة",
+            "title": "أحدث باقات وإصدارات الستائر",
+            "subtitle": "شاسيهات حديد مرنة تفصيل فابريقة",
             "limit": 12
           }
-        }
-      ]
-    },
-    "pdp": {
-      "sections": [
-        { "type": "product-gallery", "variant": "standard" },
+        },
         {
-          "type": "product-info",
-          "variant": "specs-grid",
+          "type": "features-bar",
+          "variant": "trust-strip",
           "settings": {
-            "descriptionTitle": "المواصفات ومميزات العزل",
-            "shippingTitle": "الشحن والمعاينة",
-            "shippingText": "تجهيز وشحن فوري لكل المحافظات خلال 48 ساعة مع المعاينة والتجربة قبل الدفع.",
-            "guaranteesTitle": "ضمانات Red Line",
-            "guaranteeStyle": "grid",
-            "guaranteeItems": "عزل حراري 98%|حماية أكيدة من حرارة وشمس الصيف.\nمعاينة قبل الدفع|جرب المقاس على باب عربيتك قبل الاستلام.\nاستبدال فوري|في حالة عدم تطابق الموديل بالمللي."
+            "title": "المواصفات الفنية والهندسية لستائر Red Line",
+            "subtitle": "صممت خصيصاً لتتحمل درجات الحرارة العالية وأشعة شمس الصيف الحارقة.",
+            "items": [
+              {
+                "icon": "shield",
+                "title": "عزل حراري 98% وحماية UV",
+                "description": "قماش شبكي كوري دقيق يمنع اختراق الأشعة فوق البنفسجية ويحافظ على برودة التكييف والتابلوه."
+              },
+              {
+                "icon": "truck",
+                "title": "شاسيه حديد مرن غير قابل للكسر",
+                "description": "شاسيه معدني معالج ضد الصدأ ومغلف بطبقة حماية يركب كبس داخل حلق الباب بدون أي تعديل."
+              },
+              {
+                "icon": "star",
+                "title": "الزجاج بينزل ويطلع بحرية",
+                "description": "الستارة تثبت على جسم الباب الداخلي وليس على الزجاج، مما يتيح فتح الزجاج بالكامل مع بقاء الستارة حاجزة للأتربة."
+              }
+            ]
           }
         },
-        { "type": "conversion-stack", "variant": "minimal" },
-        { "type": "delivery-proof", "variant": "minimal" },
         {
-          "type": "reviews",
-          "variant": "compact",
+          "type": "newsletter",
+          "variant": "editorial-strip",
           "settings": {
-            "title": "تقييمات وتجارب العملاء",
-            "verifiedLabel": "مشتري موثق",
-            "reviewLimit": 6
+            "title": "خليك أول من يعرف عروض السيارات",
+            "subtitle": "خصم خاص على باقات السيارات الجديدة وعروض الصيف توصلك أولاً.",
+            "buttonText": "اشتراك",
+            "placeholder": "بريدك الإلكتروني"
           }
         }
-      ]
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "minimal-toolbar",
+          "settings": {
+            "simpleToolbar": true,
+            "clearButtonText": "مسح",
+            "hideHeader": true,
+            "hideSearch": true,
+            "hideDesktopCategoryChips": true
+          }
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "simpleCatalog": true,
+            "categoryLabel": "التصنيفات",
+            "priceLabel": "السعر",
+            "allProductsLabel": "كل الأطقم والباقات",
+            "clearButtonText": "مسح الفلاتر",
+            "showSearch": false,
+            "showSort": false,
+            "showCategories": true,
+            "showPriceFilter": true,
+            "showMobileLabel": "الفلاتر",
+            "hideMobileLabel": "إغلاق"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "boutique-shelf",
+          "settings": {
+            "hideHeader": true,
+            "limit": 48
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "elessi-showroom"
+        },
+        {
+          "type": "product-info",
+          "variant": "elessi-care-buybox",
+          "settings": {
+            "addToCartText": "أضف للسلة",
+            "buyNowText": "اطلب الآن (الدفع بعد المعاينة)",
+            "descriptionTitle": "المواصفات الفنية وتفاصيل الستارة",
+            "shippingTitle": "المعاينة والشحن وضمان الاستبدال",
+            "shippingText": "التوصيل متاح لكل محافظات مصر خلال 24 إلى 48 ساعة. بتفتح وتجرب الستارة على حلق باب عربيتك وتتأكد من المقاس الفابريقة والتشطيب قبل ما تدفع قرش واحد لمندوب الشحن، مع ضمان استبدال فوري خلال 14 يوم.",
+            "shippingInteraction": "modal",
+            "shippingTriggerText": "شاهد سياسة المعاينة والتجربة قبل الدفع والاستبدال الفوري.",
+            "shippingModalTitle": "المعاينة والتجربة قبل الدفع",
+            "guaranteesTitle": "ثقة تامة قبل وأثناء الاستلام",
+            "guaranteesSubtitle": "المقاس، الخامة، والعزل الحراري مضمونين بالمللي لموديل سيارتك.",
+            "guaranteeItems": "[{\"title\":\"معاينة وتجربة قبل الدفع\",\"description\":\"جرب الستارة على باب عربيتك واتأكد من مقاسها قبل ما تدفع أي مليم.\"},{\"title\":\"عزل حراري 98% وحماية UV\",\"description\":\"قماش كوري مخرم بتقنية النانو يحجب حرارة الشمس ويحمي الصالون والتابلوه.\"},{\"title\":\"شاسيه حديد مرن غير قابل للكسر\",\"description\":\"تثبيت كبس فابريقة بدون مسامير أو لزق، والزجاج بينزل ويطلع بحرية تامة.\"},{\"title\":\"ضمان استبدال فوري 14 يوم\",\"description\":\"لو المقاس أو الموديل فيه أي اختلاف بنبدله فوراً على حسابنا.\"}]",
+            "sizeGuideText": "دليل باقات ومقاسات السيارات",
+            "sizeGuideLink": "/size-guide",
+            "sizeGuideInteraction": "modal",
+            "sizeGuideModalTitle": "دليل باقات الستائر لموديلات السيارات",
+            "fitNote": "جميع الستائر يتم تفصيلها وثني الشاسيه بالمللي طبقاً لباترون حلق الباب الفابريقة لموديل وسنة صنع سيارتك.",
+            "guideRows": "سيدان|طقم 5 قطع|4 شبابيك جانبية + زجاج خلفي كامل|عزل وحماية كاملة للصالون والركاب\nSUV / جيب|طقم 7 قطع|4 أبواب + 2 هواية مثلثة + زجاج خلفي|تغطية شاملة لكل زجاج السيارة\nأمامي / خلفي|طقم 2 قطعة|شباكين أماميين أو خلفيين حسب رغبتك|مثالي للحماية السريعة للسائق والمرافق\nستارة خلفية فقط|1 قطعة|زجاج خلفي كامل|لحماية الأطفال والمقاعد الخلفية من الشمس المباشرة"
+          }
+        },
+        {
+          "type": "quantity-offers",
+          "variant": "selection-rail",
+          "settings": {
+            "title": "عروض الباقات والوفر",
+            "subtitle": "اختار الباقة المناسبة لعربيتك (2، 3، 5، أو 7 قطع) ونوع الستارة (كبس أو جرار بالسحاب).",
+            "decisionMode": "primary",
+            "continueToFormLabel": "أكمل بيانات التوصيل وموديل السيارة",
+            "placement": "inline-buybox"
+          }
+        },
+        {
+          "type": "pdp-checkout",
+          "settings": {
+            "title": "بيانات طلب الستارة لموديل سيارتك",
+            "subtitle": "الاسم ورقم الهاتف والمحافظة والعنوان وموديل سيارتك.",
+            "emptyStateText": "اختر الباقة المناسبة أولاً.",
+            "scrollToBuyBoxText": "اختيار الباقة",
+            "submitButtonText": "تأكيد الطلب (الدفع بعد المعاينة)",
+            "formVariant": "khemet-luxe-eg",
+            "placement": "before-description",
+            "surfaceMode": "merged-buybox",
+            "showQuantity": false,
+            "showAddToCartButton": false,
+            "showOrderSummary": true,
+            "fields": {
+              "alternatePhone": {
+                "enabled": true,
+                "required": false
+              }
+            }
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "elessi-story-grid",
+          "settings": {
+            "title": "آراء وتقييمات أصحاب السيارات بعد التجربة",
+            "mediaTitle": "صور وتجارب من سيارات عملائنا",
+            "mediaDescription": "صور حية لستائر Red Line راكبة على موديلات كوري وياباني وألماني وصيني.",
+            "listTitle": "كل التقييمات الموثقة",
+            "writeReviewText": "شارك تجربتك مع الستارة",
+            "emptyText": "كن أول من يشارك تجربة الستارة لسيارتك.",
+            "verifiedLabel": "شراء وتجربة موثقة",
+            "reviewsLabel": "تقييمات",
+            "reviewLimit": 4,
+            "showMediaFeed": true
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "elessi-complete-set",
+          "settings": {
+            "title": "باقات أخرى قد تناسبك",
+            "subtitle": "أطقم الستائر والملحقات المتوافقة مع سيارتك.",
+            "limit": 4
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
     },
     "cart": {
       "sections": [
         {
           "type": "cart-items",
-          "variant": "compact",
+          "variant": "wardrobe-cart",
           "settings": {
-            "title": "سلة الطلبات",
-            "continueShoppingText": "العودة لتفاصيل الستارة"
+            "title": "سلة طلبات Red Line Auto",
+            "emptyText": "سلتك فارغة حالياً.",
+            "continueShoppingText": "متابعة التسوق",
+            "showUpsell": false,
+            "headerBadge": ""
           }
         },
         {
           "type": "order-summary",
-          "variant": "highlighted",
+          "variant": "boutique-summary",
           "settings": {
             "title": "ملخص الطلب",
-            "checkoutButtonText": "تأكيد الطلب — الدفع عند الاستلام",
-            "showTrustRow": true,
-            "showFreeShippingProgress": true
+            "shippingHelpText": "سيتم احتساب الشحن بعد اختيار المحافظة في صفحة الدفع.",
+            "couponPlaceholder": "كود الخصم",
+            "couponButtonText": "تطبيق",
+            "checkoutButtonText": "إتمام الشراء",
+            "assuranceTitle": "يشملك مع كل طلب من Red Line",
+            "assuranceItems": [
+              "معاينة وتجربة حية على سيارتك قبل دفع ثمن الطلب",
+              "تفصيل فابريقة بالمللي لشاسيه مرن غير قابل للكسر",
+              "ضمان استبدال فوري خلال 14 يوماً بدون أي مصاريف"
+            ]
           }
         }
       ]
     },
     "checkout": {
+      "layoutHint": "sidebar-right",
+      "settings": {
+        "injectCartItems": false,
+        "sidebarVisualDirection": "ltr",
+        "surfaceTone": "flat-checkout"
+      },
       "sections": [
         {
           "type": "checkout-form",
-          "variant": "compact",
+          "variant": "soft-flow",
           "settings": {
-            "contactTitle": "بيانات التواصل وموديل السيارة",
-            "shippingTitle": "عنوان التوصيل (المحافظة والمدينة)"
+            "contactTitle": "بيانات التواصل",
+            "contactDescription": "",
+            "shippingTitle": "عنوان الشحن وموديل السيارة",
+            "shippingDescription": "",
+            "notesTitle": "موديل وسنة صنع السيارة (مهم جداً للتفصيل بالمللي)",
+            "showNotesSection": true,
+            "notesOptionalLabel": "(مهم للتفصيل)",
+            "fullNameLabel": "الاسم الكامل",
+            "fullNamePlaceholder": "مثال: أحمد محمود",
+            "emailLabel": "البريد الإلكتروني",
+            "emailPlaceholder": "name@example.com",
+            "phoneLabel": "رقم الهاتف الأساسي",
+            "phonePlaceholder": "01xxxxxxxxx",
+            "addressLabel": "العنوان بالتفصيل",
+            "addressPlaceholder": "الشارع، المنطقة، والمدينة",
+            "cityLabel": "المدينة / المركز",
+            "cityPlaceholder": "مثال: مدينة نصر / المنصورة",
+            "governorateLabel": "المحافظة",
+            "governoratePlaceholder": "اختر المحافظة",
+            "notesPlaceholder": "اكتب هنا موديل سيارتك وسنة الصنع بالتفصيل (مثال: هيونداي إلنترا CN7 موديل 2022)"
           }
         },
         {
           "type": "payment",
-          "variant": "cards",
+          "variant": "boutique-payment",
           "settings": {
             "title": "طريقة الدفع",
-            "confirmOrderText": "تأكيد الطلب — الدفع عند الاستلام",
-            "codLabel": "دفع عند الاستلام (بعد المعاينة والتجربة)",
-            "cardLabel": "بطاقة بنكية"
+            "subtitle": "الدفع عند الاستلام بعد المعاينة والتجربة على سيارتك.",
+            "summaryTitle": "ملخص الطلب",
+            "confirmOrderText": "تأكيد الطلب (الدفع بعد المعاينة)",
+            "payButtonPrefix": "تأكيد",
+            "processingText": "جارٍ المعالجة...",
+            "shippingPromptText": "اختر المحافظة لحساب تكلفة الشحن.",
+            "enterGovernorateText": "اختر المحافظة",
+            "enabledMethods": [
+              "cod",
+              "card"
+            ],
+            "codLabel": "الدفع عند الاستلام بعد المعاينة",
+            "codDesc": "افحص وجرب الستارة على سيارتك وادفع نقدًا عند التأكد 100%",
+            "cardLabel": "بطاقة الائتمان",
+            "cardDesc": "Visa, Mastercard",
+            "showHeaderBadge": false,
+            "showSummaryCard": false,
+            "showAssuranceCard": false,
+            "showNextSteps": false
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary",
+          "settings": {
+            "title": "",
+            "subtitle": "",
+            "headerBadge": "",
+            "lineItemsTitle": "",
+            "showLineItems": true,
+            "lineItemsEditable": true,
+            "shippingHelpText": "رسوم الشحن تظهر فور اختيار المحافظة.",
+            "couponPlaceholder": "كود الخصم",
+            "couponButtonText": "تطبيق",
+            "subtotalLabel": "المجموع الفرعي",
+            "shippingLabel": "الشحن",
+            "shippingValueText": "يحسب بعد اختيار المحافظة",
+            "totalLabel": "الإجمالي",
+            "showCouponField": true,
+            "showFreeShippingProgress": false,
+            "hideCheckoutButton": true,
+            "showTrustRow": false,
+            "showAssuranceCard": false,
+            "showNextSteps": false
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "soft-thanks",
+          "settings": {
+            "title": "تم استلام طلبك بنجاح!",
+            "description": "استلمنا طلبك، وسنقوم بمراجعة موديل وسنة صنع سيارتك وبدء تفصيل الستائر والتواصل معك لتأكيد الشحن خلال 24 ساعة.",
+            "continueShoppingText": "متابعة التسوق",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "لو أردت الاستفسار عن الشحن أو تعديل موديل السيارة، تواصل معنا عبر",
+            "statusLabel": "قيد التجهيز والتفصيل",
+            "whatsappSupportLabel": "واتساب الدعم",
+            "trackOrderTitle": "متابعة حالة الطلب",
+            "trackOrderDescription": "اكتب نفس رقم الموبايل المستخدم وقت الطلب لمعرفة آخر تحديث.",
+            "trackOrderButtonText": "عرض حالة الطلب",
+            "reorderTitle": "إعادة طلب نفس الباقة",
+            "reorderDescription": "يمكنك إعادة نفس الباقة لسيارة أخرى بضغطة واحدة.",
+            "reorderButtonText": "أعد المنتجات للسلة",
+            "reorderSuccessText": "تمت إعادة المنتجات للسلة.",
+            "recommendedTitle": "باقات إضافية قد تهمك",
+            "recommendedSubtitle": "أطقم ومستلزمات حماية سيارتك.",
+            "recommendedBadge": "اختيارات متوافقة",
+            "recommendedVariant": "boutique-afterglow"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "عروض الصيف",
+            "message": "خصومات حصرية على باقات ستائر السيارات لفترة محدودة — حماية 98% من أشعة الشمس.",
+            "saleLabel": "وفر حتى 200 ج",
+            "shippingLabel": "شحن سريع لكل مصر",
+            "returnLabel": "معاينة قبل الدفع",
+            "ctaText": "تصفح العروض",
+            "ctaLink": "/product/car-sunshades"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "عروض باقات Red Line",
+            "subtitle": "أطقم ستائر كاملة بأسعار موسمية خاصة قبل دخول موجات الحرارة.",
+            "ctaText": "اطلب الآن",
+            "ctaLink": "/product/car-sunshades",
+            "secondaryCtaText": "شاهد الباقات",
+            "secondaryCtaLink": "/collections"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "باقات العروض الخاصة",
+            "limit": 12,
+            "saleOnly": true,
+            "emptyStateTitle": "لا توجد عروض منتهية",
+            "emptyStateDescription": "جميع باقات الستائر متاحة الآن مع المعاينة قبل الدفع.",
+            "clearButtonText": "كل الباقات"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "عروض السيارات أولاً بأول",
+            "subtitle": "اشترك لتصلك عروض الباقات والخصومات الموسمية قبل الجميع.",
+            "buttonText": "اشترك الآن",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "variant": "gallery-columns",
+          "settings": {
+            "title": "باقات ستائر Red Line",
+            "subtitle": "اختر الباقة المتوافقة تماماً مع نوع وهيكل سيارتك.",
+            "limit": 3,
+            "preferRuntimeCategories": true,
+            "ctaText": "كل الباقات",
+            "ctaLink": "/shop",
+            "collections": [
+              {
+                "title": "طقم سيدان 5 قطع",
+                "subtitle": "4 أبواب جانبية + شباك خلفي لعزل الصالون بالكامل.",
+                "image": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1200",
+                "link": "/product/car-sunshades"
+              },
+              {
+                "title": "طقم SUV جيب 7 قطع",
+                "subtitle": "تغطية VIP شاملة لـ 4 أبواب و 2 هواية مثلث وزجاج خلفي.",
+                "image": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=1200",
+                "link": "/product/car-sunshades"
+              },
+              {
+                "title": "ستائر جرار بسحاب",
+                "subtitle": "مرونة فتح جزئي لدفع الكارتة والتهوية دون فك الستارة.",
+                "image": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=1200",
+                "link": "/product/car-sunshades"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "boutique-shelf",
+          "settings": {
+            "title": "الأكثر طلباً لموديلات السيارات",
+            "subtitle": "باقات تفصيل فابريقة جاهزة للتسليم",
+            "limit": 12
+          }
+        }
+      ]
+    },
+    "size-guide": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "دليل الباقات",
+            "message": "معرفة باقة سيارتك يضمن لك الحصول على تفصيل فابريقة 100% بالمللي.",
+            "saleLabel": "سيدان • SUV • هاتشباك",
+            "shippingLabel": "تفصيل لكل الموديلات",
+            "returnLabel": "معاينة قبل الدفع",
+            "ctaText": "اطلب الآن",
+            "ctaLink": "/product/car-sunshades"
+          }
+        },
+        {
+          "type": "size-guide",
+          "variant": "detailed",
+          "settings": {
+            "badge": "دليل المقاسات والباقات",
+            "title": "دليل باقات ستائر السيارات بالمللي",
+            "subtitle": "مرجع تفصيلي لاختيار الباقة الأنسب لسيارتك سواء سيدان، SUV، أو هاتشباك.",
+            "note": "يتم تفصيل شاسيه كل ستارة طبقاً لبترون حلق الباب الفابريقة لموديل وسنة صنع سيارتك بالضبط، ويكفي كتابة موديل السيارة وسنة الصنع في خانة الملاحظات.",
+            "ctaText": "اطلب باقة سيارتك الآن",
+            "ctaLink": "/product/car-sunshades",
+            "guideRows": "سيدان|طقم 5 قطع|4 شبابيك جانبية + زجاج خلفي كامل|عزل وحماية كاملة للصالون والركاب\nSUV / جيب|طقم 7 قطع|4 أبواب + 2 هواية مثلثة + زجاج خلفي|تغطية شاملة لكل زجاج السيارة\nأمامي / خلفي|طقم 2 قطعة|شباكين أماميين أو خلفيين حسب رغبتك|مثالي للحماية السريعة للسائق والمرافق\nستارة خلفية فقط|1 قطعة|زجاج خلفي كامل|لحماية الأطفال والمقاعد الخلفية من الشمس المباشرة"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "جديد موديلات السيارات",
+            "subtitle": "اشترك لتصلك تحديثات الباقات المتوافقة مع الموديلات الحديثة أولاً.",
+            "buttonText": "اشترك",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "المعاينة والشحن والضمان",
+            "subtitle": "توصيل سريع لكل محافظات مصر مع ميزة المعاينة والتجربة على سيارتك قبل دفع مليم واحد، وضمان استبدال فوري 14 يوماً.",
+            "ctaText": "اطلب ستارتك الآن",
+            "ctaLink": "/product/car-sunshades",
+            "secondaryCtaText": "دليل الباقات",
+            "secondaryCtaLink": "/size-guide"
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "حقك قبل الدفع",
+            "title": "سياسة المعاينة والتجربة على سيارتك",
+            "subtitle": "ثقتك تهمنا: في Red Line، أنت لا تدفع ثمن الطلب إلا بعد التأكد من مطابقة الستائر لسيارتك 100%.",
+            "body": "1. المعاينة والتجربة الفورية:\nعند وصول مندوب الشحن، يتيح لك فتح الشحنة وتركيب الستائر كبس على حلق باب سيارتك والتأكد من مطابقة المقاس والتشطيب والعزل التام.\n\n2. الشحن السريع:\nيتم تجهيز وشحن الستائر خلال 24 إلى 48 ساعة لمعظم محافظات مصر (القاهرة، الجيزة، الإسكندرية، الدلتا، القناة، والصعيد).\n\n3. ضمان الاستبدال الفوري:\nفي حال وجود أي اختلاف في المقاس أو موديل السيارة، نقوم باستبدال الطقم فوراً وبشكل مجاني دون أي تكاليف شحن إضافية.",
+            "detailsTitle": "ملخص الخدمة والضمان",
+            "details": "المعاينة|تفتح وتجرب على باب عربيتك قبل الدفع\nالتوصيل|خلال 24-48 ساعة لجميع المحافظات\nالاستبدال|فوري ومجاني خلال 14 يوماً\nالدعم|متوفر هاتفياً وعبر واتساب",
+            "ctaText": "اطلب باقة سيارتك الآن",
+            "ctaLink": "/product/car-sunshades"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "سياسة الخصوصية",
+            "subtitle": "نلتزم بحماية بياناتك الشخصية وبيانات سيارتك واستخدامها فقط لتجهيز وتوصيل طلبك بأعلى دقة.",
+            "ctaText": "تصفح الستائر",
+            "ctaLink": "/product/car-sunshades",
+            "secondaryCtaText": "الشحن والمعاينة",
+            "secondaryCtaLink": "/shipping"
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "حماية البيانات",
+            "title": "كيف نستخدم بياناتك؟",
+            "subtitle": "بياناتك تستخدم فقط لتنفيذ الطلب وتفصيل الستارة المناسبة لموديل سيارتك.",
+            "body": "نستخدم بيانات الاتصال لتأكيد تفاصيل وموديل سيارتك وسنة الصنع.\n\nنشارك فقط العنوان ورقم الهاتف مع شركة الشحن المعتمدة لتوصيل الطلب إلى باب منزلك أو عملك.\n\nلا نقوم بمشاركة أي بيانات مع أي أطراف ثالثة لأغراض دعائية غير متعلقة بطلبك.",
+            "detailsTitle": "البيانات المطلوبة",
+            "details": "بيانات التواصل|الاسم ورقم الهاتف\nبيانات الشحن|المحافظة والعنوان\nبيانات السيارة|الموديل وسنة الصنع للتفصيل\nالاستخدام|التأكيد والتوصيل والدعم الفني",
+            "ctaText": "تصفح الستائر",
+            "ctaLink": "/product/car-sunshades"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "الشروط والأحكام",
+            "subtitle": "شروط واضحة وشفافة تضمن حقك في المعاينة والتجربة والضمان قبل وبعد استلام ستائر سيارتك.",
+            "ctaText": "اطلب الآن",
+            "ctaLink": "/product/car-sunshades",
+            "secondaryCtaText": "دليل المقاسات",
+            "secondaryCtaLink": "/size-guide"
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "شفافية كاملة",
+            "title": "شروط الشراء والاستلام",
+            "subtitle": "قواعد واضحة تضمن أفضل تجربة شراء لإكسسوارات سيارتك.",
+            "body": "1. دقة موديل السيارة:\nيرجى ذكر موديل السيارة وسنة الصنع بدقة لضمان ثني شاسيه الستارة وقصه طبقاً لباترون الفابريقة.\n\n2. المعاينة عند الاستلام:\nيحق للعميل فحص الستائر والتأكد من مطابقتها قبل سداد القيمة لمندوب شركة الشحن.\n\n3. الاستبدال:\nيسري ضمان الاستبدال لمدة 14 يوماً من تاريخ الاستلام في حالة وجود أي عيب مصنعي أو خطأ في المقاس.",
+            "detailsTitle": "البنود الأساسية",
+            "details": "الأسعار|شاملة الستائر طبقاً للباقة المختارة\nالشحن|يحسب حسب المحافظة ويظهر قبل التأكيد\nالمعاينة|مكفولة بالكامل قبل دفع المبلغ\nالضمان|استبدال فوري 14 يوماً",
+            "ctaText": "اطلب ستارتك الآن",
+            "ctaLink": "/product/car-sunshades"
           }
         }
       ]

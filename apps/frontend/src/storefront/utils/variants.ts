@@ -29,6 +29,18 @@ const CANONICAL_ATTRIBUTE_LABELS: Record<string, string> = {
   '\u0627\u0644\u062e\u0627\u0645\u0629': 'Material',
   style: 'Style',
   '\u0627\u0644\u0637\u0631\u0627\u0632': 'Style',
+  'عدد القطع': 'Pieces',
+  عدد_القطع: 'Pieces',
+  'العدد': 'Pieces',
+  'قطع': 'Pieces',
+  pieces: 'Pieces',
+  'pieces-count': 'Pieces',
+  pieces_count: 'Pieces',
+  'نوع الستارة': 'Type',
+  'نوع_الستارة': 'Type',
+  النوع: 'Type',
+  نوع: 'Type',
+  type: 'Type',
 };
 
 const ARABIC_ATTRIBUTE_LABELS: Record<string, string> = {
@@ -36,6 +48,8 @@ const ARABIC_ATTRIBUTE_LABELS: Record<string, string> = {
   Size: 'المقاس',
   Material: 'الخامة',
   Style: 'الطراز',
+  Pieces: 'عدد القطع',
+  Type: 'النوع',
   Option: 'الخيار',
 };
 
@@ -74,7 +88,7 @@ export function getVariantAttributeLabel(
 ): string {
   const canonicalKey = canonicalizeAttributeKey(key);
   if (!prefersArabicCopy) {
-    return canonicalKey.replace(/[:_ـ\-]+$/g, '').trim();
+    return canonicalKey.replace(/[:_ـ\-]+/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
   if (ARABIC_ATTRIBUTE_LABELS[canonicalKey]) {
@@ -86,7 +100,7 @@ export function getVariantAttributeLabel(
     return `الخيار ${optionMatch[1]}`;
   }
 
-  return canonicalKey.replace(/[:_ـ\-]+$/g, '').trim();
+  return canonicalKey.replace(/[:_ـ\-]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function normalizeVariantAttributes(
