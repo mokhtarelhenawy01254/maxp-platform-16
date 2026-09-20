@@ -32,9 +32,16 @@ export const useIpGovernorateDetection = (): void => {
           typeof window !== "undefined" &&
           window.sessionStorage?.getItem("sf-gov-manual-selection") === "true";
 
+        const isCairoDefault =
+          current.governorate === "Cairo" ||
+          current.governorate === "القاهرة";
+        const isDifferentThanTarget =
+          governorate !== current.governorate &&
+          (governorate !== "Cairo" && governorate !== "القاهرة");
+
         if (
           !current.governorate?.trim() ||
-          (!isManuallySelected && current.governorate === "Cairo" && governorate !== "Cairo")
+          (!isManuallySelected && isCairoDefault && isDifferentThanTarget)
         ) {
           useCheckoutStore.getState().updateFormData({
             governorate,

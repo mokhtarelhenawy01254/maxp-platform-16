@@ -969,10 +969,18 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         ? (storefrontSettings as any).settings.storeName
         : theme.header?.brandName || theme.name || '';
 
+    const isCorruptedString = (val: unknown): boolean => {
+      if (typeof val !== 'string') return true;
+      const s = val.trim();
+      return !s || /^\?{2,}/.test(s) || s.includes('???');
+    };
+
     const rawMetaTitle = (product as Record<string, unknown>).metaTitle;
+    const cleanMetaTitle = !isCorruptedString(rawMetaTitle) ? String(rawMetaTitle).trim() : '';
+    const cleanProductName = !isCorruptedString(product.name) ? String(product.name).trim() : '';
     const pageTitle =
-      (typeof rawMetaTitle === 'string' && rawMetaTitle.trim()) ||
-      (product.name ? `${product.name} | ${storeName}` : storeName);
+      cleanMetaTitle ||
+      (cleanProductName ? `${cleanProductName} | ${storeName}` : storeName);
 
     document.title = pageTitle;
 
@@ -987,11 +995,13 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     };
 
     const rawMetaDesc = (product as Record<string, unknown>).metaDescription;
+    const cleanRawDesc = !isCorruptedString(rawMetaDesc) ? String(rawMetaDesc).trim() : '';
+    const fallbackDesc = typeof product.description === 'string'
+      ? product.description.replace(/<[^>]*>/g, '').trim()
+      : '';
     const cleanDesc =
-      (typeof rawMetaDesc === 'string' && rawMetaDesc.trim()) ||
-      (typeof product.description === 'string'
-        ? product.description.replace(/<[^>]*>/g, '').trim()
-        : '') ||
+      cleanRawDesc ||
+      (!isCorruptedString(fallbackDesc) ? fallbackDesc : '') ||
       '';
 
     if (cleanDesc) {
@@ -999,8 +1009,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       setMeta('meta[property="og:description"]', 'property', 'og:description', cleanDesc.slice(0, 200));
     }
 
-    if (product.name) {
-      setMeta('meta[property="og:title"]', 'property', 'og:title', product.name);
+    if (cleanProductName) {
+      setMeta('meta[property="og:title"]', 'property', 'og:title', cleanProductName);
     }
 
     const primaryImg =

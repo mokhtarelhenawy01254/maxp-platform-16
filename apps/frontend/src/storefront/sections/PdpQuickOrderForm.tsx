@@ -22,7 +22,8 @@ import {
   type VolumeDiscountTier,
 } from "../utils/volumeDiscounts";
 import { getPdpQuickOrderSettingsFromDesignTokens } from "../utils/pdpQuickOrderSettings";
-import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
+import { EGYPT_GOVERNORATES, getGovernorateByName } from "../../constants/egyptGovernorates";
+import { useIpGovernorateDetection } from "../hooks/useIpGovernorateDetection";
 import { getCompanyId, storefrontApi } from "../../utils/storefrontApi";
 import { persistPurchaseTracking } from "../utils/purchaseTrackingStorage";
 import type { CartItem } from "../store/useCartStore";
@@ -127,6 +128,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const { trackAddToCartEvent, trackInitiateCheckoutEvent } =
     useStorefrontFacebookTracking();
   const { formData, updateFormData, resetCheckout } = useCheckoutStore();
+  useIpGovernorateDetection();
   const selection = usePdpSelectionStore((state) => state.selection);
   const quantity = usePdpSelectionStore((state) => state.quantity);
   const setQuantity = usePdpSelectionStore((state) => state.setQuantity);
@@ -561,8 +563,14 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       ? sectionSettings.showOrderSummary
       : pdpQuickOrderSettings.showOrderSummary;
 
+  const normalizedGovValue = useMemo(() => {
+    if (!formData.governorate) return "";
+    const matched = getGovernorateByName(formData.governorate);
+    return matched ? matched.nameEn : formData.governorate;
+  }, [formData.governorate]);
+
   const resolvedGovernorate = effectiveGovernorateField.enabled
-    ? formData.governorate?.trim() || ""
+    ? normalizedGovValue || formData.governorate?.trim() || ""
     : "";
   const resolvedAddress = effectiveAddressField.enabled
     ? formData.address?.trim() || ""
@@ -1953,7 +1961,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                   <div className="relative">
                     <select
                       name="governorate"
-                      value={formData.governorate || ""}
+                      value={normalizedGovValue}
                       onChange={handleFieldChange}
                       className={`${resolvedInputClassName} appearance-none pe-10`}
                       autoComplete="address-level1"

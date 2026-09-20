@@ -193,10 +193,16 @@ export const StorefrontHead: React.FC = () => {
       `التصنيف | ${storeName}`,
     ]);
 
+    const isCorruptedTitle = (t: string) => {
+      const s = t.trim();
+      return !s || /^\?{2,}/.test(s) || s.includes('???');
+    };
+
     const shouldPreserveExistingTitle =
       isDynamicDetailRoute &&
       Boolean(originalTitle.trim()) &&
-      !genericTitles.has(originalTitle.trim());
+      !genericTitles.has(originalTitle.trim()) &&
+      !isCorruptedTitle(originalTitle);
 
     if (!shouldPreserveExistingTitle) {
       document.title = finalTitle;

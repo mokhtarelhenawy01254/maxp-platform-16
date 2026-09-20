@@ -623,15 +623,65 @@ exports.trackMarketplaceAppUsage = async (req, res) => {
   }
 };
 
-exports.detectCustomerGeo = (req, res) => {
-  const country = (req.headers['cf-ipcountry'] || '').toUpperCase();
-  const region = req.headers['cf-region'] || null;
-  const regionCode = req.headers['cf-region-code'] || null;
-  const city = req.headers['cf-ipcity'] || null;
+exports.detectCustomerGeo = async (req, res) => {
+  let country = (req.headers['cf-ipcountry'] || '').toUpperCase();
+  let region = req.headers['cf-region'] || null;
+  let regionCode = req.headers['cf-region-code'] || null;
+  let city = req.headers['cf-ipcity'] || null;
   const ip =
     req.headers['cf-connecting-ip'] ||
     req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
     req.ip;
+
+  const cleanIp = (ip || '').replace(/^::ffff:/, '').trim();
+
+  // If Cloudflare didn't supply region/regionCode and we have a valid public IP, resolve via ipwho.is with server-side caching
+  if ((!region || !regionCode) && cleanIp && cleanIp !== '127.0.0.1' && cleanIp !== '::1') {
+    try {
+      const cacheKey = `geo:${cleanIp}`;
+      const cached = await redisCacheService.get(cacheKey);
+      if (cached && typeof cached === 'object') {
+        if (!country && cached.country_code) country = cached.country_code;
+        if (cached.region) region = cached.region;
+        if (cached.region_code) regionCode = cached.region_code;
+        if (cached.city) city = cached.city;
+      } else {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 1500);
+        try {
+          const resp = await fetch(`https://ipwho.is/${cleanIp}`, {
+            signal: controller.signal,
+            headers: { Accept: 'application/json' },
+          });
+          clearTimeout(timeout);
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && data.success !== false) {
+              if (!country && data.country_code) country = data.country_code;
+              if (data.region) region = data.region;
+              if (data.region_code) regionCode = data.region_code;
+              if (data.city) city = data.city;
+
+              await redisCacheService.set(
+                cacheKey,
+                {
+                  country_code: data.country_code || country,
+                  region: data.region || null,
+                  region_code: data.region_code || null,
+                  city: data.city || null,
+                },
+                604800, // 7 days TTL
+              );
+            }
+          }
+        } catch {
+          clearTimeout(timeout);
+        }
+      }
+    } catch {
+      // Ignore cache/lookup failure, return available headers
+    }
+  }
 
   return res.json({
     success: true,
@@ -639,6 +689,7 @@ exports.detectCustomerGeo = (req, res) => {
     region,
     regionCode,
     city,
-    ip,
+    ip: cleanIp,
   });
 };
+

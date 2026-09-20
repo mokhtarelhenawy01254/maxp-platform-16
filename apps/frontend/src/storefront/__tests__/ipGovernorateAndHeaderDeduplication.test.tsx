@@ -61,6 +61,20 @@ describe('useIpGovernorateDetection', () => {
     });
   });
 
+  it('overwrites legacy Arabic القاهرة default if the user did not manually choose it and IP says Alexandria', async () => {
+    useCheckoutStore.getState().updateFormData({ governorate: 'القاهرة' });
+    vi.spyOn(ipGovUtil, 'detectGovernorateByIp').mockResolvedValue({
+      governorate: 'Alexandria',
+      city: 'Alexandria',
+    });
+
+    renderHook(() => useIpGovernorateDetection());
+
+    await waitFor(() => {
+      expect(useCheckoutStore.getState().formData.governorate).toBe('Alexandria');
+    });
+  });
+
   it('preserves user manual selection if sf-gov-manual-selection flag is present', async () => {
     sessionStorage.setItem('sf-gov-manual-selection', 'true');
     useCheckoutStore.getState().updateFormData({ governorate: 'Cairo' });
@@ -76,3 +90,4 @@ describe('useIpGovernorateDetection', () => {
     expect(useCheckoutStore.getState().formData.governorate).toBe('Cairo');
   });
 });
+
