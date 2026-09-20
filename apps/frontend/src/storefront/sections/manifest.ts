@@ -2743,6 +2743,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { value: "kids-guarantee", label: "ضمان الأطفال (مرح)" },
       { value: "store-advantages-pastel", label: "مزايا المتجر الباستيل" },
       { value: "vela-store-advantages", label: "مزايا متجر Vela" },
+      { value: "automotive-bento", label: "مواصفات هندسية Bento (2026)" },
     ],
     fields: [
       {
@@ -3368,6 +3369,21 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { key: "customNoteMessage", label: "رسالة التفصيل المخصص", type: "text" },
       { key: "ctaText", label: "نص زر الإجراء", type: "text", placeholder: "اختيار الباقة والمتابعة" },
       { key: "ctaLink", label: "رابط زر الإجراء", type: "url", placeholder: "#pdp-buybox" },
+    ],
+  },
+  "automotive-bento": {
+    label: "مواصفات هندسية Bento (Automotive Spec Bento)",
+    component: "automotive-bento",
+    note: "شبكة بينتو هندسية بمواصفات تقنية وتيليمتري حراري للسيارات بمعايير 2026.",
+    pages: ["home", "shop", "pdp", "about"],
+    variants: [
+      { value: "standard", label: "قياسي" },
+      { value: "automotive-bento", label: "بينتو هندسي" },
+    ],
+    fields: [
+      { key: "badge", label: "الشارة", type: "text", placeholder: "المواصفات الفنية والهندسية المعتمدة" },
+      { key: "title", label: "العنوان", type: "text", placeholder: "هندسة فائقة مصممة لتحمل حرارة الصيف القاسية" },
+      { key: "subtitle", label: "الوصف", type: "textarea" },
     ],
   },
 } as const satisfies Record<string, StorefrontSectionManifestEntry>;
