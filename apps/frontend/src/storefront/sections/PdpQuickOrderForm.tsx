@@ -1631,6 +1631,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     ? "grid gap-3"
     : isCompactMergedQuickOrder
       ? "grid grid-cols-2 gap-2.5"
+      : "space-y-4";
   const shouldRenderInlineTotalRow =
     isRedlineAutoQuickOrder || !shouldShowMobileStickySubmitBar;
   const shouldShowInlineSubmitButton =
