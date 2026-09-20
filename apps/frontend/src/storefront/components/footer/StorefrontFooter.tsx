@@ -275,12 +275,18 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
     },
   ];
 
-  const socialIcons = {
-    ...(isAppliedRuntimeStorefront ? {} : theme.footer?.socialLinks || {}),
+  const customSocialLinks = {
     ...normalizeSocialLinks(runtimeStorefrontSettings.socialLinks),
     ...normalizeSocialLinks(runtimeDesignTokens.socialLinks),
     ...mergedFooterSocialLinks, // User footer settings take priority
   };
+  const hasCustomSocialLinks = Object.values(customSocialLinks).some((url) => Boolean(url && url.trim()));
+
+  const socialIcons = hasCustomSocialLinks
+    ? customSocialLinks
+    : isAppliedRuntimeStorefront
+      ? {}
+      : theme.footer?.socialLinks || {};
   const legalLinks = theme.footer?.legalLinks?.map((link) => ({
     label: link.label,
     to: buildStorefrontPath(location.pathname, link.to, location.search),
