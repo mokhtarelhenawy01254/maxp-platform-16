@@ -6804,10 +6804,11 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           ]
     ).slice(0, 3);
     const shouldUseInlineOrderFormOnly =
-      isKhemetInlineQuickOrderBuybox && Boolean(mergedInlinePdpQuickOrder);
+      (isKhemetInlineQuickOrderBuybox || isRedlineAuto) && Boolean(mergedInlinePdpQuickOrder);
     const showStickyMobileAddToCart =
       isStickyAddToCartEnabled &&
       isElessiCareBuybox &&
+      !isRedlineAuto &&
       shouldRenderPrimaryBuyBox &&
       !externalOnlyProduct &&
       !isGalleryZoomOpen &&
