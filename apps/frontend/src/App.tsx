@@ -990,6 +990,9 @@ const SuperAdminAIConsumption = React.lazy(
 const SuperAdminCompanyActivity = React.lazy(
   () => import("./pages/super-admin/SuperAdminCompanyActivity"),
 );
+const SuperAdminDailyOrdersPage = React.lazy(
+  () => import("./pages/super-admin/daily-orders"),
+);
 const SuperAdminVisualSearchLogs = React.lazy(
   () => import("./pages/super-admin/SuperAdminVisualSearchLogs"),
 );
@@ -2376,6 +2379,16 @@ const AppContent = () => {
               element={
                 <Layout fullWidth>
                   <SuperAdminCompaniesReports />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/daily-orders"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                    <SuperAdminDailyOrdersPage />
+                  </React.Suspense>
                 </Layout>
               }
             />

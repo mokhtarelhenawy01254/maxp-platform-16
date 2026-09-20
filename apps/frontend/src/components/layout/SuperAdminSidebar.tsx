@@ -43,6 +43,7 @@ import {
   ListChecks,
   Monitor,
   TrendingUp,
+  ShoppingBag,
 } from "lucide-react";
 import i18n from "../../i18n";
 import { cn } from "@/lib/utils";
@@ -108,6 +109,11 @@ export const getMenuGroups = (t: (key: string) => string): SuperAdminMenuGroup[]
         text: t("superAdmin.sidebar.companyReports") || "تقارير الشركات",
         icon: <BarChart3 className="h-4 w-4" />,
         path: "/super-admin/companies-reports",
+      },
+      {
+        text: t("superAdmin.sidebar.dailyOrders") || "متابعة الطلبات اليومية",
+        icon: <ShoppingBag className="h-4 w-4" />,
+        path: "/super-admin/daily-orders",
       },
       {
         text: t("superAdmin.sidebar.companyActivity") || "نشاط الشركات الحي",

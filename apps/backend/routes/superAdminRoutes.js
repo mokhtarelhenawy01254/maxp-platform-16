@@ -3,6 +3,7 @@ const router = express.Router();
 const superAdminController = require("../controller/superAdminController");
 const devTaskIntegrationController = require("../controller/devTaskIntegrationController");
 const storePagesController = require("../controller/storePagesController");
+const superAdminCompanyOrdersController = require("../controller/superAdminCompanyOrdersController");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const aiServiceAdminClient = require("../services/aiServiceAdminClient");
 const { TOOLS } = { TOOLS: {} };
@@ -399,6 +400,13 @@ router.get("/companies/quick-list", async (req, res) => {
     return res.status(500).json({ success: false, error: 'فشل تحميل قائمة الشركات' });
   }
 });
+
+// 📦 Daily Company Orders & Platform Summary Monitor
+router.get(
+  "/company-orders/daily-summary",
+  checkPermission("canViewReports"),
+  superAdminCompanyOrdersController.getDailyOrdersSummary,
+);
 
 // 📊 Company Activity — active vs dormant vs dead
 router.get("/company-activity", checkPermission("canViewReports"), async (req, res) => {
