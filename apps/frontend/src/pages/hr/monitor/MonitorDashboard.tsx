@@ -14,6 +14,7 @@ import {
   ExternalLink,
   Calendar,
   ShieldAlert,
+  TrendingUp,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -380,7 +381,7 @@ export const MonitorDashboard: React.FC = () => {
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>متوسط الإنتاجية اليومية</span>
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20">
-              <Sparkles className="h-3.5 w-3.5" />
+              <TrendingUp className="h-3.5 w-3.5" />
             </span>
           </div>
           <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
