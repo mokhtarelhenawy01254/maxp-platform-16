@@ -132,7 +132,7 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
     categoryLabel: "سطح المكتب",
     platform: "ويندوز (Windows 10 / 11 x64)",
     platformEn: "Windows 64-bit",
-    version: "v1.0.14",
+    version: "v1.0.15",
     releaseDate: "2026-09",
     icon: Monitor,
     summary: "تسجيل دقيق لساعات العمل والإنتاجية مع طابور تخزين محلي يعمل دون اتصال بالإنترنت وتحديثات تلقائية صامتة.",
@@ -183,6 +183,14 @@ export const DOWNLOAD_PACKAGES: DownloadPackage[] = [
       pairingNotes: "بعد تثبيت البرنامج، افتح نافذة الإعدادات وألصق معرّف المنشأة المرجعي لحسابك لتفعيل المزامنة التلقائية فوراً.",
       sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       changelog: [
+        {
+          version: "v1.0.15",
+          date: "2026-09",
+          changes: [
+            "تحصين فتح النوافذ: إضافة آلية إيقاظ واسترجاع قسري للنافذة في حال كان البرنامج يعمل في الخلفية أو مصغراً بجوار الساعة.",
+            "إضافة حواجز أمان شاملة (Global Process Guards) لمنع أي انهيار صامت وضمان استقرار تشغيل النواة.",
+          ],
+        },
         {
           version: "v1.0.14",
           date: "2026-09",

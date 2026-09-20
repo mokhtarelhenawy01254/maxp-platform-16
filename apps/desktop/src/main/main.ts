@@ -98,6 +98,14 @@ app.setName('MaxP Workspace');
 app.setAppUserModelId('online.maxp.workspace');
 app.disableHardwareAcceleration();
 
+process.on('uncaughtException', (err: any) => {
+  console.error('[Main] Uncaught Exception:', err?.message || err);
+});
+
+process.on('unhandledRejection', (reason: any) => {
+  console.error('[Main] Unhandled Rejection:', reason?.message || reason);
+});
+
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
@@ -109,6 +117,8 @@ if (!gotTheLock) {
       mainWindow.setAlwaysOnTop(true);
       mainWindow.focus();
       setTimeout(() => mainWindow?.setAlwaysOnTop(false), 800);
+    } else {
+      createMainWindow();
     }
   });
 }
