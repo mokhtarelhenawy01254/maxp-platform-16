@@ -409,3 +409,24 @@ dogfood-output/
 *service-account*.json
 serviceAccountKey.json
 
+# Scratch & temporary workspace files
+scratch/
+.opencode/
+*.docx
+apps/frontend/*_session.json
+apps/frontend/*.mjs
+scripts/check_*.js
+scripts/inspect_*.js
+scripts/seed_*.js
+scripts/update_remote_agent.js
+scripts/generate_admin_session.js
+scripts/get_admin_login.js
+scripts/run_browser_verification.mjs
+scripts/browser-*.ps1
+scripts/convert-to-word.ps1
+scripts/video-script-*.md
+apps/backend/check_task_cols.js
+scripts/check_remote.sh
+
+
+
