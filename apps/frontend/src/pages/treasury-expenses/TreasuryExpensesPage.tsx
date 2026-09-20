@@ -27,9 +27,31 @@ export default function TreasuryExpensesPage() {
         fetchAccounts(),
         fetchCategories(),
       ]);
-      setAccounts(accRes.accounts);
-      setTotalLiquidity(accRes.totalBalance);
-      setCategories(catRes);
+      const rawAccounts = accRes.accounts || [];
+      const seenAccountKeys = new Set<string>();
+      const uniqueAccounts: TreasuryAccount[] = [];
+      for (const a of rawAccounts) {
+        const key = `${a.name.trim().toLowerCase()}_${a.type}`;
+        if (!seenAccountKeys.has(key)) {
+          seenAccountKeys.add(key);
+          uniqueAccounts.push(a);
+        }
+      }
+
+      const rawCategories = catRes || [];
+      const seenCatKeys = new Set<string>();
+      const uniqueCategories: ExpenseCategory[] = [];
+      for (const c of rawCategories) {
+        const key = c.name.trim().toLowerCase();
+        if (!seenCatKeys.has(key)) {
+          seenCatKeys.add(key);
+          uniqueCategories.push(c);
+        }
+      }
+
+      setAccounts(uniqueAccounts);
+      setTotalLiquidity(uniqueAccounts.reduce((sum, a) => sum + Number(a.balance || 0), 0));
+      setCategories(uniqueCategories);
     } catch (err) {
       console.error("Failed to load treasury initial data:", err);
     } finally {

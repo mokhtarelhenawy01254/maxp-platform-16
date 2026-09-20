@@ -133,42 +133,182 @@ async function ensureTablesExist(prisma) {
   }
 }
 
+// In-flight mutex per companyId to eliminate concurrent race conditions
+const inFlightEnsures = new Map();
+
+async function cleanupDuplicateAccountsAndCategories(prisma, companyId) {
+  try {
+    // 1. Cleanup duplicate accounts
+    const allAccounts = await prisma.treasuryAccount.findMany({
+      where: { companyId },
+      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+    });
+
+    const accountsByName = new Map();
+    for (const acc of allAccounts) {
+      const key = (acc.name || "").trim();
+      if (!accountsByName.has(key)) {
+        accountsByName.set(key, []);
+      }
+      accountsByName.get(key).push(acc);
+    }
+
+    for (const [name, list] of accountsByName.entries()) {
+      if (list.length > 1) {
+        const primary = list[0];
+        const duplicates = list.slice(1);
+
+        for (const dup of duplicates) {
+          // Reassign any transactions, capital, or expenses to primary
+          await prisma.treasuryTransaction.updateMany({
+            where: { treasuryAccountId: dup.id },
+            data: { treasuryAccountId: primary.id },
+          }).catch(() => {});
+
+          await prisma.capitalTransaction.updateMany({
+            where: { treasuryAccountId: dup.id },
+            data: { treasuryAccountId: primary.id },
+          }).catch(() => {});
+
+          await prisma.companyExpense.updateMany({
+            where: { treasuryAccountId: dup.id },
+            data: { treasuryAccountId: primary.id },
+          }).catch(() => {});
+
+          // Merge any non-zero balance
+          if (Number(dup.balance) !== 0) {
+            await prisma.treasuryAccount.update({
+              where: { id: primary.id },
+              data: { balance: { increment: Number(dup.balance) } },
+            }).catch(() => {});
+          }
+
+          // Delete duplicate
+          await prisma.treasuryAccount.delete({
+            where: { id: dup.id },
+          }).catch((err) => {
+            console.warn("[treasury] failed to delete duplicate account:", err.message);
+          });
+        }
+      }
+    }
+
+    // 2. Ensure only ONE default account
+    const defaultAccounts = await prisma.treasuryAccount.findMany({
+      where: { companyId, isDefault: true },
+      orderBy: { createdAt: "asc" },
+    });
+    if (defaultAccounts.length > 1) {
+      const [keepDefault, ...extraDefaults] = defaultAccounts;
+      for (const extra of extraDefaults) {
+        await prisma.treasuryAccount.update({
+          where: { id: extra.id },
+          data: { isDefault: false },
+        }).catch(() => {});
+      }
+    }
+
+    // 3. Cleanup duplicate categories
+    const allCategories = await prisma.expenseCategory.findMany({
+      where: { companyId },
+      orderBy: [{ isSystem: "desc" }, { createdAt: "asc" }],
+    });
+
+    const categoriesByName = new Map();
+    for (const cat of allCategories) {
+      const key = (cat.name || "").trim();
+      if (!categoriesByName.has(key)) {
+        categoriesByName.set(key, []);
+      }
+      categoriesByName.get(key).push(cat);
+    }
+
+    for (const [name, list] of categoriesByName.entries()) {
+      if (list.length > 1) {
+        const primary = list[0];
+        const duplicates = list.slice(1);
+
+        for (const dup of duplicates) {
+          await prisma.companyExpense.updateMany({
+            where: { categoryId: dup.id },
+            data: { categoryId: primary.id },
+          }).catch(() => {});
+
+          await prisma.expenseCategory.delete({
+            where: { id: dup.id },
+          }).catch((err) => {
+            console.warn("[treasury] failed to delete duplicate category:", err.message);
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[treasury] cleanupDuplicateAccountsAndCategories notice:", err.message);
+  }
+}
+
+async function seedMissingDefaults(prisma, companyId) {
+  try {
+    for (const acc of DEFAULT_ACCOUNTS) {
+      const existing = await prisma.treasuryAccount.findFirst({
+        where: { companyId, name: acc.name },
+      });
+      if (!existing) {
+        await prisma.treasuryAccount.create({
+          data: {
+            companyId,
+            name: acc.name,
+            type: acc.type,
+            isDefault: acc.isDefault,
+            description: acc.description,
+            balance: 0.0,
+            currency: "EGP",
+          },
+        });
+      }
+    }
+
+    for (const cat of DEFAULT_CATEGORIES) {
+      const existing = await prisma.expenseCategory.findFirst({
+        where: { companyId, name: cat.name },
+      });
+      if (!existing) {
+        await prisma.expenseCategory.create({
+          data: {
+            companyId,
+            name: cat.name,
+            nameEn: cat.nameEn,
+            type: cat.type,
+            color: cat.color,
+            icon: cat.icon,
+            isSystem: true,
+          },
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("[treasury] seedMissingDefaults notice:", err.message);
+  }
+}
+
 // Helper: Ensure default accounts and categories exist for tenant
 async function ensureDefaults(prisma, companyId) {
-  await ensureTablesExist(prisma);
-
-  const accountCount = await prisma.treasuryAccount.count({ where: { companyId } });
-  if (accountCount === 0) {
-    for (const acc of DEFAULT_ACCOUNTS) {
-      await prisma.treasuryAccount.create({
-        data: {
-          companyId,
-          name: acc.name,
-          type: acc.type,
-          isDefault: acc.isDefault,
-          description: acc.description,
-          balance: 0.0,
-          currency: "EGP",
-        }
-      });
-    }
+  if (!companyId) return;
+  if (inFlightEnsures.has(companyId)) {
+    return inFlightEnsures.get(companyId);
   }
 
-  const catCount = await prisma.expenseCategory.count({ where: { companyId } });
-  if (catCount === 0) {
-    for (const cat of DEFAULT_CATEGORIES) {
-      await prisma.expenseCategory.create({
-        data: {
-          companyId,
-          name: cat.name,
-          nameEn: cat.nameEn,
-          type: cat.type,
-          color: cat.color,
-          icon: cat.icon,
-          isSystem: true,
-        }
-      });
-    }
+  const promise = (async () => {
+    await ensureTablesExist(prisma);
+    await cleanupDuplicateAccountsAndCategories(prisma, companyId);
+    await seedMissingDefaults(prisma, companyId);
+  })();
+
+  inFlightEnsures.set(companyId, promise);
+  try {
+    await promise;
+  } finally {
+    inFlightEnsures.delete(companyId);
   }
 }
 
