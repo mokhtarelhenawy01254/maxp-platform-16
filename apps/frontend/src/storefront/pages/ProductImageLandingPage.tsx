@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
@@ -715,6 +715,157 @@ const getLandingBenefitCards = (
   ].filter(Boolean) as Array<{ title: string; text: string }>;
 
   return cards.slice(0, 4);
+};
+
+interface PureMediaStageProps {
+  images: string[];
+  activeIndex: number;
+  onIndexChange: (idx: number) => void;
+  productName: string;
+}
+
+const PureMediaStage: React.FC<PureMediaStageProps> = ({
+  images,
+  activeIndex,
+  onIndexChange,
+  productName,
+}) => {
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const mouseStartX = useRef<number | null>(null);
+  const isDragging = useRef<boolean>(false);
+
+  const total = images.length;
+  const currentImg = images[activeIndex] || images[0];
+
+  const handlePrev = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (total <= 1) return;
+    onIndexChange((activeIndex - 1 + total) % total);
+  };
+
+  const handleNext = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (total <= 1) return;
+    onIndexChange((activeIndex + 1) % total);
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0]?.clientX ?? null;
+    touchStartY.current = e.touches[0]?.clientY ?? null;
+  };
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const endX = e.changedTouches[0]?.clientX ?? null;
+    const endY = e.changedTouches[0]?.clientY ?? null;
+    if (endX === null) return;
+
+    const diffX = touchStartX.current - endX;
+    const diffY =
+      touchStartY.current !== null && endY !== null
+        ? Math.abs(touchStartY.current - endY)
+        : 0;
+
+    // Dominant horizontal swipe (> 35px and more horizontal than vertical)
+    if (Math.abs(diffX) > 35 && Math.abs(diffX) > diffY) {
+      if (diffX > 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    mouseStartX.current = e.clientX;
+    isDragging.current = true;
+  };
+
+  const onMouseUp = (e: React.MouseEvent) => {
+    if (!isDragging.current || mouseStartX.current === null) return;
+    const diffX = mouseStartX.current - e.clientX;
+    if (Math.abs(diffX) > 40) {
+      if (diffX > 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
+    }
+    mouseStartX.current = null;
+    isDragging.current = false;
+  };
+
+  return (
+    <div
+      className="pil-pure-media-stage"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      onMouseDown={onMouseDown}
+      onMouseUp={onMouseUp}
+      role="region"
+      aria-label="معرض صور المنتج القابل للتمرير"
+    >
+      {currentImg ? (
+        <img
+          src={currentImg}
+          alt={productName}
+          loading="eager"
+          className="pil-pure-media-img"
+          draggable={false}
+        />
+      ) : null}
+
+      {total > 1 && (
+        <>
+          <div className="pil-pure-media-counter" aria-hidden="true">
+            {activeIndex + 1} / {total}
+          </div>
+
+          <button
+            type="button"
+            className="pil-pure-media-nav-btn pil-pure-media-nav-prev"
+            onClick={handlePrev}
+            aria-label="الصورة السابقة"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="pil-pure-media-nav-btn pil-pure-media-nav-next"
+            onClick={handleNext}
+            aria-label="الصورة التالية"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+        </>
+      )}
+    </div>
+  );
 };
 
 const ProductImageLandingPage: React.FC = () => {
@@ -1705,10 +1856,6 @@ const ProductImageLandingPage: React.FC = () => {
         Array.isArray(content.images) && content.images.length > 0
           ? content.images
           : allProductImages;
-      const currentImg =
-        sectionImages[activeHeroImageIndex] ||
-        sectionImages[0] ||
-        currentHeroImage;
 
       return (
         <React.Fragment key={section.id || idx}>
@@ -1720,17 +1867,13 @@ const ProductImageLandingPage: React.FC = () => {
               backgroundImage: content.bgImage ? `url(${content.bgImage})` : undefined,
             }}
           >
-            {/* Pure Clean Image Stage - No Dark Overlay, No Text, No Buttons */}
-            <div className="pil-pure-media-stage">
-              {currentImg ? (
-                <img
-                  src={currentImg}
-                  alt={activeProduct.name}
-                  loading="eager"
-                  className="pil-pure-media-img"
-                />
-              ) : null}
-            </div>
+            {/* Pure Clean Image Stage with Touch Swipe Gestures & Arrows */}
+            <PureMediaStage
+              images={sectionImages}
+              activeIndex={activeHeroImageIndex}
+              onIndexChange={setActiveHeroImageIndex}
+              productName={activeProduct.name}
+            />
 
             {/* Thumbnail Navigation Strip */}
             {sectionImages.length > 1 && (
@@ -2308,34 +2451,6 @@ const ProductImageLandingPage: React.FC = () => {
               onSubmit={handleSubmit}
               onInputCapture={handleFormFirstInteraction}
             >
-              <div className="pil-field">
-                <label htmlFor="pil-customer-name">الاسم</label>
-                <input
-                  id="pil-customer-name"
-                  name="customerName"
-                  value={formState.customerName}
-                  onChange={updateFormField("customerName")}
-                  autoComplete="name"
-                  placeholder="اكتب اسمك بالكامل"
-                  required
-                />
-              </div>
-
-              <div className="pil-field">
-                <label htmlFor="pil-phone">رقم الموبايل</label>
-                <input
-                  id="pil-phone"
-                  name="phone"
-                  type="tel"
-                  inputMode="tel"
-                  value={formState.phone}
-                  onChange={updateFormField("phone")}
-                  autoComplete="tel"
-                  placeholder="01xxxxxxxxx"
-                  required
-                />
-              </div>
-
               {activeBundle.qty > 1 && (sizeOptions.length > 0 || colorOptions.length > 0) ? (
                 <div className="pil-bundle-items-customizer" aria-label="تحديد تفاصيل كل قطعة في الباقة">
                   <div className="pil-bundle-customizer-header">
@@ -2537,6 +2652,34 @@ const ProductImageLandingPage: React.FC = () => {
                   ))}
                 </div>
               ) : null}
+
+              <div className="pil-field">
+                <label htmlFor="pil-customer-name">الاسم</label>
+                <input
+                  id="pil-customer-name"
+                  name="customerName"
+                  value={formState.customerName}
+                  onChange={updateFormField("customerName")}
+                  autoComplete="name"
+                  placeholder="اكتب اسمك بالكامل"
+                  required
+                />
+              </div>
+
+              <div className="pil-field">
+                <label htmlFor="pil-phone">رقم الموبايل</label>
+                <input
+                  id="pil-phone"
+                  name="phone"
+                  type="tel"
+                  inputMode="tel"
+                  value={formState.phone}
+                  onChange={updateFormField("phone")}
+                  autoComplete="tel"
+                  placeholder="01xxxxxxxxx"
+                  required
+                />
+              </div>
 
               <div className="pil-field">
                 <label htmlFor="pil-governorate">المحافظة</label>

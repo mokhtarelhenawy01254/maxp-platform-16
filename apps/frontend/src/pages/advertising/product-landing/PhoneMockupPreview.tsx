@@ -47,6 +47,7 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
   const [device, setDevice] = useState<"mobile" | "tablet" | "desktop">("mobile");
   const [iframeKey, setIframeKey] = useState<number>(0);
   const [selectedBundleQty, setSelectedBundleQty] = useState<number>(1);
+  const [activeMockImageIndex, setActiveMockImageIndex] = useState<number>(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const prodImg = getProductImage(product);
@@ -286,22 +287,57 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                           : prodImg
                             ? [prodImg]
                             : [];
+                    const currentMockImg = images[activeMockImageIndex] || images[0];
+
+                    const handleMockPrev = (e?: React.MouseEvent) => {
+                      e?.stopPropagation();
+                      if (images.length <= 1) return;
+                      setActiveMockImageIndex((prev) => (prev - 1 + images.length) % images.length);
+                    };
+
+                    const handleMockNext = (e?: React.MouseEvent) => {
+                      e?.stopPropagation();
+                      if (images.length <= 1) return;
+                      setActiveMockImageIndex((prev) => (prev + 1) % images.length);
+                    };
+
+                    const handleTouchStart = (e: React.TouchEvent) => {
+                      (e.currentTarget as any)._startX = e.touches[0]?.clientX ?? 0;
+                    };
+
+                    const handleTouchEnd = (e: React.TouchEvent) => {
+                      const startX = (e.currentTarget as any)._startX;
+                      const endX = e.changedTouches[0]?.clientX;
+                      if (typeof startX === "number" && typeof endX === "number") {
+                        const diff = startX - endX;
+                        if (Math.abs(diff) > 35) {
+                          if (diff > 0) handleMockNext();
+                          else handleMockPrev();
+                        }
+                      }
+                    };
+
                     return (
                       <div key={id} className="eo-sync-pure-media" style={{ padding: "8px 0" }}>
                         <div
                           className="eo-sync-hero-media"
+                          onTouchStart={handleTouchStart}
+                          onTouchEnd={handleTouchEnd}
                           style={{
+                            position: "relative",
                             borderRadius: 12,
                             overflow: "hidden",
                             background: "#ffffff",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
+                            userSelect: "none",
+                            touchAction: "pan-y",
                           }}
                         >
-                          {images.length > 0 ? (
+                          {currentMockImg ? (
                             <img
-                              src={images[0]}
+                              src={currentMockImg}
                               alt=""
                               className="eo-sync-hero-img"
                               style={{
@@ -310,6 +346,7 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                                 objectFit: "contain",
                                 display: "block",
                                 borderRadius: 12,
+                                pointerEvents: "none",
                               }}
                             />
                           ) : (
@@ -317,6 +354,76 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                               <ShoppingBag size={40} />
                               <span>لا توجد صورة</span>
                             </div>
+                          )}
+
+                          {images.length > 1 && (
+                            <>
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: 8,
+                                  left: 8,
+                                  background: "rgba(15, 23, 42, 0.65)",
+                                  color: "#ffffff",
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  padding: "2px 7px",
+                                  borderRadius: 9999,
+                                  zIndex: 4,
+                                  direction: "ltr",
+                                }}
+                              >
+                                {activeMockImageIndex + 1} / {images.length}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleMockPrev}
+                                style={{
+                                  position: "absolute",
+                                  top: "50%",
+                                  right: 6,
+                                  transform: "translateY(-50%)",
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: "50%",
+                                  background: "rgba(255, 255, 255, 0.9)",
+                                  border: "1px solid rgba(0, 0, 0, 0.08)",
+                                  boxShadow: "0 1px 4px rgba(0, 0, 0, 0.15)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  cursor: "pointer",
+                                  zIndex: 5,
+                                }}
+                                aria-label="الصورة السابقة"
+                              >
+                                ›
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleMockNext}
+                                style={{
+                                  position: "absolute",
+                                  top: "50%",
+                                  left: 6,
+                                  transform: "translateY(-50%)",
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: "50%",
+                                  background: "rgba(255, 255, 255, 0.9)",
+                                  border: "1px solid rgba(0, 0, 0, 0.08)",
+                                  boxShadow: "0 1px 4px rgba(0, 0, 0, 0.15)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  cursor: "pointer",
+                                  zIndex: 5,
+                                }}
+                                aria-label="الصورة التالية"
+                              >
+                                ‹
+                              </button>
+                            </>
                           )}
                         </div>
                         {images.length > 1 && (
@@ -336,12 +443,14 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                                 key={i}
                                 src={img}
                                 alt=""
+                                onClick={() => setActiveMockImageIndex(i)}
                                 style={{
                                   width: 48,
                                   height: 48,
                                   borderRadius: 8,
                                   objectFit: "cover",
-                                  border: i === 0 ? "2px solid #0f172a" : "1px solid #e2e8f0",
+                                  cursor: "pointer",
+                                  border: i === activeMockImageIndex ? "2px solid #0f172a" : "1px solid #e2e8f0",
                                 }}
                               />
                             ))}
@@ -445,12 +554,6 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                           </div>
                         </div>
 
-                        {/* Mock Customer Info - Name & Phone first, matching real store */}
-                        <div className="eo-sync-inputs-group">
-                          <div className="eo-sync-mock-field">اكتب اسمك بالكامل...</div>
-                          <div className="eo-sync-mock-field">01xxxxxxxxx</div>
-                        </div>
-
                         {/* Mock Variant Selectors */}
                         {selectedBundleQty > 1 ? (
                           <div className="eo-sync-bundle-customizer-mock">
@@ -524,8 +627,10 @@ export const PhoneMockupPreview: React.FC<PhoneMockupPreviewProps> = ({
                           </div>
                         )}
 
-                        {/* Mock Address & Submit */}
+                        {/* Mock Customer Info & Address in one contiguous block */}
                         <div className="eo-sync-inputs-group">
+                          <div className="eo-sync-mock-field">اكتب اسمك بالكامل...</div>
+                          <div className="eo-sync-mock-field">01xxxxxxxxx</div>
                           <div className="eo-sync-mock-field">المحافظة: اختار...</div>
                           <div className="eo-sync-mock-field">مثال: مدينة نصر...</div>
                           <div className="eo-sync-mock-field">الشارع، العمارة، الدور...</div>

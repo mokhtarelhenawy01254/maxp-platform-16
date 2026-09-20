@@ -2,7 +2,7 @@
 
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import ProductImageLandingPage from "../pages/ProductImageLandingPage";
@@ -690,12 +690,12 @@ describe("ProductImageLandingPage", () => {
     expect(screen.getByRole("button", { name: "37" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "38" })).toBeInTheDocument();
 
-    // Verify field order matches canonical store layout: Name -> Phone -> Color -> Size -> Governorate
+    // Verify field order: Color -> Size -> Name -> Phone -> Governorate
     const colorBlock = screen.getByLabelText("اختيار اللون");
     const nameInput = screen.getByLabelText("الاسم");
     const govSelect = screen.getByLabelText("المحافظة");
-    expect(nameInput.compareDocumentPosition(colorBlock) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(colorBlock.compareDocumentPosition(govSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(colorBlock.compareDocumentPosition(nameInput) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(nameInput.compareDocumentPosition(govSelect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("verifies 1:1 canonical store checkout form layout, symmetrical SVG trust badges, and WhatsApp dialogue with store reply", async () => {
@@ -778,10 +778,10 @@ describe("ProductImageLandingPage", () => {
     const addressField = screen.getByLabelText("العنوان بالتفصيل");
     const notesField = screen.getByLabelText("ملاحظات إضافية للتوصيل (اختياري)");
 
-    expect(nameField.compareDocumentPosition(phoneField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(phoneField.compareDocumentPosition(colorRadioGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(colorRadioGroup.compareDocumentPosition(sizeRadioGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(sizeRadioGroup.compareDocumentPosition(govField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(sizeRadioGroup.compareDocumentPosition(nameField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(nameField.compareDocumentPosition(phoneField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(phoneField.compareDocumentPosition(govField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(govField.compareDocumentPosition(areaField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(areaField.compareDocumentPosition(addressField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(addressField.compareDocumentPosition(notesField) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -814,5 +814,108 @@ describe("ProductImageLandingPage", () => {
     expect(document.querySelector(".bot-chat-container")).toBeNull();
     expect(document.querySelector(".ai-chat-thread")).toBeNull();
   });
+
+  it("supports touch swipe and navigation buttons on product images gallery", async () => {
+    storefrontApiMocks.getProductLandingPreview.mockResolvedValueOnce({
+      data: {
+        landing: {
+          id: "landing-gallery-swipe",
+          companyId: "company-1",
+          productId: "prod-gallery",
+          slug: "swan-gallery-swipe",
+          title: "سوان سنيكرز كلاسيك",
+          status: "DRAFT",
+          generationMode: "IMAGE_STACK",
+          generationStatus: "READY_TO_REVIEW",
+          slices: [],
+          sections: [
+            {
+              id: "sec-media-1",
+              type: "MEDIA",
+              title: "معرض الصور",
+              enabled: true,
+              content: {
+                images: [
+                  "https://cdn.example.com/shoe-1.jpg",
+                  "https://cdn.example.com/shoe-2.jpg",
+                  "https://cdn.example.com/shoe-3.jpg",
+                ],
+              },
+            },
+            {
+              id: "sec-form-1",
+              type: "FORM",
+              title: "نموذج الطلب",
+              enabled: true,
+              content: {
+                orderTitle: "اطلب الآن",
+                buttonLabel: "تأكيد الطلب",
+              },
+            },
+          ],
+          formConfig: {
+            orderTitle: "اطلب الآن",
+            buttonLabel: "تأكيد الطلب",
+          },
+        },
+        product: {
+          ...baseProduct,
+          id: "prod-gallery",
+          images: [
+            "https://cdn.example.com/shoe-1.jpg",
+            "https://cdn.example.com/shoe-2.jpg",
+            "https://cdn.example.com/shoe-3.jpg",
+          ],
+        },
+        company: {
+          id: "company-1",
+          name: "Swan",
+          currency: "EGP",
+        },
+      },
+    });
+
+    renderLanding("/store/lp/swan-gallery-swipe?companyId=company-1&preview=1");
+
+    await screen.findByRole("heading", { name: "اطلب الآن" });
+
+    // Verify media stage and counter
+    const stage = screen.getByRole("region", { name: "معرض صور المنتج القابل للتمرير" });
+    expect(stage).toBeInTheDocument();
+    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+
+    const img = stage.querySelector("img");
+    expect(img).toHaveAttribute("src", "https://cdn.example.com/shoe-1.jpg");
+
+    // Click next button
+    const nextBtn = screen.getByLabelText("الصورة التالية");
+    fireEvent.click(nextBtn);
+
+    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    expect(stage.querySelector("img")).toHaveAttribute("src", "https://cdn.example.com/shoe-2.jpg");
+
+    // Test Touch Swipe (Swipe Left -> diffX > 35 -> Next image)
+    fireEvent.touchStart(stage, {
+      touches: [{ clientX: 200, clientY: 100 }],
+    });
+    fireEvent.touchEnd(stage, {
+      changedTouches: [{ clientX: 140, clientY: 102 }],
+    });
+
+    expect(screen.getByText("3 / 3")).toBeInTheDocument();
+    expect(stage.querySelector("img")).toHaveAttribute("src", "https://cdn.example.com/shoe-3.jpg");
+
+    // Test Touch Swipe Right (diffX < -35 -> Prev image)
+    fireEvent.touchStart(stage, {
+      touches: [{ clientX: 100, clientY: 100 }],
+    });
+    fireEvent.touchEnd(stage, {
+      changedTouches: [{ clientX: 180, clientY: 98 }],
+    });
+
+    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    expect(stage.querySelector("img")).toHaveAttribute("src", "https://cdn.example.com/shoe-2.jpg");
+  });
 });
+
 
