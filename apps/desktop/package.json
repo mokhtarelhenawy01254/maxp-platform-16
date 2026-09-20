@@ -53,6 +53,12 @@
       "dist/**/*",
       "assets/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
     "publish": {
       "provider": "generic",
       "url": "https://maxp.online/download/"
