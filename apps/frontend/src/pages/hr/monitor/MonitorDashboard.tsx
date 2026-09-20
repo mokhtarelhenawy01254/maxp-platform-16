@@ -13,7 +13,6 @@ import {
   XCircle,
   ExternalLink,
   Calendar,
-  Sparkles,
   ShieldAlert,
   ArrowUpDown,
   ArrowUp,
@@ -181,6 +180,19 @@ export const MonitorDashboard: React.FC = () => {
     const m = Math.floor((sec % 3600) / 60);
     return `${h} س ${m} د`;
   };
+
+  const filteredMembers = teamMembers.filter((m) => {
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch =
+      !query ||
+      (m.employeeName && m.employeeName.toLowerCase().includes(query)) ||
+      (m.jobTitle && m.jobTitle.toLowerCase().includes(query)) ||
+      (m.departmentName && m.departmentName.toLowerCase().includes(query));
+
+    const matchesStatus = statusFilter === 'all' || m.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
 
   const sortedMembers = [...filteredMembers].sort((a, b) => {
     let valA: any = a[sortField] ?? 0;
@@ -408,9 +420,21 @@ export const MonitorDashboard: React.FC = () => {
       {/* Team Roster Grid Table with Click-to-Sort & Mobile Responsive Cards */}
       <div className="overflow-hidden rounded-xl border border-border/40 bg-card/60 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 px-4 py-3">
-          <h2 className="text-sm font-semibold text-foreground">
-            سجل نشاط وإنتاجية الفريق ({sortedMembers.length})
-          </h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-sm font-semibold text-foreground">
+              سجل نشاط وإنتاجية الفريق ({sortedMembers.length})
+            </h2>
+            <div className="relative">
+              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="بحث بالاسم أو القسم..."
+                className="h-7 w-36 sm:w-52 rounded-lg border border-border/40 bg-zinc-900/60 pr-8 pl-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-sky-500/50 focus:outline-none"
+              />
+            </div>
+          </div>
 
           {/* Status Filter Chips */}
           <div className="flex items-center gap-1 text-xs">
