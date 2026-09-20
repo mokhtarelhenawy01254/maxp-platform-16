@@ -416,6 +416,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
   const imageCandidates = getProductImageCandidates(product);
   const prefersArabicCopy =
     isRtl ||
+    isRedLine ||
     isZenOrganic ||
     isAirlume ||
     isFakhama ||
@@ -859,7 +860,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
             {/* Micro badge: OEM precision fit */}
             <div className="absolute bottom-2.5 start-3 z-20 inline-flex items-center gap-1.5 rounded-md bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-neutral-800 shadow-sm backdrop-blur-sm border border-neutral-200/70">
               <span className="h-1.5 w-1.5 rounded-full bg-rose-600 animate-pulse" />
-              <span>{isRtl ? 'تفصيل فابريقة بالمللي' : 'Custom OEM Fit'}</span>
+              <span>{prefersArabicCopy ? 'تفصيل فابريقة بالمللي' : 'Custom OEM Fit'}</span>
             </div>
           </div>
 
@@ -868,10 +869,10 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
             {/* Category & Trust indicator */}
             <div className="flex items-center justify-between gap-2 text-[11px]">
               <span className="font-semibold text-rose-600 uppercase tracking-wide">
-                {categoryLabel || (isRtl ? 'إكسسوارات سيارات' : 'Car Accessories')}
+                {categoryLabel || (prefersArabicCopy ? 'إكسسوارات سيارات' : 'Car Accessories')}
               </span>
               <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
-                {isRtl ? 'معاينة قبل الدفع' : 'Inspect before pay'}
+                {prefersArabicCopy ? 'معاينة قبل الدفع' : 'Inspect before pay'}
               </span>
             </div>
 
@@ -912,7 +913,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
               </div>
               {savingsAmount && savingsAmount > 0 ? (
                 <span className="text-[11px] font-bold text-rose-600 tabular-nums">
-                  {isRtl ? `وفّر ${formattedSavings}` : `Save ${formattedSavings}`}
+                  {prefersArabicCopy ? `وفّر ${formattedSavings}` : `Save ${formattedSavings}`}
                 </span>
               ) : null}
             </div>
@@ -928,16 +929,16 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 <ShoppingCart size={15} className="text-neutral-300" />
                 <span>
                   {hasVariantChoices
-                    ? (isRtl ? 'تحديد السيارة والطلب' : 'Select Car & Order')
-                    : (isRtl ? 'أضف للسلة' : 'Add to Cart')}
+                    ? (prefersArabicCopy ? 'تحديد السيارة والطلب' : 'Select Car & Order')
+                    : (prefersArabicCopy ? 'أضف للسلة' : 'Add to Cart')}
                 </span>
               </button>
 
               <button
                 onClick={handleQuickBuy}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-700 transition-all duration-200 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-rose-500"
-                title={isRtl ? 'طلب سريع فوري' : 'Instant Checkout'}
-                aria-label={isRtl ? 'طلب سريع فوري' : 'Instant Checkout'}
+                title={prefersArabicCopy ? 'طلب سريع فوري' : 'Instant Checkout'}
+                aria-label={prefersArabicCopy ? 'طلب سريع فوري' : 'Instant Checkout'}
               >
                 <Zap size={16} />
               </button>
