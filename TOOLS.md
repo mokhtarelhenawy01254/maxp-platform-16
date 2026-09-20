@@ -43,7 +43,7 @@ Add whatever helps you do your job. This is your cheat sheet.
 ## Git & Deployment
 
 ### Mandatory Target Repository ("ارفع الابديت")
-- **URL**: `https://github.com/elhenawym124-ops/maxp-platform-10`
+- **URL**: `https://github.com/mkhtrlhnw-blip/maxp-platform-11`
 - **Remote Name**: `origin`
 - **Rule**: When the user requests to push or deploy updates ("ارفع الابديت"), push **strictly** to this repository (`origin main`). No other remote exists in the local config — every legacy remote has been removed. If any note or command references a different repository, it is outdated: ignore it and push to `origin` only.
 
