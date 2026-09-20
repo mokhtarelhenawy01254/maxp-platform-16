@@ -27,19 +27,19 @@
       "direction": "rtl"
     },
     "shape": {
-      "borderRadius": "1rem",
-      "buttonRadius": "0.75rem"
+      "borderRadius": "0.8rem",
+      "buttonRadius": "999px"
     },
     "productCard": {
-      "borderRadius": "1rem",
-      "boxShadow": "0 4px 20px -4px rgba(0, 0, 0, 0.05)",
-      "hoverShadow": "0 16px 36px -12px rgba(225, 29, 72, 0.18)",
+      "borderRadius": "0.8rem",
+      "boxShadow": "0 20px 45px -35px rgba(0, 0, 0, 0.2)",
+      "hoverShadow": "0 25px 50px -30px rgba(225, 29, 72, 0.25)",
       "badgeRadius": "999px",
-      "buttonRadius": "0.75rem",
+      "buttonRadius": "999px",
       "surfaceOpacity": "1"
     },
     "layout": {
-      "contentAlign": "start"
+      "contentAlign": "center"
     }
   },
   "seo": {
