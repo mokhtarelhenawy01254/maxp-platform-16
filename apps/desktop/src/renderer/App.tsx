@@ -64,6 +64,7 @@ declare global {
       onTasksRefresh: (callback: (data?: any) => void) => (() => void);
       onDayRollover: (callback: (data: any) => void) => (() => void);
       onInactivityReturn: (callback: (data: any) => void) => (() => void);
+      onAuthLoggedOut?: (callback: () => void) => (() => void);
     };
   }
 }
@@ -75,6 +76,15 @@ const App: React.FC = () => {
 
   useEffect(() => {
     checkAuth();
+
+    const unsubAuth = window.electronAPI.onAuthLoggedOut?.(() => {
+      setIsLoggedIn(false);
+      setUser(null);
+    });
+
+    return () => {
+      unsubAuth?.();
+    };
   }, []);
 
   const checkAuth = async () => {

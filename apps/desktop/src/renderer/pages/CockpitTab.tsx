@@ -48,6 +48,18 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
     return `${year}-${month}-${day}`;
   };
 
+  const parseLocalDate = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d, 12, 0, 0);
+  };
+
+  const formatLocalDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const todayStr = trackerState?.currentDate || getTodayLocal();
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [historicalSummary, setHistoricalSummary] = useState<any>(null);
@@ -109,13 +121,17 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
 
   const isToday = selectedDate === todayStr;
   const effectiveSummary = isToday ? dailySummary : (historicalSummary || {});
-  const activeSeconds = effectiveSummary?.total_active_seconds ?? 0;
-  const idleSeconds = effectiveSummary?.total_idle_seconds ?? 0;
-  const totalTracked = activeSeconds + idleSeconds;
-  const activeRatio = totalTracked > 0 ? Math.round((activeSeconds / totalTracked) * 100) : (isToday ? 100 : 0);
+  const baseActive = effectiveSummary?.total_active_seconds ?? 0;
+  const baseIdle = effectiveSummary?.total_idle_seconds ?? 0;
 
-  const mouseEvents = effectiveSummary?.total_mouse_events ?? 0;
-  const keyboardEvents = effectiveSummary?.total_keyboard_events ?? 0;
+  // 1-second live ticker interval for immediate responsive feedback
+  const [liveActiveOffset, setLiveActiveOffset] = useState(0);
+  const [liveIdleOffset, setLiveIdleOffset] = useState(0);
+
+  useEffect(() => {
+    setLiveActiveOffset(0);
+    setLiveIdleOffset(0);
+  }, [baseActive, baseIdle, selectedDate]);
 
   const currentApp = trackerState?.currentApp || 'سطح المكتب / مستكشف ويندوز';
   const currentUrl = trackerState?.currentUrl;
@@ -124,19 +140,40 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
   const shiftEnded = isToday ? (trackerState?.shiftEnded ?? false) : Boolean(effectiveSummary?.shift_ended_at);
   const shiftEndedAt = isToday ? trackerState?.shiftEndedAt : effectiveSummary?.shift_ended_at;
 
+  useEffect(() => {
+    if (!isToday || !isTracking || shiftEnded) return;
+
+    const interval = setInterval(() => {
+      if (isPaused) {
+        setLiveIdleOffset((prev) => prev + 1);
+      } else {
+        setLiveActiveOffset((prev) => prev + 1);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isToday, isTracking, isPaused, shiftEnded]);
+
+  const activeSeconds = baseActive + (isToday ? liveActiveOffset : 0);
+  const idleSeconds = baseIdle + (isToday ? liveIdleOffset : 0);
+  const totalTracked = activeSeconds + idleSeconds;
+  const activeRatio = totalTracked > 0 ? Math.round((activeSeconds / totalTracked) * 100) : (isToday ? 100 : 0);
+
+  const mouseEvents = effectiveSummary?.total_mouse_events ?? 0;
+  const keyboardEvents = effectiveSummary?.total_keyboard_events ?? 0;
+
   const handlePrevDay = () => {
-    const d = new Date(selectedDate);
+    const d = parseLocalDate(selectedDate);
     d.setDate(d.getDate() - 1);
-    const prev = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    setSelectedDate(prev);
+    setSelectedDate(formatLocalDate(d));
   };
 
   const handleNextDay = () => {
     if (selectedDate >= todayStr) return;
-    const d = new Date(selectedDate);
+    const d = parseLocalDate(selectedDate);
     d.setDate(d.getDate() + 1);
-    const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    setSelectedDate(next);
+    const next = formatLocalDate(d);
+    setSelectedDate(next > todayStr ? todayStr : next);
   };
 
   const handleGoToday = () => {
@@ -201,7 +238,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         <div style={styles.dateDisplayBadge}>
           <Clock size={13} color="#38bdf8" />
           <span style={styles.dateDisplayText}>
-            {new Date(selectedDate).toLocaleDateString('ar-EG', {
+            {parseLocalDate(selectedDate).toLocaleDateString('ar-EG', {
               weekday: 'long',
               day: 'numeric',
               month: 'long',

@@ -1,11 +1,7 @@
 import type { AppUsageRecord, WebUsageRecord, AppCategory, CategoryRule } from '../shared/types';
 import path from 'path';
 import fs from 'fs';
-import { execFile } from 'child_process';
-import util from 'util';
 import { activityTracker } from './activityTracker';
-
-const execFileAsync = util.promisify(execFile);
 
 /** Extracts domain from a URL string */
 function extractDomain(url: string): string {
@@ -215,40 +211,6 @@ export class WindowTracker {
     return { apps, websites };
   }
 
-  private async getWindowsActiveWindow(): Promise<{ appName: string; windowTitle: string; exePath?: string } | null> {
-    try {
-      const exeName = 'GetActiveWindow.exe';
-      const devPath = path.resolve(__dirname, '../../../bin', exeName);
-      const prodPath = path.resolve(process.resourcesPath || '', 'bin', exeName);
-      const asarUnpackedPath = path.resolve(process.resourcesPath || '', 'app.asar.unpacked', 'bin', exeName);
-      const appPath = path.resolve(__dirname, '../../bin', exeName);
-
-      const resolvedPath = fs.existsSync(prodPath)
-        ? prodPath
-        : fs.existsSync(asarUnpackedPath)
-        ? asarUnpackedPath
-        : fs.existsSync(devPath)
-        ? devPath
-        : fs.existsSync(appPath)
-        ? appPath
-        : null;
-
-      if (!resolvedPath) return null;
-
-      const { stdout } = await (execFileAsync as any)(resolvedPath, [], { timeout: 2000, encoding: 'utf8' });
-      const out = (stdout || '').trim();
-      if (out && out.includes('|||')) {
-        const parts = out.split('|||');
-        return {
-          appName: (parts[0] || '').trim(),
-          windowTitle: (parts[1] || '').trim(),
-          exePath: (parts[2] || '').trim(),
-        };
-      }
-    } catch {}
-    return null;
-  }
-
   private async poll(): Promise<void> {
     if (!this.isTracking) return;
 
@@ -274,19 +236,8 @@ export class WindowTracker {
     try {
       let win: any = null;
 
-      // 1. Try ultra-fast native Windows detector (async non-blocking)
-      if (process.platform === 'win32') {
-        const nativeWin: any = await this.getWindowsActiveWindow();
-        if (nativeWin && nativeWin.appName && nativeWin.appName !== 'Unknown') {
-          win = {
-            title: nativeWin.windowTitle,
-            owner: { name: nativeWin.appName, exePath: nativeWin.exePath },
-          };
-        }
-      }
-
-      // 2. Fallback to active-win if needed
-      if (!win && this.getActiveWin) {
+      // In-process native tracking via active-win (Zero child processes, zero antivirus alarms)
+      if (this.getActiveWin) {
         win = await this.getActiveWin();
       }
 

@@ -35,8 +35,8 @@ class MonitorService {
 
     // Use the actual interval timestamp rather than server's current arrival time
     const firstIntervalStart = activities[0].intervalStart ? new Date(activities[0].intervalStart) : new Date();
-    const targetDate = isNaN(firstIntervalStart.getTime()) ? new Date() : new Date(firstIntervalStart);
-    targetDate.setHours(0, 0, 0, 0);
+    const dateStr = (isNaN(firstIntervalStart.getTime()) ? new Date() : firstIntervalStart).toISOString().split('T')[0];
+    const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
 
     const totalActive = activities.reduce((sum, a) => sum + (Number(a.activeSeconds) || 0), 0);
 
@@ -54,6 +54,24 @@ class MonitorService {
 
     const avgScore = activities.reduce((sum, a) => sum + (Number(a.activityScore) || 0), 0) / activities.length;
 
+    const existing = await this.prisma.monitorDailySummary.findUnique({
+      where: {
+        companyId_employeeId_date: {
+          companyId,
+          employeeId,
+          date: targetDate,
+        },
+      },
+      select: { totalActiveSeconds: true, avgActivityScore: true },
+    }).catch(() => null);
+
+    let runningAvg = Math.round(avgScore);
+    if (existing && existing.totalActiveSeconds > 0) {
+      const prevWeight = existing.totalActiveSeconds;
+      const newWeight = Math.max(1, totalActive);
+      runningAvg = Math.round(((existing.avgActivityScore * prevWeight) + (avgScore * newWeight)) / (prevWeight + newWeight));
+    }
+
     await this.prisma.monitorDailySummary.upsert({
       where: {
         companyId_employeeId_date: {
@@ -66,8 +84,8 @@ class MonitorService {
         totalActiveSeconds: { increment: totalActive },
         totalIdleSeconds: { increment: totalIdle },
         lastActivityTime: new Date(),
-        avgActivityScore: avgScore,
-        productivityScore: Math.round(avgScore),
+        avgActivityScore: runningAvg,
+        productivityScore: runningAvg,
       },
       create: {
         companyId,
@@ -77,8 +95,8 @@ class MonitorService {
         lastActivityTime: new Date(),
         totalActiveSeconds: totalActive,
         totalIdleSeconds: totalIdle,
-        productivityScore: Math.round(avgScore),
-        avgActivityScore: avgScore,
+        productivityScore: runningAvg,
+        avgActivityScore: runningAvg,
       },
     });
   }
@@ -162,10 +180,18 @@ class MonitorService {
     });
   }
 
-  async getDailySummary(companyId, employeeId, date) {
-    return this.prisma.monitorDailySummary.findUnique({
-      where: { companyId_employeeId_date: { companyId, employeeId, date: new Date(date) } }
+  async getDailySummary(companyId, employeeId, date, alternateEmployeeId = null) {
+    const dateStr = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
+    const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
+    let summary = await this.prisma.monitorDailySummary.findUnique({
+      where: { companyId_employeeId_date: { companyId, employeeId, date: targetDate } }
     });
+    if (!summary && alternateEmployeeId && alternateEmployeeId !== employeeId) {
+      summary = await this.prisma.monitorDailySummary.findUnique({
+        where: { companyId_employeeId_date: { companyId, employeeId: alternateEmployeeId, date: targetDate } }
+      });
+    }
+    return summary;
   }
 
   async getTeamOverview(companyId, date) {

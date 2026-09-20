@@ -9,9 +9,14 @@ class MonitorApiClient {
   private client: AxiosInstance;
   private serverUrl: string = '';
   private authToken: string = '';
+  private onUnauthorized: (() => void) | null = null;
 
   constructor() {
     this.client = axios.create({ timeout: 15_000 });
+  }
+
+  setOnUnauthorized(cb: () => void): void {
+    this.onUnauthorized = cb;
   }
 
   configure(serverUrl: string, authToken: string): void {
@@ -26,10 +31,49 @@ class MonitorApiClient {
         'X-Client': 'maxp-desktop-monitor',
       },
     });
+
+    this.client.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401 && this.onUnauthorized) {
+          console.warn('[ApiClient] 401 Unauthorized detected — triggering session logout');
+          this.onUnauthorized();
+        }
+        return Promise.reject(error);
+      }
+    );
   }
 
   get isConfigured(): boolean {
     return this.serverUrl.length > 0 && this.authToken.length > 0;
+  }
+
+  async validateToken(): Promise<{ valid: boolean; user?: any }> {
+    if (!this.isConfigured) return { valid: false };
+    try {
+      let res;
+      try {
+        res = await axios.get(`${this.serverUrl}/api/v1/auth/me`, {
+          headers: { Authorization: `Bearer ${this.authToken}` },
+          timeout: 8000,
+        });
+      } catch (e: any) {
+        if (e.response?.status === 404) {
+          res = await axios.get(`${this.serverUrl}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${this.authToken}` },
+            timeout: 8000,
+          });
+        } else {
+          throw e;
+        }
+      }
+      return { valid: true, user: res.data?.data ?? res.data?.user };
+    } catch (err: any) {
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        return { valid: false };
+      }
+      return { valid: true }; // network offline, don't force logout
+    }
   }
 
   // ── Ingest (Desktop -> Server) ────────────────────────────────
@@ -83,6 +127,16 @@ class MonitorApiClient {
     try {
       const params = date ? { date } : {};
       const res = await this.client.get('/summary/me', { params });
+      return res.data?.data ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async getTimeline(date?: string): Promise<{ apps?: any[]; websites?: any[] } | null> {
+    try {
+      const params = date ? { date } : {};
+      const res = await this.client.get('/timeline/me', { params });
       return res.data?.data ?? null;
     } catch {
       return null;

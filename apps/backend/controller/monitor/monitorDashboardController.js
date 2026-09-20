@@ -13,9 +13,10 @@ async function getSummary(req, res) {
     }
 
     const employeeId = isSelf ? (req.user.employeeId || userId) : requestedId;
+    const alternateId = isSelf ? userId : null;
     const date = req.query.date || new Date().toISOString().split('T')[0];
     
-    const summary = await monitorService.getDailySummary(companyId, employeeId, date);
+    const summary = await monitorService.getDailySummary(companyId, employeeId, date, alternateId);
     return res.status(200).json({ data: summary });
   } catch (error) {
     console.error('Error in getSummary:', error);

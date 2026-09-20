@@ -2607,7 +2607,7 @@ const taskController = {
     try {
       const { entryId } = req.params;
       const companyId = req.user.companyId;
-      const userId = req.user.userId;
+      const userId = req.user.userId || req.user.id;
 
       const timeEntry = await getSharedPrismaClient().timeEntry.findFirst({
         where: { id: entryId, userId, companyId, isRunning: true },
