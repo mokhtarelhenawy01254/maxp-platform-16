@@ -327,6 +327,7 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
       <PdpQuickOrderForm
         product={product}
         sectionSettings={sectionSettings}
+        hideHeader={Boolean(shouldRenderPanelHeader)}
       />
     </section>
   );

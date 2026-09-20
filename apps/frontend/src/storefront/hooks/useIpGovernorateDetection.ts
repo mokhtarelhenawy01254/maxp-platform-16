@@ -15,23 +15,32 @@ export const useIpGovernorateDetection = (): void => {
     if (ran.current) return;
     ran.current = true;
 
-    const { formData, updateFormData } = useCheckoutStore.getState();
-    if (formData?.governorate?.trim()) return;
+    const { formData } = useCheckoutStore.getState();
+    const isManuallySelected =
+      typeof window !== "undefined" &&
+      window.sessionStorage?.getItem("sf-gov-manual-selection") === "true";
+    if (formData?.governorate?.trim() && isManuallySelected) return;
 
     let active = true;
 
     const runDetection = () => {
       void detectGovernorateByIp().then(({ governorate, city }) => {
-        if (!active) return;
+        if (!active || !governorate) return;
 
         const current = useCheckoutStore.getState().formData;
-        if (current.governorate?.trim() && current.governorate !== "Cairo") return;
+        const isManuallySelected =
+          typeof window !== "undefined" &&
+          window.sessionStorage?.getItem("sf-gov-manual-selection") === "true";
 
-        const targetGov = governorate || "Cairo";
-        updateFormData({
-          governorate: targetGov,
-          city: city || current.city || targetGov,
-        });
+        if (
+          !current.governorate?.trim() ||
+          (!isManuallySelected && current.governorate === "Cairo" && governorate !== "Cairo")
+        ) {
+          useCheckoutStore.getState().updateFormData({
+            governorate,
+            ...(city ? { city } : {}),
+          });
+        }
       });
     };
 

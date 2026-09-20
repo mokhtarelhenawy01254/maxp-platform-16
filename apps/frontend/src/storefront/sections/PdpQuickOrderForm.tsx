@@ -36,6 +36,7 @@ interface PdpQuickOrderFormProps {
     hasVariants: boolean;
   };
   sectionSettings?: Record<string, unknown>;
+  hideHeader?: boolean;
 }
 
 interface PublicOrderResponse {
@@ -117,6 +118,7 @@ const inputClassName =
 const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   product,
   sectionSettings,
+  hideHeader = false,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -685,15 +687,6 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   }, [activeQuantityOffer, product.id, trackingItem]);
 
   useEffect(() => {
-    if (effectiveGovernorateField.enabled && !formData.governorate) {
-      updateFormData({
-        governorate: "Cairo",
-        city: formData.city || "Cairo",
-      });
-    }
-  }, [effectiveGovernorateField.enabled, formData.governorate, formData.city, updateFormData]);
-
-  useEffect(() => {
     let cancelled = false;
 
     const loadShipping = async () => {
@@ -875,6 +868,9 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     >,
   ) => {
     const { name, value } = event.target;
+    if (name === "governorate" && typeof window !== "undefined" && window.sessionStorage) {
+      window.sessionStorage.setItem("sf-gov-manual-selection", "true");
+    }
     updateFormData({ [name]: value });
   };
 
@@ -1670,12 +1666,12 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         }`}
       >
         <div className={isCompactMergedQuickOrder ? "space-y-1.5" : "space-y-2"}>
-          {configuredBadgeText && !isMergedBuyboxSurface ? (
+          {!hideHeader && configuredBadgeText && !isMergedBuyboxSurface ? (
             <span className="inline-flex items-center rounded-full border border-[#ead9c7] bg-[#fff8f1] px-3 py-1 text-[11px] font-black tracking-[0.16em] text-[#b45309]">
               {configuredBadgeText}
             </span>
           ) : null}
-          {title ? (
+          {!hideHeader && title ? (
             <h2
               className={`font-heading font-black text-foreground ${
                 isCompactMergedQuickOrder
@@ -1690,7 +1686,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
               {title}
             </h2>
           ) : null}
-          {subtitle ? (
+          {!hideHeader && subtitle ? (
             <p
               className={
                 isCompactMergedQuickOrder
