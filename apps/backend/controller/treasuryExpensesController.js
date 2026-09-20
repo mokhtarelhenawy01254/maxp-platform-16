@@ -875,6 +875,7 @@ exports.createExpense = async (req, res) => {
       isRecurring,
       recurringInterval,
       nextDueDate,
+      status,
       notes
     } = req.body;
 
@@ -1093,7 +1094,15 @@ exports.updateExpense = async (req, res) => {
         }
       });
 
-      return updated;
+      const currentAcc = await tx.treasuryAccount.findUnique({
+        where: { id: targetAccountId },
+        select: { balance: true }
+      });
+
+      return {
+        expense: updated,
+        updatedBalance: Number(currentAcc?.balance || 0)
+      };
     });
 
     return res.json({ success: true, message: 'تم تحديث النفقة بنجاح', data: result });
