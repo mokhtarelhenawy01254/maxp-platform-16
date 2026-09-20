@@ -272,6 +272,7 @@ woo_check.txt
 !apps/frontend/public/placeholders/**
 !apps/frontend/public/previews/**
 !apps/frontend/public/icons/**
+!apps/frontend/public/images/redline/**
 # Allow MaxP brand Open Graph cover image (served from / for link previews)
 !apps/frontend/public/og-cover.png
 !apps/frontend/public/og-cover.svg

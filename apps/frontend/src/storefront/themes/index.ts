@@ -962,7 +962,7 @@ const findThemeSectionVariant = (
 const collectThemeSectionVariants = (theme: StorefrontTheme): string[] => {
   const variants: string[] = [];
 
-  Object.values(theme.pages).forEach((page) => {
+  Object.values(theme.pages || {}).forEach((page) => {
     page?.sections?.forEach((section) => {
       const variant = getSectionVariant(section);
       if (variant) {
