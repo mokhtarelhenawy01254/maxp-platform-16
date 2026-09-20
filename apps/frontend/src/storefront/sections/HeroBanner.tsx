@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import StorefrontProductImage from "../components/StorefrontProductImage";
 import { buildStorefrontPath } from "../utils/paths";
 import { resolveSectionVariant } from "../variants";
+import { useStorefrontTheme } from "../engine/ThemeProvider";
 
 const isExternalHref = (href: string) =>
   /^(https?:\/\/|mailto:|tel:)/i.test(href);
@@ -2861,11 +2862,15 @@ const ElessiPetSunroomHero: React.FC<HeroVariantProps> = (props) => {
 };
 
 const CinematicPlinthHero: React.FC<HeroVariantProps> = (props) => {
-  const heroImage = props.backgroundImage || props.panel.image || "";
+  const { theme } = useStorefrontTheme();
+  const isRedLine =
+    theme.id === 'redline-auto' ||
+    Boolean(theme.tokens?.colors?.primary?.startsWith('0 84%'));
+  const heroImage = props.backgroundImage || props.panel.image || '';
   const leadHighlights = props.highlights.slice(0, 3);
 
   return (
-    <section className="relative overflow-hidden bg-[#111715] text-white">
+    <section className="relative overflow-hidden bg-[#0a0d10] text-white">
       <div className="absolute inset-0">
         {heroImage ? (
           <StorefrontProductImage
@@ -2881,54 +2886,69 @@ const CinematicPlinthHero: React.FC<HeroVariantProps> = (props) => {
             className="h-full w-full object-cover object-center"
           />
         ) : null}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,13,11,0.18)_0%,rgba(9,13,11,0.46)_34%,rgba(9,13,11,0.78)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(215,182,108,0.16),transparent_38%),radial-gradient(circle_at_bottom,rgba(19,57,44,0.55),transparent_48%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-[linear-gradient(180deg,transparent,rgba(7,9,8,0.72))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,13,16,0.22)_0%,rgba(10,13,16,0.58)_34%,rgba(10,13,16,0.92)_100%)]" />
+        {isRedLine ? (
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(225,29,72,0.14),transparent_44%),radial-gradient(circle_at_bottom,rgba(225,29,72,0.22),transparent_54%)]" />
+        ) : (
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(215,182,108,0.16),transparent_38%),radial-gradient(circle_at_bottom,rgba(19,57,44,0.55),transparent_48%)]" />
+        )}
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-[linear-gradient(180deg,transparent,rgba(10,13,16,0.85))]" />
       </div>
 
       <div className="relative z-10 flex min-h-[34rem] items-center justify-center px-4 py-16 text-center md:min-h-[46rem] md:px-6 md:py-20">
         <div className="mx-auto flex max-w-5xl flex-col items-center">
           {(props.eyebrow || props.panel.eyebrow) && (
-            <span className="mb-5 inline-flex border-b border-[#d8b572] pb-2 text-[11px] font-semibold uppercase tracking-[0.38em] text-[#f2d79b]">
+            <span
+              className={`mb-5 inline-flex border-b pb-2 text-[11px] font-bold uppercase tracking-[0.32em] ${
+                isRedLine
+                  ? 'border-primary/60 text-primary drop-shadow-[0_2px_8px_rgba(225,29,72,0.4)]'
+                  : 'border-[#d8b572] text-[#f2d79b]'
+              }`}
+            >
               {props.eyebrow || props.panel.eyebrow}
             </span>
           )}
 
-          <h1 className="max-w-[13ch] font-heading text-[2.6rem] font-semibold leading-[1.12] tracking-[0.01em] text-white drop-shadow-[0_18px_44px_rgba(0,0,0,0.34)] md:text-[4.5rem]">
+          <h1 className="max-w-[15ch] font-heading text-[2.6rem] font-black leading-[1.12] tracking-tight text-white drop-shadow-[0_18px_44px_rgba(0,0,0,0.5)] md:text-[4.5rem]">
             {props.title}
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-white/82 md:text-lg">
+          <p className="mt-5 max-w-2xl text-base leading-8 text-white/85 md:text-lg">
             {props.subtitle}
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
             {renderHeroAction(
               props.primaryHref,
               props.ctaText,
-              "inline-flex items-center justify-center border border-[#d9b56c] bg-[#173126] px-8 py-3 text-sm font-semibold text-[#fff4dc] transition hover:bg-[#204637]",
+              isRedLine
+                ? 'inline-flex items-center justify-center rounded-full border border-primary/50 bg-primary px-9 py-3.5 text-sm font-bold text-white shadow-[0_14px_32px_-8px_rgba(225,29,72,0.7)] transition-all hover:bg-primary/90 hover:scale-[1.02]'
+                : 'inline-flex items-center justify-center border border-[#d9b56c] bg-[#173126] px-8 py-3 text-sm font-semibold text-[#fff4dc] transition hover:bg-[#204637]',
             )}
             {renderHeroAction(
               props.secondaryHref,
               props.secondaryCtaText,
-              "inline-flex items-center justify-center border border-white/24 bg-white/8 px-8 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/16",
+              'inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-8 py-3.5 text-sm font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:border-white/40',
             )}
           </div>
 
           {leadHighlights.length > 0 ? (
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/80 md:mt-14 md:text-base">
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-sm text-white/85 md:mt-14 md:text-base">
               {leadHighlights.map((item, index) => (
                 <span
                   key={`${item.label}-${item.value}`}
                   className="inline-flex items-center gap-2"
                 >
                   {index > 0 ? (
-                    <span aria-hidden className="text-[#d8b572]/70">
+                    <span
+                      aria-hidden
+                      className={`font-bold ${
+                        isRedLine ? 'text-primary' : 'text-[#d8b572]/70'
+                      }`}
+                    >
                       •
                     </span>
                   ) : null}
-                  <span>
-                    {item.value}
-                  </span>
+                  <span className="font-medium">{item.value}</span>
                 </span>
               ))}
             </div>
