@@ -822,6 +822,18 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['procurement-pro'])
         },
 
+        // 4️⃣.35 الخزينة والنفقات ورأس المال
+        {
+            id: 'treasury-expenses',
+            title: isEn ? 'Treasury & Expenses' : 'الخزينة والنفقات ورأس المال',
+            icon: Landmark,
+            items: [
+                { to: '/treasury-expenses?tab=expenses', icon: Receipt, label: isEn ? 'Expenses & Outflows' : 'النفقات والمصروفات' },
+                { to: '/treasury-expenses?tab=treasury', icon: Landmark, label: isEn ? 'Treasury & Capital' : 'الخزنة ورأس المال' },
+            ],
+            hidden: user?.role === 'AFFILIATE'
+        },
+
         // 4️⃣.4 البيع بالجملة
         {
             id: 'wholesale',

@@ -1048,6 +1048,9 @@ const RadiologyManagementPage = React.lazy(
 const DentalLabManagementPage = React.lazy(
   () => import("./pages/dental-lab/DentalLabManagementPage"),
 );
+const TreasuryExpensesPage = React.lazy(
+  () => import("./pages/treasury-expenses/TreasuryExpensesPage"),
+);
 const DentalCaseDetailPage = React.lazy(
   () => import("./pages/dental-lab/DentalCaseDetailPage"),
 );
@@ -5608,6 +5611,22 @@ const AppContent = () => {
                       <PosPage />
                     </Layout>
                   }
+                />
+                <Route
+                  path="/treasury-expenses"
+                  element={
+                    <Layout>
+                      <TreasuryExpensesPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/treasury"
+                  element={<Navigate to="/treasury-expenses?tab=treasury" replace />}
+                />
+                <Route
+                  path="/expenses"
+                  element={<Navigate to="/treasury-expenses?tab=expenses" replace />}
                 />
                 <Route
                   path="/settings/facebook-oauth"

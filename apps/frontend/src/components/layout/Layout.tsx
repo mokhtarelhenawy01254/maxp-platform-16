@@ -93,6 +93,7 @@ const ADMIN_ROUTE_TITLES: Array<{ prefix: string; title: string }> = [
   { prefix: "/inventory", title: "المخزون والمستودعات" },
   { prefix: "/analytics", title: "التحليلات والتقارير" },
   { prefix: "/reports", title: "التقارير المالية والتشغيلية" },
+  { prefix: "/treasury-expenses", title: "الخزينة والنفقات ورأس المال" },
   { prefix: "/finance", title: "الحسابات والمالية" },
   { prefix: "/accounting", title: "النظام المحاسبي" },
   { prefix: "/hr", title: "الموارد البشرية والموظفين" },

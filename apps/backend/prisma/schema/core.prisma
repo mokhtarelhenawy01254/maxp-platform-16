@@ -207,6 +207,10 @@ model Company {
    bulkOrderItems                  BulkOrderItem[]
    pageResponseSettings            PageResponseSettings[]
   payments                        Payment[]
+  treasuryAccounts                TreasuryAccount[]                @relation("CompanyTreasuryAccounts")
+  companyExpenses                 CompanyExpense[]                 @relation("CompanyExpenses")
+  treasuryTransactions           TreasuryTransaction[]            @relation("CompanyTreasuryTransactions")
+  capitalTransactions             CapitalTransaction[]             @relation("CompanyCapitalTransactions")
   platformEnterprisePlan          PlatformEnterprisePlan?          @relation("PlatformEnterprisePlan")
   platformSignupCouponRedemptions PlatformSignupCouponRedemption[]
   platformSubscription            PlatformSubscription?            @relation("PlatformSubscription")
