@@ -269,6 +269,7 @@ woo_check.txt
 !frontend/public/assets/themes/**/*.png
 !frontend/public/assets/themes/**/*.jpg
 !apps/frontend/public/assets/themes/**
+!apps/frontend/public/assets/stores/**
 !apps/frontend/public/placeholders/**
 !apps/frontend/public/previews/**
 !apps/frontend/public/icons/**
