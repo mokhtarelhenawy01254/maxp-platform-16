@@ -985,6 +985,7 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       ]);
       prisma.dentalLabCase.count
         .mockResolvedValueOnce(2) // today received
+        .mockResolvedValueOnce(3) // today due
         .mockResolvedValueOnce(1) // ready
         .mockResolvedValueOnce(1); // overdue
       prisma.dentalInvoice.aggregate
@@ -1000,6 +1001,7 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       expect(res.statusCode).toBe(200);
       expect(res.payload.data.statusCounts).toEqual({ RECEIVED: 3, DELIVERED: 2 });
       expect(res.payload.data.todayReceived).toBe(2);
+      expect(res.payload.data.todayDue).toBe(3);
       expect(res.payload.data.readyForDelivery).toBe(1);
       expect(res.payload.data.overdue).toBe(1);
       expect(res.payload.data.totalRevenue).toBe(150);
