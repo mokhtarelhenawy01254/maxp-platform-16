@@ -2175,6 +2175,7 @@ const taskController = {
       const tasksByStatus = {
         pending: statusCountMap.PENDING || 0,
         inProgress: statusCountMap.IN_PROGRESS || 0,
+        inReview: statusCountMap.IN_REVIEW || 0,
         completed: statusCountMap.COMPLETED || 0,
         cancelled: statusCountMap.CANCELLED || 0,
       };
@@ -2182,6 +2183,7 @@ const taskController = {
       const myTasksByStatus = {
         pending: myStatusCountMap.PENDING || 0,
         inProgress: myStatusCountMap.IN_PROGRESS || 0,
+        inReview: myStatusCountMap.IN_REVIEW || 0,
         completed: myStatusCountMap.COMPLETED || 0,
         cancelled: myStatusCountMap.CANCELLED || 0,
       };

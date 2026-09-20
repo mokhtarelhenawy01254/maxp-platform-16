@@ -5,7 +5,7 @@ const { queueTaskWebhook } = require('../services/taskWebhookService');
 
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_PAGE_SIZE = 50;
-const VALID_TASK_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD'];
+const VALID_TASK_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD', 'IN_REVIEW'];
 const VALID_TASK_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 
 const createHttpError = (statusCode, message) => {

@@ -837,6 +837,7 @@ enum TasksStatus {
   COMPLETED
   CANCELLED
   ON_HOLD
+  IN_REVIEW
 
   @@map("Task_status")
 }

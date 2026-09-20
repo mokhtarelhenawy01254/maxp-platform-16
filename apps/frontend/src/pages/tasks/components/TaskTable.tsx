@@ -142,10 +142,15 @@ const SortIndicator: React.FC<{ column: TaskSortBy; currentSort: TaskSortBy; ord
   );
 };
 
-const statusNeedsStart = (status: string) =>
-  status === "pending" || status === "cancelled";
+const statusNeedsStart = (status: string) => {
+  const norm = String(status || "").toLowerCase();
+  return norm === "pending" || norm === "cancelled";
+};
 
-const statusNeedsComplete = (status: string) => status === "in_progress";
+const statusNeedsComplete = (status: string) => {
+  const norm = String(status || "").toLowerCase();
+  return norm === "in_progress";
+};
 
 const buildPageNumbers = (current: number, total: number): (number | "...")[] => {
   if (total <= 7) {

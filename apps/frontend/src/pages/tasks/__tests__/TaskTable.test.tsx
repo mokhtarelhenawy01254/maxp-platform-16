@@ -147,6 +147,12 @@ describe("TaskTable employee status actions", () => {
       "completed",
     );
   });
+
+  it("renders in_review status correctly", () => {
+    const task = buildTask("in_review");
+    renderTaskTable(task);
+    expect(screen.getAllByText("in_review").length).toBeGreaterThan(0);
+  });
 });
 
 describe("TaskTable duplicate task", () => {

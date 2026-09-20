@@ -374,6 +374,10 @@ export const TasksTab: React.FC = () => {
       prev.map((t) => (t.id === taskId ? { ...t, status: targetStatus } : t))
     );
 
+    if (targetStatus === 'IN_REVIEW') {
+      setStatusFilter('IN_REVIEW');
+    }
+
     try {
       const res = await window.electronAPI.updateTaskStatus(taskId, targetStatus);
       if (res && res.success === false) {
@@ -526,7 +530,7 @@ export const TasksTab: React.FC = () => {
             {/* Submit for Review Button (Available to all) */}
             <button
               onClick={() => {
-                handleStopTask();
+                audioAlerts.playTaskComplete();
                 handleUpdateStatus(activeTask.id, 'IN_REVIEW');
               }}
               style={styles.runnerSubmitBtn}
@@ -542,7 +546,7 @@ export const TasksTab: React.FC = () => {
             {canDirectCompleteActive && (
               <button
                 onClick={() => {
-                  handleStopTask();
+                  audioAlerts.playTaskComplete();
                   handleUpdateStatus(activeTask.id, 'COMPLETED');
                 }}
                 style={styles.runnerCompleteBtn}
