@@ -18,8 +18,10 @@ import {
   RefreshCw,
   ShieldCheck,
   Trash2,
+  UserCheck,
   UserPlus,
   Users,
+  UserX,
 } from "lucide-react";
 
 import {
@@ -434,7 +436,17 @@ const UsersManagement: React.FC = () => {
     employeeStatus: "",
   });
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<"users" | "invitations">("users");
+  type TabValue = "all" | "active" | "inactive" | "invitations";
+  const [activeTab, setActiveTab] = useState<TabValue>("all");
+  const [statusCounts, setStatusCounts] = useState<{
+    total: number;
+    active: number;
+    inactive: number;
+  }>({
+    total: 0,
+    active: 0,
+    inactive: 0,
+  });
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"create" | "edit" | null>(null);
   const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
@@ -519,6 +531,7 @@ const UsersManagement: React.FC = () => {
       const payload = await requestApi<{
         users: UserRecord[];
         pagination?: { totalPages?: number; total?: number };
+        counts?: { total: number; active: number; inactive: number };
       }>(`companies/${user.companyId}/users?${queryParams.toString()}`);
 
       if (!mountedRef.current || requestId !== usersRequestRef.current) {
@@ -529,6 +542,18 @@ const UsersManagement: React.FC = () => {
         setUsers(payload.data.users || []);
         setTotalPages(payload.data.pagination?.totalPages || 0);
         setTotalCount(payload.data.pagination?.total || 0);
+        if (payload.data.counts) {
+          setStatusCounts(payload.data.counts);
+        } else {
+          const currentTotal = payload.data.pagination?.total ?? payload.data.users.length;
+          const currentActive = payload.data.users.filter((entry) => entry.isActive).length;
+          const currentInactive = payload.data.users.filter((entry) => !entry.isActive).length;
+          setStatusCounts((prev) => ({
+            total: filters.isActive === "" ? currentTotal : (prev.total || currentTotal),
+            active: filters.isActive === "true" ? currentTotal : (filters.isActive === "" ? currentActive : prev.active),
+            inactive: filters.isActive === "false" ? currentTotal : (filters.isActive === "" ? currentInactive : prev.inactive),
+          }));
+        }
         setError(null);
       } else {
         setUsers([]);
@@ -654,28 +679,34 @@ const UsersManagement: React.FC = () => {
 
 
 
-  const activeUsersCount = useMemo(
-    () => users.filter((entry) => entry.isActive).length,
-    [users],
-  );
-
   const metrics = useMemo(
     () => [
       {
+        id: "all" as const,
         title: "إجمالي المستخدمين",
-        value: totalCount,
-        subtitle: "عدد الحسابات في الصفحة الحالية بعد الفلاتر",
+        value: statusCounts.total || (filters.isActive === "" ? totalCount : 0),
+        subtitle: "جميع حسابات الفريق بالشركة",
         tone: "primary",
         icon: Users,
       },
       {
+        id: "active" as const,
         title: "المستخدمون النشطون",
-        value: activeUsersCount,
-        subtitle: "الحسابات المفعلة حاليًا",
+        value: statusCounts.active,
+        subtitle: "الحسابات المفعلة والمتاحة للعمل",
         tone: "success",
-        icon: ShieldCheck,
+        icon: UserCheck,
       },
       {
+        id: "inactive" as const,
+        title: "غير النشطين",
+        value: statusCounts.inactive,
+        subtitle: "الحسابات المعطلة أو الموقوفة",
+        tone: "danger",
+        icon: UserX,
+      },
+      {
+        id: "invitations" as const,
         title: "الدعوات المعلقة",
         value: invitations.length,
         subtitle: "دعوات بانتظار القبول أو الإلغاء",
@@ -683,7 +714,7 @@ const UsersManagement: React.FC = () => {
         icon: MailPlus,
       },
     ],
-    [activeUsersCount, invitations.length, totalCount],
+    [filters.isActive, invitations.length, statusCounts, totalCount],
   );
 
   const activeFilterLabels = useMemo(() => {
@@ -1006,10 +1037,42 @@ const UsersManagement: React.FC = () => {
     setSelectedUsers([]);
   };
 
+  const handleTabChange = (nextValue: string) => {
+    const nextTab = nextValue as TabValue;
+    setActiveTab(nextTab);
+    setSelectedUsers([]);
+
+    if (nextTab === "invitations") {
+      return;
+    }
+
+    let nextIsActive = "";
+    if (nextTab === "active") {
+      nextIsActive = "true";
+    } else if (nextTab === "inactive") {
+      nextIsActive = "false";
+    }
+
+    setFilters((current) => {
+      if (current.isActive === nextIsActive) return current;
+      return { ...current, isActive: nextIsActive };
+    });
+    setPage(1);
+  };
+
   const updateFilter = (field: keyof FiltersState, value: string) => {
     setFilters((current) => ({ ...current, [field]: value }));
     setPage(1);
     setSelectedUsers([]);
+    if (field === "isActive") {
+      if (value === "true") {
+        setActiveTab("active");
+      } else if (value === "false") {
+        setActiveTab("inactive");
+      } else if (activeTab !== "invitations") {
+        setActiveTab("all");
+      }
+    }
   };
 
   const clearFilters = () => {
@@ -1017,6 +1080,9 @@ const UsersManagement: React.FC = () => {
     setFilters({ search: "", role: "", isActive: "", employeeStatus: "" });
     setPage(1);
     setSelectedUsers([]);
+    if (activeTab !== "invitations") {
+      setActiveTab("all");
+    }
   };
 
   const copyInvitationLink = async (invitation: InvitationRecord) => {
@@ -1106,6 +1172,48 @@ const UsersManagement: React.FC = () => {
       setError(null);
     } catch (toggleError: unknown) {
       toast.error(getErrorMessage(toggleError, i18n.t("UsersManagement.error_error_6424")));
+    }
+  };
+
+  const handleQuickToggleStatus = async (targetUser: UserRecord) => {
+    if (!user?.companyId) return;
+    const nextValue = !targetUser.isActive;
+    const guardMessage = !nextValue
+      ? getProtectedUserActionMessage({
+          users,
+          targetedUserIds: [targetUser.id],
+          currentUserId: user?.id,
+          action: "deactivate",
+        })
+      : null;
+
+    if (guardMessage) {
+      toast.error(guardMessage);
+      return;
+    }
+
+    try {
+      await requestApi<never>(`companies/${user.companyId}/users/${targetUser.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          firstName: targetUser.firstName,
+          lastName: targetUser.lastName,
+          email: targetUser.email,
+          phone: targetUser.phone || "",
+          role: targetUser.role,
+          isActive: nextValue,
+        }),
+      });
+
+      toast.success(
+        nextValue
+          ? `تم تفعيل حساب ${targetUser.firstName} ${targetUser.lastName} بنجاح`
+          : `تم تعطيل حساب ${targetUser.firstName} ${targetUser.lastName} بنجاح`,
+      );
+      await fetchUsers();
+      setError(null);
+    } catch (toggleError: unknown) {
+      toast.error(getErrorMessage(toggleError, "حدث خطأ أثناء تغيير حالة المستخدم"));
     }
   };
 
@@ -1333,51 +1441,90 @@ const UsersManagement: React.FC = () => {
             const tones: Record<string, { bar: string; icon: string }> = {
               primary: { bar: "from-violet-500 to-indigo-500", icon: "text-violet-600 dark:text-violet-300 bg-violet-500/10 dark:bg-violet-500/20" },
               success: { bar: "from-emerald-500 to-teal-500", icon: "text-emerald-600 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/20" },
+              danger: { bar: "from-rose-500 to-red-500", icon: "text-rose-600 dark:text-rose-300 bg-rose-500/10 dark:bg-rose-500/20" },
               warning: { bar: "from-amber-500 to-orange-500", icon: "text-amber-600 dark:text-amber-300 bg-amber-500/10 dark:bg-amber-500/20" },
             };
             const t = tones[m.tone] || tones.primary;
+            const isCurrent = activeTab === m.id;
             return (
               <motion.div
                 key={m.title}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.06 }}
-                className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-4 shadow-sm"
+                onClick={() => handleTabChange(m.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleTabChange(m.id);
+                  }
+                }}
+                className={cn(
+                  "relative overflow-hidden rounded-2xl border bg-card p-4 shadow-sm cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 select-none",
+                  isCurrent
+                    ? "border-primary ring-2 ring-primary/20 shadow-md"
+                    : "border-border/50 hover:border-border",
+                )}
               >
                 <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${t.bar}`} />
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm text-muted-foreground">{m.title}</p>
-                    <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{m.value}</p>
+                    <p className="text-sm font-medium text-muted-foreground">{m.title}</p>
+                    <p className="mt-1 text-2xl font-bold tracking-tight text-foreground tabular-nums">{m.value}</p>
                   </div>
-                  <div className={`rounded-xl ${t.icon} p-2.5`}>
+                  <div className={`rounded-xl ${t.icon} p-2.5 shrink-0`}>
                     <Icon className="size-5" />
                   </div>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{m.subtitle}</p>
+                <p className="mt-1 text-xs text-muted-foreground truncate">{m.subtitle}</p>
               </motion.div>
             );
           })}
         </div>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value === "invitations" ? "invitations" : "users")} className="gap-4">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="gap-4">
           <TabsList className="w-full justify-start overflow-x-auto rounded-2xl bg-muted/60 p-1">
-            <TabsTrigger value="users" className="min-w-[10rem] rounded-xl">
+            <TabsTrigger value="all" className="min-w-[8.5rem] rounded-xl gap-2">
               <Users className="size-4" />
-              قائمة المستخدمين
+              <span>كل المستخدمين</span>
+              <span className="rounded-full bg-muted-foreground/15 px-2 py-0.5 text-[11px] font-semibold text-foreground tabular-nums">
+                {statusCounts.total || (filters.isActive === "" ? totalCount : "-")}
+              </span>
             </TabsTrigger>
-            <TabsTrigger value="invitations" className="min-w-[10rem] rounded-xl">
-              <MailPlus className="size-4" />
-              الدعوات المعلقة
+            <TabsTrigger value="active" className="min-w-[8.5rem] rounded-xl gap-2">
+              <UserCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <span>المستخدمين النشطين</span>
+              <span className="rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+                {statusCounts.active}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="inactive" className="min-w-[8.5rem] rounded-xl gap-2">
+              <UserX className="size-4 text-rose-600 dark:text-rose-400" />
+              <span>غير النشطين</span>
+              <span className="rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+                {statusCounts.inactive}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="invitations" className="min-w-[8.5rem] rounded-xl gap-2">
+              <MailPlus className="size-4 text-amber-600 dark:text-amber-400" />
+              <span>الدعوات المعلقة</span>
               {invitations.length > 0 ? (
-                <span className="rounded-full bg-primary/12 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                <span className="rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
                   {invitations.length}
                 </span>
-              ) : null}
+              ) : (
+                <span className="rounded-full bg-muted-foreground/15 px-2 py-0.5 text-[11px] font-semibold text-foreground tabular-nums">
+                  0
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users" className="space-y-4">
+          <TabsContent value={activeTab} className="space-y-4">
+            {activeTab !== "invitations" ? (
+              <>
             {selectedUsers.length > 0 ? (
               <Card>
                 <CardHeader>
@@ -1495,8 +1642,20 @@ const UsersManagement: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
-                  <CardTitle>{t("users.userList", { count: totalCount })}</CardTitle>
-                  <CardDescription>{t("users.userListDescription")}</CardDescription>
+                  <CardTitle>
+                    {activeTab === "active"
+                      ? `المستخدمون النشطون (${totalCount})`
+                      : activeTab === "inactive"
+                        ? `المستخدمون غير النشطين (${totalCount})`
+                        : t("users.userList", { count: totalCount })}
+                  </CardTitle>
+                  <CardDescription>
+                    {activeTab === "active"
+                      ? "عرض وإدارة حسابات الفريق المفعلة والمتاحة للعمل حاليًا."
+                      : activeTab === "inactive"
+                        ? "عرض وإدارة حسابات الفريق المعطلة أو الموقوفة مع إمكانية إعادة التفعيل."
+                        : t("users.userListDescription")}
+                  </CardDescription>
                 </div>
                 <Button type="button" variant="outline" className="h-10 rounded-2xl" onClick={() => void fetchUsers()}>
                   <RefreshCw className={cn("size-4", loading ? "animate-spin" : undefined)} />
@@ -1590,6 +1749,19 @@ const UsersManagement: React.FC = () => {
                                         <Pencil className="size-4" />
                                         {t("users.actions.edit")}
                                       </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => void handleQuickToggleStatus(entry)}>
+                                        {entry.isActive ? (
+                                          <>
+                                            <UserX className="size-4 text-rose-500" />
+                                            تعطيل الحساب
+                                          </>
+                                        ) : (
+                                          <>
+                                            <UserCheck className="size-4 text-emerald-500" />
+                                            تفعيل الحساب
+                                          </>
+                                        )}
+                                      </DropdownMenuItem>
                                       <DropdownMenuItem onClick={() => setPendingAction({ kind: "reset-password", user: entry })}>
                                         <KeyRound className="size-4" />
                                         إعادة تعيين كلمة المرور
@@ -1661,6 +1833,19 @@ const UsersManagement: React.FC = () => {
                                         <Pencil className="size-4" />
                                         تعديل المستخدم
                                       </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => void handleQuickToggleStatus(entry)}>
+                                        {entry.isActive ? (
+                                          <>
+                                            <UserX className="size-4 text-rose-500" />
+                                            تعطيل الحساب
+                                          </>
+                                        ) : (
+                                          <>
+                                            <UserCheck className="size-4 text-emerald-500" />
+                                            تفعيل الحساب
+                                          </>
+                                        )}
+                                      </DropdownMenuItem>
                                       <DropdownMenuItem onClick={() => setPendingAction({ kind: "reset-password", user: entry })}>
                                         <KeyRound className="size-4" />
                                         إعادة التعيين
@@ -1727,10 +1912,9 @@ const UsersManagement: React.FC = () => {
               )}
             </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="invitations" className="space-y-4">
-            <Card>
+          </>
+        ) : (
+          <Card>
               <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
                   <CardTitle>{t("users.pendingInvitations", { count: invitations.length })}</CardTitle>
@@ -1813,6 +1997,7 @@ const UsersManagement: React.FC = () => {
               )}
             </CardContent>
             </Card>
+            )}
           </TabsContent>
         </Tabs>
 

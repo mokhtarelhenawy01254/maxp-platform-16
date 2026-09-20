@@ -1137,8 +1137,14 @@ const getCompanyUsers = async (req, res) => {
     // Note: Employee Status filter will be applied after fetching data
     // to handle the NO_EMPLOYEE case properly with include
 
+    const baseCountWhere = {
+      companyId: companyId,
+      ...(role ? { role } : {}),
+      user: userSearchWhere,
+    };
+
     // ✅ FIX: Fetch users through UserCompany relationship with Employee data
-    const [userCompanies, totalCount] = await Promise.all([
+    const [userCompanies, totalCount, activeCount, inactiveCount] = await Promise.all([
       getSharedPrismaClient().userCompany.findMany({
         where: {
           ...userCompanyWhere,
@@ -1200,6 +1206,18 @@ const getCompanyUsers = async (req, res) => {
         where: {
           ...userCompanyWhere,
           user: userSearchWhere,
+        },
+      }),
+      getSharedPrismaClient().userCompany.count({
+        where: {
+          ...baseCountWhere,
+          isActive: true,
+        },
+      }),
+      getSharedPrismaClient().userCompany.count({
+        where: {
+          ...baseCountWhere,
+          isActive: false,
         },
       }),
     ]);
@@ -1345,6 +1363,11 @@ const getCompanyUsers = async (req, res) => {
           totalPages,
           hasNext,
           hasPrev,
+        },
+        counts: {
+          total: activeCount + inactiveCount,
+          active: activeCount,
+          inactive: inactiveCount,
         },
       },
     });
