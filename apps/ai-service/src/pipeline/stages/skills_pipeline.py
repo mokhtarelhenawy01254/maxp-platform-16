@@ -126,12 +126,16 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         # Call-time failover: retry with agent-configured fallback models
         # (model_policy.fallback) before surfacing an error to the customer.
         raw_fallbacks = []
-        if ctx.agent is not None and getattr(ctx.agent, "policies", None):
-            raw_fallbacks = ((ctx.agent.policies or {}).get("model_policy") or {}).get("fallback") or []
+        if ctx.agent is not None:
+            policies = getattr(ctx.agent, "policies", None) or {}
+            mp = policies.get("model_policy") or getattr(ctx.agent, "model_policy", None) or {}
+            raw_fallbacks = mp.get("fallback") or []
         if isinstance(raw_fallbacks, (str, dict)):
             raw_fallbacks = [raw_fallbacks]
         elif not isinstance(raw_fallbacks, list):
             raw_fallbacks = []
+        if not raw_fallbacks:
+            raw_fallbacks = ["groq/llama-3.3-70b-versatile", "gemini-2.5-flash"]
 
         recovered = False
         for fb in raw_fallbacks:
@@ -332,7 +336,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             if not final_response.text:
                 logger.warning("skills_pipeline_followup_empty_retrying")
                 text_messages = _strip_tool_messages(followup_messages, executed)
-                final_response = await _raw_llm_call(ctx, text_messages, tools=None, tool_choice=None)
+                final_response = await _raw_llm_call(ctx, text_messages, tools=[], tool_choice="none")
 
             ctx.final_reply = final_response.text or _format_fallback_reply(ctx, executed)
             ctx.llm_response = final_response.text or ""
@@ -473,13 +477,18 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
         )
 
     # Build tool definitions so DeepSeek can understand tool_call history
-    if tools is None:
+    if (tools is not None and len(tools) == 0) or tool_choice == "none":
+        tool_dicts = None
+        effective_tool_choice = "none"
+    elif tools is None:
         from src.skills.registry import get_skill_registry
         _registry = get_skill_registry()
         _skills = _registry.get_all()
         tool_dicts = _build_skill_tool_dicts(_skills, ctx)
+        effective_tool_choice = tool_choice or "auto"
     else:
         tool_dicts = tools
+        effective_tool_choice = tool_choice or "auto"
 
     # If message has images but current model doesn't support vision, switch to Gemini
     has_images = any(
@@ -507,7 +516,7 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
                 logger.warning("followup_vision_fallback_unavailable", error=str(e))
 
     if tool_choice is None and ctx.agent and hasattr(ctx.agent, "config"):
-        tool_choice = ctx.agent.config.tool_choice
+        effective_tool_choice = ctx.agent.config.tool_choice or effective_tool_choice
 
     provider = (getattr(client, "provider", None) or "").upper()
     temperature = 1.0 if provider == "OLLAMA" else 0.3
@@ -515,7 +524,7 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
         messages=messages,
         tools=tool_dicts,
         temperature=temperature,
-        tool_choice=tool_choice or "auto",
+        tool_choice=effective_tool_choice,
     )
 
 
@@ -573,12 +582,33 @@ def _format_fallback_reply(ctx: PipelineContext, executed: list[dict]) -> str:
     """Format safe, human-like Arabic fallback response for customer-facing channels."""
     channel = str(getattr(ctx, "channel", "") or "").lower()
     customer_channels = {"chat", "facebook", "facebook_messenger", "messenger", "whatsapp", "telegram"}
-    if channel in customer_channels:
+
+    # 1. Synthesize order tracking if an order lookup tool executed
+    for item in executed:
+        t_name = str(item.get("tool", "")).lower()
+        if "order" in t_name:
+            res = item.get("result", {})
+            order = res.get("order") if isinstance(res.get("order"), dict) else res
+            if isinstance(order, dict) and order.get("found"):
+                raw_status = str(order.get("status", "")).upper()
+                status_ar = {
+                    "PENDING": "قيد المراجعة والتجهيز",
+                    "CONFIRMED": "تم تأكيد طلبك وجاري تجهيزه للشحن",
+                    "SHIPPED": "تم شحن طلبك وهو حالياً في الطريق لحضرتك مع مندوب الشحن",
+                    "DELIVERED": "تم تسليم الطلب بنجاح",
+                    "CANCELLED": "ملغي",
+                    "RETURNED": "مرتجع",
+                }.get(raw_status, raw_status or "مسجل")
+                num = order.get("orderNumber") or order.get("number") or ""
+                return f"أهلاً بحضرتك يا فندم، راجعتلك الطلب رقم {num} وحالته حالياً: {status_ar}. لو حابب تستفسر عن أي تفاصيل تانية أنا معاك وتحت أمرك 😊"
+            elif isinstance(order, dict) and order.get("found") is False:
+                num = order.get("orderNumber") or ""
+                return f"أهلاً بحضرتك يا فندم، بحثت برقم الطلب {num} ومش ظاهر عندي في السيستم، ممكن تتأكد من رقم الطلب أو تبعتلي رقم الموبايل اللي سجلت بيه الأوردر وهراجعلك فوراً 🙏"
+
+    if channel in customer_channels or not channel or channel in ("unknown", "sandbox"):
         tool_names = {item.get("tool", "") for item in executed}
         if any("product" in t or "search" in t or "catalog" in t for t in tool_names):
             return "معاك يا فندم، راجعتلك الموديلات المتاحة أهو وبشوفلك أنسب حاجة تناسب طلبك 😊 تحب تسأل عن مقاس معين أو ألوان تانية؟"
-        if any("order" in t for t in tool_names):
-            return "معاك يا فندم، راجعتلك تفاصيل الطلب مع النظام وهأكد لحضرتك الميعاد والتفاصيل فوراً 🙏"
         return "معاك يا فندم وتحت أمرك في أي استفسار، تحب أساعدك في إيه بالظبط؟ 😊"
     return _format_tool_results(executed)
 
@@ -724,9 +754,17 @@ def _strip_tool_messages(messages: list[dict], executed: list[dict]) -> list[dic
     from src.skills.registry import get_skill_registry
 
     registry = get_skill_registry()
-    result = [m for m in messages if m["role"] != "tool"]
-    for m in result:
-        m.pop("tool_calls", None)
+    result = []
+    for m in messages:
+        if m.get("role") == "tool":
+            continue
+        msg_copy = dict(m)
+        msg_copy.pop("tool_calls", None)
+        # Clean empty assistant messages: OpenAI/DeepSeek reject assistant messages with empty text and no tool_calls
+        if msg_copy.get("role") == "assistant" and not str(msg_copy.get("content") or "").strip():
+            continue
+        result.append(msg_copy)
+
     tool_summaries = []
     for item in executed:
         tool_name = item.get("tool", "")
@@ -741,10 +779,15 @@ def _strip_tool_messages(messages: list[dict], executed: list[dict]) -> list[dic
                 formatted = None
         if formatted:
             tool_summaries.append(f"[{tool_name}: {formatted}]")
+        elif isinstance(result_data, dict) and result_data:
+            data_str = json.dumps(result_data, ensure_ascii=False, cls=DecimalEncoder, default=str)
+            tool_summaries.append(f"[{tool_name}: {data_str}]")
         else:
             tool_summaries.append(f"[{tool_name}: {'نجاح' if status == 'success' else 'فشل'}]")
+
     if tool_summaries:
-        summary = "نتائج الأدوات:\n" + "\n".join(tool_summaries)
+        summary = "نتائج استدعاء الأدوات للطلب:\n" + "\n".join(tool_summaries)
+        summary += "\n\n[توجيه حاسم]: بناءً على نتائج الأدوات أعلاه، اكتب الآن ردك للعميل بالعامية المصرية الطبيعية والمباشرة بدون أي وسوم أو أكواد برمجية."
         result.append({"role": "system", "content": summary})
     return result
 

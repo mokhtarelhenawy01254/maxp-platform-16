@@ -409,10 +409,40 @@ async def order_refund(input_data: OrderRefundInput) -> dict[str, Any]:
 
 
 def _format_order_lookup(result: dict) -> str:
-    if result.get("found") or result.get("order"):
-        order = result.get("order") or result
-        return f"الطلب #{order.get('id') or order.get('number')} حالته: {order.get('status')}"
-    return ""
+    order_data = result.get("order") if isinstance(result.get("order"), dict) else result
+    if not isinstance(order_data, dict):
+        return ""
+    if order_data.get("found") is False:
+        return f"لم يتم العثور على طلب برقم {order_data.get('orderNumber') or ''}"
+    num = order_data.get("orderNumber") or order_data.get("number") or order_data.get("id") or ""
+    raw_status = str(order_data.get("status") or "").upper()
+    status_ar = {
+        "PENDING": "قيد المراجعة والتجهيز",
+        "CONFIRMED": "تم تأكيد الطلب وجاري تجهيزه للشحن",
+        "SHIPPED": "تم شحن الطلب وهو في الطريق للعميل مع شركة الشحن",
+        "DELIVERED": "تم تسليم الطلب بنجاح للعميل",
+        "CANCELLED": "تم إلغاء الطلب",
+        "RETURNED": "مرتجع",
+    }.get(raw_status, raw_status or "مسجل")
+    total = order_data.get("total") or ""
+    items = order_data.get("items") or []
+    items_str = ", ".join(i.get("name", "") for i in items if isinstance(i, dict) and i.get("name"))
+    total_part = f"، الإجمالي: {total} ج" if total else ""
+    items_part = f"، المنتجات: {items_str}" if items_str else ""
+    return f"طلب رقم #{num} - حالته: {status_ar}{total_part}{items_part}"
+
+
+def _format_order_lookup_by_phone(result: dict) -> str:
+    orders = result.get("orders") or []
+    if not orders:
+        return "لم يتم العثور على طلبات سابقة مسجلة برقم هذا الهاتف"
+    summaries = []
+    for o in orders[:3]:
+        num = o.get("orderNumber") or o.get("id") or ""
+        st = o.get("status") or ""
+        tot = o.get("total") or ""
+        summaries.append(f"طلب #{num} (الحالة: {st}، المبلغ: {tot} ج)")
+    return f"تم العثور على {len(orders)} طلب: " + " | ".join(summaries)
 
 
 order_lookup_tool = FunctionTool(
@@ -428,6 +458,7 @@ order_lookup_by_phone_tool = FunctionTool(
     description="Search all orders for a customer by their PHONE NUMBER. USE THIS when the customer asks about 'my orders' / 'my order' but does not know the order number — pass the phone number they provide. Returns a list of matching orders (orderNumber, status, total, date). If empty, the number has no orders.",
     func=order_lookup_by_phone,
     input_model=OrderLookupByPhoneInput,
+    format_result=_format_order_lookup_by_phone,
 )
 
 order_create_draft_tool = FunctionTool(

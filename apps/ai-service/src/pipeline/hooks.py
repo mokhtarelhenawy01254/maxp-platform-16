@@ -157,12 +157,31 @@ class AttachmentHook:
     ) -> None:
         _maxp_api_url = os.getenv("MAXP_API_URL", "").rstrip("/")
 
-        # Check if user explicitly asked for photos in this turn
+        # Check if user explicitly asked for photos in this turn or in response to an offer
         user_text = getattr(ctx, "message", None) or getattr(ctx, "user_message", None) or ""
         user_msg = str(user_text).lower()
-        explicit_photo_request = any(
-            k in user_msg for k in ("صور", "صوره", "صورة", "شكل", "وريني", "اشوف", "أشوف", "كاتالوج", "كتالوج")
+        photo_keywords = (
+            "صور", "صوره", "صورة", "شكل", "شكله", "شكلها", "وريني", "اشوف", "أشوف",
+            "كاتالوج", "كتالوج", "الوان", "ألوان", "الوانه", "الوانها", "ع الطبيعة",
+            "على الطبيعة", "في الحقيقة", "ابعتلي صوره", "ابعتلي صورته", "ابعت صوره",
+            "ابعت صورته", "ابعت الصور", "ابعتهم", "وريني الصور", "وريني شكله",
+            "ابعتلي الصور", "ممكن صور", "ممكن صوره", "ممكن اشوف"
         )
+        explicit_photo_request = any(k in user_msg for k in photo_keywords)
+
+        # Also detect affirmative responses if the previous assistant message offered photos
+        # e.g. "تحب أبعتلك صوره؟" -> user says "اه" / "تمام" / "ياريت" / "ابعت"
+        if not explicit_photo_request and any(
+            w in user_msg for w in ("اه", "أه", "ايوه", "أيوه", "نعم", "ياريت", "يا ريت", "ابعت", "ابعتلي", "ماشي", "تمام", "اوك", "اوكي", "أوك")
+        ):
+            recent_msgs = (getattr(ctx, "external_memory_context", None) or {}).get("recentMessages") or []
+            last_assistant_msg = ""
+            for m in reversed(recent_msgs):
+                if isinstance(m, dict) and m.get("role") in ("assistant", "agent"):
+                    last_assistant_msg = str(m.get("content") or "").lower()
+                    break
+            if any(k in last_assistant_msg for k in ("صوره", "صورة", "صور", "شكله", "تشوف", "ألوان")):
+                explicit_photo_request = True
 
         already_sent_urls = await self._get_already_sent_image_urls(ctx)
 
@@ -257,6 +276,15 @@ class AttachmentHook:
         if not reply_lower:
             return
 
+        # 🛡️ STRICT PHOTO GUARD: Never attach product images unless the user explicitly requested photos!
+        if not explicit_photo_request:
+            return
+
+        user_text = getattr(ctx, "message", None) or getattr(ctx, "user_message", None) or ""
+        recent_msgs = (getattr(ctx, "external_memory_context", None) or {}).get("recentMessages") or []
+        recent_text = " ".join(str(m.get("content") or "") for m in recent_msgs[-4:] if isinstance(m, dict))
+        search_scope = f"{reply_lower} {str(user_text).lower()} {recent_text.lower()} {str(evidence.get('arguments') or '')}".lower()
+
         for key in ("results", "products"):
             items = result.get(key) or []
             if not isinstance(items, list):
@@ -296,14 +324,13 @@ class AttachmentHook:
                 name_words = [w for w in re.findall(r"[\u0600-\u06FF\w]+", prod_name) if len(w) >= 3]
                 distinctive_words = [w for w in name_words if w not in GENERIC_PRODUCT_WORDS]
 
-                if prod_name in reply_lower:
+                if prod_name in search_scope:
                     name_match = True
                 elif distinctive_words:
-                    matched = sum(1 for w in distinctive_words if w in reply_lower)
+                    matched = sum(1 for w in distinctive_words if w in search_scope)
                     name_match = (matched > 0 and (matched >= math.ceil(len(distinctive_words) * 0.5) or len(distinctive_words) <= 2))
                 elif name_words:
-                    # If product title only has generic words (e.g. "حذاء جلد"), all must be in reply
-                    name_match = all(w in reply_lower for w in name_words)
+                    name_match = all(w in search_scope for w in name_words)
                 else:
                     name_match = False
 
@@ -312,15 +339,17 @@ class AttachmentHook:
                     for img in raw_images if img
                 )
 
-                # BAN single_match: Never attach a product solely because results had 1 item!
                 if not (name_match or img_match):
-                    continue
+                    if len(items) == 1:
+                        name_match = True
+                    else:
+                        continue
 
                 added_for_prod = 0
                 for img in raw_images:
                     if not img or not isinstance(img, str):
                         continue
-                    if added_for_prod >= 2 or len(ctx.response_attachments) >= 4:
+                    if added_for_prod >= 1 or len(ctx.response_attachments) >= 2:
                         break
                     img_clean = img.strip()
                     full_url = img_clean
@@ -329,8 +358,8 @@ class AttachmentHook:
 
                     if full_url.startswith(("http://", "https://", "data:")):
                         # 🛡️ DEDUPLICATION GUARD:
-                        # Skip if already sent previously, unless user explicitly asked to see photos
-                        if _is_image_already_sent(full_url, already_sent_urls) and not explicit_photo_request:
+                        # Skip if already sent previously
+                        if _is_image_already_sent(full_url, already_sent_urls):
                             logger.debug("skipping_duplicate_sent_image", url=full_url[:80])
                             continue
 
@@ -434,22 +463,25 @@ class AttachmentHook:
             re.IGNORECASE,
         )
 
-        # 1. Extract any image URLs in text into response_attachments
-        for match in image_url_pattern.finditer(ctx.final_reply):
-            url = match.group(0).strip()
-            if url.startswith("/"):
-                url = f"{base_url}{url}"
-            if url.startswith(("http://", "https://")):
-                # Deduplication check
-                if _is_image_already_sent(url, already_sent_urls) and not explicit_photo_request:
-                    continue
-                if not any(a.get("url") == url for a in ctx.response_attachments):
-                    ctx.response_attachments.append({
-                        "type": "image",
-                        "url": url,
-                        "source": "reply_extraction",
-                        "tool": "attachment_extractor",
-                    })
+        # 1. Extract any image URLs in text into response_attachments ONLY IF customer asked for photos
+        if explicit_photo_request:
+            for match in image_url_pattern.finditer(ctx.final_reply):
+                if len(ctx.response_attachments) >= 2:
+                    break
+                url = match.group(0).strip()
+                if url.startswith("/"):
+                    url = f"{base_url}{url}"
+                if url.startswith(("http://", "https://")):
+                    # Deduplication check
+                    if _is_image_already_sent(url, already_sent_urls):
+                        continue
+                    if not any(a.get("url") == url for a in ctx.response_attachments):
+                        ctx.response_attachments.append({
+                            "type": "image",
+                            "url": url,
+                            "source": "reply_extraction",
+                            "tool": "attachment_extractor",
+                        })
 
         # 2. Strip markdown images: ![alt](url)
         cleaned = re.sub(r'!\[.*?\]\([^\)]+\)', '', ctx.final_reply)

@@ -900,6 +900,7 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
         for t in reversed(tools):
             if isinstance(t, dict):
                 t_res = t.get("result") or {}
+                t_name = str(t.get("tool") or "").lower()
                 if isinstance(t_res, dict):
                     if t_res.get("message"):
                         reply_text = str(t_res.get("message"))
@@ -910,8 +911,26 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
                     elif t_res.get("rule_added"):
                         reply_text = f"تم تسجيل التفضيل بنجاح: {t_res.get('rule_added')}"
                         break
+                    elif "order" in t_name:
+                        order = t_res.get("order") if isinstance(t_res.get("order"), dict) else t_res
+                        if isinstance(order, dict) and order.get("found"):
+                            status_ar = {
+                                "PENDING": "قيد المراجعة والتجهيز",
+                                "CONFIRMED": "تم تأكيد طلبك وجاري تجهيزه للشحن",
+                                "SHIPPED": "تم شحن طلبك وهو حالياً في الطريق لحضرتك مع مندوب الشحن",
+                                "DELIVERED": "تم تسليم طلبك بنجاح",
+                                "CANCELLED": "ملغي",
+                                "RETURNED": "مرتجع",
+                            }.get(str(order.get("status", "")).upper(), order.get("status", ""))
+                            num = order.get("orderNumber") or order.get("number") or ""
+                            reply_text = f"أهلاً بحضرتك يا فندم، راجعتلك الطلب رقم {num} وحالته حالياً: {status_ar}. لو حابب تستفسر عن أي تفاصيل تانية أنا معاك وتحت أمرك 😊"
+                            break
+                        elif isinstance(order, dict) and order.get("found") is False:
+                            num = order.get("orderNumber") or ""
+                            reply_text = f"أهلاً بحضرتك يا فندم، بحثت برقم الطلب {num} ومش ظاهر عندي في السيستم، ممكن تتأكد من رقم الطلب أو تبعتلي رقم الموبايل اللي سجلت بيه الأوردر وهراجعلك فوراً 🙏"
+                            break
         if not reply_text:
-            reply_text = "تم تنفيذ الإجراء بنجاح."
+            reply_text = "أهلاً بحضرتك يا فندم، راجعت البيانات بالكامل وأنا معاك وتحت أمرك في أي استفسار 😊"
     return AgentChatResponse(
         status=status,
         thread_id=thread_id,
