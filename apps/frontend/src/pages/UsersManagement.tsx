@@ -342,6 +342,22 @@ const getAccountStatusClassName = (isActive: boolean) =>
     ? "border-emerald-200 bg-emerald-500/10 text-emerald-700"
     : "border-slate-200 bg-slate-500/10 text-slate-700";
 
+const getEmployeeStatusClassName = (status?: string | null) => {
+  switch (status) {
+    case "ACTIVE":
+      return "border-emerald-200 bg-emerald-500/10 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300";
+    case "ON_LEAVE":
+      return "border-amber-200 bg-amber-500/10 text-amber-700 dark:border-amber-700 dark:text-amber-300";
+    case "SUSPENDED":
+      return "border-rose-200 bg-rose-500/10 text-rose-700 dark:border-rose-900/40 dark:text-rose-400";
+    case "TERMINATED":
+    case "RESIGNED":
+      return "border-slate-300 bg-slate-500/10 text-slate-700 dark:border-slate-700 dark:text-slate-300";
+    default:
+      return "border-border bg-muted text-foreground";
+  }
+};
+
 const getEmployeeStatusLabel = (status?: string | null) => {
   switch (status) {
     case "ACTIVE":
@@ -361,27 +377,32 @@ const getEmployeeStatusLabel = (status?: string | null) => {
 
 const formatRelativeLoginTime = (value?: string | null) => {
   if (!value) return "لم يسجل الدخول بعد";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "لم يسجل الدخول بعد";
-  const diffMs = Date.now() - date.getTime();
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "لم يسجل الدخول بعد";
+    const diffMs = Math.max(0, Date.now() - date.getTime());
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-  if (diffMinutes < 5) return "متصل الآن أو مؤخراً";
-  if (diffMinutes < 60) return `منذ ${diffMinutes} دقيقة`;
-  if (diffHours < 24) return `منذ ${diffHours} ساعة`;
-  if (diffDays === 1) return "أمس";
-  if (diffDays < 30) return `منذ ${diffDays} يوم`;
+    if (diffMinutes < 5) return "متصل الآن أو مؤخراً";
+    if (diffMinutes < 60) return `منذ ${diffMinutes} دقيقة`;
+    if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+    if (diffDays === 1) return "أمس";
+    if (diffDays < 30) return `منذ ${diffDays} يوم`;
 
-  return date.toLocaleDateString("ar-EG", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+    return date.toLocaleDateString("ar-EG", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return "لم يسجل الدخول بعد";
+  }
 };
 
-const renderUserActivityBadge = (entry: UserRecord) => {
+const renderUserActivityBadge = (entry?: UserRecord | null) => {
+  if (!entry) return null;
   const hrStatus = entry.employee?.status;
 
   if (hrStatus === "RESIGNED") {
