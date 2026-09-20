@@ -70,6 +70,7 @@ type ProductLandingConfig = {
   orderKicker: string;
   orderTitle: string;
   orderCopy: string;
+  sections?: any[];
 };
 
 type PublicLandingPage = {
@@ -243,6 +244,77 @@ const PRODUCT_IMAGE_LANDING_CONFIGS: Record<string, ProductLandingConfig> = {
       {
         src: "/landing-pages/swan-high-skotch/slice-06.png",
         alt: "دعوة لطلب Swan High Skotch وملء الفورم في آخر الصفحة",
+      },
+    ],
+  },
+  "test-faq-landing": {
+    fallbackProduct: {
+      id: "prod-test-faq",
+      companyId: "cmteva12p00lrjuwxpufr4k8w",
+      name: "بيجامة الفيونكة الأجمل والأكثر راحة",
+      slug: "test-faq-landing",
+      description: "بيجامة الفيونكة الأجمل والأكثر راحة، خامات قطنية ناعمة",
+      price: 300,
+      images: [
+        "/landing-pages/swan-high-skotch/slice-01.png",
+        "/landing-pages/swan-high-skotch/slice-02.png",
+      ],
+      productVariants: [],
+    },
+    orderKicker: "نموذج الطلب المباشر",
+    orderTitle: "أدخل بياناتك لتأكيد الشحن والتوصيل",
+    orderCopy: "املأ بياناتك وسيتم التواصل معك هاتفياً لتأكيد الشحن فوراً.",
+    slices: [],
+    sections: [
+      {
+        id: "sec-media-test",
+        type: "MEDIA",
+        title: "الصور والميديا",
+        enabled: true,
+        content: {
+          images: [
+            "/landing-pages/swan-high-skotch/slice-01.png",
+            "/landing-pages/swan-high-skotch/slice-02.png",
+          ],
+        },
+      },
+      {
+        id: "sec-form-test",
+        type: "FORM",
+        title: "نموذج الشراء والدفع عند الاستلام",
+        enabled: true,
+        content: {
+          orderKicker: "نموذج الطلب المباشر",
+          orderTitle: "أدخل بياناتك لتأكيد الشحن والتوصيل الفوري",
+          orderCopy: "املأ بيانات التوصيل وسيتم التواصل معك هاتفياً لتأكيد الشحن فوراً.",
+          buttonLabel: "تأكيد الطلب الآن — دفع عند الاستلام 🚚",
+        },
+      },
+      {
+        id: "sec-reviews-test",
+        type: "REVIEWS",
+        title: "آراء وتقييمات العملاء",
+        enabled: true,
+        content: {
+          reviews: [
+            { name: "أحمد إبراهيم", text: "المنتج ممتاز جداً والتوصيل كان سريع في يومين والمعاينة تمت قبل الدفع.", rating: 5 },
+            { name: "سارة محمود", text: "الجودة فاقت توقعاتي وخدمة العملاء متعاونين جداً. أنصح به بشدة!", rating: 5 },
+            { name: "محمود حسن", text: "تجربة شراء محترمة ومطابق تماماً للصور والمواصفات المعروضة.", rating: 5 },
+          ],
+        },
+      },
+      {
+        id: "sec-faq-test",
+        type: "FAQ",
+        title: "الأسئلة الشائعة",
+        enabled: true,
+        content: {
+          faqs: [
+            { question: "هل يمكنني معاينة المنتج قبل الدفع؟", answer: "نعم بالتأكيد! مندوب الشحن ينتظرك لفتح الشحنة ومعاينتها والتأكد منها قبل الاستلام." },
+            { question: "كم يستغرق وقت التوصيل؟", answer: "التوصيل يستغرق من 24 إلى 48 ساعة لجميع محافظات مصر." },
+            { question: "ما هي سياسة الاستبدال والاسترجاع؟", answer: "لديك 14 يوماً من تاريخ الاستلام لاستبدال أو إرجاع المنتج بسهولة في حالة عيوب الصناعة." },
+          ],
+        },
       },
     ],
   },
@@ -1129,8 +1201,10 @@ const ProductImageLandingPage: React.FC = () => {
         ? activeLanding!.sections
         : Array.isArray(activeLanding?.formConfig?.sections)
           ? activeLanding!.formConfig!.sections
-          : []) || [],
-    [activeLanding],
+          : Array.isArray(fallbackConfig?.sections)
+            ? fallbackConfig!.sections!
+            : []) || [],
+    [activeLanding, fallbackConfig],
   );
 
   const formSection = activeSections.find((s) => s?.type === "FORM");

@@ -421,7 +421,7 @@ export const buildDefaultSectionsForProduct = (
       enabled: true,
       content: {
         orderKicker: "نموذج الطلب المباشر",
-        orderTitle: `اطلب ${prodName} الآن بسعر ${prodPrice}`,
+        orderTitle: prodName.length > 25 ? "اطلب الآن واستفد من العرض التوفيري" : `اطلب ${prodName} الآن`,
         orderCopy: "املأ بيانات التوصيل وسيتم التواصل معك هاتفياً لتأكيد الشحن فوراً.",
         buttonLabel: "تأكيد الطلب الآن — دفع عند الاستلام 🚚",
       },
