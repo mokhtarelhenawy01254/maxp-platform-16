@@ -135,6 +135,12 @@ const resolveOfferSignals = (
   index: number,
   themeId?: string,
 ): string[] => {
+  // If the merchant already provided an explicit stat for this card, use it as
+  // the single source of truth instead of appending guessed signals.
+  if (card.stat && card.stat.trim()) {
+    return [];
+  }
+
   const content = normalizeOfferText(
     `${card.label || ''} ${card.title} ${card.subtitle} ${card.stat || ''}`,
   );

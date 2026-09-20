@@ -21,6 +21,7 @@ interface ShoppingIntentsProps {
     subtitle?: string;
     items?: unknown;
     contentAlign?: string;
+    ctaText?: string;
     [key: string]: unknown;
   };
 }
@@ -205,7 +206,7 @@ const resolveIntentExamples = (
     return ['ارتفاع موضح', 'ثبات أفضل', 'مناسبات'];
   }
 
-  if (content.includes('صندل') || content.includes('صيف')) {
+  if (content.includes('صندل')) {
     return ['لبس سريع', 'خفة أعلى', 'خروج نهاري'];
   }
 
@@ -242,7 +243,7 @@ const resolveIntentExamples = (
       content.includes('ديكور') ||
       /(?:^|\s)(?:بيت|البيت|منزل|المنزل)(?:$|\s)/.test(content))
   ) {
-    return ['سلال تخزين', 'منظمات مكتب', 'حلول للبيت'];
+    return ['خيارات متعددة', 'قرار أسهل', 'متوفر الآن'];
   }
 
   if (
@@ -297,6 +298,7 @@ const ShoppingIntents: React.FC<ShoppingIntentsProps> = ({ settings }) => {
   const subtitle =
     settings?.subtitle ||
     'اختر المسار الأقرب لطلبك: منتجات يومية، عروض، ركنة البيت، أو هدية جاهزة بدون لف طويل داخل المتجر.';
+  const ctaText = settings?.ctaText || 'افتح هذا القسم';
   const items = useMemo(() => parseIntentItems(settings?.items), [settings?.items]);
   const contentAlign = resolveSectionContentAlign(
     settings?.contentAlign,
@@ -367,7 +369,9 @@ const ShoppingIntents: React.FC<ShoppingIntentsProps> = ({ settings }) => {
                     item.link.startsWith('/') ? item.link : `/${item.link}`,
                     location.search,
                   );
-                  const examples = resolveIntentExamples(item, index).slice(0, 2);
+                  const examples = item.chip
+                    ? []
+                    : resolveIntentExamples(item, index).slice(0, 2);
 
                   return (
                     <Link
@@ -438,7 +442,7 @@ const ShoppingIntents: React.FC<ShoppingIntentsProps> = ({ settings }) => {
                 item.link.startsWith('/') ? item.link : `/${item.link}`,
                 location.search,
               );
-              const examples = resolveIntentExamples(item, index);
+              const examples = item.chip ? [] : resolveIntentExamples(item, index);
               const isSixItems = items.length === 6;
 
               return (
@@ -506,7 +510,7 @@ const ShoppingIntents: React.FC<ShoppingIntentsProps> = ({ settings }) => {
                         }`}
                       >
                         <span className="inline-flex items-center gap-1.5 font-heading">
-                          <span>تحديد الباقة والمعاينة</span>
+                          <span>{ctaText || 'تحديد الباقة والمعاينة'}</span>
                           <span className="inline-block text-sm transition-transform duration-300 group-hover:-translate-x-1">
                             ←
                           </span>

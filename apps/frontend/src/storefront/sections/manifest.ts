@@ -3351,6 +3351,25 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { key: "ctaLink", label: "رابط زر الإجراء", type: "url", placeholder: "/contact" },
     ],
   },
+  "car-model-matcher": {
+    label: "مطابقة موديل السيارة (Car Model Matcher)",
+    component: "car-model-matcher",
+    note: "أداة بحث تفاعلية لمطابقة موديل وسنة صنع السيارة والتأكد من توافق باترون الفابريقة.",
+    pages: ["home", "shop", "pdp"],
+    variants: [
+      { value: "standard", label: "قياسي" },
+    ],
+    fields: [
+      { key: "badge", label: "الشارة", type: "text", placeholder: "تطابق فابريقة 100%" },
+      { key: "title", label: "العنوان", type: "text", placeholder: "تأكد من مطابقة الستارة لموديل سيارتك" },
+      { key: "subtitle", label: "الوصف", type: "textarea" },
+      { key: "placeholder", label: "نص خانة البحث", type: "text" },
+      { key: "fitMessage", label: "رسالة التطابق", type: "text" },
+      { key: "customNoteMessage", label: "رسالة التفصيل المخصص", type: "text" },
+      { key: "ctaText", label: "نص زر الإجراء", type: "text", placeholder: "اختيار الباقة والمتابعة" },
+      { key: "ctaLink", label: "رابط زر الإجراء", type: "url", placeholder: "#pdp-buybox" },
+    ],
+  },
 } as const satisfies Record<string, StorefrontSectionManifestEntry>;
 
 export type StorefrontSectionId = keyof typeof STOREFRONT_SECTION_MANIFEST;

@@ -51,6 +51,7 @@ const AffiliateBreadcrumbs = React.lazy(() => import('../sections/AffiliateBread
 const AffiliateArticleSeo = React.lazy(() => import('../sections/AffiliateArticleSeo'));
 const ImageHotspot = React.lazy(() => import('../sections/ImageHotspot'));
 const BeforeAfterSlider = React.lazy(() => import('../sections/BeforeAfterSlider'));
+const CarModelMatcher = React.lazy(() => import('../sections/CarModelMatcher'));
 const CombinedListing = React.lazy(() => import('../sections/CombinedListing'));
 const HoverCards = React.lazy(() => import('../sections/HoverCards'));
 const CountdownSection = React.lazy(() => import('../sections/Countdown'));
@@ -120,6 +121,7 @@ const baseComponentRegistry: Record<
   'affiliate-article-seo': AffiliateArticleSeo,
   'image-hotspot': ImageHotspot,
   'before-after': BeforeAfterSlider,
+  'car-model-matcher': CarModelMatcher,
   'combined-listing': CombinedListing,
   'hover-cards': HoverCards,
   countdown: CountdownSection,
