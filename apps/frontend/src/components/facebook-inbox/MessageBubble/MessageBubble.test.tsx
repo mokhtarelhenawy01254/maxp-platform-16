@@ -253,5 +253,30 @@ describe("MessageBubble", () => {
     fireEvent.click(angryEmojiBtn);
     expect(onReaction).toHaveBeenCalledWith("message-1", "😡");
   });
+
+  it("displays reaction pills when metadata contains reactions mapped by userId", () => {
+    render(
+      <MessageBubble
+        message={{
+          ...baseMessage,
+          content: "رسالة مع تفاعل",
+          metadata: {
+            reactions: {
+              "user-1": "😂",
+              "user-2": "😂",
+              "user-3": "❤️",
+            },
+          },
+        }}
+        currentUserId="user-1"
+      />,
+    );
+
+    // Emoji symbols should be rendered in the reaction pill
+    expect(screen.getByText("😂")).toBeInTheDocument();
+    expect(screen.getByText("❤️")).toBeInTheDocument();
+    // Count "2" for the laugh reaction
+    expect(screen.getByText("2")).toBeInTheDocument();
+  });
 });
 

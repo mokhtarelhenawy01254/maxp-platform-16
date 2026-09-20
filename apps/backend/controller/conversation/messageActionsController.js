@@ -482,6 +482,19 @@ const toggleMessageReaction = async (req, res) => {
             }
         });
 
+        // Emit socket event for real-time synchronization across devices and agents
+        try {
+            socketService.sendToConversationSecure(id, companyId, 'message_reaction_updated', {
+                conversationId: id,
+                messageId,
+                reactions: metadata.reactions,
+                userId,
+                reaction: currentReaction === reaction ? null : reaction
+            });
+        } catch (socketErr) {
+            console.warn('⚠️ [SOCKET] Failed to emit reaction update:', socketErr.message);
+        }
+
         res.json({
             success: true,
             data: { reactions: metadata.reactions },

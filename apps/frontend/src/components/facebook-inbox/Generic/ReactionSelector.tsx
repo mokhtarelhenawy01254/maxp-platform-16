@@ -129,6 +129,7 @@ const ReactionSelector: React.FC<ReactionSelectorProps> = ({
               type="button"
               key={reaction}
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 onSelect(reaction);
               }}

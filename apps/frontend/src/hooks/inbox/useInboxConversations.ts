@@ -631,6 +631,21 @@ export const useInboxConversations = () => {
     );
   }, []);
 
+  // 🆕 Update a single message in-place without reloading or resetting scroll position
+  const updateMessage = useCallback(
+    (messageId: string, updater: (prevMessage: Message) => Message) => {
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? updater(msg) : msg)),
+      );
+    },
+    [],
+  );
+
+  // 🆕 Remove a single message in-place without reloading or resetting scroll position
+  const removeMessage = useCallback((messageId: string) => {
+    setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+  }, []);
+
   return {
     conversations,
     selectedConversation,
@@ -643,6 +658,8 @@ export const useInboxConversations = () => {
     loadMessages,
     loadMoreMessages,
     addMessage,
+    updateMessage,
+    removeMessage,
     hasMore: hasMoreMessages,
     hasMoreConversations,
     loadMoreConversations,

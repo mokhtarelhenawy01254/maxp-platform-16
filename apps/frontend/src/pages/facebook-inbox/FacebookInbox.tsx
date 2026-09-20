@@ -141,6 +141,8 @@ const getApiError = (error: unknown): ApiErrorLike => {
     loadConversations,
     loadMoreMessages,
     addMessage,
+    updateMessage,
+    removeMessage,
     hasMore,
     // Conversations pagination
     hasMoreConversations,
@@ -1532,12 +1534,12 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
       try {
         await deleteMessage(selectedConversation.id, messageId);
-        loadMessages(selectedConversation.id); // Reload to reflect deletion
+        removeMessage(messageId);
       } catch (error) {
         alert(t("conversations.deleteMessageFailed"));
       }
     },
-    [selectedConversation, deleteMessage, loadMessages, t],
+    [selectedConversation, deleteMessage, removeMessage, t],
   );
 
   // Forward message request handler
@@ -1563,37 +1565,130 @@ const getApiError = (error: unknown): ApiErrorLike => {
     [messageToForward, companyId, forwardMessage, t],
   );
 
-  // Star message handler
+  // Star message handler - Optimistic in-place update without reloading or resetting scroll position
   const handleStarMessage = useCallback(
     async (messageId: string) => {
       if (!selectedConversation) return;
+      let previousMessage: InboxMessage | undefined;
+
+      updateMessage(messageId, (prevMsg) => {
+        previousMessage = prevMsg;
+        const prevMetadata =
+          prevMsg.metadata && typeof prevMsg.metadata === "object"
+            ? { ...prevMsg.metadata }
+            : {};
+        const isStarred = !prevMsg.isStarred && !prevMetadata.isStarred;
+        return {
+          ...prevMsg,
+          isStarred,
+          metadata: {
+            ...prevMetadata,
+            isStarred,
+          },
+        };
+      });
+
       try {
-        await toggleMessageStar(selectedConversation.id, messageId);
-        // Optimistic update or reload
-        loadMessages(selectedConversation.id);
+        const isStarred = await toggleMessageStar(
+          selectedConversation.id,
+          messageId,
+        );
+        updateMessage(messageId, (prevMsg) => {
+          const currentMeta =
+            prevMsg.metadata && typeof prevMsg.metadata === "object"
+              ? { ...prevMsg.metadata }
+              : {};
+          return {
+            ...prevMsg,
+            isStarred: !!isStarred,
+            metadata: {
+              ...currentMeta,
+              isStarred: !!isStarred,
+            },
+          };
+        });
       } catch (error) {
         console.error("Failed to star message", error);
+        if (previousMessage) {
+          updateMessage(messageId, () => previousMessage!);
+        }
       }
     },
-    [selectedConversation, toggleMessageStar, loadMessages],
+    [selectedConversation, toggleMessageStar, updateMessage],
   );
 
-  // Reaction handler
+  // Reaction handler - Optimistic in-place update without reloading or resetting scroll position
   const handleMessageReaction = useCallback(
     async (messageId: string, reaction: string) => {
       if (!selectedConversation) return;
+
+      const currentUserId = user?.id || "me";
+      let previousMessage: InboxMessage | undefined;
+
+      // 1. Instant optimistic update
+      updateMessage(messageId, (prevMsg) => {
+        previousMessage = prevMsg;
+        const prevMetadata =
+          prevMsg.metadata && typeof prevMsg.metadata === "object"
+            ? { ...prevMsg.metadata }
+            : {};
+        const prevReactions =
+          prevMetadata.reactions && typeof prevMetadata.reactions === "object"
+            ? { ...prevMetadata.reactions }
+            : {};
+
+        const existingReaction =
+          prevReactions[currentUserId] || prevMetadata.myReaction;
+
+        if (existingReaction === reaction) {
+          delete prevReactions[currentUserId];
+          delete prevMetadata.myReaction;
+        } else {
+          prevReactions[currentUserId] = reaction;
+          prevMetadata.myReaction = reaction;
+        }
+
+        prevMetadata.reactions = prevReactions;
+
+        return {
+          ...prevMsg,
+          metadata: prevMetadata,
+        };
+      });
+
+      // 2. Request backend in background (NO loadMessages call!)
       try {
-        await toggleMessageReaction(
+        const res = await toggleMessageReaction(
           selectedConversation.id,
           messageId,
           reaction,
         );
-        loadMessages(selectedConversation.id);
+        if (res?.data?.reactions) {
+          updateMessage(messageId, (prevMsg) => {
+            const currentMeta =
+              prevMsg.metadata && typeof prevMsg.metadata === "object"
+                ? { ...prevMsg.metadata }
+                : {};
+            const serverReactions = res.data.reactions;
+            return {
+              ...prevMsg,
+              metadata: {
+                ...currentMeta,
+                reactions: serverReactions,
+                myReaction: serverReactions[currentUserId] || undefined,
+              },
+            };
+          });
+        }
       } catch (error) {
         console.error("Failed to update reaction", error);
+        if (previousMessage) {
+          updateMessage(messageId, () => previousMessage!);
+        }
+        toast.error(t("conversations.reactionFailed", "فشل في تحديث التفاعل"));
       }
     },
-    [selectedConversation, toggleMessageReaction, loadMessages],
+    [selectedConversation, user?.id, toggleMessageReaction, updateMessage, t],
   );
 
   // Reply handler
@@ -1723,9 +1818,40 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
     socket.on("messages_read", handleMessagesRead);
 
+    // Real-time message reaction updates from other clients/agents
+    const handleReactionUpdated = (data: {
+      conversationId: string;
+      messageId: string;
+      reactions: Record<string, string>;
+      userId?: string;
+    }) => {
+      if (selectedConversation?.id === data.conversationId) {
+        updateMessage(data.messageId, (prevMsg) => {
+          const prevMeta =
+            prevMsg.metadata && typeof prevMsg.metadata === "object"
+              ? { ...prevMsg.metadata }
+              : {};
+          const currentUserId = user?.id || user?.userId;
+          return {
+            ...prevMsg,
+            metadata: {
+              ...prevMeta,
+              reactions: data.reactions,
+              myReaction:
+                (currentUserId && data.reactions?.[currentUserId]) ||
+                prevMeta.myReaction,
+            },
+          };
+        });
+      }
+    };
+
+    socket.on("message_reaction_updated", handleReactionUpdated);
+
     return () => {
       socket.off("new_message", handleNewMessage);
       socket.off("messages_read", handleMessagesRead);
+      socket.off("message_reaction_updated", handleReactionUpdated);
       if (loadConversationsTimeoutRef.current)
         clearTimeout(loadConversationsTimeoutRef.current);
     };
@@ -1734,6 +1860,9 @@ const getApiError = (error: unknown): ApiErrorLike => {
     isConnected,
     selectedConversation,
     addMessage,
+    updateMessage,
+    user?.id,
+    user?.userId,
     debouncedLoadConversations,
     playNotificationSound,
     showBrowserNotification,

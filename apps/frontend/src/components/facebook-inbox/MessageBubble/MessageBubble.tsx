@@ -278,6 +278,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
     onScrollToMessage,
     hasBeenReplied,
     onCorrect,
+    currentUserId,
   }) => {
     const isCustomer = !!message.isFromCustomer;
     const [showActions, setShowActions] = useState(false);
@@ -382,15 +383,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
         ? getInboxMessageMediaUrl(replyToResolvedId, null)
         : "";
 
-    const myReaction = metadata?.myReaction;
-    const reactionCounts = Object.entries(metadata?.reactions ?? {}).reduce<
-      Record<string, number>
-    >((acc, [reaction, count]) => {
-      if (typeof count === "number") {
-        acc[reaction] = count;
-      }
-      return acc;
-    }, {});
+    let myReaction = metadata?.myReaction;
+    const reactionCounts: Record<string, number> = {};
+
+    const rawReactions = metadata?.reactions;
+    if (rawReactions && typeof rawReactions === "object") {
+      Object.entries(rawReactions).forEach(([key, val]) => {
+        if (typeof val === "number") {
+          // Format: { "👍": 2, "❤️": 1 }
+          reactionCounts[key] = (reactionCounts[key] || 0) + val;
+        } else if (typeof val === "string" && val.trim()) {
+          // Format: { [userId]: "👍" }
+          const emoji = val.trim();
+          reactionCounts[emoji] = (reactionCounts[emoji] || 0) + 1;
+          if (currentUserId && key === currentUserId) {
+            myReaction = emoji;
+          }
+        }
+      });
+    }
 
     const formatTime = (date: Date) => {
       const now = new Date();
@@ -613,8 +624,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
               {onReaction && (
                 <div className="relative flex-shrink-0">
                   <button
+                    type="button"
                     ref={reactionTriggerRef}
-                    onClick={() => setShowReactionSelector(!showReactionSelector)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowReactionSelector(!showReactionSelector);
+                    }}
                     className={`${actionButtonClassName} w-8 h-8 sm:w-7 sm:h-7 ${
                       myReaction
                         ? "text-amber-600 bg-amber-100 border-amber-300"
