@@ -143,19 +143,47 @@ const CarModelMatcher: React.FC<CarModelMatcherProps> = ({ section, settings }) 
     setSelectedModel(model);
     setQuery(model);
     setIsFocused(false);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('maxp:storefront:select-car-model', {
+          detail: { carModel: model },
+        })
+      );
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
+    const val = e.target.value;
+    setQuery(val);
     if (selectedModel) {
       setSelectedModel(null);
+    }
+    if (val.trim().length >= 3 && typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('maxp:storefront:select-car-model', {
+          detail: { carModel: val.trim() },
+        })
+      );
     }
   };
 
   const handleCtaClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const modelToSync = activeModelName || query.trim();
+    if (modelToSync && typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('maxp:storefront:select-car-model', {
+          detail: { carModel: modelToSync },
+        })
+      );
+    }
     if (ctaLink.startsWith('#')) {
       e.preventDefault();
-      const targetElement = document.querySelector(ctaLink) || document.querySelector('[data-section="quantity-offers"]') || document.querySelector('[data-section="pdp-checkout"]');
+      const targetElement =
+        document.querySelector('#storefront-pdp-checkout') ||
+        document.querySelector(ctaLink) ||
+        document.querySelector('[data-section="pdp-checkout"]') ||
+        document.querySelector('[data-section="quantity-offers"]') ||
+        document.querySelector('#pdp-buybox');
       if (targetElement) {
         targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }

@@ -73,18 +73,26 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
     sectionSettings.decisionMode.trim()
       ? sectionSettings.decisionMode.trim()
       : "";
+  const isRedlineAutoQuickOrder =
+    theme.id === "redline-auto" || configuredFormVariant === "redline-auto";
   const isSoleaFemmeQuickOrder =
-    theme.id === "solea-femme" || configuredFormVariant === "solea-femme";
+    (theme.id === "solea-femme" || configuredFormVariant === "solea-femme") &&
+    !isRedlineAutoQuickOrder;
   const isMenShoesQuickOrder =
-    theme.id === "men-shoes-eg" ||
-    theme.id === "women-fashion-eg" ||
-    isSoleaFemmeQuickOrder ||
-    configuredFormVariant === "men-shoes-eg" ||
-    configuredFormVariant === "women-fashion-eg";
+    (theme.id === "men-shoes-eg" ||
+      theme.id === "women-fashion-eg" ||
+      isSoleaFemmeQuickOrder ||
+      configuredFormVariant === "men-shoes-eg" ||
+      configuredFormVariant === "women-fashion-eg") &&
+    !isRedlineAutoQuickOrder;
   const isVelaFashionQuickOrder =
-    theme.id === "vela-fashion-eg" || configuredFormVariant === "vela-fashion-eg";
+    (theme.id === "vela-fashion-eg" ||
+      configuredFormVariant === "vela-fashion-eg") &&
+    !isRedlineAutoQuickOrder;
   const isKhemetLuxeQuickOrder =
-    theme.id === "khemet-luxe-eg" || configuredFormVariant === "khemet-luxe-eg";
+    (theme.id === "khemet-luxe-eg" ||
+      configuredFormVariant === "khemet-luxe-eg") &&
+    !isRedlineAutoQuickOrder;
   const isMergedBuyboxSurface = configuredSurfaceMode === "merged-buybox";
   const isPrimaryQuantityOfferDecision = configuredDecisionMode === "primary";
   const activeSelection =
@@ -102,7 +110,11 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
     !(isMergedBuyboxSurface && isPrimaryQuantityOfferDecision);
   const headerTitle =
     configuredTitle ||
-    (isMenShoesQuickOrder
+    (isRedlineAutoQuickOrder
+      ? prefersArabicCopy
+        ? "بيانات الشحن وتأكيد الطلب"
+        : "Shipping & Order Confirmation"
+      : isMenShoesQuickOrder
       ? prefersArabicCopy
         ? "أكمل الطلب من هنا"
         : "Complete your order here"
@@ -113,7 +125,11 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
       : "");
   const headerSubtitle =
     configuredSubtitle ||
-    (isMenShoesQuickOrder
+    (isRedlineAutoQuickOrder
+      ? prefersArabicCopy
+        ? "استلم وجرب الستارة على حلق باب عربيتك وتأكد من المقاس الفابريقة قبل دفع أي قرش."
+        : "Inspect on your car door frame before paying."
+      : isMenShoesQuickOrder
       ? prefersArabicCopy
         ? "بعد اختيار المقاس، اكتب بياناتك فقط وسنؤكد معك الطلب."
         : "Choose the size, then leave your details and we will confirm the order."
@@ -129,7 +145,9 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
     (headerTitle || headerSubtitle || configuredBadgeText);
   const shellClassName = className
     ? className
-    : isSoleaFemmeQuickOrder
+    : isRedlineAutoQuickOrder
+      ? "space-y-4 rounded-2xl border border-slate-200/90 bg-white p-4.5 sm:p-6 shadow-[0_12px_40px_-16px_rgba(0,0,0,0.1),0_2px_8px_rgba(0,0,0,0.04)] ring-1 ring-slate-900/5 dark:border-slate-800 dark:bg-slate-950/70 dark:ring-white/10 transition-shadow"
+      : isSoleaFemmeQuickOrder
       ? isMergedBuyboxSurface
         ? "space-y-0"
         : "space-y-3 rounded-[1.55rem] border border-[#ead8cf] bg-[linear-gradient(180deg,#fffdf9_0%,#fff8f3_100%)] p-4 shadow-[0_24px_60px_-52px_rgba(47,35,45,0.18)]"
@@ -221,17 +239,38 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
       {shouldRenderPanelHeader ? (
         <div className="mb-4">
           {configuredBadgeText ? (
-            <span className="inline-flex items-center rounded-full border border-[#ead9c7] bg-[#fff8f1] px-3 py-1 text-[11px] font-black tracking-[0.16em] text-[#b45309]">
+            <span
+              className={
+                isRedlineAutoQuickOrder
+                  ? "inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50/80 px-3 py-1 text-xs font-bold text-red-700 shadow-sm dark:border-red-900/40 dark:bg-red-950/50 dark:text-red-300"
+                  : "inline-flex items-center rounded-full border border-[#ead9c7] bg-[#fff8f1] px-3 py-1 text-[11px] font-black tracking-[0.16em] text-[#b45309]"
+              }
+            >
+              {isRedlineAutoQuickOrder ? (
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse" />
+              ) : null}
               {configuredBadgeText}
             </span>
           ) : null}
           {headerTitle ? (
-            <h3 className="mt-3 text-xl font-black text-foreground sm:text-2xl">
+            <h3
+              className={
+                isRedlineAutoQuickOrder
+                  ? "mt-2.5 text-lg sm:text-xl font-black tracking-tight text-slate-900 dark:text-white"
+                  : "mt-3 text-xl font-black text-foreground sm:text-2xl"
+              }
+            >
               {headerTitle}
             </h3>
           ) : null}
           {headerSubtitle ? (
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">
+            <p
+              className={
+                isRedlineAutoQuickOrder
+                  ? "mt-1 text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-400"
+                  : "mt-2 text-sm leading-7 text-muted-foreground"
+              }
+            >
               {headerSubtitle}
             </p>
           ) : null}

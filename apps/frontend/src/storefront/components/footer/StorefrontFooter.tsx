@@ -6,6 +6,7 @@ import { useStorefrontSettings } from "../../hooks/useStorefrontSettings";
 import { formatStorefrontCurrency } from "../../utils/currency";
 import { sanitizeStorefrontHtml } from "../../utils/html";
 import GracefulFooter from "../GracefulFooter";
+import AutomotiveFooter from "./AutomotiveFooter";
 import StorefrontProductImage from "../StorefrontProductImage";
 import { getProductImageCandidates } from "../../utils/productImages";
 import { shouldStorefrontForceDocumentNavigation } from "../../utils/navigationGuards";
@@ -65,6 +66,7 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
   const isButcherAtelierFooter = footerVariant === 'butcher-atelier';
   const isLegacyDefaultOldFooter = footerVariant === 'legacy-default-old';
   const isVelaFashionFooter = footerVariant === 'vela-fashion';
+  const isAutomotiveChassis = theme.id === 'redline-auto' || footerVariant === 'automotive-chassis';
   const isThemePreview = new URLSearchParams(location.search).has('previewTheme');
   const isFastlyTheme = theme.id === 'fastly-eg';
   const homePath = buildStorefrontPath(location.pathname, '/', location.search);
@@ -309,6 +311,23 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
       : isAppliedRuntimeStorefront
         ? []
         : themeFooterContactRows;
+
+  if (isAutomotiveChassis && !isMinimal) {
+    return (
+      <AutomotiveFooter
+        displayStoreName={displayStoreName}
+        descriptionText={footerDescriptionText}
+        copyrightText={footerCopyrightText}
+        contactRows={footerContactRows}
+        socialIcons={socialIcons}
+        linksData={footerLinksData}
+        legalLinks={legalLinks}
+        shouldForceDocumentNavigation={shouldForceDocumentNavigation}
+        direction={theme.direction}
+      />
+    );
+  }
+
   const velaFooterContactRows = [
     {
       key: 'address',

@@ -84,7 +84,7 @@
     ]
   },
   "footer": {
-    "variant": "signature-panel",
+    "variant": "automotive-chassis",
     "description": "Red Line Auto — المتخصص الأول في مصر في ستائر شبابيك السيارات العازلة للحرارة والشمس بنسبة 98%. تفصيل وثني شاسيه حديد مرن بالمللي لكل موديل سيارة مع تثبيت كبس بدون مسامير والمعاينة والتجربة قبل الدفع.",
     "copyrightText": "© 2026 Red Line Auto. جميع الحقوق محفوظة.",
     "contactRows": [
@@ -174,7 +174,7 @@
             "ctaLink": "/shop",
             "secondaryCtaText": "دليل الباقات والمقاسات",
             "secondaryCtaLink": "/size-guide",
-            "backgroundImage": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=85&w=1920",
+            "backgroundImage": "https://cdn.shopify.com/s/files/1/0721/6640/8252/files/Untitled-2_8d6fdfb2-a03e-45f7-9e94-da1b74bdcb6c.png?v=1786398230",
             "highlights": [
               {
                 "label": "عزل حراري",
@@ -250,18 +250,6 @@
                 "stat": "سحاب ذكي"
               }
             ]
-          }
-        },
-        {
-          "type": "before-after",
-          "settings": {
-            "badge": "قبل وبعد التركيب",
-            "title": "الفرق قبل وبعد تركيب ستارة Red Line",
-            "subtitle": "اسحب المقبض لمقارنة الصالون بدون ستارة وبعد تركيبها — عزل 98% من الحرارة وخصوصية VIP كاملة.",
-            "beforeImage": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=85&w=1600",
-            "afterImage": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=85&w=1600",
-            "beforeLabel": "قبل — حرارة ووهج مباشر",
-            "afterLabel": "بعد — عزل 98% وخصوصية VIP"
           }
         },
         {
@@ -431,12 +419,13 @@
         {
           "type": "pdp-checkout",
           "settings": {
-            "title": "بيانات طلب الستارة لموديل سيارتك",
-            "subtitle": "الاسم ورقم الهاتف والمحافظة والعنوان وموديل سيارتك.",
+            "badgeText": "طلب مباشر • المعاينة والتجربة قبل الدفع 100%",
+            "title": "بيانات الشحن وتأكيد الطلب",
+            "subtitle": "استلم وجرب الستارة على حلق باب عربيتك وتأكد من المقاس الفابريقة قبل دفع أي قرش.",
             "emptyStateText": "اختر الباقة المناسبة أولاً.",
             "scrollToBuyBoxText": "اختيار الباقة",
-            "submitButtonText": "تأكيد الطلب (الدفع بعد المعاينة)",
-            "formVariant": "khemet-luxe-eg",
+            "submitButtonText": "تأكيد الطلب الآن (الدفع بعد المعاينة)",
+            "formVariant": "redline-auto",
             "placement": "before-description",
             "surfaceMode": "merged-buybox",
             "showQuantity": false,
@@ -696,19 +685,19 @@
               {
                 "title": "طقم سيدان 5 قطع",
                 "subtitle": "4 أبواب جانبية + شباك خلفي لعزل الصالون بالكامل.",
-                "image": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1200",
+                "image": "https://cdn.shopify.com/s/files/1/0721/6640/8252/files/80_2437ebe3-f884-4c9b-911f-7e65d195688f.png?v=1787709797",
                 "link": "/shop"
               },
               {
                 "title": "طقم SUV جيب 7 قطع",
                 "subtitle": "تغطية VIP شاملة لـ 4 أبواب و 2 هواية مثلث وزجاج خلفي.",
-                "image": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=1200",
+                "image": "https://cdn.shopify.com/s/files/1/0721/6640/8252/files/80_a5473dbe-8079-444b-9422-054964cde7d9.png?v=1787709767",
                 "link": "/shop"
               },
               {
                 "title": "ستائر جرار بسحاب",
                 "subtitle": "مرونة فتح جزئي لدفع الكارتة والتهوية دون فك الستارة.",
-                "image": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&q=80&w=1200",
+                "image": "https://cdn.shopify.com/s/files/1/0721/6640/8252/files/80_9edc92f3-24df-40f5-8930-2a16079c2a88.png?v=1787709655",
                 "link": "/shop"
               }
             ]
