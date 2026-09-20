@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   CheckCircle2,
-  Square,
   Clock,
   User,
   UserCheck,
@@ -223,27 +222,6 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
     >
       {/* Main Row */}
       <div style={cardStyles.mainRow}>
-        {/* Status Checkbox */}
-        <button
-          type="button"
-          onClick={() => {
-            if (isCompleted) {
-              audioAlerts.playTaskReopen();
-            } else {
-              audioAlerts.playTaskComplete();
-            }
-            onToggleStatus(task.id, task.status);
-          }}
-          style={cardStyles.checkBtn}
-          title={isCompleted ? 'إعادة إلى قيد التنفيذ' : 'تعليم كمكتملة'}
-        >
-          {isCompleted ? (
-            <CheckCircle2 size={19} color="#22c55e" />
-          ) : (
-            <Square size={19} color={isUrgent ? '#f87171' : '#71717a'} />
-          )}
-        </button>
-
         {/* Info Column */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={cardStyles.titleRow}>
@@ -815,16 +793,6 @@ const cardStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'flex-start',
     gap: 10,
-  },
-  checkBtn: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    padding: 0,
-    marginTop: 2,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   titleRow: {
     display: 'flex',

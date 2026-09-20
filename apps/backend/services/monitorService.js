@@ -194,27 +194,176 @@ class MonitorService {
     return summary;
   }
 
-  async getTeamOverview(companyId, date) {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+  computeBreaksFromActivities(activities) {
+    if (!activities || !activities.length) {
+      return { totalBreaksCount: 0, totalBreakSeconds: 0, totalBreakMinutes: 0, breaks: [] };
+    }
 
-    const summaries = await this.prisma.monitorDailySummary.findMany({
-      where: { companyId, date: { gte: startOfDay, lte: endOfDay } }
+    const sorted = [...activities].sort((a, b) => new Date(a.intervalStart).getTime() - new Date(b.intervalStart).getTime());
+    const breaks = [];
+    let currentBreak = null;
+
+    for (let i = 0; i < sorted.length; i++) {
+      const act = sorted[i];
+      const startMs = new Date(act.intervalStart).getTime();
+      const endMs = new Date(act.intervalEnd).getTime();
+      const actSec = Number(act.activeSeconds) || 0;
+      const score = Number(act.activityScore) || 0;
+      const isIdleInterval = actSec === 0 || act.status === 'idle' || score < 20;
+
+      // Check if there was an untracked gap of >= 3 minutes before this interval
+      if (i > 0) {
+        const prevEndMs = new Date(sorted[i - 1].intervalEnd).getTime();
+        const gapSec = Math.floor((startMs - prevEndMs) / 1000);
+        if (gapSec >= 180) {
+          if (currentBreak) {
+            currentBreak.endMs = startMs;
+          } else {
+            currentBreak = { startMs: prevEndMs, endMs: startMs };
+          }
+        }
+      }
+
+      if (isIdleInterval) {
+        if (!currentBreak) {
+          currentBreak = { startMs, endMs };
+        } else {
+          currentBreak.endMs = Math.max(currentBreak.endMs, endMs);
+        }
+      } else {
+        if (currentBreak) {
+          const durationSec = Math.floor((currentBreak.endMs - currentBreak.startMs) / 1000);
+          if (durationSec >= 300) {
+            breaks.push({
+              startMs: currentBreak.startMs,
+              endMs: currentBreak.endMs,
+              durationSeconds: durationSec
+            });
+          }
+          currentBreak = null;
+        }
+      }
+    }
+
+    if (currentBreak) {
+      const durationSec = Math.floor((currentBreak.endMs - currentBreak.startMs) / 1000);
+      if (durationSec >= 300) {
+        breaks.push({
+          startMs: currentBreak.startMs,
+          endMs: currentBreak.endMs,
+          durationSeconds: durationSec
+        });
+      }
+    }
+
+    const formattedBreaks = breaks.map((b, idx) => {
+      const startDate = new Date(b.startMs);
+      const endDate = new Date(b.endMs);
+      const durationMinutes = Math.round(b.durationSeconds / 60);
+      const startHour = startDate.getHours();
+
+      let reasonType = 'UNLOGGED_INACTIVITY';
+      let reasonLabel = 'توقف عن استخدام الجهاز (خمول)';
+
+      if (startHour >= 13 && startHour <= 15) {
+        reasonType = 'SCHEDULED_LUNCH';
+        reasonLabel = 'استراحة غداء وصلاة معتمدة';
+      } else if (durationMinutes >= 60) {
+        reasonType = 'EXTENDED_ABSENCE';
+        reasonLabel = 'انقطاع طويل عن الجهاز';
+      } else if (durationMinutes <= 20) {
+        reasonType = 'SHORT_BREAK';
+        reasonLabel = 'استراحة قصيرة / قهوة';
+      }
+
+      return {
+        breakNumber: idx + 1,
+        startTime: startDate.toISOString(),
+        endTime: endDate.toISOString(),
+        startTimeStr: startDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+        endTimeStr: endDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+        durationSeconds: b.durationSeconds,
+        durationMinutes,
+        reasonType,
+        reasonLabel,
+      };
     });
 
-    const employeeIds = summaries.map(s => s.employeeId).filter(Boolean);
+    const totalBreakSeconds = formattedBreaks.reduce((sum, b) => sum + b.durationSeconds, 0);
+
+    return {
+      totalBreaksCount: formattedBreaks.length,
+      totalBreakSeconds,
+      totalBreakMinutes: Math.round(totalBreakSeconds / 60),
+      breaks: formattedBreaks
+    };
+  }
+
+  async getTeamOverview(companyId, date) {
+    const dateStr = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
+    const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
+    const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
+
+    const [summaries, activeLogs, appUsages, completedTasks] = await Promise.all([
+      this.prisma.monitorDailySummary.findMany({
+        where: { companyId, date: { gte: startOfDay, lte: endOfDay } }
+      }),
+      this.prisma.monitorActivityLog.findMany({
+        where: { companyId, intervalStart: { gte: startOfDay, lte: endOfDay } },
+        select: { employeeId: true, activeSeconds: true, activityScore: true, intervalStart: true, intervalEnd: true }
+      }),
+      this.prisma.monitorAppUsage.findMany({
+        where: { companyId, date: { gte: startOfDay, lte: endOfDay } },
+        select: { employeeId: true, appName: true, durationSeconds: true }
+      }),
+      this.prisma.task.findMany({
+        where: { companyId, status: 'COMPLETED', updatedAt: { gte: startOfDay, lte: endOfDay } },
+        select: { assignedTo: true, id: true }
+      })
+    ]);
+
+    // Aggregate true top apps per employee (deprioritizing generic desktop shells)
+    const empAppMap = new Map();
+    for (const app of appUsages) {
+      if (!empAppMap.has(app.employeeId)) empAppMap.set(app.employeeId, new Map());
+      const m = empAppMap.get(app.employeeId);
+      const name = String(app.appName || 'Unknown').trim();
+      m.set(name, (m.get(name) || 0) + (app.durationSeconds || 0));
+    }
+
+    const empTopApp = new Map();
+    for (const [empId, m] of empAppMap.entries()) {
+      const sorted = Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+      // Filter out desktop shell if a real app was used
+      const realApp = sorted.find(([name]) => !['سطح المكتب', 'Desktop', 'explorer', 'explorer.exe', 'Windows Explorer', 'مستكشف ويندوز'].includes(name));
+      empTopApp.set(empId, realApp ? realApp[0] : (sorted[0] ? sorted[0][0] : 'سطح المكتب'));
+    }
+
+    // Task count map
+    const taskCountMap = new Map();
+    for (const t of completedTasks) {
+      if (t.assignedTo) {
+        taskCountMap.set(t.assignedTo, (taskCountMap.get(t.assignedTo) || 0) + 1);
+      }
+    }
+
+    // Collect all candidate IDs
+    const rawIds = new Set([
+      ...summaries.map(s => s.employeeId),
+      ...activeLogs.map(a => a.employeeId),
+      ...appUsages.map(a => a.employeeId),
+    ].filter(Boolean));
+
+    const employeeIds = Array.from(rawIds);
     const empMap = new Map();
 
     if (employeeIds.length > 0) {
-      // 1. Try resolving through Employee table by id or userId
       const employees = await this.prisma.employee.findMany({
         where: {
           companyId,
           OR: [{ id: { in: employeeIds } }, { userId: { in: employeeIds } }]
         },
-        include: { department: true }
+        include: { department: true, position: true }
       });
 
       employees.forEach(e => {
@@ -222,7 +371,6 @@ class MonitorService {
         if (e.userId) empMap.set(e.userId, e);
       });
 
-      // 2. Fallback for accounts without employee records (e.g. COMPANY_ADMIN)
       const missingIds = employeeIds.filter(id => !empMap.has(id));
       if (missingIds.length > 0) {
         const users = await this.prisma.user.findMany({
@@ -237,51 +385,219 @@ class MonitorService {
             firstName: fullName,
             lastName: '',
             email: u.email,
-            department: { name: u.role === 'COMPANY_ADMIN' ? 'الإدارة العامة' : 'فريق العمل' }
+            department: { name: u.role === 'COMPANY_ADMIN' ? 'الإدارة العامة' : 'فريق العمل' },
+            position: { title: 'موظف' }
           });
         });
       }
     }
 
-    return summaries.map(s => ({
-      ...s,
-      employee: empMap.get(s.employeeId) || null,
-      status: s.lastActivityTime && (Date.now() - new Date(s.lastActivityTime).getTime() < 15 * 60 * 1000) ? 'active' : 'idle'
-    }));
+    // Group and Deduplicate by canonical employee entity to ban duplicate rows
+    const grouped = new Map();
+
+    // 1. Process summaries
+    for (const s of summaries) {
+      const empObj = empMap.get(s.employeeId) || { id: s.employeeId, firstName: s.employeeId };
+      const canonicalKey = empObj.id || empObj.userId || s.employeeId;
+
+      if (!grouped.has(canonicalKey)) {
+        grouped.set(canonicalKey, {
+          employeeId: canonicalKey,
+          employee: empObj,
+          totalActiveSeconds: 0,
+          totalIdleSeconds: 0,
+          productivityScores: [],
+          lastActivityTime: s.lastActivityTime,
+          firstActivityTime: s.firstActivityTime,
+          status: 'offline',
+          topApp: empTopApp.get(s.employeeId) || empTopApp.get(canonicalKey) || 'سطح المكتب',
+          completedTasksCount: taskCountMap.get(canonicalKey) || taskCountMap.get(s.employeeId) || 0,
+        });
+      }
+
+      const item = grouped.get(canonicalKey);
+      item.totalActiveSeconds += (s.totalActiveSeconds || 0);
+      item.totalIdleSeconds += (s.totalIdleSeconds || 0);
+      if (s.productivityScore > 0) item.productivityScores.push(s.productivityScore);
+      if (s.lastActivityTime && (!item.lastActivityTime || new Date(s.lastActivityTime) > new Date(item.lastActivityTime))) {
+        item.lastActivityTime = s.lastActivityTime;
+      }
+      if (s.firstActivityTime && (!item.firstActivityTime || new Date(s.firstActivityTime) < new Date(item.firstActivityTime))) {
+        item.firstActivityTime = s.firstActivityTime;
+      }
+    }
+
+    // 2. Ensure anyone with active logs is represented even if summary record was delayed
+    for (const log of activeLogs) {
+      const empObj = empMap.get(log.employeeId) || { id: log.employeeId, firstName: log.employeeId };
+      const canonicalKey = empObj.id || empObj.userId || log.employeeId;
+
+      if (!grouped.has(canonicalKey)) {
+        grouped.set(canonicalKey, {
+          employeeId: canonicalKey,
+          employee: empObj,
+          totalActiveSeconds: 0,
+          totalIdleSeconds: 0,
+          productivityScores: [],
+          lastActivityTime: log.intervalEnd,
+          firstActivityTime: log.intervalStart,
+          status: 'offline',
+          topApp: empTopApp.get(log.employeeId) || empTopApp.get(canonicalKey) || 'سطح المكتب',
+          completedTasksCount: taskCountMap.get(canonicalKey) || taskCountMap.get(log.employeeId) || 0,
+        });
+      }
+    }
+
+    // Finalize aggregated items
+    const result = Array.from(grouped.values()).map(item => {
+      const avgScore = item.productivityScores.length > 0
+        ? Math.round(item.productivityScores.reduce((a, b) => a + b, 0) / item.productivityScores.length)
+        : (item.totalActiveSeconds > 0 ? 70 : 0);
+
+      const isLiveActive = item.lastActivityTime && (Date.now() - new Date(item.lastActivityTime).getTime() < 15 * 60 * 1000);
+
+      return {
+        employeeId: item.employeeId,
+        employee: item.employee,
+        totalActiveSeconds: item.totalActiveSeconds,
+        totalIdleSeconds: item.totalIdleSeconds,
+        productivityScore: avgScore,
+        lastActivityTime: item.lastActivityTime,
+        firstActivityTime: item.firstActivityTime,
+        status: isLiveActive ? 'active' : (item.totalActiveSeconds > 0 ? 'idle' : 'offline'),
+        topApp: item.topApp,
+        completedTasksCount: item.completedTasksCount,
+      };
+    });
+
+    return result;
   }
 
   async getEmployeeTimeline(companyId, employeeId, date) {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+    const dateStr = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
+    const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
+    const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
+    const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
 
-    const [activities, apps, websites, summary, employee] = await Promise.all([
-      this.prisma.monitorActivityLog.findMany({
-        where: { companyId, employeeId, intervalStart: { gte: startOfDay, lte: endOfDay } },
-        orderBy: { intervalStart: 'asc' },
-      }),
-      this.prisma.monitorAppUsage.findMany({
-        where: { companyId, employeeId, date: { gte: startOfDay, lte: endOfDay } },
-        orderBy: { durationSeconds: 'desc' },
-      }),
-      this.prisma.monitorWebUsage.findMany({
-        where: { companyId, employeeId, date: { gte: startOfDay, lte: endOfDay } },
-        orderBy: { durationSeconds: 'desc' },
-      }),
-      this.prisma.monitorDailySummary.findUnique({
-        where: { companyId_employeeId_date: { companyId, employeeId, date: startOfDay } },
-      }),
+    // 1. Resolve employee and user identities
+    const [employeeRecord, userRecord] = await Promise.all([
       this.prisma.employee.findFirst({
         where: { companyId, OR: [{ id: employeeId }, { userId: employeeId }] },
         include: {
           department: { select: { name: true } },
           position: { select: { title: true } },
+          user: { select: { id: true, firstName: true, lastName: true, email: true } }
         },
+      }).catch(() => null),
+      this.prisma.user.findFirst({
+        where: { companyId, id: employeeId },
+        select: { id: true, firstName: true, lastName: true, email: true, role: true }
       }).catch(() => null),
     ]);
 
-    // Aggregate app totals by appName
+    const resolvedUserId = employeeRecord?.userId || userRecord?.id || employeeId;
+    const resolvedEmployeeId = employeeRecord?.id || employeeId;
+    const candidateIds = Array.from(new Set([employeeId, resolvedUserId, resolvedEmployeeId].filter(Boolean)));
+
+    // 2. Fetch all telemetry, apps, websites, tasks, and attendance
+    const [activities, apps, websites, summary, completedTasks, attendance] = await Promise.all([
+      this.prisma.monitorActivityLog.findMany({
+        where: { companyId, employeeId: { in: candidateIds }, intervalStart: { gte: startOfDay, lte: endOfDay } },
+        orderBy: { intervalStart: 'asc' },
+      }),
+      this.prisma.monitorAppUsage.findMany({
+        where: { companyId, employeeId: { in: candidateIds }, date: { gte: startOfDay, lte: endOfDay } },
+        orderBy: { durationSeconds: 'desc' },
+      }),
+      this.prisma.monitorWebUsage.findMany({
+        where: { companyId, employeeId: { in: candidateIds }, date: { gte: startOfDay, lte: endOfDay } },
+        orderBy: { durationSeconds: 'desc' },
+      }),
+      this.prisma.monitorDailySummary.findFirst({
+        where: { companyId, employeeId: { in: candidateIds }, date: { gte: startOfDay, lte: endOfDay } },
+      }),
+      this.prisma.task.findMany({
+        where: {
+          companyId,
+          assignedTo: { in: candidateIds },
+          status: 'COMPLETED',
+          updatedAt: { gte: startOfDay, lte: endOfDay }
+        },
+        include: {
+          project: { select: { id: true, name: true } }
+        },
+        orderBy: { updatedAt: 'desc' }
+      }),
+      this.prisma.attendance.findFirst({
+        where: {
+          companyId,
+          userId: { in: candidateIds },
+          date: { gte: startOfDay, lte: endOfDay }
+        }
+      }).catch(() => null),
+    ]);
+
+    // 3. True recalculation directly from activity logs (eliminates zero-telemetry display discrepancy)
+    const calcActiveSeconds = activities.reduce((sum, a) => sum + (Number(a.activeSeconds) || 0), 0);
+    const calcIdleSeconds = activities.reduce((sum, a) => {
+      const startMs = a.intervalStart ? new Date(a.intervalStart).getTime() : 0;
+      const endMs = a.intervalEnd ? new Date(a.intervalEnd).getTime() : 0;
+      const active = Number(a.activeSeconds) || 0;
+      if (startMs && endMs && endMs > startMs) {
+        const intervalSec = Math.min(300, Math.max(1, Math.floor((endMs - startMs) / 1000)));
+        return sum + Math.max(0, intervalSec - active);
+      }
+      return sum;
+    }, 0);
+
+    const calcProdScore = activities.length > 0
+      ? Math.round(activities.reduce((sum, a) => sum + (Number(a.activityScore) || 0), 0) / activities.length)
+      : 0;
+
+    const finalSummary = {
+      ...(summary || {}),
+      totalActiveSeconds: (summary?.totalActiveSeconds && summary.totalActiveSeconds > 0) ? summary.totalActiveSeconds : calcActiveSeconds,
+      totalIdleSeconds: (summary?.totalIdleSeconds && summary.totalIdleSeconds > 0) ? summary.totalIdleSeconds : calcIdleSeconds,
+      productivityScore: (summary?.productivityScore && summary.productivityScore > 0) ? summary.productivityScore : calcProdScore,
+      firstActivityTime: summary?.firstActivityTime || (activities.length > 0 ? activities[0].intervalStart : null),
+      lastActivityTime: summary?.lastActivityTime || (activities.length > 0 ? activities[activities.length - 1].intervalEnd : null),
+      clockInTime: attendance?.checkIn || summary?.clockInTime || null,
+      clockOutTime: attendance?.checkOut || summary?.clockOutTime || null,
+      checkInMethod: attendance?.checkInMethod || null,
+    };
+
+    // 4. Task Performance Calculation (Deterministic logic)
+    const tasksCount = completedTasks.length;
+    const totalActive = finalSummary.totalActiveSeconds || 0;
+    const totalIdle = finalSummary.totalIdleSeconds || 0;
+    const totalSessionSeconds = totalActive + totalIdle || 1;
+
+    const avgActiveSecondsPerTask = tasksCount > 0 ? Math.round(totalActive / tasksCount) : 0;
+    const avgIdleSecondsPerTask = tasksCount > 0 ? Math.round(totalIdle / tasksCount) : 0;
+    const activeRatioPct = Math.round((totalActive / totalSessionSeconds) * 100);
+    const idleRatioPct = Math.round((totalIdle / totalSessionSeconds) * 100);
+    const idleToActiveRatio = totalActive > 0 ? (totalIdle / totalActive).toFixed(1) : '0.0';
+
+    const taskPerformance = {
+      tasksCompletedCount: tasksCount,
+      avgActiveSecondsPerTask,
+      avgIdleSecondsPerTask,
+      activeRatioPct,
+      idleRatioPct,
+      idleToActiveRatio,
+      tasks: completedTasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        priority: t.priority,
+        completedAt: t.completedDate || t.updatedAt,
+        projectName: t.project?.name || 'عام',
+      }))
+    };
+
+    // 5. Break Detection Calculation
+    const breaksSummary = this.computeBreaksFromActivities(activities);
+
+    // 6. Aggregate apps
     const appMap = new Map();
     for (const a of apps) {
       const key = a.appName || 'Unknown';
@@ -303,7 +619,7 @@ class MonitorService {
       (a, b) => b.durationSeconds - a.durationSeconds
     );
 
-    // Aggregate web totals by domain
+    // 7. Aggregate web
     const webMap = new Map();
     for (const w of websites) {
       const key = w.domain || w.url || 'Unknown';
@@ -328,8 +644,15 @@ class MonitorService {
 
     return {
       date,
-      summary,
-      employee,
+      summary: finalSummary,
+      employee: employeeRecord || {
+        id: resolvedUserId,
+        firstName: userRecord ? [userRecord.firstName, userRecord.lastName].filter(Boolean).join(' ') : 'الموظف',
+        department: { name: 'الإدارة العامة' },
+        position: { title: 'موظف' }
+      },
+      taskPerformance,
+      breaksSummary,
       activities,
       apps: aggregatedApps,
       rawApps: apps,

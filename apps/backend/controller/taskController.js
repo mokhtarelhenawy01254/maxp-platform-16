@@ -1333,14 +1333,34 @@ const taskController = {
       const currentUserId = req.user?.userId || req.user?.id;
 
       if (await shouldUseLegacyTaskQueries()) {
-        const existingTask = await fetchLegacyTaskById(companyId, id);
-
-        if (!existingTask) {
-          return res.status(404).json({
-            success: false,
-            error: "المهمة غير موجودة",
-          });
+        let existingTask = null;
+        if (companyId) {
+          existingTask = await fetchLegacyTaskById(companyId, id);
         }
+
+      if (!existingTask) {
+        const fallbackTask = await getSharedPrismaClient().task.findUnique({
+          where: { id },
+        });
+        if (fallbackTask) {
+          const canAccess =
+            isManagerOrAdmin ||
+            fallbackTask.assignedTo === currentUserId ||
+            fallbackTask.createdBy === currentUserId ||
+            req.user?.companyId === fallbackTask.companyId;
+          if (canAccess) {
+            companyId = fallbackTask.companyId;
+            existingTask = await fetchLegacyTaskById(companyId, id);
+          }
+        }
+      }
+
+      if (!existingTask) {
+        return res.status(404).json({
+          success: false,
+          error: "المهمة غير موجودة",
+        });
+      }
 
         if (!isManagerOrAdmin && existingTask.assignedTo !== currentUserId && existingTask.createdBy !== currentUserId) {
           return res.status(403).json({
@@ -1491,9 +1511,29 @@ const taskController = {
         return;
       }
 
-      const existingTask = await getSharedPrismaClient().task.findFirst({
-        where: { id, companyId },
-      });
+      let existingTask = null;
+      if (companyId) {
+        existingTask = await getSharedPrismaClient().task.findFirst({
+          where: { id, companyId },
+        });
+      }
+
+      if (!existingTask) {
+        const fallbackTask = await getSharedPrismaClient().task.findUnique({
+          where: { id },
+        });
+        if (fallbackTask) {
+          const canAccess =
+            isManagerOrAdmin ||
+            fallbackTask.assignedTo === currentUserId ||
+            fallbackTask.createdBy === currentUserId ||
+            req.user?.companyId === fallbackTask.companyId;
+          if (canAccess) {
+            companyId = fallbackTask.companyId;
+            existingTask = fallbackTask;
+          }
+        }
+      }
 
       if (!existingTask) {
         return res.status(404).json({

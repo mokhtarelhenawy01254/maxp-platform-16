@@ -221,16 +221,23 @@ class MonitorApiClient {
   }
 
   // ── Tasks Engine ──────────────────────────────────────────────
+  getAuthHeaders(extra?: Record<string, string>): Record<string, string> {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.authToken}`,
+      'Content-Type': 'application/json',
+      ...extra,
+    };
+    if (this.companyId) {
+      headers['X-Company-Id'] = this.companyId;
+    }
+    return headers;
+  }
+
   async getTasks(type: 'my-tasks' | 'assigned-by-me' | 'all' = 'my-tasks'): Promise<any[]> {
     try {
       const base = this.serverUrl;
       const endpoint = type === 'all' ? '' : `/${type}`;
-      const headers: Record<string, string> = {
-        Authorization: `Bearer ${this.authToken}`,
-      };
-      if (this.companyId) {
-        headers['X-Company-Id'] = this.companyId;
-      }
+      const headers = this.getAuthHeaders();
       const res = await axios.get(`${base}/api/v1/tasks${endpoint}`, {
         headers,
         timeout: 10_000,
@@ -245,12 +252,7 @@ class MonitorApiClient {
   async getCompanyUsers(): Promise<any[]> {
     try {
       const base = this.serverUrl;
-      const headers: Record<string, string> = {
-        Authorization: `Bearer ${this.authToken}`,
-      };
-      if (this.companyId) {
-        headers['X-Company-Id'] = this.companyId;
-      }
+      const headers = this.getAuthHeaders();
       const res = await axios.get(`${base}/api/v1/tasks/company-users`, {
         headers,
         timeout: 10_000,
@@ -272,10 +274,7 @@ class MonitorApiClient {
       `${base}/api/v1/tasks/${taskId}/status`,
       { status: status.toUpperCase() },
       {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
         timeout: 10_000,
       }
     );
@@ -312,10 +311,7 @@ class MonitorApiClient {
     };
 
     const res = await axios.put(`${base}/api/v1/tasks/${id}`, payload, {
-      headers: {
-        Authorization: `Bearer ${this.authToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: this.getAuthHeaders(),
       timeout: 15_000,
     });
     return res.data?.data ?? res.data;
@@ -346,10 +342,7 @@ class MonitorApiClient {
     };
 
     const res = await axios.post(`${base}/api/v1/tasks`, payload, {
-      headers: {
-        Authorization: `Bearer ${this.authToken}`,
-        'Content-Type': 'application/json',
-      },
+      headers: this.getAuthHeaders(),
       timeout: 15_000,
     });
     return res.data?.data ?? res.data;
@@ -361,10 +354,7 @@ class MonitorApiClient {
       `${base}/api/v1/tasks/${taskId}/watchers`,
       { userId },
       {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
         timeout: 10_000,
       }
     );
@@ -376,9 +366,7 @@ class MonitorApiClient {
     const res = await axios.delete(
       `${base}/api/v1/tasks/${taskId}/watchers/${userId}`,
       {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-        },
+        headers: this.getAuthHeaders(),
         timeout: 10_000,
       }
     );
@@ -403,10 +391,7 @@ class MonitorApiClient {
           fileType: mimeType,
         },
         {
-          headers: {
-            Authorization: `Bearer ${this.authToken}`,
-            'Content-Type': 'application/json',
-          },
+          headers: this.getAuthHeaders(),
           timeout: 25_000,
         }
       );
@@ -429,6 +414,7 @@ class MonitorApiClient {
     const uploadRes = await axios.post(`${base}/api/v1/upload`, formData, {
       headers: {
         Authorization: `Bearer ${this.authToken}`,
+        ...(this.companyId ? { 'X-Company-Id': this.companyId } : {}),
       },
       timeout: 30_000,
     });
@@ -448,10 +434,7 @@ class MonitorApiClient {
         filePath: uploadPayload.filePath,
       },
       {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
         timeout: 10_000,
       }
     );
@@ -465,10 +448,7 @@ class MonitorApiClient {
       `${base}/api/v1/tasks/${taskId}/time-tracking/start`,
       {},
       {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
         timeout: 10_000,
       }
     );
@@ -481,10 +461,7 @@ class MonitorApiClient {
       `${base}/api/v1/tasks/time-tracking/${entryId}/stop`,
       {},
       {
-        headers: {
-          Authorization: `Bearer ${this.authToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
         timeout: 10_000,
       }
     );
@@ -494,7 +471,7 @@ class MonitorApiClient {
   async getRunningTaskTimer(): Promise<any> {
     const base = this.serverUrl;
     const res = await axios.get(`${base}/api/v1/tasks/running-timer`, {
-      headers: { Authorization: `Bearer ${this.authToken}` },
+      headers: this.getAuthHeaders(),
       timeout: 10_000,
     });
     return res.data?.data ?? null;
@@ -508,13 +485,13 @@ class MonitorApiClient {
       let res;
       try {
         res = await axios.get(`${base}/api/v1/hr/attendance/my-today`, {
-          headers: { Authorization: `Bearer ${this.authToken}` },
+          headers: this.getAuthHeaders(),
           timeout: 10_000,
         });
       } catch (err: any) {
         if (err.response?.status === 404) {
           res = await axios.get(`${base}/api/hr/attendance/my-today`, {
-            headers: { Authorization: `Bearer ${this.authToken}` },
+            headers: this.getAuthHeaders(),
             timeout: 10_000,
           });
         } else {
@@ -539,10 +516,7 @@ class MonitorApiClient {
             workMode: 'office',
           },
           {
-            headers: {
-              Authorization: `Bearer ${this.authToken}`,
-              'Content-Type': 'application/json',
-            },
+            headers: this.getAuthHeaders(),
             timeout: 10_000,
           }
         );
@@ -555,10 +529,7 @@ class MonitorApiClient {
               workMode: 'office',
             },
             {
-              headers: {
-                Authorization: `Bearer ${this.authToken}`,
-                'Content-Type': 'application/json',
-              },
+              headers: this.getAuthHeaders(),
               timeout: 10_000,
             }
           );
@@ -584,10 +555,7 @@ class MonitorApiClient {
             workMode: 'office',
           },
           {
-            headers: {
-              Authorization: `Bearer ${this.authToken}`,
-              'Content-Type': 'application/json',
-            },
+            headers: this.getAuthHeaders(),
             timeout: 10_000,
           }
         );
@@ -600,10 +568,7 @@ class MonitorApiClient {
               workMode: 'office',
             },
             {
-              headers: {
-                Authorization: `Bearer ${this.authToken}`,
-                'Content-Type': 'application/json',
-              },
+              headers: this.getAuthHeaders(),
               timeout: 10_000,
             }
           );

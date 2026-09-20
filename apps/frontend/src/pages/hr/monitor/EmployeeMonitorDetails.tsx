@@ -19,6 +19,8 @@ import api from '../../../services/api';
 import ActivityTimelineBar from './components/ActivityTimelineBar';
 import AppUsageList from './components/AppUsageList';
 import WebUsageList from './components/WebUsageList';
+import TaskPerformanceCard from './components/TaskPerformanceCard';
+import BreakDetailsCard from './components/BreakDetailsCard';
 
 interface EmployeeMonitorDetailsProps {
   employeeIdProp?: string;
@@ -40,6 +42,8 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
   const [data, setData] = useState<{
     summary?: any;
     employee?: any;
+    taskPerformance?: any;
+    breaksSummary?: any;
     activities: any[];
     apps: any[];
     websites: any[];
@@ -60,6 +64,8 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
         setData({
           summary: res.data.data.summary,
           employee: res.data.data.employee,
+          taskPerformance: res.data.data.taskPerformance,
+          breaksSummary: res.data.data.breaksSummary,
           activities: res.data.data.activities || [],
           apps: res.data.data.apps || [],
           websites: res.data.data.websites || [],
@@ -232,8 +238,18 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
         </div>
       </div>
 
+      {/* Task Performance Analysis */}
+      <TaskPerformanceCard
+        taskPerformance={data.taskPerformance}
+        totalActiveSeconds={totalActive}
+        totalIdleSeconds={totalIdle}
+      />
+
       {/* 24-Hour Visual Activity Heat Timeline */}
       <ActivityTimelineBar activities={data.activities} />
+
+      {/* Detailed Breaks Analysis */}
+      <BreakDetailsCard breaksSummary={data.breaksSummary} />
 
       {/* Apps & Web Usage Split Bento Grid */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

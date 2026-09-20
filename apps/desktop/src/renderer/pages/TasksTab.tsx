@@ -375,7 +375,16 @@ export const TasksTab: React.FC = () => {
     );
 
     try {
-      await window.electronAPI.updateTaskStatus(taskId, targetStatus);
+      const res = await window.electronAPI.updateTaskStatus(taskId, targetStatus);
+      if (res && res.success === false) {
+        throw new Error(res.error || 'فشل في تحديث حالة المهمة على السيرفر');
+      }
+      if (res?.task?.status) {
+        const finalStatus = res.task.status;
+        setTasks((prev) =>
+          prev.map((t) => (t.id === taskId ? { ...t, ...res.task, status: finalStatus } : t))
+        );
+      }
     } catch (err) {
       console.warn('[TasksTab] Status update failed:', err);
       // Rollback on error

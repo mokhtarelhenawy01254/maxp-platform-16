@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import api from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuthSimple';
-import AiStandupCard from './components/AiStandupCard';
+import TeamExecutiveSummary from './components/TeamExecutiveSummary';
 import EmployeeMonitorDetails from './EmployeeMonitorDetails';
 
 export interface TeamMemberSummary {
@@ -32,6 +32,7 @@ export interface TeamMemberSummary {
   productivityScore: number;
   lastHeartbeat?: string;
   topApp?: string;
+  completedTasksCount?: number;
 }
 
 export const MonitorDashboard: React.FC = () => {
@@ -46,16 +47,10 @@ export const MonitorDashboard: React.FC = () => {
     new Date().toISOString().split('T')[0]
   );
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'idle' | 'offline'>('all');
   const [teamMembers, setTeamMembers] = useState<TeamMemberSummary[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
 
-  const [aiStandup, setAiStandup] = useState<{
-    date?: string;
-    headline?: string;
-    summary?: string;
-    telemetry?: any;
-    attentionFlags?: string[];
-  } | null>(null);
   const [archiving, setArchiving] = useState(false);
   const [archiveSuccess, setArchiveSuccess] = useState<string | null>(null);
 
@@ -64,6 +59,7 @@ export const MonitorDashboard: React.FC = () => {
     activeNow: 0,
     avgProductivity: 0,
     totalHoursTracked: 0,
+    totalTasksCompleted: 0,
   });
 
   const fetchData = useCallback(async () => {
@@ -73,54 +69,53 @@ export const MonitorDashboard: React.FC = () => {
     }
     setLoading(true);
     try {
-      const [overviewRes, aiRes] = await Promise.allSettled([
-        api.get(`/employee-monitor/team/overview?date=${selectedDate}`),
-        api.get(`/employee-monitor/ai-standup?date=${selectedDate}`),
-      ]);
+      const overviewRes: any = await api.get(`/employee-monitor/team/overview?date=${selectedDate}`);
+      const data = overviewRes?.data?.data || [];
+      let totalActiveSec = 0;
+      let totalProdScore = 0;
+      let activeCount = 0;
+      let totalTasks = 0;
 
-      if (overviewRes.status === 'fulfilled') {
-        const resVal: any = overviewRes.value;
-        const data = resVal?.data?.data || [];
-        let totalActiveSec = 0;
-        let totalProdScore = 0;
-        let activeCount = 0;
+      // Deduplicate on client to prevent repeated employee cards
+      const seen = new Set<string>();
+      const formatted: TeamMemberSummary[] = [];
 
-        const formatted: TeamMemberSummary[] = data.map((item: any) => {
-          totalActiveSec += item.totalActiveSeconds || 0;
-          totalProdScore += item.productivityScore || 0;
-          if (item.status === 'active') activeCount++;
+      for (const item of data) {
+        const empName = item.employee?.firstName
+          ? `${item.employee.firstName} ${item.employee.lastName || ''}`.trim()
+          : item.employeeId;
+        const key = item.employeeId || empName;
+        if (seen.has(key)) continue;
+        seen.add(key);
 
-          return {
-            employeeId: item.employeeId,
-            employeeName: item.employee?.firstName
-              ? `${item.employee.firstName} ${item.employee.lastName || ''}`.trim()
-              : item.employeeId,
-            departmentName: item.employee?.department?.name || 'الإدارة العامة',
-            jobTitle: item.employee?.position?.title || 'موظف',
-            status: item.status || 'offline',
-            totalActiveSeconds: item.totalActiveSeconds || 0,
-            totalIdleSeconds: item.totalIdleSeconds || 0,
-            productivityScore: Math.round(item.productivityScore || 0),
-            lastHeartbeat: item.lastActivityTime,
-            topApp: item.topApps ? Object.keys(JSON.parse(item.topApps || '{}'))[0] : undefined,
-          };
-        });
+        totalActiveSec += item.totalActiveSeconds || 0;
+        totalProdScore += item.productivityScore || 0;
+        if (item.status === 'active') activeCount++;
+        totalTasks += item.completedTasksCount || 0;
 
-        setTeamMembers(formatted);
-        setStats({
-          totalTracked: formatted.length,
-          activeNow: activeCount,
-          avgProductivity: formatted.length ? Math.round(totalProdScore / formatted.length) : 0,
-          totalHoursTracked: Math.round((totalActiveSec / 3600) * 10) / 10,
+        formatted.push({
+          employeeId: item.employeeId,
+          employeeName: empName,
+          departmentName: item.employee?.department?.name || 'الإدارة العامة',
+          jobTitle: item.employee?.position?.title || 'موظف',
+          status: item.status || 'offline',
+          totalActiveSeconds: item.totalActiveSeconds || 0,
+          totalIdleSeconds: item.totalIdleSeconds || 0,
+          productivityScore: Math.round(item.productivityScore || 0),
+          lastHeartbeat: item.lastActivityTime,
+          topApp: item.topApp || (item.topApps ? Object.keys(JSON.parse(item.topApps || '{}'))[0] : undefined),
+          completedTasksCount: item.completedTasksCount || 0,
         });
       }
 
-      if (aiRes.status === 'fulfilled') {
-        const aiVal: any = aiRes.value;
-        if (aiVal?.data?.data) {
-          setAiStandup(aiVal.data.data);
-        }
-      }
+      setTeamMembers(formatted);
+      setStats({
+        totalTracked: formatted.length,
+        activeNow: activeCount,
+        avgProductivity: formatted.length ? Math.round(totalProdScore / formatted.length) : 0,
+        totalHoursTracked: Math.round((totalActiveSec / 3600) * 10) / 10,
+        totalTasksCompleted: totalTasks,
+      });
     } catch (err) {
       console.warn('[MonitorDashboard] Fetch error:', err);
     } finally {
@@ -157,6 +152,7 @@ export const MonitorDashboard: React.FC = () => {
   };
 
   const filteredMembers = teamMembers.filter((m) => {
+    if (statusFilter !== 'all' && m.status !== statusFilter) return false;
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
     return (
@@ -316,9 +312,9 @@ export const MonitorDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* AI Daily Standup Card */}
-      <AiStandupCard
-        aiStandup={aiStandup}
+      {/* Team Executive Telemetry Summary */}
+      <TeamExecutiveSummary
+        stats={stats}
         isSuperOrOwner={isSuperOrOwner}
         archiving={archiving}
         archiveSuccess={archiveSuccess}
@@ -327,10 +323,54 @@ export const MonitorDashboard: React.FC = () => {
 
       {/* Team Roster Grid Table */}
       <div className="overflow-hidden rounded-xl border border-border/40 bg-card/60 shadow-sm">
-        <div className="border-b border-border/40 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 px-4 py-3">
           <h2 className="text-sm font-semibold text-foreground">
             سجل نشاط وإنتاجية الفريق ({filteredMembers.length})
           </h2>
+
+          {/* Status Filter Chips */}
+          <div className="flex items-center gap-1 text-xs">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`rounded-lg px-2.5 py-1 font-medium transition ${
+                statusFilter === 'all'
+                  ? 'bg-zinc-800 text-foreground ring-1 ring-border/40'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              الكل ({teamMembers.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('active')}
+              className={`rounded-lg px-2.5 py-1 font-medium transition ${
+                statusFilter === 'active'
+                  ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              نشط الآن ({stats.activeNow})
+            </button>
+            <button
+              onClick={() => setStatusFilter('idle')}
+              className={`rounded-lg px-2.5 py-1 font-medium transition ${
+                statusFilter === 'idle'
+                  ? 'bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              استراحة / خمول
+            </button>
+            <button
+              onClick={() => setStatusFilter('offline')}
+              className={`rounded-lg px-2.5 py-1 font-medium transition ${
+                statusFilter === 'offline'
+                  ? 'bg-zinc-800 text-zinc-300 ring-1 ring-border/40'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              غير متصل
+            </button>
+          </div>
         </div>
 
         {loading && teamMembers.length === 0 ? (
@@ -352,6 +392,7 @@ export const MonitorDashboard: React.FC = () => {
                   <th className="px-4 py-3 font-semibold">وقت العمل الفعلي</th>
                   <th className="px-4 py-3 font-semibold">وقت التوقف / الاستراحة</th>
                   <th className="px-4 py-3 font-semibold">معدل الإنتاجية</th>
+                  <th className="px-4 py-3 font-semibold">المهام المنجزة اليوم</th>
                   <th className="px-4 py-3 font-semibold">البرنامج الأبرز</th>
                   <th className="px-4 py-3 text-left font-semibold">الإجراءات</th>
                 </tr>
@@ -422,11 +463,16 @@ export const MonitorDashboard: React.FC = () => {
                       </div>
                     </td>
 
+                    {/* Completed Tasks */}
+                    <td className="px-4 py-3 font-semibold text-emerald-400 tabular-nums">
+                      {m.completedTasksCount || 0} مهام
+                    </td>
+
                     {/* Top App */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 text-zinc-300">
                         <Laptop className="h-3.5 w-3.5 text-sky-400 shrink-0" />
-                        <span className="truncate max-w-[130px]" title={m.topApp || 'سطح المكتب'}>
+                        <span className="truncate max-w-[130px] font-medium" title={m.topApp || 'سطح المكتب'}>
                           {m.topApp || 'سطح المكتب'}
                         </span>
                       </div>

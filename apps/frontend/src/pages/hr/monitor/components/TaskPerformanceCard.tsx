@@ -1,0 +1,199 @@
+import React from 'react';
+import { CheckCircle2, Clock, PauseCircle, AlertCircle, ArrowUpRight, ShieldCheck, ListTodo } from 'lucide-react';
+
+export interface CompletedTaskItem {
+  id: string;
+  title: string;
+  priority?: string;
+  completedAt?: string;
+  projectName?: string;
+}
+
+export interface TaskPerformanceData {
+  tasksCompletedCount: number;
+  avgActiveSecondsPerTask: number;
+  avgIdleSecondsPerTask: number;
+  activeRatioPct: number;
+  idleRatioPct: number;
+  idleToActiveRatio: string;
+  tasks: CompletedTaskItem[];
+}
+
+interface TaskPerformanceCardProps {
+  taskPerformance?: TaskPerformanceData;
+  totalActiveSeconds: number;
+  totalIdleSeconds: number;
+}
+
+export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
+  taskPerformance,
+  totalActiveSeconds,
+  totalIdleSeconds,
+}) => {
+  const tasksCount = taskPerformance?.tasksCompletedCount || 0;
+  const tasks = taskPerformance?.tasks || [];
+
+  const formatDuration = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (h > 0) return `${h} س ${m} د`;
+    return `${m} د`;
+  };
+
+  const activePct = taskPerformance?.activeRatioPct ?? Math.round((totalActiveSeconds / (totalActiveSeconds + totalIdleSeconds || 1)) * 100);
+  const idlePct = taskPerformance?.idleRatioPct ?? Math.round((totalIdleSeconds / (totalActiveSeconds + totalIdleSeconds || 1)) * 100);
+  const idleMultiplier = taskPerformance?.idleToActiveRatio ?? (totalActiveSeconds > 0 ? (totalIdleSeconds / totalActiveSeconds).toFixed(1) : '0.0');
+
+  return (
+    <div className="rounded-xl border border-border/40 bg-card/60 p-4 text-card-foreground shadow-sm">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/30 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 ring-1 ring-inset ring-emerald-500/25">
+            <CheckCircle2 className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground">
+              مؤشرات إنجاز المهام واستغلال الوقت الفعلي
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              تحليل حسابي دقيق لعدد المهام المنجزة ومتوسط الوقت الفعلي المستغرق لكل مهمة
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400 ring-1 ring-emerald-500/20 tabular-nums">
+            <ListTodo className="h-3.5 w-3.5" />
+            <span>{tasksCount} مهام مكتملة اليوم</span>
+          </span>
+        </div>
+      </div>
+
+      {/* 3 Quantitative Metric Strips */}
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {/* Metric 1: Tasks Completed & Avg Active Time */}
+        <div className="rounded-lg border border-border/30 bg-zinc-900/40 p-3">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>متوسط وقت العمل الفعلي لكل مهمة</span>
+            <Clock className="h-3.5 w-3.5 text-emerald-400" />
+          </div>
+          <div className="mt-2 text-lg font-bold text-foreground tabular-nums">
+            {tasksCount > 0 ? formatDuration(taskPerformance?.avgActiveSecondsPerTask || 0) : '—'}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            {tasksCount > 0
+              ? `بناءً على ${tasksCount} مهام منجزة بوقت عمل ${formatDuration(totalActiveSeconds)}`
+              : 'لم تُسجل مهام مكتملة حتى الآن'}
+          </div>
+        </div>
+
+        {/* Metric 2: Idle Time per Task */}
+        <div className="rounded-lg border border-border/30 bg-zinc-900/40 p-3">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>متوسط وقت التوقف والخمول لكل مهمة</span>
+            <PauseCircle className="h-3.5 w-3.5 text-amber-400" />
+          </div>
+          <div className="mt-2 text-lg font-bold text-foreground tabular-nums">
+            {tasksCount > 0 ? formatDuration(taskPerformance?.avgIdleSecondsPerTask || 0) : '—'}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            {tasksCount > 0
+              ? `إجمالي فترات التوقف والانتظار: ${formatDuration(totalIdleSeconds)}`
+              : `إجمالي التوقف اليوم: ${formatDuration(totalIdleSeconds)}`}
+          </div>
+        </div>
+
+        {/* Metric 3: Active vs Idle Ratio Factor */}
+        <div className="rounded-lg border border-border/30 bg-zinc-900/40 p-3">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>معامل استغلال الوقت (نشاط مقابل خمول)</span>
+            <AlertCircle className="h-3.5 w-3.5 text-sky-400" />
+          </div>
+          <div className="mt-2 text-lg font-bold text-foreground tabular-nums">
+            {activePct}% عمل <span className="text-xs font-normal text-muted-foreground">({idleMultiplier}x خمول)</span>
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            لكل دقيقة عمل يقابلها {idleMultiplier} دقيقة توقف
+          </div>
+        </div>
+      </div>
+
+      {/* Visual Work vs Inactivity Comparison Bar */}
+      <div className="mt-3 space-y-1 rounded-lg border border-border/30 bg-zinc-950/40 p-3">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-medium text-emerald-400 tabular-nums">
+            وقت العمل الفعلي: {formatDuration(totalActiveSeconds)} ({activePct}%)
+          </span>
+          <span className="font-medium text-amber-400 tabular-nums">
+            وقت التوقف والخمول: {formatDuration(totalIdleSeconds)} ({idlePct}%)
+          </span>
+        </div>
+        <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-zinc-800">
+          <div
+            className="bg-emerald-500 transition-all duration-300"
+            style={{ width: `${activePct}%` }}
+            title={`عمل فعلي: ${activePct}%`}
+          />
+          <div
+            className="bg-amber-500 transition-all duration-300"
+            style={{ width: `${idlePct}%` }}
+            title={`توقف وخمول: ${idlePct}%`}
+          />
+        </div>
+      </div>
+
+      {/* Completed Tasks List Table / Feed */}
+      {tasks.length > 0 ? (
+        <div className="mt-3 overflow-hidden rounded-lg border border-border/30 bg-zinc-950/30">
+          <div className="border-b border-border/30 bg-zinc-900/50 px-3 py-2 text-xs font-semibold text-foreground">
+            المهام المكتملة المسجلة اليوم ({tasks.length})
+          </div>
+          <div className="divide-y divide-border/20">
+            {tasks.map((task) => {
+              const timeStr = task.completedAt
+                ? new Date(task.completedAt).toLocaleTimeString('ar-EG', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : '—';
+
+              return (
+                <div key={task.id} className="flex items-center justify-between p-2.5 text-xs transition-colors hover:bg-zinc-900/40">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold text-foreground">{task.title}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        المشروع: {task.projectName || 'عام'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 tabular-nums">
+                    {task.priority && (
+                      <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-300">
+                        {task.priority}
+                      </span>
+                    )}
+                    <span className="text-[11px] text-muted-foreground">
+                      اكتملت: {timeStr}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-dashed border-border/40 p-3 text-xs text-muted-foreground">
+          <AlertCircle className="h-4 w-4 text-amber-400 shrink-0" />
+          <span>
+            لم تُسجل مهام رسمية مكتملة اليوم على النظام. قد يكون وقت العمل الفعلي ({formatDuration(totalActiveSeconds)}) مستهلكاً في اجتماعات، تواصل، أو مهام غير مسندة في النظام.
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TaskPerformanceCard;
