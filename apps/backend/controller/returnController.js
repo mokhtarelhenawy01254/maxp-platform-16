@@ -497,15 +497,71 @@ exports.updateReturnRequest = async (req, res) => {
 
         const updatedRequest = await getPrisma().returnRequest.update({
             where: { id },
-            data
+            data,
+            include: {
+                returnReason: true,
+                returnType: true,
+                shippingCompany: true
+            }
         });
 
-        if (adminNotes && adminNotes !== oldRequest.adminNotes) {
-            await logReturnActivity(getPrisma(), id, req.user.id, 'NOTE_ADDED', 'Admin note updated');
+        if (isReviewed && !oldRequest.isReviewed) {
+            const reviewDetails = {
+                responsibleParty: updatedRequest.responsibleParty,
+                reason: updatedRequest.returnReason?.reason || null,
+                shippingCompany: updatedRequest.shippingCompany?.name || null,
+                returnType: updatedRequest.returnType?.name || null,
+                shippingReturnCost: updatedRequest.shippingReturnCost,
+                settlementAmount: updatedRequest.settlementAmount,
+                adminNotes: updatedRequest.adminNotes,
+                customerNotes: updatedRequest.customerNotes,
+                refundAmount: updatedRequest.refundAmount
+            };
+            await logReturnActivity(getPrisma(), id, req.user.id, 'REVIEWED', reviewDetails);
+        } else if (oldRequest.isReviewed) {
+            // Track modifications to an already-reviewed return request
+            const changes = {};
+            if (responsibleParty !== undefined && responsibleParty !== oldRequest.responsibleParty) {
+                changes.responsibleParty = { from: oldRequest.responsibleParty, to: responsibleParty };
+            }
+            if (reasonId !== undefined && reasonId !== oldRequest.reasonId) {
+                changes.reason = { from: oldRequest.reasonId, to: updatedRequest.returnReason?.reason || reasonId };
+            }
+            if (shippingCompanyId !== undefined && shippingCompanyId !== oldRequest.shippingCompanyId) {
+                changes.shippingCompany = { from: oldRequest.shippingCompanyId, to: updatedRequest.shippingCompany?.name || shippingCompanyId };
+            }
+            if (returnTypeId !== undefined && returnTypeId !== oldRequest.returnTypeId) {
+                changes.returnType = { from: oldRequest.returnTypeId, to: updatedRequest.returnType?.name || returnTypeId };
+            }
+            if (shippingReturnCost !== undefined && Number(shippingReturnCost) !== Number(oldRequest.shippingReturnCost)) {
+                changes.shippingReturnCost = { from: oldRequest.shippingReturnCost, to: data.shippingReturnCost };
+            }
+            if (settlementAmount !== undefined && Number(settlementAmount) !== Number(oldRequest.settlementAmount)) {
+                changes.settlementAmount = { from: oldRequest.settlementAmount, to: data.settlementAmount };
+            }
+            if (customerNotes !== undefined && customerNotes !== oldRequest.customerNotes) {
+                changes.customerNotes = { from: oldRequest.customerNotes, to: customerNotes };
+            }
+            if (adminNotes !== undefined && adminNotes !== oldRequest.adminNotes) {
+                changes.adminNotes = { from: oldRequest.adminNotes, to: adminNotes };
+            }
+
+            if (Object.keys(changes).length > 0) {
+                await logReturnActivity(getPrisma(), id, req.user.id, 'UPDATED', {
+                    description: 'تعديل بيانات مراجعة طلب الإرجاع',
+                    changes
+                });
+            }
+        }
+
+        if (adminNotes && adminNotes !== oldRequest.adminNotes && !oldRequest.isReviewed && !isReviewed) {
+            await logReturnActivity(getPrisma(), id, req.user.id, 'NOTE_ADDED', {
+                note: adminNotes,
+                previous: oldRequest.adminNotes
+            });
         }
 
         if (isReviewed && !oldRequest.isReviewed) {
-            await logReturnActivity(getPrisma(), id, req.user.id, 'REVIEWED', {});
             try {
                 await calculateCustomerScore(updatedRequest.customerId, req.user.companyId);
             } catch (scoreError) {
@@ -877,18 +933,80 @@ exports.getActivityLog = async (req, res) => {
 
         // Security check
         const request = await getPrisma().returnRequest.findFirst({
-            where: { id, companyId: req.user.effectiveCompanyId || req.user.companyId }
+            where: { id, companyId: req.user.effectiveCompanyId || req.user.companyId },
+            include: {
+                returnReason: {
+                    include: { returnReasonCategory: true }
+                },
+                returnType: true,
+                shippingCompany: { select: { id: true, name: true, slug: true } },
+                order: { select: { orderNumber: true, turboTrackingNumber: true } },
+                assignedUser: { select: { firstName: true, lastName: true } }
+            }
         });
         if (!request) return res.status(404).json({ error: 'Return request not found' });
 
         const logs = await getPrisma().returnActivityLog.findMany({
             where: { returnRequestId: id },
-            include: { user: { select: { firstName: true, lastName: true } } },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        role: true
+                    }
+                }
+            },
             orderBy: { createdAt: 'desc' }
         });
-        res.json(logs);
+
+        // Enrich logs for maximum clarity (especially existing historical logs where details = '{}')
+        const enrichedLogs = logs.map(log => {
+            let parsedDetails = log.details;
+            if (typeof parsedDetails === 'string') {
+                try {
+                    parsedDetails = JSON.parse(parsedDetails);
+                } catch {
+                    // Keep as string
+                }
+            }
+
+            const isEmptyObject = parsedDetails && typeof parsedDetails === 'object' && Object.keys(parsedDetails).length === 0;
+            const isEmptyString = !parsedDetails || parsedDetails === '{}' || parsedDetails === '';
+
+            if (log.action === 'REVIEWED' && (isEmptyObject || isEmptyString)) {
+                parsedDetails = {
+                    responsibleParty: request.responsibleParty,
+                    reason: request.returnReason?.reason || null,
+                    category: request.returnReason?.returnReasonCategory?.name || null,
+                    shippingCompany: request.shippingCompany?.name || null,
+                    returnType: request.returnType?.name || null,
+                    shippingReturnCost: request.shippingReturnCost,
+                    settlementAmount: request.settlementAmount,
+                    adminNotes: request.adminNotes,
+                    customerNotes: request.customerNotes,
+                    refundAmount: request.refundAmount,
+                    isHistoricalEnriched: true
+                };
+            }
+
+            return {
+                ...log,
+                details: parsedDetails,
+                returnRequestSummary: {
+                    orderNumber: request.order?.orderNumber,
+                    turboTrackingNumber: request.order?.turboTrackingNumber,
+                    status: request.status,
+                    isReviewed: request.isReviewed
+                }
+            };
+        });
+
+        res.json(enrichedLogs);
     } catch (error) {
-        console.error(error);
+        console.error('❌ [GET_ACTIVITY_LOG] ERROR:', error);
         res.status(500).json({ error: 'Failed to fetch activity logs' });
     }
 };

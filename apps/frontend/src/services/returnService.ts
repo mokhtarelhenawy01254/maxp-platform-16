@@ -206,9 +206,21 @@ export interface ContactAttempt {
 export interface ActivityLog {
   id: string;
   action: string;
-  details: string;
+  details: any;
   createdAt: string;
-  user?: { firstName: string; lastName: string };
+  user?: {
+    id?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    role?: string;
+  };
+  returnRequestSummary?: {
+    orderNumber?: string;
+    turboTrackingNumber?: string;
+    status?: string;
+    isReviewed?: boolean;
+  };
 }
 
 export interface ReviewDisplayConfig {
