@@ -22,6 +22,7 @@ const preparationQueueService = require('../services/preparationQueueService');
 const {
   extractAttributionFromCheckoutData
 } = require('../utils/orderAttribution');
+const { getCustomerFirstOrderInfo } = require('../utils/sessionDetailsHelper');
 const { detectAbandonReason } = require('../utils/incompleteAbandonReason');
 const {
   buildDateRangeFilter,
@@ -2387,6 +2388,31 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
       ? maskCheckoutData(rawCheckoutData)
       : rawCheckoutData;
 
+    const cartSessionDetails = checkoutData?.sessionDetails || (cartAttribution ? {
+      trafficSource: {
+        source: cartAttribution.source || 'direct',
+        medium: cartAttribution.medium,
+        campaignName: cartAttribution.campaignName,
+        campaignId: cartAttribution.campaignId,
+        adSetId: cartAttribution.adSetId,
+        adId: cartAttribution.adId,
+        referrer: cartAttribution.referrer,
+        landingPath: cartAttribution.landingPath,
+      },
+      ip: null,
+      pagesVisited: cartAttribution.landingPath ? [{ path: cartAttribution.landingPath, title: 'صفحة الهبوط', timestamp: cart.createdAt }] : [],
+      durationSeconds: cart.checkoutStartedAt && cart.checkoutUpdatedAt ? Math.max(0, Math.round((new Date(cart.checkoutUpdatedAt) - new Date(cart.checkoutStartedAt)) / 1000)) : 0,
+      sessionCount: 1,
+      firstSeenAt: cart.checkoutStartedAt || cart.createdAt,
+    } : null);
+
+    const customerPhone = checkoutData?.phone || checkoutData?.guestPhone || checkoutData?.mobileNumber || '';
+    const customerEmail = checkoutData?.email || checkoutData?.guestEmail || '';
+    const firstOrderInfo = await getCustomerFirstOrderInfo(getSharedPrismaClient(), companyId, {
+      phone: customerPhone,
+      email: customerEmail,
+    });
+
     res.json({
       success: true,
       data: {
@@ -2396,6 +2422,8 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
         total,
         checkoutData: safeCheckoutData,
         ...(cartAttribution ? { attribution: cartAttribution } : {}),
+        sessionDetails: cartSessionDetails,
+        firstOrderInfo,
         checkoutStartedAt: cart.checkoutStartedAt,
         checkoutUpdatedAt: cart.checkoutUpdatedAt,
         updatedAt: cart.updatedAt,
@@ -6195,6 +6223,38 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         turboMetadata: formattedOrder.turboMetadata ? 'exists' : 'null'
       });
     }
+
+    const resolvedOrderMeta = typeof formattedOrder.metadata === 'object' && formattedOrder.metadata !== null
+      ? formattedOrder.metadata
+      : safeParseOrderMetadata(formattedOrder.metadata);
+
+    const orderSessionDetails = resolvedOrderMeta?.sessionDetails || (resolvedOrderMeta?.attribution ? {
+      trafficSource: {
+        source: resolvedOrderMeta.attribution.source || 'direct',
+        medium: resolvedOrderMeta.attribution.medium,
+        campaignName: resolvedOrderMeta.attribution.campaignName,
+        campaignId: resolvedOrderMeta.attribution.campaignId,
+        adSetId: resolvedOrderMeta.attribution.adSetId,
+        adId: resolvedOrderMeta.attribution.adId,
+        referrer: resolvedOrderMeta.attribution.referrer,
+        landingPath: resolvedOrderMeta.attribution.landingPath,
+      },
+      ip: null,
+      pagesVisited: resolvedOrderMeta.attribution.landingPath ? [{ path: resolvedOrderMeta.attribution.landingPath, title: 'صفحة الهبوط', timestamp: formattedOrder.createdAt }] : [],
+      durationSeconds: 0,
+      sessionCount: 1,
+      firstSeenAt: formattedOrder.createdAt,
+    } : null);
+
+    const firstOrderInfo = await getCustomerFirstOrderInfo(getSharedPrismaClient(), companyId, {
+      phone: formattedOrder.customerPhone,
+      email: formattedOrder.customerEmail,
+      customerId: formattedOrder.customerId,
+      currentOrderNumber: formattedOrder.orderNumber,
+    });
+
+    formattedOrder.sessionDetails = orderSessionDetails;
+    formattedOrder.firstOrderInfo = firstOrderInfo;
 
     const responseOrder = applyOrderDetailFeatureAccess(
       formattedOrder,

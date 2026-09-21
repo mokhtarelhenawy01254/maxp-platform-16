@@ -574,12 +574,26 @@ export const storefrontApi = {
   },
 
   saveCheckoutDraft: async (payload: object) => {
-    setStoredValue("storefront_checkout_draft", JSON.stringify(payload));
+    let enrichedPayload = payload;
+    try {
+      const { getStorefrontSessionDetails } = await import("../storefront/utils/storefrontSessionTracker");
+      const sessionDetails = (payload as any)?.sessionDetails || getStorefrontSessionDetails();
+      if (sessionDetails) {
+        enrichedPayload = {
+          ...payload,
+          sessionDetails,
+        };
+      }
+    } catch {
+      // Ignore tracker import failures
+    }
+
+    setStoredValue("storefront_checkout_draft", JSON.stringify(enrichedPayload));
 
     try {
       const response = await storefrontFetch(
         "/orders/checkout-draft",
-        withJsonBody("POST", payload),
+        withJsonBody("POST", enrichedPayload),
       );
 
       const responseCartId = response?.data?.cartId || response?.cartId;

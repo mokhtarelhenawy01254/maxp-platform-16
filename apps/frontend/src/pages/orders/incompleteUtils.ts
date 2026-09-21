@@ -1,5 +1,9 @@
 import type { TFunction } from "i18next";
-import type { OrderAttributionData } from "./types";
+import type {
+  OrderAttributionData,
+  OrderSessionDetailsData,
+  CustomerFirstOrderInfo,
+} from "./types";
 
 export interface IncompleteOrderItem {
   name?: string;
@@ -31,6 +35,7 @@ export interface CheckoutData {
   city?: string;
   gov?: string;
   attribution?: OrderAttributionData;
+  sessionDetails?: OrderSessionDetailsData;
   [key: string]: unknown;
 }
 
@@ -40,6 +45,8 @@ export interface IncompleteOrder {
   total: number;
   checkoutData?: CheckoutData;
   attribution?: OrderAttributionData | null;
+  sessionDetails?: OrderSessionDetailsData | null;
+  firstOrderInfo?: CustomerFirstOrderInfo | null;
   checkoutStartedAt?: string;
   checkoutUpdatedAt?: string;
   updatedAt?: string;
@@ -77,6 +84,8 @@ export interface IncompleteOrderDetailsData {
   total: number;
   checkoutData?: CheckoutData;
   attribution?: OrderAttributionData | null;
+  sessionDetails?: OrderSessionDetailsData | null;
+  firstOrderInfo?: CustomerFirstOrderInfo | null;
   checkoutStartedAt?: string;
   checkoutUpdatedAt?: string;
   updatedAt?: string;

@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import storefrontAnalytics from "../services/storefrontAnalytics";
+import { recordPageVisit } from "../utils/storefrontSessionTracker";
 import type { StorefrontSettings } from "./useStorefrontSettings";
 
 const persistStorefrontCompanyId = (companyId: string) => {
@@ -39,6 +40,9 @@ export const useStorefrontVisitTracking = (
     if (typeof window === "undefined") {
       return;
     }
+
+    // Record the current page path into the visitor journey
+    recordPageVisit(location.pathname);
 
     const track = () => {
       void storefrontAnalytics.trackStoreVisit(location.pathname);

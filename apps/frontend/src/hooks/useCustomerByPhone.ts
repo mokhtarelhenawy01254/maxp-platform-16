@@ -1,6 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import { apiClient } from "../services/apiClient";
 
+export interface EligiblePreviousOrder {
+  id: string;
+  orderNumber: string;
+  customerName?: string;
+  customerPhone?: string;
+  status: string;
+  total: number;
+  createdAt: string;
+  orderItems?: Array<{
+    id: string;
+    productName: string;
+    productColor?: string | null;
+    productSize?: string | null;
+    quantity: number;
+    price: number;
+    total: number;
+  }>;
+}
+
+export interface ExchangeReturnPolicy {
+  requirePreviousOrder: boolean;
+  allowedStatuses: string[];
+  timeLimitDays: number;
+  requireExplicitOrderLink: boolean;
+}
+
 export interface CustomerLookupResult {
   firstName: string;
   lastName: string;
@@ -10,6 +36,8 @@ export interface CustomerLookupResult {
   city?: string | null;
   area?: string | null;
   notes?: string | null;
+  eligiblePreviousOrders?: EligiblePreviousOrder[];
+  exchangeReturnPolicy?: ExchangeReturnPolicy;
 }
 
 const toDigits = (value?: string | null): string =>
@@ -65,9 +93,26 @@ export async function lookupCustomerByPhone(
 
     if (!response.data?.success) return null;
 
-    const { customer, latestOrder } = response.data.data || {};
+    const { customer, latestOrder, eligiblePreviousOrders, exchangeReturnPolicy } =
+      response.data.data || {};
 
-    if (!customer && !latestOrder) return null;
+    if (!customer && !latestOrder) {
+      if (exchangeReturnPolicy) {
+        return {
+          firstName: "",
+          lastName: "",
+          phone: null,
+          address: null,
+          governorate: null,
+          city: null,
+          area: null,
+          notes: null,
+          eligiblePreviousOrders: eligiblePreviousOrders || [],
+          exchangeReturnPolicy,
+        };
+      }
+      return null;
+    }
 
     const governorate =
       latestOrder?.governorate || latestOrder?.city || customer?.governorate || customer?.city || null;
@@ -92,6 +137,8 @@ export async function lookupCustomerByPhone(
       city: latestOrder?.city || customer?.city || null,
       area,
       notes,
+      eligiblePreviousOrders: eligiblePreviousOrders || [],
+      exchangeReturnPolicy,
     };
   } catch {
     return null;

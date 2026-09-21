@@ -88,6 +88,20 @@ describe("OrdersMobileList", () => {
     expect(screen.getAllByText("now").length).toBe(2);
     expect(screen.getAllByText("100 EGP").length).toBe(2);
     expect(screen.getAllByText("Processing").length).toBe(2);
+    expect(screen.getByText("Sara Ali")).toBeInTheDocument();
+    expect(screen.getByText("Ahmed Hassan")).toBeInTheDocument();
+  });
+
+  it("renders customer name in compact density mode", () => {
+    render(
+      <MemoryRouter>
+        <OrdersMobileList {...baseProps} density="compact" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("#100")).toBeInTheDocument();
+    expect(screen.getByText("Sara Ali")).toBeInTheDocument();
+    expect(screen.getByText("Ahmed Hassan")).toBeInTheDocument();
   });
 
   it("includes customer name and order number in accessibility label", () => {

@@ -33,6 +33,7 @@ import UnifiedShippingCard from "./components/UnifiedShippingCard";
 import OrderActivityLog from "./components/OrderActivityLog";
 import OrderSourceCard from "./components/OrderSourceCard";
 import OrderAttributionCard from "./components/OrderAttributionCard";
+import OrderSessionDetailsCard from "./components/OrderSessionDetailsCard";
 import ConfirmationModal from "./components/ConfirmationModal";
 import PostponeOrderModal from "./components/PostponeOrderModal";
 import PartialDeliveryModal from "./components/PartialDeliveryModal";
@@ -1157,6 +1158,15 @@ const OrderDetails: React.FC = () => {
             order={order}
             canUpdatePaymentStatus={canUpdatePaymentStatus}
             onOpenPaymentModal={() => setShowPaymentModal(true)}
+          />
+
+          <OrderSessionDetailsCard
+            sessionDetails={order.sessionDetails || (order.metadata as any)?.sessionDetails}
+            firstOrderInfo={order.firstOrderInfo}
+            orderSource={order.orderSource}
+            sourceType={order.sourceType}
+            customerPhone={order.customerPhone}
+            createdAt={order.createdAt}
           />
 
           {showOrderSourceCard && <OrderSourceCard order={order} />}

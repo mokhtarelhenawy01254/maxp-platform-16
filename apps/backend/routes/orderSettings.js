@@ -63,6 +63,9 @@ router.get('/', async (req, res) => {
             });
         }
 
+        const orderService = require('../services/orderService');
+        const exchangeReturnPolicy = await orderService.getExchangeReturnPolicy(companyId);
+
         res.json({
             success: true,
             data: {
@@ -70,12 +73,14 @@ router.get('/', async (req, res) => {
                 orderPrefix: settings.orderPrefix,
                 nextOrderNumber: settings.nextOrderNumber,
                 orderNumberFormat: settings.orderNumberFormat,
-                duplicateOrderAction: 'filter',                duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes || 60,
+                duplicateOrderAction: 'filter',
+                duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes || 60,
                 incompleteOrderLostAfterHours: normalizeIncompleteHours(settings.incompleteOrderLostAfterHours),
                 showIncompleteCartsInOrders: Boolean(settings.showIncompleteCartsInOrders),
                 minimumOrderEnabled: Boolean(settings.minimumOrderEnabled),
                 minimumOrderAmount: Number(settings.minimumOrderAmount || 0),
-                minimumOrderMessage: settings.minimumOrderMessage || DEFAULT_MINIMUM_ORDER_MESSAGE
+                minimumOrderMessage: settings.minimumOrderMessage || DEFAULT_MINIMUM_ORDER_MESSAGE,
+                exchangeReturnPolicy
             }
         });
     } catch (error) {
@@ -103,7 +108,8 @@ router.put('/', async (req, res) => {
             showIncompleteCartsInOrders,
             minimumOrderEnabled,
             minimumOrderAmount,
-            minimumOrderMessage
+            minimumOrderMessage,
+            exchangeReturnPolicy
         } = req.body;
 
         if (!companyId) {
@@ -293,6 +299,44 @@ router.put('/', async (req, res) => {
             }
         }
 
+        let savedPolicy = null;
+        if (exchangeReturnPolicy !== undefined) {
+            try {
+                const company = await prisma.company.findUnique({
+                    where: { id: companyId },
+                    select: { settings: true }
+                });
+                const companySettings = typeof company?.settings === 'string'
+                    ? JSON.parse(company.settings || '{}')
+                    : (company?.settings || {});
+
+                savedPolicy = {
+                    requirePreviousOrder: parseBooleanSetting(exchangeReturnPolicy.requirePreviousOrder),
+                    allowedStatuses: Array.isArray(exchangeReturnPolicy.allowedStatuses) && exchangeReturnPolicy.allowedStatuses.length > 0
+                        ? exchangeReturnPolicy.allowedStatuses
+                        : ['DELIVERED'],
+                    timeLimitDays: Number.isFinite(Number(exchangeReturnPolicy.timeLimitDays))
+                        ? Number(exchangeReturnPolicy.timeLimitDays)
+                        : 14,
+                    requireExplicitOrderLink: parseBooleanSetting(exchangeReturnPolicy.requireExplicitOrderLink)
+                };
+
+                companySettings.exchangeReturnPolicy = savedPolicy;
+
+                await prisma.company.update({
+                    where: { id: companyId },
+                    data: { settings: JSON.stringify(companySettings) }
+                });
+            } catch (policyErr) {
+                console.warn('⚠️ [EXCHANGE-RETURN-POLICY] Error saving policy:', policyErr.message);
+            }
+        }
+
+        if (!savedPolicy) {
+            const orderService = require('../services/orderService');
+            savedPolicy = await orderService.getExchangeReturnPolicy(companyId);
+        }
+
         res.json({
             success: true,
             message: req.body.applyToPastOrders
@@ -303,12 +347,14 @@ router.put('/', async (req, res) => {
                 orderPrefix: settings.orderPrefix,
                 nextOrderNumber: settings.nextOrderNumber,
                 orderNumberFormat: settings.orderNumberFormat,
-                duplicateOrderAction: 'filter',                duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes || 60,
+                duplicateOrderAction: 'filter',
+                duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes || 60,
                 incompleteOrderLostAfterHours: normalizeIncompleteHours(settings.incompleteOrderLostAfterHours),
                 showIncompleteCartsInOrders: Boolean(settings.showIncompleteCartsInOrders),
                 minimumOrderEnabled: Boolean(settings.minimumOrderEnabled),
                 minimumOrderAmount: Number(settings.minimumOrderAmount || 0),
-                minimumOrderMessage: settings.minimumOrderMessage || DEFAULT_MINIMUM_ORDER_MESSAGE
+                minimumOrderMessage: settings.minimumOrderMessage || DEFAULT_MINIMUM_ORDER_MESSAGE,
+                exchangeReturnPolicy: savedPolicy
             }
         });
     } catch (error) {

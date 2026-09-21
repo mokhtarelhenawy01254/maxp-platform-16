@@ -66,9 +66,13 @@
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
-  padding: 0.5rem 0.75rem;
+  padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
+  padding-bottom: 0.5rem;
+  padding-inline: 0.75rem;
   border-bottom: 1px solid var(--color-border);
   background-color: var(--color-card);
+  position: relative;
+  z-index: 30;
 }
 
 @media (min-width: 1024px) {
@@ -309,11 +313,15 @@
   body:has([data-chat-active="true"]) .app-shell-content,
   body:has(.marketing-studio-root) .app-shell-content,
   body:has(.agent-studio-root) .app-shell-content,
+  body:has(.orders-page-root) .app-shell-content,
+  body:has([data-orders-page]) .app-shell-content,
   .app-shell-root:has(.business-inbox-shell--conversation-active) .app-shell-content,
   .app-shell-root:has(.whatsapp-workspace--chat-active) .app-shell-content,
   .app-shell-root:has([data-chat-active="true"]) .app-shell-content,
   .app-shell-root:has(.marketing-studio-root) .app-shell-content,
-  .app-shell-root:has(.agent-studio-root) .app-shell-content {
+  .app-shell-root:has(.agent-studio-root) .app-shell-content,
+  .app-shell-root:has(.orders-page-root) .app-shell-content,
+  .app-shell-root:has([data-orders-page]) .app-shell-content {
     padding-bottom: env(safe-area-inset-bottom, 0px) !important;
   }
 }
@@ -378,7 +386,9 @@
 .app-shell-content:has(.marketing-studio-root),
 .app-shell-content:has(.agent-studio-root),
 .app-shell-content:has(.turbo-tickets-root),
-.app-shell-content:has(.eo-builder-page) {
+.app-shell-content:has(.eo-builder-page),
+.app-shell-content:has(.orders-page-root),
+.app-shell-content:has([data-orders-page]) {
   overflow: hidden !important;
   padding: 0 !important;
   height: 100% !important;
@@ -388,7 +398,11 @@
 .app-shell-content > .motion-safe\:animate-fade-in:has(.marketing-studio-root),
 .app-shell-content > .motion-safe\:animate-fade-in:has(.agent-studio-root),
 .app-shell-content > .motion-safe\:animate-fade-in:has(.turbo-tickets-root),
-.app-shell-content > .motion-safe\:animate-fade-in:has(.eo-builder-page) {
+.app-shell-content > .motion-safe\:animate-fade-in:has(.eo-builder-page),
+.app-shell-content > .motion-safe\:animate-fade-in:has(.orders-page-root),
+.app-shell-content > .motion-safe\:animate-fade-in:has([data-orders-page]),
+.app-shell-content > .orders-page-root,
+.app-shell-content > [data-orders-page] {
   height: 100% !important;
   min-height: 0 !important;
   overflow: hidden !important;
@@ -448,6 +462,11 @@
 #app-shell-mobile-drawer.app-shell-drawer--open {
   visibility: visible;
   pointer-events: auto;
+}
+
+#app-shell-mobile-drawer .app-shell-sidebar {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .app-card-enter {

@@ -1592,6 +1592,15 @@ const getCustomerLookupByPhone = async (req, res) => {
       },
     });
 
+    const orderService = require('../services/orderService');
+    const exchangeReturnPolicy = await orderService.getExchangeReturnPolicy(companyId);
+    const eligiblePreviousOrders = await orderService.findEligiblePreviousOrders({
+      companyId,
+      customerId: customer?.id,
+      customerPhone: phone,
+      policy: exchangeReturnPolicy
+    });
+
     res.json({
       success: true,
       data: {
@@ -1619,6 +1628,8 @@ const getCustomerLookupByPhone = async (req, res) => {
               createdAt: latestOrder.createdAt,
             }
           : null,
+        eligiblePreviousOrders: eligiblePreviousOrders || [],
+        exchangeReturnPolicy,
       },
     });
   } catch (error) {

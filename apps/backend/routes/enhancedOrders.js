@@ -665,6 +665,56 @@ router.post('/', manualOrderAccess, async (req, res) => {
       return customerBlocklistService.sendBlockedResponse(res, blockEvaluation);
     }
 
+    // 🔄 التحقق من سياسة الاستبدال والاسترجاع (اشتراط وجود طلب سابق)
+    const isExchangeOrReturn =
+      req.body?.requestType === 'exchange' ||
+      req.body?.requestType === 'return' ||
+      String(req.body?.status || '').toUpperCase() === 'EXCHANGED' ||
+      String(req.body?.status || '').toUpperCase() === 'RETURNED';
+
+    let validatedOriginalOrder = null;
+    if (isExchangeOrReturn) {
+      const orderService = require('../services/orderService');
+      const policy = await orderService.getExchangeReturnPolicy(req.user.companyId);
+
+      if (policy.requirePreviousOrder) {
+        const eligibleOrders = await orderService.findEligiblePreviousOrders({
+          companyId: req.user.companyId,
+          customerId: possibleFacebookId ? null : req.body?.customerId,
+          customerPhone: req.body?.customerPhone,
+          policy
+        });
+
+        if (!eligibleOrders || eligibleOrders.length === 0) {
+          const isReturn = req.body?.requestType === 'return' || String(req.body?.status || '').toUpperCase() === 'RETURNED';
+          const typeLabel = isReturn ? 'مرتجع' : 'استبدال';
+          return res.status(400).json({
+            success: false,
+            code: 'PREVIOUS_ORDER_REQUIRED',
+            message: `لا يمكن إنشاء طلب ${typeLabel}: لا يوجد أي طلب سابق مؤهل لهذا العميل وفقاً لسياسة المتجر.`
+          });
+        }
+
+        const requestedOriginalId = req.body?.originalOrderId || req.body?.originalOrderNumber;
+        if (requestedOriginalId) {
+          validatedOriginalOrder = eligibleOrders.find(
+            o => o.id === requestedOriginalId || o.orderNumber === requestedOriginalId
+          );
+          if (!validatedOriginalOrder && policy.requireExplicitOrderLink) {
+            return res.status(400).json({
+              success: false,
+              code: 'INVALID_PREVIOUS_ORDER',
+              message: 'الطلب السابق المحدد غير مؤهل للاستبدال أو المرتجع وفقاً لسياسة المتجر.'
+            });
+          }
+        }
+
+        if (!validatedOriginalOrder) {
+          validatedOriginalOrder = eligibleOrders[0];
+        }
+      }
+    }
+
     if (affiliateId) {
       const productIds = Array.from(
         new Set(
@@ -809,6 +859,15 @@ router.post('/', manualOrderAccess, async (req, res) => {
       createdBy: req.user.id,
       createdByName: `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.email,
       createdByRole: req.user.role,
+
+      // Previous order link for exchange / return
+      ...(validatedOriginalOrder ? {
+        originalOrderId: validatedOriginalOrder.id,
+        originalOrderNumber: validatedOriginalOrder.orderNumber,
+      } : (req.body?.originalOrderId ? {
+        originalOrderId: req.body.originalOrderId,
+        originalOrderNumber: req.body.originalOrderNumber || null,
+      } : {})),
     };
 
     console.log('📦 [ENHANCED-ORDERS] Processing order data:', JSON.stringify(orderData.products || orderData.productName, null, 2));

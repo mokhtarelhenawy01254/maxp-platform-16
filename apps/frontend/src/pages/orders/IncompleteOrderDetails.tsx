@@ -20,6 +20,7 @@ import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import OrderAttributionCard from "./components/OrderAttributionCard";
+import OrderSessionDetailsCard from "./components/OrderSessionDetailsCard";
 import {
   ORDER_CAMPAIGN_ATTRIBUTION_APP_SLUGS,
   getCurrentCompanyActiveApps,
@@ -484,6 +485,15 @@ const IncompleteOrderDetails: React.FC = () => {
                 )}
               </div>
             </div>
+          </div>
+
+          <div className="lg:max-w-3xl">
+            <OrderSessionDetailsCard
+              sessionDetails={order.sessionDetails || order.checkoutData?.sessionDetails}
+              firstOrderInfo={order.firstOrderInfo}
+              customerPhone={customerInfo.phone}
+              createdAt={order.checkoutStartedAt || order.updatedAt}
+            />
           </div>
 
           {canShowAttribution && order.attribution && (

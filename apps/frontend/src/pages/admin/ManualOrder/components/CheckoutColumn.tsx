@@ -17,14 +17,18 @@ import {
 import { SearchableSelect } from "../../../../components/ui/SearchableSelect";
 import { GovernorateAreaSearch } from "../../../../components/ui/GovernorateAreaSearch";
 import { apiClient } from "../../../../services/apiClient";
-import { lookupCustomerByPhone } from "../../../../hooks/useCustomerByPhone";
+import {
+  lookupCustomerByPhone,
+  EligiblePreviousOrder,
+  ExchangeReturnPolicy,
+} from "../../../../hooks/useCustomerByPhone";
 import {
   customerBlocklistService,
   CustomerBlockEvaluation,
 } from "../../../../services/customerBlocklistService";
 import { toast } from "sonner";
 import { CartItem } from "../types";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../../hooks/useAuthSimple";
 
 const normalizeLocationLabel = (value: string | null | undefined) =>
@@ -133,7 +137,49 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   const [status, setStatus] = useState("CONFIRMED"); // PENDING, CONFIRMED
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [requestType, setRequestType] = useState("delivery");
+  const [searchParams] = useSearchParams();
   const [returnAmount, setReturnAmount] = useState<string>("");
+
+  // Exchange & Return Policy State
+  const [eligiblePreviousOrders, setEligiblePreviousOrders] = useState<EligiblePreviousOrder[]>([]);
+  const [exchangeReturnPolicy, setExchangeReturnPolicy] = useState<ExchangeReturnPolicy | null>(null);
+  const [selectedPreviousOrder, setSelectedPreviousOrder] = useState<string>("");
+
+  // Initialize from searchParams if present
+  useEffect(() => {
+    const exchangeParam = searchParams.get("exchangeOrderNumber");
+    const returnParam = searchParams.get("returnOrderNumber");
+    const phoneParam = searchParams.get("phone");
+
+    if (phoneParam && !phone) {
+      setPhone(phoneParam);
+    }
+    if (exchangeParam) {
+      setRequestType("exchange");
+      setStatus("EXCHANGED");
+      setSelectedPreviousOrder(exchangeParam);
+    } else if (returnParam) {
+      setRequestType("return");
+      setStatus("RETURNED");
+      setSelectedPreviousOrder(returnParam);
+    }
+  }, [searchParams]);
+
+  // Preload order policy on mount
+  useEffect(() => {
+    let active = true;
+    apiClient
+      .get("/order-settings")
+      .then((res) => {
+        if (active && res.data?.data?.exchangeReturnPolicy) {
+          setExchangeReturnPolicy(res.data.data.exchangeReturnPolicy);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Shipping State
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null);
@@ -219,6 +265,7 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
     const digits = phone.replace(/\D/g, "");
     if (digits.length < 9) {
       setSearching(false);
+      setEligiblePreviousOrders([]);
       return;
     }
 
@@ -230,13 +277,31 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
 
         if (isCancelled || !customer) return;
 
-        setFirstName(customer.firstName || "");
-        setLastName(customer.lastName || "");
-        setAddress(customer.address || "");
-        setGovernorate(normalizeLocationLabel(customer.governorate || ""));
-        setArea(normalizeLocationLabel(customer.area || ""));
-        if (customer.notes) setNotes(customer.notes);
-        toast.success(t('manualOrder.k_52'));
+        if (customer.firstName || customer.lastName || customer.address) {
+          setFirstName(customer.firstName || "");
+          setLastName(customer.lastName || "");
+          setAddress(customer.address || "");
+          setGovernorate(normalizeLocationLabel(customer.governorate || ""));
+          setArea(normalizeLocationLabel(customer.area || ""));
+          if (customer.notes) setNotes(customer.notes);
+          toast.success(t('manualOrder.k_52'));
+        }
+
+        if (customer.eligiblePreviousOrders) {
+          setEligiblePreviousOrders(customer.eligiblePreviousOrders);
+          const targetNum = searchParams.get("exchangeOrderNumber") || searchParams.get("returnOrderNumber");
+          if (targetNum) {
+            const matched = customer.eligiblePreviousOrders.find(
+              (o) => o.orderNumber === targetNum || o.id === targetNum
+            );
+            if (matched) setSelectedPreviousOrder(matched.id);
+          } else if (customer.eligiblePreviousOrders.length === 1) {
+            setSelectedPreviousOrder(customer.eligiblePreviousOrders[0].id);
+          }
+        }
+        if (customer.exchangeReturnPolicy) {
+          setExchangeReturnPolicy(customer.exchangeReturnPolicy);
+        }
       } catch (error) {
         console.error("Search error:", error);
       } finally {
@@ -453,6 +518,16 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
       toast.error(t('manualOrder.k_58'));
       return;
     }
+    if (previousOrderMissing) {
+      toast.error(
+        `لا يمكن إنشاء طلب ${requestType === "return" ? "مرتجع" : "استبدال"}: يتطلب وجود طلب سابق مؤهل لهذا العميل وفقاً لسياسة المتجر.`
+      );
+      return;
+    }
+    if (explicitOrderLinkMissing) {
+      toast.error("يرجى اختيار الطلب السابق المرتبط بالاستبدال أو المرتجع.");
+      return;
+    }
     if (governorate && loadingShipping) {
       toast.error(t('manualOrder.k_59'));
       return;
@@ -508,6 +583,10 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
         source: "manual_entry",
         requestType: requestType,
         returnAmount: returnAmount ? parseFloat(returnAmount) : undefined,
+        ...(isExchangeOrReturn ? {
+          originalOrderId: selectedPreviousOrder || (eligiblePreviousOrders[0]?.id) || undefined,
+          originalOrderNumber: selectedOrderObj?.orderNumber || (eligiblePreviousOrders[0]?.orderNumber) || undefined,
+        } : {}),
         // New fields for shipping and discount
         couponId: appliedCoupon?.id,
         couponCode: appliedCoupon?.code,
@@ -560,6 +639,19 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
   const blockPreventsOrder =
     Boolean(customerBlock?.blocked) &&
     !(canOverrideBlockedCustomer && allowBlockedCustomerOverride);
+
+  const isExchangeOrReturn = requestType === "exchange" || requestType === "return";
+  const previousOrderRequired = isExchangeOrReturn && (exchangeReturnPolicy?.requirePreviousOrder ?? false);
+  const phoneDigitsCount = phone.replace(/\D/g, "").length;
+  const previousOrderMissing = previousOrderRequired && phoneDigitsCount >= 9 && eligiblePreviousOrders.length === 0;
+  const explicitOrderLinkMissing = previousOrderRequired && Boolean(exchangeReturnPolicy?.requireExplicitOrderLink) && !selectedPreviousOrder;
+  const previousOrderPreventsOrder = previousOrderMissing || explicitOrderLinkMissing;
+
+  const selectedOrderObj = useMemo(() => {
+    return eligiblePreviousOrders.find(
+      (o) => o.id === selectedPreviousOrder || o.orderNumber === selectedPreviousOrder
+    );
+  }, [eligiblePreviousOrders, selectedPreviousOrder]);
 
   return (
     <div
@@ -921,6 +1013,63 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
                 <option value="exchange">{t('manualOrder.k_21')}</option>
               </select>
             </div>
+
+            {isExchangeOrReturn && (
+              <div className="col-span-2 space-y-2">
+                {phoneDigitsCount < 9 ? (
+                  <div className="p-2.5 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50/70 dark:bg-amber-950/20 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                    <ExclamationTriangleIcon className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>يرجى إدخال رقم هاتف العميل أولاً للتحقق من وجود طلبات سابقة مؤهلة</span>
+                  </div>
+                ) : previousOrderMissing ? (
+                  <div className="p-3 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50/80 dark:bg-red-950/30 text-xs text-red-700 dark:text-red-300 space-y-1">
+                    <div className="font-semibold flex items-center gap-1.5">
+                      <ExclamationTriangleIcon className="w-4 h-4 text-red-600 shrink-0" />
+                      <span>لا يمكن إنشاء طلب {requestType === "return" ? "مرتجع" : "استبدال"}</span>
+                    </div>
+                    <p className="leading-relaxed">
+                      سياسة المتجر تشترط وجود طلب سابق مكتمل ({exchangeReturnPolicy?.allowedStatuses?.join(" أو ") || "DELIVERED"}) خلال {exchangeReturnPolicy?.timeLimitDays || 14} يوم. لم يتم العثور على أي طلب مؤهل لهذا الرقم.
+                    </p>
+                  </div>
+                ) : eligiblePreviousOrders.length > 0 ? (
+                  <div className="p-3 rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-semibold text-blue-900 dark:text-blue-300">
+                        الطلب السابق المرتبط بال{requestType === "return" ? "مرتجع" : "استبدال"}
+                        {exchangeReturnPolicy?.requireExplicitOrderLink && <span className="text-red-500 ms-1">*</span>}
+                      </label>
+                      <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
+                        {eligiblePreviousOrders.length} طلب سابق مؤهل
+                      </span>
+                    </div>
+                    <select
+                      value={selectedPreviousOrder}
+                      onChange={(e) => setSelectedPreviousOrder(e.target.value)}
+                      className="w-full text-xs border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-100 py-2"
+                    >
+                      <option value="">
+                        {exchangeReturnPolicy?.requireExplicitOrderLink
+                          ? "اختر الطلب السابق (إلزامي)..."
+                          : "تحديد تلقائي (أحدث طلب مؤهل)"}
+                      </option>
+                      {eligiblePreviousOrders.map((ord) => (
+                        <option key={ord.id} value={ord.id}>
+                          #{ord.orderNumber} — {new Date(ord.createdAt).toLocaleDateString("ar-EG")} — {Number(ord.total).toLocaleString()} ج.م ({ord.status})
+                        </option>
+                      ))}
+                    </select>
+                    {selectedOrderObj && (
+                      <div className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 p-2 rounded border border-gray-200 dark:border-gray-700 space-y-0.5">
+                        <span className="font-semibold text-gray-700 dark:text-gray-200">المنتجات بالطلب السابق: </span>
+                        <span>
+                          {selectedOrderObj.orderItems?.map((it) => `${it.productName}${it.productColor ? ` - ${it.productColor}` : ''}${it.productSize ? ` (${it.productSize})` : ''} × ${it.quantity}`).join(' | ') || 'منتجات الطلب السابق'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
 
           {/* قيمة المرتجع الافتراضية */}
@@ -1091,10 +1240,18 @@ const CheckoutColumn: React.FC<CheckoutColumnProps> = ({
 
         <button
           onClick={handleCreateOrder}
-          disabled={loading || cartItems.length === 0 || (!!governorate && loadingShipping) || blockPreventsOrder}
+          disabled={loading || cartItems.length === 0 || (!!governorate && loadingShipping) || blockPreventsOrder || previousOrderPreventsOrder}
+          title={
+            previousOrderMissing
+              ? "لا يمكن المتابعة: سياسة المتجر تشترط وجود طلب سابق مؤهل لهذا العميل"
+              : explicitOrderLinkMissing
+              ? "يرجى تحديد الطلب السابق المرتبط أولاً"
+              : undefined
+          }
           className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 text-white font-bold transition-all mt-3 ${loading || cartItems.length === 0
             || (!!governorate && loadingShipping)
             || blockPreventsOrder
+            || previousOrderPreventsOrder
             ? "bg-gray-400 dark:bg-gray-700 cursor-not-allowed"
             : "bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 shadow-lg hover:shadow-xl"
             }`}

@@ -17,6 +17,7 @@ import {
   AlertOctagon,
   XCircle,
   Volume2,
+  ArrowLeftRight,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import OrderStatusManager from "./OrderStatusManager";
@@ -35,6 +36,7 @@ import LateCancellationSettings from "./LateCancellationSettings";
 import CancellationSettingsPage from "../cancellations/CancellationSettingsPage";
 import EasyWarehouseSettings from "./EasyWarehouseSettings";
 import OrderSoundSettings from "./OrderSoundSettings";
+import ExchangeReturnSettings from "./ExchangeReturnSettings";
 
 // ═══════════════════════════════════════════════════════════════
 // 📦 Order Settings Page with Sidebar Tabs
@@ -56,7 +58,8 @@ type TabId =
   | "late_cancellation"
   | "cancellation_reasons"
   | "easy_warehouse"
-  | "sound";
+  | "sound"
+  | "exchange_return";
 
 const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "status",
@@ -75,6 +78,7 @@ const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "cancellation_reasons",
   "easy_warehouse",
   "sound",
+  "exchange_return",
 ];
 
 const isOrderSettingsTabId = (value: string): value is TabId =>
@@ -229,6 +233,12 @@ const OrderSettings: React.FC = () => {
       icon: Volume2,
       description: "إنذار عالي عند وصول طلب جديد",
     },
+    {
+      id: "exchange_return",
+      label: "الاستبدال والاسترجاع",
+      icon: ArrowLeftRight,
+      description: "اشتراط وجود طلب سابق للعميل",
+    },
   ];
 
   return (
@@ -319,6 +329,7 @@ const OrderSettings: React.FC = () => {
             {activeTab === "cancellation_reasons" && <CancellationSettingsPage isEmbedded={true} />}
             {activeTab === "easy_warehouse" && <EasyWarehouseSettings />}
             {activeTab === "sound" && <OrderSoundSettings />}
+            {activeTab === "exchange_return" && <ExchangeReturnSettings />}
           </div>
         </div>
       </div>

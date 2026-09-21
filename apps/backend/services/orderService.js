@@ -794,6 +794,118 @@ class OrderService {
     };
   }
 
+  // سياسة الاستبدال والاسترجاع
+  async getExchangeReturnPolicy(companyId = null) {
+    const effectiveCompanyId = companyId || this.companyId;
+    const defaultPolicy = {
+      requirePreviousOrder: false,
+      allowedStatuses: ['DELIVERED'],
+      timeLimitDays: 14,
+      requireExplicitOrderLink: false
+    };
+
+    if (!effectiveCompanyId) return defaultPolicy;
+
+    try {
+      const prisma = this.getPrisma();
+      const company = await prisma.company.findUnique({
+        where: { id: effectiveCompanyId },
+        select: { settings: true }
+      });
+      const companySettings = typeof company?.settings === 'string'
+        ? JSON.parse(company.settings || '{}')
+        : (company?.settings || {});
+
+      const policy = companySettings?.exchangeReturnPolicy;
+      if (!policy) return defaultPolicy;
+
+      return {
+        requirePreviousOrder: Boolean(policy.requirePreviousOrder),
+        allowedStatuses: Array.isArray(policy.allowedStatuses) && policy.allowedStatuses.length > 0
+          ? policy.allowedStatuses
+          : ['DELIVERED'],
+        timeLimitDays: policy.timeLimitDays !== undefined && policy.timeLimitDays !== null
+          ? Number(policy.timeLimitDays)
+          : 14,
+        requireExplicitOrderLink: Boolean(policy.requireExplicitOrderLink)
+      };
+    } catch (err) {
+      console.warn('⚠️ [EXCHANGE-RETURN-POLICY] Error reading policy:', err.message);
+      return defaultPolicy;
+    }
+  }
+
+  // البحث عن الطلبات السابقة المؤهلة للاستبدال أو المرتجع
+  async findEligiblePreviousOrders({ companyId, customerId, customerPhone, policy = null }) {
+    const effectiveCompanyId = companyId || this.companyId;
+    if (!effectiveCompanyId) return [];
+
+    try {
+      const prisma = this.getPrisma();
+      const resolvedPolicy = policy || await this.getExchangeReturnPolicy(effectiveCompanyId);
+
+      const conditions = [];
+      if (customerId) {
+        conditions.push({ customerId });
+      }
+      if (customerPhone) {
+        const phoneVariations = this.getPhoneVariationsForDuplicate(customerPhone);
+        if (phoneVariations.length > 0) {
+          conditions.push({
+            OR: phoneVariations.map(p => ({ customerPhone: { contains: p } }))
+          });
+        }
+      }
+
+      if (conditions.length === 0) return [];
+
+      const allowedStatuses = resolvedPolicy.allowedStatuses || ['DELIVERED'];
+
+      const where = {
+        companyId: effectiveCompanyId,
+        OR: conditions,
+        status: { in: allowedStatuses }
+      };
+
+      if (resolvedPolicy.timeLimitDays && resolvedPolicy.timeLimitDays > 0) {
+        const minDate = new Date();
+        minDate.setDate(minDate.getDate() - resolvedPolicy.timeLimitDays);
+        where.createdAt = { gte: minDate };
+      }
+
+      const orders = await prisma.order.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          orderNumber: true,
+          customerName: true,
+          customerPhone: true,
+          status: true,
+          total: true,
+          createdAt: true,
+          orderItems: {
+            select: {
+              id: true,
+              productName: true,
+              productColor: true,
+              productSize: true,
+              quantity: true,
+              price: true,
+              total: true
+            }
+          }
+        }
+      });
+
+      return orders;
+    } catch (err) {
+      console.error('⚠️ [ELIGIBLE-ORDERS] Error finding eligible previous orders:', err.message);
+      return [];
+    }
+  }
+
   normalizePhone(phone) {
     if (!phone) return null;
     const str = String(phone)

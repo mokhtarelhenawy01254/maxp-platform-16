@@ -229,6 +229,10 @@ export interface OrderDetailsType {
     email?: string;
     avatar?: string;
   } | null;
+
+  // Session Details & Customer First Order Metrics
+  sessionDetails?: OrderSessionDetailsData | null;
+  firstOrderInfo?: CustomerFirstOrderInfo | null;
 }
 
 export interface Government {
@@ -240,3 +244,42 @@ export interface Area {
   id: number;
   name: string;
 }
+
+export interface OrderSessionPageVisit {
+  path: string;
+  title?: string;
+  timestamp: string;
+}
+
+export interface OrderSessionDetailsData {
+  ip?: string | null;
+  ipGovernorate?: string | null;
+  ipCity?: string | null;
+  ipCountry?: string | null;
+  trafficSource?: {
+    platform?: string;
+    source: string;
+    medium?: string;
+    campaignName?: string;
+    campaignId?: string;
+    adSetId?: string;
+    adId?: string;
+    referrer?: string;
+    landingPath?: string;
+  } | null;
+  pagesVisited?: OrderSessionPageVisit[];
+  durationSeconds?: number;
+  sessionStartedAt?: string;
+  sessionCount?: number;
+  firstSeenAt?: string;
+  sessionId?: string;
+  visitorId?: string;
+}
+
+export interface CustomerFirstOrderInfo {
+  isFirstOrder: boolean;
+  firstOrderNumber?: string | null;
+  firstOrderAt?: string | null;
+  totalOrdersCount: number;
+}
+

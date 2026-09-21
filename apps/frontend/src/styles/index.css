@@ -3888,11 +3888,14 @@ select {
 @media (max-width: 1023px) {
   [data-theme="business-os-enterprise"]
     .business-shell-header[data-mobile="true"]
+    .business-shell-header-main,
+  .business-shell-header[data-mobile="true"]
     .business-shell-header-main {
     flex-wrap: nowrap;
     align-items: center;
     gap: 0.3rem;
-    padding-block: 0.45rem;
+    padding-top: calc(0.45rem + env(safe-area-inset-top, 0px));
+    padding-bottom: 0.45rem;
   }
 
   [data-theme="business-os-enterprise"]

@@ -7,6 +7,10 @@ import {
   getOrderAttributionPayload,
   type StorefrontOrderAttributionSnapshot,
 } from '../utils/orderAttribution';
+import {
+  getStorefrontSessionDetails,
+  type StorefrontSessionDetails,
+} from '../utils/storefrontSessionTracker';
 import { persistPurchaseTracking } from '../utils/purchaseTrackingStorage';
 import { toast } from 'sonner';
 
@@ -140,12 +144,14 @@ export const buildCheckoutOrderPayload = (
     resolvedSubtotal + resolvedShippingCost,
   );
   const attribution = getOrderAttributionPayload();
+  const sessionDetails = getStorefrontSessionDetails();
 
   return {
     ...(companyId ? { companyId } : {}),
     ...(pixelEventId ? { pixelEventId } : {}),
     ...(cartId ? { cartId } : {}),
     ...(attribution ? { attribution } : {}),
+    ...(sessionDetails ? { sessionDetails } : {}),
     guestName: data.customerName,
     guestEmail: data.email,
     guestPhone: data.phone,

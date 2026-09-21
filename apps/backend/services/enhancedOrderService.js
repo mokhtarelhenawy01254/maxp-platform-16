@@ -997,6 +997,8 @@ class EnhancedOrderService {
         source: data.source,
         requestType: data.requestType || 'delivery',
         returnAmount: data.returnAmount || null,
+        ...(data.originalOrderId ? { originalOrderId: data.originalOrderId } : {}),
+        ...(data.originalOrderNumber ? { originalOrderNumber: data.originalOrderNumber } : {}),
         ...(data.autoDiscountVoucherId && { autoDiscountVoucherId: data.autoDiscountVoucherId }),
         ...(data.autoDiscountApplied && { autoDiscountApplied: data.autoDiscountApplied }),
         ...(attribution && { attribution }),

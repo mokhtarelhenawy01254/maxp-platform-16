@@ -31,7 +31,11 @@ import { toast } from "sonner";
 import i18n from "../../../i18n";
 import { tToast } from "../../../utils/i18n-toast";
 import { apiClient } from "../../../services/apiClient";
-import { lookupCustomerByPhone } from "../../../hooks/useCustomerByPhone";
+import {
+  lookupCustomerByPhone,
+  EligiblePreviousOrder,
+  ExchangeReturnPolicy,
+} from "../../../hooks/useCustomerByPhone";
 import { authService } from "../../../services/authService";
 import { config } from "../../../config";
 import { InboxConversation } from "../../../types/inbox.types";
@@ -604,6 +608,28 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   const [requestType, setRequestType] = useState("delivery");
   const [returnAmount, setReturnAmount] = useState("");
 
+  // Exchange & Return Policy State
+  const [eligiblePreviousOrders, setEligiblePreviousOrders] = useState<EligiblePreviousOrder[]>([]);
+  const [exchangeReturnPolicy, setExchangeReturnPolicy] = useState<ExchangeReturnPolicy | null>(null);
+  const [selectedPreviousOrder, setSelectedPreviousOrder] = useState<string>("");
+
+  // Preload order policy when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    apiClient
+      .get("/order-settings")
+      .then((res) => {
+        if (active && res.data?.data?.exchangeReturnPolicy) {
+          setExchangeReturnPolicy(res.data.data.exchangeReturnPolicy);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [isOpen]);
+
   // Coupon State
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<CouponInfo | null>(null);
@@ -673,7 +699,10 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   useEffect(() => {
     const phoneStr = String(phone || "");
     const digits = phoneStr.replace(/\D/g, "");
-    if (!isOpen || digits.length < 9) return;
+    if (!isOpen || digits.length < 9) {
+      setEligiblePreviousOrders([]);
+      return;
+    }
 
     let cancelled = false;
     const timeoutId = setTimeout(async () => {
@@ -684,11 +713,27 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         const firstNameStr = String(customer.firstName || "").trim();
         const lastNameStr = String(customer.lastName || "").trim();
         const fullName = `${firstNameStr} ${lastNameStr}`.trim();
-        setCustomerName((prev) => String(prev || "").trim() || fullName);
-        setAddress((prev) => String(prev || "").trim() || (customer.address ? String(customer.address) : ""));
+        if (fullName) {
+          setCustomerName((prev) => String(prev || "").trim() || fullName);
+        }
+        if (customer.address) {
+          setAddress((prev) => String(prev || "").trim() || String(customer.address));
+        }
         setCity((prev) => prev || customer.governorate || customer.city || "");
         setArea((prev) => prev || customer.area || customer.city || "");
-        setNotes((prev) => String(prev || "").trim() || (customer.notes ? String(customer.notes) : ""));
+        if (customer.notes) {
+          setNotes((prev) => String(prev || "").trim() || String(customer.notes));
+        }
+
+        if (customer.eligiblePreviousOrders) {
+          setEligiblePreviousOrders(customer.eligiblePreviousOrders);
+          if (customer.eligiblePreviousOrders.length === 1) {
+            setSelectedPreviousOrder(customer.eligiblePreviousOrders[0].id);
+          }
+        }
+        if (customer.exchangeReturnPolicy) {
+          setExchangeReturnPolicy(customer.exchangeReturnPolicy);
+        }
       } catch (error) {
         console.error("Quick order customer lookup error:", error);
       }
@@ -1089,6 +1134,20 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
     Boolean(customerBlock?.blocked) &&
     !(canOverrideBlockedCustomer && allowBlockedCustomerOverride);
 
+  // Check if previous order policy prevents exchange/return
+  const isExchangeOrReturn = requestType === "exchange" || requestType === "return";
+  const previousOrderRequired = isExchangeOrReturn && (exchangeReturnPolicy?.requirePreviousOrder ?? false);
+  const phoneDigitsCount = String(phone || "").replace(/\D/g, "").length;
+  const previousOrderMissing = previousOrderRequired && phoneDigitsCount >= 9 && eligiblePreviousOrders.length === 0;
+  const explicitOrderLinkMissing = previousOrderRequired && Boolean(exchangeReturnPolicy?.requireExplicitOrderLink) && !selectedPreviousOrder;
+  const previousOrderPreventsOrder = previousOrderMissing || explicitOrderLinkMissing;
+
+  const selectedOrderObj = useMemo(() => {
+    return eligiblePreviousOrders.find(
+      (o) => o.id === selectedPreviousOrder || o.orderNumber === selectedPreviousOrder
+    );
+  }, [eligiblePreviousOrders, selectedPreviousOrder]);
+
   // Create order
   const handleCreateOrder = async () => {
     if (cartItems.length === 0) {
@@ -1097,6 +1156,16 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
     }
     if (!phone || !customerName) {
       tToast.error("QuickOrderModal.msg_55c5");
+      return;
+    }
+    if (previousOrderMissing) {
+      toast.error(
+        `لا يمكن إنشاء طلب ${requestType === "return" ? "مرتجع" : "استبدال"}: يتطلب وجود طلب سابق مؤهل لهذا العميل وفقاً لسياسة المتجر.`
+      );
+      return;
+    }
+    if (explicitOrderLinkMissing) {
+      toast.error("يرجى اختيار الطلب السابق المرتبط بالاستبدال أو المرتجع.");
       return;
     }
     if (blockPreventsOrder) {
@@ -1151,6 +1220,10 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         source,
         requestType: requestType,
         returnAmount: returnAmount ? parseFloat(returnAmount) : undefined,
+        ...(isExchangeOrReturn ? {
+          originalOrderId: selectedPreviousOrder || (eligiblePreviousOrders[0]?.id) || undefined,
+          originalOrderNumber: selectedOrderObj?.orderNumber || (eligiblePreviousOrders[0]?.orderNumber) || undefined,
+        } : {}),
         couponId: appliedCoupon?.id,
         couponCode: appliedCoupon?.code,
         couponDiscount: couponDiscount,
@@ -2353,6 +2426,63 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                       </p>
                     </div>
                   )}
+
+                  {isExchangeOrReturn && (
+                    <div className="mt-3 space-y-2">
+                      {phoneDigitsCount < 9 ? (
+                        <div className="p-2.5 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50/70 dark:bg-amber-950/20 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                          <ExclamationTriangleIcon className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>يرجى إدخال رقم هاتف العميل أولاً للتحقق من وجود طلبات سابقة مؤهلة</span>
+                        </div>
+                      ) : previousOrderMissing ? (
+                        <div className="p-3 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50/80 dark:bg-red-950/30 text-xs text-red-700 dark:text-red-300 space-y-1">
+                          <div className="font-semibold flex items-center gap-1.5">
+                            <ExclamationTriangleIcon className="w-4 h-4 text-red-600 shrink-0" />
+                            <span>لا يمكن إنشاء طلب {requestType === "return" ? "مرتجع" : "استبدال"}</span>
+                          </div>
+                          <p className="leading-relaxed text-[11px]">
+                            سياسة المتجر تشترط وجود طلب سابق مكتمل ({exchangeReturnPolicy?.allowedStatuses?.join(" أو ") || "DELIVERED"}) خلال {exchangeReturnPolicy?.timeLimitDays || 14} يوم. لم يتم العثور على أي طلب مؤهل لهذا الرقم.
+                          </p>
+                        </div>
+                      ) : eligiblePreviousOrders.length > 0 ? (
+                        <div className="p-3 rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-xs font-semibold text-blue-900 dark:text-blue-300">
+                              الطلب السابق المرتبط بال{requestType === "return" ? "مرتجع" : "استبدال"}
+                              {exchangeReturnPolicy?.requireExplicitOrderLink && <span className="text-red-500 ms-1">*</span>}
+                            </label>
+                            <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
+                              {eligiblePreviousOrders.length} طلب سابق مؤهل
+                            </span>
+                          </div>
+                          <select
+                            value={selectedPreviousOrder}
+                            onChange={(e) => setSelectedPreviousOrder(e.target.value)}
+                            className="business-control-input w-full text-xs py-1.5"
+                          >
+                            <option value="">
+                              {exchangeReturnPolicy?.requireExplicitOrderLink
+                                ? "اختر الطلب السابق (إلزامي)..."
+                                : "تحديد تلقائي (أحدث طلب مؤهل)"}
+                            </option>
+                            {eligiblePreviousOrders.map((ord) => (
+                              <option key={ord.id} value={ord.id}>
+                                #{ord.orderNumber} — {new Date(ord.createdAt).toLocaleDateString("ar-EG")} — {Number(ord.total).toLocaleString()} ج.م ({ord.status})
+                              </option>
+                            ))}
+                          </select>
+                          {selectedOrderObj && (
+                            <div className="text-[11px] text-gray-600 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 p-2 rounded border border-gray-200 dark:border-gray-700 space-y-0.5">
+                              <span className="font-semibold text-gray-700 dark:text-gray-200">المنتجات بالطلب السابق: </span>
+                              <span>
+                                {selectedOrderObj.orderItems?.map((it) => `${it.productName}${it.productColor ? ` - ${it.productColor}` : ''}${it.productSize ? ` (${it.productSize})` : ''} × ${it.quantity}`).join(' | ') || 'منتجات الطلب السابق'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
 
                 {/* Scheduled Order Section */}
@@ -2520,6 +2650,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                   !phone ||
                   !customerName ||
                   blockPreventsOrder ||
+                  previousOrderPreventsOrder ||
                   (isScheduledOrder && !scheduledDeliveryDate) ||
                   (Boolean(city) && loadingShipping)
                 }
@@ -2529,6 +2660,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                   !phone ||
                   !customerName ||
                   blockPreventsOrder ||
+                  previousOrderPreventsOrder ||
                   (isScheduledOrder && !scheduledDeliveryDate) ||
                   (Boolean(city) && loadingShipping)
                     ? "cursor-not-allowed opacity-60"
@@ -2540,6 +2672,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                   !phone ||
                   !customerName ||
                   blockPreventsOrder ||
+                  previousOrderPreventsOrder ||
                   (isScheduledOrder && !scheduledDeliveryDate) ||
                   (Boolean(city) && loadingShipping)
                     ? undefined

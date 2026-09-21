@@ -12,6 +12,7 @@ import {
   TicketIcon,
   ArrowPathRoundedSquareIcon,
   CreditCardIcon,
+  ArrowsRightLeftIcon,
 } from "@heroicons/react/24/outline";
 import { WhatsAppIcon } from "../../../components/icons/brands";
 import { useDateFormat } from "../../../hooks/useDateFormat";
@@ -386,6 +387,16 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
               >
                 <WhatsAppIcon className="h-4 w-4 ml-2 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 واتساب المنصة
+              </Link>
+            )}
+            {["DELIVERED", "PARTIALLY_DELIVERED", "SHIPPED"].includes(String(order.status || "").toUpperCase()) && (
+              <Link
+                to={`/orders/manual?exchangeOrderNumber=${encodeURIComponent(order.orderNumber)}&phone=${encodeURIComponent(order.customerPhone || "")}`}
+                className="inline-flex items-center px-4 py-2 border border-blue-300 dark:border-blue-700 text-sm font-medium rounded-lg text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition active:scale-97 shadow-xs"
+                title="إنشاء طلب استبدال مبني على هذا الطلب"
+              >
+                <ArrowsRightLeftIcon className="h-4 w-4 ml-2 text-blue-600 dark:text-blue-400 shrink-0" />
+                طلب استبدال
               </Link>
             )}
           </>

@@ -7,6 +7,7 @@ import {
   UserGroupIcon,
   SparklesIcon,
   ClockIcon,
+  ArrowsRightLeftIcon,
 } from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
 
@@ -318,6 +319,29 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
                 {parsedMetadata.requestType === "partial_delivery" && "📦 طلب تسليم جزئي"}
                 {parsedMetadata.requestType === "return" && "🔄 طلب مرتجع"}
                 {parsedMetadata.requestType === "exchange" && "🔀 طلب استبدال"}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Previous Order Link (for Exchange / Return) */}
+        {(parsedMetadata?.originalOrderNumber || parsedMetadata?.originalOrderId) && (
+          <div className="flex items-start gap-3 p-3 bg-teal-50 dark:bg-teal-950/20 rounded-lg border border-teal-200 dark:border-teal-800/50">
+            <ArrowsRightLeftIcon className="h-5 w-5 text-teal-600 dark:text-teal-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                الطلب السابق المرتبط بالاستبدال / المرتجع
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  to={`/orders?search=${encodeURIComponent(parsedMetadata.originalOrderNumber || parsedMetadata.originalOrderId)}`}
+                  className="font-mono text-sm font-bold text-teal-700 dark:text-teal-300 hover:underline"
+                >
+                  #{parsedMetadata.originalOrderNumber || parsedMetadata.originalOrderId}
+                </Link>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                  (فتح الطلب السابق)
+                </span>
               </div>
             </div>
           </div>

@@ -29,6 +29,7 @@ const {
 } = require('../utils/shippingClassUtils');
 const { safeJsonParse } = require('../utils/jsonUtils');
 const { sanitizeOrderAttribution } = require('../utils/orderAttribution');
+const { buildSessionDetails } = require('../utils/sessionDetailsHelper');
 const { isPreOrderEligible } = require('../utils/preOrderUtils');
 const { isBackorderPermitted } = require('../utils/inventoryPolicyUtils');
 const {
@@ -150,6 +151,7 @@ router.post('/checkout-draft', async (req, res) => {
         : [];
 
     const attribution = sanitizeOrderAttribution(req.body?.attribution);
+    const sessionDetails = await buildSessionDetails(req.body?.sessionDetails, req);
 
     const checkoutData = {
       customerName: normalizeCheckoutDraftText(req.body?.customerName, 120),
@@ -166,6 +168,7 @@ router.post('/checkout-draft', async (req, res) => {
       shippingCost: toCheckoutDraftAmount(req.body?.shippingCost, 0),
       total: toCheckoutDraftAmount(req.body?.total, 0),
       ...(attribution ? { attribution } : {}),
+      ...(sessionDetails ? { sessionDetails } : {}),
     };
 
     const hasCheckoutSignal = Boolean(
@@ -1961,6 +1964,11 @@ router.post('/', async (req, res) => {
 
       if (sanitizedAttribution) {
         orderMetadata.attribution = sanitizedAttribution;
+      }
+
+      const resolvedSessionDetails = await buildSessionDetails(req.body?.sessionDetails, req);
+      if (resolvedSessionDetails) {
+        orderMetadata.sessionDetails = resolvedSessionDetails;
       }
 
       // Wallet payment proof (screenshot + transfer details) uploaded by customer
