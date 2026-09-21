@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAuth } from "../../hooks/useAuthSimple";
 import ThemeToggle from "../ui/theme-toggle";
+import AppUpdateIndicator from "../common/AppUpdateIndicator";
 import GlobalTimer from "../common/GlobalTimer";
 import GlobalSearch from "./GlobalSearch";
 import { cn } from "@/lib/utils";
@@ -89,6 +90,7 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
               <TooltipContent>{t("superAdmin.activeUsers")}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          <AppUpdateIndicator />
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger className="relative border border-transparent p-0.5 hover:border-primary/40 rounded-full cursor-pointer transition-all" aria-label={t("superAdmin.profileMenu")}>

@@ -20,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { buildStoreUrl } from "../utils/storeUrl";
 import HeaderWalletShortcut from "./wallet/HeaderWalletShortcut";
+import AppUpdateIndicator from "./common/AppUpdateIndicator";
 
 import { useTimer } from "../contexts/TimerContext";
 import { PlayIcon, PauseIcon, StopIcon } from "@heroicons/react/24/solid";
@@ -323,6 +324,9 @@ const Header: React.FC = () => {
 
             {/* New Orders Bell */}
             <OrderNotificationBell />
+
+            {/* Update Indicator */}
+            <AppUpdateIndicator />
 
             {/* Notifications */}
             <NotificationDropdown />

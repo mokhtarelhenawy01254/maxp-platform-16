@@ -40,6 +40,7 @@ import TemplateSlot from "../../templates/TemplateSlot";
 import { buildStoreUrl } from "../../utils/storeUrl";
 import { hasStoreApp } from "../../utils/storeShortcut";
 import HeaderWalletShortcut from "../wallet/HeaderWalletShortcut";
+import AppUpdateIndicator from "../common/AppUpdateIndicator";
 import { envConfig } from "../../config/environment";
 
 const SuperAdminLayout = React.lazy(() => import("./SuperAdminLayout"));
@@ -756,6 +757,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
               />
             </div>
 
+            <AppUpdateIndicator />
             <NotificationDropdown className="business-shell-notification-slot shrink-0" />
 
             <a

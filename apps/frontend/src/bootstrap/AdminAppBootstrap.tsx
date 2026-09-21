@@ -2,8 +2,7 @@ import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../utils/queryClient";
-import { toast, Toaster } from "sonner";
-import { flushSWCacheAndReload } from "../utils/swCacheFlush";
+import { Toaster } from "sonner";
 
 import "../styles/index.css";
 import "../styles/app-dashboard.css";
@@ -13,27 +12,21 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import { ThemeProvider } from "../components/theme-provider";
 import AppRoot from "../AppRoot";
 
-const SwUpdateToast: React.FC = () => {
+const AppUpdateNotifier: React.FC = () => {
   React.useEffect(() => {
-    let hasPrompted = false;
+    let hasNotified = false;
 
-    const show = () => {
-      if (hasPrompted) return;
-      hasPrompted = true;
-      toast("تحديث جديد متاح للمنصة", {
-        description: "اضغط لتحديث الواجهة إلى آخر إصدار فوراً",
-        duration: Infinity,
-        action: {
-          label: "تحديث الآن",
-          onClick: () => {
-            void flushSWCacheAndReload();
-          },
-        },
-      });
+    const notifyUpdate = () => {
+      if (hasNotified) return;
+      hasNotified = true;
+      (window as unknown as { __MAXP_UPDATE_AVAILABLE__?: boolean }).__MAXP_UPDATE_AVAILABLE__ = true;
+      window.dispatchEvent(new CustomEvent("maxp:update-available"));
     };
 
-    if ((window as unknown as Record<string, unknown>).__SW_UPDATE_PENDING__) show();
-    window.addEventListener("sw-update-ready", show);
+    if ((window as unknown as Record<string, unknown>).__SW_UPDATE_PENDING__) {
+      notifyUpdate();
+    }
+    window.addEventListener("sw-update-ready", notifyUpdate);
 
     const checkServerVersion = async () => {
       try {
@@ -47,26 +40,18 @@ const SwUpdateToast: React.FC = () => {
         const currentEntry = document.querySelector('script[src*="/assets/index-"]')?.getAttribute("src");
         const serverMatch = text.match(/src="(\/assets\/index-[^"]+)"/);
         if (currentEntry && serverMatch && serverMatch[1] && currentEntry !== serverMatch[1]) {
-          show();
+          notifyUpdate();
         }
       } catch {
         // Ignore network errors during background check
       }
     };
 
-    // Check when user brings app/tab to foreground
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        void checkServerVersion();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibility);
-    const interval = setInterval(checkServerVersion, 3 * 60 * 1000);
+    // Run periodic check every 30 minutes in background (non-intrusive)
+    const interval = setInterval(checkServerVersion, 30 * 60 * 1000);
 
     return () => {
-      window.removeEventListener("sw-update-ready", show);
-      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("sw-update-ready", notifyUpdate);
       clearInterval(interval);
     };
   }, []);
@@ -93,7 +78,7 @@ const AdminAppBootstrap: React.FC = () => (
         <RouteAwareErrorBoundary>
           <AppRoot />
         </RouteAwareErrorBoundary>
-        <SwUpdateToast />
+        <AppUpdateNotifier />
         <Toaster position="top-right" richColors />
       </BrowserRouter>
     </ThemeProvider>
