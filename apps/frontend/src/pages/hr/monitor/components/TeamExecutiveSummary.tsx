@@ -8,6 +8,7 @@ interface TeamExecutiveSummaryProps {
     avgProductivity: number;
     totalHoursTracked: number;
     totalTasksCompleted?: number;
+    totalTasksCreated?: number;
   };
   isSuperOrOwner: boolean;
   archiving: boolean;
@@ -83,10 +84,15 @@ export const TeamExecutiveSummary: React.FC<TeamExecutiveSummaryProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground">إجمالي المهام المنجزة:</span>
+            <span className="text-muted-foreground">إجمالي المهام:</span>
             <span className="font-semibold text-emerald-400 tabular-nums">
-              {stats.totalTasksCompleted || 0} مهمة
+              {stats.totalTasksCompleted || 0} منجزة
             </span>
+            {(stats.totalTasksCreated || 0) > 0 && (
+              <span className="font-medium text-sky-400 tabular-nums">
+                • {stats.totalTasksCreated} منشأة
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">

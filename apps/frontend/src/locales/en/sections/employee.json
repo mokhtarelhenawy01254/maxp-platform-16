@@ -175,7 +175,8 @@
     "locationRequiredDesc": "To check in from the office, you must allow access to your location. Enable location services and try again.",
     "checkinTime": "Check-in time:",
     "hoursElapsed": "{{hours}}h elapsed",
-    "minute": "min"
+    "minute": "min",
+    "desktopPrompt": "Reminder: Please make sure to launch the MaxP Workspace desktop app to accurately record your activity and working hours."
   },
   "leaves": {
     "myLeaves": "My Leaves",

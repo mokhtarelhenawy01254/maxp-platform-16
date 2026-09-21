@@ -25,6 +25,7 @@ import {
   MapPin,
   AlertCircle,
   XCircle,
+  Laptop,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -560,7 +561,13 @@ const MyAttendance: React.FC = () => {
         location: location ? JSON.stringify(location) : null,
       });
 
-      toast.success(t("employee.attendance.checkinSuccess"));
+      toast.success(t("employee.attendance.checkinSuccess"), {
+        description: t(
+          "employee.attendance.desktopPrompt",
+          "تذكير: يرجى التأكد من تشغيل تطبيق سطح المكتب MaxP Workspace لتوثيق فترات النشاط وساعات العمل بدقة."
+        ),
+        duration: 7000,
+      });
       await fetchTodayAttendance();
       await fetchStats();
       await fetchTodayGoals();
@@ -850,6 +857,13 @@ const MyAttendance: React.FC = () => {
                           {t("employee.attendance.earlyLeave", { minutes: todayAttendance.earlyLeaveMinutes })}
                         </Badge>
                       )}
+                  </div>
+                )}
+
+                {!todayAttendance.checkOut && todayAttendance.checkIn && (
+                  <div className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/70 dark:border-blue-800/75 px-3 py-2 text-xs text-blue-800 dark:text-blue-300 font-medium">
+                    <Laptop className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                    <span>{t("employee.attendance.desktopPrompt", "تذكير: يرجى التأكد من تشغيل تطبيق سطح المكتب MaxP Workspace لتوثيق فترات النشاط وساعات العمل بدقة.")}</span>
                   </div>
                 )}
                 </div>

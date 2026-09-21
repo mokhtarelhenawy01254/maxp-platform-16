@@ -394,11 +394,26 @@ class MonitorService {
       }).catch(() => [])
     ]);
 
-    // Build attendance map supporting both userId and employeeRelId
+    // Build attendance map supporting both userId and employeeRelId, merging multiple daily punches
     const attendanceMap = new Map();
     for (const att of (attendances || [])) {
-      if (att.userId) attendanceMap.set(att.userId, att);
-      if (att.employeeRelId) attendanceMap.set(att.employeeRelId, att);
+      const keys = [att.userId, att.employeeRelId].filter(Boolean);
+      for (const k of keys) {
+        if (!attendanceMap.has(k)) {
+          attendanceMap.set(k, { ...att });
+        } else {
+          const existing = attendanceMap.get(k);
+          // Preserve earliest checkIn
+          if (att.checkIn && (!existing.checkIn || new Date(att.checkIn) < new Date(existing.checkIn))) {
+            existing.checkIn = att.checkIn;
+            existing.checkInMethod = att.checkInMethod || existing.checkInMethod;
+          }
+          // Preserve latest checkOut
+          if (att.checkOut && (!existing.checkOut || new Date(att.checkOut) > new Date(existing.checkOut))) {
+            existing.checkOut = att.checkOut;
+          }
+        }
+      }
     }
 
     // Build device session map
@@ -666,16 +681,26 @@ class MonitorService {
 
       // Calculate elapsed attendance duration & untracked gap
       let elapsedAttendanceSeconds = 0;
+      let hasMissingClockOut = false;
+      const isToday = dateStr === new Date().toISOString().split('T')[0];
+
       if (item.clockInTime) {
         const inMs = new Date(item.clockInTime).getTime();
         if (!isNaN(inMs)) {
           let outMs = item.clockOutTime ? new Date(item.clockOutTime).getTime() : 0;
           if (!outMs || isNaN(outMs)) {
-            const isToday = dateStr === new Date().toISOString().split('T')[0];
-            outMs = isToday ? Date.now() : endOfDay.getTime();
+            if (isToday) {
+              outMs = Date.now();
+            } else {
+              // Past day missing clock-out: cap at standard 9-hour shift (32,400s)
+              hasMissingClockOut = true;
+              outMs = inMs + (9 * 3600 * 1000);
+            }
           }
           if (outMs > inMs) {
             elapsedAttendanceSeconds = Math.max(0, Math.floor((outMs - inMs) / 1000));
+            // Absolute sanity cap at 12 hours
+            elapsedAttendanceSeconds = Math.min(elapsedAttendanceSeconds, 12 * 3600);
           }
         }
       }
@@ -699,6 +724,7 @@ class MonitorService {
         clockInTime: item.clockInTime,
         clockOutTime: item.clockOutTime,
         checkInMethod: item.checkInMethod,
+        hasMissingClockOut,
         elapsedAttendanceSeconds,
         untrackedSeconds,
         status,
@@ -851,16 +877,23 @@ class MonitorService {
     const clockOutVal = attendance?.checkOut || summary?.clockOutTime || null;
 
     let elapsedAttendanceSeconds = 0;
+    let hasMissingClockOut = false;
     if (clockInVal) {
       const inMs = new Date(clockInVal).getTime();
       if (!isNaN(inMs)) {
         let outMs = clockOutVal ? new Date(clockOutVal).getTime() : 0;
+        const isToday = dateStr === new Date().toISOString().split('T')[0];
         if (!outMs || isNaN(outMs)) {
-          const isToday = dateStr === new Date().toISOString().split('T')[0];
-          outMs = isToday ? Date.now() : endOfDay.getTime();
+          if (isToday) {
+            outMs = Date.now();
+          } else {
+            hasMissingClockOut = true;
+            outMs = inMs + (9 * 3600 * 1000);
+          }
         }
         if (outMs > inMs) {
           elapsedAttendanceSeconds = Math.max(0, Math.floor((outMs - inMs) / 1000));
+          elapsedAttendanceSeconds = Math.min(elapsedAttendanceSeconds, 12 * 3600);
         }
       }
     }
@@ -883,6 +916,7 @@ class MonitorService {
       clockInTime: clockInVal,
       clockOutTime: clockOutVal,
       checkInMethod: attendance?.checkInMethod || null,
+      hasMissingClockOut,
       elapsedAttendanceSeconds,
       untrackedSeconds,
     };

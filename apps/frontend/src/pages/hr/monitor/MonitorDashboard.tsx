@@ -49,6 +49,7 @@ export interface TeamMemberSummary {
   createdTasksCount?: number;
   elapsedAttendanceSeconds?: number;
   untrackedSeconds?: number;
+  hasMissingClockOut?: boolean;
 }
 
 type SortField = 'employeeName' | 'totalActiveSeconds' | 'totalIdleSeconds' | 'productivityScore' | 'completedTasksCount';
@@ -80,6 +81,7 @@ export const MonitorDashboard: React.FC = () => {
     avgProductivity: 0,
     totalHoursTracked: 0,
     totalTasksCompleted: 0,
+    totalTasksCreated: 0,
   });
 
   const handleDateStep = (daysOffset: number) => {
@@ -114,9 +116,11 @@ export const MonitorDashboard: React.FC = () => {
       const overviewRes: any = await api.get(`/employee-monitor/team/overview?date=${selectedDate}`);
       const data = overviewRes?.data?.data || [];
       let totalActiveSec = 0;
-      let totalProdScore = 0;
+      let activeProdScore = 0;
+      let activeProdCount = 0;
       let activeCount = 0;
       let totalTasks = 0;
+      let totalCreated = 0;
 
       // Deduplicate on client to prevent repeated employee cards
       const seen = new Set<string>();
@@ -131,9 +135,15 @@ export const MonitorDashboard: React.FC = () => {
         seen.add(key);
 
         totalActiveSec += item.totalActiveSeconds || 0;
-        totalProdScore += item.productivityScore || 0;
         if (item.status === 'active') activeCount++;
         totalTasks += item.completedTasksCount || 0;
+        totalCreated += item.createdTasksCount || 0;
+
+        // Accurate productivity average: exclude completely inactive/offline zero accounts
+        if ((item.totalActiveSeconds || 0) > 0 && (item.productivityScore || 0) > 0) {
+          activeProdScore += item.productivityScore;
+          activeProdCount++;
+        }
 
         formatted.push({
           employeeId: item.employeeId,
@@ -152,6 +162,7 @@ export const MonitorDashboard: React.FC = () => {
           clockInTime: item.clockInTime,
           clockOutTime: item.clockOutTime,
           checkInMethod: item.checkInMethod,
+          hasMissingClockOut: item.hasMissingClockOut || false,
           topApp: item.topApp || (item.topApps ? Object.keys(JSON.parse(item.topApps || '{}'))[0] : undefined),
           completedTasksCount: item.completedTasksCount || 0,
           createdTasksCount: item.createdTasksCount || 0,
@@ -164,9 +175,10 @@ export const MonitorDashboard: React.FC = () => {
       setStats({
         totalTracked: formatted.length,
         activeNow: activeCount,
-        avgProductivity: formatted.length ? Math.round(totalProdScore / formatted.length) : 0,
+        avgProductivity: activeProdCount > 0 ? Math.round(activeProdScore / activeProdCount) : 0,
         totalHoursTracked: Math.round((totalActiveSec / 3600) * 10) / 10,
         totalTasksCompleted: totalTasks,
+        totalTasksCreated: totalCreated,
       });
     } catch (err) {
       console.warn('[MonitorDashboard] Fetch error:', err);
@@ -432,7 +444,7 @@ export const MonitorDashboard: React.FC = () => {
             {stats.avgProductivity}%
           </div>
           <div className="mt-1 text-[11px] text-purple-400">
-            مؤشر كفاءة استخدام وقت الدوام
+            مؤشر كفاءة الأعضاء المتفاعلين فعلياً
           </div>
         </div>
 
@@ -669,6 +681,11 @@ export const MonitorDashboard: React.FC = () => {
                               <div className="flex items-center gap-1.5 tabular-nums text-zinc-400">
                                 <span className="text-muted-foreground">الدوام المنقضي:</span>
                                 <span className="font-medium text-zinc-300">{formatSeconds(m.elapsedAttendanceSeconds)}</span>
+                                {m.hasMissingClockOut && (
+                                  <span className="text-[10px] text-amber-400 font-normal" title="الموظف لم يسجل بصمة انصراف، فتم تقييد الدوام بحد أقصى ساعات الشفت المقدرة (9 ساعات)">
+                                    (لم ينصرف • شفت 9س)
+                                  </span>
+                                )}
                               </div>
                             ) : null}
                             <div className="flex items-center gap-1.5 tabular-nums">
@@ -854,7 +871,14 @@ export const MonitorDashboard: React.FC = () => {
                       {m.elapsedAttendanceSeconds && m.elapsedAttendanceSeconds > 0 ? (
                         <div className="flex items-center justify-between text-zinc-400">
                           <span className="text-muted-foreground text-[11px]">الدوام المنقضي:</span>
-                          <span className="font-medium text-zinc-300 tabular-nums">{formatSeconds(m.elapsedAttendanceSeconds)}</span>
+                          <span className="font-medium text-zinc-300 tabular-nums">
+                            {formatSeconds(m.elapsedAttendanceSeconds)}
+                            {m.hasMissingClockOut && (
+                              <span className="text-[10px] text-amber-400 font-normal mr-1">
+                                (لم ينصرف • 9س)
+                              </span>
+                            )}
+                          </span>
                         </div>
                       ) : null}
                       <div className="flex items-center justify-between">

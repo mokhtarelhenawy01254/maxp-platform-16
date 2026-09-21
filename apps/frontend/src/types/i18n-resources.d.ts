@@ -1671,6 +1671,7 @@ declare module 'react-i18next' {
           checkinTime: string;
           hoursElapsed: string;
           minute: string;
+          desktopPrompt: string;
         };
         leaves: {
           myLeaves: string;
