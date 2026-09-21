@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -60,6 +61,11 @@ const StatusBadge = ({ status }: { status: string }) => {
             icon: <CheckCircle2 className="w-3.5 h-3.5" />,
             className: "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300",
         },
+        COMPLETED: {
+            label: t("employee.advances.settled"),
+            icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+            className: "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300",
+        },
         REJECTED: {
             label: t("employee.advances.rejectedStatus"),
             icon: <XCircle className="w-3.5 h-3.5" />,
@@ -79,6 +85,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 const MyAdvances = () => {
     const { t } = useTranslation();
     const { user } = useAuth();
+    const location = useLocation();
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [history, setHistory] = useState<any[]>([]);
@@ -110,6 +117,13 @@ const MyAdvances = () => {
         fetchData();
     }, []);
 
+    // فتح نموذج طلب سلفة جديدة تلقائياً عند القدوم من لوحة التحكم الرئيسية
+    useEffect(() => {
+        if (location.state?.createNew) {
+            setShowForm(true);
+        }
+    }, [location.state]);
+
     const fetchData = async () => {
         try {
             setFetching(true);
@@ -138,17 +152,28 @@ const MyAdvances = () => {
         }
     };
 
+    // حساب الراتب الأساسي والحد الأقصى للسلفة
+    const baseSalary =
+        Number(settings?.baseSalary) ||
+        parseFloat((user as any)?.baseSalary || "0") ||
+        Number(history.find((r) => r.employeeSalary && parseFloat(r.employeeSalary) > 0)?.employeeSalary) ||
+        0;
+
+    const maxAllowed =
+        Number(settings?.maxAllowedAmount) > 0
+            ? Number(settings.maxAllowedAmount)
+            : settings && baseSalary > 0
+                ? (baseSalary * (Number(settings.maxAdvancePercentage) || 50)) / 100
+                : Number(settings?.maxAdvanceAmount || 0);
+
     const onSubmit = async (data: AdvanceFormData) => {
         try {
             setLoading(true);
             const requestedAmount = parseFloat(data.amount);
 
-            if (settings && user?.baseSalary) {
-                const maxAllowed = (parseFloat(user.baseSalary) * settings.maxAdvancePercentage) / 100;
-                if (requestedAmount > maxAllowed && maxAllowed > 0) {
-                    toast.error(t("employee.advances.maxExceeded", { max: maxAllowed.toFixed(0) }));
-                    return;
-                }
+            if (maxAllowed > 0 && requestedAmount > maxAllowed) {
+                toast.error(t("employee.advances.maxExceeded", { max: maxAllowed.toFixed(0) }));
+                return;
             }
 
             await api.post("/hr/advances", {
@@ -170,24 +195,13 @@ const MyAdvances = () => {
 
     // Calculate stats
     const totalActive = history
-        .filter((r) => r.status === "APPROVED" && !r.isPaidOff)
+        .filter((r) => (r.status === "APPROVED" || r.status === "PARTIALLY_PAID") && !r.isPaidOff)
         .reduce((sum, r) => sum + parseFloat(r.remainingBalance || 0), 0);
     const totalPending = history.filter((r) => r.status === "PENDING").length;
     const totalAmount = history.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
 
-    // Try to get baseSalary from advances history (employeeSalary field) or user object
-    const baseSalary =
-        parseFloat(user?.baseSalary || "0") ||
-        history.find((r) => r.employeeSalary && parseFloat(r.employeeSalary) > 0)?.employeeSalary ||
-        0;
-
-    const maxAllowed =
-        settings && baseSalary > 0
-            ? (parseFloat(String(baseSalary)) * settings.maxAdvancePercentage) / 100
-            : settings?.maxAdvanceAmount || 0;
-
     const hasPending = totalPending > 0;
-    const hasActiveApproved = history.some((r) => r.status === "APPROVED" && !r.isPaidOff);
+    const hasActiveApproved = history.some((r) => (r.status === "APPROVED" || r.status === "PARTIALLY_PAID") && !r.isPaidOff);
 
     if (fetching) {
         return (
@@ -202,98 +216,92 @@ const MyAdvances = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 sm:p-8" dir="rtl">
-            <div className="max-w-5xl mx-auto space-y-8">
-
-                {/* ─── Header ─── */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-                            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2.5 rounded-2xl shadow-lg shadow-emerald-500/20">
-                                <Wallet className="w-7 h-7 text-white" />
-                            </div>
-                            {t("employee.advances.title")}
-                        </h1>
-                        <p className="text-gray-500 dark:text-gray-400 mt-1.5 text-base">
-                            {t("employee.advances.subtitle")}
-                        </p>
-                    </div>
-
-                    {!showForm && !hasPending && (
-                        <Button
-                            onClick={() => setShowForm(true)}
-                            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 rounded-xl h-12 px-6 gap-2 transition-all hover:scale-[1.02]"
-                        >
-                            <Plus className="w-5 h-5" />
-                            {t("employee.advances.newRequest")}
-                        </Button>
-                    )}
-                    {hasPending && (
-                        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-4 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800 text-sm font-bold">
-                            <Clock className="w-4 h-4" />
-                            {t("employee.advances.hasPendingRequest")}
+        <div className="p-3 sm:p-6 space-y-6 max-w-5xl mx-auto" dir="rtl">
+            {/* ─── Header ─── */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2.5 rounded-2xl shadow-lg shadow-emerald-500/20">
+                            <Wallet className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                         </div>
-                    )}
+                        {t("employee.advances.title")}
+                    </h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1.5 text-sm sm:text-base">
+                        {t("employee.advances.subtitle")}
+                    </p>
                 </div>
 
-                {/* ─── Stats Row ─── */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                        {
-                            label: t("employee.advances.totalRequests"),
-                            value: history.length,
-                            suffix: t("employee.advances.statsRequestSuffix"),
-                            icon: <BarChart3 className="w-5 h-5" />,
-                            color: "from-blue-500 to-indigo-600",
-                            bg: "bg-blue-50 dark:bg-blue-900/20",
-                            text: "text-blue-600 dark:text-blue-400",
-                        },
-                        {
-                            label: t("employee.advances.pending"),
-                            value: totalPending,
-                            suffix: t("employee.advances.statsRequestSuffix"),
-                            icon: <Clock className="w-5 h-5" />,
-                            color: "from-amber-500 to-orange-600",
-                            bg: "bg-amber-50 dark:bg-amber-900/20",
-                            text: "text-amber-600 dark:text-amber-400",
-                        },
-                        {
-                            label: t("employee.advances.remainingForRepayment"),
-                            value: totalActive.toFixed(0),
-                            suffix: t("employee.advances.egp"),
-                            icon: <TrendingDown className="w-5 h-5" />,
-                            color: "from-rose-500 to-pink-600",
-                            bg: "bg-rose-50 dark:bg-rose-900/20",
-                            text: "text-rose-600 dark:text-rose-400",
-                        },
-                        {
-                            label: t("employee.advances.maxAllowed"),
-                            value: maxAllowed > 0 ? maxAllowed.toFixed(0) : "---",
-                            suffix: maxAllowed > 0 ? t("employee.advances.egp") : "",
-                            icon: <ShieldCheck className="w-5 h-5" />,
-                            color: "from-emerald-500 to-teal-600",
-                            bg: "bg-emerald-50 dark:bg-emerald-900/20",
-                            text: "text-emerald-600 dark:text-emerald-400",
-                        },
-                    ].map((stat, i) => (
-                        <motion.div
-                            key={i}
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.07 }}
-                        >
-                            <Card className={`border-0 shadow-sm ${stat.bg} overflow-hidden`}>
-                                <CardContent className="p-5">
-                                    <div className={`${stat.text} mb-3`}>{stat.icon}</div>
-                                    <p className="text-gray-500 dark:text-gray-400 text-xs font-semibold mb-1">{stat.label}</p>
-                                    <p className={`text-2xl font-black ${stat.text}`}>
-                                        {stat.value} <span className="text-sm font-semibold opacity-70">{stat.suffix}</span>
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-                    ))}
-                </div>
+                {!showForm && !hasPending && (
+                    <Button
+                        onClick={() => setShowForm(true)}
+                        className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 rounded-xl h-11 sm:h-12 px-5 sm:px-6 gap-2 transition-all hover:scale-[1.02]"
+                    >
+                        <Plus className="w-5 h-5" />
+                        {t("employee.advances.newRequest")}
+                    </Button>
+                )}
+                {hasPending && (
+                    <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-4 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800 text-sm font-bold">
+                        <Clock className="w-4 h-4" />
+                        {t("employee.advances.hasPendingRequest")}
+                    </div>
+                )}
+            </div>
+
+            {/* ─── Stats Row ─── */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                {[
+                    {
+                        label: t("employee.advances.totalRequests"),
+                        value: history.length,
+                        suffix: t("employee.advances.statsRequestSuffix"),
+                        icon: <BarChart3 className="w-5 h-5" />,
+                        bg: "bg-blue-50/80 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30",
+                        text: "text-blue-600 dark:text-blue-400",
+                    },
+                    {
+                        label: t("employee.advances.pending"),
+                        value: totalPending,
+                        suffix: t("employee.advances.statsRequestSuffix"),
+                        icon: <Clock className="w-5 h-5" />,
+                        bg: "bg-amber-50/80 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30",
+                        text: "text-amber-600 dark:text-amber-400",
+                    },
+                    {
+                        label: t("employee.advances.remainingForRepayment"),
+                        value: totalActive.toFixed(0),
+                        suffix: t("employee.advances.egp"),
+                        icon: <TrendingDown className="w-5 h-5" />,
+                        bg: "bg-rose-50/80 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30",
+                        text: "text-rose-600 dark:text-rose-400",
+                    },
+                    {
+                        label: t("employee.advances.maxAllowed"),
+                        value: maxAllowed > 0 ? maxAllowed.toFixed(0) : "---",
+                        suffix: maxAllowed > 0 ? t("employee.advances.egp") : "",
+                        icon: <ShieldCheck className="w-5 h-5" />,
+                        bg: "bg-emerald-50/80 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30",
+                        text: "text-emerald-600 dark:text-emerald-400",
+                    },
+                ].map((stat, i) => (
+                    <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.07 }}
+                    >
+                        <Card className={`shadow-sm ${stat.bg} overflow-hidden rounded-2xl`}>
+                            <CardContent className="p-4 sm:p-5">
+                                <div className={`${stat.text} mb-2`}>{stat.icon}</div>
+                                <p className="text-gray-500 dark:text-gray-400 text-xs font-semibold mb-1">{stat.label}</p>
+                                <p className={`text-xl sm:text-2xl font-black tabular-nums ${stat.text}`}>
+                                    {stat.value} <span className="text-xs sm:text-sm font-semibold opacity-70">{stat.suffix}</span>
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                ))}
+            </div>
 
                 {/* ─── New Request Form ─── */}
                 <AnimatePresence>
@@ -531,7 +539,7 @@ const MyAdvances = () => {
                                         <Card
                                             className={`border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all rounded-2xl overflow-hidden bg-white dark:bg-gray-900 cursor-pointer
                                                 ${req.status === "PENDING" ? "border-l-4 border-l-amber-400" :
-                                                    req.status === "APPROVED" ? "border-l-4 border-l-emerald-400" :
+                                                    (req.status === "APPROVED" || req.status === "COMPLETED") ? "border-l-4 border-l-emerald-400" :
                                                         req.status === "REJECTED" ? "border-l-4 border-l-rose-400" : ""}`}
                                             onClick={() => setExpandedId(isExpanded ? null : req.id)}
                                         >
@@ -540,10 +548,10 @@ const MyAdvances = () => {
                                                 <div className="flex items-center gap-4 p-5">
                                                     {/* Amount Badge */}
                                                     <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center shrink-0 font-black text-sm
-                                                        ${req.status === "APPROVED" ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300" :
+                                                        ${(req.status === "APPROVED" || req.status === "COMPLETED") ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300" :
                                                             req.status === "REJECTED" ? "bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300" :
                                                                 "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"}`}>
-                                                        <span className="text-lg font-black leading-none">{parseFloat(req.amount).toFixed(0)}</span>
+                                                        <span className="text-lg font-black leading-none tabular-nums">{parseFloat(req.amount).toFixed(0)}</span>
                                                         <span className="text-xs opacity-70">{t("employee.advances.egp")}</span>
                                                     </div>
 
@@ -555,7 +563,7 @@ const MyAdvances = () => {
                                                                 {isOneTime ? t("employee.advances.lumpSum") : t("employee.advances.installments", { count: req.installmentsCount })}
                                                             </span>
                                                             {/* Tag if created by manager */}
-                                                            {req.approvedBy && req.status === "APPROVED" && (
+                                                            {req.approvedBy && (req.status === "APPROVED" || req.status === "COMPLETED") && (
                                                                 <span className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40 px-2 py-0.5 rounded-full font-bold">
                                                                     <User className="w-3 h-3" /> {t("employee.advances.approvedByMgmt")}
                                                                 </span>
@@ -567,7 +575,7 @@ const MyAdvances = () => {
                                                         <p className="text-gray-400 text-xs mt-0.5">
                                                             {new Date(req.createdAt).toLocaleDateString("ar-EG", {
                                                                 year: "numeric", month: "long", day: "numeric"
-                                                            })}
+                                                             })}
                                                         </p>
                                                     </div>
 
@@ -576,12 +584,12 @@ const MyAdvances = () => {
                                                         {req.status === "APPROVED" && !req.isPaidOff && (
                                                             <div className="text-left hidden sm:block">
                                                                 <p className="text-xs text-gray-400 font-semibold">{t("employee.advances.remaining")}</p>
-                                                                <p className="text-lg font-black text-rose-600 dark:text-rose-400">
+                                                                <p className="text-lg font-black text-rose-600 dark:text-rose-400 tabular-nums">
                                                                     {parseFloat(req.remainingBalance || 0).toFixed(0)} {t("employee.advances.egp")}
                                                                 </p>
                                                             </div>
                                                         )}
-                                                        {req.isPaidOff && (
+                                                        {(req.isPaidOff || req.status === "COMPLETED") && (
                                                             <span className="text-emerald-600 text-xs font-black bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-900 px-3 py-1.5 rounded-full flex items-center gap-1">
                                                                 <CheckCircle2 className="w-3.5 h-3.5" /> {t("employee.advances.settled")}
                                                             </span>
@@ -595,7 +603,7 @@ const MyAdvances = () => {
                                                     <div className="px-5 pb-3">
                                                         <div className="flex justify-between text-xs text-gray-400 mb-1.5 font-medium">
                                                             <span>{t("employee.advances.paidAmount", { amount: paidAmount.toFixed(0) })}</span>
-                                                            <span>{progressPct.toFixed(0)}%</span>
+                                                            <span className="tabular-nums">{progressPct.toFixed(0)}%</span>
                                                         </div>
                                                         <Progress value={progressPct} className="h-1.5 bg-gray-100 dark:bg-gray-800" />
                                                     </div>
@@ -614,23 +622,23 @@ const MyAdvances = () => {
                                                             <div className="border-t border-gray-100 dark:border-gray-800 p-5 bg-gray-50/50 dark:bg-gray-800/30 space-y-4">
                                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                                                     <div>
-                                                                    <p className="text-gray-400 font-semibold text-xs uppercase mb-1">{t("employee.advances.totalAmountLabel")}</p>
-                                                                    <p className="font-black text-gray-800 dark:text-white text-base">{parseFloat(req.amount).toFixed(0)} {t("employee.advances.egp")}</p>
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-gray-400 font-semibold text-xs uppercase mb-1">{t("employee.advances.repaymentMethodLabel")}</p>
-                                                                    <p className="font-bold text-gray-700 dark:text-gray-300">
-                                                                        {isOneTime ? t("employee.advances.lumpSum") : t("employee.advances.installments", { count: req.installmentsCount })}
-                                                                    </p>
-                                                                </div>
-                                                                {!isOneTime && (
-                                                                    <div>
-                                                                        <p className="text-gray-400 font-semibold text-xs uppercase mb-1">{t("employee.advances.monthlyPaymentLabel")}</p>
-                                                                        <p className="font-bold text-gray-700 dark:text-gray-300">{parseFloat(req.monthlyAmount || req.installmentAmount || 0).toFixed(0)} {t("employee.advances.egp")}</p>
+                                                                        <p className="text-gray-400 font-semibold text-xs uppercase mb-1">{t("employee.advances.totalAmountLabel")}</p>
+                                                                        <p className="font-black text-gray-800 dark:text-white text-base tabular-nums">{parseFloat(req.amount).toFixed(0)} {t("employee.advances.egp")}</p>
                                                                     </div>
-                                                                )}
-                                                                <div>
-                                                                    <p className="text-gray-400 font-semibold text-xs uppercase mb-1">{t("employee.advances.requestDateLabel")}</p>
+                                                                    <div>
+                                                                        <p className="text-gray-400 font-semibold text-xs uppercase mb-1">{t("employee.advances.repaymentMethodLabel")}</p>
+                                                                        <p className="font-bold text-gray-700 dark:text-gray-300">
+                                                                            {isOneTime ? t("employee.advances.lumpSum") : t("employee.advances.installments", { count: req.installmentsCount })}
+                                                                        </p>
+                                                                    </div>
+                                                                    {!isOneTime && (
+                                                                        <div>
+                                                                            <p className="text-gray-400 font-semibold text-xs uppercase mb-1">{t("employee.advances.monthlyPaymentLabel")}</p>
+                                                                            <p className="font-bold text-gray-700 dark:text-gray-300 tabular-nums">{parseFloat(req.monthlyAmount || req.installmentAmount || 0).toFixed(0)} {t("employee.advances.egp")}</p>
+                                                                        </div>
+                                                                    )}
+                                                                    <div>
+                                                                        <p className="text-gray-400 font-semibold text-xs uppercase mb-1">{t("employee.advances.requestDateLabel")}</p>
                                                                         <p className="font-bold text-gray-700 dark:text-gray-300">
                                                                             {new Date(req.createdAt).toLocaleDateString("ar-EG")}
                                                                         </p>
@@ -644,10 +652,10 @@ const MyAdvances = () => {
                                                                 </div>
 
                                                                 {/* Approval info */}
-                                                                {req.status === "APPROVED" && req.approver && (
+                                                                {(req.status === "APPROVED" || req.status === "COMPLETED") && req.approver && (
                                                                     <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 px-4 py-2.5 rounded-xl text-sm font-bold">
                                                                         <ShieldCheck className="w-4 h-4" />
-                                                                        {t("employee.advances.approvedBy", { name: `${req.approver.firstName} ${req.approver.lastName}` })}
+                                                                        {t("employee.advances.approvedBy", { name: `${req.approver.firstName || ''} ${req.approver.lastName || ''}`.trim() || t("employee.advances.management") })}
                                                                         {req.approvedAt && (
                                                                             <span className="text-emerald-500 font-normal mr-auto">
                                                                                 {new Date(req.approvedAt).toLocaleDateString("ar-EG")}
@@ -679,7 +687,6 @@ const MyAdvances = () => {
                     )}
                 </div>
             </div>
-        </div>
     );
 };
 

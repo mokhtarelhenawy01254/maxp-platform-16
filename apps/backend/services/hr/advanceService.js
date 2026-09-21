@@ -51,37 +51,98 @@ class AdvanceService {
         try {
             const { employeeId, amount, reason, repaymentType, installmentsCount } = data;
 
-            // 1. جلب إعدادات السلف
-            const settings = await this.prisma.hRSettings.findUnique({
-                where: { companyId }
-            });
+            // Resolve effectiveCompanyId if null/undefined (e.g. for super admins or missing tenant header)
+            let effectiveCompanyId = companyId;
+            if (!effectiveCompanyId) {
+                const userRef = await this.prisma.user.findUnique({
+                    where: { id: employeeId },
+                    select: { companyId: true, userCompanies: { select: { companyId: true }, take: 1 } }
+                });
+                effectiveCompanyId = userRef?.companyId || userRef?.userCompanies?.[0]?.companyId;
+                if (!effectiveCompanyId) {
+                    const firstCompany = await this.prisma.company.findFirst({ select: { id: true } });
+                    effectiveCompanyId = firstCompany?.id;
+                }
+            }
 
-            if (!settings) throw new Error('يرجى ضبط إعدادات الموارد البشرية أولاً');
+            // 1. جلب إعدادات السلف (مع إنشاء إعدادات افتراضية تلقائياً إن لم تكن موجودة)
+            let settings = null;
+            if (effectiveCompanyId) {
+                settings = await this.prisma.hRSettings.findUnique({
+                    where: { companyId: effectiveCompanyId }
+                });
+
+                if (!settings) {
+                    try {
+                        const compExists = await this.prisma.company.findUnique({
+                            where: { id: effectiveCompanyId },
+                            select: { id: true }
+                        });
+                        if (compExists) {
+                            settings = await this.prisma.hRSettings.create({
+                                data: { companyId: effectiveCompanyId }
+                            });
+                        }
+                    } catch (createErr) {
+                        settings = await this.prisma.hRSettings.findUnique({
+                            where: { companyId: effectiveCompanyId }
+                        });
+                    }
+                }
+            }
+
+            if (!settings) {
+                settings = {
+                    maxAdvancePercentage: 50,
+                    maxActiveAdvances: 1,
+                    minMonthsForAdvance: 0,
+                    advanceRepaymentMonths: 12
+                };
+            }
 
             // 2. جلب بيانات الموظف (البحث بـ userId والتأكد من عضويته في الشركة)
-            const user = await this.prisma.user.findFirst({
+            let user = await this.prisma.user.findFirst({
                 where: {
                     id: employeeId,
                     OR: [
-                        { companyId },
-                        { userCompanies: { some: { companyId } } }
+                        ...(effectiveCompanyId ? [{ companyId: effectiveCompanyId }, { userCompanies: { some: { companyId: effectiveCompanyId } } }] : [])
                     ]
                 },
                 include: {
                     positionRelation: true,
                     employees: {
-                        where: { companyId }
+                        ...(effectiveCompanyId ? { where: { companyId: effectiveCompanyId } } : {})
                     }
                 }
             });
+
+            // السماح لـ SUPER_ADMIN بالمرور حتى وإن لم تكن شركته الأساسية مرتبطة بالـ Tenant
+            if (!user) {
+                const fallbackUser = await this.prisma.user.findUnique({
+                    where: { id: employeeId },
+                    include: {
+                        positionRelation: true,
+                        employees: {
+                            ...(effectiveCompanyId ? { where: { companyId: effectiveCompanyId } } : {})
+                        }
+                    }
+                });
+
+                if (fallbackUser && (fallbackUser.role === 'SUPER_ADMIN' || !companyId)) {
+                    user = fallbackUser;
+                }
+            }
 
             if (!user) {
                 console.error(`❌ [AdvanceService] User ${employeeId} not found in company ${companyId}`);
                 throw new Error('الموظف غير موجود أو لا ينتمي لهذه الشركة');
             }
 
-            const employeeTableRecord = user.employees?.[0] || null;
-            const baseSalary = employeeTableRecord?.baseSalary || user.baseSalary || 0;
+            // علاقة employees قد تكون Object (1-to-1) أو Array (1-to-many) بحسب الـ Schema
+            const employeeTableRecord = Array.isArray(user.employees)
+                ? (user.employees[0] || null)
+                : (user.employees || null);
+            const baseSalary = Number(employeeTableRecord?.baseSalary || user.baseSalary || 0);
 
             console.log(`💰 [AdvanceService] Employee: ${user.firstName} ${user.lastName}, baseSalary: ${baseSalary}`);
 
@@ -128,7 +189,7 @@ class AdvanceService {
             // 8. إنشاء الطلب
             const request = await this.prisma.advanceRequest.create({
                 data: {
-                    companyId,
+                    companyId: effectiveCompanyId,
                     userId: user.id, // ✅ FIX: always use the resolved user.id
                     employeeRelId: employeeTableRecord?.id || null,
                     amount: requestedAmount,
@@ -167,7 +228,7 @@ class AdvanceService {
 
             // Log Audit
             await auditService.logAction(
-                companyId,
+                effectiveCompanyId,
                 user.id || 'SYSTEM',
                 'CREATE',
                 'ADVANCE_REQUEST',
@@ -348,8 +409,12 @@ class AdvanceService {
         try {
             const { limit } = options;
             const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : undefined;
+            const whereClause = {
+                userId: employeeId,
+                ...(companyId ? { companyId } : {})
+            };
             const requests = await this.prisma.advanceRequest.findMany({
-                where: { companyId, userId: employeeId }, // Use userId instead of employeeId
+                where: whereClause,
                 orderBy: { createdAt: 'desc' },
                 ...(safeLimit ? { take: safeLimit } : {})
             });

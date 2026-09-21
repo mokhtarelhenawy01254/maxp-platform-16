@@ -51,26 +51,79 @@ exports.createAdvanceRequest = async (req, res) => {
  */
 exports.getMyAdvanceConfig = async (req, res) => {
     try {
-        const { companyId } = req.user;
+        let { companyId, id: userId } = req.user;
         const prisma = getSharedPrismaClient();
 
-        let settings = await prisma.hRSettings.findUnique({
-            where: { companyId }
-        });
-
-        if (!settings) {
-            settings = await prisma.hRSettings.create({
-                data: { companyId }
+        if (!companyId && userId) {
+            const userRef = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { companyId: true, userCompanies: { select: { companyId: true }, take: 1 } }
             });
+            companyId = userRef?.companyId || userRef?.userCompanies?.[0]?.companyId;
+            if (!companyId) {
+                const firstCompany = await prisma.company.findFirst({ select: { id: true } });
+                companyId = firstCompany?.id;
+            }
         }
+
+        let settings = null;
+        if (companyId) {
+            settings = await prisma.hRSettings.findUnique({
+                where: { companyId }
+            });
+
+            if (!settings) {
+                try {
+                    const companyExists = await prisma.company.findUnique({
+                        where: { id: companyId },
+                        select: { id: true }
+                    });
+                    if (companyExists) {
+                        settings = await prisma.hRSettings.create({
+                            data: { companyId }
+                        });
+                    }
+                } catch (e) {
+                    // Fallback if concurrent create occurs
+                    settings = await prisma.hRSettings.findUnique({
+                        where: { companyId }
+                    });
+                }
+            }
+        }
+
+        // Fetch employee base salary from User or Employee table
+        let baseSalary = 0;
+        if (userId) {
+            const user = await prisma.user.findUnique({
+                where: { id: userId },
+                select: {
+                    baseSalary: true,
+                    employees: {
+                        ...(companyId ? { where: { companyId } } : {}),
+                        select: { baseSalary: true }
+                    }
+                }
+            });
+
+            const empRecord = Array.isArray(user?.employees) ? user.employees[0] : user?.employees;
+            baseSalary = Number(empRecord?.baseSalary || user?.baseSalary || 0);
+        }
+
+        const maxAdvancePercentage = Number(settings?.maxAdvancePercentage) || 50;
+        const maxAllowedAmount = baseSalary > 0
+            ? Math.floor((baseSalary * maxAdvancePercentage) / 100)
+            : 0;
 
         res.json({
             success: true,
             settings: {
-                maxAdvancePercentage: Number(settings.maxAdvancePercentage) || 0,
-                maxActiveAdvances: settings.maxActiveAdvances || 1,
-                minMonthsForAdvance: settings.minMonthsForAdvance || 0,
-                advanceRepaymentMonths: settings.advanceRepaymentMonths || 12
+                maxAdvancePercentage,
+                maxActiveAdvances: settings?.maxActiveAdvances || 1,
+                minMonthsForAdvance: settings?.minMonthsForAdvance || 0,
+                advanceRepaymentMonths: settings?.advanceRepaymentMonths || 12,
+                baseSalary,
+                maxAllowedAmount
             }
         });
     } catch (error) {
