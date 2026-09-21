@@ -38,30 +38,51 @@ export const TasksTab: React.FC = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [lightboxBlobUrl, setLightboxBlobUrl] = useState<string | null>(null);
   const [lightboxImgError, setLightboxImgError] = useState(false);
+  const [isLightboxLoading, setIsLightboxLoading] = useState(false);
   const [serverUrl, setServerUrl] = useState('https://maxp.online');
   const [authToken, setAuthToken] = useState<string>('');
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Authenticated or direct blob loader for lightbox images
+  // Authenticated or direct blob loader for lightbox images (3-tier resilient loader)
   useEffect(() => {
     if (!previewImage) {
-      if (lightboxBlobUrl) {
+      if (lightboxBlobUrl && lightboxBlobUrl.startsWith('blob:')) {
         URL.revokeObjectURL(lightboxBlobUrl);
-        setLightboxBlobUrl(null);
       }
+      setLightboxBlobUrl(null);
       setLightboxImgError(false);
+      setIsLightboxLoading(false);
       return;
     }
 
     let isCancelled = false;
     setLightboxImgError(false);
+    setIsLightboxLoading(true);
 
+    // 0. If it's already a data: or blob: URI, render directly
     if (previewImage.startsWith('data:') || previewImage.startsWith('blob:')) {
       setLightboxBlobUrl(previewImage);
+      setIsLightboxLoading(false);
       return;
     }
 
-    const fetchImgBlob = async () => {
+    const loadAttachment = async () => {
+      // 1. Tier 1: Try loading via Electron main process IPC (bypasses any renderer CORS/CSP/network quirks)
+      if (window.electronAPI?.fetchAttachment) {
+        try {
+          const ipcRes = await window.electronAPI.fetchAttachment(previewImage);
+          if (!isCancelled && ipcRes.success && ipcRes.dataUrl) {
+            setLightboxBlobUrl(ipcRes.dataUrl);
+            setLightboxImgError(false);
+            setIsLightboxLoading(false);
+            return;
+          }
+        } catch (ipcErr) {
+          console.warn('[TasksTab] IPC fetchAttachment error, falling back to renderer fetch:', ipcErr);
+        }
+      }
+
+      // 2. Tier 2: Renderer fetch with authorization headers
       try {
         const headers: Record<string, string> = {};
         if (authToken) {
@@ -73,18 +94,26 @@ export const TasksTab: React.FC = () => {
           if (!isCancelled) {
             const url = URL.createObjectURL(blob);
             setLightboxBlobUrl(url);
+            setLightboxImgError(false);
+            setIsLightboxLoading(false);
+            return;
           }
         }
       } catch (err) {
-        console.warn('Blob fetch failed, falling back to direct previewImage:', err);
+        console.warn('[TasksTab] Blob fetch failed, falling back to direct URL in img tag:', err);
+      }
+
+      // 3. Tier 3: Fall back to letting the <img> tag try direct previewImage URL
+      if (!isCancelled) {
+        setIsLightboxLoading(false);
       }
     };
 
-    fetchImgBlob();
+    loadAttachment();
 
     return () => {
       isCancelled = true;
-      if (lightboxBlobUrl) {
+      if (lightboxBlobUrl && lightboxBlobUrl.startsWith('blob:')) {
         URL.revokeObjectURL(lightboxBlobUrl);
       }
     };
@@ -705,11 +734,12 @@ export const TasksTab: React.FC = () => {
           style={styles.lightboxOverlay}
           onClick={() => {
             setPreviewImage(null);
-            if (lightboxBlobUrl) {
+            if (lightboxBlobUrl && lightboxBlobUrl.startsWith('blob:')) {
               URL.revokeObjectURL(lightboxBlobUrl);
-              setLightboxBlobUrl(null);
             }
+            setLightboxBlobUrl(null);
             setLightboxImgError(false);
+            setIsLightboxLoading(false);
           }}
         >
           <div style={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
@@ -760,11 +790,12 @@ export const TasksTab: React.FC = () => {
                 <button
                   onClick={() => {
                     setPreviewImage(null);
-                    if (lightboxBlobUrl) {
+                    if (lightboxBlobUrl && lightboxBlobUrl.startsWith('blob:')) {
                       URL.revokeObjectURL(lightboxBlobUrl);
-                      setLightboxBlobUrl(null);
                     }
+                    setLightboxBlobUrl(null);
                     setLightboxImgError(false);
+                    setIsLightboxLoading(false);
                   }}
                   style={styles.closeBtn}
                 >
@@ -772,31 +803,87 @@ export const TasksTab: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)', minHeight: 200 }}>
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)', minHeight: 240, position: 'relative' }}>
+              {isLightboxLoading && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: 32 }}>
+                  <RefreshCw size={24} color="#38bdf8" style={{ animation: 'spin 1s linear infinite' }} />
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>جاري تحميل ومعالجة المرفق...</span>
+                </div>
+              )}
+
               {!lightboxImgError ? (
                 <img
                   src={lightboxBlobUrl || previewImage}
                   alt="Preview"
-                  style={styles.lightboxImg}
-                  onError={() => setLightboxImgError(true)}
+                  style={{
+                    ...styles.lightboxImg,
+                    display: isLightboxLoading ? 'none' : 'block',
+                  }}
+                  onLoad={() => {
+                    setIsLightboxLoading(false);
+                    setLightboxImgError(false);
+                  }}
+                  onError={async () => {
+                    if (!lightboxBlobUrl && window.electronAPI?.fetchAttachment) {
+                      try {
+                        const res = await window.electronAPI.fetchAttachment(previewImage);
+                        if (res.success && res.dataUrl) {
+                          setLightboxBlobUrl(res.dataUrl);
+                          setIsLightboxLoading(false);
+                          setLightboxImgError(false);
+                          return;
+                        }
+                      } catch {}
+                    }
+                    setIsLightboxLoading(false);
+                    setLightboxImgError(true);
+                  }}
                 />
               ) : (
                 <div style={{ textAlign: 'center', padding: 24 }}>
                   <p style={{ color: 'var(--accent-red)', fontSize: 13, marginBottom: 12 }}>تعذر تحميل الصورة مباشرة داخل التطبيق</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.electronAPI.openExternal) {
-                        window.electronAPI.openExternal(previewImage);
-                      } else {
-                        window.open(previewImage, '_blank');
-                      }
-                    }}
-                    style={{ ...styles.lightboxActionBtn, margin: '0 auto' }}
-                  >
-                    <ExternalLink size={13} />
-                    <span>فتح المرفق في المتصفح الخارجي</span>
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLightboxImgError(false);
+                        setIsLightboxLoading(true);
+                        if (window.electronAPI?.fetchAttachment && previewImage) {
+                          window.electronAPI.fetchAttachment(previewImage).then((res) => {
+                            if (res.success && res.dataUrl) {
+                              setLightboxBlobUrl(res.dataUrl);
+                              setLightboxImgError(false);
+                            } else {
+                              setLightboxImgError(true);
+                            }
+                          }).catch(() => setLightboxImgError(true))
+                            .finally(() => setIsLightboxLoading(false));
+                        } else {
+                          setIsLightboxLoading(false);
+                          setLightboxImgError(true);
+                        }
+                      }}
+                      style={styles.lightboxActionBtn}
+                      title="إعادة محاولة التحميل"
+                    >
+                      <RefreshCw size={13} />
+                      <span>إعادة المحاولة</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.electronAPI.openExternal) {
+                          window.electronAPI.openExternal(previewImage);
+                        } else {
+                          window.open(previewImage, '_blank');
+                        }
+                      }}
+                      style={styles.lightboxActionBtn}
+                    >
+                      <ExternalLink size={13} />
+                      <span>فتح المرفق في المتصفح الخارجي</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

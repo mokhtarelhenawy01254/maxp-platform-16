@@ -54,6 +54,10 @@ class MonitorApiClient {
     return this.serverUrl.length > 0 && this.authToken.length > 0;
   }
 
+  get server(): string {
+    return this.serverUrl;
+  }
+
   async validateToken(): Promise<{ valid: boolean; user?: any }> {
     if (!this.isConfigured) return { valid: false };
     try {

@@ -189,7 +189,12 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         normalized = `/uploads/tasks${normalized}`;
       }
     }
-    return `${base}${encodeURI(normalized)}`;
+    try {
+      normalized = encodeURI(decodeURI(normalized));
+    } catch {
+      normalized = encodeURI(normalized);
+    }
+    return `${base}${normalized}`;
   };
 
   const isImgAttachment = (att: any) => {

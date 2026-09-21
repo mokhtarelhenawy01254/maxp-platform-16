@@ -77,6 +77,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     originalName: string;
     mimeType?: string;
   }) => ipcRenderer.invoke('tasks:upload-attachment', data),
+  fetchAttachment: (url: string) =>
+    ipcRenderer.invoke('tasks:fetch-attachment', { url }),
   captureDesktopSnippet: () =>
     ipcRenderer.invoke('tasks:capture-screen'),
   addWatcher: (taskId: string, userId: string) =>

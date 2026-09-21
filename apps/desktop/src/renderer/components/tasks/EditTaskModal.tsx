@@ -116,6 +116,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         normalized = `/uploads/tasks${normalized}`;
       }
     }
+    try {
+      normalized = encodeURI(decodeURI(normalized));
+    } catch {
+      normalized = encodeURI(normalized);
+    }
     return `${base}${normalized}`;
   };
 

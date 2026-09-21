@@ -40,6 +40,13 @@ declare global {
         originalName: string;
         mimeType?: string;
       }) => Promise<{ success: boolean; attachment?: any; error?: string }>;
+      fetchAttachment: (url: string) => Promise<{
+        success: boolean;
+        dataUrl?: string;
+        contentType?: string;
+        fileSize?: number;
+        error?: string;
+      }>;
       captureDesktopSnippet: () => Promise<{ success: boolean; dataUrl?: string; error?: string }>;
       addWatcher: (taskId: string, userId: string) => Promise<{ success: boolean; result?: any; error?: string }>;
       removeWatcher: (taskId: string, userId: string) => Promise<{ success: boolean; result?: any; error?: string }>;

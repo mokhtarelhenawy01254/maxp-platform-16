@@ -9,6 +9,7 @@ import { localDb, getLocalDateString } from '../db/localDb';
 import { apiClient } from '../shared/api';
 import { IPC_CHANNELS } from '../shared/types';
 import { autoUpdater } from 'electron-updater';
+import axios from 'axios';
 
 class SimpleStore {
   private file = '';
@@ -931,6 +932,54 @@ function registerIpcHandlers(): void {
       }
     }
   );
+
+  ipcMain.handle('tasks:fetch-attachment', async (_, { url }: { url: string }) => {
+    try {
+      if (!url || typeof url !== 'string') {
+        return { success: false, error: 'Invalid attachment URL' };
+      }
+
+      let targetUrl = url.trim();
+      if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        let base = (store.get('serverUrl') || apiClient.server || 'https://maxp.online').trim().replace(/\/$/, '');
+        if (!base.startsWith('http://') && !base.startsWith('https://')) {
+          base = `https://${base}`;
+        }
+        if (!targetUrl.startsWith('/')) {
+          targetUrl = `/${targetUrl}`;
+        }
+        targetUrl = `${base}${targetUrl}`;
+      }
+
+      const headers: Record<string, string> = {
+        'User-Agent': 'MaxP-Desktop-Workspace',
+      };
+      if (apiClient.token) {
+        headers['Authorization'] = `Bearer ${apiClient.token}`;
+      }
+
+      const res = await axios.get(targetUrl, {
+        responseType: 'arraybuffer',
+        headers,
+        timeout: 25000,
+        maxContentLength: 50 * 1024 * 1024,
+      });
+
+      const contentType = res.headers['content-type'] || 'image/png';
+      const base64 = Buffer.from(res.data).toString('base64');
+      const dataUrl = `data:${contentType};base64,${base64}`;
+
+      return {
+        success: true,
+        dataUrl,
+        contentType,
+        fileSize: res.data.byteLength,
+      };
+    } catch (err: any) {
+      console.warn('[Main] Failed to fetch task attachment via IPC:', err?.message || err);
+      return { success: false, error: err?.message || 'Failed to download attachment' };
+    }
+  });
 
   // ── Window Management & Titlebar IPCs ──
   ipcMain.handle('window:minimize', () => {
