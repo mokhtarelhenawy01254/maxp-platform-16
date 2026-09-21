@@ -118,6 +118,9 @@
   outline: 2px solid var(--color-ring);
   outline-offset: 2px;
 }
+.app-shell-mobile-header-button:focus:not(:focus-visible) {
+  outline: none;
+}
 .app-shell-mobile-header-button:active {
   transform: scale(0.94);
   background-color: var(--color-accent);
