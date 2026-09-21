@@ -43,7 +43,7 @@ const LookProgress: React.FC<{
     const trimmed = raw.trim();
     if (!trimmed) return '';
     if (isExternalHref(trimmed)) return trimmed;
-    return buildStorefrontPath(location.pathname, trimmed.startsWith('/') ? trimmed : `/${trimmed}`, location.search);
+    return buildStorefrontPath(location.pathname, trimmed, location.search);
   })();
 
   const pieces = (settings?.pieces || []).filter((p) => p && p.title);

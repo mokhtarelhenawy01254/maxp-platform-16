@@ -27,7 +27,7 @@ const toHref = (pathname: string, search: string, raw?: string): string => {
   const trimmed = raw.trim();
   if (!trimmed) return '';
   if (isExternalHref(trimmed)) return trimmed;
-  return buildStorefrontPath(pathname, trimmed.startsWith('/') ? trimmed : `/${trimmed}`, search);
+  return buildStorefrontPath(pathname, trimmed, search);
 };
 
 const toPieces = (value: unknown): string[] => {

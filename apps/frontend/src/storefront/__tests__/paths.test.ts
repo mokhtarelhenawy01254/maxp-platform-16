@@ -9,6 +9,7 @@ import {
   buildStorefrontPreviewPath,
   getStorefrontProductRouteKey,
   getStorefrontBasePath,
+  normalizeRouteInput,
   resolveImplicitStorefrontPreviewAdminOrigin,
 } from "../utils/paths";
 
@@ -229,5 +230,55 @@ describe("storefront path helpers", () => {
         "lvh.me:3000",
       ),
     ).toBe("http://lvh.me:3000");
+  });
+
+  describe("self-healing and URL normalization", () => {
+    it("normalizes malformed /https:// origin prefixes for same-store URLs", () => {
+      // Mock window.location.hostname to simulate red-line.maxp.online
+      const originalLocation = window.location;
+      delete (window as unknown as { location?: unknown }).location;
+      window.location = new URL("https://red-line.maxp.online/") as unknown as Location;
+
+      try {
+        expect(
+          buildStorefrontPath("/", "/https://red-line.maxp.online/"),
+        ).toBe("/");
+        expect(
+          buildStorefrontPath("/", "https://red-line.maxp.online/"),
+        ).toBe("/");
+        expect(
+          buildStorefrontPath("/", "https://red-line.maxp.online/shop"),
+        ).toBe("/shop");
+        expect(
+          buildStorefrontPath("/", "/https://red-line.maxp.online/shop?cat=heels#top"),
+        ).toBe("/shop?cat=heels#top");
+        expect(
+          normalizeRouteInput("/https://red-line.maxp.online/"),
+        ).toBe("/");
+        expect(
+          normalizeRouteInput("https://red-line.maxp.online/shop"),
+        ).toBe("/shop");
+      } finally {
+        window.location = originalLocation;
+      }
+    });
+
+    it("preserves external URLs and special schemes without adding a leading slash", () => {
+      expect(
+        buildStorefrontPath("/", "https://instagram.com/mybrand"),
+      ).toBe("https://instagram.com/mybrand");
+      expect(
+        buildStorefrontPath("/", "/https://instagram.com/mybrand"),
+      ).toBe("https://instagram.com/mybrand");
+      expect(
+        buildStorefrontPath("/", "mailto:support@maxp.online"),
+      ).toBe("mailto:support@maxp.online");
+      expect(
+        buildStorefrontPath("/", "tel:+201012345678"),
+      ).toBe("tel:+201012345678");
+      expect(
+        buildStorefrontPath("/", "#reviews"),
+      ).toBe("#reviews");
+    });
   });
 });

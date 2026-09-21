@@ -43,7 +43,7 @@ const RichText: React.FC<RichTextProps> = ({ section, settings }) => {
   const alignClass =
     align === 'center' ? 'text-center mx-auto items-center' : 'text-start items-start';
   const ctaResolved = ctaLink
-    ? buildStorefrontPath(location.pathname, ctaLink.startsWith('/') ? ctaLink : `/${ctaLink}`, location.search)
+    ? buildStorefrontPath(location.pathname, ctaLink, location.search)
     : '';
 
   const renderTextBlock = () => (

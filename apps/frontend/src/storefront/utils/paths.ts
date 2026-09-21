@@ -194,10 +194,26 @@ export const buildStorefrontPreviewPath = (
 
   const routePath = normalizeRouteInput(route);
   const subdomainSlug = companySlug || companyId;
+  const isLocal = isLocalPreviewDomain(getBaseDomain());
+  const useLocalSameOriginPreview = Boolean(
+    isLocal &&
+    !customDomain &&
+    companyId &&
+    options.previewAdminOrigin &&
+    typeof window !== "undefined" &&
+    window.location?.origin
+  );
+
   const previewUrl = customDomain
     ? `https://${customDomain}${routePath}`
-    : `${isLocalPreviewDomain(getBaseDomain()) ? "http:" : window.location.protocol}//${subdomainSlug}.${getBaseDomain()}${routePath}`;
+    : useLocalSameOriginPreview
+      ? `${window.location.origin}/store${routePath}`
+      : `${isLocal ? "http:" : window.location.protocol}//${subdomainSlug}.${getBaseDomain()}${routePath}`;
   const url = new URL(previewUrl, window.location.origin);
+
+  if (useLocalSameOriginPreview && companyId) {
+    url.searchParams.set("companyId", companyId);
+  }
 
   if (options.previewTheme?.trim()) {
     url.searchParams.set("previewTheme", options.previewTheme.trim());
