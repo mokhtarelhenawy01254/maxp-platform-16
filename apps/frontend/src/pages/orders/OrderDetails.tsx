@@ -16,7 +16,6 @@ import {
   ArrowTopRightOnSquareIcon,
   ArrowPathRoundedSquareIcon,
 } from "@heroicons/react/24/outline";
-import { WhatsAppIcon } from "../../components/icons/brands";
 import { toast } from "sonner";
 import SimplifiedProductSelectionModal from "./components/SimplifiedProductSelectionModal";
 import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOperationsCard";
@@ -1014,17 +1013,6 @@ const OrderDetails: React.FC = () => {
       <div className="mt-4 flex flex-wrap gap-3 sm:gap-4">
         {!isEditing && (
           <>
-            {whatsappChatUrl && (
-              <Link
-                to={whatsappChatUrl}
-                className="inline-flex items-center px-3.5 py-2 border border-emerald-300 shadow-xs text-sm leading-4 font-medium rounded-lg text-emerald-800 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 dark:hover:bg-emerald-900/40 transition active:scale-97"
-                title="محادثة العميل مباشرة عبر واتساب المنصة"
-              >
-                <WhatsAppIcon className="ml-2 -mr-0.5 h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                محادثة واتساب
-              </Link>
-            )}
-
             <button
               type="button"
               onClick={() => setShowTicketModal(true)}
