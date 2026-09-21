@@ -882,6 +882,33 @@ const OrderDetails: React.FC = () => {
     [orderStatuses],
   );
 
+  const whatsappChatUrl = useMemo(() => {
+    const rawPhone = order?.customerPhone || order?.alternativePhone;
+    if (!rawPhone) return null;
+    let cleanPhone = String(rawPhone).replace(/\D/g, "");
+    if (cleanPhone.startsWith("01") && cleanPhone.length === 11) {
+      cleanPhone = "2" + cleanPhone;
+    }
+    const params = new URLSearchParams();
+    params.set("phone", cleanPhone);
+    if (order?.customerName) {
+      params.set("name", order.customerName);
+    }
+    if (order?.orderNumber) {
+      params.set("orderNumber", order.orderNumber);
+    }
+    if (order?.conversationId) {
+      params.set("conversationId", order.conversationId);
+    }
+    return `/whatsapp?${params.toString()}`;
+  }, [
+    order?.customerPhone,
+    order?.alternativePhone,
+    order?.customerName,
+    order?.orderNumber,
+    order?.conversationId,
+  ]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -947,33 +974,6 @@ const OrderDetails: React.FC = () => {
   const confirmationStatusLabel =
     (!isCurrentlyPending && order.confirmedAt) || effectiveStatus === "CONFIRMED" ? t("orderDetails.confirmedStatus") : t("orderDetails.notConfirmedStatus");
   const assignmentStatusLabel = order.assignedTo ? t("orderDetails.distributed") : t("orderDetails.notDistributed");
-
-  const whatsappChatUrl = useMemo(() => {
-    const rawPhone = order?.customerPhone || order?.alternativePhone;
-    if (!rawPhone) return null;
-    let cleanPhone = String(rawPhone).replace(/\D/g, "");
-    if (cleanPhone.startsWith("01") && cleanPhone.length === 11) {
-      cleanPhone = "2" + cleanPhone;
-    }
-    const params = new URLSearchParams();
-    params.set("phone", cleanPhone);
-    if (order?.customerName) {
-      params.set("name", order.customerName);
-    }
-    if (order?.orderNumber) {
-      params.set("orderNumber", order.orderNumber);
-    }
-    if (order?.conversationId) {
-      params.set("conversationId", order.conversationId);
-    }
-    return `/whatsapp?${params.toString()}`;
-  }, [
-    order?.customerPhone,
-    order?.alternativePhone,
-    order?.customerName,
-    order?.orderNumber,
-    order?.conversationId,
-  ]);
 
   console.log("🔍 Order Status Debug:", {
     orderStatus: order.status,
