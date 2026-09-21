@@ -5,7 +5,36 @@ from typing import Any
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
-from src.tools.definitions._helpers import _write_result
+from src.tools.definitions._helpers import _executed_result, _write_result
+
+
+class ShippingZoneSetInput(BaseModel):
+    governorates: list[str] | str = Field(
+        description="Governorate name or list of governorates to set shipping price for (e.g. 'الإسكندرية' or ['القاهرة', 'الجيزة'])"
+    )
+    price: float = Field(
+        description="Shipping cost/price (e.g. 50.0)"
+    )
+    delivery_time: str = Field(
+        default="2-3 أيام",
+        description="Expected delivery duration (e.g. '2-3 أيام' or '1-2 days')"
+    )
+    name: str | None = Field(
+        default=None,
+        description="Optional name for this shipping zone (e.g. 'شحن الإسكندرية')"
+    )
+    free_shipping_threshold: float | None = Field(
+        default=None,
+        description="Optional minimum order amount to qualify for free shipping (e.g. 500.0)"
+    )
+    is_active: bool = Field(
+        default=True,
+        description="Whether this shipping rate is active"
+    )
+    company_id: str | None = Field(
+        default=None,
+        description="Tenant ID (auto-injected)"
+    )
 
 
 class ShippingRatesInput(BaseModel):
@@ -147,11 +176,74 @@ async def search_area_by_text(input_data: SearchAreaByTextInput) -> dict[str, An
         return {"found": False, "error": str(exc), "matches": []}
 
 
+async def shipping_zone_set(input_data: ShippingZoneSetInput) -> dict[str, Any]:
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "Missing company_id"}
+
+    raw_govs = input_data.governorates
+    if isinstance(raw_govs, str):
+        govs = [g.strip() for g in raw_govs.split(",") if g.strip()]
+    elif isinstance(raw_govs, list):
+        govs = [str(g).strip() for g in raw_govs if str(g).strip()]
+    else:
+        govs = []
+
+    if not govs:
+        return {"success": False, "error": "يرجى تحديد محافظة واحدة على الأقل"}
+
+    if input_data.price < 0:
+        return {"success": False, "error": "سعر الشحن لا يمكن أن يكون سالباً"}
+
+    from src.tools.repositories.shipping_repository import ShippingRepository
+    import src.db.session as _db_mod
+
+    if _db_mod.async_session is None:
+        await _db_mod.init_db()
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = ShippingRepository(sess)
+        result = await repo.upsert_zone(
+            company_id=company_id,
+            governorates=govs,
+            price=input_data.price,
+            delivery_time=input_data.delivery_time,
+            name=input_data.name,
+            free_shipping_threshold=input_data.free_shipping_threshold,
+            is_active=input_data.is_active,
+        )
+
+    return _executed_result("SHIPPING_ZONE_SET", result)
+
+
+def _format_shipping_zone_set(result: dict[str, Any]) -> str:
+    res = result.get("result", result)
+    if not res.get("id") and not res.get("success", True):
+        return f"تعذر تحديث سعر الشحن: {res.get('error', 'خطأ غير معروف')}"
+    govs_str = ", ".join(res.get("governorates", []))
+    price = res.get("price")
+    time = res.get("deliveryTime")
+    action_str = "تم تحديث" if res.get("isUpdated") else "تمت إضافة"
+    msg = f"{action_str} سعر الشحن لمحافظة ({govs_str}) بنجاح: {price} ج.م (مدة التوصيل: {time})."
+    if res.get("freeShippingThreshold"):
+        msg += f" [شحن مجاني للطلبات فوق {res.get('freeShippingThreshold')} ج.م]."
+    return msg
+
+
 shipping_rates_tool = FunctionTool(
     name="shipping_rates",
     description="Get shipping rates and delivery info for a governorate. Only needs the governorate name to calculate — do not ask for full address, city, or street. Use this immediately when customer asks about delivery cost, shipping fees, or how much delivery costs.",
     func=shipping_rates,
     input_model=ShippingRatesInput,
+)
+
+shipping_zone_set_tool = FunctionTool(
+    name="shipping_zone_set",
+    description="Create or update shipping price and delivery duration for one or more governorates (e.g. setting Alexandria shipping to 60 EGP). Automatically creates the zone or updates the existing rate if already present.",
+    func=shipping_zone_set,
+    input_model=ShippingZoneSetInput,
+    format_result=_format_shipping_zone_set,
 )
 
 shipping_update_tool = FunctionTool(
@@ -184,6 +276,7 @@ search_area_by_text_tool = FunctionTool(
 
 __all_tools__ = [
     shipping_rates_tool,
+    shipping_zone_set_tool,
     shipping_update_tool,
     shipping_company_governorates_tool,
     shipping_company_areas_tool,

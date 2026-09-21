@@ -31,6 +31,8 @@
     "inventory.adjust",
     "product.update.price",
     "discount.create_draft",
+    "shipping.rates",
+    "shipping.zone.set",
     "audit.read"
   ],
   "allowedSkills": [

@@ -138,6 +138,7 @@ DIRECT_WRITE_TOOL_NAMES: set[str] = {
     "knowledge_create_faq",
     "order_confirm",
     "order_update_details",
+    "shipping_zone_set",
 }
 
 
@@ -200,6 +201,7 @@ company_snapshot_tool = _registry.resolve("company_snapshot")
 discount_create_tool = _registry.resolve("discount_create")
 discount_create_draft_tool = _registry.resolve("discount_create_draft")
 whatsapp_send_tool = _registry.resolve("whatsapp_send")
+shipping_zone_set_tool = _registry.resolve("shipping_zone_set")
 shipping_company_governorates_tool = _registry.resolve("shipping_company_governorates")
 shipping_company_areas_tool = _registry.resolve("shipping_company_areas")
 search_area_by_text_tool = _registry.resolve("search_area_by_text")
@@ -284,6 +286,7 @@ from src.tools.definitions.competitor import (  # noqa: E402 F401
 )
 from src.tools.definitions.shipping import (  # noqa: E402 F401
     ShippingRatesInput,
+    ShippingZoneSetInput,
     ShippingUpdateInput,
     ShippingCompanyGovernoratesInput,
     ShippingCompanyAreasInput,
