@@ -673,7 +673,7 @@ function buildShippingLabelPageMarkup(
   `;
 }
 
-function buildSingleLabelDocument(
+export function buildSingleLabelDocument(
   order: OrderDetailsType,
   companyName?: string,
   companyLogoUrl?: string | null,
