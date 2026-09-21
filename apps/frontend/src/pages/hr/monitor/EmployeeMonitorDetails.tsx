@@ -160,6 +160,29 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
       })
     : null;
 
+  const activityLagMinutes = (() => {
+    if (!data.summary?.clockInTime || !data.summary?.firstActivityTime) return null;
+    const diffMs = new Date(data.summary.firstActivityTime).getTime() - new Date(data.summary.clockInTime).getTime();
+    return Math.round(diffMs / 60000);
+  })();
+
+  const getCheckInMethodLabel = (method?: string | null) => {
+    switch (method) {
+      case 'FINGERPRINT':
+        return 'بصمة جهاز';
+      case 'MANUAL':
+        return 'تسجيل يدوي';
+      case 'GPS':
+        return 'موقع جغرافي';
+      case 'MOBILE_APP':
+        return 'تطبيق هاتف';
+      case 'SYSTEM':
+        return 'نظامي';
+      default:
+        return 'حضور رسمي';
+    }
+  };
+
   return (
     <div className="min-h-full space-y-4 p-3 sm:p-6" dir="rtl">
       {/* Top Header Chassis with Employee & Date Switchers */}
@@ -331,19 +354,52 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
           </div>
         </div>
 
-        {/* Attendance Match */}
+        {/* Attendance & First Activity Match */}
         <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>تسجيل الحضور الصباحي</span>
+            <span>البصمة وأول نشاط للجهاز</span>
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/10 text-purple-400 ring-1 ring-inset ring-purple-500/20">
               <ShieldCheck className="h-3.5 w-3.5" />
             </span>
           </div>
-          <div className="mt-2 text-sm font-semibold text-foreground tabular-nums">
-            {clockInStr ? `حضور: ${clockInStr}` : 'لم يسجل حضوراً رسمياً'}
-          </div>
-          <div className="mt-1 text-[11px] text-muted-foreground tabular-nums">
-            {firstActivityStr ? `أول نشاط للجهاز: ${firstActivityStr}` : 'لا توجد حركة مسجلة'}
+
+          <div className="mt-2 space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">وقت الحضور:</span>
+              <div className="flex items-center gap-1.5">
+                {clockInStr ? (
+                  <>
+                    <span className="font-semibold text-foreground tabular-nums">{clockInStr}</span>
+                    <span className="rounded bg-purple-500/15 px-1.5 py-0.5 text-[10px] font-medium text-purple-300">
+                      {getCheckInMethodLabel(data.summary?.checkInMethod)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">لم يُسجل</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">أول نشاط للجهاز:</span>
+              <span className="font-semibold text-foreground tabular-nums">
+                {firstActivityStr || 'لا يوجد'}
+              </span>
+            </div>
+
+            {activityLagMinutes !== null && (
+              <div className="pt-1">
+                {activityLagMinutes <= 5 ? (
+                  <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400">
+                    {activityLagMinutes < 0 ? `نشاط مبكر (${Math.abs(activityLagMinutes)} د قبل الحضور)` : 'نشاط فوري (متطابق)'}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-400">
+                    تأخر بدء النشاط: +{activityLagMinutes} دقيقة
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

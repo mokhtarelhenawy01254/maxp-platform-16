@@ -66,7 +66,7 @@ const GracefulFooter: React.FC = () => {
   const description = footer?.description || '';
 
   const linkTo = (to: string) =>
-    buildStorefrontPath(location.pathname, to.startsWith('/') ? to : `/${to}`, location.search);
+    buildStorefrontPath(location.pathname, to, location.search);
 
   return (
     <footer

@@ -14,15 +14,76 @@ const STOREFRONT_PREVIEW_QUERY_KEYS = [
   "previewAdminOrigin",
 ] as const;
 
-type NullablePathInput = string | null | undefined;
+const isIpAddress = (hostname: string): boolean =>
+  /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+
+const isLocalPreviewDomain = (domainWithOptionalPort: string): boolean => {
+  const hostname = (domainWithOptionalPort.split(":")[0] || "").toLowerCase();
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "0.0.0.0" ||
+    hostname === "lvh.me" ||
+    hostname.endsWith(".localhost") ||
+    hostname.endsWith(".local") ||
+    hostname.endsWith(".lvh.me") ||
+    hostname.endsWith(".test") ||
+    isIpAddress(hostname)
+  );
+};
+
+const unwrapMalformedUrl = (raw: string): string => {
+  return raw.replace(/^\/+(https?):(?:\/+)?/i, "$1://");
+};
+
+const isSpecialScheme = (url: string): boolean =>
+  /^(mailto:|tel:|javascript:|#)/i.test(url);
+
+const isAbsoluteUrl = (url: string): boolean =>
+  /^https?:\/\//i.test(url) || url.startsWith("//");
+
+const isInternalStorefrontTarget = (urlObj: URL): boolean => {
+  if (typeof window === "undefined" || !window.location?.hostname) {
+    return false;
+  }
+  const currentHost = (window.location.hostname || "").toLowerCase();
+  const targetHost = urlObj.hostname.toLowerCase();
+  if (currentHost && targetHost === currentHost) {
+    return true;
+  }
+  if (currentHost && isLocalPreviewDomain(currentHost) && isLocalPreviewDomain(targetHost)) {
+    return true;
+  }
+  return false;
+};
 
 const normalizePathnameInput = (value: NullablePathInput): string =>
   typeof value === "string" ? value : "";
 
-const normalizeRouteInput = (value: NullablePathInput): string => {
-  const trimmedValue = typeof value === "string" ? value.trim() : "";
+export const normalizeRouteInput = (value: NullablePathInput): string => {
+  let trimmedValue = typeof value === "string" ? value.trim() : "";
   if (!trimmedValue) {
     return "/";
+  }
+
+  trimmedValue = unwrapMalformedUrl(trimmedValue);
+
+  if (isSpecialScheme(trimmedValue)) {
+    return trimmedValue;
+  }
+
+  if (isAbsoluteUrl(trimmedValue)) {
+    try {
+      const parsed = new URL(
+        trimmedValue.startsWith("//") ? `https:${trimmedValue}` : trimmedValue,
+      );
+      if (isInternalStorefrontTarget(parsed)) {
+        return `${parsed.pathname}${parsed.search}${parsed.hash}` || "/";
+      }
+      return trimmedValue;
+    } catch {
+      return trimmedValue;
+    }
   }
 
   return trimmedValue.startsWith("/") ? trimmedValue : `/${trimmedValue}`;
@@ -40,8 +101,35 @@ export const buildStorefrontPath = (
   route: NullablePathInput,
   search: NullablePathInput = "",
 ): string => {
+  let trimmedRoute = typeof route === "string" ? route.trim() : "";
+  if (!trimmedRoute) {
+    trimmedRoute = "/";
+  }
+
+  trimmedRoute = unwrapMalformedUrl(trimmedRoute);
+
+  if (isSpecialScheme(trimmedRoute)) {
+    return trimmedRoute;
+  }
+
+  if (isAbsoluteUrl(trimmedRoute)) {
+    try {
+      const parsed = new URL(
+        trimmedRoute.startsWith("//") ? `https:${trimmedRoute}` : trimmedRoute,
+      );
+      if (!isInternalStorefrontTarget(parsed)) {
+        // External link: return directly as is!
+        return trimmedRoute;
+      }
+      // Internal link to current storefront: extract route
+      trimmedRoute = `${parsed.pathname}${parsed.search}${parsed.hash}` || "/";
+    } catch {
+      return trimmedRoute;
+    }
+  }
+
   const basePath = getStorefrontBasePath(pathname);
-  const normalizedRoute = normalizeRouteInput(route);
+  const normalizedRoute = normalizeRouteInput(trimmedRoute);
   const routeTarget = new URL(
     normalizedRoute,
     "https://storefront.local",
@@ -91,24 +179,6 @@ interface BuildStorefrontPreviewPathOptions {
   previewSource?: string | null;
   previewAdminOrigin?: string | null;
 }
-
-const isIpAddress = (hostname: string): boolean =>
-  /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
-
-const isLocalPreviewDomain = (domainWithOptionalPort: string): boolean => {
-  const hostname = (domainWithOptionalPort.split(":")[0] || "").toLowerCase();
-  return (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "0.0.0.0" ||
-    hostname === "lvh.me" ||
-    hostname.endsWith(".localhost") ||
-    hostname.endsWith(".local") ||
-    hostname.endsWith(".lvh.me") ||
-    hostname.endsWith(".test") ||
-    isIpAddress(hostname)
-  );
-};
 
 export const buildStorefrontPreviewPath = (
   route: NullablePathInput,

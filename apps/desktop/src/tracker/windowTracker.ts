@@ -1,6 +1,7 @@
 import type { AppUsageRecord, WebUsageRecord, AppCategory, CategoryRule } from '../shared/types';
 import path from 'path';
 import fs from 'fs';
+import { spawn, ChildProcess } from 'child_process';
 import { activityTracker } from './activityTracker';
 
 /** Extracts domain from a URL string */
@@ -127,17 +128,19 @@ function isMeeting(appName: string, title: string): boolean {
 
 /**
  * Tracks the currently active window/application and websites.
- * Uses `active-win` to detect the foreground app every few seconds.
+ * Uses native Win32 helper (maxp-win-tracker.exe) for 100% reliable tracking on Windows.
  */
 export class WindowTracker {
   private isTracking = false;
-  private pollIntervalMs = 5000; // Check every 5 seconds
+  private pollIntervalMs = 5000;
   private currentApp: AppUsageRecord | null = null;
   private currentWeb: WebUsageRecord | null = null;
   private appRecords: AppUsageRecord[] = [];
   private webRecords: WebUsageRecord[] = [];
   private categoryRules: CategoryRule[] = [];
   private getActiveWin: (() => Promise<any>) | null = null;
+  private nativeProcess: ChildProcess | null = null;
+  private lineBuffer = '';
 
   get currentAppName(): string | null {
     return this.currentApp?.appName ?? null;
@@ -151,23 +154,114 @@ export class WindowTracker {
     this.categoryRules = rules;
   }
 
+  private getNativeHelperPath(): string | null {
+    const candidates = [
+      path.join((process as any).resourcesPath || '', 'assets', 'maxp-win-tracker.exe'),
+      path.resolve(__dirname, '../../../assets/maxp-win-tracker.exe'),
+      path.resolve(__dirname, '../../assets/maxp-win-tracker.exe'),
+      path.resolve(__dirname, '../assets/maxp-win-tracker.exe'),
+      path.resolve(process.cwd(), 'assets/maxp-win-tracker.exe'),
+      path.resolve(process.cwd(), 'apps/desktop/assets/maxp-win-tracker.exe'),
+    ];
+    for (const p of candidates) {
+      if (fs.existsSync(p)) return p;
+    }
+    return null;
+  }
+
+  private startNativeHelper(): boolean {
+    const exePath = this.getNativeHelperPath();
+    if (!exePath) {
+      console.warn('[WindowTracker] maxp-win-tracker.exe not found on disk');
+      return false;
+    }
+
+    try {
+      console.log(`[WindowTracker] Spawning native helper: ${exePath}`);
+      this.nativeProcess = spawn(exePath, ['--parent', String(process.pid)], {
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
+
+      this.nativeProcess.stdout?.setEncoding('utf8');
+      this.nativeProcess.stdout?.on('data', (chunk: string) => {
+        this.lineBuffer += chunk;
+        const lines = this.lineBuffer.split(/\r?\n/);
+        this.lineBuffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            const win = JSON.parse(trimmed);
+            if (win && (win.title !== undefined || win.owner)) {
+              this.processWindow(win);
+            }
+          } catch {}
+        }
+      });
+
+      this.nativeProcess.on('exit', (code) => {
+        console.log(`[WindowTracker] Native helper exited with code ${code}`);
+        this.nativeProcess = null;
+        if (this.isTracking) {
+          setTimeout(() => {
+            if (this.isTracking) this.startNativeHelper();
+          }, 3000);
+        }
+      });
+
+      this.nativeProcess.on('error', (err) => {
+        console.warn('[WindowTracker] Native helper spawn error:', err.message);
+        this.nativeProcess = null;
+      });
+
+      return true;
+    } catch (err: any) {
+      console.warn('[WindowTracker] Error launching native helper:', err.message);
+      return false;
+    }
+  }
+
+  private async initFallbackActiveWin(): Promise<void> {
+    try {
+      const mod: any = await import('active-win');
+      if (typeof mod.activeWindow === 'function') {
+        this.getActiveWin = mod.activeWindow;
+      } else if (typeof mod.default === 'function') {
+        this.getActiveWin = mod.default;
+      } else if (typeof mod === 'function') {
+        this.getActiveWin = mod;
+      }
+    } catch (err: any) {
+      console.warn('[WindowTracker] active-win optional load notice:', err.message);
+    }
+  }
+
   async start(): Promise<void> {
     if (this.isTracking) return;
     this.isTracking = true;
 
-    try {
-      const mod: any = await import('active-win');
-      this.getActiveWin = mod.default ?? mod.activeWindow ?? mod;
-    } catch (err: any) {
-      console.warn('[WindowTracker] active-win optional load notice:', err.message);
+    if (process.platform === 'win32') {
+      const spawned = this.startNativeHelper();
+      if (!spawned) {
+        await this.initFallbackActiveWin();
+        this.poll();
+      }
+    } else {
+      await this.initFallbackActiveWin();
+      this.poll();
     }
-
-    // Always start polling! On Windows, native GetActiveWindow takes precedence.
-    this.poll();
   }
 
   stop(): void {
     this.isTracking = false;
+    if (this.nativeProcess) {
+      try {
+        this.nativeProcess.kill();
+      } catch {}
+      this.nativeProcess = null;
+    }
     this.finalizeCurrentApp();
     this.finalizeCurrentWeb();
   }
@@ -212,10 +306,8 @@ export class WindowTracker {
   }
 
   private async poll(): Promise<void> {
-    if (!this.isTracking) return;
+    if (!this.isTracking || this.nativeProcess) return;
 
-    // Idle-aware accrual: while the user is AFK, close current records at the
-    // moment the idle gap began and stop attributing time until activity resumes.
     let idleSec = 0;
     try {
       idleSec = activityTracker.idleSeconds || 0;
@@ -235,12 +327,9 @@ export class WindowTracker {
 
     try {
       let win: any = null;
-
-      // In-process native tracking via active-win (Zero child processes, zero antivirus alarms)
       if (this.getActiveWin) {
         win = await this.getActiveWin();
       }
-
       if (win) {
         this.processWindow(win);
       }

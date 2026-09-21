@@ -475,6 +475,42 @@ const app = express();
 const server = http.createServer(app);
 app.set("trust proxy", true);
 
+// 🩹 Self-Healing Middleware for Malformed Concatenated URLs
+// Catches accidental client-side origin/path concatenations like /https://domain.com/path or /http://domain.com
+// and issues a permanent 301 redirect to the clean intended destination.
+app.use((req, res, next) => {
+  const rawUrl = req.originalUrl || req.url || req.path || "";
+  let decodedUrl = rawUrl;
+  try {
+    decodedUrl = decodeURIComponent(rawUrl);
+  } catch {}
+
+  const malformedMatch = decodedUrl.match(/^\/+(https?):(?:\/+)?([^\/\?#]+)(\/[^?#]*)?(\?[^#]*)?(#.*)?$/i);
+  if (malformedMatch) {
+    const protocol = malformedMatch[1].toLowerCase();
+    const targetHost = malformedMatch[2].toLowerCase();
+    const targetPath = malformedMatch[3] || "/";
+    const targetQuery = malformedMatch[4] || "";
+    const targetHash = malformedMatch[5] || "";
+
+    const currentHost = (req.get("host") || "").toLowerCase().split(":")[0];
+    const isSameHost = targetHost === currentHost;
+
+    let cleanDestination;
+    if (isSameHost) {
+      cleanDestination = `${targetPath}${targetQuery}${targetHash}`;
+    } else {
+      cleanDestination = `${protocol}://${targetHost}${targetPath}${targetQuery}${targetHash}`;
+    }
+
+    console.warn(
+      `⚠️ [SELF-HEAL] Intercepted malformed URL: "${rawUrl}" -> redirecting 301 to: "${cleanDestination}"`
+    );
+    return res.redirect(301, cleanDestination);
+  }
+  next();
+});
+
 const uploadRoots = [
   path.resolve(__dirname, "uploads"),
   path.resolve(__dirname, "../uploads"),

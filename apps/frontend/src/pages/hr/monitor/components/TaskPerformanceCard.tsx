@@ -4,6 +4,7 @@ import { CheckCircle2, Clock, PauseCircle, AlertCircle, ArrowUpRight, ShieldChec
 export interface CompletedTaskItem {
   id: string;
   title: string;
+  status?: string;
   priority?: string;
   completedAt?: string;
   projectName?: string;
@@ -65,7 +66,7 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400 ring-1 ring-emerald-500/20 tabular-nums">
             <ListTodo className="h-3.5 w-3.5" />
-            <span>{tasksCount} مهام مكتملة اليوم</span>
+            <span>{tasksCount} مهام منفذة / قيد التدقيق اليوم</span>
           </span>
         </div>
       </div>
@@ -147,7 +148,7 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
       {tasks.length > 0 ? (
         <div className="mt-3 overflow-hidden rounded-lg border border-border/30 bg-zinc-950/30">
           <div className="border-b border-border/30 bg-zinc-900/50 px-3 py-2 text-xs font-semibold text-foreground">
-            المهام المكتملة المسجلة اليوم ({tasks.length})
+            المهام المنفذة والمسجلة اليوم ({tasks.length})
           </div>
           <div className="divide-y divide-border/20">
             {tasks.map((task) => {
@@ -158,10 +159,16 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
                   })
                 : '—';
 
+              const isReview = task.status === 'IN_REVIEW';
+
               return (
                 <div key={task.id} className="flex items-center justify-between p-2.5 text-xs transition-colors hover:bg-zinc-900/40">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    {isReview ? (
+                      <Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    )}
                     <div>
                       <div className="font-semibold text-foreground">{task.title}</div>
                       <div className="text-[11px] text-muted-foreground">
@@ -169,14 +176,23 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 tabular-nums">
+                  <div className="flex items-center gap-2 tabular-nums">
+                    {isReview ? (
+                      <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-300 ring-1 ring-amber-500/20">
+                        قيد الاعتماد
+                      </span>
+                    ) : (
+                      <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-400 ring-1 ring-emerald-500/20">
+                        معتمدة
+                      </span>
+                    )}
                     {task.priority && (
                       <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-300">
                         {task.priority}
                       </span>
                     )}
                     <span className="text-[11px] text-muted-foreground">
-                      اكتملت: {timeStr}
+                      {isReview ? 'سُلّمت:' : 'اكتملت:'} {timeStr}
                     </span>
                   </div>
                 </div>

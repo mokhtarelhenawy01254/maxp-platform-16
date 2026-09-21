@@ -91,7 +91,7 @@ class MonitorService {
         companyId,
         employeeId,
         date: targetDate,
-        firstActivityTime: new Date(),
+        firstActivityTime: firstIntervalStart,
         lastActivityTime: new Date(),
         totalActiveSeconds: totalActive,
         totalIdleSeconds: totalIdle,
@@ -107,8 +107,8 @@ class MonitorService {
     return this.prisma.monitorAppUsage.createMany({
       data: capped.map(a => {
         const startedAt = a.startedAt ? new Date(a.startedAt) : new Date();
-        const startOfDay = new Date(startedAt);
-        startOfDay.setHours(0, 0, 0, 0);
+        const dateStr = (isNaN(startedAt.getTime()) ? new Date() : startedAt).toISOString().split('T')[0];
+        const utcDate = new Date(`${dateStr}T00:00:00.000Z`);
         return {
           companyId,
           employeeId,
@@ -118,7 +118,7 @@ class MonitorService {
           durationSeconds: Math.max(0, Math.min(86400, Number(a.durationSeconds || 0))),
           startedAt,
           endedAt: a.endedAt ? new Date(a.endedAt) : null,
-          date: a.date ? new Date(a.date) : startOfDay,
+          date: a.date ? new Date(a.date) : utcDate,
         };
       })
     });
@@ -130,8 +130,8 @@ class MonitorService {
     return this.prisma.monitorWebUsage.createMany({
       data: capped.map(w => {
         const startedAt = w.startedAt ? new Date(w.startedAt) : new Date();
-        const startOfDay = new Date(startedAt);
-        startOfDay.setHours(0, 0, 0, 0);
+        const dateStr = (isNaN(startedAt.getTime()) ? new Date() : startedAt).toISOString().split('T')[0];
+        const utcDate = new Date(`${dateStr}T00:00:00.000Z`);
         return {
           companyId,
           employeeId,
@@ -142,7 +142,7 @@ class MonitorService {
           durationSeconds: Math.max(0, Math.min(86400, Number(w.durationSeconds || 0))),
           startedAt,
           endedAt: w.endedAt ? new Date(w.endedAt) : null,
-          date: w.date ? new Date(w.date) : startOfDay,
+          date: w.date ? new Date(w.date) : utcDate,
         };
       })
     });
@@ -304,7 +304,7 @@ class MonitorService {
     const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
     const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
 
-    const [summaries, activeLogs, appUsages, completedTasks] = await Promise.all([
+    const [summaries, activeLogs, appUsages, completedTasks, attendances] = await Promise.all([
       this.prisma.monitorDailySummary.findMany({
         where: { companyId, date: { gte: startOfDay, lte: endOfDay } }
       }),
@@ -313,38 +313,46 @@ class MonitorService {
         select: { employeeId: true, activeSeconds: true, activityScore: true, intervalStart: true, intervalEnd: true }
       }),
       this.prisma.monitorAppUsage.findMany({
-        where: { companyId, date: { gte: startOfDay, lte: endOfDay } },
+        where: {
+          companyId,
+          OR: [
+            { date: { gte: startOfDay, lte: endOfDay } },
+            { startedAt: { gte: startOfDay, lte: endOfDay } }
+          ]
+        },
         select: { employeeId: true, appName: true, durationSeconds: true }
       }),
       this.prisma.task.findMany({
-        where: { companyId, status: 'COMPLETED', updatedAt: { gte: startOfDay, lte: endOfDay } },
-        select: { assignedTo: true, id: true }
-      })
+        where: {
+          companyId,
+          status: { in: ['COMPLETED', 'IN_REVIEW'] },
+          OR: [
+            { updatedAt: { gte: startOfDay, lte: endOfDay } },
+            { completedDate: { gte: startOfDay, lte: endOfDay } }
+          ]
+        },
+        select: { assignedTo: true, id: true, status: true }
+      }),
+      this.prisma.attendance.findMany({
+        where: {
+          companyId,
+          date: { gte: startOfDay, lte: endOfDay }
+        },
+        select: {
+          userId: true,
+          employeeRelId: true,
+          checkIn: true,
+          checkOut: true,
+          checkInMethod: true
+        }
+      }).catch(() => [])
     ]);
 
-    // Aggregate true top apps per employee (deprioritizing generic desktop shells)
-    const empAppMap = new Map();
-    for (const app of appUsages) {
-      if (!empAppMap.has(app.employeeId)) empAppMap.set(app.employeeId, new Map());
-      const m = empAppMap.get(app.employeeId);
-      const name = String(app.appName || 'Unknown').trim();
-      m.set(name, (m.get(name) || 0) + (app.durationSeconds || 0));
-    }
-
-    const empTopApp = new Map();
-    for (const [empId, m] of empAppMap.entries()) {
-      const sorted = Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
-      // Filter out desktop shell if a real app was used
-      const realApp = sorted.find(([name]) => !['سطح المكتب', 'Desktop', 'explorer', 'explorer.exe', 'Windows Explorer', 'مستكشف ويندوز'].includes(name));
-      empTopApp.set(empId, realApp ? realApp[0] : (sorted[0] ? sorted[0][0] : 'سطح المكتب'));
-    }
-
-    // Task count map
-    const taskCountMap = new Map();
-    for (const t of completedTasks) {
-      if (t.assignedTo) {
-        taskCountMap.set(t.assignedTo, (taskCountMap.get(t.assignedTo) || 0) + 1);
-      }
+    // Build attendance map supporting both userId and employeeRelId
+    const attendanceMap = new Map();
+    for (const att of (attendances || [])) {
+      if (att.userId) attendanceMap.set(att.userId, att);
+      if (att.employeeRelId) attendanceMap.set(att.employeeRelId, att);
     }
 
     // Collect all candidate IDs
@@ -352,6 +360,9 @@ class MonitorService {
       ...summaries.map(s => s.employeeId),
       ...activeLogs.map(a => a.employeeId),
       ...appUsages.map(a => a.employeeId),
+      ...completedTasks.map(t => t.assignedTo),
+      ...(attendances || []).map(a => a.userId),
+      ...(attendances || []).map(a => a.employeeRelId),
     ].filter(Boolean));
 
     const employeeIds = Array.from(rawIds);
@@ -368,7 +379,15 @@ class MonitorService {
 
       employees.forEach(e => {
         empMap.set(e.id, e);
-        if (e.userId) empMap.set(e.userId, e);
+        if (e.userId) {
+          empMap.set(e.userId, e);
+          if (attendanceMap.has(e.userId) && !attendanceMap.has(e.id)) {
+            attendanceMap.set(e.id, attendanceMap.get(e.userId));
+          }
+          if (attendanceMap.has(e.id) && !attendanceMap.has(e.userId)) {
+            attendanceMap.set(e.userId, attendanceMap.get(e.id));
+          }
+        }
       });
 
       const missingIds = employeeIds.filter(id => !empMap.has(id));
@@ -392,6 +411,42 @@ class MonitorService {
       }
     }
 
+    // Aggregate true top apps per employee (deprioritizing generic desktop shells)
+    const empAppMap = new Map();
+    for (const app of appUsages) {
+      if (!empAppMap.has(app.employeeId)) empAppMap.set(app.employeeId, new Map());
+      const m = empAppMap.get(app.employeeId);
+      const name = String(app.appName || 'Unknown').trim();
+      m.set(name, (m.get(name) || 0) + (app.durationSeconds || 0));
+
+      const emp = empMap.get(app.employeeId);
+      const altId = (emp?.userId && emp.userId !== app.employeeId) ? emp.userId : (emp?.id && emp.id !== app.employeeId ? emp.id : null);
+      if (altId) {
+        if (!empAppMap.has(altId)) empAppMap.set(altId, new Map());
+        const mAlt = empAppMap.get(altId);
+        mAlt.set(name, (mAlt.get(name) || 0) + (app.durationSeconds || 0));
+      }
+    }
+
+    const empTopApp = new Map();
+    for (const [empId, m] of empAppMap.entries()) {
+      const sorted = Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+      const realApp = sorted.find(([name]) => !['سطح المكتب', 'Desktop', 'explorer', 'explorer.exe', 'Windows Explorer', 'مستكشف ويندوز'].includes(name));
+      empTopApp.set(empId, realApp ? realApp[0] : (sorted[0] ? sorted[0][0] : 'سطح المكتب'));
+    }
+
+    // Task count map mapped to both userId and employee.id
+    const taskCountMap = new Map();
+    for (const t of completedTasks) {
+      if (t.assignedTo) {
+        taskCountMap.set(t.assignedTo, (taskCountMap.get(t.assignedTo) || 0) + 1);
+        const emp = empMap.get(t.assignedTo);
+        if (emp?.id && emp.id !== t.assignedTo) {
+          taskCountMap.set(emp.id, (taskCountMap.get(emp.id) || 0) + 1);
+        }
+      }
+    }
+
     // Group and Deduplicate by canonical employee entity to ban duplicate rows
     const grouped = new Map();
 
@@ -399,6 +454,7 @@ class MonitorService {
     for (const s of summaries) {
       const empObj = empMap.get(s.employeeId) || { id: s.employeeId, firstName: s.employeeId };
       const canonicalKey = empObj.id || empObj.userId || s.employeeId;
+      const att = attendanceMap.get(canonicalKey) || attendanceMap.get(empObj.userId) || attendanceMap.get(s.employeeId);
 
       if (!grouped.has(canonicalKey)) {
         grouped.set(canonicalKey, {
@@ -409,9 +465,12 @@ class MonitorService {
           productivityScores: [],
           lastActivityTime: s.lastActivityTime,
           firstActivityTime: s.firstActivityTime,
+          clockInTime: att?.checkIn || s.clockInTime || null,
+          clockOutTime: att?.checkOut || s.clockOutTime || null,
+          checkInMethod: att?.checkInMethod || null,
           status: 'offline',
-          topApp: empTopApp.get(s.employeeId) || empTopApp.get(canonicalKey) || 'سطح المكتب',
-          completedTasksCount: taskCountMap.get(canonicalKey) || taskCountMap.get(s.employeeId) || 0,
+          topApp: empTopApp.get(s.employeeId) || empTopApp.get(canonicalKey) || empTopApp.get(empObj.userId) || 'سطح المكتب',
+          completedTasksCount: taskCountMap.get(canonicalKey) || taskCountMap.get(empObj.userId) || taskCountMap.get(s.employeeId) || 0,
         });
       }
 
@@ -425,12 +484,22 @@ class MonitorService {
       if (s.firstActivityTime && (!item.firstActivityTime || new Date(s.firstActivityTime) < new Date(item.firstActivityTime))) {
         item.firstActivityTime = s.firstActivityTime;
       }
+      if (!item.clockInTime && (att?.checkIn || s.clockInTime)) {
+        item.clockInTime = att?.checkIn || s.clockInTime;
+      }
+      if (!item.clockOutTime && (att?.checkOut || s.clockOutTime)) {
+        item.clockOutTime = att?.checkOut || s.clockOutTime;
+      }
+      if (!item.checkInMethod && att?.checkInMethod) {
+        item.checkInMethod = att.checkInMethod;
+      }
     }
 
     // 2. Ensure anyone with active logs is represented even if summary record was delayed
     for (const log of activeLogs) {
       const empObj = empMap.get(log.employeeId) || { id: log.employeeId, firstName: log.employeeId };
       const canonicalKey = empObj.id || empObj.userId || log.employeeId;
+      const att = attendanceMap.get(canonicalKey) || attendanceMap.get(empObj.userId) || attendanceMap.get(log.employeeId);
 
       if (!grouped.has(canonicalKey)) {
         grouped.set(canonicalKey, {
@@ -441,9 +510,36 @@ class MonitorService {
           productivityScores: [],
           lastActivityTime: log.intervalEnd,
           firstActivityTime: log.intervalStart,
+          clockInTime: att?.checkIn || null,
+          clockOutTime: att?.checkOut || null,
+          checkInMethod: att?.checkInMethod || null,
           status: 'offline',
-          topApp: empTopApp.get(log.employeeId) || empTopApp.get(canonicalKey) || 'سطح المكتب',
-          completedTasksCount: taskCountMap.get(canonicalKey) || taskCountMap.get(log.employeeId) || 0,
+          topApp: empTopApp.get(log.employeeId) || empTopApp.get(canonicalKey) || empTopApp.get(empObj.userId) || 'سطح المكتب',
+          completedTasksCount: taskCountMap.get(canonicalKey) || taskCountMap.get(empObj.userId) || taskCountMap.get(log.employeeId) || 0,
+        });
+      }
+    }
+
+    // 3. Ensure anyone with attendance or tasks is also represented
+    for (const [key, att] of attendanceMap.entries()) {
+      const empObj = empMap.get(key) || { id: key, firstName: key };
+      const canonicalKey = empObj.id || empObj.userId || key;
+
+      if (!grouped.has(canonicalKey)) {
+        grouped.set(canonicalKey, {
+          employeeId: canonicalKey,
+          employee: empObj,
+          totalActiveSeconds: 0,
+          totalIdleSeconds: 0,
+          productivityScores: [],
+          lastActivityTime: null,
+          firstActivityTime: null,
+          clockInTime: att?.checkIn || null,
+          clockOutTime: att?.checkOut || null,
+          checkInMethod: att?.checkInMethod || null,
+          status: 'offline',
+          topApp: empTopApp.get(canonicalKey) || empTopApp.get(empObj.userId) || 'سطح المكتب',
+          completedTasksCount: taskCountMap.get(canonicalKey) || taskCountMap.get(empObj.userId) || 0,
         });
       }
     }
@@ -464,6 +560,9 @@ class MonitorService {
         productivityScore: avgScore,
         lastActivityTime: item.lastActivityTime,
         firstActivityTime: item.firstActivityTime,
+        clockInTime: item.clockInTime,
+        clockOutTime: item.clockOutTime,
+        checkInMethod: item.checkInMethod,
         status: isLiveActive ? 'active' : (item.totalActiveSeconds > 0 ? 'idle' : 'offline'),
         topApp: item.topApp,
         completedTasksCount: item.completedTasksCount,
@@ -506,11 +605,25 @@ class MonitorService {
         orderBy: { intervalStart: 'asc' },
       }),
       this.prisma.monitorAppUsage.findMany({
-        where: { companyId, employeeId: { in: candidateIds }, date: { gte: startOfDay, lte: endOfDay } },
+        where: {
+          companyId,
+          employeeId: { in: candidateIds },
+          OR: [
+            { date: { gte: startOfDay, lte: endOfDay } },
+            { startedAt: { gte: startOfDay, lte: endOfDay } }
+          ]
+        },
         orderBy: { durationSeconds: 'desc' },
       }),
       this.prisma.monitorWebUsage.findMany({
-        where: { companyId, employeeId: { in: candidateIds }, date: { gte: startOfDay, lte: endOfDay } },
+        where: {
+          companyId,
+          employeeId: { in: candidateIds },
+          OR: [
+            { date: { gte: startOfDay, lte: endOfDay } },
+            { startedAt: { gte: startOfDay, lte: endOfDay } }
+          ]
+        },
         orderBy: { durationSeconds: 'desc' },
       }),
       this.prisma.monitorDailySummary.findFirst({
@@ -520,8 +633,11 @@ class MonitorService {
         where: {
           companyId,
           assignedTo: { in: candidateIds },
-          status: 'COMPLETED',
-          updatedAt: { gte: startOfDay, lte: endOfDay }
+          status: { in: ['COMPLETED', 'IN_REVIEW'] },
+          OR: [
+            { updatedAt: { gte: startOfDay, lte: endOfDay } },
+            { completedDate: { gte: startOfDay, lte: endOfDay } }
+          ]
         },
         include: {
           project: { select: { id: true, name: true } }
@@ -531,7 +647,10 @@ class MonitorService {
       this.prisma.attendance.findFirst({
         where: {
           companyId,
-          userId: { in: candidateIds },
+          OR: [
+            { userId: { in: candidateIds } },
+            { employeeRelId: { in: candidateIds } }
+          ],
           date: { gte: startOfDay, lte: endOfDay }
         }
       }).catch(() => null),
@@ -588,6 +707,7 @@ class MonitorService {
       tasks: completedTasks.map(t => ({
         id: t.id,
         title: t.title,
+        status: t.status,
         priority: t.priority,
         completedAt: t.completedDate || t.updatedAt,
         projectName: t.project?.name || 'عام',

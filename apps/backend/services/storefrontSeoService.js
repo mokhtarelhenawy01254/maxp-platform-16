@@ -988,6 +988,22 @@ const injectStorefrontSeoTags = (html, metadata) => {
   return nextHtml;
 };
 
+const STATIC_ASSET_EXTENSIONS = new Set([
+  ".js", ".mjs", ".cjs", ".css", ".map",
+  ".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".ico", ".avif", ".bmp", ".tiff",
+  ".woff", ".woff2", ".ttf", ".eot", ".otf",
+  ".mp4", ".webm", ".ogv", ".mp3", ".wav", ".flac", ".aac",
+  ".json", ".xml", ".txt", ".pdf", ".zip", ".tar", ".gz", ".rar", ".7z",
+  ".wasm"
+]);
+
+const hasStaticFileExtension = (requestPath) => {
+  if (!requestPath || typeof requestPath !== "string") return false;
+  const ext = path.posix.extname(requestPath).toLowerCase();
+  if (!ext) return false;
+  return STATIC_ASSET_EXTENSIONS.has(ext);
+};
+
 const isHtmlRouteRequest = (req) => {
   if (req.method !== "GET" && req.method !== "HEAD") {
     return false;
@@ -1001,7 +1017,7 @@ const isHtmlRouteRequest = (req) => {
     return false;
   }
 
-  if (path.posix.extname(req.path)) {
+  if (hasStaticFileExtension(req.path)) {
     return false;
   }
 
@@ -1014,6 +1030,7 @@ module.exports = {
   applyTitleTemplate,
   buildStorefrontSeoMetadata,
   cleanCanonicalUrl,
+  hasStaticFileExtension,
   injectStorefrontSeoTags,
   isHtmlRouteRequest,
   parseJsonObject,

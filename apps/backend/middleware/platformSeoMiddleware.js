@@ -20,6 +20,7 @@
 "use strict";
 
 const path = require("path");
+const { hasStaticFileExtension } = require("../services/storefrontSeoService");
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -405,7 +406,7 @@ const handlePlatformSeo = async (req, res, next) => {
   // Only handle HTML-looking GET/HEAD requests.
   if (req.method !== "GET" && req.method !== "HEAD") return next();
   if (req.path.startsWith("/api") || req.path.startsWith("/socket.io")) return next();
-  if (path.posix.extname(req.path)) return next();
+  if (hasStaticFileExtension(req.path)) return next();
 
   // If request belongs to a tenant company (subdomain or custom domain) and is NOT a funnel,
   // let storefrontHtmlController handle it.

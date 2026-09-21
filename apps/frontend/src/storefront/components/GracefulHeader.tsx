@@ -34,8 +34,12 @@ const TITAN_ONE_HREF =
   'https://fonts.googleapis.com/css2?family=Titan+One&display=swap';
 
 const resolveHref = (to: string | undefined, fallback = '/shop') => {
-  const target = (to || fallback).startsWith('/') ? to || fallback : `/${to || fallback}`;
-  return target;
+  const candidate = (to || fallback || '').trim();
+  if (!candidate) return fallback;
+  if (/^(https?:|\/\/|mailto:|tel:|#)/i.test(candidate) || candidate.startsWith('/')) {
+    return candidate;
+  }
+  return `/${candidate}`;
 };
 
 const ChevronDown = ({ className = '' }: { className?: string }) => (

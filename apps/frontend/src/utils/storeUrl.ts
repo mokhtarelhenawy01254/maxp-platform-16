@@ -89,8 +89,15 @@ export const isSubdomain = (): boolean => {
   return getCurrentSubdomain() !== null;
 };
 
-const normalizeStorePath = (path: string): string =>
-  path.startsWith("/") ? path : `/${path}`;
+const normalizeStorePath = (path: string): string => {
+  const trimmed = typeof path === "string" ? path.trim() : "";
+  if (!trimmed) return "/";
+  const unwrapped = trimmed.replace(/^\/+(https?:\/+)/i, "$1");
+  if (/^(https?:|\/\/|mailto:|tel:|#)/i.test(unwrapped)) {
+    return unwrapped;
+  }
+  return unwrapped.startsWith("/") ? unwrapped : `/${unwrapped}`;
+};
 
 /**
  * Build store URL with subdomain or custom domain
@@ -128,7 +135,9 @@ export const buildStoreUrl = (
 
   // إذا كان هناك custom domain، استخدمه
   if (customDomain && customDomain.trim().length > 0) {
-    return `https://${customDomain}${cleanPath}`;
+    const cleanDomain = customDomain.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+    const safePath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
+    return `https://${cleanDomain}${safePath}`;
   }
 
   if (!safeIdentifier) {

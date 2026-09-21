@@ -36,6 +36,10 @@ export interface TeamMemberSummary {
   totalIdleSeconds: number;
   productivityScore: number;
   lastHeartbeat?: string;
+  firstActivityTime?: string;
+  clockInTime?: string;
+  clockOutTime?: string;
+  checkInMethod?: string;
   topApp?: string;
   completedTasksCount?: number;
 }
@@ -134,6 +138,10 @@ export const MonitorDashboard: React.FC = () => {
           totalIdleSeconds: item.totalIdleSeconds || 0,
           productivityScore: Math.round(item.productivityScore || 0),
           lastHeartbeat: item.lastActivityTime,
+          firstActivityTime: item.firstActivityTime,
+          clockInTime: item.clockInTime,
+          clockOutTime: item.clockOutTime,
+          checkInMethod: item.checkInMethod,
           topApp: item.topApp || (item.topApps ? Object.keys(JSON.parse(item.topApps || '{}'))[0] : undefined),
           completedTasksCount: item.completedTasksCount || 0,
         });
@@ -180,6 +188,29 @@ export const MonitorDashboard: React.FC = () => {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
     return `${h} س ${m} د`;
+  };
+
+  const formatClockTime = (iso?: string | null) => {
+    if (!iso) return null;
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return null;
+      return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return null;
+    }
+  };
+
+  const getAttendanceActivityDelta = (clockIn?: string | null, firstAct?: string | null): number | null => {
+    if (!clockIn || !firstAct) return null;
+    try {
+      const tIn = new Date(clockIn).getTime();
+      const tAct = new Date(firstAct).getTime();
+      if (isNaN(tIn) || isNaN(tAct)) return null;
+      return Math.round((tAct - tIn) / 60000);
+    } catch {
+      return null;
+    }
   };
 
   const filteredMembers = teamMembers.filter((m) => {
@@ -508,6 +539,7 @@ export const MonitorDashboard: React.FC = () => {
                       </div>
                     </th>
                     <th className="px-4 py-3 font-semibold">الحالة اللحظية</th>
+                    <th className="px-4 py-3 font-semibold">البصمة وأول نشاط للجهاز</th>
                     <th
                       onClick={() => handleSort('totalActiveSeconds')}
                       className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
@@ -549,158 +581,264 @@ export const MonitorDashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/20">
-                  {sortedMembers.map((m) => (
-                    <tr
-                      key={m.employeeId}
-                      className="transition-colors hover:bg-zinc-900/40"
-                    >
-                      {/* Employee info */}
-                      <td className="px-4 py-3">
-                        <div className="font-semibold text-foreground">
-                          {m.employeeName}
-                        </div>
-                        <div className="text-[11px] text-muted-foreground">
-                          {m.departmentName} • {m.jobTitle}
-                        </div>
-                      </td>
+                  {sortedMembers.map((m) => {
+                    const inTimeStr = formatClockTime(m.clockInTime);
+                    const firstActStr = formatClockTime(m.firstActivityTime);
+                    const deltaMin = getAttendanceActivityDelta(m.clockInTime, m.firstActivityTime);
+                    const methodLabel = m.checkInMethod === 'fingerprint' || m.checkInMethod === 'biometric'
+                      ? 'بصمة'
+                      : m.checkInMethod === 'mobile'
+                      ? 'موبايل'
+                      : m.checkInMethod === 'web'
+                      ? 'ويب'
+                      : m.checkInMethod || 'نظام';
 
-                      {/* Status */}
-                      <td className="px-4 py-3">
-                        {m.status === 'active' && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
-                            <CheckCircle2 className="h-3 w-3" /> نشط الآن
-                          </span>
-                        )}
-                        {m.status === 'idle' && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
-                            <PauseCircle className="h-3 w-3" /> استراحة / خمول
-                          </span>
-                        )}
-                        {m.status === 'offline' && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
-                            <XCircle className="h-3 w-3" /> غير متصل
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Active Time */}
-                      <td className="px-4 py-3 font-medium text-foreground tabular-nums">
-                        {formatSeconds(m.totalActiveSeconds)}
-                      </td>
-
-                      {/* Idle Time */}
-                      <td className="px-4 py-3 text-muted-foreground tabular-nums">
-                        {formatSeconds(m.totalIdleSeconds)}
-                      </td>
-
-                      {/* Productivity Score Bar */}
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-16 overflow-hidden rounded-full bg-zinc-800">
-                            <div
-                              className={`h-full rounded-full ${
-                                m.productivityScore >= 75
-                                  ? 'bg-emerald-500'
-                                  : m.productivityScore >= 50
-                                  ? 'bg-sky-500'
-                                  : 'bg-amber-500'
-                              }`}
-                              style={{ width: `${Math.min(100, m.productivityScore)}%` }}
-                            />
+                    return (
+                      <tr
+                        key={m.employeeId}
+                        className="transition-colors hover:bg-zinc-900/40"
+                      >
+                        {/* Employee info */}
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-foreground">
+                            {m.employeeName}
                           </div>
-                          <span className="font-semibold text-foreground tabular-nums">
-                            {m.productivityScore}%
-                          </span>
-                        </div>
-                      </td>
+                          <div className="text-[11px] text-muted-foreground">
+                            {m.departmentName} • {m.jobTitle}
+                          </div>
+                        </td>
 
-                      {/* Completed Tasks */}
-                      <td className="px-4 py-3 font-semibold text-emerald-400 tabular-nums">
-                        {m.completedTasksCount || 0} مهام
-                      </td>
+                        {/* Status */}
+                        <td className="px-4 py-3">
+                          {m.status === 'active' && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                              <CheckCircle2 className="h-3 w-3" /> نشط الآن
+                            </span>
+                          )}
+                          {m.status === 'idle' && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
+                              <PauseCircle className="h-3 w-3" /> استراحة / خمول
+                            </span>
+                          )}
+                          {m.status === 'offline' && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
+                              <XCircle className="h-3 w-3" /> غير متصل
+                            </span>
+                          )}
+                        </td>
 
-                      {/* Top App */}
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5 text-zinc-300">
-                          <Laptop className="h-3.5 w-3.5 text-sky-400 shrink-0" />
-                          <span className="truncate max-w-[130px] font-medium" title={m.topApp || 'سطح المكتب'}>
-                            {m.topApp || 'سطح المكتب'}
-                          </span>
-                        </div>
-                      </td>
+                        {/* Attendance & First Activity Time */}
+                        <td className="px-4 py-3">
+                          <div className="space-y-1 text-[11px]">
+                            <div className="flex items-center gap-1.5 tabular-nums">
+                              <span className="text-muted-foreground">البصمة:</span>
+                              {inTimeStr ? (
+                                <span className="font-semibold text-foreground">
+                                  {inTimeStr} <span className="text-[10px] text-sky-400 font-normal">({methodLabel})</span>
+                                </span>
+                              ) : (
+                                <span className="text-rose-400/80 font-medium">لم يسجل حضوراً</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 tabular-nums">
+                              <span className="text-muted-foreground">أول نشاط:</span>
+                              {firstActStr ? (
+                                <span className="font-semibold text-emerald-400">
+                                  {firstActStr}
+                                </span>
+                              ) : (
+                                <span className="text-zinc-500 font-normal">لا توجد حركة مسجلة</span>
+                              )}
+                            </div>
+                            {deltaMin !== null && (
+                              <div className="pt-0.5">
+                                {deltaMin > 15 ? (
+                                  <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[10px] font-medium bg-amber-500/15 text-amber-400 ring-1 ring-inset ring-amber-500/30">
+                                    تأخر نشاط: +{deltaMin} د
+                                  </span>
+                                ) : deltaMin >= -5 && deltaMin <= 15 ? (
+                                  <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[10px] font-medium bg-emerald-500/15 text-emerald-400 ring-1 ring-inset ring-emerald-500/30">
+                                    نشاط فوري (متطابق)
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[10px] font-medium bg-sky-500/15 text-sky-400 ring-1 ring-inset ring-sky-500/30">
+                                    بدأ قبل البصمة ({Math.abs(deltaMin)} د)
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </td>
 
-                      {/* Actions */}
-                      <td className="px-4 py-3 text-left">
-                        <button
-                          onClick={() => setSelectedEmployeeId(m.employeeId)}
-                          className="inline-flex items-center gap-1 rounded-md border border-border/40 bg-zinc-900 px-2.5 py-1 text-xs font-medium text-sky-400 transition hover:bg-sky-500/10 hover:border-sky-500/30 active:scale-95"
-                          title="عرض المخطط الزمني والبرامج والمواقع لهذا الموظف"
-                        >
-                          <span>التفاصيل</span>
-                          <ExternalLink className="h-3 w-3" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        {/* Active Time */}
+                        <td className="px-4 py-3 font-medium text-foreground tabular-nums">
+                          {formatSeconds(m.totalActiveSeconds)}
+                        </td>
+
+                        {/* Idle Time */}
+                        <td className="px-4 py-3 text-muted-foreground tabular-nums">
+                          {formatSeconds(m.totalIdleSeconds)}
+                        </td>
+
+                        {/* Productivity Score Bar */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-zinc-800">
+                              <div
+                                className={`h-full rounded-full ${
+                                  m.productivityScore >= 75
+                                    ? 'bg-emerald-500'
+                                    : m.productivityScore >= 50
+                                    ? 'bg-sky-500'
+                                    : 'bg-amber-500'
+                                }`}
+                                style={{ width: `${Math.min(100, m.productivityScore)}%` }}
+                              />
+                            </div>
+                            <span className="font-semibold text-foreground tabular-nums">
+                              {m.productivityScore}%
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Completed Tasks */}
+                        <td className="px-4 py-3 font-semibold text-emerald-400 tabular-nums">
+                          {m.completedTasksCount || 0} مهام
+                        </td>
+
+                        {/* Top App */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5 text-zinc-300">
+                            <Laptop className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                            <span className="truncate max-w-[130px] font-medium" title={m.topApp || 'سطح المكتب'}>
+                              {m.topApp || 'سطح المكتب'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-4 py-3 text-left">
+                          <button
+                            onClick={() => setSelectedEmployeeId(m.employeeId)}
+                            className="inline-flex items-center gap-1 rounded-md border border-border/40 bg-zinc-900 px-2.5 py-1 text-xs font-medium text-sky-400 transition hover:bg-sky-500/10 hover:border-sky-500/30 active:scale-95"
+                            title="عرض المخطط الزمني والبرامج والمواقع لهذا الموظف"
+                          >
+                            <span>التفاصيل</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
             {/* Mobile Responsive Cards View */}
             <div className="block divide-y divide-border/20 md:hidden">
-              {sortedMembers.map((m) => (
-                <div key={m.employeeId} className="p-3.5 space-y-2.5 transition-colors hover:bg-zinc-900/30">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-bold text-foreground text-sm">{m.employeeName}</div>
-                      <div className="text-xs text-muted-foreground">{m.departmentName} • {m.jobTitle}</div>
-                    </div>
-                    {/* Status */}
-                    <div>
-                      {m.status === 'active' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
-                          <CheckCircle2 className="h-2.5 w-2.5" /> نشط
-                        </span>
-                      )}
-                      {m.status === 'idle' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
-                          <PauseCircle className="h-2.5 w-2.5" /> استراحة
-                        </span>
-                      )}
-                      {m.status === 'offline' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
-                          <XCircle className="h-2.5 w-2.5" /> غير متصل
-                        </span>
-                      )}
-                    </div>
-                  </div>
+              {sortedMembers.map((m) => {
+                const inTimeStr = formatClockTime(m.clockInTime);
+                const firstActStr = formatClockTime(m.firstActivityTime);
+                const deltaMin = getAttendanceActivityDelta(m.clockInTime, m.firstActivityTime);
+                const methodLabel = m.checkInMethod === 'fingerprint' || m.checkInMethod === 'biometric'
+                  ? 'بصمة'
+                  : m.checkInMethod === 'mobile'
+                  ? 'موبايل'
+                  : m.checkInMethod === 'web'
+                  ? 'ويب'
+                  : m.checkInMethod || 'نظام';
 
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded bg-zinc-900/60 p-2">
-                      <span className="text-muted-foreground block text-[10px]">عمل فعلي:</span>
-                      <span className="font-semibold text-foreground tabular-nums">{formatSeconds(m.totalActiveSeconds)}</span>
+                return (
+                  <div key={m.employeeId} className="p-3.5 space-y-2.5 transition-colors hover:bg-zinc-900/30">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-foreground text-sm">{m.employeeName}</div>
+                        <div className="text-xs text-muted-foreground">{m.departmentName} • {m.jobTitle}</div>
+                      </div>
+                      {/* Status */}
+                      <div>
+                        {m.status === 'active' && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                            <CheckCircle2 className="h-2.5 w-2.5" /> نشط
+                          </span>
+                        )}
+                        {m.status === 'idle' && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
+                            <PauseCircle className="h-2.5 w-2.5" /> استراحة
+                          </span>
+                        )}
+                        {m.status === 'offline' && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
+                            <XCircle className="h-2.5 w-2.5" /> غير متصل
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="rounded bg-zinc-900/60 p-2">
-                      <span className="text-muted-foreground block text-[10px]">توقف وخمول:</span>
-                      <span className="font-semibold text-muted-foreground tabular-nums">{formatSeconds(m.totalIdleSeconds)}</span>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center justify-between text-xs pt-1">
-                    <div className="flex items-center gap-3 tabular-nums">
-                      <span className="text-emerald-400 font-semibold">{m.completedTasksCount || 0} مهام</span>
-                      <span className="text-sky-400 font-semibold">{m.productivityScore}% إنتاجية</span>
+                    {/* Attendance & First Activity Time Strip */}
+                    <div className="rounded-lg border border-border/30 bg-zinc-900/50 p-2 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground text-[11px]">البصمة الرسمية:</span>
+                        <span className="font-semibold text-foreground tabular-nums">
+                          {inTimeStr ? (
+                            `${inTimeStr} (${methodLabel})`
+                          ) : (
+                            <span className="text-rose-400 font-normal">لم يسجل حضوراً</span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground text-[11px]">أول نشاط للجهاز:</span>
+                        <span className="font-semibold text-emerald-400 tabular-nums">
+                          {firstActStr || <span className="text-zinc-500 font-normal">لا توجد حركة مسجلة</span>}
+                        </span>
+                      </div>
+                      {deltaMin !== null && (
+                        <div className="pt-0.5 text-left">
+                          {deltaMin > 15 ? (
+                            <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                              تأخر نشاط: +{deltaMin} دقيقة
+                            </span>
+                          ) : deltaMin >= -5 && deltaMin <= 15 ? (
+                            <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                              نشاط فوري (متطابق)
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">
+                              بدأ قبل البصمة ({Math.abs(deltaMin)} د)
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <button
-                      onClick={() => setSelectedEmployeeId(m.employeeId)}
-                      className="inline-flex items-center gap-1 rounded-md border border-border/40 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-sky-400 transition hover:bg-sky-500/10 active:scale-95"
-                    >
-                      <span>عرض التفاصيل</span>
-                      <ExternalLink className="h-3 w-3" />
-                    </button>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="rounded bg-zinc-900/60 p-2">
+                        <span className="text-muted-foreground block text-[10px]">عمل فعلي:</span>
+                        <span className="font-semibold text-foreground tabular-nums">{formatSeconds(m.totalActiveSeconds)}</span>
+                      </div>
+                      <div className="rounded bg-zinc-900/60 p-2">
+                        <span className="text-muted-foreground block text-[10px]">توقف وخمول:</span>
+                        <span className="font-semibold text-muted-foreground tabular-nums">{formatSeconds(m.totalIdleSeconds)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <div className="flex items-center gap-3 tabular-nums">
+                        <span className="text-emerald-400 font-semibold">{m.completedTasksCount || 0} مهام</span>
+                        <span className="text-sky-400 font-semibold">{m.productivityScore}% إنتاجية</span>
+                      </div>
+                      <button
+                        onClick={() => setSelectedEmployeeId(m.employeeId)}
+                        className="inline-flex items-center gap-1 rounded-md border border-border/40 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-sky-400 transition hover:bg-sky-500/10 active:scale-95"
+                      >
+                        <span>عرض التفاصيل</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}

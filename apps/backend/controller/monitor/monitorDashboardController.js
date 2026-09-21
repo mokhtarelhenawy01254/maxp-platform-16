@@ -167,8 +167,11 @@ async function getAiDailyStandup(req, res) {
       completedTasksCount = await prisma.task.count({
         where: {
           companyId,
-          status: 'COMPLETED',
-          updatedAt: { gte: startOfDay, lte: endOfDay }
+          status: { in: ['COMPLETED', 'IN_REVIEW'] },
+          OR: [
+            { updatedAt: { gte: startOfDay, lte: endOfDay } },
+            { completedDate: { gte: startOfDay, lte: endOfDay } }
+          ]
         }
       });
     } catch {}

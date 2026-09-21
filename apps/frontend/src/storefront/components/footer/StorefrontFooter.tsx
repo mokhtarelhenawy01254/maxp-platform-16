@@ -369,7 +369,7 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
 
     return buildStorefrontPath(
       location.pathname,
-      trimmed.startsWith('/') ? trimmed : `/${trimmed}`,
+      trimmed,
       location.search,
     );
   };

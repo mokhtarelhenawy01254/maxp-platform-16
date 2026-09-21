@@ -45,6 +45,7 @@ jspm_packages/
 *.tgz
 *.zip
 *.exe
+!apps/desktop/assets/*.exe
 *.msi
 *.rar
 *.7z

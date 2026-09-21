@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret, isMissingAuthSecretError } = require('../utils/jwtSecret');
 const tenantContext = require('../services/tenantContext');
+const { hasStaticFileExtension } = require('../services/storefrontSeoService');
 
 const LOG_FILE = 'e:/max_p_new/max_p_new/backend/debug_auth.log';
 
@@ -768,7 +769,7 @@ function isPublicStorefrontShellRequest(req) {
     return false;
   }
 
-  if (path.extname(rawPath)) {
+  if (hasStaticFileExtension(rawPath)) {
     return false;
   }
 
