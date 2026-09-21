@@ -339,7 +339,7 @@ class MonitorService {
     const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
     const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
 
-    const [summaries, activeLogs, appUsages, completedTasks, attendances, deviceSessions] = await Promise.all([
+    const [summaries, activeLogs, appUsages, completedTasks, createdTasks, attendances, deviceSessions] = await Promise.all([
       this.prisma.monitorDailySummary.findMany({
         where: { companyId, date: { gte: startOfDay, lte: endOfDay } }
       }),
@@ -367,6 +367,13 @@ class MonitorService {
           ]
         },
         select: { assignedTo: true, id: true, status: true }
+      }),
+      this.prisma.task.findMany({
+        where: {
+          companyId,
+          createdAt: { gte: startOfDay, lte: endOfDay }
+        },
+        select: { createdBy: true, id: true, status: true }
       }),
       this.prisma.attendance.findMany({
         where: {
@@ -406,6 +413,7 @@ class MonitorService {
       ...activeLogs.map(a => a.employeeId),
       ...appUsages.map(a => a.employeeId),
       ...completedTasks.map(t => t.assignedTo),
+      ...createdTasks.map(t => t.createdBy),
       ...(attendances || []).map(a => a.userId),
       ...(attendances || []).map(a => a.employeeRelId),
       ...(deviceSessions || []).map(d => d.employeeId),
@@ -493,6 +501,18 @@ class MonitorService {
       }
     }
 
+    // Created task count map mapped to both userId and employee.id
+    const createdTaskCountMap = new Map();
+    for (const t of createdTasks) {
+      if (t.createdBy) {
+        createdTaskCountMap.set(t.createdBy, (createdTaskCountMap.get(t.createdBy) || 0) + 1);
+        const emp = empMap.get(t.createdBy);
+        if (emp?.id && emp.id !== t.createdBy) {
+          createdTaskCountMap.set(emp.id, (createdTaskCountMap.get(emp.id) || 0) + 1);
+        }
+      }
+    }
+
     // Group and Deduplicate by canonical employee entity to ban duplicate rows
     const grouped = new Map();
 
@@ -517,6 +537,7 @@ class MonitorService {
           status: 'offline',
           topApp: empTopApp.get(s.employeeId) || empTopApp.get(canonicalKey) || empTopApp.get(empObj.userId) || 'سطح المكتب',
           completedTasksCount: taskCountMap.get(canonicalKey) || taskCountMap.get(empObj.userId) || taskCountMap.get(s.employeeId) || 0,
+          createdTasksCount: createdTaskCountMap.get(canonicalKey) || createdTaskCountMap.get(empObj.userId) || createdTaskCountMap.get(s.employeeId) || 0,
         });
       }
 
@@ -562,6 +583,7 @@ class MonitorService {
           status: 'offline',
           topApp: empTopApp.get(log.employeeId) || empTopApp.get(canonicalKey) || empTopApp.get(empObj.userId) || 'سطح المكتب',
           completedTasksCount: taskCountMap.get(canonicalKey) || taskCountMap.get(empObj.userId) || taskCountMap.get(log.employeeId) || 0,
+          createdTasksCount: createdTaskCountMap.get(canonicalKey) || createdTaskCountMap.get(empObj.userId) || createdTaskCountMap.get(log.employeeId) || 0,
         });
       }
     }
@@ -586,6 +608,32 @@ class MonitorService {
           status: 'offline',
           topApp: empTopApp.get(canonicalKey) || empTopApp.get(empObj.userId) || 'سطح المكتب',
           completedTasksCount: taskCountMap.get(canonicalKey) || taskCountMap.get(empObj.userId) || 0,
+          createdTasksCount: createdTaskCountMap.get(canonicalKey) || createdTaskCountMap.get(empObj.userId) || 0,
+        });
+      }
+    }
+
+    // 4. Ensure anyone who created tasks is also represented
+    for (const [key, count] of createdTaskCountMap.entries()) {
+      const empObj = empMap.get(key) || { id: key, firstName: key };
+      const canonicalKey = empObj.id || empObj.userId || key;
+
+      if (!grouped.has(canonicalKey)) {
+        grouped.set(canonicalKey, {
+          employeeId: canonicalKey,
+          employee: empObj,
+          totalActiveSeconds: 0,
+          totalIdleSeconds: 0,
+          productivityScores: [],
+          lastActivityTime: null,
+          firstActivityTime: null,
+          clockInTime: null,
+          clockOutTime: null,
+          checkInMethod: null,
+          status: 'offline',
+          topApp: empTopApp.get(canonicalKey) || empTopApp.get(empObj.userId) || 'سطح المكتب',
+          completedTasksCount: taskCountMap.get(canonicalKey) || taskCountMap.get(empObj.userId) || 0,
+          createdTasksCount: count || 0,
         });
       }
     }
@@ -616,6 +664,27 @@ class MonitorService {
         ? session.lastHeartbeat
         : item.lastActivityTime;
 
+      // Calculate elapsed attendance duration & untracked gap
+      let elapsedAttendanceSeconds = 0;
+      if (item.clockInTime) {
+        const inMs = new Date(item.clockInTime).getTime();
+        if (!isNaN(inMs)) {
+          let outMs = item.clockOutTime ? new Date(item.clockOutTime).getTime() : 0;
+          if (!outMs || isNaN(outMs)) {
+            const isToday = dateStr === new Date().toISOString().split('T')[0];
+            outMs = isToday ? Date.now() : endOfDay.getTime();
+          }
+          if (outMs > inMs) {
+            elapsedAttendanceSeconds = Math.max(0, Math.floor((outMs - inMs) / 1000));
+          }
+        }
+      }
+
+      const trackedDeviceSeconds = (item.totalActiveSeconds || 0) + (item.totalIdleSeconds || 0);
+      const untrackedSeconds = (elapsedAttendanceSeconds > trackedDeviceSeconds)
+        ? (elapsedAttendanceSeconds - trackedDeviceSeconds)
+        : 0;
+
       return {
         employeeId: item.employeeId,
         employee: item.employee,
@@ -630,9 +699,12 @@ class MonitorService {
         clockInTime: item.clockInTime,
         clockOutTime: item.clockOutTime,
         checkInMethod: item.checkInMethod,
+        elapsedAttendanceSeconds,
+        untrackedSeconds,
         status,
         topApp: item.topApp,
-        completedTasksCount: item.completedTasksCount,
+        completedTasksCount: item.completedTasksCount || 0,
+        createdTasksCount: item.createdTasksCount || 0,
       };
     });
 
@@ -666,7 +738,7 @@ class MonitorService {
     const candidateIds = Array.from(new Set([employeeId, resolvedUserId, resolvedEmployeeId].filter(Boolean)));
 
     // 2. Fetch all telemetry, apps, websites, tasks, attendance, and active device session
-    const [activities, apps, websites, summary, completedTasks, attendance, deviceSession] = await Promise.all([
+    const [activities, apps, websites, summary, completedTasks, createdTasks, attendance, deviceSession] = await Promise.all([
       this.prisma.monitorActivityLog.findMany({
         where: { companyId, employeeId: { in: candidateIds }, intervalStart: { gte: startOfDay, lte: endOfDay } },
         orderBy: { intervalStart: 'asc' },
@@ -710,6 +782,18 @@ class MonitorService {
           project: { select: { id: true, name: true } }
         },
         orderBy: { updatedAt: 'desc' }
+      }),
+      this.prisma.task.findMany({
+        where: {
+          companyId,
+          createdBy: { in: candidateIds },
+          createdAt: { gte: startOfDay, lte: endOfDay }
+        },
+        include: {
+          project: { select: { id: true, name: true } },
+          assignee: { select: { id: true, firstName: true, lastName: true } }
+        },
+        orderBy: { createdAt: 'desc' }
       }),
       this.prisma.attendance.findFirst({
         where: {
@@ -763,6 +847,28 @@ class MonitorService {
       ? deviceSession.lastHeartbeat
       : lastActivityTimeVal;
 
+    const clockInVal = attendance?.checkIn || summary?.clockInTime || null;
+    const clockOutVal = attendance?.checkOut || summary?.clockOutTime || null;
+
+    let elapsedAttendanceSeconds = 0;
+    if (clockInVal) {
+      const inMs = new Date(clockInVal).getTime();
+      if (!isNaN(inMs)) {
+        let outMs = clockOutVal ? new Date(clockOutVal).getTime() : 0;
+        if (!outMs || isNaN(outMs)) {
+          const isToday = dateStr === new Date().toISOString().split('T')[0];
+          outMs = isToday ? Date.now() : endOfDay.getTime();
+        }
+        if (outMs > inMs) {
+          elapsedAttendanceSeconds = Math.max(0, Math.floor((outMs - inMs) / 1000));
+        }
+      }
+    }
+
+    const trackedDeviceSec = (summary?.totalActiveSeconds && summary.totalActiveSeconds > 0 ? summary.totalActiveSeconds : calcActiveSeconds) +
+                             (summary?.totalIdleSeconds && summary.totalIdleSeconds > 0 ? summary.totalIdleSeconds : calcIdleSeconds);
+    const untrackedSeconds = elapsedAttendanceSeconds > trackedDeviceSec ? (elapsedAttendanceSeconds - trackedDeviceSec) : 0;
+
     const finalSummary = {
       ...(summary || {}),
       totalActiveSeconds: (summary?.totalActiveSeconds && summary.totalActiveSeconds > 0) ? summary.totalActiveSeconds : calcActiveSeconds,
@@ -774,9 +880,11 @@ class MonitorService {
       isDeviceConnected,
       status: currentStatus,
       deviceName: deviceSession?.deviceName || null,
-      clockInTime: attendance?.checkIn || summary?.clockInTime || null,
-      clockOutTime: attendance?.checkOut || summary?.clockOutTime || null,
+      clockInTime: clockInVal,
+      clockOutTime: clockOutVal,
       checkInMethod: attendance?.checkInMethod || null,
+      elapsedAttendanceSeconds,
+      untrackedSeconds,
     };
 
     // 4. Task Performance Calculation (Deterministic logic)
@@ -793,6 +901,7 @@ class MonitorService {
 
     const taskPerformance = {
       tasksCompletedCount: tasksCount,
+      tasksCreatedCount: createdTasks.length,
       avgActiveSecondsPerTask,
       avgIdleSecondsPerTask,
       activeRatioPct,
@@ -804,6 +913,15 @@ class MonitorService {
         status: t.status,
         priority: t.priority,
         completedAt: t.completedDate || t.updatedAt,
+        projectName: t.project?.name || 'عام',
+      })),
+      createdTasks: createdTasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+        createdAt: t.createdAt,
+        assignedToName: t.assignee ? [t.assignee.firstName, t.assignee.lastName].filter(Boolean).join(' ') : 'غير محدد',
         projectName: t.project?.name || 'عام',
       }))
     };

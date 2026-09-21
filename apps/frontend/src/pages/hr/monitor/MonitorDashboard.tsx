@@ -20,6 +20,7 @@ import {
   ArrowDown,
   ChevronRight,
   ChevronLeft,
+  ListTodo,
 } from 'lucide-react';
 import api from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuthSimple';
@@ -45,6 +46,9 @@ export interface TeamMemberSummary {
   checkInMethod?: string;
   topApp?: string;
   completedTasksCount?: number;
+  createdTasksCount?: number;
+  elapsedAttendanceSeconds?: number;
+  untrackedSeconds?: number;
 }
 
 type SortField = 'employeeName' | 'totalActiveSeconds' | 'totalIdleSeconds' | 'productivityScore' | 'completedTasksCount';
@@ -142,11 +146,17 @@ export const MonitorDashboard: React.FC = () => {
           productivityScore: Math.round(item.productivityScore || 0),
           lastHeartbeat: item.lastActivityTime,
           firstActivityTime: item.firstActivityTime,
+          lastSeenTime: item.lastSeenTime,
+          deviceName: item.deviceName,
+          isDeviceConnected: item.isDeviceConnected,
           clockInTime: item.clockInTime,
           clockOutTime: item.clockOutTime,
           checkInMethod: item.checkInMethod,
           topApp: item.topApp || (item.topApps ? Object.keys(JSON.parse(item.topApps || '{}'))[0] : undefined),
           completedTasksCount: item.completedTasksCount || 0,
+          createdTasksCount: item.createdTasksCount || 0,
+          elapsedAttendanceSeconds: item.elapsedAttendanceSeconds || 0,
+          untrackedSeconds: item.untrackedSeconds || 0,
         });
       }
 
@@ -575,7 +585,7 @@ export const MonitorDashboard: React.FC = () => {
                       className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
                     >
                       <div className="flex items-center gap-1.5">
-                        <span>المهام المنجزة اليوم</span>
+                        <span>المهام (إنجاز / تكليف)</span>
                         {renderSortIcon('completedTasksCount')}
                       </div>
                     </th>
@@ -642,7 +652,7 @@ export const MonitorDashboard: React.FC = () => {
                           )}
                         </td>
 
-                        {/* Attendance & First Activity Time */}
+                        {/* Attendance, Elapsed & First Activity Time */}
                         <td className="px-4 py-3">
                           <div className="space-y-1 text-[11px]">
                             <div className="flex items-center gap-1.5 tabular-nums">
@@ -655,6 +665,12 @@ export const MonitorDashboard: React.FC = () => {
                                 <span className="text-rose-400/80 font-medium">لم يسجل حضوراً</span>
                               )}
                             </div>
+                            {m.elapsedAttendanceSeconds && m.elapsedAttendanceSeconds > 0 ? (
+                              <div className="flex items-center gap-1.5 tabular-nums text-zinc-400">
+                                <span className="text-muted-foreground">الدوام المنقضي:</span>
+                                <span className="font-medium text-zinc-300">{formatSeconds(m.elapsedAttendanceSeconds)}</span>
+                              </div>
+                            ) : null}
                             <div className="flex items-center gap-1.5 tabular-nums">
                               <span className="text-muted-foreground">أول نشاط:</span>
                               {firstActStr ? (
@@ -682,6 +698,18 @@ export const MonitorDashboard: React.FC = () => {
                                 )}
                               </div>
                             )}
+                            {/* Untracked Gap Alert */}
+                            {m.untrackedSeconds && m.untrackedSeconds >= 15 * 60 ? (
+                              <div className="pt-0.5">
+                                <span
+                                  className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium bg-rose-500/15 text-rose-400 ring-1 ring-inset ring-rose-500/30"
+                                  title="الموظف سجل حضوراً بالبصمة لكن الجهاز كان مغلقاً أو في وضع السكون أو التتبع متوقف طوال هذه المدة"
+                                >
+                                  <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
+                                  <span>غير موثق: {formatSeconds(m.untrackedSeconds)} (خارج الجهاز)</span>
+                                </span>
+                              </div>
+                            ) : null}
                           </div>
                         </td>
 
@@ -716,9 +744,23 @@ export const MonitorDashboard: React.FC = () => {
                           </div>
                         </td>
 
-                        {/* Completed Tasks */}
-                        <td className="px-4 py-3 font-semibold text-emerald-400 tabular-nums">
-                          {m.completedTasksCount || 0} مهام
+                        {/* Completed & Created Tasks */}
+                        <td className="px-4 py-3 tabular-nums">
+                          <div className="flex flex-col gap-1">
+                            <span className="inline-flex items-center gap-1 font-semibold text-emerald-400">
+                              <CheckCircle2 className="h-3 w-3 shrink-0" />
+                              <span>{m.completedTasksCount || 0} منجزة</span>
+                            </span>
+                            {(m.createdTasksCount || 0) > 0 && (
+                              <span
+                                className="inline-flex items-center gap-1 text-[10px] font-medium text-sky-400"
+                                title="مهام قام الموظف بإنشائها وتكليفها اليوم"
+                              >
+                                <ListTodo className="h-2.5 w-2.5 shrink-0" />
+                                <span>{m.createdTasksCount} منشأة</span>
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Top App */}
@@ -809,6 +851,12 @@ export const MonitorDashboard: React.FC = () => {
                           )}
                         </span>
                       </div>
+                      {m.elapsedAttendanceSeconds && m.elapsedAttendanceSeconds > 0 ? (
+                        <div className="flex items-center justify-between text-zinc-400">
+                          <span className="text-muted-foreground text-[11px]">الدوام المنقضي:</span>
+                          <span className="font-medium text-zinc-300 tabular-nums">{formatSeconds(m.elapsedAttendanceSeconds)}</span>
+                        </div>
+                      ) : null}
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground text-[11px]">أول نشاط للجهاز:</span>
                         <span className="font-semibold text-emerald-400 tabular-nums">
@@ -832,6 +880,14 @@ export const MonitorDashboard: React.FC = () => {
                           )}
                         </div>
                       )}
+                      {m.untrackedSeconds && m.untrackedSeconds >= 15 * 60 ? (
+                        <div className="pt-0.5 text-left">
+                          <span className="inline-flex items-center gap-1 text-[10px] text-rose-400 bg-rose-500/15 px-1.5 py-0.5 rounded">
+                            <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
+                            غير موثق: {formatSeconds(m.untrackedSeconds)} (خارج الجهاز)
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs">
@@ -846,8 +902,11 @@ export const MonitorDashboard: React.FC = () => {
                     </div>
 
                     <div className="flex items-center justify-between text-xs pt-1">
-                      <div className="flex items-center gap-3 tabular-nums">
-                        <span className="text-emerald-400 font-semibold">{m.completedTasksCount || 0} مهام</span>
+                      <div className="flex items-center gap-2 tabular-nums">
+                        <span className="text-emerald-400 font-semibold">{m.completedTasksCount || 0} منجزة</span>
+                        {(m.createdTasksCount || 0) > 0 && (
+                          <span className="text-sky-400 font-medium text-[11px]">({m.createdTasksCount} منشأة)</span>
+                        )}
                         <span className="text-sky-400 font-semibold">{m.productivityScore}% إنتاجية</span>
                       </div>
                       <button

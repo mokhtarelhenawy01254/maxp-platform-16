@@ -10,14 +10,26 @@ export interface CompletedTaskItem {
   projectName?: string;
 }
 
+export interface CreatedTaskItem {
+  id: string;
+  title: string;
+  status?: string;
+  priority?: string;
+  createdAt?: string;
+  assignedToName?: string;
+  projectName?: string;
+}
+
 export interface TaskPerformanceData {
   tasksCompletedCount: number;
+  tasksCreatedCount?: number;
   avgActiveSecondsPerTask: number;
   avgIdleSecondsPerTask: number;
   activeRatioPct: number;
   idleRatioPct: number;
   idleToActiveRatio: string;
   tasks: CompletedTaskItem[];
+  createdTasks?: CreatedTaskItem[];
 }
 
 interface TaskPerformanceCardProps {
@@ -32,7 +44,9 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
   totalIdleSeconds,
 }) => {
   const tasksCount = taskPerformance?.tasksCompletedCount || 0;
+  const createdTasksCount = taskPerformance?.tasksCreatedCount || 0;
   const tasks = taskPerformance?.tasks || [];
+  const createdTasks = taskPerformance?.createdTasks || [];
 
   const formatDuration = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -55,19 +69,25 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">
-              مؤشرات إنجاز المهام واستغلال الوقت الفعلي
+              مؤشرات إنجاز وتكليف المهام واستغلال الوقت
             </h3>
             <p className="text-xs text-muted-foreground">
-              تحليل حسابي دقيق لعدد المهام المنجزة ومتوسط الوقت الفعلي المستغرق لكل مهمة
+              تحليل دقيق للمهام المنفذة والمهام الموزعة ومتوسط وقت العمل الفعلي لكل مهمة
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400 ring-1 ring-emerald-500/20 tabular-nums">
-            <ListTodo className="h-3.5 w-3.5" />
-            <span>{tasksCount} مهام منفذة / قيد التدقيق اليوم</span>
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            <span>{tasksCount} مهام منفذة اليوم</span>
           </span>
+          {createdTasksCount > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-sky-500/10 px-2.5 py-1 text-xs font-semibold text-sky-400 ring-1 ring-sky-500/20 tabular-nums">
+              <ListTodo className="h-3.5 w-3.5" />
+              <span>{createdTasksCount} مهام تم إنشاؤها وتكليفها</span>
+            </span>
+          )}
         </div>
       </div>
 
@@ -206,6 +226,50 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
           <span>
             لم تُسجل مهام رسمية مكتملة اليوم على النظام. قد يكون وقت العمل الفعلي ({formatDuration(totalActiveSeconds)}) مستهلكاً في اجتماعات، تواصل، أو مهام غير مسندة في النظام.
           </span>
+        </div>
+      )}
+
+      {/* Created / Delegated Tasks List */}
+      {createdTasks.length > 0 && (
+        <div className="mt-3 overflow-hidden rounded-lg border border-border/30 bg-zinc-950/30">
+          <div className="flex items-center gap-1.5 border-b border-border/30 bg-zinc-900/50 px-3 py-2 text-xs font-semibold text-sky-400">
+            <ListTodo className="h-3.5 w-3.5" />
+            <span>المهام التي قام الموظف بإنشائها وتكليفها اليوم ({createdTasks.length})</span>
+          </div>
+          <div className="divide-y divide-border/20">
+            {createdTasks.map((task) => {
+              const timeStr = task.createdAt
+                ? new Date(task.createdAt).toLocaleTimeString('ar-EG', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : '—';
+
+              return (
+                <div key={task.id} className="flex items-center justify-between p-2.5 text-xs transition-colors hover:bg-zinc-900/40">
+                  <div className="flex items-center gap-2">
+                    <ListTodo className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold text-foreground">{task.title}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        المشروع: {task.projectName || 'عام'} • المكلّف به: <span className="text-zinc-300 font-medium">{task.assignedToName}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 tabular-nums">
+                    {task.priority && (
+                      <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-300">
+                        {task.priority}
+                      </span>
+                    )}
+                    <span className="text-[11px] text-muted-foreground">
+                      أُنشئت: {timeStr}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
