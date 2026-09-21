@@ -453,8 +453,219 @@ const getDailyOrdersSummary = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/v1/super-admin/dashboard/operations-pulse
+ * Live multi-domain pulse telemetry for Super Admin command center
+ */
+const getOperationsPulse = async (req, res) => {
+  try {
+    const prisma = getPrisma();
+    const tz = req.query.tz || "Africa/Cairo";
+    const now = moment().tz(tz);
+    const todayStart = now.clone().startOf("day").toDate();
+    const todayEnd = now.clone().endOf("day").toDate();
+    const in48h = now.clone().add(48, "hours").toDate();
+
+    // Parallel fetch across domains with safe fallbacks
+    const [
+      ordersTodayAgg,
+      topMerchantAgg,
+      waConnectedCount,
+      waDisconnectedSessions,
+      todayCartsAgg,
+      todayRecoveredCount,
+      aiLogsAgg,
+      trialsEndingSoon,
+    ] = await Promise.all([
+      // 1. Orders today
+      prisma.order
+        .aggregate({
+          _count: { id: true },
+          _sum: { total: true },
+          where: { createdAt: { gte: todayStart, lte: todayEnd } },
+        })
+        .catch(() => ({ _count: { id: 0 }, _sum: { total: 0 } })),
+
+      // 2. Top merchant today
+      prisma.order
+        .groupBy({
+          by: ["companyId"],
+          _count: { id: true },
+          _sum: { total: true },
+          where: { createdAt: { gte: todayStart, lte: todayEnd } },
+          orderBy: { _count: { id: "desc" } },
+          take: 1,
+        })
+        .catch(() => []),
+
+      // 3. WhatsApp Connected sessions
+      prisma.whatsAppSession
+        .count({
+          where: { status: "CONNECTED" },
+        })
+        .catch(() => 0),
+
+      // 4. WhatsApp Disconnected / Needs QR sessions
+      prisma.whatsAppSession
+        .findMany({
+          where: { status: { not: "CONNECTED" } },
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+            status: true,
+            company: {
+              select: { id: true, name: true, slug: true },
+            },
+          },
+          take: 6,
+        })
+        .catch(() => []),
+
+      // 5. Abandoned Guest Carts today
+      prisma.guestCart
+        .aggregate({
+          _count: { id: true },
+          _sum: { total: true },
+          where: { createdAt: { gte: todayStart, lte: todayEnd } },
+        })
+        .catch(() => ({ _count: { id: 0 }, _sum: { total: 0 } })),
+
+      // 6. Recovered carts today
+      prisma.cartConversionLog
+        .count({
+          where: { convertedAt: { gte: todayStart, lte: todayEnd } },
+        })
+        .catch(() => 0),
+
+      // 7. AI provider logs today
+      prisma.aiProviderLog
+        .aggregate({
+          _count: { id: true },
+          _avg: { latencyMs: true },
+          where: { createdAt: { gte: todayStart, lte: todayEnd } },
+        })
+        .catch(() => ({ _count: { id: 0 }, _avg: { latencyMs: 0 } })),
+
+      // 8. Trials ending in <= 48 hours
+      prisma.company
+        .findMany({
+          where: {
+            isActive: true,
+            OR: [
+              { trialEndsAt: { gte: now.toDate(), lte: in48h } },
+              {
+                platformSubscription: {
+                  trialEndDate: { gte: now.toDate(), lte: in48h },
+                },
+              },
+            ],
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            trialEndsAt: true,
+            platformSubscription: {
+              select: { trialEndDate: true, plan: true },
+            },
+          },
+          take: 5,
+        })
+        .catch(() => []),
+    ]);
+
+    // Top merchant resolution
+    let topMerchant = null;
+    if (topMerchantAgg.length > 0 && topMerchantAgg[0].companyId) {
+      const topComp = await prisma.company
+        .findUnique({
+          where: { id: topMerchantAgg[0].companyId },
+          select: { id: true, name: true, slug: true },
+        })
+        .catch(() => null);
+
+      if (topComp) {
+        topMerchant = {
+          ...topComp,
+          ordersCount: topMerchantAgg[0]._count.id || 0,
+          ordersGMV: Math.round(parseFloat(topMerchantAgg[0]._sum.total || 0)),
+        };
+      }
+    }
+
+    const totalOrdersToday = ordersTodayAgg._count.id || 0;
+    const totalGMVToday = Math.round(parseFloat(ordersTodayAgg._sum.total || 0));
+
+    const totalWaSessions =
+      waConnectedCount + waDisconnectedSessions.length;
+
+    const cartsCountToday = todayCartsAgg._count.id || 0;
+    const cartsValueToday = Math.round(parseFloat(todayCartsAgg._sum.total || 0));
+    const recoveryRate =
+      cartsCountToday > 0
+        ? Math.round((todayRecoveredCount / cartsCountToday) * 1000) / 10
+        : 0;
+
+    return res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      pulse: {
+        orders: {
+          todayOrders: totalOrdersToday,
+          todayGMV: totalGMVToday,
+          avgOrderValue:
+            totalOrdersToday > 0 ? Math.round(totalGMVToday / totalOrdersToday) : 0,
+          topMerchant,
+        },
+        whatsapp: {
+          totalSessions: totalWaSessions,
+          connected: waConnectedCount,
+          disconnected: waDisconnectedSessions.length,
+          hasDisconnectedAlert: waDisconnectedSessions.length > 0,
+          disconnectedList: waDisconnectedSessions.map((s) => ({
+            id: s.id,
+            companyName: s.company?.name || "متجر",
+            companyId: s.company?.id,
+            phoneNumber: s.phoneNumber || "بدون رقم",
+            status: s.status,
+          })),
+        },
+        abandonedCarts: {
+          todayCount: cartsCountToday,
+          todayValue: cartsValueToday,
+          todayRecovered: todayRecoveredCount,
+          recoveryRatePercent: recoveryRate,
+        },
+        aiActivity: {
+          todayInteractions: aiLogsAgg._count.id || 0,
+          avgLatencyMs: Math.round(aiLogsAgg._avg.latencyMs || 0),
+        },
+        trials: {
+          expiringCount: trialsEndingSoon.length,
+          hasExpiringAlert: trialsEndingSoon.length > 0,
+          expiringList: trialsEndingSoon.map((c) => ({
+            id: c.id,
+            name: c.name,
+            phone: c.phone,
+            endsAt: c.trialEndsAt || c.platformSubscription?.trialEndDate,
+          })),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[SA] operations-pulse error:", error);
+    return res.status(500).json({
+      success: false,
+      error: "فشل استخراج نبض عمليات المنصة",
+    });
+  }
+};
+
 module.exports = {
   getDailyOrdersSummary,
+  getOperationsPulse,
   resolveDateRanges,
   categorizeStatus,
 };

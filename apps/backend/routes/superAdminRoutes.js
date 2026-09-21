@@ -408,6 +408,13 @@ router.get(
   superAdminCompanyOrdersController.getDailyOrdersSummary,
 );
 
+// 💓 Live Platform Operations Pulse (WhatsApp, Orders, Carts, AI, Trials)
+router.get(
+  "/dashboard/operations-pulse",
+  checkPermission("canViewReports"),
+  superAdminCompanyOrdersController.getOperationsPulse,
+);
+
 // 📊 Company Activity — active vs dormant vs dead
 router.get("/company-activity", checkPermission("canViewReports"), async (req, res) => {
   try {

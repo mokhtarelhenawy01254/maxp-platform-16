@@ -14,6 +14,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../co
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { cn } from "../lib/utils";
+import { PlatformOperationsPulse } from "./super-admin/dashboard/PlatformOperationsPulse";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
@@ -389,6 +390,9 @@ const SuperAdminDashboard = () => {
             </Button>
           </div>
         </div>
+
+        {/* 💓 Platform Live Operations & Merchant Health Pulse */}
+        <PlatformOperationsPulse />
 
         {/* System Health */}
         {data?.health && <SystemHealthBar health={data.health} />}
