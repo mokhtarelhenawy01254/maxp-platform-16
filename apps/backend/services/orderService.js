@@ -178,6 +178,12 @@ class OrderService {
 
     const normalizedCurrentStatus = normalizeOrderStatusCode(currentStatus);
     const normalizedNextStatus = normalizeOrderStatusCode(nextStatus);
+
+    // If status is unchanged (e.g. updating notes or return reason in-place), skip transition check
+    if (normalizedCurrentStatus === normalizedNextStatus) {
+      return;
+    }
+
     const prisma = this.getPrisma();
     const statusConfig = await prisma.orderStatusConfig.findFirst({
       where: {
@@ -1246,7 +1252,8 @@ class OrderService {
       const currentStatus = normalizeOrderStatusCode(order.status);
       // 🛡️ PRODUCTION-FIX (custom-status-noop): لو عليه كود مخصص، نفس الحالة النظامية
       // المطلوبة صراحةً مش no-op — التاجر عايز يرجّع للحالة النظامية ويشيل الكود المخصص.
-      if (currentStatus === status && !order.customStatusCode) {
+      // وإذا كان هناك ملاحظات أو سبب إرجاع جديد، لا نتجاهل التعديل.
+      if (currentStatus === status && !order.customStatusCode && (!notes || !String(notes).trim())) {
         return order;
       }
 
@@ -1822,7 +1829,7 @@ class OrderService {
         throw createOrderStatusError('الطلب غير موجود', 404);
       }
 
-      if (normalizeOrderStatusCode(guestOrder.status) === status) {
+      if (normalizeOrderStatusCode(guestOrder.status) === status && (!notes || !String(notes).trim())) {
         return guestOrder;
       }
 

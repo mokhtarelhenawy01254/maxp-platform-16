@@ -341,42 +341,52 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                     )}
                     {columns.includes("status") && (
                       <td className={cellPadding}>
-                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                          {(() => {
-                            const unifiedStatus = getUnifiedStatusDisplay(order, t);
-                            return (
+                        <div className="flex flex-col gap-0.5 items-start">
+                          <div className="flex items-center gap-1.5 whitespace-nowrap">
+                            {(() => {
+                              const unifiedStatus = getUnifiedStatusDisplay(order, t);
+                              return (
+                                <span
+                                  className={`${unifiedStatus.className} text-xs py-1 px-2.5 rounded-full font-medium`}
+                                  style={unifiedStatus.style}
+                                  aria-label={unifiedStatus.labelKey}
+                                >
+                                  {unifiedStatus.text}
+                                </span>
+                              );
+                            })()}
+                            {order.isScheduled &&
+                              order.scheduledDeliveryDate && (
+                                <span
+                                  className="text-xs text-slate-500 dark:text-slate-400 font-mono"
+                                  dir="ltr"
+                                >
+                                  📅{" "}
+                                  {new Date(
+                                    order.scheduledDeliveryDate,
+                                  ).toLocaleDateString("ar-EG", {
+                                    month: "short",
+                                    day: "numeric",
+                                  })}
+                                </span>
+                              )}
+                            {order.confidence && (
                               <span
-                                className={`${unifiedStatus.className} text-xs py-1 px-2.5 rounded-full font-medium`}
-                                style={unifiedStatus.style}
-                                aria-label={unifiedStatus.labelKey}
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getConfidenceColor(order.confidence)}`}
                               >
-                                {unifiedStatus.text}
-                              </span>
-                            );
-                          })()}
-                          {order.isScheduled &&
-                            order.scheduledDeliveryDate && (
-                              <span
-                                className="text-xs text-slate-500 dark:text-slate-400 font-mono"
-                                dir="ltr"
-                              >
-                                📅{" "}
-                                {new Date(
-                                  order.scheduledDeliveryDate,
-                                ).toLocaleDateString("ar-EG", {
-                                  month: "short",
-                                  day: "numeric",
-                                })}
+                                {getConfidenceIcon(order.confidence)}
+                                <span className="mr-0.5">
+                                  {(order.confidence * 100).toFixed(0)}%
+                                </span>
                               </span>
                             )}
-                          {order.confidence && (
+                          </div>
+                          {(order.turboReturnReason || order.turboDelayReason) && (
                             <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getConfidenceColor(order.confidence)}`}
+                              className="text-[11px] font-medium text-rose-700 dark:text-rose-300 max-w-[170px] truncate block leading-tight"
+                              title={`سبب المرتجع: ${order.turboReturnReason || order.turboDelayReason}`}
                             >
-                              {getConfidenceIcon(order.confidence)}
-                              <span className="mr-0.5">
-                                {(order.confidence * 100).toFixed(0)}%
-                              </span>
+                              ↩ {order.turboReturnReason || order.turboDelayReason}
                             </span>
                           )}
                         </div>

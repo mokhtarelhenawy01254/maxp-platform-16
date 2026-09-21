@@ -127,6 +127,8 @@ export interface Order {
   sourceType?: string;
   turboShipmentStatus?: string;
   turboTrackingNumber?: string;
+  turboReturnReason?: string | null;
+  turboDelayReason?: string | null;
   carrierType?: string;
   shipment?: any;
   shipments?: any[];

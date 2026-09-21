@@ -227,12 +227,15 @@ async function syncTurboStatusToOrder({
     const guestStatusChanged = Boolean(guestTargetStatus) && guestTargetStatus !== existingGuestOrder.status;
     if (guestStatusChanged) {
       try {
-        const orderService = require('./orderService');
+        const turboReason = payload.return_reason || payload.return_status_text || payload.delay_reason;
+        const noteText = turboReason
+          ? `${turboReason} (تحديث تلقائي من تربو - ${canonicalTurboStatus})`
+          : `تحديث تلقائي من تربو (${canonicalTurboStatus})`;
         await orderService.updateGuestOrderStatus(
           existingGuestOrder.orderNumber,
           companyId,
           guestTargetStatus,
-          `تحديث تلقائي من تربو (${canonicalTurboStatus})`,
+          noteText,
           'SYSTEM',
           'Turbo Sync',
           null,
@@ -412,12 +415,15 @@ async function syncTurboStatusToOrder({
   // نمرّر له الكود الأصلي (orderStatus) — وهو هيحلّ mapsToSystem ويتأكد إن storage صالح.
   if (statusChanged) {
     try {
-      const orderService = require('./orderService');
+      const turboReason = payload.return_reason || payload.return_status_text || payload.delay_reason;
+      const noteText = turboReason
+        ? `${turboReason} (تحديث تلقائي من تربو - ${canonicalTurboStatus})`
+        : `تحديث تلقائي من تربو (${canonicalTurboStatus})`;
       await orderService.updateOrderStatus(
         existingOrder.orderNumber,
         companyId,
         orderStatus,
-        `تحديث تلقائي من تربو (${canonicalTurboStatus})`,
+        noteText,
         'SYSTEM',
         'Turbo Sync',
         null,

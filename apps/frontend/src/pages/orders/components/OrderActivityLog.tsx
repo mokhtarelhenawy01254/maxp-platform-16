@@ -13,9 +13,11 @@ import {
   XCircleIcon,
   PencilSquareIcon,
   ClockIcon,
+  ArrowPathRoundedSquareIcon,
 } from "@heroicons/react/24/outline";
 import { useDateFormat } from "../../../hooks/useDateFormat";
 import { OrderDetailsType } from "../types";
+import { isReturnStatusCode } from "../utils/returnHelper";
 
 interface OrderActivityLogProps {
   order: OrderDetailsType;
@@ -166,9 +168,11 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
 
         const isTrash = h.status === "TRASH" || h.status === "DELETED";
         const isCancelled = isCancellationStatus(h.status);
+        const isReturned = isReturnStatusCode(h.status) || String(h.status || "").toUpperCase().includes("RETURN");
         const isModification =
           !isTrash &&
           !isCancelled &&
+          !isReturned &&
           ((Boolean(h.oldStatus) && h.status === h.oldStatus) ||
             (typeof h.reason === "string" && h.reason.trim().startsWith("تعديل")));
 
@@ -219,6 +223,10 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
           category = "status";
           itemIcon = XCircleIcon;
           itemColor = "bg-rose-500";
+        } else if (isReturned) {
+          category = "status";
+          itemIcon = ArrowPathRoundedSquareIcon;
+          itemColor = String(h.status || "").toUpperCase() === "PARTIALLY_RETURNED" ? "bg-amber-500" : "bg-rose-600";
         } else {
           category = "status";
           itemIcon = CheckCircleIcon;
@@ -230,7 +238,9 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
             ? (reason.startsWith("تعديل") ? reason : t("orderDetails.modificationDetail", { reason }))
             : (isCancelled || isTrash)
               ? t("orderDetails.cancellationReasonLine", { reason })
-              : t("orderDetails.statusReasonLine", { reason })
+              : isReturned
+                ? t("orderDetails.returnReasonLine", { reason, defaultValue: `سبب المرتجع: ${reason}` })
+                : t("orderDetails.statusReasonLine", { reason })
           : "";
 
         let actionTitle = "";
@@ -244,6 +254,11 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
           }
         } else if (isTrash) {
           actionTitle = t("orderDetails.orderTrashed");
+        } else if (isReturned) {
+          const isPartial = String(h.status || "").toUpperCase() === "PARTIALLY_RETURNED";
+          actionTitle = isPartial
+            ? t("orderDetails.orderPartiallyReturned", { defaultValue: "تغيير الحالة إلى مرتجع جزئياً" })
+            : t("orderDetails.orderReturned", { defaultValue: "تغيير الحالة إلى مرتجع" });
         } else {
           const statusLabel =
             statusNameMap?.[String(h.status || "").trim().toUpperCase()] || h.status;

@@ -297,6 +297,14 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
+                        {(order.turboReturnReason || (order as any).turboDelayReason) && (
+                          <span
+                            className="text-[10px] font-medium text-rose-700 dark:text-rose-300 max-w-[120px] truncate"
+                            title={`سبب المرتجع: ${order.turboReturnReason || (order as any).turboDelayReason}`}
+                          >
+                            ↩ {order.turboReturnReason || (order as any).turboDelayReason}
+                          </span>
+                        )}
                         <span
                           className={`${unifiedStatus.className} text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 shadow-sm`}
                           style={unifiedStatus.style}
