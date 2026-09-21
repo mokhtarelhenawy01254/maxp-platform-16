@@ -30,6 +30,16 @@ async def agent_spawn(input_data: AgentSpawnInput) -> dict[str, Any]:
     }, input_data.company_id or "")
 
 
+def _format_agent_handoff_to(result: dict) -> str:
+    if not result.get("success", False):
+        return f"تعذر التحويل: {result.get('error', 'الوكيل المستهدف غير متاح')}. يرجى إنجاز الطلب مباشرة بالصلاحيات المتوفرة."
+    target = result.get("targetRole", "")
+    reply = result.get("reply", "")
+    if reply:
+        return f"تم التحويل للوكيل ({target}):\n{reply}"
+    return f"تم تسليم المحادثة للوكيل المختص ({target}) بنجاح."
+
+
 async def agent_handoff_to(input_data: AgentHandoffToInput) -> dict[str, Any]:
     from src.services.agent_manager_service import AgentManagerService, get_agent_manager_service
     manager: AgentManagerService = get_agent_manager_service()
@@ -39,8 +49,22 @@ async def agent_handoff_to(input_data: AgentHandoffToInput) -> dict[str, Any]:
         role=input_data.target_role,
         thread_id="",
     )
+    if not result.get("success"):
+        return {
+            "success": False,
+            "status": "HANDOFF_FAILED",
+            "targetRole": input_data.target_role,
+            "reason": input_data.reason,
+            "error": (
+                f"فشل التحويل: لا يوجد وكيل آخر نشط بالدور '{input_data.target_role}' مسجل في هذا المتجر. "
+                "إذا كانت الأداة المطلوبة متوفرة في صلاحياتك، يجب عليك تنفيذ طلب التاجر فوراً بنفسك دون تحويل."
+            ),
+            "detail": result.get("error", ""),
+            "action": "HANDLE_LOCALLY",
+        }
     return {
-        "status": "HANDOFF_INITIATED",
+        "success": True,
+        "status": "HANDOFF_COMPLETED",
         "targetRole": input_data.target_role,
         "reason": input_data.reason,
         "reply": result.get("reply", ""),
@@ -56,9 +80,10 @@ agent_spawn_tool = FunctionTool(
 
 agent_handoff_to_tool = FunctionTool(
     name="agent_handoff_to",
-    description="Transfer the conversation to a specialist agent. Use when the customer needs expertise outside your role.",
+    description="Transfer the conversation to an active specialist agent in the store. ONLY use when you lack the tools to fulfill the merchant request AND a qualified target agent exists.",
     func=agent_handoff_to,
     input_model=AgentHandoffToInput,
+    format_result=_format_agent_handoff_to,
 )
 
 __all_tools__ = [
