@@ -203,18 +203,35 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
       });
     }
 
-    // Strict Descending Sorting: Newest Activity on Top!
+    // Strict Smart Sorting: Unread first -> Open/In Progress -> Highest ID (Newest created)
     list.sort((a, b) => {
-      const timeA = Math.max(
-        parseSafeDate(a.created_at)?.getTime() || 0,
-        parseSafeDate(a.updated_at)?.getTime() || 0
+      const unreadA = Number(
+        a.un_read_messages_count ||
+        a.unread_messages_count ||
+        (a.unread ? 1 : 0) ||
+        (a.is_seen === false ? 1 : 0) ||
+        0
       );
-      const timeB = Math.max(
-        parseSafeDate(b.created_at)?.getTime() || 0,
-        parseSafeDate(b.updated_at)?.getTime() || 0
+      const unreadB = Number(
+        b.un_read_messages_count ||
+        b.unread_messages_count ||
+        (b.unread ? 1 : 0) ||
+        (b.is_seen === false ? 1 : 0) ||
+        0
       );
-      if (timeB !== timeA) return timeB - timeA;
-      return (Number(b.id) || 0) - (Number(a.id) || 0);
+      if (unreadB !== unreadA) return unreadB - unreadA;
+
+      const isClosedA = a.is_closed === true || a.status?.value === "closed" || a.status === "closed";
+      const isClosedB = b.is_closed === true || b.status?.value === "closed" || b.status === "closed";
+      if (isClosedA !== isClosedB) return isClosedA ? 1 : -1;
+
+      const idA = Number(a.id) || 0;
+      const idB = Number(b.id) || 0;
+      if (idB !== idA) return idB - idA;
+
+      const timeA = parseSafeDate(a.created_at)?.getTime() || parseSafeDate(a.updated_at)?.getTime() || 0;
+      const timeB = parseSafeDate(b.created_at)?.getTime() || parseSafeDate(b.updated_at)?.getTime() || 0;
+      return timeB - timeA;
     });
 
     return list;
@@ -360,11 +377,28 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
           <div className="p-8 text-center text-xs text-zinc-500 dark:text-zinc-400 space-y-2">
             <ChatBubbleLeftEllipsisIcon className="h-8 w-8 mx-auto text-zinc-300 dark:text-zinc-700" />
             <p className="font-semibold text-zinc-700 dark:text-zinc-300">
-              {activeCategory === "unread" ? "لا توجد رسائل غير مقروءة حالياً" : "لا توجد تذاكر مطابقة"}
+              {activeCategory === "unread"
+                ? "لا توجد رسائل غير مقروءة حالياً"
+                : statusFilter === "open"
+                ? "لا توجد تذاكر مفتوحة حالياً"
+                : "لا توجد تذاكر مطابقة"}
             </p>
-            <p className="text-[11px] text-zinc-400">
-              {activeCategory === "unread" ? "جميع التذاكر والمحادثات مقروءة ومحدثة." : "يمكنك فتح تذكرة جديدة لأي استفسار أو شكوى شحن."}
+            <p className="text-[11px] text-zinc-400 max-w-xs mx-auto leading-relaxed">
+              {activeCategory === "unread"
+                ? "جميع التذاكر والمحادثات مقروءة ومحدثة."
+                : statusFilter === "open"
+                ? "تقوم خدمة عملاء الشحن بمعالجة وإغلاق التذاكر فور الرد عليها. يمكنك مراجعة تبويب «كافة الحالات» لرؤية كافة التذاكر والردود."
+                : "يمكنك فتح تذكرة جديدة لأي استفسار أو شكوى شحن."}
             </p>
+            {statusFilter === "open" && (
+              <button
+                type="button"
+                onClick={() => onChangeStatusFilter("all")}
+                className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
+              >
+                <span>عرض كافة الحالات</span>
+              </button>
+            )}
           </div>
         ) : (
           processedTickets.map((t) => {

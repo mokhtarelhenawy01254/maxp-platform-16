@@ -2,6 +2,19 @@
 
 > Domain-specific bug tracker for Prisma, auth, deployment, AI, billing, and general platform issues.
 
+### [FIX] Turbo Tickets — Pagination Restoration & Smart Chronological Sorting (2026-09-21)
+- **Description**: The `/tickets` page stopped showing pagination controls and gave the impression that no new tickets were arriving, with old tickets appearing ahead of newer ones.
+- **Root Cause**:
+  1. The modern Turbo API returns pagination metadata under `result.meta` (`{ current_page, last_page, per_page, total }`). `ticketService.js` only checked `result.feed` and `result.pagination`, defaulting `total` to `tickets.length` (15) and `lastPage` to 1. Consequently, `total > perPage` evaluated to false, completely hiding the pagination buttons.
+  2. Sorting was purely based on `Math.max(created_at, updated_at)`. Old tickets (e.g. #3117007 from Sept 19) that received automated support rating requests on Sept 20 jumped ahead of tickets created later (e.g. #3118323 from Sept 20), obscuring recent activity.
+  3. When filtering by "الجديدة" (status=open), 0 tickets were returned because Turbo support/AI bot automatically transitions tickets to closed upon reply.
+- **Resolution**:
+  1. Added `result.meta` extraction in `ticketService.js` to restore accurate total count (2500+ tickets, 168+ pages) and active pagination controls.
+  2. Enhanced sorting to prioritize: Unread tickets first -> Open/In-progress tickets -> Highest ticket ID / newest created -> Updated timestamp.
+  3. Enhanced the empty state in `TurboTicketListPanel.tsx` when status=open is empty to guide users with a one-click action to view all ticket statuses.
+- **Files Modified**: `backend/services/turbo/ticketService.js`, `backend/controller/turbo/ticketHandlers.js`, `frontend/src/pages/tickets/turbo/TurboTicketListPanel.tsx`
+
+
 ### [FIX] AI Sandbox Chat — Product List Rendered as Blank Lines (2026-06-09)
 - **Description**: The AI agent sandbox chat (`/admin/ai-hub?tab=sandbox`) showed "المنتجات المتاحة حالياً عندنا هي:" followed by blank lines where product names should appear, even though the tool returned 20 products with correct names and the LLM response stored in the DB was correct.
 - **Root Cause**: `filterChainOfThought()` in `ChatArea.tsx` contained a catch-all guard `if (trimmed.startsWith('*')) return false` that was intended to filter chain-of-thought reasoning lines. It stripped every markdown bullet list item (e.g. `* **Platform Sneakers** بسعر 499 جنيه.`), replacing them with empty strings and leaving visible blank lines in the rendered output.

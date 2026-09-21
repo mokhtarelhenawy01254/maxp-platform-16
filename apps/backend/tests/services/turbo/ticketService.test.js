@@ -45,7 +45,7 @@ describe('TicketService', () => {
         data: { success: 1, ticket_id: 'TKT-001', message: 'تم إنشاء التذكرة' },
       });
 
-      const result = await service.addTicket('محتوى التذكرة', 3, 'TRK-001');
+      const result = await service.addTicket('محتوى التذكرة', 3, 'TRK-001', [], 'low', 'others');
 
       expect(result.success).toBe(true);
       expect(result.ticketId).toBe('TKT-001');
@@ -120,6 +120,29 @@ describe('TicketService', () => {
       expect(result.tickets).toHaveLength(1);
       expect(result.pagination.page).toBe(1);
       expect(result.pagination.total).toBe(1);
+    });
+
+    test('correctly extracts pagination from result.meta in modern Turbo API', async () => {
+      axios.get.mockResolvedValue({
+        data: {
+          data: [{ id: 3118323, content: 'تذكرة حديثة' }],
+          meta: {
+            current_page: 2,
+            per_page: 15,
+            total: 2514,
+            last_page: 168,
+          },
+        },
+      });
+
+      const result = await service.getTickets(2, 15);
+
+      expect(result.success).toBe(true);
+      expect(result.tickets).toHaveLength(1);
+      expect(result.pagination.page).toBe(2);
+      expect(result.pagination.perPage).toBe(15);
+      expect(result.pagination.total).toBe(2514);
+      expect(result.pagination.lastPage).toBe(168);
     });
 
     test('returns empty list on 404 (endpoint not available)', async () => {

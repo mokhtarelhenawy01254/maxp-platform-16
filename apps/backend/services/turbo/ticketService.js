@@ -111,8 +111,23 @@ class TicketService {
       const isSuccess = result.success === 1 || result.success === true;
       if (!isSuccess && result.success !== undefined) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
       const tickets = result.feed?.data || result.tickets || result.data || [];
-      const pagination = result.feed || result.pagination || { current_page: page, per_page: perPage, total: tickets.length, last_page: Math.ceil(tickets.length / perPage) };
-      return { success: true, tickets, pagination: { page: pagination.current_page || page, perPage: pagination.per_page || perPage, total: pagination.total || tickets.length, lastPage: pagination.last_page || Math.ceil((pagination.total || tickets.length) / perPage) }, message: result.message || 'تم جلب التذاكر بنجاح', data: result };
+      const pagination = result.meta || result.feed || result.pagination || { current_page: page, per_page: perPage, total: tickets.length, last_page: Math.ceil(tickets.length / perPage) };
+      const total = Number(pagination.total ?? tickets.length);
+      const lastPage = Number(pagination.last_page ?? pagination.lastPage ?? Math.ceil(total / perPage));
+      const currentPageNum = Number(pagination.current_page ?? pagination.page ?? page);
+      const perPageNum = Number(pagination.per_page ?? pagination.perPage ?? perPage);
+      return {
+        success: true,
+        tickets,
+        pagination: {
+          page: currentPageNum,
+          perPage: perPageNum,
+          total,
+          lastPage
+        },
+        message: result.message || 'تم جلب التذاكر بنجاح',
+        data: result
+      };
     } catch (error) {
       if (error.response?.status === 404) return { success: true, tickets: [], pagination: { page, perPage, total: 0, lastPage: 0 }, message: 'لا توجد تذاكر متاحة', data: null };
       handleError(error, 'Get Tickets');

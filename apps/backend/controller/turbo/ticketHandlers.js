@@ -79,18 +79,23 @@ const getTickets = async (req, res) => {
     const result = await turboService.getTickets(parseInt(page), parseInt(per_page), { status, search });
 
     if (result && Array.isArray(result.tickets) && result.tickets.length > 0) {
-      // 1. Strict Descending Sorting (Newest tickets on top)
+      // 1. Strict Smart Sorting (Unread first -> Open/In Progress -> Highest ID / Newest created)
       result.tickets.sort((a, b) => {
-        const timeA = Math.max(
-          new Date(a.created_at || 0).getTime(),
-          new Date(a.updated_at || 0).getTime()
-        );
-        const timeB = Math.max(
-          new Date(b.created_at || 0).getTime(),
-          new Date(b.updated_at || 0).getTime()
-        );
-        if (timeB !== timeA) return timeB - timeA;
-        return (Number(b.id) || 0) - (Number(a.id) || 0);
+        const unreadA = Number(a.un_read_messages_count || a.unread_messages_count || (a.unread ? 1 : 0) || 0);
+        const unreadB = Number(b.un_read_messages_count || b.unread_messages_count || (b.unread ? 1 : 0) || 0);
+        if (unreadB !== unreadA) return unreadB - unreadA;
+
+        const isClosedA = a.is_closed === true || a.status?.value === 'closed' || a.status === 'closed';
+        const isClosedB = b.is_closed === true || b.status?.value === 'closed' || b.status === 'closed';
+        if (isClosedA !== isClosedB) return isClosedA ? 1 : -1;
+
+        const idA = Number(a.id) || 0;
+        const idB = Number(b.id) || 0;
+        if (idB !== idA) return idB - idA;
+
+        const timeA = new Date(a.created_at || a.updated_at || 0).getTime();
+        const timeB = new Date(b.created_at || b.updated_at || 0).getTime();
+        return timeB - timeA;
       });
 
       // 2. Batch order matching for badges
