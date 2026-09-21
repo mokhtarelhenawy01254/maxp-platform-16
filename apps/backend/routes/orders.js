@@ -3864,6 +3864,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // Unified effective status (own prep → twin prep/status → guest col),
       // mapped to regular codes — identical rule used for filtering/totals.
       const twinKey = String(order.orderNumber || '').trim().toLowerCase();
+      const twin = regularTwinsByNumber.get(twinKey);
       const guestDisplayStatus = String(
         effectiveCodeForGuest(twinKey) || order.status || 'PENDING',
       ).toLowerCase();
