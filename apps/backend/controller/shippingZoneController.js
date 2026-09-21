@@ -1064,135 +1064,186 @@ const findZoneViaCanonicalGovernorate = async (companyId, governorateInput) => {
   };
 };
 
-const syncCanonicalShippingData = async (companyId = null) => {
-  const prisma = await getSharedPrismaClientAsync();
-  if (!canUseCanonicalGovernorateStorage(prisma)) {
-    return;
+// ── Canonical Shipping Data In-Memory Cache & Synchronization Guard ──────────
+let canonicalSeedDataSynced = false;
+const companyZoneSyncTimestamps = new Map();
+const inFlightCompanySyncs = new Map();
+const ZONE_SYNC_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours TTL per company
+
+const invalidateCompanyShippingZoneSync = (companyId = null) => {
+  if (!companyId) {
+    companyZoneSyncTimestamps.clear();
+  } else {
+    companyZoneSyncTimestamps.delete(companyId);
+  }
+};
+
+const resetCanonicalShippingSyncCache = () => {
+  canonicalSeedDataSynced = false;
+  companyZoneSyncTimestamps.clear();
+  inFlightCompanySyncs.clear();
+};
+
+const syncCanonicalShippingData = async (companyId = null, options = {}) => {
+  const force = options.force === true;
+  const syncKey = companyId || '__GLOBAL__';
+
+  if (!force && companyZoneSyncTimestamps.has(syncKey)) {
+    const lastSync = companyZoneSyncTimestamps.get(syncKey);
+    if (lastSync && Date.now() - lastSync < ZONE_SYNC_TTL_MS) {
+      return;
+    }
   }
 
-  const seedRecords = getGovernorateSeedRecords();
+  // Deduplicate concurrent in-flight syncs for the same company/scope
+  if (inFlightCompanySyncs.has(syncKey)) {
+    return inFlightCompanySyncs.get(syncKey);
+  }
 
-  try {
-    for (const record of seedRecords) {
-      const governorate = await prisma.governorate.upsert({
-        where: { code: record.code },
-        update: {
-          nameAr: record.nameAr,
-          nameEn: record.nameEn,
-          isActive: true
-        },
-        create: {
-          code: record.code,
-          nameAr: record.nameAr,
-          nameEn: record.nameEn,
-          isActive: true
+  const syncPromise = (async () => {
+    try {
+      const prisma = await getSharedPrismaClientAsync();
+      if (!canUseCanonicalGovernorateStorage(prisma)) {
+        return;
+      }
+
+      // 1. Seed canonical governorates once per process lifecycle unless forced
+      if (!canonicalSeedDataSynced || force) {
+        const seedRecords = getGovernorateSeedRecords();
+        const countFn = typeof prisma?.governorate?.count === 'function' ? prisma.governorate.count.bind(prisma.governorate) : null;
+        const existingCount = countFn ? await countFn().catch(() => 0) : 0;
+        if (existingCount < seedRecords.length || force) {
+          for (const record of seedRecords) {
+            const governorate = await prisma.governorate.upsert({
+              where: { code: record.code },
+              update: {
+                nameAr: record.nameAr,
+                nameEn: record.nameEn,
+                isActive: true
+              },
+              create: {
+                code: record.code,
+                nameAr: record.nameAr,
+                nameEn: record.nameEn,
+                isActive: true
+              }
+            });
+
+            for (const alias of record.aliases) {
+              const normalizedAlias = normalizeGovernorateValue(alias);
+              if (!normalizedAlias) continue;
+
+              await prisma.governorateAlias.upsert({
+                where: {
+                  governorateId_normalizedAlias: {
+                    governorateId: governorate.id,
+                    normalizedAlias
+                  }
+                },
+                update: {
+                  alias
+                },
+                create: {
+                  governorateId: governorate.id,
+                  alias,
+                  normalizedAlias
+                }
+              });
+            }
+          }
         }
+        canonicalSeedDataSynced = true;
+      }
+
+      // 2. Sync company zones mappings
+      const zones = await prisma.shippingZone.findMany({
+        where: companyId ? { companyId } : undefined
       });
 
-      for (const alias of record.aliases) {
-        const normalizedAlias = normalizeGovernorateValue(alias);
-        if (!normalizedAlias) continue;
+      for (const zone of zones) {
+        const zoneGovernorates = parseZoneGovernorates(zone.governorates, 'syncCanonicalShippingData');
+        const matchedGovernorateIds = new Set();
 
-        await prisma.governorateAlias.upsert({
-          where: {
-            governorateId_normalizedAlias: {
-              governorateId: governorate.id,
-              normalizedAlias
+        const explicitGovernorateIds = Array.isArray(zone.governorateIds)
+          ? zone.governorateIds
+          : parseZoneGovernorates(zone.governorateIds, 'syncCanonicalShippingData.ids');
+
+        for (const governorateIdOrCode of explicitGovernorateIds) {
+          const governorate = await prisma.governorate.findFirst({
+            where: {
+              OR: [
+                { id: governorateIdOrCode },
+                { code: governorateIdOrCode }
+              ]
             }
-          },
-          update: {
-            alias
-          },
-          create: {
-            governorateId: governorate.id,
-            alias,
-            normalizedAlias
+          });
+
+          if (governorate?.id) {
+            matchedGovernorateIds.add(governorate.id);
           }
-        });
-      }
-    }
+        }
 
-    const zones = await prisma.shippingZone.findMany({
-      where: companyId ? { companyId } : undefined
-    });
-
-    for (const zone of zones) {
-      const zoneGovernorates = parseZoneGovernorates(zone.governorates, 'syncCanonicalShippingData');
-      const matchedGovernorateIds = new Set();
-
-      const explicitGovernorateIds = Array.isArray(zone.governorateIds)
-        ? zone.governorateIds
-        : parseZoneGovernorates(zone.governorateIds, 'syncCanonicalShippingData.ids');
-
-      for (const governorateIdOrCode of explicitGovernorateIds) {
-        const governorate = await prisma.governorate.findFirst({
-          where: {
-            OR: [
-              { id: governorateIdOrCode },
-              { code: governorateIdOrCode }
-            ]
+        for (const zoneGovernorate of zoneGovernorates) {
+          const canonicalGovernorate = await findCanonicalGovernorate(zoneGovernorate);
+          if (canonicalGovernorate?.id) {
+            matchedGovernorateIds.add(canonicalGovernorate.id);
           }
-        });
-
-        if (governorate?.id) {
-          matchedGovernorateIds.add(governorate.id);
         }
-      }
 
-      for (const zoneGovernorate of zoneGovernorates) {
-        const canonicalGovernorate = await findCanonicalGovernorate(zoneGovernorate);
-        if (canonicalGovernorate?.id) {
-          matchedGovernorateIds.add(canonicalGovernorate.id);
-        }
-      }
+        const matchedGovernorateIdsList = [...matchedGovernorateIds];
 
-      const matchedGovernorateIdsList = [...matchedGovernorateIds];
-
-      if (matchedGovernorateIdsList.length > 0) {
-        await prisma.shippingZoneGovernorate.deleteMany({
-          where: {
-            shippingZoneId: zone.id,
-            governorateId: {
-              notIn: matchedGovernorateIdsList
+        if (matchedGovernorateIdsList.length > 0) {
+          await prisma.shippingZoneGovernorate.deleteMany({
+            where: {
+              shippingZoneId: zone.id,
+              governorateId: {
+                notIn: matchedGovernorateIdsList
+              }
             }
-          }
-        });
-      } else {
-        await prisma.shippingZoneGovernorate.deleteMany({
-          where: {
-            shippingZoneId: zone.id
-          }
-        });
-      }
+          });
+        } else {
+          await prisma.shippingZoneGovernorate.deleteMany({
+            where: {
+              shippingZoneId: zone.id
+            }
+          });
+        }
 
-      for (const governorateId of matchedGovernorateIdsList) {
-        await prisma.shippingZoneGovernorate.upsert({
-          where: {
-            shippingZoneId_governorateId: {
+        for (const governorateId of matchedGovernorateIdsList) {
+          await prisma.shippingZoneGovernorate.upsert({
+            where: {
+              shippingZoneId_governorateId: {
+                shippingZoneId: zone.id,
+                governorateId
+              }
+            },
+            update: {},
+            create: {
               shippingZoneId: zone.id,
               governorateId
             }
-          },
-          update: {},
-          create: {
-            shippingZoneId: zone.id,
-            governorateId
-          }
-        });
+          });
+        }
       }
-    }
 
-    markCanonicalGovernorateStorageAvailability(prisma, 'available');
-  } catch (error) {
-    if (isCanonicalGovernorateStorageError(error)) {
-      markCanonicalGovernorateStorageAvailability(prisma, 'unavailable');
-      console.warn('Canonical governorate storage unavailable; continuing with seed fallback:', error.message);
-      return;
+      markCanonicalGovernorateStorageAvailability(prisma, 'available');
+      companyZoneSyncTimestamps.set(syncKey, Date.now());
+    } catch (error) {
+      if (isCanonicalGovernorateStorageError(error)) {
+        markCanonicalGovernorateStorageAvailability(prisma, 'unavailable');
+        console.warn('Canonical governorate storage unavailable; continuing with seed fallback:', error.message);
+        return;
+      }
+      
+      console.error('Error during canonical shipping data sync:', error.message);
+      // Continue execution despite sync errors
+    } finally {
+      inFlightCompanySyncs.delete(syncKey);
     }
-    
-    console.error('Error during canonical shipping data sync:', error.message);
-    // Continue execution despite sync errors
-  }
+  })();
+
+  inFlightCompanySyncs.set(syncKey, syncPromise);
+  return syncPromise;
 };
 
 // Get all shipping zones for a company
@@ -1387,7 +1438,7 @@ const createShippingZone = async (req, res) => {
       data: payload.data
     }));
 
-    await syncCanonicalShippingData(companyId);
+    await syncCanonicalShippingData(companyId, { force: true });
 
     const zone = await runShippingQuery((prisma) => findShippingZoneWithCanonicalFallback(prisma, {
       where: {
@@ -1537,7 +1588,7 @@ const updateShippingZone = async (req, res) => {
       data: payload.data
     }));
 
-    await syncCanonicalShippingData(companyId);
+    await syncCanonicalShippingData(companyId, { force: true });
 
     const zone = await runShippingQuery((prisma) => findShippingZoneWithCanonicalFallback(prisma, {
       where: {
@@ -1592,6 +1643,8 @@ const deleteShippingZone = async (req, res) => {
       where: { id }
     });
 
+    invalidateCompanyShippingZoneSync(companyId);
+
     res.json({
       success: true,
       message: 'تم حذف منطقة الشحن بنجاح'
@@ -1638,6 +1691,8 @@ const toggleZoneStatus = async (req, res) => {
         isActive: !zone.isActive
       }
     });
+
+    invalidateCompanyShippingZoneSync(companyId);
 
     res.json({
       success: true,
@@ -1947,6 +2002,8 @@ module.exports = {
   calculatePublicShippingCost,
   getCanonicalGovernorates,
   resolveShippingQuoteForGovernorate,
-  resolvePublicShippingQuote
+  resolvePublicShippingQuote,
+  invalidateCompanyShippingZoneSync,
+  resetCanonicalShippingSyncCache
 };
 

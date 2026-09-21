@@ -198,16 +198,39 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
           </button>
 
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
                 تقرير النشاط الميداني: {employeeName}
               </h1>
               <span className="rounded-full bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-400 ring-1 ring-inset ring-sky-500/20">
                 {departmentName}
               </span>
+              {data.summary?.status === 'active' && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  متصل ويعمل الآن
+                </span>
+              )}
+              {data.summary?.status === 'idle' && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                  خامل (الجهاز مفتوح)
+                </span>
+              )}
+              {data.summary?.status === 'offline' && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
+                  <span className="h-1.5 w-1.5 rounded-full bg-zinc-500" />
+                  غير متصل (مغلق)
+                  {data.summary?.lastSeenTime && (
+                    <span className="mr-1 text-[10px] text-zinc-400 tabular-nums">
+                      (آخر ظهور: {new Date(data.summary.lastSeenTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })})
+                    </span>
+                  )}
+                </span>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {jobTitle} • توثيق النشاط وسجلات البرامج وتطابق الحضور
+              {jobTitle} • {data.summary?.deviceName ? `الجهاز: ${data.summary.deviceName} • ` : ''}توثيق النشاط وسجلات البرامج وتطابق الحضور
             </p>
           </div>
 

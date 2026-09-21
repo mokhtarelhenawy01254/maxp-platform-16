@@ -180,6 +180,21 @@ class MonitorService {
     });
   }
 
+  async endDeviceSession(companyId, employeeId, reason = 'MANUAL_CLOSE') {
+    try {
+      return await this.prisma.monitorDeviceSession.updateMany({
+        where: { companyId, employeeId, isOnline: true },
+        data: {
+          isOnline: false,
+          lastHeartbeat: new Date(),
+        }
+      });
+    } catch (err) {
+      console.warn('[MonitorService] Could not update device session end:', err.message);
+      return null;
+    }
+  }
+
   async getDailySummary(companyId, employeeId, date, alternateEmployeeId = null) {
     const dateStr = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
     const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
@@ -217,10 +232,23 @@ class MonitorService {
         const gapSec = Math.floor((startMs - prevEndMs) / 1000);
         if (gapSec >= 180) {
           if (currentBreak) {
-            currentBreak.endMs = startMs;
-          } else {
-            currentBreak = { startMs: prevEndMs, endMs: startMs };
+            const dur = Math.floor((currentBreak.endMs - currentBreak.startMs) / 1000);
+            if (dur >= 300) {
+              breaks.push({
+                startMs: currentBreak.startMs,
+                endMs: currentBreak.endMs,
+                durationSeconds: dur,
+                isGap: false,
+              });
+            }
+            currentBreak = null;
           }
+          breaks.push({
+            startMs: prevEndMs,
+            endMs: startMs,
+            durationSeconds: gapSec,
+            isGap: true,
+          });
         }
       }
 
@@ -237,7 +265,8 @@ class MonitorService {
             breaks.push({
               startMs: currentBreak.startMs,
               endMs: currentBreak.endMs,
-              durationSeconds: durationSec
+              durationSeconds: durationSec,
+              isGap: false,
             });
           }
           currentBreak = null;
@@ -251,7 +280,8 @@ class MonitorService {
         breaks.push({
           startMs: currentBreak.startMs,
           endMs: currentBreak.endMs,
-          durationSeconds: durationSec
+          durationSeconds: durationSec,
+          isGap: false,
         });
       }
     }
@@ -265,7 +295,12 @@ class MonitorService {
       let reasonType = 'UNLOGGED_INACTIVITY';
       let reasonLabel = 'توقف عن استخدام الجهاز (خمول)';
 
-      if (startHour >= 13 && startHour <= 15) {
+      if (b.isGap) {
+        reasonType = 'DEVICE_DISCONNECTED_OR_POWER_CUT';
+        reasonLabel = durationMinutes >= 30
+          ? 'انقطاع اتصال طويل / إغلاق جهاز أو انقطاع كهرباء'
+          : 'انقطاع اتصال مؤقت بالجهاز / إغلاق أو شبكة';
+      } else if (startHour >= 13 && startHour <= 15) {
         reasonType = 'SCHEDULED_LUNCH';
         reasonLabel = 'استراحة غداء وصلاة معتمدة';
       } else if (durationMinutes >= 60) {
@@ -273,7 +308,7 @@ class MonitorService {
         reasonLabel = 'انقطاع طويل عن الجهاز';
       } else if (durationMinutes <= 20) {
         reasonType = 'SHORT_BREAK';
-        reasonLabel = 'استراحة قصيرة / قهوة';
+        reasonLabel = 'استراحة قصيرة / خمول مؤقت';
       }
 
       return {
@@ -304,7 +339,7 @@ class MonitorService {
     const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
     const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
 
-    const [summaries, activeLogs, appUsages, completedTasks, attendances] = await Promise.all([
+    const [summaries, activeLogs, appUsages, completedTasks, attendances, deviceSessions] = await Promise.all([
       this.prisma.monitorDailySummary.findMany({
         where: { companyId, date: { gte: startOfDay, lte: endOfDay } }
       }),
@@ -345,6 +380,10 @@ class MonitorService {
           checkOut: true,
           checkInMethod: true
         }
+      }).catch(() => []),
+      this.prisma.monitorDeviceSession.findMany({
+        where: { companyId, isOnline: true },
+        select: { employeeId: true, lastHeartbeat: true, deviceName: true, appVersion: true }
       }).catch(() => [])
     ]);
 
@@ -355,6 +394,12 @@ class MonitorService {
       if (att.employeeRelId) attendanceMap.set(att.employeeRelId, att);
     }
 
+    // Build device session map
+    const sessionMap = new Map();
+    for (const sess of (deviceSessions || [])) {
+      if (sess.employeeId) sessionMap.set(sess.employeeId, sess);
+    }
+
     // Collect all candidate IDs
     const rawIds = new Set([
       ...summaries.map(s => s.employeeId),
@@ -363,6 +408,7 @@ class MonitorService {
       ...completedTasks.map(t => t.assignedTo),
       ...(attendances || []).map(a => a.userId),
       ...(attendances || []).map(a => a.employeeRelId),
+      ...(deviceSessions || []).map(d => d.employeeId),
     ].filter(Boolean));
 
     const employeeIds = Array.from(rawIds);
@@ -550,7 +596,25 @@ class MonitorService {
         ? Math.round(item.productivityScores.reduce((a, b) => a + b, 0) / item.productivityScores.length)
         : (item.totalActiveSeconds > 0 ? 70 : 0);
 
-      const isLiveActive = item.lastActivityTime && (Date.now() - new Date(item.lastActivityTime).getTime() < 15 * 60 * 1000);
+      const session = sessionMap.get(item.employeeId) || sessionMap.get(item.employee?.userId) || sessionMap.get(item.employee?.id);
+      const lastHeartbeatMs = session?.lastHeartbeat ? new Date(session.lastHeartbeat).getTime() : 0;
+      const isDeviceConnected = lastHeartbeatMs > 0 && (Date.now() - lastHeartbeatMs < 4 * 60 * 1000);
+
+      const lastActivityMs = item.lastActivityTime ? new Date(item.lastActivityTime).getTime() : 0;
+      const isActivityRecent = lastActivityMs > 0 && (Date.now() - lastActivityMs < 4 * 60 * 1000);
+
+      let status = 'offline';
+      if (isActivityRecent) {
+        status = 'active'; // يعمل بنشاط حالياً (حركة ماوس أو كيبورد خلال آخر 4 دقائق)
+      } else if (isDeviceConnected) {
+        status = 'idle'; // الجهاز متصل وشغال لكن الموظف متوقف عن العمل أو ترك جهازه
+      } else {
+        status = 'offline'; // الجهاز مغلق أو انقطعت الكهرباء أو النت
+      }
+
+      const lastSeenTime = (session?.lastHeartbeat && (!item.lastActivityTime || new Date(session.lastHeartbeat) > new Date(item.lastActivityTime)))
+        ? session.lastHeartbeat
+        : item.lastActivityTime;
 
       return {
         employeeId: item.employeeId,
@@ -560,10 +624,13 @@ class MonitorService {
         productivityScore: avgScore,
         lastActivityTime: item.lastActivityTime,
         firstActivityTime: item.firstActivityTime,
+        lastSeenTime,
+        deviceName: session?.deviceName || null,
+        isDeviceConnected,
         clockInTime: item.clockInTime,
         clockOutTime: item.clockOutTime,
         checkInMethod: item.checkInMethod,
-        status: isLiveActive ? 'active' : (item.totalActiveSeconds > 0 ? 'idle' : 'offline'),
+        status,
         topApp: item.topApp,
         completedTasksCount: item.completedTasksCount,
       };
@@ -598,8 +665,8 @@ class MonitorService {
     const resolvedEmployeeId = employeeRecord?.id || employeeId;
     const candidateIds = Array.from(new Set([employeeId, resolvedUserId, resolvedEmployeeId].filter(Boolean)));
 
-    // 2. Fetch all telemetry, apps, websites, tasks, and attendance
-    const [activities, apps, websites, summary, completedTasks, attendance] = await Promise.all([
+    // 2. Fetch all telemetry, apps, websites, tasks, attendance, and active device session
+    const [activities, apps, websites, summary, completedTasks, attendance, deviceSession] = await Promise.all([
       this.prisma.monitorActivityLog.findMany({
         where: { companyId, employeeId: { in: candidateIds }, intervalStart: { gte: startOfDay, lte: endOfDay } },
         orderBy: { intervalStart: 'asc' },
@@ -654,6 +721,10 @@ class MonitorService {
           date: { gte: startOfDay, lte: endOfDay }
         }
       }).catch(() => null),
+      this.prisma.monitorDeviceSession.findFirst({
+        where: { companyId, employeeId: { in: candidateIds }, isOnline: true },
+        orderBy: { lastHeartbeat: 'desc' }
+      }).catch(() => null),
     ]);
 
     // 3. True recalculation directly from activity logs (eliminates zero-telemetry display discrepancy)
@@ -673,13 +744,36 @@ class MonitorService {
       ? Math.round(activities.reduce((sum, a) => sum + (Number(a.activityScore) || 0), 0) / activities.length)
       : 0;
 
+    const lastHeartbeatMs = deviceSession?.lastHeartbeat ? new Date(deviceSession.lastHeartbeat).getTime() : 0;
+    const isDeviceConnected = lastHeartbeatMs > 0 && (Date.now() - lastHeartbeatMs < 4 * 60 * 1000);
+    const lastActivityTimeVal = summary?.lastActivityTime || (activities.length > 0 ? activities[activities.length - 1].intervalEnd : null);
+    const lastActMs = lastActivityTimeVal ? new Date(lastActivityTimeVal).getTime() : 0;
+    const isActivityRecent = lastActMs > 0 && (Date.now() - lastActMs < 4 * 60 * 1000);
+
+    let currentStatus = 'offline';
+    if (isActivityRecent) {
+      currentStatus = 'active'; // نشط ويعمل حالياً
+    } else if (isDeviceConnected) {
+      currentStatus = 'idle'; // الجهاز متصل وشغال لكن متوقف عن الحركة
+    } else {
+      currentStatus = 'offline'; // الجهاز مغلق أو انقطع الاتصال/الكهرباء
+    }
+
+    const lastSeenTime = (deviceSession?.lastHeartbeat && (!lastActivityTimeVal || new Date(deviceSession.lastHeartbeat) > new Date(lastActivityTimeVal)))
+      ? deviceSession.lastHeartbeat
+      : lastActivityTimeVal;
+
     const finalSummary = {
       ...(summary || {}),
       totalActiveSeconds: (summary?.totalActiveSeconds && summary.totalActiveSeconds > 0) ? summary.totalActiveSeconds : calcActiveSeconds,
       totalIdleSeconds: (summary?.totalIdleSeconds && summary.totalIdleSeconds > 0) ? summary.totalIdleSeconds : calcIdleSeconds,
       productivityScore: (summary?.productivityScore && summary.productivityScore > 0) ? summary.productivityScore : calcProdScore,
       firstActivityTime: summary?.firstActivityTime || (activities.length > 0 ? activities[0].intervalStart : null),
-      lastActivityTime: summary?.lastActivityTime || (activities.length > 0 ? activities[activities.length - 1].intervalEnd : null),
+      lastActivityTime: lastActivityTimeVal,
+      lastSeenTime,
+      isDeviceConnected,
+      status: currentStatus,
+      deviceName: deviceSession?.deviceName || null,
       clockInTime: attendance?.checkIn || summary?.clockInTime || null,
       clockOutTime: attendance?.checkOut || summary?.clockOutTime || null,
       checkInMethod: attendance?.checkInMethod || null,

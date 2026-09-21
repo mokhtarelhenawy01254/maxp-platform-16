@@ -522,21 +522,44 @@ export class WindowTracker {
       return domainMatch[1].toLowerCase();
     }
 
-    // 3. Fallback: check tab format "Page Title - BrandName - Browser" or "Page Title | Brand"
-    const separators = [' - ', ' — ', ' | ', ' · '];
+    // 3. Fallback: extract site or brand from browser title segments
+    const separators = [' - ', ' — ', ' | ', ' · ', ' • '];
     for (const sep of separators) {
       if (title.includes(sep)) {
-        const parts = title.split(sep).map((s) => s.trim()).filter(Boolean);
-        if (parts.length >= 2) {
-          // Check candidate brand before the browser name.
-          // Only accept it when it looks like a real domain — never fabricate
-          // a ".com" for a brand word, that poisons usage reports.
-          const candidate = parts[parts.length - 2].toLowerCase().replace(/[^a-z0-9.-]/g, '');
-          if (candidate.length >= 3 && candidate.length <= 25 && candidate.includes('.')) {
-            return candidate;
+        let parts = title.split(sep).map((s) => s.trim()).filter(Boolean);
+        // Remove trailing browser name if present
+        if (parts.length > 1) {
+          const lastPart = parts[parts.length - 1].toLowerCase();
+          if (
+            lastPart.includes('chrome') ||
+            lastPart.includes('edge') ||
+            lastPart.includes('firefox') ||
+            lastPart.includes('opera') ||
+            lastPart.includes('brave')
+          ) {
+            parts.pop();
+          }
+        }
+        if (parts.length >= 1) {
+          const siteCandidate = parts[parts.length - 1];
+          // If it has domain format (e.g. store.eg, portal.co)
+          if (siteCandidate.includes('.') && !siteCandidate.includes(' ')) {
+            return siteCandidate.toLowerCase();
+          }
+          // If valid site name (Arabic or English), return it as a tracked site label
+          if (siteCandidate.length >= 2 && siteCandidate.length <= 40) {
+            return siteCandidate;
           }
         }
       }
+    }
+
+    // 4. Ultimate browser fallback: strip browser suffix and return clean page title
+    const cleanTitle = title
+      .replace(/\s*-\s*(Google Chrome|Microsoft Edge|Mozilla Firefox|Opera|Brave Browser|Brave|Vivaldi|Arc)$/i, '')
+      .trim();
+    if (cleanTitle && cleanTitle.length >= 2 && cleanTitle.length <= 40) {
+      return cleanTitle;
     }
 
     return null;

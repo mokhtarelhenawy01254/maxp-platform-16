@@ -60,8 +60,21 @@ async function processWebUsageBatch(req, res) {
   }
 }
 
+async function endSession(req, res) {
+  try {
+    const { companyId, id: userId } = req.user;
+    const { reason } = req.body || {};
+    await monitorService.endDeviceSession(companyId, userId, reason || 'MANUAL_CLOSE');
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error in endSession:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   heartbeat,
+  endSession,
   processActivityBatch,
   processAppUsageBatch,
   processWebUsageBatch

@@ -37,6 +37,9 @@ export interface TeamMemberSummary {
   productivityScore: number;
   lastHeartbeat?: string;
   firstActivityTime?: string;
+  lastSeenTime?: string;
+  deviceName?: string;
+  isDeviceConnected?: boolean;
   clockInTime?: string;
   clockOutTime?: string;
   checkInMethod?: string;
@@ -616,14 +619,26 @@ export const MonitorDashboard: React.FC = () => {
                             </span>
                           )}
                           {m.status === 'idle' && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
-                              <PauseCircle className="h-3 w-3" /> استراحة / خمول
-                            </span>
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
+                                <PauseCircle className="h-3 w-3" /> خامل (الجهاز مفتوح)
+                              </span>
+                              {m.deviceName && (
+                                <div className="text-[10px] text-muted-foreground">{m.deviceName}</div>
+                              )}
+                            </div>
                           )}
                           {m.status === 'offline' && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
-                              <XCircle className="h-3 w-3" /> غير متصل
-                            </span>
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800/80 px-2 py-0.5 text-[11px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
+                                <XCircle className="h-3 w-3" /> غير متصل (مغلق)
+                              </span>
+                              {m.lastSeenTime && (
+                                <div className="text-[10px] text-zinc-500 tabular-nums">
+                                  آخر اتصال: {formatClockTime(m.lastSeenTime)}
+                                </div>
+                              )}
+                            </div>
                           )}
                         </td>
 
@@ -756,21 +771,28 @@ export const MonitorDashboard: React.FC = () => {
                         <div className="text-xs text-muted-foreground">{m.departmentName} • {m.jobTitle}</div>
                       </div>
                       {/* Status */}
-                      <div>
+                      <div className="text-left">
                         {m.status === 'active' && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
-                            <CheckCircle2 className="h-2.5 w-2.5" /> نشط
+                            <CheckCircle2 className="h-2.5 w-2.5" /> نشط الآن
                           </span>
                         )}
                         {m.status === 'idle' && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
-                            <PauseCircle className="h-2.5 w-2.5" /> استراحة
+                            <PauseCircle className="h-2.5 w-2.5" /> خامل (مفتوح)
                           </span>
                         )}
                         {m.status === 'offline' && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
-                            <XCircle className="h-2.5 w-2.5" /> غير متصل
-                          </span>
+                          <div className="flex flex-col items-end">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
+                              <XCircle className="h-2.5 w-2.5" /> غير متصل
+                            </span>
+                            {m.lastSeenTime && (
+                              <span className="text-[9px] text-zinc-500 mt-0.5 tabular-nums">
+                                آخر اتصال: {formatClockTime(m.lastSeenTime)}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain, desktopCapturer, screen, safeStorage, powerMonitor, shell } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain, desktopCapturer, screen, safeStorage, powerMonitor, shell, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -199,6 +199,9 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  try {
+    apiClient.endDeviceSession('APP_EXIT');
+  } catch {}
   stopTracking();
   localDb.close();
 });
@@ -382,9 +385,25 @@ function updateTrayMenu(): void {
     },
     { type: 'separator' as const },
     {
-      label: 'إغلاق التطبيق',
-      click: () => {
-        app.exit(0);
+      label: 'إغلاق مساحة العمل (خروج)',
+      click: async () => {
+        const choice = dialog.showMessageBoxSync(mainWindow || undefined as any, {
+          type: 'warning',
+          buttons: ['إلغاء والتراجع', 'تأكيد إغلاق مساحة العمل'],
+          defaultId: 0,
+          cancelId: 0,
+          title: 'تأكيد إغلاق مساحة العمل — MaxP',
+          message: 'هل أنت متأكد من إغلاق تطبيق مساحة العمل؟',
+          detail: 'سيتم توثيق إغلاق التطبيق يدوياً وتجميد عداد العمل الفعلي فوراً وإشعار الإدارة بحالة عدم الاتصال.',
+        });
+
+        if (choice === 1) {
+          try {
+            await apiClient.endDeviceSession('MANUAL_APP_CLOSE');
+            syncEngine.flushAndCaptureNow();
+          } catch {}
+          app.exit(0);
+        }
       },
     },
   ]);

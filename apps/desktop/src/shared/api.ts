@@ -92,6 +92,12 @@ class MonitorApiClient {
     await this.client.post('/heartbeat', deviceInfo);
   }
 
+  async endDeviceSession(reason: string = 'MANUAL_CLOSE'): Promise<void> {
+    try {
+      await this.client.post('/session/end', { reason });
+    } catch {}
+  }
+
   async sendActivityBatch(activities: SyncBatch['activities']): Promise<void> {
     if (activities.length === 0) return;
     await this.client.post('/activity/batch', { activities });

@@ -533,4 +533,44 @@ describe("shippingZoneController", () => {
       })
     ]);
   });
+
+  test('calculatePublicShippingCost caches syncCanonicalShippingData and skips redundant syncs on repeated calls', async () => {
+    shippingZoneController.resetCanonicalShippingSyncCache();
+    mockPrisma.governorate.count = jest.fn().mockResolvedValue(27);
+    mockPrisma.shippingZone.findMany.mockResolvedValue([
+      {
+        id: 'zone-cairo',
+        companyId: 'company-cached',
+        name: 'Cairo Zone',
+        price: 50,
+        deliveryTime: '2 days',
+        governorates: '["Cairo"]',
+        governorateIds: '[]',
+        governorateMappings: []
+      }
+    ]);
+    mockPrisma.company.findUnique.mockResolvedValue({ id: 'company-cached', settings: null });
+    mockPrisma.shippingMethod.findMany.mockResolvedValue([]);
+
+    const req = {
+      params: { companyId: 'company-cached' },
+      query: {},
+      body: { governorate: 'Cairo' }
+    };
+
+    // First call: runs sync and populates cache
+    const res1 = createResponseMock();
+    await shippingZoneController.calculatePublicShippingCost(req, res1);
+    expect(res1.statusCode).toBe(200);
+
+    const callCountAfterFirst = mockPrisma.shippingZone.findMany.mock.calls.length;
+
+    // Second call: should hit cache and skip sync
+    const res2 = createResponseMock();
+    await shippingZoneController.calculatePublicShippingCost(req, res2);
+    expect(res2.statusCode).toBe(200);
+
+    // findMany was called only once more for reading zones (not for sync)
+    expect(mockPrisma.shippingZone.findMany.mock.calls.length).toBe(callCountAfterFirst + 1);
+  });
 });

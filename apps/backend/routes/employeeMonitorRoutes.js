@@ -8,6 +8,7 @@ router.use(authenticateToken);
 
 // Ingest Endpoints
 router.post('/heartbeat', monitorIngestController.heartbeat);
+router.post('/session/end', monitorIngestController.endSession);
 router.post('/activity/batch', monitorIngestController.processActivityBatch);
 router.post('/apps/batch', monitorIngestController.processAppUsageBatch);
 router.post('/web/batch', monitorIngestController.processWebUsageBatch);
