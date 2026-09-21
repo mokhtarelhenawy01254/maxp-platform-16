@@ -3,7 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  AlertTriangle, ArrowRightCircle, Check, CheckCircle2, CheckSquare, Clock, Columns3, CreditCard, ExternalLink, Eye, Filter, FilterX, Flame, Layers, List, Loader2, PackageCheck, Pencil, Printer, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
+  AlertTriangle, ArrowRightCircle, Calendar, Check, CheckCircle2, CheckSquare, Clock, Columns3, CreditCard, ExternalLink, Eye, Filter, FilterX, Flame, Layers, List, Loader2, PackageCheck, Pencil, Printer, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
 } from "lucide-react";
 import {
   CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG, PAYMENT_STATUS_MAP,
@@ -40,6 +40,7 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [doctorId, setDoctorId] = useState(initial?.doctorId ?? "");
+  const [doctorName, setDoctorName] = useState(initial?.doctorName ?? "");
   const [technicianId, setTechnicianId] = useState(initial?.assignments?.[0]?.technicianId ?? "");
   const [workTypeId, setWorkTypeId] = useState(initial?.workTypeId ?? "");
   const [workTypeName, setWorkTypeName] = useState(initial?.workTypeName ?? "");
@@ -126,6 +127,7 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
     try {
       const payload = {
         doctorId: doctorId || undefined,
+        doctorName: doctorName.trim() || undefined,
         technicianId: technicianId || undefined,
         patientName: patientName.trim(),
         patientPhone: patientPhone.trim() || undefined,
@@ -208,12 +210,62 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>{t("dentalLab.cases.doctor")} *</label>
-              <select className={inputCls} value={doctorId} onChange={e => setDoctorId(e.target.value)}>
-                <option value="">—</option>
-                {doctors.filter(d => d.isActive).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              <label className={labelCls}>العيادة / المركز الطبي *</label>
+              <select
+                className={inputCls}
+                value={doctorId}
+                onChange={e => {
+                  const newDocId = e.target.value;
+                  setDoctorId(newDocId);
+                  const found = doctors.find(d => d.id === newDocId);
+                  if (found) {
+                    setDoctorName(found.doctors?.[0]?.name || found.name);
+                  } else {
+                    setDoctorName("");
+                  }
+                }}
+              >
+                <option value="">— اختر العيادة / الحساب —</option>
+                {doctors.filter(d => d.isActive).map(d => (
+                  <option key={d.id} value={d.id}>
+                    {d.clinicName ? `${d.clinicName} (${d.name})` : d.name}
+                  </option>
+                ))}
               </select>
             </div>
+            {(() => {
+              const selectedClinic = doctors.find(d => d.id === doctorId);
+              if (selectedClinic?.doctors && selectedClinic.doctors.length > 0) {
+                return (
+                  <div>
+                    <label className={labelCls}>الطبيب المعالج داخل العيادة</label>
+                    <select
+                      className={inputCls}
+                      value={doctorName}
+                      onChange={e => setDoctorName(e.target.value)}
+                    >
+                      <option value={selectedClinic.name}>{selectedClinic.name} (الطبيب الرئيسي)</option>
+                      {selectedClinic.doctors.map(doc => (
+                        <option key={doc.id} value={doc.name}>
+                          {doc.name} {doc.specialty ? `(${doc.specialty})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              }
+              return (
+                <div>
+                  <label className={labelCls}>اسم الطبيب المعالج (اختياري)</label>
+                  <input
+                    className={inputCls}
+                    value={doctorName}
+                    onChange={e => setDoctorName(e.target.value)}
+                    placeholder="اسم الطبيب المعالج"
+                  />
+                </div>
+              );
+            })()}
             <div>
               <label className={labelCls}>{t("dentalLab.cases.workType")} *</label>
               <select className={inputCls} value={workTypeId} onChange={onWorkTypeChange}>
@@ -875,6 +927,10 @@ export default function DentalCasesTab() {
     if (searchParams.get("filter") === "received_today") return "received_today";
     return "ALL";
   });
+  const [agendaDate, setAgendaDate] = useState(() => searchParams.get("date") || "");
+  const [agendaField, setAgendaField] = useState<"receivedDate" | "dueDate">(() => {
+    return (searchParams.get("dateField") as "dueDate") || "receivedDate";
+  });
   const [search, setSearch] = useState(() => searchParams.get("search") || "");
   const [searchInput, setSearchInput] = useState(() => searchParams.get("search") || "");
   const [page, setPage] = useState(1);
@@ -1070,6 +1126,8 @@ export default function DentalCasesTab() {
         dueDateTo,
         receivedDateFrom,
         receivedDateTo,
+        date: agendaDate || undefined,
+        dateFilterField: agendaField,
         search: search.trim() || undefined,
         trash: viewMode === "TRASH",
         overdueOnly: viewMode === "OVERDUE",
@@ -1082,7 +1140,7 @@ export default function DentalCasesTab() {
     } catch (e) {
       if (!opts?.silent) toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
     }
-  }, [status, doctorId, workTypeId, priority, paymentStatus, technicianId, dateRangePreset, search, viewMode, page, layoutMode, t]);
+  }, [status, doctorId, workTypeId, priority, paymentStatus, technicianId, dateRangePreset, agendaDate, agendaField, search, viewMode, page, layoutMode, t]);
 
   useEffect(() => {
     const t2 = setTimeout(() => setSearch(searchInput.trim()), 400);
@@ -1222,7 +1280,7 @@ export default function DentalCasesTab() {
     Boolean(priority),
     Boolean(paymentStatus),
     Boolean(technicianId),
-    dateRangePreset !== "ALL",
+    Boolean(agendaDate) || dateRangePreset !== "ALL",
     Boolean(searchInput.trim()),
   ].filter(Boolean).length;
 
@@ -1234,6 +1292,8 @@ export default function DentalCasesTab() {
     setPaymentStatus("");
     setTechnicianId("");
     setDateRangePreset("ALL");
+    setAgendaDate("");
+    setAgendaField("receivedDate");
     setSearchInput("");
     setSearch("");
     setPage(1);
@@ -1467,14 +1527,88 @@ export default function DentalCasesTab() {
             <option value="PAID">مسدد بالكامل (Paid)</option>
           </select>
 
+          {/* فلتر الأجندة والبحث بالتاريخ المحدد */}
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-2xs">
+            <span className="flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 px-1.5" title="فلتر الأجندة">
+              <Calendar className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">الأجندة:</span>
+            </span>
+            <select
+              className="bg-transparent text-xs font-medium text-gray-700 dark:text-gray-300 focus:outline-none cursor-pointer py-1"
+              value={agendaField}
+              onChange={e => { setAgendaField(e.target.value as "receivedDate" | "dueDate"); setPage(1); }}
+              title="نوع التاريخ للفلترة"
+            >
+              <option value="receivedDate">تاريخ الدخول</option>
+              <option value="dueDate">تاريخ التسليم</option>
+            </select>
+            <input
+              type="date"
+              className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-1 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              value={agendaDate}
+              onChange={e => {
+                const val = e.target.value;
+                setAgendaDate(val);
+                setDateRangePreset(val ? "CUSTOM" : "ALL");
+                setPage(1);
+              }}
+              title="اختر تاريخ محدد للبحث كأجندة"
+            />
+            {agendaDate ? (
+              <button
+                type="button"
+                onClick={() => { setAgendaDate(""); setDateRangePreset("ALL"); setPage(1); }}
+                className="p-1 text-gray-400 hover:text-red-500 rounded"
+                title="إلغاء تاريخ الأجندة"
+              >
+                <XMarkIcon className="w-3.5 h-3.5" />
+              </button>
+            ) : (
+              <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const today = new Date().toISOString().split("T")[0];
+                    setAgendaDate(today);
+                    setDateRangePreset("CUSTOM");
+                    setPage(1);
+                  }}
+                  className="px-1.5 py-0.5 text-[11px] font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
+                  title="حالات اليوم"
+                >
+                  اليوم
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const y = new Date();
+                    y.setDate(y.getDate() - 1);
+                    setAgendaDate(y.toISOString().split("T")[0]);
+                    setDateRangePreset("CUSTOM");
+                    setPage(1);
+                  }}
+                  className="px-1.5 py-0.5 text-[11px] font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
+                  title="حالات أمس"
+                >
+                  أمس
+                </button>
+              </div>
+            )}
+          </div>
+
           <select
             className={`${filterCls} text-xs`}
             value={dateRangePreset}
-            onChange={e => { setDateRangePreset(e.target.value); setPage(1); }}
-            title="فلترة بموعد الاستلام أو التسليم"
+            onChange={e => {
+              const val = e.target.value;
+              setDateRangePreset(val);
+              if (val !== "CUSTOM") setAgendaDate("");
+              setPage(1);
+            }}
+            title="فترات سريعة للمواعيد"
           >
-            <option value="ALL">كل المواعيد</option>
-            <option value="received_today">وارد اليوم (مستلم اليوم)</option>
+            <option value="ALL">كل المواعيد العامة</option>
+            <option value="received_today">وارد اليوم (استلام اليوم)</option>
             <option value="today">تسليم اليوم</option>
             <option value="this_week">تسليم هذا الأسبوع</option>
           </select>
@@ -1529,6 +1663,7 @@ export default function DentalCasesTab() {
                     t("dentalLab.cases.priority"),
                     "الفني المسند",
                     t("dentalLab.cases.status"),
+                    "تاريخ الدخول",
                     t("dentalLab.cases.dueDate"),
                     t("dentalLab.cases.amounts"),
                     t("dentalLab.common.actions"),
@@ -1613,6 +1748,9 @@ export default function DentalCasesTab() {
                             </span>
                           )}
                         </div>
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap text-xs text-gray-700 dark:text-gray-300 font-medium">
+                        {fmtDate(c.receivedDate)}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap">
                         <span className={overdue ? "text-rose-600 dark:text-rose-400 font-bold" : "text-gray-500 dark:text-gray-400"}>
@@ -1809,7 +1947,14 @@ export default function DentalCasesTab() {
                             </div>
 
                             <div className="flex items-center justify-between text-[11px] pt-1 border-t dark:border-gray-800">
-                              <span className="text-gray-400 text-[10px]">التسليم:</span>
+                              <span className="text-gray-400 text-[10px]">دخول:</span>
+                              <span className="text-gray-600 dark:text-gray-300 font-medium">
+                                {fmtDate(c.receivedDate)}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="text-gray-400 text-[10px]">تسليم:</span>
                               {overdue ? (
                                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400 animate-pulse">
                                   <Flame className="w-3 h-3" /> متأخر {daysOverdue} يوم

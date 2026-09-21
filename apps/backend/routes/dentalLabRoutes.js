@@ -19,7 +19,7 @@ router.get('/files/:name', async (req, res) => {
     const companyId = req.user?.companyId || req.dentist?.companyId;
     if (!companyId) return res.status(401).json({ success: false, error: 'غير مصرح' });
     const attachment = await prisma.dentalCaseAttachment.findFirst({
-      where: { storedPath: name, kind: { not: 'DESIGN_REVIEW' }, companyId },
+      where: { storedPath: name, companyId },
       select: { id: true, storedPath: true, fileName: true, mimeType: true, companyId: true },
     });
     if (!attachment || attachment.companyId !== companyId) {
@@ -28,19 +28,25 @@ router.get('/files/:name', async (req, res) => {
     const filePath = path.join(dentalLabDir, name);
     if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'الملف غير موجود' });
 
-    // نوع المحتوى حسب الامتداد: الصور و PDF تُفتح inline في المتصفح،
+    // نوع المحتوى حسب الامتداد: الصور و PDF و HTML تُفتح inline في المتصفح،
     // وملفات 3D/أخرى تبقى للتحميل (المعاينة 3D عبر model-viewer من الـ blob).
     const ext = path.extname(attachment.fileName || name).toLowerCase();
-    const inlineTypes = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.pdf']);
+    const isHtml = ext === '.html' || ext === '.htm';
+    const inlineTypes = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.pdf', '.html', '.htm']);
     const contentTypeMap = {
       '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
       '.webp': 'image/webp', '.gif': 'image/gif', '.pdf': 'application/pdf',
+      '.html': 'text/html; charset=utf-8', '.htm': 'text/html; charset=utf-8',
       '.json': 'application/json', '.txt': 'text/plain',
     };
     const isInline = inlineTypes.has(ext);
     res.setHeader('Content-Type', contentTypeMap[ext] || 'application/octet-stream');
     res.setHeader('Content-Disposition', isInline ? 'inline' : `attachment; filename="${encodeURIComponent(attachment.fileName || name)}"`);
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (isHtml) {
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob: data:; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: data:; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'");
+    }
     res.sendFile(filePath);
   } catch (error) {
     console.error('Error serving dental file:', error);

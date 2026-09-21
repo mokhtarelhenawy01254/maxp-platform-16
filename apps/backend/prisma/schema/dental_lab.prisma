@@ -9,6 +9,7 @@ model DentalLabDoctor {
   portalPin   String?   // doctor login PIN (portal)
   creditLimit Float    @default(0)
   notes       String?
+  doctors     Json?    // قائمة أطباء العيادة: [{ id, name, phone, specialty }]
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

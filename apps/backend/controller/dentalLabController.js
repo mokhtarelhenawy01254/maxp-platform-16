@@ -365,6 +365,7 @@ const createDoctor = async (req, res) => {
         portalPin: hashedPin,
         creditLimit: creditResult.value,
         notes: body.notes ? String(body.notes) : null,
+        doctors: Array.isArray(body.doctors) ? body.doctors : undefined,
         isActive: normalizeBool(body.isActive, true),
       },
     });
@@ -376,7 +377,7 @@ const createDoctor = async (req, res) => {
 };
 
 
-const DOCTOR_UPDATE_FIELDS = ['name', 'phone', 'clinicName', 'governorate', 'portalPin', 'creditLimit', 'notes', 'isActive'];
+const DOCTOR_UPDATE_FIELDS = ['name', 'phone', 'clinicName', 'governorate', 'portalPin', 'creditLimit', 'notes', 'isActive', 'doctors'];
 
 const updateDoctor = async (req, res) => {
   try {
@@ -410,6 +411,9 @@ const updateDoctor = async (req, res) => {
       const creditResult = toNonNegativeNumber(data.creditLimit, 0);
       if (!creditResult.valid) return res.status(400).json({ success: false, error: 'حد الائتمان غير صحيح' });
       data.creditLimit = creditResult.value;
+    }
+    if ('doctors' in data) {
+      data.doctors = Array.isArray(data.doctors) ? data.doctors : null;
     }
     if ('isActive' in data) data.isActive = normalizeBool(data.isActive, true);
 
@@ -1328,6 +1332,19 @@ const listCases = async (req, res) => {
       }
     }
 
+    // فلتر الأجندة بتاريخ محدد (يوم معين بالكامل 00:00 إلى 23:59:59)
+    if (req.query.date) {
+      const d = parseDate(req.query.date);
+      if (d) {
+        const start = new Date(d);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(d);
+        end.setHours(23, 59, 59, 999);
+        const targetField = req.query.dateFilterField === 'dueDate' ? 'dueDate' : 'receivedDate';
+        where[targetField] = { gte: start, lte: end };
+      }
+    }
+
     const searchOr = search ? [
       { caseNumber: { contains: search, mode: 'insensitive' } },
       { patientName: { contains: search, mode: 'insensitive' } },
@@ -1354,7 +1371,13 @@ const listCases = async (req, res) => {
     const { pageNum, limitNum, skip } = parsePagination(req.query);
     const prisma = getSharedPrismaClient();
     const [items, total, trashCount] = await Promise.all([
-      prisma.dentalLabCase.findMany({ where, include: CASE_LIST_INCLUDE, orderBy: { createdAt: 'desc' }, skip, take: limitNum }),
+      prisma.dentalLabCase.findMany({
+        where,
+        include: CASE_LIST_INCLUDE,
+        orderBy: [{ receivedDate: 'desc' }, { createdAt: 'desc' }],
+        skip,
+        take: limitNum,
+      }),
       prisma.dentalLabCase.count({ where }),
       prisma.dentalLabCase.count({ where: { companyId, isDeleted: true } }),
     ]);
@@ -1704,11 +1727,13 @@ const updateCase = async (req, res) => {
         const doctor = await prisma.dentalLabDoctor.findFirst({ where: { id: doctorId, companyId } });
         if (!doctor) return res.status(400).json({ success: false, error: 'الطبيب لا ينتمي لهذه الشركة' });
         data.doctorId = doctorId;
-        data.doctorName = doctor.name;
+        data.doctorName = (body.doctorName && String(body.doctorName).trim()) || doctor.name;
       } else {
         data.doctorId = null;
         data.doctorName = null;
       }
+    } else if ('doctorName' in body) {
+      data.doctorName = body.doctorName ? String(body.doctorName).trim() : null;
     }
 
     let priceSnapshot = Number(existing.priceSnapshot) || 0;

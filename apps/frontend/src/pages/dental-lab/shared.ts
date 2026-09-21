@@ -37,6 +37,13 @@ export type DentalTechnicianRole =
   | "TECHNICIAN"
   | "QC";
 
+export interface ClinicDoctorItem {
+  id: string;
+  name: string;
+  phone?: string;
+  specialty?: string;
+}
+
 export interface DentalLabDoctor {
   id: string;
   name: string;
@@ -46,6 +53,7 @@ export interface DentalLabDoctor {
   portalPin?: string;
   creditLimit?: number;
   notes?: string;
+  doctors?: ClinicDoctorItem[];
   isActive: boolean;
   createdAt?: string;
   totalBilled?: number;
@@ -437,6 +445,7 @@ export interface DentalLabCase {
   remaining?: number;
   paymentStatus?: DentalPaymentStatus;
   dueDate?: string;
+  receivedDate?: string;
   priority: DentalCasePriority;
   technicianId?: string;
   technicianRole?: DentalTechnicianRole;
@@ -854,6 +863,8 @@ export const fetchCases = async (params?: {
   dueDateTo?: string;
   receivedDateFrom?: string;
   receivedDateTo?: string;
+  date?: string;
+  dateFilterField?: "receivedDate" | "dueDate";
   page?: number;
   limit?: number;
 }): Promise<CasesListResult> => {
