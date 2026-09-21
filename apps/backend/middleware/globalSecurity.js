@@ -364,6 +364,10 @@ const PUBLIC_ROUTES = [
   'GET /',
   'OPTIONS *',
 
+  // Internal deployment and cache purge routes (secured via x-deploy-secret header)
+  'GET /api/v1/internal/*',
+  'POST /api/v1/internal/*',
+
   // Public geolocation (used for language defaults / UX)
   'GET /api/geolocation/*',
   'GET /api/v1/geolocation/*',

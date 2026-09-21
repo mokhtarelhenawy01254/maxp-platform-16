@@ -312,6 +312,49 @@ exports.handleStorefrontShell = async (req, res, next) => {
     // renders the preview or its own not-found state.
     const landingMissing = Boolean(routeContext.landingSlug && !landing);
 
+    // If a single slug was requested (e.g. /car-sunshades) and it didn't match a custom store page,
+    // check if it matches an active product or published landing page for this store and redirect seamlessly.
+    if (routeContext.storePageSlug && !storePage) {
+      const matchedProduct = await safeQuery(() =>
+        prisma.product.findFirst({
+          where: {
+            companyId: req.companyId,
+            isActive: true,
+            deletedAt: null,
+            isHidden: false,
+            OR: [
+              { id: routeContext.storePageSlug },
+              { slug: routeContext.storePageSlug },
+            ],
+          },
+          select: { slug: true },
+        }),
+      );
+
+      if (matchedProduct?.slug) {
+        const queryIdx = req.url.indexOf("?");
+        const queryString = queryIdx !== -1 ? req.url.slice(queryIdx) : "";
+        return res.redirect(301, `/product/${matchedProduct.slug}${queryString}`);
+      }
+
+      const matchedLanding = await safeQuery(() =>
+        prisma.productLandingPage.findFirst({
+          where: {
+            companyId: req.companyId,
+            slug: routeContext.storePageSlug,
+            status: "PUBLISHED",
+          },
+          select: { slug: true },
+        }),
+      );
+
+      if (matchedLanding?.slug) {
+        const queryIdx = req.url.indexOf("?");
+        const queryString = queryIdx !== -1 ? req.url.slice(queryIdx) : "";
+        return res.redirect(301, `/lp/${matchedLanding.slug}${queryString}`);
+      }
+    }
+
     const isNotFound =
       (routeContext.productKey && !product) ||
       (routeContext.categorySlug && !category) ||
