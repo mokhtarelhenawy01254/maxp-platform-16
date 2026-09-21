@@ -25,6 +25,7 @@ import { OrdersMobileList } from "./components/OrdersMobileList";
 import { OrdersToolbar } from "./components/OrdersToolbar";
 import { OrdersTable } from "./components/OrdersTable";
 import { OrdersStatsBar } from "./components/OrdersStatsBar";
+import { isReturnStatusCode, isTurboReturnStatus } from "./utils/returnHelper";
 
 import { OrdersPagination } from "./components/OrdersPagination";
 import { BulkActionBar } from "./components/BulkActionBar";
@@ -2572,7 +2573,22 @@ const Orders: React.FC = () => {
   }, [activeCarriers]);
 
   const getUnifiedStatusDisplay = (order: Order, translate: (key: string) => string) => {
+    // 🛡️ لو شحنة الطلب مرتجعة في شركة الشحن، نعرض حالة الإرجاع بوضوح حتى لو حالة الطلب الداخلية مختلفة
+    const isCarrierReturn = isTurboReturnStatus(order.turboShipmentStatus);
     const display = getOrderStatusDisplay(order);
+
+    if (isCarrierReturn && !isReturnStatusCode(order.status)) {
+      const returnLabel = display.secondary?.label
+        ? display.secondary.label.replace(/^🚚\s*/, "")
+        : "مرتجع بالشركة (تربو)";
+      return {
+        text: returnLabel,
+        labelKey: display.secondary?.labelKey || "orders.turboReturnedToCompany",
+        className: "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300",
+        style: undefined,
+      };
+    }
+
     const customStyle = getStatusBadgeStyle(order.status || "");
     // 🛡️ (custom-status-persist): الحالات المخصصة — الباك-إند بيرجّع الكود المخصص
     // والـ registry مش بيعرفه، فكان بيقع على fallback بيعرض الكود الإنجليزي الخام.

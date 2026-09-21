@@ -63,6 +63,17 @@ const TURBO_RETURN_CODES = [
   "returned_to_customer",
 ];
 
+export const isTurboReturnStatus = (status?: string | null): boolean => {
+  if (!status) return false;
+  const s = String(status).trim().toLowerCase();
+  return (
+    TURBO_RETURN_CODES.includes(s) ||
+    s.includes("return") ||
+    s.includes("مرتجع") ||
+    s.includes("مسترجع")
+  );
+};
+
 export const isOrderReturned = (order?: OrderDetailsType | any | null): boolean => {
   if (!order) return false;
 

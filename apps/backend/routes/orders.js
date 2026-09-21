@@ -3464,7 +3464,17 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           companyId,
           orderNumber: { in: guestTwinNumbers, mode: 'insensitive' },
         },
-        select: { orderNumber: true, status: true, customStatusCode: true, metadata: true, billingHoldAt: true },
+        select: {
+          orderNumber: true,
+          status: true,
+          customStatusCode: true,
+          metadata: true,
+          billingHoldAt: true,
+          turboShipmentStatus: true,
+          turboReturnReason: true,
+          turboDelayReason: true,
+          turboTrackingNumber: true
+        },
       });
       for (const t of twinRows) {
         regularTwinsByNumber.set(String(t.orderNumber).trim().toLowerCase(), t);
@@ -3522,8 +3532,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // (لو موجود) له الأولوية — قبل كده كان بيضيع فكان الضيف الشبح بيعرض حالة قديمة.
       if (t?.customStatusCode) return String(t.customStatusCode).toUpperCase();
       const prep = t ? prepFromMeta(t.metadata) : prepFromMeta(g?.metadata);
-      if (prep) return String(getMappedRegularOrderStatus(prep)).toUpperCase();
-      return String((t ? t.status : g?.status) || '').toUpperCase();
+      const rawStatus = String((t ? t.status : g?.status) || '').toUpperCase();
+      const turboStatus = String((t ? t.turboShipmentStatus : g?.turboShipmentStatus) || '').toLowerCase();
+      if (['returned_to_company', 'returned_received', 'returned_resent', 'returned_missing', 'returned_destroyed', '5', '10', '11', '12', '20'].includes(turboStatus)) {
+        return 'RETURNED';
+      }
+      return rawStatus;
     };
 
     if (totalGuest > 0) {
@@ -3533,7 +3547,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         select: {
           orderNumber: true,
           status: true,
-          metadata: true
+          metadata: true,
+          turboShipmentStatus: true,
+          turboReturnReason: true,
+          turboDelayReason: true
         }
       });
 
@@ -3779,6 +3796,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         carrierType: order.shipments?.[0]?.carrierType || orderMetadata?.shippingCarrier || (order.turboTrackingNumber ? 'TURBO' : null),
         shipment: order.shipments?.[0] || null,
         shipments: order.shipments || [],
+        turboShipmentStatus: order.turboShipmentStatus || null,
+        turboReturnReason: order.turboReturnReason || null,
+        turboDelayReason: order.turboDelayReason || null,
+        turboTrackingNumber: order.turboTrackingNumber || null,
         notes: order.notes,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
@@ -3874,7 +3895,11 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           image: item.image || item.productImage || '',
           metadata: item.metadata && typeof item.metadata === 'object' ? item.metadata : {}
         })) : [],
-        trackingNumber: null,
+        trackingNumber: order.turboTrackingNumber || twin?.turboTrackingNumber || null,
+        turboTrackingNumber: order.turboTrackingNumber || twin?.turboTrackingNumber || null,
+        turboShipmentStatus: order.turboShipmentStatus || twin?.turboShipmentStatus || null,
+        turboReturnReason: order.turboReturnReason || twin?.turboReturnReason || null,
+        turboDelayReason: order.turboDelayReason || twin?.turboDelayReason || null,
         notes: order.notes || '',
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
