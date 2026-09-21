@@ -620,61 +620,160 @@ const WhatsAppChatContent: React.FC = () => {
     return bareJid.replace(/\D/g, '');
   }, []);
 
-  // — Deep link: فتح محادثة محددة من رابط مشارك (session + jid) —
+  // — Deep link: فتح محادثة محددة من رابط مشارك (session / jid / phone / conversationId) —
   const [searchParams, setSearchParams] = useSearchParams();
   const deepLinkAppliedRef = useRef(false);
 
   useEffect(() => {
+    if (deepLinkAppliedRef.current) return;
+    if (loadingSessions) return;
+
     const sessionParam = searchParams.get('session');
-    const jidParam = searchParams.get('jid');
-    if (!sessionParam || !jidParam || deepLinkAppliedRef.current) return;
+    const rawJidParam = searchParams.get('jid');
+    const phoneParam = searchParams.get('phone');
+    const conversationIdParam = searchParams.get('conversationId') || searchParams.get('conversation');
+    const nameParam = searchParams.get('name');
+    const orderNumberParam = searchParams.get('orderNumber') || searchParams.get('orderId');
 
-    if (selectedSession && selectedSession !== 'all' && selectedSession !== sessionParam) {
-      setSelectedSession(sessionParam);
-    }
-    if (!selectedSession) {
-      setSelectedSession(sessionParam);
+    // If none of the identifiers are present, nothing to deep-link
+    if (!sessionParam && !rawJidParam && !phoneParam && !conversationIdParam) return;
+
+    // Normalize phone number
+    let cleanPhone = (phoneParam || '').replace(/\D/g, '');
+    if (cleanPhone.startsWith('01') && cleanPhone.length === 11) {
+      cleanPhone = '2' + cleanPhone;
     }
 
-    const normalizedTarget = normalizeContactJid(jidParam);
-    const found = conversations.find(
-      (c) => c.sessionId === sessionParam && normalizeContactJid(c.jid) === normalizedTarget
-    );
+    // Determine target JID
+    let targetJid = rawJidParam || '';
+    if (!targetJid && cleanPhone) {
+      targetJid = `${cleanPhone}@s.whatsapp.net`;
+    } else if (targetJid && !targetJid.includes('@')) {
+      targetJid = `${targetJid}@s.whatsapp.net`;
+    }
+
+    if (!cleanPhone && targetJid) {
+      cleanPhone = targetJid.replace(/@.*$/, '').replace(/\D/g, '');
+    }
+
+    const normalizedTarget = targetJid ? normalizeContactJid(targetJid) : '';
+
+    const applyOrderGreeting = () => {
+      if (orderNumberParam) {
+        setNewMessage((prev) => {
+          if (prev && prev.trim()) return prev;
+          const greetingName = nameParam ? `${nameParam}، ` : '';
+          return `مرحباً ${greetingName}نتواصل معك بخصوص طلبك رقم #${orderNumberParam}`;
+        });
+      }
+    };
+
+    // 1. Try finding in already loaded conversations
+    const found = conversations.find((c) => {
+      if (conversationIdParam && (c.id === conversationIdParam || c.jid === conversationIdParam)) return true;
+      if (sessionParam && c.sessionId !== sessionParam) return false;
+      if (normalizedTarget && normalizeContactJid(c.jid) === normalizedTarget) return true;
+      if (cleanPhone && c.phoneNumber && normalizeContactJid(c.phoneNumber).includes(cleanPhone)) return true;
+      return false;
+    });
 
     if (found) {
       deepLinkAppliedRef.current = true;
       setSearchParams({}, { replace: true });
+      if (selectedSession !== found.sessionId) {
+        setSelectedSession(found.sessionId);
+      }
       setSelectedContact(found);
+      applyOrderGreeting();
       return;
     }
 
-    if (sessions.length > 0) {
-      const newContact: Contact = {
-        id: jidParam,
-        jid: jidParam,
-        sessionId: sessionParam,
-        phoneNumber: jidParam.replace(/@.*$/, '').replace(/[^\d]/g, ''),
-        name: null,
-        pushName: null,
-        profilePicUrl: null,
-        isGroup: jidParam.includes('@g.us'),
-        isNewsletter: jidParam.includes('@newsletter'),
-        category: null,
-        unreadCount: 0,
-        lastMessageAt: new Date().toISOString(),
-        isArchived: false,
-        isPinned: false,
-        isMuted: false,
-        isBlocked: false,
-        session: { name: '', phoneNumber: '' },
-        customer: null,
-        window: { isOpen: false, remainingSeconds: 0, remainingLabel: '', windowExpiresAt: null },
-      };
-      deepLinkAppliedRef.current = true;
-      setSearchParams({}, { replace: true });
-      setSelectedContact(newContact);
-    }
-  }, [searchParams, conversations, sessions, selectedSession, normalizeContactJid, setSearchParams]);
+    // 2. If not found in memory, lookup via backend API or fallback to creating new contact
+    let isCancelled = false;
+    const lookupAndApply = async () => {
+      if (cleanPhone || conversationIdParam || targetJid) {
+        try {
+          const res = await api.get<{ conversations?: Contact[] }>('/whatsapp/conversations', {
+            params: {
+              search: cleanPhone || targetJid || conversationIdParam,
+              sessionId: sessionParam || 'all',
+              limit: 5,
+            },
+          });
+          const matched = res.data?.conversations?.[0];
+          if (matched && !isCancelled) {
+            deepLinkAppliedRef.current = true;
+            setSearchParams({}, { replace: true });
+            if (selectedSession !== matched.sessionId) {
+              setSelectedSession(matched.sessionId);
+            }
+            setSelectedContact(matched);
+            applyOrderGreeting();
+            return;
+          }
+        } catch (err) {
+          console.warn('WhatsApp deep-link lookup error:', err);
+        }
+      }
+
+      if (isCancelled) return;
+
+      // 3. Fallback: Initialize new contact under the active / connected session
+      if (sessions.length > 0 && targetJid) {
+        const activeSession =
+          (sessionParam && sessions.find((s) => s.id === sessionParam)) ||
+          sessions.find((s) => s.status === 'CONNECTED') ||
+          sessions[0];
+
+        if (activeSession) {
+          const newContact: Contact = {
+            id: targetJid,
+            jid: targetJid,
+            sessionId: activeSession.id,
+            phoneNumber: cleanPhone || targetJid.replace(/@.*$/, '').replace(/[^\d]/g, ''),
+            name: nameParam || null,
+            pushName: null,
+            profilePicUrl: null,
+            isGroup: targetJid.includes('@g.us'),
+            isNewsletter: targetJid.includes('@newsletter'),
+            category: null,
+            unreadCount: 0,
+            lastMessageAt: new Date().toISOString(),
+            isArchived: false,
+            isPinned: false,
+            isMuted: false,
+            isBlocked: false,
+            session: { name: activeSession.name || '', phoneNumber: activeSession.phoneNumber || '' },
+            customer: null,
+            window: { isOpen: false, remainingSeconds: 0, remainingLabel: '', windowExpiresAt: null },
+          };
+          deepLinkAppliedRef.current = true;
+          setSearchParams({}, { replace: true });
+          if (selectedSession !== activeSession.id) {
+            setSelectedSession(activeSession.id);
+          }
+          setSelectedContact(newContact);
+          applyOrderGreeting();
+        }
+      } else if (sessions.length === 0) {
+        toast.warning('لا يوجد رقم واتساب متصل بالمنصة. يرجى ربط رقم واتساب في الإعدادات.');
+      }
+    };
+
+    lookupAndApply();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    searchParams,
+    conversations,
+    sessions,
+    loadingSessions,
+    selectedSession,
+    normalizeContactJid,
+    setSearchParams,
+  ]);
 
   // Filtered contacts logic moved to ChatSidebar
 

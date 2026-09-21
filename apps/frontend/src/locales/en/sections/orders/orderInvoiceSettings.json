@@ -55,6 +55,8 @@
   "k_54": "Show Tax Details",
   "k_55": "Show Payment Method",
   "k_56": "Show Product Details",
+  "showCustomFields": "Show Custom Fields & Order Specs (Car Make & Model)",
+  "showCustomFieldsDesc": "Display custom field values (such as car make, model & year) prominently on printed invoices and waybills.",
   "k_57": "Order Number Barcode",
   "k_58": "Tracking Code Barcode",
   "k_59": "Show Company Name",

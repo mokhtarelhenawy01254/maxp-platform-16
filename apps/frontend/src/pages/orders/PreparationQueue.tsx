@@ -14,6 +14,7 @@ import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { printSingleShippingLabel } from "../../utils/printShippingLabel";
+import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import type { OrderDetailsType } from "./types";
 import {
   DEFAULT_PROBLEM_HOLD_DETAILS,
@@ -134,6 +135,7 @@ const PreparationQueue: React.FC = () => {
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
   const { user } = useAuth();
+  const { settings: invoiceSettings } = useInvoiceSettings();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialOverrides = useMemo(() => getInitialPreparationState(searchParams), []);
   const { state: uiState, actions: uiActions } = usePreparationQueueUiState(initialOverrides);
@@ -953,6 +955,7 @@ const PreparationQueue: React.FC = () => {
         companyName: user?.company?.name,
         companyLogoUrl: user?.company?.logo || null,
         printWindow,
+        settings: invoiceSettings,
       });
       toast.success(t('preparation.page.slipOpened'));
     } catch (error: unknown) {
@@ -961,7 +964,7 @@ const PreparationQueue: React.FC = () => {
     } finally {
       setPrintingOrderNumber(null);
     }
-  }, [orders, user?.company?.name, user?.company?.logo, t]);
+  }, [orders, user?.company?.name, user?.company?.logo, invoiceSettings, t]);
 
   const saveShortageHoldDetails = useCallback(
     async (

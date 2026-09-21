@@ -644,6 +644,7 @@ model OrderInvoiceSettings {
   fontFamily             String   @default("Arial")
   showBarcodeOrderCode   Boolean  @default(true)
   showBarcodeShippingCode Boolean  @default(true)
+  showCustomFields       Boolean  @default(false)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
     enableSequentialOrders Boolean  @default(false)

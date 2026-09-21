@@ -1328,6 +1328,7 @@ class OrderService {
               ? { customStatusCode: isRequestedCustom ? originalRequestedStatus : null }
               : {}),
             notes: notes || undefined,
+            ...((status === 'RETURNED' || status === 'PARTIALLY_RETURNED' || String(originalRequestedStatus || '').toUpperCase().includes('RETURN')) && notes ? { turboReturnReason: notes } : {}),
             ...(nextMetadata ? { metadata: nextMetadata } : {}),
             ...confirmationData,
             ...resetConfirmationData,
@@ -1478,7 +1479,7 @@ class OrderService {
             // جانبي تماماً — أي فشل فيه (زي FK على userId بتاعة SYSTEM من سينك تربو) كان بيكسر
             // الـ background block كله وقبل وصول الإشعار للعميل. دلوقتي أي خطأ بيتسجل بس
             // والإشعار يكمل.
-            await this.autoCreateReturnRequest(order, userId, status).catch(returnErr => {
+            await this.autoCreateReturnRequest(order, userId, status, notes).catch(returnErr => {
               console.error(`❌ [RETURNS-AUTO-BG] autoCreateReturnRequest failed for ${orderNumber}:`, returnErr.message);
             });
           }
@@ -1758,6 +1759,7 @@ class OrderService {
           data: {
             status,
             notes: notes || undefined,
+            ...((status === 'RETURNED' || status === 'PARTIALLY_RETURNED' || String(status || '').toUpperCase().includes('RETURN')) && notes ? { turboReturnReason: notes } : {}),
             ...(nextGuestMetadata ? { metadata: nextGuestMetadata } : {}),
             OrderStatusHistory: {
               create: {
@@ -1785,6 +1787,7 @@ class OrderService {
             data: {
               status: status,
               notes: notes || undefined,
+              ...((status === 'RETURNED' || status === 'PARTIALLY_RETURNED' || String(status || '').toUpperCase().includes('RETURN')) && notes ? { turboReturnReason: notes } : {}),
               updatedAt: new Date()
             }
           });
@@ -1915,7 +1918,7 @@ class OrderService {
   }
 
   // إنشاء طلب إرجاع تلقائياً
-  async autoCreateReturnRequest(order, userId, status) {
+  async autoCreateReturnRequest(order, userId, status, notes = null) {
     try {
       const prisma = this.getPrisma();
 
@@ -1924,6 +1927,15 @@ class OrderService {
       });
 
       if (existingRequest) {
+        if (notes && !existingRequest.adminNotes?.includes(notes)) {
+          await prisma.returnRequest.update({
+            where: { id: existingRequest.id },
+            data: {
+              adminNotes: existingRequest.adminNotes ? `${existingRequest.adminNotes} - ${notes}` : `سبب المرتجع: ${notes}`,
+              customerNotes: existingRequest.customerNotes || notes
+            }
+          }).catch(() => null);
+        }
         return;
       }
 
@@ -1934,7 +1946,8 @@ class OrderService {
           companyId: order.companyId,
           reasonId: null,
           status: 'PENDING',
-          adminNotes: `تم إنشاء هذا الطلب تلقائياً عند تغيير حالة الطلب الأصلي إلى: ${status}`,
+          adminNotes: notes ? `تم إنشاء هذا الطلب تلقائياً عند تغيير حالة الطلب الأصلي إلى: ${status} - سبب المرتجع: ${notes}` : `تم إنشاء هذا الطلب تلقائياً عند تغيير حالة الطلب الأصلي إلى: ${status}`,
+          customerNotes: notes || null,
           responsibleParty: null,
           isReviewed: false,
           refundAmount: order.total ? parseFloat(order.total) : undefined,

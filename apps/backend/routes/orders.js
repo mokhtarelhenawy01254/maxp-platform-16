@@ -5616,6 +5616,20 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             createdAt: 'desc'
           }
         },
+        returnRequests: {
+          include: {
+            returnReason: {
+              include: {
+                returnReasonCategory: true
+              }
+            },
+            returnType: true,
+            shippingCompany: true
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        },
         ...buildScopedMerchantOrderInclude(merchant)
       }
     });
@@ -5963,7 +5977,8 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         assignedToUser: guestAssignedToUser,
         assignedByUser: guestAssignedByUser,
         orderNotes: guestOrder.orderNotes || [],
-        statusHistory: guestOrder.OrderStatusHistory || []
+        statusHistory: guestOrder.OrderStatusHistory || [],
+        returnRequests: []
       };
 
       console.log('📦 [ORDER-DETAIL] GuestOrder Turbo fields:', {
@@ -6168,7 +6183,8 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         autoTransitionEnabled: order.autoTransitionEnabled || false,
         scheduledTransitionedAt: order.scheduledTransitionedAt || null,
         orderNotes: order.orderNotes || [],
-        statusHistory: order.statusHistory || []
+        statusHistory: order.statusHistory || [],
+        returnRequests: order.returnRequests || []
       };
 
       console.log('📦 [ORDER-DETAIL] Regular Order Turbo fields:', {

@@ -1,12 +1,14 @@
 import React from "react";
 import i18n from "../../i18n";
 import InvoiceBarcode from "./InvoiceBarcode";
+import { extractOrderCustomFields } from "../../utils/orderCustomFields";
 
 export interface InvoicePrintSettings {
   showCompanyLogo: boolean;
   showTaxBreakdown: boolean;
   showPaymentMethod: boolean;
   showOrderItems: boolean;
+  showCustomFields?: boolean;
   primaryColor: string;
   secondaryColor: string;
   fontFamily: string;
@@ -19,6 +21,7 @@ export const DEFAULT_INVOICE_SETTINGS: InvoicePrintSettings = {
   showTaxBreakdown: true,
   showPaymentMethod: true,
   showOrderItems: true,
+  showCustomFields: false,
   primaryColor: "#0f766e",
   secondaryColor: "#6b7280",
   fontFamily: 'Cairo, "Segoe UI", Tahoma, Arial, sans-serif',
@@ -156,6 +159,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
   
   const addressText = invoice.customerAddress ? formatAddress(invoice.customerAddress) : "";
   const items = page?.chunkItems ?? (invoice.order?.orderItems || []);
+  const customFields = extractOrderCustomFields(invoice);
   
   let governorate = invoice.governorate;
   let city = invoice.city;
@@ -268,6 +272,54 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
            <div style={{ ...valueStyle, flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "flex-end" }}>{addressText || "—"}</div>
         </div>
 
+        {/* Row 4b: Custom Fields (Car Make & Model / Custom Specs) */}
+        {s.showCustomFields && customFields.length > 0 && (
+          <div
+            style={{
+              borderBottom: borderStyle,
+              padding: compact ? "6px 8px" : "8px 12px",
+              backgroundColor: "#f8fafc",
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+            }}
+          >
+            {customFields.map((cf, idx) => (
+              <div
+                key={idx}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "8px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: compact ? "11px" : "13px",
+                    fontWeight: 700,
+                    color: "#334155",
+                  }}
+                >
+                  🚗 {cf.label}:
+                </span>
+                <span
+                  style={{
+                    fontSize: compact ? "13px" : "15px",
+                    fontWeight: 900,
+                    color: "#000",
+                    direction: "rtl",
+                    textAlign: "right",
+                  }}
+                >
+                  {cf.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Row 5: Products Table (Replaces string concatenation) */}
         <div style={{ borderBottom: borderStyle, flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
@@ -312,7 +364,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
         {/* Row 6: Notes */}
         <div style={{ borderBottom: borderStyle, padding: compact ? "4px 8px" : "8px 12px", minHeight: compact ? "35px" : "45px", display: "flex", flexDirection: "column" }}>
            <div style={titleStyle}>{i18n.t("invoiceContent.notes")}</div>
-           <div style={{ ...valueStyle, flex: 1 }}></div>
+           <div style={{ ...valueStyle, flex: 1, fontSize: compact ? "11px" : "13px", fontWeight: 600 }}>{invoice.notes || invoice.order?.notes || ""}</div>
         </div>
 
         {/* Row 7: Shipping Barcode & Total (Footer) */}

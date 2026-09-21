@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import {
   UserIcon,
   PhoneIcon,
@@ -10,6 +11,7 @@ import {
   CheckCircleIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
+import { WhatsAppIcon } from "../../../components/icons/brands";
 import { OrderDetailsType, Government, Area } from "../types";
 import { GovernorateAreaSearch } from "../../../components/ui/GovernorateAreaSearch";
 import { validateEgyptianPhone, toStandardDigits } from "../../../utils/validation";
@@ -221,6 +223,26 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
     }
   };
 
+  const getWhatsAppChatUrl = (phone?: string | null) => {
+    if (!phone) return null;
+    let cleanPhone = String(phone).replace(/\D/g, "");
+    if (cleanPhone.startsWith("01") && cleanPhone.length === 11) {
+      cleanPhone = "2" + cleanPhone;
+    }
+    const params = new URLSearchParams();
+    params.set("phone", cleanPhone);
+    if (order.customerName) {
+      params.set("name", order.customerName);
+    }
+    if (order.orderNumber) {
+      params.set("orderNumber", order.orderNumber);
+    }
+    if (order.conversationId) {
+      params.set("conversationId", order.conversationId);
+    }
+    return `/whatsapp?${params.toString()}`;
+  };
+
   return (
     <>
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
@@ -338,16 +360,28 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
               )}
             </div>
           ) : (
-            <div className="flex items-center text-gray-900 dark:text-gray-100">
-              <PhoneIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 ms-0 me-2 shrink-0" />
-              {order.customerPhone ? (
-                <span dir="ltr" className="font-mono tabular-nums font-medium">
-                  {toStandardDigits(order.customerPhone)}
-                </span>
-              ) : (
-                <span className="text-gray-400 text-sm">
-                  {t("orders.notSpecified")}
-                </span>
+            <div className="flex items-center justify-between text-gray-900 dark:text-gray-100">
+              <div className="flex items-center min-w-0">
+                <PhoneIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 ms-0 me-2 shrink-0" />
+                {order.customerPhone ? (
+                  <span dir="ltr" className="font-mono tabular-nums font-medium">
+                    {toStandardDigits(order.customerPhone)}
+                  </span>
+                ) : (
+                  <span className="text-gray-400 text-sm">
+                    {t("orders.notSpecified")}
+                  </span>
+                )}
+              </div>
+              {order.customerPhone && getWhatsAppChatUrl(order.customerPhone) && (
+                <Link
+                  to={getWhatsAppChatUrl(order.customerPhone)!}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition active:scale-97 shrink-0 shadow-xs"
+                  title="فتح محادثة العميل على واتساب المنصة"
+                >
+                  <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>محادثة واتساب</span>
+                </Link>
               )}
             </div>
           )}
@@ -380,11 +414,23 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
               )}
             </div>
           ) : order.alternativePhone ? (
-            <div className="flex items-center text-gray-900 dark:text-gray-100">
-              <PhoneIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 ms-0 me-2 shrink-0" />
-              <span dir="ltr" className="font-mono tabular-nums font-medium">
-                {toStandardDigits(order.alternativePhone)}
-              </span>
+            <div className="flex items-center justify-between text-gray-900 dark:text-gray-100">
+              <div className="flex items-center min-w-0">
+                <PhoneIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 ms-0 me-2 shrink-0" />
+                <span dir="ltr" className="font-mono tabular-nums font-medium">
+                  {toStandardDigits(order.alternativePhone)}
+                </span>
+              </div>
+              {getWhatsAppChatUrl(order.alternativePhone) && (
+                <Link
+                  to={getWhatsAppChatUrl(order.alternativePhone)!}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition active:scale-97 shrink-0 shadow-xs"
+                  title="فتح محادثة الهاتف البديل على واتساب المنصة"
+                >
+                  <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>محادثة واتساب</span>
+                </Link>
+              )}
             </div>
           ) : (
             <p className="text-gray-400 dark:text-gray-500 text-sm">

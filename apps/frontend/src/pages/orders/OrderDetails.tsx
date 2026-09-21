@@ -14,7 +14,9 @@ import {
   XCircleIcon,
   TicketIcon,
   ArrowTopRightOnSquareIcon,
+  ArrowPathRoundedSquareIcon,
 } from "@heroicons/react/24/outline";
+import { WhatsAppIcon } from "../../components/icons/brands";
 import { toast } from "sonner";
 import SimplifiedProductSelectionModal from "./components/SimplifiedProductSelectionModal";
 import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOperationsCard";
@@ -24,6 +26,7 @@ import OrderHeader from "./components/OrderHeader";
 import OrderItemsCard from "./components/OrderItemsCard";
 import CustomerInfoCard from "./components/CustomerInfoCard";
 import OrderPaymentCard from "./components/OrderPaymentCard";
+import OrderReturnCard from "./components/OrderReturnCard";
 import TurboShippingPanel from "./components/TurboShippingPanel";
 import BostaShippingPanel from "./components/BostaShippingPanel";
 import UnifiedShippingCard from "./components/UnifiedShippingCard";
@@ -35,12 +38,18 @@ import PostponeOrderModal from "./components/PostponeOrderModal";
 import PartialDeliveryModal from "./components/PartialDeliveryModal";
 import { CreateTicketModal } from "./shipments/CreateTicketModal";
 
-// Hooks
+// Hooks & Utils
 import { useOrderDetails } from "./hooks/useOrderDetails";
 import { useTurboShipping } from "./hooks/useTurboShipping";
 import { useBostaShipping } from "./hooks/useBostaShipping";
 import { OrderDetailsType } from "./types";
+import {
+  getOrderReturnDetails,
+  isReturnStatusCode,
+  COMMON_RETURN_REASONS,
+} from "./utils/returnHelper";
 import { printSingleShippingLabel } from "../../utils/printShippingLabel";
+import { useInvoiceSettings } from "../../hooks/useInvoiceSettings";
 import { apiClient } from "../../services/apiClient";
 import { cancellationService, CancellationReason } from "../../services/cancellationService";
 import tokenManager from "../../utils/tokenManager";
@@ -148,6 +157,8 @@ const OrderDetails: React.FC = () => {
     cancelShipment: cancelBostaShipment,
   } = useBostaShipping(order, setOrder);
 
+  const { settings: invoiceSettings } = useInvoiceSettings();
+
   useEffect(() => {
     if (order?.id) fetchBostaShipment();
   }, [order?.id]);
@@ -180,6 +191,8 @@ const OrderDetails: React.FC = () => {
   // Temporary Form State for Modals
   const [newStatus, setNewStatus] = useState("");
   const [statusNotes, setStatusNotes] = useState("");
+  const [returnReason, setReturnReason] = useState("");
+  const [returnAdditionalNotes, setReturnAdditionalNotes] = useState("");
   const [isOverride, setIsOverride] = useState(false);
   const [newPaymentStatus, setNewPaymentStatus] = useState("");
   const [paymentNotes, setPaymentNotes] = useState("");
@@ -193,8 +206,13 @@ const OrderDetails: React.FC = () => {
 
   const isGuestOrder = Boolean(order?.metadata?.isGuestOrder);
   const isModalCancellationStatus = isCancellationStatus(newStatus);
+  const isModalReturnStatus = isReturnStatusCode(newStatus);
   const latestCancellationReason = useMemo(
     () => getLatestCancellationReason(order),
+    [order],
+  );
+  const returnDetails = useMemo(
+    () => getOrderReturnDetails(order),
     [order],
   );
   const isMerchant = user?.role === "MERCHANT";
@@ -346,6 +364,7 @@ const OrderDetails: React.FC = () => {
         companyName: user?.company?.name,
         companyLogoUrl: user?.company?.logo || null,
         printWindow,
+        settings: invoiceSettings,
       });
     };
 
@@ -407,6 +426,7 @@ const OrderDetails: React.FC = () => {
         companyName: user?.company?.name,
         companyLogoUrl: user?.company?.logo || null,
         printWindow,
+        settings: invoiceSettings,
       });
     } catch (error: any) {
       console.error("Error generating preparation slip HTML:", error);
@@ -417,16 +437,27 @@ const OrderDetails: React.FC = () => {
   const onUpdateStatus = async () => {
     const trimmedReason = statusNotes.trim();
     if (isCancellationStatus(newStatus) && !trimmedReason) return;
+    if (isModalReturnStatus && !returnReason.trim() && !trimmedReason) return;
 
-    const notesToSend = isCancellationStatus(newStatus) && cancellationAdditionalNotes.trim()
-      ? trimmedReason + '\n' + cancellationAdditionalNotes.trim()
-      : isCancellationStatus(newStatus) ? trimmedReason : statusNotes.trim();
+    let notesToSend = statusNotes.trim();
+    if (isCancellationStatus(newStatus)) {
+      notesToSend = cancellationAdditionalNotes.trim()
+        ? trimmedReason + '\n' + cancellationAdditionalNotes.trim()
+        : trimmedReason;
+    } else if (isModalReturnStatus) {
+      const primary = returnReason.trim() && returnReason !== "other" ? returnReason.trim() : trimmedReason;
+      notesToSend = returnAdditionalNotes.trim()
+        ? primary + (primary ? '\n' : '') + returnAdditionalNotes.trim()
+        : primary;
+    }
 
     const success = await updateStatus(newStatus, notesToSend, isOverride);
     if (success) {
       setShowStatusModal(false);
       setNewStatus("");
       setStatusNotes("");
+      setReturnReason("");
+      setReturnAdditionalNotes("");
       setCancellationAdditionalNotes("");
       setIsOverride(false);
     }
@@ -572,9 +603,11 @@ const OrderDetails: React.FC = () => {
     )
       return;
 
-    if (isCancellationStatus(normalizedStatusCode)) {
+    if (isCancellationStatus(normalizedStatusCode) || isReturnStatusCode(normalizedStatusCode)) {
       setNewStatus(normalizedStatusCode);
       setStatusNotes("");
+      setReturnReason("");
+      setReturnAdditionalNotes("");
       setShowStatusModal(true);
       return;
     }
@@ -583,6 +616,8 @@ const OrderDetails: React.FC = () => {
     if (success) {
       setNewStatus("");
       setStatusNotes("");
+      setReturnReason("");
+      setReturnAdditionalNotes("");
     }
   };
 
@@ -913,6 +948,33 @@ const OrderDetails: React.FC = () => {
     (!isCurrentlyPending && order.confirmedAt) || effectiveStatus === "CONFIRMED" ? t("orderDetails.confirmedStatus") : t("orderDetails.notConfirmedStatus");
   const assignmentStatusLabel = order.assignedTo ? t("orderDetails.distributed") : t("orderDetails.notDistributed");
 
+  const whatsappChatUrl = useMemo(() => {
+    const rawPhone = order?.customerPhone || order?.alternativePhone;
+    if (!rawPhone) return null;
+    let cleanPhone = String(rawPhone).replace(/\D/g, "");
+    if (cleanPhone.startsWith("01") && cleanPhone.length === 11) {
+      cleanPhone = "2" + cleanPhone;
+    }
+    const params = new URLSearchParams();
+    params.set("phone", cleanPhone);
+    if (order?.customerName) {
+      params.set("name", order.customerName);
+    }
+    if (order?.orderNumber) {
+      params.set("orderNumber", order.orderNumber);
+    }
+    if (order?.conversationId) {
+      params.set("conversationId", order.conversationId);
+    }
+    return `/whatsapp?${params.toString()}`;
+  }, [
+    order?.customerPhone,
+    order?.alternativePhone,
+    order?.customerName,
+    order?.orderNumber,
+    order?.conversationId,
+  ]);
+
   console.log("🔍 Order Status Debug:", {
     orderStatus: order.status,
     orderStatuses: orderStatuses,
@@ -944,12 +1006,24 @@ const OrderDetails: React.FC = () => {
         currentStatusConfig={currentStatusConfig}
         statusOptions={canUpdateOrderStatus ? filteredStatusOptions : []}
         onStatusSelect={canUpdateOrderStatus ? handleQuickStatusSelect : undefined}
+        whatsappChatUrl={whatsappChatUrl}
       />
 
       {/* Quick Actions Bar (Below Header) */}
       <div className="mt-4 flex flex-wrap gap-3 sm:gap-4">
         {!isEditing && (
           <>
+            {whatsappChatUrl && (
+              <Link
+                to={whatsappChatUrl}
+                className="inline-flex items-center px-3.5 py-2 border border-emerald-300 shadow-xs text-sm leading-4 font-medium rounded-lg text-emerald-800 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 dark:hover:bg-emerald-900/40 transition active:scale-97"
+                title="محادثة العميل مباشرة عبر واتساب المنصة"
+              >
+                <WhatsAppIcon className="ml-2 -mr-0.5 h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                محادثة واتساب
+              </Link>
+            )}
+
             <button
               type="button"
               onClick={() => setShowTicketModal(true)}
@@ -1004,6 +1078,26 @@ const OrderDetails: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Return Alert Banner & Details Card */}
+      {returnDetails && returnDetails.isReturned && (
+        <div className="mt-6">
+          <OrderReturnCard
+            returnDetails={returnDetails}
+            onEditReason={
+              canUpdateOrderStatus
+                ? () => {
+                    setNewStatus(order.status || "RETURNED");
+                    setStatusNotes(returnDetails.reason || "");
+                    setReturnReason(returnDetails.reason || "");
+                    setShowStatusModal(true);
+                  }
+                : undefined
+            }
+            canEdit={canUpdateOrderStatus}
+          />
+        </div>
+      )}
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-flow-col-dense lg:grid-cols-3">
         {/* RIGHT COLUMN (Main Info) */}
@@ -1104,6 +1198,31 @@ const OrderDetails: React.FC = () => {
                 {latestCancellationReason ||
                   t("orderDetails.noCancellationReason")}
               </p>
+            </div>
+          )}
+
+          {returnDetails && returnDetails.isReturned && (
+            <div className="rounded-lg border border-rose-200 bg-rose-50/80 p-5 shadow-sm dark:border-rose-900/50 dark:bg-rose-950/20">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 text-rose-900 dark:text-rose-100 font-bold text-sm">
+                  <ArrowPathRoundedSquareIcon className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                  <span>{returnDetails.returnTypeLabel}</span>
+                </div>
+                {returnDetails.source && (
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                    {returnDetails.source}
+                  </span>
+                )}
+              </div>
+              <p className="whitespace-pre-wrap text-sm font-semibold leading-relaxed text-rose-950 dark:text-rose-100">
+                {returnDetails.reason || t("orderDetails.noReturnReason", { defaultValue: "لم يتم تسجيل سبب محدد للمرتجع" })}
+              </p>
+              {returnDetails.secondaryReason && returnDetails.secondaryReason !== returnDetails.reason && (
+                <div className="mt-2.5 pt-2 border-t border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300">
+                  <span className="font-semibold">ملاحظة الشحن: </span>
+                  <span>{returnDetails.secondaryReason}</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -1422,6 +1541,54 @@ const OrderDetails: React.FC = () => {
                             placeholder={t("orderDetails.additionalNotesPlaceholder")}
                           />
                         </>
+                      ) : isModalReturnStatus ? (
+                        <>
+                          <label className="block text-sm font-medium text-rose-800 dark:text-rose-300 mb-1">
+                            {t("orderDetails.selectReturnReason", { defaultValue: "سبب المرتجع (اختر من الأسباب الشائعة)" })}
+                          </label>
+                          <select
+                            value={returnReason}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setReturnReason(val);
+                              if (val && val !== "other") {
+                                setStatusNotes(val);
+                              }
+                            }}
+                            disabled={updating}
+                            className="block w-full px-4 py-3 text-sm border-gray-300 dark:border-gray-600 focus:ring-rose-500 focus:border-rose-500 rounded-xl dark:bg-gray-700 dark:text-gray-100 mb-3"
+                          >
+                            <option value="">{t("orderDetails.chooseReturnReason", { defaultValue: "-- اختر سبب المرتجع --" })}</option>
+                            {COMMON_RETURN_REASONS.map((reasonText, idx) => (
+                              <option key={idx} value={reasonText}>
+                                {reasonText}
+                              </option>
+                            ))}
+                            <option value="other">{t("orderDetails.otherReason", { defaultValue: "سبب آخر (كتابة مخصصة)" })}</option>
+                          </select>
+
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            {t("orderDetails.returnReasonDetails", { defaultValue: "نص سبب المرتجع بالتفصيل" })}
+                          </label>
+                          <textarea
+                            value={statusNotes}
+                            onChange={(e) => setStatusNotes(e.target.value)}
+                            rows={2}
+                            className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-rose-500 focus:border-rose-500 dark:bg-gray-700 dark:text-gray-100 mb-3"
+                            placeholder={t("orderDetails.returnReasonPlaceholder", { defaultValue: "اكتب سبب إرجاع الطلب بالتفصيل هنا..." })}
+                          />
+
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            {t("orderDetails.additionalNotesLabel", { defaultValue: "ملاحظات إضافية (اختياري)" })}
+                          </label>
+                          <textarea
+                            value={returnAdditionalNotes}
+                            onChange={(e) => setReturnAdditionalNotes(e.target.value)}
+                            rows={2}
+                            className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                            placeholder={t("orderDetails.additionalNotesPlaceholder", { defaultValue: "أي ملاحظات إضافية..." })}
+                          />
+                        </>
                       ) : (
                         <>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1448,7 +1615,8 @@ const OrderDetails: React.FC = () => {
                   disabled={
                     updating ||
                     !newStatus ||
-                    (isModalCancellationStatus && !statusNotes.trim())
+                    (isModalCancellationStatus && !statusNotes.trim()) ||
+                    (isModalReturnStatus && !returnReason.trim() && !statusNotes.trim())
                   }
                 >
                   {updating

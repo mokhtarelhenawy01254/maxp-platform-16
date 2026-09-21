@@ -62,7 +62,8 @@ const updateSettings = async (req, res) => {
       'secondaryColor',
       'fontFamily',
       'showBarcodeOrderCode',
-      'showBarcodeShippingCode'
+      'showBarcodeShippingCode',
+      'showCustomFields'
     ];
 
     const filteredData = {};

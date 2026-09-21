@@ -198,6 +198,7 @@ export interface OrderDetailsType {
   scheduledTransitionedAt?: string;
 
   orderNotes?: OrderNote[];
+  returnRequests?: any[];
 
   // Confirmation & Assignment Fields
   confirmedAt?: string | null;

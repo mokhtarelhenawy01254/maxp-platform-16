@@ -71,6 +71,7 @@ type InvoiceSettings = {
   fontFamily: string;
   showBarcodeOrderCode: boolean;
   showBarcodeShippingCode: boolean;
+  showCustomFields: boolean;
 };
 
 type SlipSettings = {
@@ -124,6 +125,7 @@ const defaultInvoice: InvoiceSettings = {
   fontFamily: "Arial",
   showBarcodeOrderCode: true,
   showBarcodeShippingCode: true,
+  showCustomFields: false,
 };
 
 const statuses = [
@@ -166,6 +168,7 @@ const createInvoiceFlags = (t: (key: string) => string) =>
     ["showTaxBreakdown", t('orderInvoiceSettings.k_54')],
     ["showPaymentMethod", t('orderInvoiceSettings.k_55')],
     ["showOrderItems", t('orderInvoiceSettings.k_56')],
+    ["showCustomFields", t('orderInvoiceSettings.showCustomFields', 'إظهار الحقول المخصصة ومواصفات الطلب')],
   ] as const;
 
 const createBarcodeFlags = (t: (key: string) => string) =>
@@ -863,7 +866,14 @@ const OrderInvoiceSettings: React.FC<{ isEmbedded?: boolean }> = ({ isEmbedded =
                       <ToggleCard
                         key={key}
                         title={label}
-                        description={t('orderInvoiceSettings.k_15')}
+                        description={
+                          key === "showCustomFields"
+                            ? t(
+                                'orderInvoiceSettings.showCustomFieldsDesc',
+                                'إظهار بيانات الحقول المخصصة ومواصفات السيارة/الطلب داخل بوليصة الشحن والفاتورة.',
+                              )
+                            : t('orderInvoiceSettings.k_15')
+                        }
                         checked={invoice[key]}
                         onCheckedChange={(checked) =>
                           setInvoice((currentInvoice) => ({

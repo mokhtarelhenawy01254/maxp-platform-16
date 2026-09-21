@@ -11,6 +11,7 @@ const DEFAULT_INVOICE_SETTINGS = Object.freeze({
   showTaxBreakdown: true,
   showPaymentMethod: true,
   showOrderItems: true,
+  showCustomFields: false,
   pdfPageSize: 'A4',
   pdfOrientation: 'portrait',
   primaryColor: '#4F46E5',

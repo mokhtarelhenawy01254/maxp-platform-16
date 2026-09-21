@@ -13821,6 +13821,21 @@ declare module 'react-i18next' {
         success_save_a5c2: string;
         msg_911a: string;
         success_update_status_5c48: string;
+        orderReturned: string;
+        orderPartiallyReturned: string;
+        fullReturnDesc: string;
+        partialReturnDesc: string;
+        returnReason: string;
+        selectReturnReason: string;
+        chooseReturnReason: string;
+        returnReasonDetails: string;
+        returnReasonPlaceholder: string;
+        otherReason: string;
+        noReturnReason: string;
+        carrierDelayReason: string;
+        returnSource: string;
+        editReturnReason: string;
+        addReturnReason: string;
       };
       orderInvoices: {
         k_1: string;
@@ -13941,6 +13956,8 @@ declare module 'react-i18next' {
         k_54: string;
         k_55: string;
         k_56: string;
+        showCustomFields: string;
+        showCustomFieldsDesc: string;
         k_57: string;
         k_58: string;
         k_59: string;

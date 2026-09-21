@@ -2,6 +2,7 @@ import { formatCurrency } from "./currency";
 import { OrderDetailsType, OrderItem } from "../pages/orders/types";
 import { groupOrderDocumentQuantityOffers } from "./orderDocumentQuantityOffers";
 import JsBarcode from "jsbarcode";
+import { extractOrderCustomFields } from "./orderCustomFields";
 
 export interface SimpleOrderForLabel {
   id: string;
@@ -96,11 +97,17 @@ export function toOrderDetailsType(order: SimpleOrderForLabel): OrderDetailsType
   };
 }
 
-interface PrintShippingLabelOptions {
+export interface ShippingLabelSettings {
+  showCustomFields?: boolean;
+  [key: string]: unknown;
+}
+
+export interface PrintShippingLabelOptions {
   order: OrderDetailsType;
   companyName?: string;
   companyLogoUrl?: string | null;
   printWindow?: Window | null;
+  settings?: ShippingLabelSettings;
 }
 
 const escapeHtml = (value: unknown): string =>
@@ -541,8 +548,15 @@ function buildShippingLabelStyle(): string {
   `;
 }
 
-function buildShippingLabelPageMarkup(order: OrderDetailsType, companyName?: string, companyLogoUrl?: string | null): string {
+function buildShippingLabelPageMarkup(
+  order: OrderDetailsType,
+  companyName?: string,
+  companyLogoUrl?: string | null,
+  settings?: ShippingLabelSettings,
+): string {
   const ctx = resolveLabelContext(order);
+  const showCustomFields = settings?.showCustomFields === true;
+  const customFields = showCustomFields ? extractOrderCustomFields(order) : [];
   const orderBarcode = order.orderNumber
     ? `<div style="text-align:center;margin-bottom:4px">${generateBarcodeSvg(order.orderNumber)}<div style="font-size:10px;font-weight:600;color:#000">كود الطلب</div></div>`
     : "";
@@ -599,6 +613,18 @@ function buildShippingLabelPageMarkup(order: OrderDetailsType, companyName?: str
           <div class="cell-value">${ctx.addressText ? escapeHtml(ctx.addressText) : "—"}</div>
         </div>
 
+        <!-- Row 3b: Custom Fields (Car Make, Model & Year / Custom Specs) -->
+        ${showCustomFields && customFields.length > 0 ? `
+          <div class="label-custom-fields" style="border-bottom: 2px solid #000; padding: 6px 12px; background-color: #f8fafc;">
+            ${customFields.map((cf) => `
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">
+                <span style="font-size:12px; font-weight:700; color:#334155;">🚗 ${escapeHtml(cf.label)}:</span>
+                <span style="font-size:14px; font-weight:900; color:#000; direction:rtl; text-align:right;">${escapeHtml(cf.value)}</span>
+              </div>
+            `).join("")}
+          </div>
+        ` : ""}
+
         <!-- Row 4: Products Table -->
         <div class="label-table">
           <table>
@@ -647,7 +673,12 @@ function buildShippingLabelPageMarkup(order: OrderDetailsType, companyName?: str
   `;
 }
 
-function buildSingleLabelDocument(order: OrderDetailsType, companyName?: string, companyLogoUrl?: string | null): string {
+function buildSingleLabelDocument(
+  order: OrderDetailsType,
+  companyName?: string,
+  companyLogoUrl?: string | null,
+  settings?: ShippingLabelSettings,
+): string {
   return `
     <!DOCTYPE html>
     <html lang="ar" dir="rtl">
@@ -658,7 +689,7 @@ function buildSingleLabelDocument(order: OrderDetailsType, companyName?: string,
         ${buildShippingLabelStyle()}
       </head>
       <body>
-        ${buildShippingLabelPageMarkup(order, companyName, companyLogoUrl)}
+        ${buildShippingLabelPageMarkup(order, companyName, companyLogoUrl, settings)}
       </body>
     </html>
   `;
@@ -668,9 +699,10 @@ function buildMultiLabelDocument(
   orders: OrderDetailsType[],
   companyName?: string,
   companyLogoUrl?: string | null,
+  settings?: ShippingLabelSettings,
 ): string {
   const pages = orders.map((order) => {
-    return `<div class="page-break">${buildShippingLabelPageMarkup(order, companyName, companyLogoUrl)}</div>`;
+    return `<div class="page-break">${buildShippingLabelPageMarkup(order, companyName, companyLogoUrl, settings)}</div>`;
   }).join("\n");
 
   return `
@@ -705,11 +737,12 @@ export const printSingleShippingLabel = async ({
   companyName,
   companyLogoUrl,
   printWindow,
+  settings,
 }: PrintShippingLabelOptions) => {
   const targetWindow = printWindow || window.open("", "_blank");
   if (!targetWindow) throw new Error("فشل في فتح نافذة جديدة للطباعة");
 
-  writeAndPrint(targetWindow, buildSingleLabelDocument(order, companyName, companyLogoUrl));
+  writeAndPrint(targetWindow, buildSingleLabelDocument(order, companyName, companyLogoUrl, settings));
   return true;
 };
 
@@ -718,6 +751,7 @@ export interface PrintMultipleShippingLabelsOptions {
   companyName?: string;
   companyLogoUrl?: string | null;
   printWindow?: Window | null;
+  settings?: ShippingLabelSettings;
 }
 
 export const printMultipleShippingLabels = async ({
@@ -725,10 +759,11 @@ export const printMultipleShippingLabels = async ({
   companyName,
   companyLogoUrl,
   printWindow,
+  settings,
 }: PrintMultipleShippingLabelsOptions) => {
   const targetWindow = printWindow || window.open("", "_blank");
   if (!targetWindow) throw new Error("فشل في فتح نافذة جديدة للطباعة");
 
-  writeAndPrint(targetWindow, buildMultiLabelDocument(orders, companyName, companyLogoUrl));
+  writeAndPrint(targetWindow, buildMultiLabelDocument(orders, companyName, companyLogoUrl, settings));
   return true;
 };
