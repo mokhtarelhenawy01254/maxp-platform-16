@@ -118,3 +118,45 @@ export function extractOrderCustomFields(source: any): OrderCustomFieldEntry[] {
 
   return entries;
 }
+
+/**
+ * Removes custom fields / car specs lines from notes when they are displayed
+ * in their own dedicated section, preventing duplicate text in the notes box.
+ */
+export function cleanNotesWithoutCustomFields(
+  notes: string | null | undefined,
+  customFields?: OrderCustomFieldEntry[]
+): string {
+  const notesStr = String(notes || "").trim();
+  if (!notesStr) return "";
+
+  const lines = notesStr.split(/\r?\n/);
+  const filteredLines = lines.filter((rawLine) => {
+    const line = rawLine.trim();
+    if (!line) return false;
+
+    // Filter out lines starting with "تفاصيل الطلب:"
+    if (line.startsWith("تفاصيل الطلب:") || line.startsWith("تفاصيل الطلب")) return false;
+
+    // Filter out lines mentioning car specs
+    if (
+      line.includes("سيار") ||
+      line.includes("موديل") ||
+      line.startsWith("نوع وموديل")
+    ) {
+      return false;
+    }
+
+    // Filter out if line matches any custom field value or label
+    if (customFields && customFields.length > 0) {
+      for (const cf of customFields) {
+        if (cf.value && line.includes(cf.value)) return false;
+        if (cf.label && line.includes(cf.label)) return false;
+      }
+    }
+
+    return true;
+  });
+
+  return filteredLines.join("\n").trim();
+}

@@ -1,7 +1,7 @@
 import React from "react";
 import i18n from "../../i18n";
 import InvoiceBarcode from "./InvoiceBarcode";
-import { extractOrderCustomFields } from "../../utils/orderCustomFields";
+import { extractOrderCustomFields, cleanNotesWithoutCustomFields } from "../../utils/orderCustomFields";
 
 export interface InvoicePrintSettings {
   showCompanyLogo: boolean;
@@ -160,6 +160,10 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
   const addressText = invoice.customerAddress ? formatAddress(invoice.customerAddress) : "";
   const items = page?.chunkItems ?? (invoice.order?.orderItems || []);
   const customFields = extractOrderCustomFields(invoice);
+  const rawNotes = invoice.notes || invoice.order?.notes || "";
+  const displayNotes = s.showCustomFields
+    ? cleanNotesWithoutCustomFields(rawNotes, customFields)
+    : rawNotes;
   
   let governorate = invoice.governorate;
   let city = invoice.city;
@@ -364,7 +368,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
         {/* Row 6: Notes */}
         <div style={{ borderBottom: borderStyle, padding: compact ? "4px 8px" : "8px 12px", minHeight: compact ? "35px" : "45px", display: "flex", flexDirection: "column" }}>
            <div style={titleStyle}>{i18n.t("invoiceContent.notes")}</div>
-           <div style={{ ...valueStyle, flex: 1, fontSize: compact ? "11px" : "13px", fontWeight: 600 }}>{invoice.notes || invoice.order?.notes || ""}</div>
+           <div style={{ ...valueStyle, flex: 1, fontSize: compact ? "11px" : "13px", fontWeight: 600 }}>{displayNotes}</div>
         </div>
 
         {/* Row 7: Shipping Barcode & Total (Footer) */}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractOrderCustomFields } from "../orderCustomFields";
+import { extractOrderCustomFields, cleanNotesWithoutCustomFields } from "../orderCustomFields";
 
 describe("extractOrderCustomFields", () => {
   it("returns empty array when source is null or empty", () => {
@@ -55,3 +55,27 @@ describe("extractOrderCustomFields", () => {
     ]);
   });
 });
+
+describe("cleanNotesWithoutCustomFields", () => {
+  it("returns empty string when notes is null or empty", () => {
+    expect(cleanNotesWithoutCustomFields(null)).toBe("");
+    expect(cleanNotesWithoutCustomFields("")).toBe("");
+  });
+
+  it("strips out 'تفاصيل الطلب: ...' lines and returns empty string if no other notes exist", () => {
+    const notes = "تفاصيل الطلب: نوع وموديل وسنة صنع السيارة: هيونداي توسان 2022";
+    expect(cleanNotesWithoutCustomFields(notes)).toBe("");
+  });
+
+  it("strips out car specification lines while preserving actual customer delivery notes", () => {
+    const notes = "تفاصيل الطلب: نوع وموديل وسنة صنع السيارة: هيونداي توسان 2022\nيرجى الاتصال قبل الوصول بنصف ساعة";
+    expect(cleanNotesWithoutCustomFields(notes)).toBe("يرجى الاتصال قبل الوصول بنصف ساعة");
+  });
+
+  it("strips custom field values matched against customFields list", () => {
+    const notes = "هيونداي توسان 2022\nملاحظة هامة: التسليم بعد الساعة 5 مساء";
+    const customFields = [{ label: "نوع وموديل وسنة صنع السيارة", value: "هيونداي توسان 2022" }];
+    expect(cleanNotesWithoutCustomFields(notes, customFields)).toBe("ملاحظة هامة: التسليم بعد الساعة 5 مساء");
+  });
+});
+

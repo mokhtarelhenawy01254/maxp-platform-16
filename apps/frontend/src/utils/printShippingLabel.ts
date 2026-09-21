@@ -2,7 +2,7 @@ import { formatCurrency } from "./currency";
 import { OrderDetailsType, OrderItem } from "../pages/orders/types";
 import { groupOrderDocumentQuantityOffers } from "./orderDocumentQuantityOffers";
 import JsBarcode from "jsbarcode";
-import { extractOrderCustomFields } from "./orderCustomFields";
+import { extractOrderCustomFields, cleanNotesWithoutCustomFields } from "./orderCustomFields";
 
 export interface SimpleOrderForLabel {
   id: string;
@@ -557,6 +557,10 @@ function buildShippingLabelPageMarkup(
   const ctx = resolveLabelContext(order);
   const showCustomFields = settings?.showCustomFields === true;
   const customFields = showCustomFields ? extractOrderCustomFields(order) : [];
+  const rawNotes = order.notes || "";
+  const displayNotes = showCustomFields
+    ? cleanNotesWithoutCustomFields(rawNotes, customFields)
+    : rawNotes;
   const orderBarcode = order.orderNumber
     ? `<div style="text-align:center;margin-bottom:4px">${generateBarcodeSvg(order.orderNumber)}<div style="font-size:10px;font-weight:600;color:#000">كود الطلب</div></div>`
     : "";
@@ -648,7 +652,7 @@ function buildShippingLabelPageMarkup(
           <div class="cell-title">ملاحظات</div>
           <div style="flex:1;font-size:12px;font-weight:700;color:#000;">
             ${ctx.isPaid ? '<span style="color:#059669;font-weight:800;display:inline-block;margin-left:6px;">⚠️ الطلب مدفوع مسبقاً (لا يتم تحصيل أي مبالغ من العميل).</span>' : ''}
-            ${escapeHtml(order.notes || '')}
+            ${escapeHtml(displayNotes)}
           </div>
         </div>
 
