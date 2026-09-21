@@ -28,6 +28,12 @@
   12. **Failure Reflection & Anti-Blind-Retries:** Never blindly re-execute a failed tool call when the merchant asks "ليه؟"; explain the blocker in clean Arabic business terms and ask for the specific resolution.
   13. **Meta Structured Targeting & Geo-Key Resolution (Ban Empty Targeting Specs):** Ad creation and draft tools must explicitly assemble nested `targeting` (`ageMin`, `ageMax`, `genders`, `regions`, `cities`, `interests`) and resolve Egyptian governorates to official numeric Meta keys (`geo_locations.regions`), with backend defensive auto-hydration preventing blank `{}` AdSet creation. When activating a campaign, cascade status to all child ad sets and ads so delivery starts immediately without leaving ads stranded in `PAUSED`.
   14. **Dynamic Meta Geolocation & Negative Targeting Engine (Global-Ready & COD Logistics Guard):** Never rely solely on static regional dictionaries. The advertising pipeline must support dynamic real-time querying of Meta's Graph Search API (`GET /search?type=adgeolocation` and `type=adinterest`) for any country worldwide (EG, SA, AE, US, etc.), support exact GPS Pin-Drop radius targeting (`custom_locations: [{ latitude, longitude, radius, distance_unit }]`), and negative geographic exclusions (`excluded_geo_locations: { regions, cities, custom_locations }`) to automatically cut off high-cancellation and delivery-failure provinces in cash-on-delivery (COD) markets.
+  15. **Capability-Driven Authority & Topology-Aware Handoff (Ban Negative Boundaries & Blind Handoffs):**
+      - The Tool Manifest (`allowed_tools` + `FunctionTool` schemas) is the explicit, absolute source of authority for an agent.
+      - Never write negative functional refusal statements in `SOUL.md` or `PERSONA.md` (e.g. "أنا مسؤول فقط عن كذا ولا شأن لي بالشحن"); doing so breaks dynamic tool assignment from the dashboard.
+      - Agents must never call `agent_handoff_to` blindly without verifying that an active target agent actually exists for that tenant (`company_id`).
+      - In Single-Agent Mode, the agent must seamlessly act as an all-in-one Store Assistant, executing any task it is equipped with tools to perform.
+      - Never patch system prompts ad-hoc when tools are assigned; rely on Pydantic tool definitions to keep KV prompt caching intact (80%+ cost savings).
 
 ## 🖥️ Desktop Application Auto-Update & Versioning Law (Mandatory SemVer Bump)
 
