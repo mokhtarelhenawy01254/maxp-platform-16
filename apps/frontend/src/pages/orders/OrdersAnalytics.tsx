@@ -472,7 +472,7 @@ const OrdersAnalytics: React.FC = () => {
                         <span className="text-gray-500 dark:text-gray-400 tabular-nums shrink-0">
                           {t("orders.analyticsStatusCount", {
                             orders: count,
-                            pieces: stats.statusPiecesDistribution[status] || 0,
+                            pieces: stats.statusPiecesDistribution?.[status] ?? 0,
                           })}
                         </span>
                       </div>

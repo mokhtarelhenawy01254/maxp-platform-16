@@ -744,7 +744,7 @@ const getDetailedOrderReport = async (req, res) => {
         try {
             const statusPiecesRows = await prisma.$queryRaw`
                 SELECT o."status", COALESCE(SUM(oi."quantity"), 0)::int as pieces
-                FROM "Order" o
+                FROM "orders" o
                 JOIN "order_items" oi ON o."id" = oi."orderId"
                 WHERE o."companyId" = ${companyId}
                   AND o."createdAt" >= ${start}
@@ -759,8 +759,31 @@ const getDetailedOrderReport = async (req, res) => {
                     }
                 });
             }
-        } catch (_rawErr) {
-            // Fallback: إذا تعذر الاستعلام المباشر، يتم الحساب الافتراضي
+        } catch (rawErr) {
+            console.error('Error fetching statusPiecesDistribution via raw query:', rawErr?.message || rawErr);
+            try {
+                const orderItems = await prisma.orderItem.findMany({
+                    where: {
+                        order: {
+                            companyId,
+                            createdAt: { gte: start, lte: end },
+                            status: { not: 'TRASH' }
+                        }
+                    },
+                    select: {
+                        quantity: true,
+                        order: { select: { status: true } }
+                    }
+                });
+                orderItems.forEach(item => {
+                    const st = item.order?.status;
+                    if (st) {
+                        statusPiecesDistribution[st] = (statusPiecesDistribution[st] || 0) + (Number(item.quantity) || 0);
+                    }
+                });
+            } catch (fallbackErr) {
+                console.error('Fallback statusPiecesDistribution failed:', fallbackErr?.message || fallbackErr);
+            }
         }
 
         const totalOrders = orderAgg._count?.id || 0;
