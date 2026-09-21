@@ -3036,9 +3036,20 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
       // Helper function to generate variations of Egypt/generic phone numbers to match stored phone format in database
       const getPhoneVariations = (input) => {
-        const clean = input.replace(/\D/g, '');
+        if (!input) return [];
+        const rawStr = String(input);
+        const toEnglishDigits = (str) => String(str || '')
+          .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632))
+          .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 1776));
+        const toArabicDigits = (str) => {
+          const ar = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+          return String(str || '').replace(/[0-9]/g, d => ar[Number(d)]);
+        };
+
+        const convertedInput = toEnglishDigits(rawStr);
+        const clean = convertedInput.replace(/\D/g, '');
         if (!clean) return [];
-        const variations = new Set([clean, input]);
+        const variations = new Set([clean, convertedInput, rawStr]);
         if (clean.startsWith('0') && clean.length === 11) {
           const withoutZero = clean.slice(1);
           variations.add(withoutZero);
@@ -3060,6 +3071,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
             variations.add('0' + clean);
           }
         }
+
+        // Add Arabic/Indic digits counterpart for every variation so database matches either representation
+        const allVariations = Array.from(variations);
+        allVariations.forEach(v => {
+          const ar = toArabicDigits(v);
+          if (ar) variations.add(ar);
+        });
+
         return Array.from(variations);
       };
 

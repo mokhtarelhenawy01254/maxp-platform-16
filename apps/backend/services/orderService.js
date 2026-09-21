@@ -796,16 +796,30 @@ class OrderService {
 
   normalizePhone(phone) {
     if (!phone) return null;
-    const normalized = String(phone).replace(/\D/g, '');
+    const str = String(phone)
+      .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632))
+      .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 1776));
+    const normalized = str.replace(/\D/g, '');
     return normalized || null;
   }
 
   // توليد كل الصيغ الممكنة لرقم الهاتف (مصر/دولي) عشان كشف التكرار يمسك نفس الرقم
-  // بصيغ مختلفة (012/20/+20/بدون بادئة...). نفس منطق البحث في القائمة.
+  // بصيغ مختلفة (012/20/+20/بدون بادئة...). يدعم الأرقام العربية والإنجليزية.
   getPhoneVariationsForDuplicate(input) {
-    const clean = String(input || '').replace(/\D/g, '');
+    if (!input) return [];
+    const rawStr = String(input);
+    const toEnglishDigits = (str) => String(str || '')
+      .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632))
+      .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 1776));
+    const toArabicDigits = (str) => {
+      const ar = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+      return String(str || '').replace(/[0-9]/g, d => ar[Number(d)]);
+    };
+
+    const convertedInput = toEnglishDigits(rawStr);
+    const clean = convertedInput.replace(/\D/g, '');
     if (!clean) return [];
-    const variations = new Set([clean]);
+    const variations = new Set([clean, convertedInput, rawStr]);
     if (clean.startsWith('0') && clean.length === 11) {
       const withoutZero = clean.slice(1);
       variations.add(withoutZero);
@@ -827,6 +841,13 @@ class OrderService {
         variations.add('0' + clean);
       }
     }
+
+    const allVariations = Array.from(variations);
+    allVariations.forEach(v => {
+      const ar = toArabicDigits(v);
+      if (ar) variations.add(ar);
+    });
+
     return Array.from(variations);
   }
 

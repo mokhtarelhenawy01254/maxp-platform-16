@@ -46,6 +46,11 @@ function normalizePhone(value) {
   return digits;
 }
 
+function toArabicDigits(value) {
+  const ar = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  return String(value || '').replace(/[0-9]/g, (d) => ar[Number(d)]);
+}
+
 function getPhoneVariants(value) {
   const raw = stripPhone(value);
   const normalized = normalizePhone(value);
@@ -60,6 +65,13 @@ function getPhoneVariants(value) {
   if (raw.startsWith('20') && raw.length === 12) {
     variants.add(`0${raw.slice(2)}`);
   }
+
+  // Add Arabic/Indic digits variants so database matches both representations
+  const allVariants = Array.from(variants);
+  allVariants.forEach((v) => {
+    const ar = toArabicDigits(v);
+    if (ar) variants.add(ar);
+  });
 
   return Array.from(variants);
 }
@@ -120,4 +132,5 @@ module.exports = {
   toCanonicalE164,
   getCanonicalKey,
   toAsciiDigits,
+  toArabicDigits,
 };
