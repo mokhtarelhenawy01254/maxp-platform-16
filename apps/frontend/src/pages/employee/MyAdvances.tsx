@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import {
     Wallet,
@@ -40,13 +39,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "../../components/ui/select";
-
-type AdvanceFormData = {
-    amount: string;
-    reason: string;
-    repaymentType: "ONE_TIME" | "INSTALLMENTS";
-    installmentsCount: string;
-};
 
 const StatusBadge = ({ status }: { status: string }) => {
     const { t } = useTranslation();
@@ -93,25 +85,21 @@ const MyAdvances = () => {
     const [showForm, setShowForm] = useState(false);
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
-    const {
-        register,
-        handleSubmit,
-        setValue,
-        watch,
-        reset,
-        formState: { errors },
-    } = useForm<AdvanceFormData>({
-        defaultValues: {
-            amount: "",
-            reason: "",
-            repaymentType: "INSTALLMENTS",
-            installmentsCount: "3",
-        },
+    const [formData, setFormData] = useState({
+        amount: "",
+        reason: "",
+        repaymentType: "INSTALLMENTS" as "INSTALLMENTS" | "ONE_TIME",
+        installmentsCount: "3",
     });
+    const [fieldErrors, setFieldErrors] = useState<{
+        amount?: string;
+        reason?: string;
+        installmentsCount?: string;
+    }>({});
 
-    const repaymentType = watch("repaymentType");
-    const amount = watch("amount");
-    const installmentsCount = watch("installmentsCount");
+    const repaymentType = formData.repaymentType;
+    const amount = formData.amount;
+    const installmentsCount = formData.installmentsCount;
 
     useEffect(() => {
         fetchData();
@@ -166,25 +154,59 @@ const MyAdvances = () => {
                 ? (baseSalary * (Number(settings.maxAdvancePercentage) || 50)) / 100
                 : Number(settings?.maxAdvanceAmount || 0);
 
-    const onSubmit = async (data: AdvanceFormData) => {
+    const handleSubmitForm = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const errors: { amount?: string; reason?: string; installmentsCount?: string } = {};
+
+        const cleanAmount = formData.amount.trim();
+        const cleanReason = formData.reason.trim();
+        const numericAmount = parseFloat(cleanAmount);
+
+        if (!cleanAmount || isNaN(numericAmount) || numericAmount <= 0) {
+            errors.amount = t("employee.advances.amountRequired");
+        } else if (numericAmount < 100) {
+            errors.amount = t("employee.advances.minAmount");
+        } else if (maxAllowed > 0 && numericAmount > maxAllowed) {
+            errors.amount = t("employee.advances.maxExceeded", { max: maxAllowed.toFixed(0) });
+        }
+
+        if (!cleanReason) {
+            errors.reason = t("employee.advances.reasonRequired");
+        }
+
+        if (formData.repaymentType === "INSTALLMENTS") {
+            const count = parseInt(formData.installmentsCount);
+            const maxMonths = settings?.advanceRepaymentMonths || 12;
+            if (!formData.installmentsCount || isNaN(count) || count < 1) {
+                errors.installmentsCount = t("employee.advances.minInstallment");
+            } else if (count > maxMonths) {
+                errors.installmentsCount = t("employee.advances.maxInstallment", { max: maxMonths });
+            }
+        }
+
+        if (Object.keys(errors).length > 0) {
+            setFieldErrors(errors);
+            return;
+        }
+
         try {
             setLoading(true);
-            const requestedAmount = parseFloat(data.amount);
-
-            if (maxAllowed > 0 && requestedAmount > maxAllowed) {
-                toast.error(t("employee.advances.maxExceeded", { max: maxAllowed.toFixed(0) }));
-                return;
-            }
-
             await api.post("/hr/advances", {
-                ...data,
-                amount: requestedAmount,
-                installmentsCount: data.repaymentType === "INSTALLMENTS" ? parseInt(data.installmentsCount) : 1,
+                amount: numericAmount,
+                reason: cleanReason,
+                repaymentType: formData.repaymentType,
+                installmentsCount: formData.repaymentType === "INSTALLMENTS" ? parseInt(formData.installmentsCount) : 1,
             });
 
             toast.success(t("employee.advances.submitSuccess"));
             setShowForm(false);
-            reset();
+            setFormData({
+                amount: "",
+                reason: "",
+                repaymentType: "INSTALLMENTS",
+                installmentsCount: "3",
+            });
+            setFieldErrors({});
             fetchData();
         } catch (error: any) {
             toast.error(error.response?.data?.error || t("employee.advances.submitError"));
@@ -327,7 +349,11 @@ const MyAdvances = () => {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={() => { setShowForm(false); reset(); }}
+                                        onClick={() => {
+                                            setShowForm(false);
+                                            setFormData({ amount: "", reason: "", repaymentType: "INSTALLMENTS", installmentsCount: "3" });
+                                            setFieldErrors({});
+                                        }}
                                         className="rounded-xl text-gray-400 hover:text-gray-600 hover:bg-white dark:hover:bg-gray-800"
                                     >
                                         <X className="w-5 h-5" />
@@ -335,7 +361,7 @@ const MyAdvances = () => {
                                 </div>
 
                                 <CardContent className="p-8">
-                                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                                    <form onSubmit={handleSubmitForm} className="space-y-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             {/* Amount */}
                                             <div className="space-y-2">
@@ -345,19 +371,26 @@ const MyAdvances = () => {
                                                 </Label>
                                                 <div className="relative">
                                                     <Input
-                                                        type="number"
+                                                        type="text"
+                                                        inputMode="decimal"
                                                         placeholder={t("employee.advances.amountPlaceholder")}
+                                                        value={formData.amount}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value
+                                                                .replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d).toString())
+                                                                .replace(/[^0-9.]/g, "");
+                                                            setFormData((prev) => ({ ...prev, amount: val }));
+                                                            if (fieldErrors.amount) {
+                                                                setFieldErrors((prev) => ({ ...prev, amount: undefined }));
+                                                            }
+                                                        }}
                                                         className="h-14 text-xl font-bold pr-4 pl-14 border-2 border-gray-100 dark:border-gray-700 focus:border-emerald-400 focus:ring-emerald-200 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 transition-all"
-                                                        {...register("amount", {
-                                                            required: t("employee.advances.amountRequired"),
-                                                            min: { value: 100, message: t("employee.advances.minAmount") },
-                                                        })}
                                                     />
                                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">{t("employee.advances.egp")}</span>
                                                 </div>
-                                                {errors.amount && (
+                                                {fieldErrors.amount && (
                                                     <p className="text-rose-500 text-sm flex items-center gap-1 font-medium">
-                                                        <AlertCircle className="w-4 h-4" /> {errors.amount.message}
+                                                        <AlertCircle className="w-4 h-4" /> {fieldErrors.amount}
                                                     </p>
                                                 )}
                                                 {maxAllowed > 0 && (
@@ -375,8 +408,10 @@ const MyAdvances = () => {
                                                     {t("employee.advances.repaymentMethod")}
                                                 </Label>
                                                 <Select
-                                                    onValueChange={(val) => setValue("repaymentType", val as any)}
-                                                    defaultValue="INSTALLMENTS"
+                                                    value={formData.repaymentType}
+                                                    onValueChange={(val: "INSTALLMENTS" | "ONE_TIME") =>
+                                                        setFormData((prev) => ({ ...prev, repaymentType: val }))
+                                                    }
                                                 >
                                                     <SelectTrigger className="h-14 text-base font-semibold border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 focus:border-blue-400">
                                                         <SelectValue placeholder={t("employee.advances.repaymentPlaceholder")} />
@@ -401,15 +436,20 @@ const MyAdvances = () => {
                                                     </Label>
                                                     <Input
                                                         type="number"
+                                                        min="1"
+                                                        max={settings?.advanceRepaymentMonths || 12}
+                                                        value={formData.installmentsCount}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value.replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d).toString());
+                                                            setFormData((prev) => ({ ...prev, installmentsCount: val }));
+                                                            if (fieldErrors.installmentsCount) {
+                                                                setFieldErrors((prev) => ({ ...prev, installmentsCount: undefined }));
+                                                            }
+                                                        }}
                                                         className="h-14 text-xl font-bold border-2 border-gray-100 dark:border-gray-700 focus:border-amber-400 focus:ring-amber-200 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 transition-all"
-                                                        {...register("installmentsCount", {
-                                                            required: t("employee.advances.installmentRequired"),
-                                                            min: { value: 1, message: t("employee.advances.minInstallment") },
-                                                            max: { value: settings?.advanceRepaymentMonths || 12, message: t("employee.advances.maxInstallment", { max: settings?.advanceRepaymentMonths || 12 }) },
-                                                        })}
                                                     />
-                                                    {errors.installmentsCount && (
-                                                        <p className="text-rose-500 text-sm font-medium">{errors.installmentsCount.message}</p>
+                                                    {fieldErrors.installmentsCount && (
+                                                        <p className="text-rose-500 text-sm font-medium">{fieldErrors.installmentsCount}</p>
                                                     )}
                                                 </motion.div>
                                             )}
@@ -447,12 +487,18 @@ const MyAdvances = () => {
                                             <Label className="font-bold text-gray-700 dark:text-gray-300">{t("employee.advances.reasonLabel")}</Label>
                                             <Textarea
                                                 placeholder={t("employee.advances.reasonPlaceholder")}
+                                                value={formData.reason}
+                                                onChange={(e) => {
+                                                    setFormData((prev) => ({ ...prev, reason: e.target.value }));
+                                                    if (fieldErrors.reason) {
+                                                        setFieldErrors((prev) => ({ ...prev, reason: undefined }));
+                                                    }
+                                                }}
                                                 className="min-h-[110px] text-base border-2 border-gray-100 dark:border-gray-700 focus:border-emerald-400 transition-all bg-gray-50/50 dark:bg-gray-800/50 p-4 rounded-xl resize-none"
-                                                {...register("reason", { required: t("employee.advances.reasonRequired") })}
                                             />
-                                            {errors.reason && (
+                                            {fieldErrors.reason && (
                                                 <p className="text-rose-500 text-sm font-medium flex items-center gap-1">
-                                                    <AlertCircle className="w-4 h-4" /> {errors.reason.message}
+                                                    <AlertCircle className="w-4 h-4" /> {fieldErrors.reason}
                                                 </p>
                                             )}
                                         </div>
@@ -461,7 +507,11 @@ const MyAdvances = () => {
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                onClick={() => { setShowForm(false); reset(); }}
+                                                onClick={() => {
+                                                    setShowForm(false);
+                                                    setFormData({ amount: "", reason: "", repaymentType: "INSTALLMENTS", installmentsCount: "3" });
+                                                    setFieldErrors({});
+                                                }}
                                                 className="flex-1 h-12 rounded-xl font-bold border-2"
                                             >
                                                 {t("employee.advances.cancelButton")}
