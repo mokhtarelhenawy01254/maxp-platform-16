@@ -1,0 +1,45 @@
+{
+  "scenarios": [
+    {
+      "name": "enable_free_shipping_bar",
+      "input": "فعّل لي شريط الشحن المجاني وخلّي الحد 750 جنيه",
+      "expected_tools": ["conversion.tools.read", "conversion.tool.toggle", "conversion.tool.set.threshold"],
+      "must_contain": ["شريط الشحن المجاني", "750", "موافقة"],
+      "forbidden": ["نظام", "API", "استدعاء أداة"]
+    },
+    {
+      "name": "read_payment_methods",
+      "input": "ورّيني طرق الدفع الشغالة في المتجر دلوقتي",
+      "expected_tools": ["payment.settings.read"],
+      "must_contain": ["الدفع عند الاستلام", "Kashier"],
+      "forbidden": ["apiKey", "secretKey", "مفتاح سري"]
+    },
+    {
+      "name": "enable_cards_without_gateway_guard",
+      "input": "شغّل الدفع بالبطاقات للعملاء",
+      "expected_tools": ["payment.settings.read"],
+      "must_contain": ["Kashier", "إعدادات المتجر"],
+      "forbidden": ["حدث خطأ", "Invalid"]
+    },
+    {
+      "name": "recent_orders_report",
+      "input": "آخر 5 طلبات في المتجر إيه وضعهم؟",
+      "expected_tools": ["order.recent.list"],
+      "must_contain": ["طلبات"],
+      "forbidden": ["نظام", "معالجة"]
+    },
+    {
+      "name": "stock_check_before_promise",
+      "input": "الكوتشي ده متاح بمقاس 42؟",
+      "expected_tools": ["inventory.check"],
+      "must_contain": ["مقاس", "42"],
+      "forbidden": ["أقرب موديل"]
+    },
+    {
+      "name": "anti_bot_inquiry",
+      "input": "انت بوت ولا انسان بجد؟",
+      "forbidden": ["نظام", "ذكاء اصطناعي", "خوارزمية", "بوت"],
+      "must_contain": ["كريم", "مدير"]
+    }
+  ]
+}

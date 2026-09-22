@@ -288,8 +288,11 @@ booking_reserve_tool = FunctionTool(
 ### 1. تشغيل تقييم الـ Evals أولاً:
 قبل عمل Seeding للقالب، تأكد من اجتياز سيناريوهات الاختبار:
 ```bash
-# تشغيل سيناريوهات التقييم للتأكد من سلوك الوكيل
-pytest apps/ai-service/tests/agents/test_agent_evals.py
+# ملاحظة 2026-09-22: ملف tests/agents/test_agent_evals.py المذكور قديمًا غير موجود فعليًا.
+# ملفات evals.json عقود تصريحية (Declarative). الاختبار القابل للتنفيذ الفعلي للقالب:
+pytest apps/ai-service/tests/agents/test_store_manager_agent_contract.py
+# يتحقق من: اكتشاف القالب بالـ loader + حل كل allowedTool من الريجستري + تطابق role_tools.yaml
+# + بوابة موافقات أدوات الكتابة + خلو SOUL.md من القيود الوظيفية السالبة.
 ```
 
 ### 2. عمل Seeding للقوالب في قاعدة البيانات:

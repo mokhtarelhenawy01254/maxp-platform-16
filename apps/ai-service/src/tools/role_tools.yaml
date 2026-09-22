@@ -310,3 +310,57 @@ roles:
     - payment_settings_read
     - payment_methods_configure
 
+  STORE_MANAGER:
+    - product_search
+    - product_create
+    - product_update_price
+    - product_low_stock
+    - product_top_selling
+    - product_performance
+    - category_list
+    - inventory_check
+    - inventory_adjust
+    - order_lookup
+    - order_lookup_by_phone
+    - order_summary
+    - order_recent_list
+    - order_create_draft
+    - order_create_confirmed
+    - order_confirm
+    - order_update_details
+    - order_cancel
+    - order_refund
+    - customer_info
+    - customer_top_buyers
+    - sales_revenue
+    - company_snapshot
+    - discount_create_draft
+    - discount_create
+    - offers_list_active
+    - coupon_validate
+    - shipping_rates
+    - shipping_update
+    - shipping_company_governorates
+    - shipping_company_areas
+    - search_area_by_text
+    - shipping_zone_set
+    - knowledge_search
+    - knowledge_ask_merchant
+    - knowledge_create_faq
+    - knowledge_create_policy
+    - whatsapp_send
+    - message_broadcast
+    - competitor_search
+    - competitor_get_products
+    - competitor_price_compare
+    - conversion_tools_read
+    - conversion_tool_toggle
+    - conversion_tool_set_threshold
+    - payment_settings_read
+    - payment_methods_configure
+    - session_search
+    - manage_todo
+    - delegate_task
+    - agent_handoff_to
+    - unlock_advanced_tools
+
