@@ -487,6 +487,20 @@ class MonitorApiClient {
     return res.data?.data ?? null;
   }
 
+  async getCompanyActiveTimers(): Promise<any[]> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.get(`${base}/api/v1/tasks/company-active-timers`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return res.data?.data ?? [];
+    } catch (err: any) {
+      console.warn('[API] getCompanyActiveTimers failed:', err?.message);
+      return [];
+    }
+  }
+
   // ── Automated Attendance Linkage ─────────────────────────────
 
   async checkTodayAttendance(): Promise<any> {

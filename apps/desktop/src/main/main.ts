@@ -911,6 +911,15 @@ function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('tasks:get-company-active-timers', async () => {
+    try {
+      const activeTimers = await apiClient.getCompanyActiveTimers();
+      return { success: true, activeTimers };
+    } catch (err: any) {
+      return { success: false, activeTimers: [], error: err.message };
+    }
+  });
+
   ipcMain.handle('tasks:add-watcher', async (_, { taskId, userId }) => {
     try {
       const result = await apiClient.addTaskWatcher(taskId, userId);

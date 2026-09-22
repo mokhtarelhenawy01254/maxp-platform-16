@@ -391,6 +391,13 @@ class MonitorService {
       this.prisma.monitorDeviceSession.findMany({
         where: { companyId, isOnline: true },
         select: { employeeId: true, lastHeartbeat: true, deviceName: true, appVersion: true }
+      }).catch(() => []),
+      this.prisma.timeEntry.findMany({
+        where: { companyId, isRunning: true },
+        include: {
+          task: { select: { id: true, title: true, priority: true } },
+          user: { select: { id: true, firstName: true, lastName: true } }
+        }
       }).catch(() => [])
     ]);
 
@@ -422,6 +429,12 @@ class MonitorService {
       if (sess.employeeId) sessionMap.set(sess.employeeId, sess);
     }
 
+    // Build active task timers map
+    const activeTimerMap = new Map();
+    for (const timer of (activeTimers || [])) {
+      if (timer.userId) activeTimerMap.set(timer.userId, timer);
+    }
+
     // Collect all candidate IDs
     const rawIds = new Set([
       ...summaries.map(s => s.employeeId),
@@ -432,6 +445,7 @@ class MonitorService {
       ...(attendances || []).map(a => a.userId),
       ...(attendances || []).map(a => a.employeeRelId),
       ...(deviceSessions || []).map(d => d.employeeId),
+      ...(activeTimers || []).map(t => t.userId),
     ].filter(Boolean));
 
     const employeeIds = Array.from(rawIds);
@@ -455,6 +469,12 @@ class MonitorService {
           }
           if (attendanceMap.has(e.id) && !attendanceMap.has(e.userId)) {
             attendanceMap.set(e.userId, attendanceMap.get(e.id));
+          }
+          if (activeTimerMap.has(e.userId) && !activeTimerMap.has(e.id)) {
+            activeTimerMap.set(e.id, activeTimerMap.get(e.userId));
+          }
+          if (activeTimerMap.has(e.id) && !activeTimerMap.has(e.userId)) {
+            activeTimerMap.set(e.userId, activeTimerMap.get(e.id));
           }
         }
       });
@@ -710,6 +730,21 @@ class MonitorService {
         ? (elapsedAttendanceSeconds - trackedDeviceSeconds)
         : 0;
 
+      const activeTimer = activeTimerMap.get(item.employeeId) || activeTimerMap.get(item.employee?.userId) || activeTimerMap.get(item.employee?.id);
+      let activeTask = null;
+      if (activeTimer && activeTimer.task) {
+        const startMs = new Date(activeTimer.startTime).getTime();
+        const elapsedSec = !isNaN(startMs) && Date.now() > startMs ? Math.floor((Date.now() - startMs) / 1000) : 0;
+        activeTask = {
+          entryId: activeTimer.id,
+          taskId: activeTimer.taskId,
+          title: activeTimer.task.title,
+          priority: activeTimer.task.priority,
+          startTime: activeTimer.startTime,
+          elapsedSeconds: elapsedSec,
+        };
+      }
+
       return {
         employeeId: item.employeeId,
         employee: item.employee,
@@ -731,6 +766,7 @@ class MonitorService {
         topApp: item.topApp,
         completedTasksCount: item.completedTasksCount || 0,
         createdTasksCount: item.createdTasksCount || 0,
+        activeTask,
       };
     });
 
@@ -764,7 +800,7 @@ class MonitorService {
     const candidateIds = Array.from(new Set([employeeId, resolvedUserId, resolvedEmployeeId].filter(Boolean)));
 
     // 2. Fetch all telemetry, apps, websites, tasks, attendance, and active device session
-    const [activities, apps, websites, summary, completedTasks, createdTasks, attendance, deviceSession] = await Promise.all([
+    const [activities, apps, websites, summary, completedTasks, createdTasks, attendance, deviceSession, activeTimer] = await Promise.all([
       this.prisma.monitorActivityLog.findMany({
         where: { companyId, employeeId: { in: candidateIds }, intervalStart: { gte: startOfDay, lte: endOfDay } },
         orderBy: { intervalStart: 'asc' },
@@ -834,6 +870,12 @@ class MonitorService {
       this.prisma.monitorDeviceSession.findFirst({
         where: { companyId, employeeId: { in: candidateIds }, isOnline: true },
         orderBy: { lastHeartbeat: 'desc' }
+      }).catch(() => null),
+      this.prisma.timeEntry.findFirst({
+        where: { companyId, userId: { in: candidateIds }, isRunning: true },
+        include: {
+          task: { select: { id: true, title: true, priority: true } }
+        }
       }).catch(() => null),
     ]);
 
@@ -919,6 +961,14 @@ class MonitorService {
       hasMissingClockOut,
       elapsedAttendanceSeconds,
       untrackedSeconds,
+      activeTask: activeTimer?.task ? {
+        entryId: activeTimer.id,
+        taskId: activeTimer.taskId,
+        title: activeTimer.task.title,
+        priority: activeTimer.task.priority,
+        startTime: activeTimer.startTime,
+        elapsedSeconds: Math.max(0, Math.floor((Date.now() - new Date(activeTimer.startTime).getTime()) / 1000)),
+      } : null,
     };
 
     // 4. Task Performance Calculation (Deterministic logic)
@@ -934,6 +984,14 @@ class MonitorService {
     const idleToActiveRatio = totalActive > 0 ? (totalIdle / totalActive).toFixed(1) : '0.0';
 
     const taskPerformance = {
+      activeTask: activeTimer?.task ? {
+        entryId: activeTimer.id,
+        taskId: activeTimer.taskId,
+        title: activeTimer.task.title,
+        priority: activeTimer.task.priority,
+        startTime: activeTimer.startTime,
+        elapsedSeconds: Math.max(0, Math.floor((Date.now() - new Date(activeTimer.startTime).getTime()) / 1000)),
+      } : null,
       tasksCompletedCount: tasksCount,
       tasksCreatedCount: createdTasks.length,
       avgActiveSecondsPerTask,

@@ -27,12 +27,30 @@ interface ActiveTaskState {
   entryId?: string;
 }
 
+export interface TeamActiveTimer {
+  id: string;
+  taskId: string;
+  taskTitle: string;
+  priority: string;
+  taskStatus: string;
+  projectId?: string;
+  projectName?: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  userJobTitle?: string;
+  userDepartment?: string;
+  startTime: string;
+  elapsedSeconds: number;
+}
+
 export const TasksTab: React.FC = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'my-tasks' | 'assigned-by-me' | 'all'>('my-tasks');
   const [statusFilter, setStatusFilter] = useState<'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'>('IN_PROGRESS');
   const [users, setUsers] = useState<any[]>([]);
+  const [teamActiveTimers, setTeamActiveTimers] = useState<TeamActiveTimer[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -150,6 +168,20 @@ export const TasksTab: React.FC = () => {
     const interval = setInterval(calc, 1000);
     return () => clearInterval(interval);
   }, [activeTask?.id, activeTask?.startTime, activeTask?.accumulatedSeconds]);
+
+  // Real-time ticking stopwatch for all company active timers
+  useEffect(() => {
+    if (teamActiveTimers.length === 0) return;
+    const interval = setInterval(() => {
+      setTeamActiveTimers((prev) =>
+        prev.map((timer) => ({
+          ...timer,
+          elapsedSeconds: timer.elapsedSeconds + 1,
+        }))
+      );
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [teamActiveTimers.length]);
 
   const handleStartTask = async (task: any) => {
     // If clicking on a task that is ALREADY active, do nothing
@@ -324,6 +356,20 @@ export const TasksTab: React.FC = () => {
           });
         }
       } catch {}
+
+      // 4. Fetch company active running timers for team managers
+      const roleStr = String(authState?.user?.role || '').toUpperCase();
+      const isMgr = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER', 'HR_MANAGER'].includes(roleStr);
+      if (isMgr) {
+        try {
+          const activeRes = await window.electronAPI.getCompanyActiveTimers();
+          if (activeRes?.success && Array.isArray(activeRes.activeTimers)) {
+            setTeamActiveTimers(activeRes.activeTimers);
+          }
+        } catch (err) {
+          console.warn('[TasksTab] getCompanyActiveTimers error:', err);
+        }
+      }
     } catch (err) {
       console.warn('[TasksTab] Fetch error:', err);
     } finally {
@@ -587,6 +633,70 @@ export const TasksTab: React.FC = () => {
                 <span>إنجاز مباشر</span>
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Team Live Active Tasks Cockpit for Managers */}
+      {isAdminOrManager && teamActiveTimers.length > 0 && (
+        <div style={styles.teamCockpitBox}>
+          <div style={styles.teamCockpitHeader}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={styles.teamPulseDot} />
+              <span style={styles.teamCockpitTitle}>أعضاء الفريق قيد العمل المباشر الآن</span>
+              <span style={styles.teamCockpitCountBadge}>
+                {teamActiveTimers.length} {teamActiveTimers.length === 1 ? 'عضو' : 'أعضاء'}
+              </span>
+            </div>
+            <span style={styles.teamCockpitSubtitle}>
+              تتبع حي فوري للمهام الجاري إنجازها في هذه اللحظة
+            </span>
+          </div>
+
+          <div style={styles.teamCockpitGrid}>
+            {teamActiveTimers.map((timer) => (
+              <div
+                key={timer.id}
+                style={styles.teamTimerCard}
+                onClick={() => {
+                  setActiveView('all');
+                }}
+                title={`الضغط لعرض كل المهام — يعمل على: ${timer.taskTitle}`}
+                onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)'; }}
+                onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+              >
+                {/* User Avatar & Info */}
+                <div style={styles.teamUserSection}>
+                  <div style={styles.teamAvatar}>
+                    {timer.userName ? timer.userName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={styles.teamUserName} title={timer.userName}>{timer.userName}</div>
+                    <div style={styles.teamUserDept} title={timer.userJobTitle || timer.userDepartment || 'فريق العمل'}>
+                      {timer.userJobTitle || timer.userDepartment || 'فريق العمل'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Task Title & Project */}
+                <div style={styles.teamTaskSection}>
+                  <div style={styles.teamTaskTitle} title={timer.taskTitle}>
+                    {timer.taskTitle}
+                  </div>
+                  {timer.projectName && (
+                    <span style={styles.teamProjectTag}>{timer.projectName}</span>
+                  )}
+                </div>
+
+                {/* Live Stopwatch Badge */}
+                <div style={styles.teamStopwatchBadge} title="عداد وقت العمل الفعلي على المهمة">
+                  <Clock size={11} color="#22c55e" />
+                  <span style={styles.teamStopwatchText}>
+                    {formatRunnerTimer(timer.elapsedSeconds)}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -1180,6 +1290,142 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-dim)',
     cursor: 'pointer',
     padding: 3,
+  },
+  teamCockpitBox: {
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 8,
+    padding: '10px 12px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 8,
+    boxShadow: 'var(--shadow-card)',
+  },
+  teamCockpitHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 6,
+    borderBottom: '1px solid var(--border-subtle)',
+    flexWrap: 'wrap' as const,
+    gap: 6,
+  },
+  teamPulseDot: {
+    width: 7,
+    height: 7,
+    borderRadius: '50%',
+    backgroundColor: '#22c55e',
+    boxShadow: '0 0 6px #22c55e',
+  },
+  teamCockpitTitle: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+  },
+  teamCockpitCountBadge: {
+    fontSize: 10,
+    fontWeight: 600,
+    color: '#22c55e',
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    border: '1px solid rgba(34, 197, 94, 0.25)',
+    padding: '1px 6px',
+    borderRadius: 9999,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  teamCockpitSubtitle: {
+    fontSize: 10,
+    color: 'var(--text-dim)',
+  },
+  teamCockpitGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+    gap: 8,
+  },
+  teamTimerCard: {
+    backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 6,
+    padding: '8px 10px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    cursor: 'pointer',
+    transition: 'all 140ms ease-out',
+  },
+  teamUserSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 7,
+    maxWidth: 100,
+    minWidth: 80,
+  },
+  teamAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: '50%',
+    backgroundColor: 'var(--accent-primary-subtle, rgba(56, 189, 248, 0.12))',
+    color: 'var(--accent-primary, #38bdf8)',
+    fontSize: 11,
+    fontWeight: 700,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '1px solid var(--border-strong)',
+    flexShrink: 0,
+  },
+  teamUserName: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const,
+  },
+  teamUserDept: {
+    fontSize: 9,
+    color: 'var(--text-dim)',
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const,
+  },
+  teamTaskSection: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 2,
+  },
+  teamTaskTitle: {
+    fontSize: 11,
+    fontWeight: 500,
+    color: 'var(--text-primary)',
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const,
+  },
+  teamProjectTag: {
+    fontSize: 9,
+    color: 'var(--text-dim)',
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden' as const,
+    textOverflow: 'ellipsis' as const,
+  },
+  teamStopwatchBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+    border: '1px solid rgba(34, 197, 94, 0.2)',
+    padding: '3px 7px',
+    borderRadius: 5,
+    flexShrink: 0,
+  },
+  teamStopwatchText: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    fontWeight: 700,
+    color: '#22c55e',
+    fontVariantNumeric: 'tabular-nums',
   },
 };
 

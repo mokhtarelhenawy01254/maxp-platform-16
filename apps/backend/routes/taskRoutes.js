@@ -150,6 +150,7 @@ router.get(
 );
 router.get("/kanban", taskController.getKanbanTasks);
 router.get("/running-timer", taskController.getRunningTimer);
+router.get("/company-active-timers", taskController.getCompanyActiveTimers);
 router.get("/notifications", taskController.getNotifications);
 router.post("/", taskController.createTask);
 router.get("/:id", taskController.getTaskById);

@@ -2984,6 +2984,111 @@ const taskController = {
     }
   },
 
+  getCompanyActiveTimers: async (req, res) => {
+    try {
+      const companyId = await resolveCompanyContext(req);
+      const userRole = String(req.user?.role || "").toUpperCase();
+      const isAdminOrManager = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER", "HR_MANAGER"].includes(userRole);
+
+      if (!isAdminOrManager) {
+        return res.status(403).json({
+          success: false,
+          error: "غير مصرح: استعراض مؤقتات الفريق المباشرة متاح للمدراء فقط",
+        });
+      }
+
+      const activeEntries = await getSharedPrismaClient().timeEntry.findMany({
+        where: {
+          companyId,
+          isRunning: true,
+        },
+        include: {
+          task: {
+            select: {
+              id: true,
+              title: true,
+              priority: true,
+              status: true,
+              assignedTo: true,
+              project: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              avatar: true,
+              employeeRel: {
+                select: {
+                  id: true,
+                  position: { select: { title: true } },
+                  department: { select: { name: true } },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { startTime: "desc" },
+      });
+
+      const validActive = [];
+      const cleanupIds = [];
+
+      for (const entry of activeEntries) {
+        const taskStatus = String(entry.task?.status || "").toUpperCase();
+        if (["COMPLETED", "CANCELLED"].includes(taskStatus)) {
+          cleanupIds.push(entry.id);
+        } else {
+          const now = Date.now();
+          const startMs = new Date(entry.startTime).getTime();
+          const elapsedSeconds = !isNaN(startMs) && now > startMs ? Math.floor((now - startMs) / 1000) : 0;
+          const fullName = [entry.user?.firstName, entry.user?.lastName].filter(Boolean).join(" ").trim() || entry.user?.email || "عضو الفريق";
+
+          validActive.push({
+            id: entry.id,
+            taskId: entry.taskId,
+            taskTitle: entry.task?.title || "مهمة قيد العمل",
+            priority: entry.task?.priority || "MEDIUM",
+            taskStatus: entry.task?.status || "IN_PROGRESS",
+            projectId: entry.task?.project?.id || null,
+            projectName: entry.task?.project?.name || null,
+            userId: entry.userId,
+            userName: fullName,
+            userAvatar: entry.user?.avatar || null,
+            userJobTitle: entry.user?.employeeRel?.position?.title || "موظف",
+            userDepartment: entry.user?.employeeRel?.department?.name || "فريق العمل",
+            startTime: entry.startTime,
+            elapsedSeconds,
+          });
+        }
+      }
+
+      if (cleanupIds.length > 0) {
+        const stopNow = new Date();
+        getSharedPrismaClient().timeEntry.updateMany({
+          where: { id: { in: cleanupIds } },
+          data: { endTime: stopNow, isRunning: false },
+        }).catch((err) => console.warn("[taskController] Auto cleanup stopped timers error:", err.message));
+      }
+
+      res.json({
+        success: true,
+        count: validActive.length,
+        data: validActive,
+      });
+    } catch (error) {
+      console.error("Error fetching company active timers:", error);
+      res.status(500).json({ success: false, error: "فشل في جلب مؤقتات المهام المباشرة للفريق" });
+    }
+  },
+
   // ==================== سجل النشاطات (Activity Log) ====================
 
   getTaskActivities: async (req, res) => {

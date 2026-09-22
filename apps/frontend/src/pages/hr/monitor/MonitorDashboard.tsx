@@ -50,6 +50,14 @@ export interface TeamMemberSummary {
   elapsedAttendanceSeconds?: number;
   untrackedSeconds?: number;
   hasMissingClockOut?: boolean;
+  activeTask?: {
+    entryId?: string;
+    taskId: string;
+    title: string;
+    priority?: string;
+    startTime?: string;
+    elapsedSeconds?: number;
+  } | null;
 }
 
 type SortField = 'employeeName' | 'totalActiveSeconds' | 'totalIdleSeconds' | 'productivityScore' | 'completedTasksCount';
@@ -168,6 +176,7 @@ export const MonitorDashboard: React.FC = () => {
           createdTasksCount: item.createdTasksCount || 0,
           elapsedAttendanceSeconds: item.elapsedAttendanceSeconds || 0,
           untrackedSeconds: item.untrackedSeconds || 0,
+          activeTask: item.activeTask || null,
         });
       }
 
@@ -764,6 +773,15 @@ export const MonitorDashboard: React.FC = () => {
                         {/* Completed & Created Tasks */}
                         <td className="px-4 py-3 tabular-nums">
                           <div className="flex flex-col gap-1">
+                            {m.activeTask && (
+                              <span
+                                className="inline-flex items-center gap-1 rounded bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-sky-400 ring-1 ring-sky-500/25 max-w-[155px] truncate"
+                                title={`يعمل الآن على: ${m.activeTask.title}`}
+                              >
+                                <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse shrink-0" />
+                                <span className="truncate">{m.activeTask.title}</span>
+                              </span>
+                            )}
                             <span className="inline-flex items-center gap-1 font-semibold text-emerald-400">
                               <CheckCircle2 className="h-3 w-3 shrink-0" />
                               <span>{m.completedTasksCount || 0} منجزة</span>
@@ -855,6 +873,14 @@ export const MonitorDashboard: React.FC = () => {
                         )}
                       </div>
                     </div>
+
+                    {/* Live Task Badge if Active */}
+                    {m.activeTask && (
+                      <div className="flex items-center gap-1.5 rounded-lg bg-sky-500/10 px-2 py-1 text-[11px] font-semibold text-sky-400 ring-1 ring-sky-500/20">
+                        <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse shrink-0" />
+                        <span className="truncate">يعمل الآن: {m.activeTask.title}</span>
+                      </div>
+                    )}
 
                     {/* Attendance & First Activity Time Strip */}
                     <div className="rounded-lg border border-border/30 bg-zinc-900/50 p-2 text-xs space-y-1">

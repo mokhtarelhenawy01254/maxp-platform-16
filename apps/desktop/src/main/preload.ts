@@ -69,6 +69,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('tasks:stop-timer', { entryId }),
   getRunningTaskTimer: () =>
     ipcRenderer.invoke('tasks:get-running-timer'),
+  getCompanyActiveTimers: () =>
+    ipcRenderer.invoke('tasks:get-company-active-timers'),
   getAuthToken: () =>
     ipcRenderer.invoke('auth:get-token'),
   uploadTaskAttachment: (data: {
