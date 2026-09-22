@@ -93,3 +93,45 @@ async def test_registry_write_tools_all_gated():
     assert "conversion_tool_toggle" in gated
     assert "payment_methods_configure" in gated
     assert "order_cancel" in gated
+
+
+@pytest.mark.asyncio
+async def test_followup_surfaces_approval_message_not_generic_error():
+    """The LLM must see the Arabic approval template — not 'Execution failed'."""
+    import json as _json
+    from unittest.mock import MagicMock
+
+    from src.llm.client import ProviderResponse
+    from src.pipeline.context import PipelineContext
+    from src.pipeline.stages.skills_pipeline import _build_followup_messages
+
+    ctx = PipelineContext(
+        message="فعّل شريط الشحن المجاني",
+        thread_id="t9",
+        company_id="comp1",
+        customer_id="merchant",
+    )
+    ctx.attachments = []
+    first_response = MagicMock()
+    first_response.tool_calls = [
+        {"id": "call_1", "function": {"name": "conversion_tool_toggle", "arguments": "{}"}}
+    ]
+    first_response.text = ""
+    first_response.reasoning_content = None
+
+    awaiting_result = {
+        "status": "awaiting_approval",
+        "action_type": "conversion_tool_toggle",
+        "message": "قالب الرد: التعديل جاهز ومستني موافقتك",
+    }
+    executed = [{"tool": "conversion_tool_toggle", "status": "awaiting_approval", "result": awaiting_result}]
+
+    messages = await _build_followup_messages(ctx, first_response, executed)
+
+    tool_msgs = [m for m in messages if m.get("role") == "tool"]
+    assert len(tool_msgs) == 1
+    content = tool_msgs[0]["content"]
+    assert "مستني موافقتك" in content
+    assert "Execution failed" not in content
+    parsed = _json.loads(content.split("\n\n[Directive]")[0])
+    assert parsed["status"] == "awaiting_approval"

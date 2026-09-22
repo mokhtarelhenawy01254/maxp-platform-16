@@ -754,17 +754,32 @@ async def _build_followup_messages(
                 }
             )
         else:
-            err_dict = {"error": error or "Execution failed"}
-            err_str = json.dumps(err_dict, ensure_ascii=False, cls=DecimalEncoder, default=str)
-            if is_last and followup_directive:
-                err_str += f"\n\n[Directive]: {followup_directive}"
-            messages.append(
-                {
-                    "role": "tool",
-                    "tool_call_id": tc_id,
-                    "content": err_str,
-                }
-            )
+            if status == "awaiting_approval":
+                # Approval gate: surface the full structured payload (including
+                # the Arabic reply template) — sending a generic "Execution
+                # failed" error made the model apologize or claim a malfunction.
+                content_str = json.dumps(result, ensure_ascii=False, cls=DecimalEncoder, default=str)
+                if is_last and followup_directive:
+                    content_str += f"\n\n[Directive]: {followup_directive}"
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc_id,
+                        "content": content_str,
+                    }
+                )
+            else:
+                err_dict = {"error": error or "Execution failed"}
+                err_str = json.dumps(err_dict, ensure_ascii=False, cls=DecimalEncoder, default=str)
+                if is_last and followup_directive:
+                    err_str += f"\n\n[Directive]: {followup_directive}"
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc_id,
+                        "content": err_str,
+                    }
+                )
 
     return messages
 
