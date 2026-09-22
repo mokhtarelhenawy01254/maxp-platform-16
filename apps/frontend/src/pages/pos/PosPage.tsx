@@ -26,6 +26,10 @@ import {
   Moon,
   Coffee,
   Bookmark,
+  Flame,
+  Percent,
+  Gift,
+  Sliders,
 } from "lucide-react";
 import { config } from "../../config";
 import { authService } from "../../services/authService";
@@ -35,6 +39,7 @@ import {
   buildResponsiveUploadImage,
   getImageCandidates,
 } from "../../utils/imageUrl";
+import ItemModifierModal, { ModifierGroupItem, ModifierOptionItem } from "./ItemModifierModal";
 
 interface Product {
   id: string;
@@ -47,7 +52,10 @@ interface Product {
   trackInventory?: boolean;
 }
 interface CartItem extends Product {
+  cartItemId?: string;
   qty: number;
+  selectedModifiers?: ModifierOptionItem[];
+  itemNotes?: string;
 }
 interface Customer {
   id: string;
@@ -68,11 +76,14 @@ interface LastOrder {
   subtotal: number;
   tax: number;
   total: number;
+  discount?: number;
+  discountType?: string;
   customer: Customer | null;
   date: Date;
   paymentMethod: string;
   cashReceived?: number;
   change?: number;
+  splitDetails?: { cash: number; card: number };
 }
 
 interface OpenTab {
@@ -81,6 +92,9 @@ interface OpenTab {
   items: CartItem[];
   customer: Customer | null;
   createdAt: string;
+  subtotal?: number;
+  total?: number;
+  kotPrintedAt?: string | null;
 }
 
 interface PosApiProduct {
@@ -246,57 +260,227 @@ const PosPage = () => {
       orders: [],
     };
   });
-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CARD">("CASH");
+  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CARD" | "SPLIT">("CASH");
   const [cashReceived, setCashReceived] = useState(0);
+  const [splitCash, setSplitCash] = useState<number>(0);
+  const [splitCard, setSplitCard] = useState<number>(0);
   const searchRef = useRef<HTMLInputElement>(null);
   const barcodeBuffer = useRef("");
   const barcodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Open Tabs / Cafe Tables State
+  // Modifiers state
+  const [modifierGroups, setModifierGroups] = useState<ModifierGroupItem[]>([]);
+  const [selectedProductForModifier, setSelectedProductForModifier] = useState<Product | null>(null);
+  const [showModifierModal, setShowModifierModal] = useState(false);
+
+  // Open Tabs / Cafe Tables State (Cloud + Local fallback)
   const [openTabs, setOpenTabs] = useState<OpenTab[]>(() => {
     const saved = localStorage.getItem("pos_open_tabs");
     return saved ? safeJsonParse<OpenTab[]>(saved, []) : [];
   });
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [activeTabName, setActiveTabName] = useState<string | null>(null);
   const [showParkModal, setShowParkModal] = useState(false);
   const [parkTableName, setParkTableName] = useState("");
 
-  const handleParkCart = (e: React.FormEvent) => {
+  // KOT state
+  const [kotFiring, setKotFiring] = useState(false);
+  const [kotSuccessNotice, setKotSuccessNotice] = useState<string | null>(null);
+
+  // Discount state
+  const [discountType, setDiscountType] = useState<"NONE" | "PERCENT" | "VIP_COMP">("NONE");
+  const [discountPercent, setDiscountPercent] = useState<number>(0);
+
+  const fetchCloudTabs = useCallback(async () => {
+    try {
+      const token = authService.getAccessToken();
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = "Bearer " + token;
+      const res = await fetch(`${config.apiUrl}/cafe/tables`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          const mapped: OpenTab[] = data.data.map((t: any) => ({
+            id: t.id,
+            name: t.tableName,
+            items: Array.isArray(t.items) ? t.items : [],
+            customer: t.customerName ? { id: "guest", name: t.customerName, phone: t.customerPhone || "" } : null,
+            createdAt: t.createdAt,
+            subtotal: t.subtotal,
+            total: t.total,
+            kotPrintedAt: t.kotPrintedAt
+          }));
+          setOpenTabs(mapped);
+          localStorage.setItem("pos_open_tabs", JSON.stringify(mapped));
+        }
+      }
+    } catch {
+      // offline fallback
+    }
+  }, []);
+
+  const fetchModifiers = useCallback(async () => {
+    try {
+      const token = authService.getAccessToken();
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = "Bearer " + token;
+      const res = await fetch(`${config.apiUrl}/cafe/modifiers`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setModifierGroups(data.data);
+        }
+      }
+    } catch {
+      // non-cafe tenant or offline
+    }
+  }, []);
+
+  const handleParkCart = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cart.length) return;
-    const tabName = parkTableName.trim() || `طاولة ${openTabs.length + 1}`;
-    const newTab: OpenTab = {
-      id: "tab_" + Date.now(),
-      name: tabName,
-      items: [...cart],
-      customer: customer,
-      createdAt: new Date().toISOString()
-    };
-    const updated = [...openTabs, newTab];
-    setOpenTabs(updated);
-    localStorage.setItem("pos_open_tabs", JSON.stringify(updated));
+    const tabName = parkTableName.trim() || activeTabName || `طاولة ${openTabs.length + 1}`;
+
+    try {
+      const token = authService.getAccessToken();
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = "Bearer " + token;
+      await fetch(`${config.apiUrl}/cafe/tables`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          tabId: activeTabId || undefined,
+          tableName: tabName,
+          items: cart,
+          subtotal,
+          tax,
+          total,
+          customerName: customer?.name,
+          customerPhone: customer?.phone
+        })
+      });
+      await fetchCloudTabs();
+    } catch {
+      const newTab: OpenTab = {
+        id: activeTabId || "tab_" + Date.now(),
+        name: tabName,
+        items: [...cart],
+        customer: customer,
+        createdAt: new Date().toISOString(),
+        subtotal,
+        total
+      };
+      const updated = activeTabId
+        ? openTabs.map((t) => (t.id === activeTabId ? newTab : t))
+        : [...openTabs, newTab];
+      setOpenTabs(updated);
+      localStorage.setItem("pos_open_tabs", JSON.stringify(updated));
+    }
+
     setCart([]);
     setCustomer(null);
+    setActiveTabId(null);
+    setActiveTabName(null);
     setShowParkModal(false);
     setParkTableName("");
+    setDiscountType("NONE");
+    setDiscountPercent(0);
   };
 
   const handleRestoreTab = (tab: OpenTab) => {
-    if (cart.length > 0 && !window.confirm("هناك طلب حالي في السلة. هل تريد استبداله بالطلب المعلق؟")) {
+    if (cart.length > 0 && !window.confirm("هناك طلب حالي في السلة. هل تريد استبداله بهذه الطاولة؟")) {
       return;
     }
     setCart(tab.items);
     setCustomer(tab.customer);
-    const updated = openTabs.filter((t) => t.id !== tab.id);
-    setOpenTabs(updated);
-    localStorage.setItem("pos_open_tabs", JSON.stringify(updated));
+    setActiveTabId(tab.id);
+    setActiveTabName(tab.name);
   };
 
-  const handleDeleteTab = (tabId: string, e: React.MouseEvent) => {
+  const handleDeleteTab = async (tabId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm("هل تريد إلغاء هذه الطاولة المعلقة؟")) return;
+    if (!window.confirm("هل تريد إلغاء هذه الطاولة المعلقة وحذفها؟")) return;
+    try {
+      const token = authService.getAccessToken();
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = "Bearer " + token;
+      await fetch(`${config.apiUrl}/cafe/tables/${tabId}`, {
+        method: "DELETE",
+        headers
+      });
+    } catch {
+      // offline
+    }
     const updated = openTabs.filter((t) => t.id !== tabId);
     setOpenTabs(updated);
     localStorage.setItem("pos_open_tabs", JSON.stringify(updated));
+    if (activeTabId === tabId) {
+      setActiveTabId(null);
+      setActiveTabName(null);
+    }
+  };
+
+  const handleUnlinkTab = () => {
+    setActiveTabId(null);
+    setActiveTabName(null);
+  };
+
+  const fireKitchenTicket = async () => {
+    if (!cart.length) return;
+    setKotFiring(true);
+    try {
+      if (activeTabId) {
+        const token = authService.getAccessToken();
+        const headers: HeadersInit = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = "Bearer " + token;
+        await fetch(`${config.apiUrl}/cafe/tables/${activeTabId}/fire-kot`, {
+          method: "POST",
+          headers
+        });
+      }
+
+      const locale = i18n.language === "ar" ? "ar-EG" : "en-US";
+      const w = window.open("", "", "width=400,height=550");
+      if (w) {
+        w.document.write(
+          '<html dir="rtl"><head><title>تذكرة بار / مطبخ</title><style>body{font:13px monospace;max-width:280px;margin:auto;padding:15px;color:#000}.c{text-align:center}.r{display:flex;justify-content:space-between;margin:5px 0;font-weight:bold;font-size:14px}.mod{font-size:11px;color:#555;padding-right:8px}.note{font-size:11px;color:#c00;padding-right:8px;font-style:italic}.hr{border-top:2px dashed #000;margin:8px 0}</style></head><body>'
+        );
+        w.document.write(
+          '<div class="c"><h2 style="margin:0;font-size:16px">تذكرة تجهيز بار / مطبخ</h2>' +
+          (activeTabName ? '<h1 style="margin:4px 0;font-size:20px;border:1px solid #000;padding:4px">' + activeTabName + '</h1>' : '<h3 style="margin:4px 0">طلب صالة / سفري</h3>') +
+          '<p style="margin:0;font-size:11px">' + new Date().toLocaleTimeString(locale) + '</p></div><div class="hr"></div>'
+        );
+        cart.forEach((i) => {
+          w.document.write(
+            '<div class="r"><span>' + i.name + '</span><span>x ' + i.qty + '</span></div>'
+          );
+          if (i.selectedModifiers && i.selectedModifiers.length > 0) {
+            i.selectedModifiers.forEach((m) => {
+              w.document.write('<div class="mod">+ ' + m.name + (m.additionalPrice > 0 ? ' (+' + m.additionalPrice + ')' : '') + '</div>');
+            });
+          }
+          if (i.itemNotes) {
+            w.document.write('<div class="note">ملاحظة: ' + i.itemNotes + '</div>');
+          }
+        });
+        w.document.write(
+          '<div class="hr"></div><p class="c" style="font-size:10px;margin:4px 0">يرجى سرعة التجهيز والتقديم</p></body></html>'
+        );
+        w.document.close();
+        setTimeout(() => {
+          w.print();
+          w.close();
+        }, 300);
+      }
+
+      setKotSuccessNotice("تم إرسال تذكرة التحضير للبار بنجاح");
+      setTimeout(() => setKotSuccessNotice(null), 3500);
+    } catch (err) {
+      console.error(err);
+      alert("حدث خطأ أثناء إرسال تذكرة البار");
+    } finally {
+      setKotFiring(false);
+    }
   };
 
   useEffect(() => {
@@ -342,12 +526,23 @@ const PosPage = () => {
       }
     };
     load();
-  }, []);
+    fetchCloudTabs();
+    fetchModifiers();
+  }, [fetchCloudTabs, fetchModifiers]);
 
-  const subtotal = cart.reduce((a, i) => a + i.price * i.qty, 0);
+  const rawSubtotal = cart.reduce((a, i) => a + i.price * i.qty, 0);
+  const discountAmount = useMemo(() => {
+    if (discountType === "VIP_COMP") return rawSubtotal;
+    if (discountType === "PERCENT" && discountPercent > 0) {
+      return Math.round((rawSubtotal * discountPercent) / 100);
+    }
+    return 0;
+  }, [rawSubtotal, discountType, discountPercent]);
+
+  const subtotal = Math.max(0, rawSubtotal - discountAmount);
   const tax = subtotal * 0.14;
   const total = subtotal + tax;
-  const change = cashReceived - total;
+  const change = paymentMethod === "CASH" ? cashReceived - total : 0;
 
   const filtered = products.filter((p) => {
     const q = searchQuery.toLowerCase();
@@ -359,14 +554,42 @@ const PosPage = () => {
 
   const addToCart = (p: Product) => {
     if (p.trackInventory !== false && p.stock <= 0) return alert(t("posPage.notAvailable"));
+    if (modifierGroups.length > 0) {
+      setSelectedProductForModifier(p);
+      setShowModifierModal(true);
+    } else {
+      addToCartDirect(p);
+    }
+  };
+
+  const addToCartDirect = (p: Product) => {
     setCart((prev) => {
-      const ex = prev.find((i) => i.id === p.id);
+      const ex = prev.find((i) => i.id === p.id && (!i.selectedModifiers || i.selectedModifiers.length === 0));
       if (ex) {
         if (p.trackInventory !== false && ex.qty >= p.stock) return prev;
         return prev.map((i) => (i.id === p.id ? { ...i, qty: i.qty + 1 } : i));
       }
       return [...prev, { ...p, qty: 1 }];
     });
+  };
+
+  const handleModifierConfirm = (
+    product: any,
+    selectedModifiers: ModifierOptionItem[],
+    notes: string,
+    finalUnitPrice: number
+  ) => {
+    const uniqueCartId = `${product.id}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newCartItem: CartItem = {
+      ...product,
+      id: uniqueCartId,
+      cartItemId: uniqueCartId,
+      price: finalUnitPrice,
+      selectedModifiers,
+      itemNotes: notes,
+      qty: 1
+    };
+    setCart((prev) => [...prev, newCartItem]);
   };
 
   const updateQty = (id: string, d: number) =>
@@ -383,6 +606,10 @@ const PosPage = () => {
     if (cart.length > 0 && !window.confirm(t("posPage.clearCartConfirm"))) return;
     setCart([]);
     setCustomer(null);
+    setActiveTabId(null);
+    setActiveTabName(null);
+    setDiscountType("NONE");
+    setDiscountPercent(0);
   };
 
   const handleBarcode = useCallback(
@@ -395,16 +622,7 @@ const PosPage = () => {
           if (p.trackInventory !== false && p.stock <= 0) {
             alert(t("posPage.notAvailable"));
           } else {
-            setCart((prev) => {
-              const ex = prev.find((i) => i.id === p.id);
-              if (ex) {
-                if (p.trackInventory !== false && ex.qty >= p.stock) return prev;
-                return prev.map((i) =>
-                  i.id === p.id ? { ...i, qty: i.qty + 1 } : i,
-                );
-              }
-              return [...prev, { ...p, qty: 1 }];
-            });
+            addToCart(p);
           }
         } else {
           setSearchQuery(sku);
@@ -419,7 +637,7 @@ const PosPage = () => {
         }, 500);
       }
     },
-    [products],
+    [products, modifierGroups],
   );
 
   useEffect(() => {
@@ -448,24 +666,36 @@ const PosPage = () => {
   }, [cart, total]);
 
   const checkout = async () => {
-    if (!cart.length || (paymentMethod === "CASH" && cashReceived < total))
-      return;
+    if (!cart.length) return;
+    if (paymentMethod === "CASH" && cashReceived < total) return;
+    if (paymentMethod === "SPLIT" && (splitCash + splitCard < Math.floor(total))) return;
+
     setProcessing(true);
     try {
       const token = authService.getAccessToken();
       const headers: HeadersInit = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = "Bearer " + token;
+
+      const sanitizedCart = cart.map((i) => ({
+        ...i,
+        productId: i.id.includes("_") ? i.id.split("_")[0] : i.id
+      }));
+
       const res = await fetch(config.apiUrl + "/pos/orders", {
         method: "POST",
         headers,
         body: JSON.stringify({
-          cart,
+          cart: sanitizedCart,
           customer,
           paymentMethod,
+          discount: discountAmount,
+          discountType,
+          splitDetails: paymentMethod === "SPLIT" ? { cash: splitCash, card: splitCard } : null,
+          tableTabId: activeTabId || undefined,
           subtotal,
           tax,
           total,
-          cashReceived,
+          cashReceived: paymentMethod === "CASH" ? cashReceived : (paymentMethod === "SPLIT" ? splitCash : 0),
         }),
       });
       const data = await res.json();
@@ -476,20 +706,24 @@ const PosPage = () => {
           subtotal,
           tax,
           total,
+          discount: discountAmount,
+          discountType,
           customer,
           date: new Date(),
           paymentMethod,
-          cashReceived,
-          change: change > 0 ? change : 0,
+          cashReceived: paymentMethod === "CASH" ? cashReceived : undefined,
+          change: paymentMethod === "CASH" && change > 0 ? change : 0,
+          splitDetails: paymentMethod === "SPLIT" ? { cash: splitCash, card: splitCard } : undefined,
         });
+
         const newShiftData = {
           ...shiftData,
           totalSales: shiftData.totalSales + total,
           totalOrders: shiftData.totalOrders + 1,
-          totalItems:
-            shiftData.totalItems + cart.reduce((a, i) => a + i.qty, 0),
+          totalItems: shiftData.totalItems + cart.reduce((a, i) => a + i.qty, 0),
           cashPayments:
-            shiftData.cashPayments + (paymentMethod === "CASH" ? total : 0),
+            shiftData.cashPayments +
+            (paymentMethod === "CASH" ? total : paymentMethod === "SPLIT" ? splitCash : 0),
           orders: [
             ...shiftData.orders,
             { orderNumber: data.data.orderNumber, total, paymentMethod },
@@ -497,12 +731,25 @@ const PosPage = () => {
         };
         setShiftData(newShiftData);
         localStorage.setItem("pos_shift_data", JSON.stringify(newShiftData));
+
+        if (activeTabId) {
+          const updatedTabs = openTabs.filter((t) => t.id !== activeTabId);
+          setOpenTabs(updatedTabs);
+          localStorage.setItem("pos_open_tabs", JSON.stringify(updatedTabs));
+          setActiveTabId(null);
+          setActiveTabName(null);
+        }
+
         setShowPayment(false);
         setShowReceipt(true);
         setCart([]);
         setCustomer(null);
         setCashReceived(0);
-      } else alert(data.message);
+        setDiscountType("NONE");
+        setDiscountPercent(0);
+      } else {
+        alert(data.message);
+      }
     } catch {
       alert(t("posPage.connectionError"));
     } finally {
@@ -527,7 +774,7 @@ const PosPage = () => {
           lastOrder.date.toLocaleString(locale) +
           '</p></div><div class="hr"></div>',
       );
-      lastOrder.items.forEach((i) =>
+      lastOrder.items.forEach((i) => {
         w.document.write(
           '<div class="r"><span>' +
             i.name +
@@ -536,8 +783,25 @@ const PosPage = () => {
             "</span><span>" +
             (i.price * i.qty).toLocaleString(locale) +
             "</span></div>",
-        ),
-      );
+        );
+        if (i.selectedModifiers && i.selectedModifiers.length > 0) {
+          i.selectedModifiers.forEach((m) => {
+            w.document.write(
+              '<div style="font-size:10px;color:#555;padding-right:8px">+ ' +
+                m.name +
+                (m.additionalPrice > 0 ? " (+" + m.additionalPrice + ")" : "") +
+                "</div>",
+            );
+          });
+        }
+        if (i.itemNotes) {
+          w.document.write(
+            '<div style="font-size:10px;color:#888;padding-right:8px">ملاحظة: ' +
+              i.itemNotes +
+              "</div>",
+          );
+        }
+      });
       w.document.write(
         '<div class="hr"></div><div class="r"><span>' +
           t("posPage.subtotal") +
@@ -545,6 +809,15 @@ const PosPage = () => {
           lastOrder.subtotal.toLocaleString(locale) +
           "</span></div>",
       );
+      if (lastOrder.discount && lastOrder.discount > 0) {
+        w.document.write(
+          '<div class="r" style="color:#d97706"><span>' +
+            (lastOrder.discountType === "VIP_COMP" ? "ضيافة إدارة (100%)" : "خصم") +
+            '</span><span>-' +
+            lastOrder.discount.toLocaleString(locale) +
+            "</span></div>",
+        );
+      }
       w.document.write(
         '<div class="r"><span>' +
           t("posPage.vat") +
@@ -576,6 +849,14 @@ const PosPage = () => {
             (lastOrder.change || 0).toLocaleString(locale) +
             "</span></div>",
         );
+      } else if (lastOrder.paymentMethod === "SPLIT" && lastOrder.splitDetails) {
+        w.document.write(
+          '<div class="hr"></div><div class="r"><span>كاش: ' +
+            lastOrder.splitDetails.cash.toLocaleString(locale) +
+            '</span><span>فيزا: ' +
+            lastOrder.splitDetails.card.toLocaleString(locale) +
+            "</span></div>",
+        );
       }
       w.document.write(
         '<div class="hr"></div><p class="c">' +
@@ -605,15 +886,31 @@ const PosPage = () => {
           lastOrder.date.toLocaleTimeString(locale) +
           '</p></div><div class="hr"></div>',
       );
-      lastOrder.items.forEach((i) =>
+      lastOrder.items.forEach((i) => {
         w.document.write(
           '<div class="r"><span>' +
             i.name +
             '</span><span>x ' +
             i.qty +
             '</span></div>',
-        ),
-      );
+        );
+        if (i.selectedModifiers && i.selectedModifiers.length > 0) {
+          i.selectedModifiers.forEach((m) => {
+            w.document.write(
+              '<div style="font-size:11px;font-weight:normal;padding-right:8px">+ ' +
+                m.name +
+                '</div>',
+            );
+          });
+        }
+        if (i.itemNotes) {
+          w.document.write(
+            '<div style="font-size:11px;font-weight:normal;color:#c00;padding-right:8px">ملاحظة: ' +
+              i.itemNotes +
+              '</div>',
+          );
+        }
+      });
       w.document.write(
         '<div class="hr"></div><p class="c" style="font-size:10px">تذكرة تشغيلية للأقسام</p></body></html>',
       );
@@ -821,6 +1118,28 @@ const PosPage = () => {
           </div>
         </div>
 
+        {activeTabName && (
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-3 py-1.5 flex items-center justify-between text-xs text-amber-700 dark:text-amber-300">
+            <div className="flex items-center gap-1.5 font-medium">
+              <Coffee className="w-3.5 h-3.5 text-amber-600" />
+              <span>طاولة مفتوحة: {activeTabName}</span>
+            </div>
+            <button
+              onClick={handleUnlinkTab}
+              className="text-[11px] underline hover:text-amber-800 dark:hover:text-amber-200"
+            >
+              تحويل لسفري
+            </button>
+          </div>
+        )}
+
+        {kotSuccessNotice && (
+          <div className="bg-green-500/15 border-b border-green-500/30 px-3 py-1.5 text-xs text-green-700 dark:text-green-300 font-medium flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5 text-green-600" />
+            <span>{kotSuccessNotice}</span>
+          </div>
+        )}
+
         {openTabs.length > 0 && (
           <div className="bg-amber-50/70 dark:bg-amber-950/30 border-b dark:border-gray-700 px-3 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-hide text-xs">
             <span className="font-semibold text-amber-800 dark:text-amber-400 whitespace-nowrap text-[11px]">
@@ -830,13 +1149,20 @@ const PosPage = () => {
               <div
                 key={tab.id}
                 onClick={() => handleRestoreTab(tab)}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-700/60 shadow-xs cursor-pointer hover:border-amber-500 whitespace-nowrap"
+                className={
+                  "inline-flex items-center gap-1 px-2 py-1 rounded border shadow-xs cursor-pointer whitespace-nowrap " +
+                  (activeTabId === tab.id
+                    ? "bg-amber-500 text-white border-amber-600 font-bold"
+                    : "bg-white dark:bg-gray-800 border-amber-300 dark:border-amber-700/60 hover:border-amber-500 text-gray-900 dark:text-white")
+                }
               >
-                <span className="font-medium text-gray-900 dark:text-white text-xs">{tab.name}</span>
-                <span className="text-[10px] text-gray-400">({tab.items.length})</span>
+                <span className="text-xs">{tab.name}</span>
+                <span className={"text-[10px] " + (activeTabId === tab.id ? "text-white/80" : "text-gray-400")}>
+                  ({tab.items.length})
+                </span>
                 <span
                   onClick={(e) => handleDeleteTab(tab.id, e)}
-                  className="text-gray-400 hover:text-red-500 ml-1 font-bold text-xs"
+                  className="hover:text-red-500 ml-1 font-bold text-xs"
                 >
                   ×
                 </span>
@@ -879,7 +1205,25 @@ const PosPage = () => {
                     <h4 className="font-medium text-sm truncate text-gray-900 dark:text-white">
                       {item.name}
                     </h4>
-                    <p className="text-blue-600 dark:text-blue-400 font-bold text-sm">
+                    {item.selectedModifiers && item.selectedModifiers.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {item.selectedModifiers.map((mod) => (
+                          <span
+                            key={mod.id}
+                            className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-300 px-1 py-0.2 rounded border border-amber-500/20 tabular-nums"
+                          >
+                            +{mod.name}
+                            {mod.additionalPrice > 0 ? ` (${mod.additionalPrice})` : ""}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {item.itemNotes && (
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 italic mt-0.5 truncate">
+                        ملاحظة: {item.itemNotes}
+                      </p>
+                    )}
+                    <p className="text-blue-600 dark:text-blue-400 font-bold text-sm mt-0.5 tabular-nums">
                       {(item.price * item.qty).toLocaleString()} {t('pos.k_39')}
                     </p>
                   </div>
@@ -912,43 +1256,117 @@ const PosPage = () => {
           )}
         </div>
         <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 space-y-3">
+          {/* Quick Discounts Bar */}
+          <div className="flex items-center justify-between gap-1 pb-2 border-b dark:border-gray-700">
+            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <Percent className="w-3 h-3" />
+              <span className="text-[11px]">خصم:</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {[
+                { label: "0%", type: "NONE", val: 0 },
+                { label: "10%", type: "PERCENT", val: 10 },
+                { label: "15%", type: "PERCENT", val: 15 },
+                { label: "20%", type: "PERCENT", val: 20 },
+                { label: "ضيافة VIP", type: "VIP_COMP", val: 100 },
+              ].map((d) => {
+                const active =
+                  discountType === d.type &&
+                  (d.type !== "PERCENT" || discountPercent === d.val);
+                return (
+                  <button
+                    key={d.label}
+                    type="button"
+                    onClick={() => {
+                      if (active) {
+                        setDiscountType("NONE");
+                        setDiscountPercent(0);
+                      } else {
+                        setDiscountType(d.type as any);
+                        setDiscountPercent(d.val);
+                      }
+                    }}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                      active
+                        ? "bg-amber-600 text-white shadow-xs"
+                        : "bg-gray-200/70 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    }`}
+                  >
+                    {d.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex justify-between">
               <span>{t('pos.k_4')}</span>
-              <span className="text-gray-900 dark:text-white">
-                {subtotal.toLocaleString()} {t('pos.k_39')}
+              <span className="text-gray-900 dark:text-white tabular-nums">
+                {rawSubtotal.toLocaleString()} {t('pos.k_39')}
               </span>
             </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-amber-600 dark:text-amber-400 font-medium">
+                <span>
+                  {discountType === "VIP_COMP"
+                    ? "ضيافة إدارة (100%)"
+                    : `خصم (${discountPercent}%)`}
+                </span>
+                <span className="tabular-nums">
+                  - {discountAmount.toLocaleString()} {t('pos.k_39')}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span>{t('pos.k_11')}</span>
-              <span className="text-gray-900 dark:text-white">
+              <span className="text-gray-900 dark:text-white tabular-nums">
                 {tax.toLocaleString()} {t('pos.k_39')}
               </span>
             </div>
             <div className="flex justify-between text-xl font-bold pt-2 border-t dark:border-gray-700 text-gray-900 dark:text-white">
               <span>{t('pos.k_6')}</span>
-              <span className="text-blue-600 dark:text-blue-400">
+              <span className="text-blue-600 dark:text-blue-400 tabular-nums">
                 {total.toLocaleString()} {t('pos.k_39')}
               </span>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-1.5">
             <button
               onClick={() => setShowShiftReport(true)}
-              className="p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg flex flex-col items-center hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+              className="p-2.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg flex flex-col items-center justify-center hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+              title={t('pos.k_12')}
             >
-              <FileText className="h-5 w-5" />
-              <span className="text-xs mt-1">{t('pos.k_12')}</span>
+              <FileText className="h-4 w-4" />
+              <span className="text-[10px] mt-0.5">{t('pos.k_12')}</span>
+            </button>
+            <button
+              onClick={fireKitchenTicket}
+              disabled={!cart.length || kotFiring}
+              className="p-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 rounded-lg flex flex-col items-center justify-center transition-colors disabled:opacity-40"
+              title="إرسال تذكرة التحضير للبار والمطبخ فوراً"
+            >
+              {kotFiring ? (
+                <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+              ) : (
+                <Flame className="h-4 w-4 text-amber-600" />
+              )}
+              <span className="text-[10px] font-bold mt-0.5">للبـار</span>
             </button>
             <button
               onClick={() => {
                 setShowPayment(true);
                 setCashReceived(Math.ceil(total));
+                if (paymentMethod === "SPLIT") {
+                  const half = Math.round(total / 2);
+                  setSplitCash(half);
+                  setSplitCard(Math.max(0, total - half));
+                }
               }}
               disabled={!cart.length}
-              className="col-span-2 p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 font-bold transition-all shadow-md active:scale-95"
+              className="col-span-2 p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center gap-1.5 disabled:opacity-50 font-bold transition-all shadow-md active:scale-95 text-sm"
             >
-              <CreditCard className="h-5 w-5" />
+              <CreditCard className="h-4 w-4" />
               {t('pos.k_47')}
             </button>
           </div>
@@ -971,17 +1389,24 @@ const PosPage = () => {
             </div>
             <div className="text-center mb-6">
               <p className="text-gray-500 dark:text-gray-400">{t('pos.k_6')}</p>
-              <p className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+              <p className="text-4xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">
                 {total.toLocaleString()} {t('pos.k_39')}
               </p>
             </div>
             <div className="flex gap-2 mb-6">
-              {(["CASH", "CARD"] as const).map((m) => (
+              {(["CASH", "CARD", "SPLIT"] as const).map((m) => (
                 <button
                   key={m}
-                  onClick={() => setPaymentMethod(m)}
+                  onClick={() => {
+                    setPaymentMethod(m);
+                    if (m === "SPLIT") {
+                      const half = Math.round(total / 2);
+                      setSplitCash(half);
+                      setSplitCard(Math.max(0, total - half));
+                    }
+                  }}
                   className={
-                    "flex-1 p-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all " +
+                    "flex-1 p-3 rounded-xl font-medium flex items-center justify-center gap-1.5 transition-all text-xs sm:text-sm " +
                     (paymentMethod === m
                       ? "bg-blue-600 text-white shadow-lg"
                       : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300")
@@ -989,13 +1414,18 @@ const PosPage = () => {
                 >
                   {m === "CASH" ? (
                     <>
-                      <Banknote className="h-5 w-5" />
+                      <Banknote className="h-4 w-4" />
                       {t('pos.k_49')}
+                    </>
+                  ) : m === "CARD" ? (
+                    <>
+                      <CreditCard className="h-4 w-4" />
+                      {t('pos.k_50')}
                     </>
                   ) : (
                     <>
-                      <CreditCard className="h-5 w-5" />
-                      {t('pos.k_50')}
+                      <Sliders className="h-4 w-4" />
+                      مقسم (كاش+فيزا)
                     </>
                   )}
                 </button>
@@ -1033,10 +1463,63 @@ const PosPage = () => {
                 )}
               </div>
             )}
+            {paymentMethod === "SPLIT" && (
+              <div className="space-y-3 mb-6 bg-gray-50 dark:bg-gray-700/50 p-3.5 rounded-xl border border-gray-200 dark:border-gray-600">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                      المبلغ نقداً (كاش)
+                    </label>
+                    <span className="text-[11px] text-gray-400">ج.م</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={splitCash || ""}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setSplitCash(val);
+                      setSplitCard(Math.max(0, Math.round(total - val)));
+                    }}
+                    placeholder="0"
+                    className="w-full p-2.5 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-lg text-center font-bold text-gray-900 dark:text-white outline-none focus:border-blue-500 tabular-nums"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                      المبلغ بالبطاقة (فيزا / مدى)
+                    </label>
+                    <span className="text-[11px] text-gray-400">ج.م</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={splitCard || ""}
+                    onChange={(e) => setSplitCard(Number(e.target.value))}
+                    placeholder="0"
+                    className="w-full p-2.5 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg text-lg text-center font-bold text-gray-900 dark:text-white outline-none focus:border-blue-500 tabular-nums"
+                  />
+                </div>
+                <div className="flex justify-between text-xs pt-1 border-t dark:border-gray-600">
+                  <span className="text-gray-500 dark:text-gray-400">إجمالي المدفوع:</span>
+                  <span
+                    className={
+                      "font-bold tabular-nums " +
+                      (splitCash + splitCard >= Math.floor(total)
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-red-500")
+                    }
+                  >
+                    {(splitCash + splitCard).toLocaleString()} / {total.toLocaleString()} {t('pos.k_39')}
+                  </span>
+                </div>
+              </div>
+            )}
             <button
               onClick={checkout}
               disabled={
-                processing || (paymentMethod === "CASH" && cashReceived < total)
+                processing ||
+                (paymentMethod === "CASH" && cashReceived < total) ||
+                (paymentMethod === "SPLIT" && splitCash + splitCard < Math.floor(total))
               }
               className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all"
             >
@@ -1213,6 +1696,18 @@ const PosPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showModifierModal && selectedProductForModifier && (
+        <ItemModifierModal
+          product={selectedProductForModifier}
+          modifierGroups={modifierGroups}
+          onClose={() => {
+            setShowModifierModal(false);
+            setSelectedProductForModifier(null);
+          }}
+          onConfirm={handleModifierConfirm}
+        />
       )}
     </div>
   );

@@ -227,6 +227,8 @@ model Company {
   recipes                         Recipe[]
   stockAuditSessions              StockAuditSession[]
   productModifierGroups           ProductModifierGroup[]
+  cafeTableTabs                   CafeTableTab[]
+  operationalWasteLogs            OperationalWasteLog[]
   purchaseInvoices                PurchaseInvoice[]
   purchaseOrders                  PurchaseOrder[]
   recentlyVieweds                 RecentlyViewed[]

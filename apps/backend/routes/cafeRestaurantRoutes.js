@@ -34,4 +34,20 @@ router.post('/modifiers', controller.createModifierGroup);
 router.put('/modifiers/:id', controller.updateModifierGroup);
 router.delete('/modifiers/:id', controller.deleteModifierGroup);
 
+// -----------------------------
+// 4. Cloud Table Tabs
+// -----------------------------
+router.get('/tables', controller.listTableTabs);
+router.post('/tables', controller.saveTableTab);
+router.post('/tables/:id/fire-kot', controller.fireTableKot);
+router.post('/tables/:id/close', controller.closeTableTab);
+router.delete('/tables/:id', controller.deleteTableTab);
+
+// -----------------------------
+// 5. Operational Waste & Spoilage
+// -----------------------------
+router.get('/waste', controller.listOperationalWaste);
+router.post('/waste', controller.recordOperationalWaste);
+
 module.exports = router;
+

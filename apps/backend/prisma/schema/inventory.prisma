@@ -109,6 +109,7 @@ model Warehouse {
   stockMovements StockMovement[]
   shipments      Shipment[]
   stockAuditSessions StockAuditSession[]
+  operationalWasteLogs OperationalWasteLog[]
   company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   merchant       Merchant?       @relation(fields: [merchantId], references: [id], onDelete: SetNull)
 

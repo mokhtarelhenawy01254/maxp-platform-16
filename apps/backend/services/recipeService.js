@@ -305,15 +305,67 @@ async function deductRecipeIngredients({ companyId, warehouseId, orderItems, ord
         });
       }
 
-      deductions.push({
-        rawProductId: rawProdId,
-        rawProductName: ing.rawProduct?.name,
-        quantityDeducted: roundedUnitsToDeduct,
-        unit: ing.unit,
-        orderItemId: item.id || item.productId
-      });
+        deductions.push({
+          rawProductId: rawProdId,
+          rawProductName: ing.rawProduct?.name,
+          quantityDeducted: roundedUnitsToDeduct,
+          unit: ing.unit,
+          orderItemId: item.id || item.productId
+        });
+      }
+
+      // 3. Deduct additional raw materials linked to selected modifiers (e.g. Almond milk, syrups)
+      const selectedModifiers = item.selectedModifiers || item.modifiers || [];
+      if (Array.isArray(selectedModifiers) && selectedModifiers.length > 0) {
+        for (const mod of selectedModifiers) {
+          const rawModId = mod.rawProductId;
+          const modQty = Number(mod.rawQuantity || 0);
+          if (rawModId && modQty > 0) {
+            const totalModUnits = Math.max(1, Math.round(orderQty * modQty));
+            await tx.product.update({
+              where: { id: rawModId },
+              data: { stock: { decrement: totalModUnits } }
+            });
+
+            const modInv = await tx.inventory.findFirst({
+              where: warehouseId ? { warehouseId, productId: rawModId } : { productId: rawModId, warehouse: { companyId } }
+            });
+
+            if (modInv) {
+              await tx.inventory.update({
+                where: { id: modInv.id },
+                data: {
+                  quantity: { decrement: totalModUnits },
+                  available: { decrement: totalModUnits }
+                }
+              });
+
+              await tx.stockMovement.create({
+                data: {
+                  productId: rawModId,
+                  warehouseId: modInv.warehouseId,
+                  type: 'OUT',
+                  reason: 'SALE',
+                  quantity: totalModUnits,
+                  reference: orderNumber,
+                  notes: `استهلاك خامة تعديل (${mod.name || 'إضافة'}) لطلب #${orderNumber}`,
+                  userId: userId || null,
+                  isApproved: true
+                }
+              });
+
+              deductions.push({
+                rawProductId: rawModId,
+                rawProductName: mod.name,
+                quantityDeducted: totalModUnits,
+                unit: 'UNIT',
+                orderItemId: item.id || item.productId
+              });
+            }
+          }
+        }
+      }
     }
-  }
 
   return deductions;
 }

@@ -293,3 +293,112 @@ exports.deleteModifierGroup = async (req, res) => {
     res.status(400).json({ success: false, message: error.message || 'فشل حذف مجموعة التعديل' });
   }
 };
+
+// ==========================================
+// 4. CLOUD TABLE TABS CONTROLLERS
+// ==========================================
+
+const cafeTableService = require('../services/cafeTableService');
+
+exports.listTableTabs = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const tabs = await cafeTableService.listActiveTabs(companyId);
+    res.json({ success: true, data: tabs });
+  } catch (error) {
+    console.error('Error in listTableTabs:', error);
+    res.status(500).json({ success: false, message: error.message || 'حدث خطأ أثناء جلب الطاولات المعلقة' });
+  }
+};
+
+exports.saveTableTab = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const userId = req.user.id;
+    const tab = await cafeTableService.saveOrUpdateTab({
+      ...req.body,
+      companyId,
+      openedBy: userId
+    });
+    res.json({ success: true, data: tab, message: 'تم حفظ شيك الطاولة بنجاح' });
+  } catch (error) {
+    console.error('Error in saveTableTab:', error);
+    res.status(400).json({ success: false, message: error.message || 'فشل حفظ شيك الطاولة' });
+  }
+};
+
+exports.fireTableKot = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const { id } = req.params;
+    await cafeTableService.markKotFired(companyId, id);
+    res.json({ success: true, message: 'تم إرسال تذكرة التحضير للبار والمطبخ بنجاح' });
+  } catch (error) {
+    console.error('Error in fireTableKot:', error);
+    res.status(400).json({ success: false, message: error.message || 'فشل إرسال تذكرة البار' });
+  }
+};
+
+exports.closeTableTab = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const { id } = req.params;
+    await cafeTableService.closeTab(companyId, id);
+    res.json({ success: true, message: 'تم إغلاق شيك الطاولة بنجاح' });
+  } catch (error) {
+    console.error('Error in closeTableTab:', error);
+    res.status(400).json({ success: false, message: error.message || 'فشل إغلاق شيك الطاولة' });
+  }
+};
+
+exports.deleteTableTab = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const { id } = req.params;
+    await cafeTableService.deleteTab(companyId, id);
+    res.json({ success: true, message: 'تم حذف شيك الطاولة بنجاح' });
+  } catch (error) {
+    console.error('Error in deleteTableTab:', error);
+    res.status(400).json({ success: false, message: error.message || 'فشل حذف شيك الطاولة' });
+  }
+};
+
+// ==========================================
+// 5. OPERATIONAL WASTE & SPOILAGE CONTROLLERS
+// ==========================================
+
+const wasteLogService = require('../services/wasteLogService');
+
+exports.recordOperationalWaste = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const userId = req.user.id;
+    const waste = await wasteLogService.recordWaste({
+      ...req.body,
+      companyId,
+      loggedBy: userId
+    });
+    res.json({ success: true, data: waste, message: 'تم تسجيل الهدر التشغيلي وخصم المخزون بنجاح' });
+  } catch (error) {
+    console.error('Error in recordOperationalWaste:', error);
+    res.status(400).json({ success: false, message: error.message || 'فشل تسجيل الهدر' });
+  }
+};
+
+exports.listOperationalWaste = async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const { page, limit, reason, warehouseId } = req.query;
+    const result = await wasteLogService.listWasteLogs(companyId, {
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 50,
+      reason,
+      warehouseId
+    });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error in listOperationalWaste:', error);
+    res.status(500).json({ success: false, message: error.message || 'حدث خطأ أثناء جلب سجلات الهدر' });
+  }
+};
+

@@ -430,6 +430,7 @@ model Product {
   rawIngredients             RecipeIngredient[]        @relation("RawProductIngredient")
   stockAuditItems            StockAuditItem[]
   rawModifierOptions         ProductModifierOption[]   @relation("RawProductModifierOption")
+  operationalWasteLogs       OperationalWasteLog[]
 
   showFakeStock              Boolean                   @default(false)
   

@@ -134,3 +134,52 @@ model ProductModifierOption {
   @@index([rawProductId])
   @@map("product_modifier_options")
 }
+
+model CafeTableTab {
+  id            String    @id @default(cuid())
+  companyId     String
+  tableName     String
+  tableNumber   String?
+  serverName    String?
+  serviceType   String    @default("DINE_IN") // DINE_IN, TAKEAWAY, DELIVERY
+  status        String    @default("OPEN")    // OPEN, BILLED, CLOSED, CANCELLED
+  items         Json
+  subtotal      Decimal   @default(0.00) @db.Decimal(10, 2)
+  tax           Decimal   @default(0.00) @db.Decimal(10, 2)
+  total         Decimal   @default(0.00) @db.Decimal(10, 2)
+  kotPrintedAt  DateTime?
+  customerName  String?
+  customerPhone String?
+  openedBy      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([status])
+  @@map("cafe_table_tabs")
+}
+
+model OperationalWasteLog {
+  id          String    @id @default(cuid())
+  companyId   String
+  warehouseId String
+  productId   String
+  quantity    Decimal   @db.Decimal(10, 3)
+  unit        String    @default("G")
+  reason      String    // CALIBRATION_DIAL_IN, SPILL_DROP, EXPIRED_SPOILED, QUALITY_TEST, OTHER
+  costPerUnit Decimal   @default(0.00) @db.Decimal(10, 4)
+  totalCost   Decimal   @default(0.00) @db.Decimal(12, 2)
+  loggedBy    String
+  notes       String?
+  createdAt   DateTime  @default(now())
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([warehouseId])
+  @@index([productId])
+  @@index([reason])
+  @@map("operational_waste_logs")
+}

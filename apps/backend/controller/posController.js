@@ -5,7 +5,15 @@ const { ensureWithinPlanLimit } = require('../utils/planLimitPayloads');
 
 const createPOSOrder = async (req, res) => {
   try {
-    const { cart, customer, paymentMethod = 'CASH' } = req.body;
+    const {
+      cart,
+      customer,
+      paymentMethod = 'CASH',
+      discount = 0,
+      discountType = 'NONE',
+      splitDetails = null,
+      tableTabId = null
+    } = req.body;
     const companyId = req.user.companyId;
     const userId = req.user.id;
 
@@ -19,7 +27,7 @@ const createPOSOrder = async (req, res) => {
     const orderItemsData = [];
 
     // Fetch real product data to avoid frontend manipulation
-    const productIds = cart.map(item => item.id);
+    const productIds = cart.map(item => item.productId || item.id);
     const dbProducts = await getSharedPrismaClient().product.findMany({
       where: {
         id: { in: productIds },
@@ -33,7 +41,8 @@ const createPOSOrder = async (req, res) => {
 
     // Validate stock and prices
     for (const cartItem of cart) {
-      const dbProduct = dbProducts.find(p => p.id === cartItem.id);
+      const prodId = cartItem.productId || cartItem.id;
+      const dbProduct = dbProducts.find(p => p.id === prodId);
       
       if (!dbProduct) {
         return res.status(400).json({ 
@@ -50,22 +59,35 @@ const createPOSOrder = async (req, res) => {
         });
       }
 
-      const itemTotal = Number(dbProduct.price) * cartItem.qty;
+      const itemUnitPrice = Number(cartItem.price != null ? cartItem.price : dbProduct.price);
+      const itemTotal = itemUnitPrice * cartItem.qty;
       calculatedSubtotal += itemTotal;
+
+      const metadataObj = {};
+      if (cartItem.selectedModifiers && cartItem.selectedModifiers.length > 0) {
+        metadataObj.selectedModifiers = cartItem.selectedModifiers;
+      }
+      if (cartItem.itemNotes) {
+        metadataObj.itemNotes = cartItem.itemNotes;
+      }
 
       orderItemsData.push({
         productId: dbProduct.id,
-        productName: dbProduct.name,
+        productName: dbProduct.name + (cartItem.selectedModifiers?.length ? ` (${cartItem.selectedModifiers.map(m => m.name).join(', ')})` : ''),
         quantity: cartItem.qty,
-        price: dbProduct.price,
+        price: itemUnitPrice,
         total: itemTotal,
         productSku: dbProduct.sku,
-        extractionSource: 'pos'
+        extractionSource: 'pos',
+        metadata: Object.keys(metadataObj).length > 0 ? JSON.stringify(metadataObj) : null,
+        selectedModifiers: cartItem.selectedModifiers || []
       });
     }
 
-    const tax = calculatedSubtotal * 0.14; // 14% VAT
-    calculatedTotal = calculatedSubtotal + tax;
+    const discountAmount = Number(discount) > 0 ? Math.min(Number(discount), calculatedSubtotal) : 0;
+    const taxableSubtotal = Math.max(0, calculatedSubtotal - discountAmount);
+    const tax = taxableSubtotal * 0.14; // 14% VAT
+    calculatedTotal = taxableSubtotal + tax;
 
     // 2. Handle Customer
     let customerId = customer?.id;
@@ -133,6 +155,17 @@ const createPOSOrder = async (req, res) => {
 
     // 4. Execute Transaction (Order + Inventory Update)
     const result = await getSharedPrismaClient().$transaction(async (tx) => {
+      const prismaOrderItems = orderItemsData.map(item => ({
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total,
+        productSku: item.productSku,
+        extractionSource: item.extractionSource,
+        metadata: item.metadata
+      }));
+
       // A. Create Order
       const order = await tx.order.create({
         data: {
@@ -150,15 +183,19 @@ const createPOSOrder = async (req, res) => {
           sourceType: 'pos',
           isViewed: false,
           orderItems: {
-            create: orderItemsData
+            create: prismaOrderItems
           },
           metadata: JSON.stringify({
-              cashierId: userId,
-              source: 'pos_terminal'
+            cashierId: userId,
+            source: 'pos_terminal',
+            discountAmount,
+            discountType,
+            splitDetails: paymentMethod === 'SPLIT' ? splitDetails : null,
+            tableTabId: tableTabId || null
           })
         },
         include: {
-            orderItems: true
+          orderItems: true
         }
       });
 
@@ -210,6 +247,17 @@ const createPOSOrder = async (req, res) => {
             });
           }
         }
+      }
+
+      // C. If order was parked as a cloud table tab, mark it closed
+      if (tableTabId) {
+        await tx.cafeTableTab.updateMany({
+          where: { id: tableTabId, companyId },
+          data: {
+            status: 'CLOSED',
+            updatedAt: new Date()
+          }
+        });
       }
 
       return order;
