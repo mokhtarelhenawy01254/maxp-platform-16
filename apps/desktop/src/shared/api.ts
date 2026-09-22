@@ -383,6 +383,46 @@ class MonitorApiClient {
     return res.data;
   }
 
+  // ── Task Dependencies ───────────────────────────────────────
+  async getTaskDependencies(taskId: string): Promise<any> {
+    const base = this.serverUrl;
+    try {
+      const res = await axios.get(`${base}/api/v1/tasks/${taskId}/dependencies`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return res.data?.data ?? res.data;
+    } catch (err: any) {
+      console.warn('[API] getTaskDependencies failed:', err?.message);
+      return [];
+    }
+  }
+
+  async addTaskDependency(taskId: string, dependsOnId: string, type: string = 'blocked_by'): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.post(
+      `${base}/api/v1/tasks/${taskId}/dependencies`,
+      { dependsOnId, type },
+      {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      }
+    );
+    return res.data?.data ?? res.data;
+  }
+
+  async removeTaskDependency(dependencyId: string): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.delete(
+      `${base}/api/v1/tasks/dependencies/${dependencyId}`,
+      {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      }
+    );
+    return res.data;
+  }
+
   async uploadTaskAttachment(
     taskId: string,
     base64Data: string,

@@ -51,6 +51,10 @@ declare global {
       captureDesktopSnippet: () => Promise<{ success: boolean; dataUrl?: string; error?: string }>;
       addWatcher: (taskId: string, userId: string) => Promise<{ success: boolean; result?: any; error?: string }>;
       removeWatcher: (taskId: string, userId: string) => Promise<{ success: boolean; result?: any; error?: string }>;
+      // Task Dependencies
+      getTaskDependencies: (taskId: string) => Promise<{ success: boolean; data?: any; error?: string }>;
+      addTaskDependency: (taskId: string, dependsOnId: string, type: string) => Promise<{ success: boolean; data?: any; error?: string }>;
+      removeTaskDependency: (dependencyId: string) => Promise<{ success: boolean; data?: any; error?: string }>;
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
       windowMinimize: () => Promise<boolean>;
       windowToggleMaximize: () => Promise<boolean>;

@@ -23,6 +23,7 @@ import {
   ClipboardCheck,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
+import { TaskDependencyBadge } from './TaskDependencyBadge';
 
 interface TaskItemCardProps {
   task: any;
@@ -72,6 +73,11 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const isWatching = currentUserId
     ? watchers.some((w: any) => (w.userId || w.id || w.user?.id) === currentUserId)
     : false;
+
+  const dependencies = task.taskDependencies || task.dependencies || [];
+  const blockingDeps = dependencies.filter((d: any) => d.type === 'blocked_by' && d.taskId === task.id);
+  const incompleteBlockingDeps = blockingDeps.filter((d: any) => String(d.dependsOn?.status || '').toUpperCase() !== 'COMPLETED');
+  const hasBlocking = incompleteBlockingDeps.length > 0;
 
   const handleToggleWatch = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -258,6 +264,28 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                   }}
                 >
                   🚨 عاجل وفوري
+                </span>
+              )}
+
+              {/* Blocking Dependencies Badge */}
+              {hasBlocking && !isCompleted && (
+                <span
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.1)',
+                    color: '#b45309',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                  title="المهمة متوقفة على مهام أخرى"
+                >
+                  <AlertTriangle size={10} />
+                  محظورة بـ {incompleteBlockingDeps.length}
                 </span>
               )}
 
@@ -556,9 +584,14 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             </div>
           </div>
 
-          {/* Expanded Description */}
-          {expanded && task.description && (
-            <div style={cardStyles.descBox}>{task.description}</div>
+          {/* Expanded Description and Dependencies */}
+          {expanded && (
+            <>
+              {task.description && (
+                <div style={cardStyles.descBox}>{task.description}</div>
+              )}
+              <TaskDependencyBadge taskId={task.id} />
+            </>
           )}
 
           {/* Meta Chips Row */}

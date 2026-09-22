@@ -87,6 +87,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('tasks:add-watcher', { taskId, userId }),
   removeWatcher: (taskId: string, userId: string) =>
     ipcRenderer.invoke('tasks:remove-watcher', { taskId, userId }),
+  // Task Dependencies
+  getTaskDependencies: (taskId: string) =>
+    ipcRenderer.invoke('tasks:get-dependencies', { taskId }),
+  addTaskDependency: (taskId: string, dependsOnId: string, type: string) =>
+    ipcRenderer.invoke('tasks:add-dependency', { taskId, dependsOnId, type }),
+  removeTaskDependency: (dependencyId: string) =>
+    ipcRenderer.invoke('tasks:remove-dependency', { dependencyId }),
   openExternal: (url: string) =>
     ipcRenderer.invoke('shell:open-external', url),
 

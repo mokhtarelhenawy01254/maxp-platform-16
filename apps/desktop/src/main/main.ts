@@ -940,6 +940,36 @@ function registerIpcHandlers(): void {
     }
   });
 
+  // ── Task Dependencies Handlers ──
+  ipcMain.handle('tasks:get-dependencies', async (_, { taskId }) => {
+    try {
+      const data = await apiClient.getTaskDependencies(taskId);
+      return { success: true, data };
+    } catch (err: any) {
+      return { success: false, error: err.message, data: [] };
+    }
+  });
+
+  ipcMain.handle('tasks:add-dependency', async (_, { taskId, dependsOnId, type }) => {
+    try {
+      const data = await apiClient.addTaskDependency(taskId, dependsOnId, type);
+      mainWindow?.webContents.send('tasks:refresh', { action: 'add-dependency', taskId });
+      return { success: true, data };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('tasks:remove-dependency', async (_, { dependencyId }) => {
+    try {
+      const data = await apiClient.removeTaskDependency(dependencyId);
+      mainWindow?.webContents.send('tasks:refresh', { action: 'remove-dependency' });
+      return { success: true, data };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('auth:get-token', async () => {
     return { token: apiClient.token };
   });
