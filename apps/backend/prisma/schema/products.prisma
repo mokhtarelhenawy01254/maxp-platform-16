@@ -426,6 +426,10 @@ model Product {
   wholesalePriceListItems    WholesalePriceListItem[]
   wishlists                  Wishlist[]
   overlayCampaignProducts    OverlayCampaignProduct[]
+  recipes                    Recipe[]
+  rawIngredients             RecipeIngredient[]        @relation("RawProductIngredient")
+  stockAuditItems            StockAuditItem[]
+  rawModifierOptions         ProductModifierOption[]   @relation("RawProductModifierOption")
 
   showFakeStock              Boolean                   @default(false)
   

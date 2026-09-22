@@ -26,7 +26,8 @@ const createPOSOrder = async (req, res) => {
         companyId: companyId
       },
       include: {
-        inventories: true // Include inventory to check stock
+        inventories: true,
+        recipes: { where: { isActive: true } }
       }
     });
 
@@ -41,7 +42,8 @@ const createPOSOrder = async (req, res) => {
         });
       }
 
-      if (dbProduct.stock < cartItem.qty) {
+      const hasRecipe = dbProduct.recipes && dbProduct.recipes.length > 0;
+      if (dbProduct.trackInventory !== false && !hasRecipe && dbProduct.stock < cartItem.qty) {
         return res.status(400).json({ 
           success: false, 
           message: `الكمية المطلوبة للمنتج ${dbProduct.name} غير متوفرة. المتاح: ${dbProduct.stock}` 
@@ -160,35 +162,53 @@ const createPOSOrder = async (req, res) => {
         }
       });
 
-      // B. Update Product Stock (Global Stock)
+      // B. Update Product Stock / Recipe Ingredients
+      const recipeService = require('../services/recipeService');
       for (const item of orderItemsData) {
-        await tx.product.update({
-            where: { id: item.productId },
-            data: {
-                stock: {
-                    decrement: item.quantity
-                }
-            }
-        });
-        
-        // C. Update Warehouse Inventory (Optional: Update default warehouse)
-        // Find the first warehouse for this product to deduct from
-        const inventoryItem = await tx.inventory.findFirst({
-            where: { 
-                productId: item.productId,
-                warehouse: { companyId: companyId }
-            },
-            include: { warehouse: true }
+        // Check if item has an active recipe
+        const recipe = await tx.recipe.findFirst({
+          where: { companyId, productId: item.productId, isActive: true }
         });
 
-        if (inventoryItem) {
+        if (recipe) {
+          // Deduct raw ingredients (beans, milk, cups)
+          await recipeService.deductRecipeIngredients({
+            companyId,
+            warehouseId: req.body.warehouseId || null,
+            orderItems: [item],
+            orderNumber,
+            userId,
+            tx
+          });
+        } else {
+          // Regular finished product stock decrement
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: {
+                decrement: item.quantity
+              }
+            }
+          });
+          
+          // Update Warehouse Inventory
+          const inventoryItem = await tx.inventory.findFirst({
+            where: { 
+              productId: item.productId,
+              warehouse: { companyId: companyId }
+            },
+            include: { warehouse: true }
+          });
+
+          if (inventoryItem) {
             await tx.inventory.update({
-                where: { id: inventoryItem.id },
-                data: {
-                    quantity: { decrement: item.quantity },
-                    available: { decrement: item.quantity }
-                }
+              where: { id: inventoryItem.id },
+              data: {
+                quantity: { decrement: item.quantity },
+                available: { decrement: item.quantity }
+              }
             });
+          }
         }
       }
 

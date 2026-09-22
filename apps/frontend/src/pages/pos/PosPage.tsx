@@ -24,6 +24,8 @@ import {
   Check,
   Sun,
   Moon,
+  Coffee,
+  Bookmark,
 } from "lucide-react";
 import { config } from "../../config";
 import { authService } from "../../services/authService";
@@ -70,6 +72,14 @@ interface LastOrder {
   paymentMethod: string;
   cashReceived?: number;
   change?: number;
+}
+
+interface OpenTab {
+  id: string;
+  name: string;
+  items: CartItem[];
+  customer: Customer | null;
+  createdAt: string;
 }
 
 interface PosApiProduct {
@@ -239,6 +249,53 @@ const PosPage = () => {
   const searchRef = useRef<HTMLInputElement>(null);
   const barcodeBuffer = useRef("");
   const barcodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Open Tabs / Cafe Tables State
+  const [openTabs, setOpenTabs] = useState<OpenTab[]>(() => {
+    const saved = localStorage.getItem("pos_open_tabs");
+    return saved ? safeJsonParse<OpenTab[]>(saved, []) : [];
+  });
+  const [showParkModal, setShowParkModal] = useState(false);
+  const [parkTableName, setParkTableName] = useState("");
+
+  const handleParkCart = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cart.length) return;
+    const tabName = parkTableName.trim() || `طاولة ${openTabs.length + 1}`;
+    const newTab: OpenTab = {
+      id: "tab_" + Date.now(),
+      name: tabName,
+      items: [...cart],
+      customer: customer,
+      createdAt: new Date().toISOString()
+    };
+    const updated = [...openTabs, newTab];
+    setOpenTabs(updated);
+    localStorage.setItem("pos_open_tabs", JSON.stringify(updated));
+    setCart([]);
+    setCustomer(null);
+    setShowParkModal(false);
+    setParkTableName("");
+  };
+
+  const handleRestoreTab = (tab: OpenTab) => {
+    if (cart.length > 0 && !window.confirm("هناك طلب حالي في السلة. هل تريد استبداله بالطلب المعلق؟")) {
+      return;
+    }
+    setCart(tab.items);
+    setCustomer(tab.customer);
+    const updated = openTabs.filter((t) => t.id !== tab.id);
+    setOpenTabs(updated);
+    localStorage.setItem("pos_open_tabs", JSON.stringify(updated));
+  };
+
+  const handleDeleteTab = (tabId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm("هل تريد إلغاء هذه الطاولة المعلقة؟")) return;
+    const updated = openTabs.filter((t) => t.id !== tabId);
+    setOpenTabs(updated);
+    localStorage.setItem("pos_open_tabs", JSON.stringify(updated));
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -591,6 +648,24 @@ const PosPage = () => {
               <Maximize className="h-5 w-5" />
             )}
           </button>
+
+          <a
+            href="/cafe/recipes"
+            className="p-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1 text-xs font-medium"
+            title="معايير الرسيبي وتكلفة المشروبات"
+          >
+            <Coffee className="h-5 w-5 text-amber-600" />
+            <span className="hidden sm:inline">الرسيبي</span>
+          </a>
+
+          <a
+            href="/cafe/audits"
+            className="p-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1 text-xs font-medium"
+            title="جلسات الجرد الفعلي للمخزن"
+          >
+            <FileText className="h-5 w-5 text-blue-600" />
+            <span className="hidden sm:inline">الجرد</span>
+          </a>
         </div>
         <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-4 py-2 flex gap-2 overflow-x-auto scrollbar-hide">
           {categories.map((c) => (
@@ -690,13 +765,47 @@ const PosPage = () => {
               {cart.length}
             </span>
           </div>
-          <button
-            onClick={clearCart}
-            className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-          >
-            <Trash2 className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setShowParkModal(true)}
+              disabled={!cart.length}
+              className="p-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors disabled:opacity-30"
+              title="تعليق الطلب على طاولة"
+            >
+              <Bookmark className="h-5 w-5" />
+            </button>
+            <button
+              onClick={clearCart}
+              className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
+          </div>
         </div>
+
+        {openTabs.length > 0 && (
+          <div className="bg-amber-50/70 dark:bg-amber-950/30 border-b dark:border-gray-700 px-3 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-hide text-xs">
+            <span className="font-semibold text-amber-800 dark:text-amber-400 whitespace-nowrap text-[11px]">
+              طاولات:
+            </span>
+            {openTabs.map((tab) => (
+              <div
+                key={tab.id}
+                onClick={() => handleRestoreTab(tab)}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-700/60 shadow-xs cursor-pointer hover:border-amber-500 whitespace-nowrap"
+              >
+                <span className="font-medium text-gray-900 dark:text-white text-xs">{tab.name}</span>
+                <span className="text-[10px] text-gray-400">({tab.items.length})</span>
+                <span
+                  onClick={(e) => handleDeleteTab(tab.id, e)}
+                  className="text-gray-400 hover:text-red-500 ml-1 font-bold text-xs"
+                >
+                  ×
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex-1 overflow-y-auto p-3 space-y-2 dark:bg-gray-800/50">
           {!cart.length ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600">
@@ -941,6 +1050,51 @@ const PosPage = () => {
                 {t('pos.k_55')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showParkModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full p-5">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-gray-900 dark:text-white text-base">
+                تعليق الطلب (طاولة / شيك مفتوح)
+              </h3>
+              <button onClick={() => setShowParkModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleParkCart} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  رقم الطاولة أو اسم الزبون
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="مثال: طاولة 4، صالة 2"
+                  value={parkTableName}
+                  onChange={(e) => setParkTableName(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border border-transparent focus:border-blue-500 outline-none"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowParkModal(false)}
+                  className="flex-1 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium shadow-xs"
+                >
+                  حفظ وتعليق
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

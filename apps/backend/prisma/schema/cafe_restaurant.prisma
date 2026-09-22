@@ -1,0 +1,136 @@
+// Cafe & Restaurant F&B Suite
+// Recipes, Bill of Materials, Stock Audit Sessions, and Modifiers
+
+model Recipe {
+  id              String             @id @default(cuid())
+  companyId       String
+  productId       String
+  name            String
+  description     String?
+  prepTimeMinutes Int?               @default(3)
+  yieldQuantity   Decimal            @default(1.00) @db.Decimal(10, 2)
+  estimatedCost   Decimal            @default(0.00) @db.Decimal(10, 2)
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product         Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredients     RecipeIngredient[]
+
+  @@unique([companyId, productId])
+  @@index([companyId])
+  @@index([productId])
+  @@map("recipes")
+}
+
+model RecipeIngredient {
+  id                  String   @id @default(cuid())
+  recipeId            String
+  rawProductId        String
+  quantity            Decimal  @db.Decimal(10, 3)
+  unit                String   @default("G")
+  unitConversionRatio Decimal  @default(1.000000) @db.Decimal(12, 6)
+  yieldPercentage     Decimal  @default(100.00) @db.Decimal(5, 2)
+  costPerUnit         Decimal? @db.Decimal(10, 4)
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  recipe              Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  rawProduct          Product  @relation("RawProductIngredient", fields: [rawProductId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+  @@index([rawProductId])
+  @@map("recipe_ingredients")
+}
+
+model StockAuditSession {
+  id                  String           @id @default(cuid())
+  companyId           String
+  warehouseId         String
+  sessionNumber       String           @unique
+  status              String           @default("DRAFT")
+  title               String
+  notes               String?
+  startedAt           DateTime         @default(now())
+  completedAt         DateTime?
+  approvedAt          DateTime?
+  startedBy           String
+  approvedBy          String?
+  totalExpectedValue  Decimal          @default(0.00) @db.Decimal(12, 2)
+  totalActualValue    Decimal          @default(0.00) @db.Decimal(12, 2)
+  totalVarianceValue  Decimal          @default(0.00) @db.Decimal(12, 2)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  company             Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  warehouse           Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  items               StockAuditItem[]
+
+  @@index([companyId])
+  @@index([warehouseId])
+  @@index([status])
+  @@map("stock_audit_sessions")
+}
+
+model StockAuditItem {
+  id               String            @id @default(cuid())
+  sessionId        String
+  productId        String
+  productName      String
+  productSku       String?
+  expectedQuantity Decimal           @db.Decimal(10, 3)
+  actualQuantity   Decimal?          @db.Decimal(10, 3)
+  varianceQuantity Decimal           @default(0.000) @db.Decimal(10, 3)
+  unitCost         Decimal           @default(0.00) @db.Decimal(10, 2)
+  varianceCost     Decimal           @default(0.00) @db.Decimal(12, 2)
+  isReconciled     Boolean           @default(false)
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  session          StockAuditSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  product          Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([productId])
+  @@map("stock_audit_items")
+}
+
+model ProductModifierGroup {
+  id            String                  @id @default(cuid())
+  companyId     String
+  name          String
+  nameEn        String?
+  selectionType String                  @default("SINGLE")
+  isRequired    Boolean                 @default(false)
+  minSelection  Int                     @default(0)
+  maxSelection  Int                     @default(1)
+  sortOrder     Int                     @default(0)
+  isActive      Boolean                 @default(true)
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  company       Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  options       ProductModifierOption[]
+
+  @@index([companyId])
+  @@map("product_modifier_groups")
+}
+
+model ProductModifierOption {
+  id              String               @id @default(cuid())
+  groupId         String
+  name            String
+  nameEn          String?
+  additionalPrice Decimal              @default(0.00) @db.Decimal(10, 2)
+  rawProductId    String?
+  rawQuantity     Decimal?             @db.Decimal(10, 3)
+  isDefault       Boolean              @default(false)
+  sortOrder       Int                  @default(0)
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  group           ProductModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  rawProduct      Product?             @relation("RawProductModifierOption", fields: [rawProductId], references: [id], onDelete: SetNull)
+
+  @@index([groupId])
+  @@index([rawProductId])
+  @@map("product_modifier_options")
+}

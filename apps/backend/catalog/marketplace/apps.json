@@ -4177,5 +4177,65 @@
     "engineCompatibility": null,
     "createdAt": "2026-09-20T00:00:00Z",
     "updatedAt": "2026-09-20T00:00:00Z"
+  },
+  {
+    "id": "cat-app-cafe-restaurant-pro",
+    "slug": "cafe-restaurant-pro",
+    "name": "نظام الكافيهات والمطاعم",
+    "nameEn": "Cafe & Restaurant Pro",
+    "description": "تشغيل متكامل للكافيهات والمطاعم: معايير تصنيع المشروبات (الرسيبي)، تفكيك وخصم الخامات اللحظي، جلسات الجرد والمطابقة، خيارات الحليب والنكهات، وإدارة الطاولات والشيكات.",
+    "descriptionEn": "Complete operating suite for cafes and F&B: recipe management (BOM), automated ingredient deduction, physical stock audit sessions, drink modifiers, and table tabs.",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "pos-pro",
+      "inventory-pro"
+    ],
+    "positioning": {
+      "audience": "أصحاب ومديرو الكافيهات والمطاعم ومحلات المشروبات والحلويات.",
+      "surface": "داخل قسم الكافيه والمطعم — إدارة الرسيبي، جلسات الجرد، والربط مع نقطة البيع (POS).",
+      "outcome": "إيقاف هدر الخامات بنسبة 100%، ضبط تكلفة الأكواب والوجبات، وجرد ومطابقة المخزن في دقائق."
+    },
+    "features": {
+      "recipes": {
+        "enabled": true,
+        "name": "معايير التصنيع والمقادير (Recipe BOM)",
+        "description": "تحديد مقادير المشروبات بالجرام والملليتر وخصمها التلقائي عند البيع.",
+        "access": "PAID"
+      },
+      "stockAudits": {
+        "enabled": true,
+        "name": "جلسات الجرد والمطابقة السريعة",
+        "description": "مقارنة لحظية بين الفعلي والدفتري واحتساب العجز والزيادة واعتماد التسوية بضغطة زر.",
+        "access": "PAID"
+      },
+      "drinkModifiers": {
+        "enabled": true,
+        "name": "خيارات وتعديلات المشروبات",
+        "description": "تخصيص أنواع الحليب، مستويات السكر، والإضافات مع ربط تكلفتها بالمخزون.",
+        "access": "PAID"
+      },
+      "tableManagement": {
+        "enabled": true,
+        "name": "إدارة الطاولات والشيكات المعلقة",
+        "description": "تعليق الطلب برقم الطاولة أو اسم العميل وإضافة طلبات متعددة قبل تقفيل الحساب.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": true,
+    "icon": "coffee",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-22T00:00:00Z",
+    "updatedAt": "2026-09-22T00:00:00Z"
   }
 ]

@@ -478,6 +478,15 @@ const SupplierPaymentForm = React.lazy(
 const ProcurementDashboard = React.lazy(
   () => import("./components/procurement/ProcurementDashboard"),
 );
+const RecipeManagementPage = React.lazy(
+  () => import("./pages/cafe/RecipeManagementPage"),
+);
+const StockCountSessionPage = React.lazy(
+  () => import("./pages/cafe/StockCountSessionPage"),
+);
+const ModifiersManagementPage = React.lazy(
+  () => import("./pages/cafe/ModifiersManagementPage"),
+);
 const WholesaleDashboard = React.lazy(
   () => import("./pages/wholesale/WholesaleDashboard"),
 );
@@ -5186,6 +5195,41 @@ const AppContent = () => {
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
                         <SupplierPaymentForm />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                {/* Cafe & Restaurant Pro Routes */}
+                <Route
+                  path="/cafe"
+                  element={<Navigate to="/cafe/recipes" replace />}
+                />
+                <Route
+                  path="/cafe/recipes"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['cafe-restaurant-pro', 'pos-pro', 'store-pro']}>
+                        <RecipeManagementPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/cafe/audits"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['cafe-restaurant-pro', 'pos-pro', 'store-pro']}>
+                        <StockCountSessionPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/cafe/modifiers"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['cafe-restaurant-pro', 'pos-pro', 'store-pro']}>
+                        <ModifiersManagementPage />
                       </AppAccessRoute>
                     </Layout>
                   }

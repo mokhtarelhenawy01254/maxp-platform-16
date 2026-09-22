@@ -125,5 +125,25 @@
     ],
     "createdAt": "2026-09-10T00:00:00.000Z",
     "updatedAt": "2026-09-10T00:00:00.000Z"
+  },
+  {
+    "id": "cat-bundle-cafe-complete",
+    "slug": "cafe-complete-bundle",
+    "name": "باقة الكافيه والمطعم المتكاملة",
+    "nameEn": "Cafe & Restaurant Complete Suite",
+    "description": "المنظومة الكاملة لإدارة الكافيه والمطعم: الرسيبي وتفكيك الخامات + المخازن والتنبيهات + المشتريات والموردين + كاشير POS والورديات بتوفير شامل.",
+    "monthlyPrice": 399,
+    "yearlyPrice": 3990,
+    "discount": 40,
+    "isActive": true,
+    "isFeatured": true,
+    "appSlugs": [
+      "cafe-restaurant-pro",
+      "inventory-pro",
+      "procurement-pro",
+      "pos-pro"
+    ],
+    "createdAt": "2026-09-22T00:00:00.000Z",
+    "updatedAt": "2026-09-22T00:00:00.000Z"
   }
 ]
