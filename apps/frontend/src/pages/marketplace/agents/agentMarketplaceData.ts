@@ -427,6 +427,53 @@ export const AGENT_LISTINGS: AgentListing[] = [
       ],
     },
   },
+
+  // ── 9. Store Manager Agent (PRO) ───────────────────────────
+  {
+    id: "agent_store_manager",
+    slug: "store-manager-agent",
+    name: "كريم عبد العال",
+    position: "مدير تشغيل المتجر — الكتالوج والطلبات وأدوات التحويل وطرق الدفع (Store Operations Manager)",
+    category: "operations",
+    tier: "pro",
+    priceMonthly: 590,
+    currency: "ج.م",
+    featured: true,
+    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+    summary: "إدارة شاملة للمتجر من المحادثة: تشغيل وإيقاف أدوات رفع التحويل الـ 22، تكوين طرق الدفع والعربون، الكتالوج والمخزون، الطلبات والشحن، والعروض والخصومات.",
+    tools: [
+      "conversion_tool_toggle",
+      "payment_methods_configure",
+      "product_create",
+      "order_recent_list",
+      "inventory_adjust",
+    ],
+    skills: ["storefront-management", "read-before-write", "catalog-operations"],
+    telemetry: {
+      engine: "DeepSeek-V4 Flash",
+      fallbackEngine: "Llama 3.3 70B",
+      p95Latency: "0.85s",
+      taskPrecision: "99.2%",
+      governance: "human_in_loop",
+      contextWindow: "128k Tokens",
+    },
+    dossier: {
+      bio: "مدير تشغيل خبرته 10 سنوات في متاجر إلكترونية مصرية. فلسفته: يعرض الحالة الحالية بالأرقام قبل أي تغيير، ولا ينفذ قرارًا حساسًا إلا بموافقة صريحة من صاحب المتجر.",
+      persona: "عملي، دافئ، سريع الإنجاز — يجيب بالأرقام والعملة، ويقترح الخطوة التالية الأعلى أثرًا.",
+      dialect: "العربية المصرية المهنية الراقية.",
+      boundaries: [
+        "يقرأ حالة أي أداة (تحويل أو دفع) ويعرضها على التاجر قبل تفعيلها أو تعديلها.",
+        "لا يعدل طرق الدفع أو المخزون أو الطلبات الحساسة إلا بعد موافقة صريحة داخل المحادثة.",
+        "مفاتيح بوابات الدفع تُسجل يدويًا من الإعدادات فقط — هو يفعلها ويتحقق منها ولا يراها أبدًا.",
+      ],
+      executionStream: [
+        { step: "01: قراءة الحالة", action: "conversion_tools_read() → شريط الشحن المجاني متوقف، الحد الحالي 750 ج.م", type: "tool" },
+        { step: "02: عرض التوصية", action: "شريط الشحن المجاني متوقف رغم إن متوسط السلة 820 ج.م — تفعيله هيرفع قيمة السلة", type: "thought" },
+        { step: "03: التنفيذ بموافقة", action: "conversion_tool_toggle(tool_key='freeShippingBar', enable=true)", type: "tool" },
+        { step: "04: التأكيد", action: "تمام يا فندم، الشريط بقى شغال على كل المنتجات والتاجر هيشوفه أول ما يدخل.", type: "output" },
+      ],
+    },
+  },
 ];
 
 /**
@@ -467,6 +514,21 @@ export interface SandboxSample {
 
 export function getAgentSamplePrompts(slug: string): SandboxSample[] {
   switch (slug) {
+    case "store-manager-agent":
+      return [
+        {
+          label: "تشغيل أدوات رفع التحويل",
+          prompt: "فعّل شريط الشحن المجاني وخلّي الحد 750 جنيه",
+          toolUsed: "conversion_tool_toggle(tool_key='freeShippingBar', enable=true)",
+          response: "شريط الشحن المجاني بقى شغال على كل صفحات المنتجات، والحد اتظبط على 750 ج.م — أي عميل سلة أقل من كده هيشوف رصيده الناقص للشحن المجاني لحظة التسوق.",
+        },
+        {
+          label: "فحص طرق الدفع",
+          prompt: "ورّيني طرق الدفع الشغالة في المتجر دلوقتي",
+          toolUsed: "payment_settings_read()",
+          response: "الشغال حاليًا: الدفع عند الاستلام بس. بوابة Kashier مش متسجلة فالبطاقات معطلة، والمحفظة من غير رقم مسجل. تحب أفعّل المحفظة لو بعتلي رقمها؟",
+        },
+      ];
     case "facebook-media-buyer-agent":
       return [
         {
