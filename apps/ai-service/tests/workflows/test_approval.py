@@ -29,9 +29,12 @@ def mock_session():
 @pytest.mark.asyncio
 async def test_create_approval_draft_success(mock_session):
     thread_uuid = uuid.uuid4()
-    mock_session.execute.return_value = MagicMock(
-        scalar_one_or_none=MagicMock(return_value=thread_uuid)
-    )
+    # 1st execute: get_by_request_key (no duplicate) → None.
+    # 2nd execute: repo.create thread lookup → thread uuid.
+    mock_session.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=None)),
+        MagicMock(scalar_one_or_none=MagicMock(return_value=thread_uuid)),
+    ]
 
     result = await create_approval_draft(
         action_type="discount.create",
@@ -47,11 +50,39 @@ async def test_create_approval_draft_success(mock_session):
 
 
 @pytest.mark.asyncio
+async def test_create_approval_draft_is_idempotent_for_identical_pending_request(mock_session):
+    from src.workflows.approval import _request_key
+
+    existing = MagicMock()
+    existing.status = "pending"
+    existing.draft_id = "existing-draft"
+    existing.id = "row-1"
+
+    # 1st execute: get_by_request_key finds the identical pending draft.
+    mock_session.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=existing)),
+    ]
+
+    result = await create_approval_draft(
+        action_type="discount.create",
+        action_args={"percent": 15},
+        company_id="comp1",
+        customer_id="cust1",
+        thread_id="comp1:cust1:chat",
+        session=mock_session,
+    )
+
+    assert result == {"draft_id": "existing-draft", "status": "pending"}
+    mock_session.add.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_create_approval_draft_stores_sdk_approval_metadata(mock_session):
     thread_uuid = uuid.uuid4()
-    mock_session.execute.return_value = MagicMock(
-        scalar_one_or_none=MagicMock(return_value=thread_uuid)
-    )
+    mock_session.execute.side_effect = [
+        MagicMock(scalar_one_or_none=MagicMock(return_value=None)),
+        MagicMock(scalar_one_or_none=MagicMock(return_value=thread_uuid)),
+    ]
 
     await create_approval_draft(
         action_type="discount_create",

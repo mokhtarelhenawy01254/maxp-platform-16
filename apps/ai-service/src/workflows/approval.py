@@ -60,6 +60,19 @@ async def create_approval_draft(
         action_type=action_type,
         action_args=action_args,
     )
+
+    # Idempotency: an identical pending request (same company/thread/action/args)
+    # re-surfaces the existing draft instead of crashing on the unique key.
+    existing = await repo.get_by_request_key(request_key)
+    if existing is not None and str(existing.status or "") == "pending":
+        return {"draft_id": str(existing.draft_id or existing.id or ""), "status": "pending"}
+    if existing is not None:
+        # Same action was already resolved (approved/rejected/executed) — the
+        # merchant may legitimately ask again, so mint a fresh unique key.
+        import uuid as _uuid
+
+        request_key = f"{request_key}:{_uuid.uuid4().hex[:8]}"
+
     approval = await repo.create(
         company_id=company_id,
         thread_id=thread_id,

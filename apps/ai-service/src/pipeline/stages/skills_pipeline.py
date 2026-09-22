@@ -39,6 +39,26 @@ async def _execute_one_tool(ctx: PipelineContext, registry: Any, tc: dict) -> di
     if ctx.company_id and "company_id" not in arguments:
         arguments = {**arguments, "company_id": ctx.company_id}
 
+    # Approval gate: write tools (approval_mode='always_require') must NEVER
+    # execute directly in the chat pipeline. Return the structured awaiting
+    # payload — the chat endpoint turns it into an approval draft the merchant
+    # confirms (execution happens only via approval_service._execute_action).
+    approval_mode = getattr(tool, "approval_mode", "never_require")
+    if approval_mode == "always_require":
+        logger.info("tool_blocked_for_approval", name=func_name, company_id=ctx.company_id)
+        awaiting = {
+            "status": "awaiting_approval",
+            "action_type": func_name,
+            "action_args": arguments,
+            "company_id": ctx.company_id,
+            "message": (
+                "الإجراء ده مش خطأ ولا فشل — ده إجراء حساس بيتطلب موافقة صاحب المتجر قبل التنفيذ. "
+                "طلب الموافقة اتبعت وظهرله زر اعتماد. قول للتاجر: «التعديل جاهز ومستني موافقتك — "
+                "اضغط موافقة وأكمّل فورًا». ممنوع تعتذر أو تقول إنه فشل أو إنك سترفع للدعم."
+            ),
+        }
+        return {"tool": func_name, **awaiting, "result": awaiting}
+
     try:
         validated = tool.input_model(**arguments)
         result = await tool.func(validated)
