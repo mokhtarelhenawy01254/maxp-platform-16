@@ -291,9 +291,21 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                     halt_triggered = False
                     halt_reason = None
 
+                    # Tools already blocked pending merchant approval: the model
+                    # retrying them is EXPECTED — never treat as failure or loop.
+                    awaiting_names = {
+                        ex.get("tool")
+                        for ex in executed
+                        if ex.get("status") == "awaiting_approval"
+                    }
+
                     for tc in final_response.tool_calls:
                         f_name = tc.get("function", {}).get("name", "")
                         f_args = tc.get("function", {}).get("arguments", {})
+
+                        if f_name in awaiting_names:
+                            valid_tool_calls.append(tc)
+                            continue
 
                         # Check for identical loop / stall
                         is_loop, reason = loop_guard.check_call(f_name, f_args)
@@ -303,7 +315,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                             break
 
                         already_failed = any(
-                            ex.get("tool") == f_name and ex.get("status") != "success"
+                            ex.get("tool") == f_name and ex.get("status") not in ("success", "awaiting_approval")
                             for ex in executed
                         )
                         if already_failed:
@@ -339,7 +351,13 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                     for idx, tc in enumerate(final_response.tool_calls):
                         res_item = extra_results[idx] if idx < len(extra_results) else {}
                         status = res_item.get("status", "unknown")
-                        result_content = res_item.get("result", {}) if status == "success" else {"error": res_item.get("error", "Failed")}
+                        if status == "success" or status == "awaiting_approval":
+                            # awaiting_approval must surface its full payload
+                            # (with the Arabic reply template) — a generic
+                            # {"error": "Failed"} makes the model apologize.
+                            result_content = res_item.get("result", {})
+                        else:
+                            result_content = {"error": res_item.get("error", "Failed")}
                         # Hermes Duplicate Result Stubbing
                         tc_name = tc.get("function", {}).get("name", "")
                         tc_args = tc.get("function", {}).get("arguments", {})
