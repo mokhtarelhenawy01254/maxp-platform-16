@@ -5,6 +5,7 @@ const {
 } = require('../services/storefrontThemeCatalogService');
 const { sanitizeMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
 const redisCacheService = require('../services/redisCacheService');
+const { getClientIp, resolveIpLocation, isLocalOrPrivateIp } = require('../utils/ipGeoLookup');
 
 const DEFAULT_THEME_ID = 'modern-minimal';
 const PUBLIC_MARKETPLACE_APP_SLUGS = [
@@ -628,15 +629,11 @@ exports.detectCustomerGeo = async (req, res) => {
   let region = req.headers['cf-region'] || null;
   let regionCode = req.headers['cf-region-code'] || null;
   let city = req.headers['cf-ipcity'] || null;
-  const ip =
-    req.headers['cf-connecting-ip'] ||
-    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-    req.ip;
+  const clientIp = getClientIp(req);
+  const cleanIp = (clientIp || '').replace(/^::ffff:/, '').trim();
 
-  const cleanIp = (ip || '').replace(/^::ffff:/, '').trim();
-
-  // If Cloudflare didn't supply region/regionCode and we have a valid public IP, resolve via ipwho.is with server-side caching
-  if ((!region || !regionCode) && cleanIp && cleanIp !== '127.0.0.1' && cleanIp !== '::1') {
+  // If Cloudflare didn't supply region/regionCode and we have a valid public IP, resolve via ipGeoLookup with multi-provider fallback
+  if ((!region || !regionCode) && cleanIp && !isLocalOrPrivateIp(cleanIp)) {
     try {
       const cacheKey = `geo:${cleanIp}`;
       const cached = await redisCacheService.get(cacheKey);
@@ -646,36 +643,22 @@ exports.detectCustomerGeo = async (req, res) => {
         if (cached.region_code) regionCode = cached.region_code;
         if (cached.city) city = cached.city;
       } else {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 1500);
-        try {
-          const resp = await fetch(`https://ipwho.is/${cleanIp}`, {
-            signal: controller.signal,
-            headers: { Accept: 'application/json' },
-          });
-          clearTimeout(timeout);
-          if (resp.ok) {
-            const data = await resp.json();
-            if (data && data.success !== false) {
-              if (!country && data.country_code) country = data.country_code;
-              if (data.region) region = data.region;
-              if (data.region_code) regionCode = data.region_code;
-              if (data.city) city = data.city;
+        const geo = await resolveIpLocation(cleanIp, req);
+        if (geo && (geo.governorate || geo.city)) {
+          if (!country && geo.country) country = geo.country;
+          if (geo.governorate) region = geo.governorate;
+          if (geo.city) city = geo.city;
 
-              await redisCacheService.set(
-                cacheKey,
-                {
-                  country_code: data.country_code || country,
-                  region: data.region || null,
-                  region_code: data.region_code || null,
-                  city: data.city || null,
-                },
-                604800, // 7 days TTL
-              );
-            }
-          }
-        } catch {
-          clearTimeout(timeout);
+          await redisCacheService.set(
+            cacheKey,
+            {
+              country_code: country || 'EG',
+              region: region || null,
+              region_code: regionCode || null,
+              city: city || null,
+            },
+            604800, // 7 days TTL
+          );
         }
       }
     } catch {
@@ -685,7 +668,7 @@ exports.detectCustomerGeo = async (req, res) => {
 
   return res.json({
     success: true,
-    country,
+    country: country || 'EG',
     region,
     regionCode,
     city,

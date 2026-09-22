@@ -19,6 +19,8 @@ interface OrderSessionDetailsCardProps {
   sourceType?: string;
   customerPhone?: string;
   createdAt?: string;
+  orderGovernorate?: string | null;
+  orderCity?: string | null;
 }
 
 const formatDuration = (seconds?: number): string => {
@@ -46,75 +48,105 @@ const formatRelativeDays = (dateStr?: string | null): string => {
 };
 
 const EGYPTIAN_GOVERNORATES_EN_TO_AR: Record<string, string> = {
+  c: "القاهرة",
+  cai: "القاهرة",
   cairo: "القاهرة",
+  "cairo governorate": "القاهرة",
   "al qahirah": "القاهرة",
+  gz: "الجيزة",
+  giz: "الجيزة",
   giza: "الجيزة",
   "al jizah": "الجيزة",
+  alx: "الإسكندرية",
   alexandria: "الإسكندرية",
   "al iskandariyah": "الإسكندرية",
+  dk: "الدقهلية",
   dakahlia: "الدقهلية",
   "ad daqahliyah": "الدقهلية",
   mansoura: "الدقهلية",
+  gh: "الغربية",
   gharbia: "الغربية",
   "al gharbiyah": "الغربية",
   tanta: "الغربية",
+  shk: "الشرقية",
   sharqia: "الشرقية",
   "ash sharqiyah": "الشرقية",
   zagazig: "الشرقية",
+  kb: "القليوبية",
   qalyubia: "القليوبية",
   "al qalyubiyah": "القليوبية",
   banha: "القليوبية",
+  bh: "البحيرة",
   beheira: "البحيرة",
   "al buhayrah": "البحيرة",
   damanhur: "البحيرة",
+  mnf: "المنوفية",
   monufia: "المنوفية",
   "al minufiyah": "المنوفية",
+  dt: "دمياط",
   damietta: "دمياط",
   dumyat: "دمياط",
+  pts: "بورسعيد",
   "port said": "بورسعيد",
   "bur said": "بورسعيد",
+  is: "الإسماعيلية",
   ismailia: "الإسماعيلية",
   "al ismailiyah": "الإسماعيلية",
+  suz: "السويس",
   suez: "السويس",
   "as suways": "السويس",
+  fym: "الفيوم",
   fayoum: "الفيوم",
   "al fayyum": "الفيوم",
+  bns: "بني سويف",
   "beni suef": "بني سويف",
   "bani suwayf": "بني سويف",
+  mn: "المنيا",
   minya: "المنيا",
   "al minya": "المنيا",
+  ast: "أسيوط",
   asyut: "أسيوط",
+  shg: "سوهاج",
   sohag: "سوهاج",
   suhaj: "سوهاج",
+  kn: "قنا",
   qena: "قنا",
   qina: "قنا",
+  lx: "الأقصر",
   luxor: "الأقصر",
   "al uqsur": "الأقصر",
+  asn: "أسوان",
   aswan: "أسوان",
+  ba: "البحر الأحمر",
   "red sea": "البحر الأحمر",
   "al bahr al ahmar": "البحر الأحمر",
   hurghada: "البحر الأحمر",
+  js: "جنوب سيناء",
   "south sinai": "جنوب سيناء",
   "janub sina": "جنوب سيناء",
   "sharm el-sheikh": "جنوب سيناء",
+  sin: "شمال سيناء",
   "north sinai": "شمال سيناء",
   "shamal sina": "شمال سيناء",
+  mt: "مطروح",
   matrouh: "مطروح",
   matruh: "مطروح",
+  wad: "الوادي الجديد",
   "new valley": "الوادي الجديد",
   "al wadi al jadid": "الوادي الجديد",
+  kfs: "كفر الشيخ",
   "kafr el sheikh": "كفر الشيخ",
   "kafr ash shaykh": "كفر الشيخ",
-  cai: "القاهرة",
-  giz: "الجيزة",
-  alx: "الإسكندرية",
-  dk: "الدقهلية",
 };
 
 const COMMON_CITIES_EN_TO_AR: Record<string, string> = {
+  girga: "جرجا",
   "al mansurah": "المنصورة",
   mansoura: "المنصورة",
+  talkha: "طلخا",
   tanta: "طنطا",
+  mahalla: "المحلة الكبرى",
+  "el mahalla el kubra": "المحلة الكبرى",
   zagazig: "الزقازيق",
   damanhur: "دمنهور",
   banha: "بنها",
@@ -123,12 +155,49 @@ const COMMON_CITIES_EN_TO_AR: Record<string, string> = {
   cairo: "القاهرة",
   giza: "الجيزة",
   alexandria: "الإسكندرية",
+  obour: "مدينة العبور",
+  "el obour": "مدينة العبور",
+  "6th of october": "السادس من أكتوبر",
+  "sheikh zayed": "الشيخ زايد",
+  "new cairo": "القاهرة الجديدة",
+  "nasr city": "مدينة نصر",
+  "heliopolis": "مصر الجديدة",
+  "maadi": "المعادي",
+  "helwan": "حلوان",
+  "shubra": "شبرا",
+  "dokki": "الدقي",
+  "mohandessin": "المهندسين",
+  suez: "السويس",
+  "port said": "بورسعيد",
+  ismailia: "الإسماعيلية",
+  damietta: "دمياط",
+  fayoum: "الفيوم",
+  "beni suef": "بني سويف",
+  minya: "المنيا",
+  asyut: "أسيوط",
+  sohag: "سوهاج",
+  qena: "قنا",
+  luxor: "الأقصر",
+  aswan: "أسوان",
+  "marsa matruh": "مرسى مطروح",
+  arish: "العريش",
+  mallawi: "ملوي",
+  maghagha: "مغاغة",
+  samalut: "سمالوط",
+  tahta: "طهطا",
+  qous: "قوص",
+  edfu: "إدفو",
+  "kom ombo": "كوم أمبو",
+  "mit gamr": "ميت غمر",
+  "shebin el kom": "شبين الكوم",
+  desouk: "دسوق",
+  "kafr el dawwar": "كفر الدوار",
 };
 
 const formatLocationPart = (val?: string | null): string => {
   if (!val || typeof val !== "string") return "";
   const clean = val.toLowerCase().trim();
-  return EGYPTIAN_GOVERNORATES_EN_TO_AR[clean] || COMMON_CITIES_EN_TO_AR[clean] || val;
+  return EGYPTIAN_GOVERNORATES_EN_TO_AR[clean] || COMMON_CITIES_EN_TO_AR[clean] || val.trim();
 };
 
 export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = ({
@@ -137,11 +206,21 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
   orderSource,
   sourceType,
   createdAt,
+  orderGovernorate,
+  orderCity,
 }) => {
   const { formatDate, formatDateTime } = useDateFormat();
   const [copiedIp, setCopiedIp] = useState(false);
 
-  const ip = sessionDetails?.ip;
+  const rawIp = sessionDetails?.ip;
+  const isLocalIp =
+    rawIp === "127.0.0.1" ||
+    rawIp === "::1" ||
+    rawIp === "localhost" ||
+    String(rawIp || "").startsWith("192.168.") ||
+    String(rawIp || "").startsWith("10.");
+
+  const ip = isLocalIp ? null : rawIp;
   const governorate = sessionDetails?.ipGovernorate;
   const city = sessionDetails?.ipCity;
   const country = sessionDetails?.ipCountry;
@@ -153,21 +232,43 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
   const isManualOrder =
     sourceType === "manual" ||
     orderSource === "MANUAL" ||
-    (!sessionDetails && !ip);
+    (!sessionDetails && !rawIp);
 
   const handleCopyIp = () => {
-    if (!ip) return;
-    navigator.clipboard.writeText(ip);
+    const copyTarget = ip || rawIp;
+    if (!copyTarget) return;
+    navigator.clipboard.writeText(copyTarget);
     setCopiedIp(true);
     setTimeout(() => setCopiedIp(false), 2000);
   };
 
   const normalizedGov = formatLocationPart(governorate);
   const normalizedCity = formatLocationPart(city);
-  const locationDisplay = [normalizedGov, normalizedCity]
+  const ipLocationDisplay = [normalizedGov, normalizedCity]
     .filter(Boolean)
+    .filter((v) => v !== "محلي" && v !== "محلي (تطوير)")
     .filter((item, idx, arr) => arr.indexOf(item) === idx)
     .join(" - ");
+
+  const hasValidIpLocation = Boolean(
+    ipLocationDisplay &&
+    !ipLocationDisplay.includes("محلي") &&
+    !isLocalIp
+  );
+
+  const fallbackGov = formatLocationPart(orderGovernorate);
+  const fallbackCity = formatLocationPart(orderCity);
+  const shippingLocationDisplay = [fallbackGov, fallbackCity]
+    .filter(Boolean)
+    .filter((v) => v !== "محلي" && v !== "محلي (تطوير)")
+    .filter((item, idx, arr) => arr.indexOf(item) === idx)
+    .join(" - ");
+
+  const finalLocationDisplay = hasValidIpLocation
+    ? ipLocationDisplay
+    : shippingLocationDisplay;
+
+  const isLocationFromShipping = !hasValidIpLocation && Boolean(shippingLocationDisplay);
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -206,7 +307,7 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
               <MapPinIcon className="h-4 w-4 text-blue-500" />
               <span>عنوان الـ IP والموقع الجغرافي</span>
             </div>
-            {ip && (
+            {(ip || isLocalIp) && (
               <button
                 type="button"
                 onClick={handleCopyIp}
@@ -232,19 +333,33 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
             <div>
               <span className="text-[11px] text-gray-400 dark:text-gray-500">IP العميل:</span>
               <div className="mt-0.5 font-mono text-xs font-semibold text-gray-800 dark:text-gray-200 dir-ltr text-right">
-                {ip || (isManualOrder ? "طلب يدوي (بدون IP)" : "غير محدد")}
+                {ip ? (
+                  ip
+                ) : isLocalIp ? (
+                  <span className="text-gray-500 font-normal">شبكة داخلية / محلي</span>
+                ) : isManualOrder ? (
+                  "طلب يدوي (بدون IP)"
+                ) : (
+                  "غير محدد"
+                )}
               </div>
             </div>
             <div>
-              <span className="text-[11px] text-gray-400 dark:text-gray-500">الموقع من الـ IP:</span>
+              <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                {isLocationFromShipping ? "الموقع (من عنوان الشحن):" : "الموقع من الـ IP:"}
+              </span>
               <div className="mt-0.5 font-semibold text-gray-800 dark:text-gray-200">
-                {locationDisplay ? (
+                {finalLocationDisplay ? (
                   <span>
-                    {locationDisplay} {country ? `(${country})` : ""}
+                    {finalLocationDisplay}
+                    {hasValidIpLocation && country ? ` (${country})` : ""}
+                    {isLocationFromShipping ? (
+                      <span className="text-[10px] font-normal text-gray-400 mr-1.5">(من بيانات الشحن)</span>
+                    ) : null}
                   </span>
                 ) : (
                   <span className="text-gray-400 font-normal">
-                    {ip ? "جارٍ التحديد / غير متاح" : "غير متاح"}
+                    {rawIp ? "جارٍ التحديد / غير متاح" : "غير متاح"}
                   </span>
                 )}
               </div>

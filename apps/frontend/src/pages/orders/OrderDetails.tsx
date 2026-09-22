@@ -1189,6 +1189,8 @@ const OrderDetails: React.FC = () => {
             sourceType={order.sourceType}
             customerPhone={order.customerPhone}
             createdAt={order.createdAt}
+            orderGovernorate={order.governorate || order.shippingAddress?.governorate || (order.shippingAddress as any)?.government}
+            orderCity={order.city || order.shippingAddress?.city}
           />
 
           {showOrderSourceCard && <OrderSourceCard order={order} />}

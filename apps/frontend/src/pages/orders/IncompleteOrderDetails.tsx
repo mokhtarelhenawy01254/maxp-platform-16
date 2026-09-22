@@ -493,6 +493,8 @@ const IncompleteOrderDetails: React.FC = () => {
               firstOrderInfo={order.firstOrderInfo}
               customerPhone={customerInfo.phone}
               createdAt={order.checkoutStartedAt || order.updatedAt}
+              orderGovernorate={order.checkoutData?.governorate}
+              orderCity={order.checkoutData?.city}
             />
           </div>
 

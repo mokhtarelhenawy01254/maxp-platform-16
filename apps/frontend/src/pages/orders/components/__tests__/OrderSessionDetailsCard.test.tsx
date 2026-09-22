@@ -89,4 +89,40 @@ describe("OrderSessionDetailsCard", () => {
 
     expect(screen.getByText("طلب يدوي (بدون IP)")).toBeInTheDocument();
   });
+
+  it("falls back to customer shipping address when IP location is null or unavailable", () => {
+    render(
+      <OrderSessionDetailsCard
+        sessionDetails={{
+          ip: "196.148.123.165",
+          ipGovernorate: null,
+          ipCity: null,
+        }}
+        orderGovernorate="Dakahlia"
+        orderCity="Talkha"
+      />
+    );
+
+    expect(screen.getByText("196.148.123.165")).toBeInTheDocument();
+    expect(screen.getByText(/الدقهلية - طلخا/)).toBeInTheDocument();
+    expect(screen.getByText("(من بيانات الشحن)")).toBeInTheDocument();
+  });
+
+  it("handles local 127.0.0.1 IP cleanly and displays shipping address location", () => {
+    render(
+      <OrderSessionDetailsCard
+        sessionDetails={{
+          ip: "127.0.0.1",
+          ipGovernorate: "محلي (تطوير)",
+          ipCity: "محلي",
+        }}
+        orderGovernorate="Cairo"
+        orderCity="Cairo"
+      />
+    );
+
+    expect(screen.getByText("شبكة داخلية / محلي")).toBeInTheDocument();
+    expect(screen.getByText(/القاهرة/)).toBeInTheDocument();
+    expect(screen.getByText("(من بيانات الشحن)")).toBeInTheDocument();
+  });
 });

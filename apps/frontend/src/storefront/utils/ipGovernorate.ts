@@ -204,6 +204,35 @@ const fetchBackendGeo = async (): Promise<GeoPayload | null> => {
 
 let ipwhoCooldownUntil = 0;
 
+const fetchFreeIpApi = async (): Promise<GeoPayload | null> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3000);
+
+  try {
+    const response = await fetch("https://freeipapi.com/api/json", {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as {
+      ipAddress?: string;
+      cityName?: string;
+      regionName?: string;
+      countryCode?: string;
+    };
+    return {
+      ip: data.ipAddress,
+      country_code: data.countryCode,
+      region: data.regionName,
+      city: data.cityName,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
 const fetchGeo = async (): Promise<GeoPayload | null> => {
   if (Date.now() < ipwhoCooldownUntil) {
     return null;
@@ -252,9 +281,12 @@ export const detectGovernorateByIp = async (): Promise<IpGovernorateResult> => {
     let city = backendGeo?.city?.trim() || null;
     let ip = backendGeo?.ip || "unknown";
 
-    // 2. If backend geo didn't resolve a valid Egyptian governorate, fall back to ipwho.is
+    // 2. If backend geo didn't resolve a valid Egyptian governorate, fall back to external providers
     if (!governorate) {
-      const fallbackGeo = await fetchGeo();
+      let fallbackGeo = await fetchGeo();
+      if (!fallbackGeo) {
+        fallbackGeo = await fetchFreeIpApi();
+      }
       if (fallbackGeo) {
         // Only autofill for Egypt — the storefront ships within Egypt only.
         if ((fallbackGeo.country_code || "").toUpperCase() === "EG") {

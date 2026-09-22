@@ -1,7 +1,7 @@
 const { describe, it: test } = require('node:test');
 const assert = require('node:assert');
 const { buildSessionDetails, getCustomerFirstOrderInfo } = require('../../utils/sessionDetailsHelper');
-const { getClientIp, mapToEgyptianGovernorate } = require('../../utils/ipGeoLookup');
+const { getClientIp, mapToEgyptianGovernorate, mapCityToArabic } = require('../../utils/ipGeoLookup');
 
 describe('utils/ipGeoLookup & sessionDetailsHelper', () => {
   test('extracts client IP from Cloudflare header', () => {
@@ -22,11 +22,31 @@ describe('utils/ipGeoLookup & sessionDetailsHelper', () => {
     assert.strictEqual(getClientIp(req), '197.38.5.12');
   });
 
-  test('maps Egyptian regions to Arabic names', () => {
+  test('extracts public IP from x-forwarded-for when local proxy is first', () => {
+    const req = {
+      headers: {
+        'x-forwarded-for': '127.0.0.1, 196.148.123.165',
+      },
+    };
+    assert.strictEqual(getClientIp(req), '196.148.123.165');
+  });
+
+  test('maps Egyptian regions to Arabic names including short codes', () => {
     assert.strictEqual(mapToEgyptianGovernorate('ALX', 'Alexandria', 'Alexandria'), 'الإسكندرية');
+    assert.strictEqual(mapToEgyptianGovernorate('C', 'Cairo Governorate', 'Cairo'), 'القاهرة');
     assert.strictEqual(mapToEgyptianGovernorate('CAI', 'Cairo', 'Nasr City'), 'القاهرة');
+    assert.strictEqual(mapToEgyptianGovernorate('GZ', 'Giza', 'Dokki'), 'الجيزة');
+    assert.strictEqual(mapToEgyptianGovernorate('SHG', 'Sohag', 'Girga'), 'سوهاج');
     assert.strictEqual(mapToEgyptianGovernorate('DK', 'Dakahlia', 'Mansoura'), 'الدقهلية');
     assert.strictEqual(mapToEgyptianGovernorate(null, 'Giza', 'Dokki'), 'الجيزة');
+  });
+
+  test('maps common Egyptian city names to Arabic', () => {
+    assert.strictEqual(mapCityToArabic('Girga'), 'جرجا');
+    assert.strictEqual(mapCityToArabic('Al Mansurah'), 'المنصورة');
+    assert.strictEqual(mapCityToArabic('Mansoura'), 'المنصورة');
+    assert.strictEqual(mapCityToArabic('Talkha'), 'طلخا');
+    assert.strictEqual(mapCityToArabic('Nasr City'), 'مدينة نصر');
   });
 
   test('buildSessionDetails normalizes session and page journey data', async () => {

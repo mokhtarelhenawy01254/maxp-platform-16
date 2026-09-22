@@ -24,6 +24,7 @@ const {
   extractAttributionFromCheckoutData
 } = require('../utils/orderAttribution');
 const { getCustomerFirstOrderInfo } = require('../utils/sessionDetailsHelper');
+const { resolveIpLocation, isLocalOrPrivateIp } = require('../utils/ipGeoLookup');
 const { detectAbandonReason } = require('../utils/incompleteAbandonReason');
 const {
   buildDateRangeFilter,
@@ -6597,6 +6598,79 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         },
         ip: null,
         pagesVisited: resolvedOrderMeta.attribution.landingPath ? [{ path: resolvedOrderMeta.attribution.landingPath, title: 'صفحة الهبوط', timestamp: formattedOrder.createdAt }] : [],
+        durationSeconds: 0,
+        sessionCount: 1,
+        firstSeenAt: formattedOrder.createdAt,
+      };
+    }
+
+    // ── On-the-fly GeoIP Resolution & Location Enrichment ──────────────────
+    // If order has a valid public IP, but ipGovernorate is missing/null/local:
+    if (orderSessionDetails?.ip && !isLocalOrPrivateIp(orderSessionDetails.ip)) {
+      const needsGeoResolution = !orderSessionDetails.ipGovernorate ||
+        orderSessionDetails.ipGovernorate === 'محلي (تطوير)' ||
+        orderSessionDetails.ipCity === 'محلي';
+
+      if (needsGeoResolution) {
+        try {
+          const resolvedGeo = await resolveIpLocation(orderSessionDetails.ip, req);
+          if (resolvedGeo && (resolvedGeo.governorate || resolvedGeo.city)) {
+            orderSessionDetails.ipGovernorate = resolvedGeo.governorate || orderSessionDetails.ipGovernorate;
+            orderSessionDetails.ipCity = resolvedGeo.city || orderSessionDetails.ipCity;
+            orderSessionDetails.ipCountry = resolvedGeo.country || orderSessionDetails.ipCountry || 'EG';
+
+            // Asynchronously persist resolved location back to database
+            const updatedMeta = { ...resolvedOrderMeta, sessionDetails: orderSessionDetails };
+            const prismaClient = getSharedPrismaClient();
+            if (isGuestOrder && guestOrder?.id) {
+              prismaClient.guestOrder.update({
+                where: { id: guestOrder.id },
+                data: { metadata: JSON.stringify(updatedMeta) }
+              }).catch(() => {});
+            } else if (order?.id) {
+              prismaClient.order.update({
+                where: { id: order.id },
+                data: { metadata: JSON.stringify(updatedMeta) }
+              }).catch(() => {});
+            }
+          }
+        } catch (geoErr) {
+          console.warn('⚠️ [ORDER-DETAIL] On-the-fly geo lookup error:', geoErr.message);
+        }
+      }
+    }
+
+    // Extract customer shipping address location (governorate & city)
+    let shippingGov = formattedOrder.governorate || null;
+    let shippingCity = formattedOrder.city || null;
+    let rawShipping = formattedOrder.shippingAddress;
+    if (typeof rawShipping === 'string') {
+      try {
+        rawShipping = JSON.parse(rawShipping);
+        if (typeof rawShipping === 'string') {
+          rawShipping = JSON.parse(rawShipping);
+        }
+      } catch {}
+    }
+    if (rawShipping && typeof rawShipping === 'object') {
+      if (!shippingGov) shippingGov = rawShipping.governorate || rawShipping.government || null;
+      if (!shippingCity) shippingCity = rawShipping.city || null;
+    }
+
+    if (orderSessionDetails) {
+      if (!orderSessionDetails.ipGovernorate && shippingGov) {
+        orderSessionDetails.ipGovernorate = shippingGov;
+      }
+      if (!orderSessionDetails.ipCity && shippingCity) {
+        orderSessionDetails.ipCity = shippingCity;
+      }
+    } else if (shippingGov || shippingCity) {
+      orderSessionDetails = {
+        ip: null,
+        ipGovernorate: shippingGov || null,
+        ipCity: shippingCity || null,
+        ipCountry: 'EG',
+        pagesVisited: [],
         durationSeconds: 0,
         sessionCount: 1,
         firstSeenAt: formattedOrder.createdAt,
