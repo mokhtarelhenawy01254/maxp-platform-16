@@ -77,5 +77,30 @@ describe("cleanNotesWithoutCustomFields", () => {
     const customFields = [{ label: "نوع وموديل وسنة صنع السيارة", value: "هيونداي توسان 2022" }];
     expect(cleanNotesWithoutCustomFields(notes, customFields)).toBe("ملاحظة هامة: التسليم بعد الساعة 5 مساء");
   });
+
+  it("handles bulk invoice data shapes with notes and metadata forwarded correctly", () => {
+    const bulkInvoiceData = {
+      id: "inv-bulk-1",
+      invoiceNumber: "INV-2026-001",
+      notes: null,
+      metadata: null,
+      order: {
+        orderNumber: "ORD-991",
+        notes: "تفاصيل الطلب: نوع وموديل وسنة صنع السيارة: هيونداي توسان 2022",
+        metadata: {
+          customAttributes: [
+            { label: "نوع وموديل وسنة صنع السيارة", value: "هيونداي توسان 2022" },
+          ],
+        },
+      },
+    };
+    const fields = extractOrderCustomFields(bulkInvoiceData);
+    expect(fields).toEqual([
+      { label: "نوع وموديل وسنة صنع السيارة", value: "هيونداي توسان 2022" },
+    ]);
+    const cleaned = cleanNotesWithoutCustomFields(bulkInvoiceData.order.notes, fields);
+    expect(cleaned).toBe("");
+  });
 });
+
 

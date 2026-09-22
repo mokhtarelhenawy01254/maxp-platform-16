@@ -91,11 +91,16 @@ export interface InvoiceData {
   discount?: number | string;
   discountReason?: string | null;
   totalAmount?: number | string;
+  notes?: string | null;
+  metadata?: any;
   order?: {
     orderNumber?: string;
     status?: string;
     trackingNumber?: string | null;
     turboTrackingNumber?: string | null;
+    notes?: string | null;
+    metadata?: any;
+    shippingAddress?: any;
     orderItems?: InvoiceItem[];
   };
 }

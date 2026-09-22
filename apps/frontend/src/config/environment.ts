@@ -104,7 +104,7 @@ const detectEnvironment = (): "development" | "production" => {
  * إنشاء إعدادات البيئة
  */
 const createEnvironmentConfig = (): EnvironmentConfig => {
-  const viteEnv = import.meta.env as ViteEnvMap;
+  const viteEnv = ((typeof import.meta !== "undefined" && import.meta.env) ? import.meta.env : (typeof process !== "undefined" ? process.env : {})) as ViteEnvMap;
   const environment = detectEnvironment();
   const isDevelopment = environment === "development";
   const isProduction = environment === "production";
@@ -224,7 +224,7 @@ const createEnvironmentConfig = (): EnvironmentConfig => {
 
 // إنشاء إعدادات البيئة
 export const envConfig = createEnvironmentConfig();
-if (import.meta.env.DEV || import.meta.env.MODE === "development") {
+if (import.meta?.env?.DEV || import.meta?.env?.MODE === "development") {
   console.log(
     "🌍 [ENV] Detected Environment:",
     envConfig.environment,
@@ -236,7 +236,7 @@ if (import.meta.env.DEV || import.meta.env.MODE === "development") {
 }
 
 // تسجيل معلومات البيئة في الكونسول
-if (import.meta.env.DEV || import.meta.env.MODE === "development") {
+if (import.meta?.env?.DEV || import.meta?.env?.MODE === "development") {
   console.debug("🌍 [ENV-CONFIG] Environment Detection:", {
     hostname: window.location.hostname,
 

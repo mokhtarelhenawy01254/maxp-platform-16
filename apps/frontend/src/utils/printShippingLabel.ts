@@ -94,6 +94,7 @@ export function toOrderDetailsType(order: SimpleOrderForLabel): OrderDetailsType
       null,
     turboTrackingNumber: order.turboTrackingNumber || (order as any).shipment?.trackingNumber || null,
     shippingAddress: order.shippingAddress || "",
+    metadata: (order as any).metadata || null,
   };
 }
 

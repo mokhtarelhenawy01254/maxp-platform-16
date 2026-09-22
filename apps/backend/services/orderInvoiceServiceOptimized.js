@@ -317,6 +317,7 @@ function mapGuestOrderForPrint(guestOrder) {
     discount: Number(guestOrder.discountAmount || 0),
     total: Number(guestOrder.finalTotal || guestOrder.total || 0),
     currency: 'EGP',
+    notes: guestOrder.notes || null,
     metadata,
     turboTrackingNumber: guestOrder.turboTrackingNumber || null,
     invoiceNumber: guestOrder.orderNumber,
@@ -424,9 +425,17 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
       const existingInvoice = existingInvoicesMap.get(order.id);
       
       if (existingInvoice) {
-        // إضافة بيانات الطلب للفاتورة الموجودة مع التأكد من وجود كود المنتج
+        // إضافة بيانات الطلب للفاتورة الموجودة مع التأكد من وجود كود المنتج والبيانات المخصصة
+        existingInvoice.notes = existingInvoice.notes || order.notes || null;
+        existingInvoice.governorate = existingInvoice.governorate || order.governorate || null;
         existingInvoice.order = {
           orderNumber: order.orderNumber,
+          notes: order.notes || null,
+          metadata: order.metadata || null,
+          shippingAddress: order.shippingAddress || null,
+          city: order.city || null,
+          governorate: order.governorate || null,
+          customerAddress: order.customerAddress || null,
           orderItems: (order.orderItems || []).map(item => ({
             ...item,
             productSku: item.productSku || extractSkuFromOrderItem(item) || null

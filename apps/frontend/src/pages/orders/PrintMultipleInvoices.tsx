@@ -19,15 +19,21 @@ interface Invoice {
   customerEmail: string | null;
   customerAddress: string | null;
   city: string | null;
+  governorate?: string | null;
   companyName: string;
   companyPhone: string | null;
   companyLogo: string | null;
   paymentMethod: string | null;
   paymentStatus: string;
+  notes?: string | null;
+  metadata?: any;
   order: {
     orderNumber: string;
     trackingNumber?: string | null;
     turboTrackingNumber?: string | null;
+    notes?: string | null;
+    metadata?: any;
+    shippingAddress?: any;
     orderItems: Array<{
       productName: string;
       productSku?: string | null;
@@ -53,6 +59,7 @@ function toInvoiceData(inv: Invoice): InvoiceData {
     customerEmail: inv.customerEmail,
     customerAddress: inv.customerAddress,
     city: inv.city,
+    governorate: inv.governorate,
     paymentMethod: inv.paymentMethod,
     paymentStatus: inv.paymentStatus,
     currency: inv.currency,
@@ -61,11 +68,16 @@ function toInvoiceData(inv: Invoice): InvoiceData {
     shipping: inv.shipping,
     discount: inv.discount,
     totalAmount: inv.totalAmount,
+    notes: inv.notes || inv.order?.notes || null,
+    metadata: inv.metadata || inv.order?.metadata || null,
     order: {
-      orderNumber: inv.order.orderNumber,
-      trackingNumber: (inv.order as any).trackingNumber || inv.order.turboTrackingNumber || null,
-      turboTrackingNumber: inv.order.turboTrackingNumber,
-      orderItems: inv.order.orderItems?.map((item: any) => ({
+      orderNumber: inv.order?.orderNumber,
+      trackingNumber: (inv.order as any)?.trackingNumber || inv.order?.turboTrackingNumber || null,
+      turboTrackingNumber: inv.order?.turboTrackingNumber,
+      notes: inv.order?.notes || inv.notes || null,
+      metadata: inv.order?.metadata || inv.metadata || null,
+      shippingAddress: (inv.order as any)?.shippingAddress || null,
+      orderItems: inv.order?.orderItems?.map((item: any) => ({
         ...item,
         productName: item.productName,
         quantity: item.quantity,
@@ -123,6 +135,9 @@ interface GuestOrderPrint {
   total?: number;
   trackingNumber?: string | null;
   turboTrackingNumber?: string | null;
+  notes?: string | null;
+  metadata?: any;
+  shippingAddress?: any;
   items?: Array<{
     productName?: string;
     productSku?: string | null;
@@ -187,10 +202,15 @@ function guestOrderToInvoiceData(guest: GuestOrderPrint, company: GuestPrintComp
     shipping: Number(guest.shipping || 0),
     discount: Number(guest.discount || 0),
     totalAmount: Number(guest.total || 0),
+    notes: guest.notes || null,
+    metadata: guest.metadata || null,
     order: {
       orderNumber: guest.orderNumber,
       trackingNumber: guest.trackingNumber || guest.turboTrackingNumber || null,
       turboTrackingNumber: guest.turboTrackingNumber,
+      notes: guest.notes || null,
+      metadata: guest.metadata || null,
+      shippingAddress: guest.shippingAddress || null,
       orderItems: (guest.items || []).map((item: any) => ({
         ...item,
         productName: item.productName || item.name || "منتج",
