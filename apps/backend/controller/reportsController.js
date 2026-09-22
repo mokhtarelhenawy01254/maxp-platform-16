@@ -652,6 +652,39 @@ const getAllReports = async (req, res) => {
 };
 
 // تقرير الطلبات المفصل
+const normalizeGovName = (name) => {
+    if (!name) return 'غير محدد';
+    const n = String(name).trim().toLowerCase();
+    if (n === 'cairo' || n === 'القاهرة') return 'القاهرة';
+    if (n === 'giza' || n === 'الجيزة') return 'الجيزة';
+    if (n === 'alexandria' || n === 'alex' || n === 'الإسكندرية' || n === 'الاسكندرية') return 'الإسكندرية';
+    if (n === 'dakahlia' || n === 'الدقهلية' || n === 'mansoura' || n === 'المنصورة') return 'الدقهلية';
+    if (n === 'sharqia' || n === 'الشرقية' || n === 'zagazig' || n === 'الزقازيق') return 'الشرقية';
+    if (n === 'gharbia' || n === 'الغربية' || n === 'tanta' || n === 'طنطا') return 'الغربية';
+    if (n === 'qalyubia' || n === 'القليوبية') return 'القليوبية';
+    if (n === 'monufia' || n === 'المنوفية') return 'المنوفية';
+    if (n === 'beheira' || n === 'البحيرة') return 'البحيرة';
+    if (n === 'kafr el-sheikh' || n === 'كفر الشيخ') return 'كفر الشيخ';
+    if (n === 'damietta' || n === 'دمياط') return 'دمياط';
+    if (n === 'port said' || n === 'بورسعيد') return 'بورسعيد';
+    if (n === 'ismailia' || n === 'الإسماعيلية') return 'الإسماعيلية';
+    if (n === 'suez' || n === 'السويس') return 'السويس';
+    if (n === 'fayoum' || n === 'الفيوم') return 'الفيوم';
+    if (n === 'beni suef' || n === 'بني سويف') return 'بني سويف';
+    if (n === 'minya' || n === 'المنيا') return 'المنيا';
+    if (n === 'assiut' || n === 'أسيوط') return 'أسيوط';
+    if (n === 'sohag' || n === 'سوهاج') return 'سوهاج';
+    if (n === 'qena' || n === 'قنا') return 'قنا';
+    if (n === 'luxor' || n === 'الأقصر') return 'الأقصر';
+    if (n === 'aswan' || n === 'أسوان') return 'أسوان';
+    if (n === 'red sea' || n === 'البحر الأحمر') return 'البحر الأحمر';
+    if (n === 'matrouh' || n === 'مطروح') return 'مطروح';
+    if (n === 'new valley' || n === 'الوادي الجديد') return 'الوادي الجديد';
+    if (n === 'north sinai' || n === 'شمال سيناء') return 'شمال سيناء';
+    if (n === 'south sinai' || n === 'جنوب سيناء') return 'جنوب سيناء';
+    return String(name).trim();
+};
+
 const getDetailedOrderReport = async (req, res) => {
     try {
         const { companyId } = req.user;
@@ -667,43 +700,40 @@ const getDetailedOrderReport = async (req, res) => {
         const start = startDate ? startOfDay(fromZonedTime(startDate, timeZone)) : subDays(new Date(), 30);
         const end = endDate ? endOfDay(fromZonedTime(endDate, timeZone)) : new Date();
 
-        const [orderAgg, statusGroups, govGroups, paymentGroups, piecesAgg] = await Promise.all([
-            prisma.order.aggregate({
+        const [ordersList, piecesAgg] = await Promise.all([
+            prisma.order.findMany({
                 where: {
                     companyId,
                     createdAt: { gte: start, lte: end },
                     status: { not: 'TRASH' }
                 },
-                _count: { id: true },
-                _sum: { total: true }
-            }),
-            prisma.order.groupBy({
-                by: ['status'],
-                where: {
-                    companyId,
-                    createdAt: { gte: start, lte: end },
-                    status: { not: 'TRASH' }
+                select: {
+                    id: true,
+                    orderNumber: true,
+                    status: true,
+                    customStatusCode: true,
+                    paymentMethod: true,
+                    paymentStatus: true,
+                    total: true,
+                    subtotal: true,
+                    shipping: true,
+                    governorate: true,
+                    city: true,
+                    turboBranchName: true,
+                    turboShipmentId: true,
+                    turboShipmentStatus: true,
+                    turboTrackingNumber: true,
+                    createdAt: true,
+                    shipments: {
+                        select: {
+                            id: true,
+                            status: true,
+                            cost: true,
+                            shippingCompany: { select: { name: true } }
+                        }
+                    }
                 },
-                _count: { id: true }
-            }),
-            prisma.order.groupBy({
-                by: ['governorate'],
-                where: {
-                    companyId,
-                    createdAt: { gte: start, lte: end },
-                    status: { not: 'TRASH' },
-                    governorate: { not: null }
-                },
-                _count: { id: true }
-            }),
-            prisma.order.groupBy({
-                by: ['paymentMethod'],
-                where: {
-                    companyId,
-                    createdAt: { gte: start, lte: end },
-                    status: { not: 'TRASH' }
-                },
-                _count: { id: true }
+                orderBy: { createdAt: 'asc' }
             }),
             prisma.orderItem.aggregate({
                 where: {
@@ -722,22 +752,169 @@ const getDetailedOrderReport = async (req, res) => {
         const governorateStats = {};
         const paymentStats = {};
 
-        statusGroups.forEach(g => {
-            if (g.status) {
-                statusDistribution[g.status] = g._count.id;
-            }
-        });
+        const govMap = {};
+        const shippingMap = {};
+        const dailyMap = {};
 
-        govGroups.forEach(g => {
-            if (g.governorate) {
-                governorateStats[g.governorate] = g._count.id;
-            }
-        });
+        let totalRevenue = 0;
+        let deliveredOrders = 0;
+        let cancelledOrders = 0;
+        let returnedOrders = 0;
+        let shippedOrders = 0;
+        let deliveredRevenue = 0;
+        let returnedRevenue = 0;
+        let cancelledRevenue = 0;
 
-        paymentGroups.forEach(g => {
-            if (g.paymentMethod) {
-                paymentStats[g.paymentMethod] = g._count.id;
+        let codOrdersCount = 0;
+        let codOrdersRevenue = 0;
+        let codDeliveredCount = 0;
+        let codDeliveredRevenue = 0;
+        let prepaidOrdersCount = 0;
+        let prepaidOrdersRevenue = 0;
+        let totalShippingFees = 0;
+
+        const totalOrders = ordersList.length;
+
+        ordersList.forEach(order => {
+            const rawStatus = String(order.status || '').toUpperCase().trim();
+            const rawCustom = String(order.customStatusCode || '').toUpperCase().trim();
+            const turboStatus = String(order.turboShipmentStatus || '').toLowerCase().trim();
+            const effectiveStatus = rawCustom || rawStatus;
+
+            const total = Number(order.total) || 0;
+            const subtotal = Number(order.subtotal) || total;
+            const shipping = Number(order.shipping) || (order.shipments?.[0]?.cost ? Number(order.shipments[0].cost) : 0) || 0;
+
+            totalRevenue += total;
+            totalShippingFees += shipping;
+
+            // Status Distribution
+            const displayStatus = order.status || 'UNKNOWN';
+            statusDistribution[displayStatus] = (statusDistribution[displayStatus] || 0) + 1;
+
+            // Payment Method
+            const pm = order.paymentMethod || 'UNKNOWN';
+            paymentStats[pm] = (paymentStats[pm] || 0) + 1;
+
+            const isCOD = ['CASH', 'COD'].includes(String(pm).toUpperCase().trim());
+            if (isCOD) {
+                codOrdersCount += 1;
+                codOrdersRevenue += total;
+            } else {
+                prepaidOrdersCount += 1;
+                prepaidOrdersRevenue += total;
             }
+
+            // Classification
+            const isDelivered = ['DELIVERED', 'PARTIALLY_DELIVERED', 'COMPLETED'].includes(effectiveStatus) ||
+                                ['DELIVERED', 'PARTIALLY_DELIVERED', 'COMPLETED'].includes(rawStatus) ||
+                                turboStatus.includes('delivered') || turboStatus.includes('remitted');
+
+            const isCancelled = !isDelivered && (
+                ['CANCELLED', 'REJECTED', 'FAILED', 'DUPLICATE_ORDER'].includes(effectiveStatus) ||
+                ['CANCELLED', 'REJECTED', 'FAILED', 'DUPLICATE_ORDER'].includes(rawStatus) ||
+                turboStatus.includes('cancelled')
+            );
+
+            const isReturned = !isDelivered && !isCancelled && (
+                ['RETURNED', 'PARTIALLY_RETURNED', 'RETURNED_TO_COMPANY', 'REFUNDED', 'PARTIALLY_REFUNDED'].includes(effectiveStatus) ||
+                ['RETURNED', 'PARTIALLY_RETURNED', 'RETURNED_TO_COMPANY', 'REFUNDED', 'PARTIALLY_REFUNDED'].includes(rawStatus) ||
+                turboStatus.includes('return')
+            );
+
+            const isShipped = Boolean(order.turboShipmentId) || Boolean(order.turboTrackingNumber) || (order.shipments && order.shipments.length > 0) ||
+                ['SHIPPED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT'].includes(effectiveStatus) ||
+                ['SHIPPED', 'OUT_FOR_DELIVERY', 'IN_TRANSIT'].includes(rawStatus) ||
+                isDelivered || isReturned;
+
+            if (isDelivered) {
+                deliveredOrders += 1;
+                deliveredRevenue += total;
+                if (isCOD) {
+                    codDeliveredCount += 1;
+                    codDeliveredRevenue += total;
+                }
+            } else if (isCancelled) {
+                cancelledOrders += 1;
+                cancelledRevenue += total;
+            } else if (isReturned) {
+                returnedOrders += 1;
+                returnedRevenue += total;
+            }
+
+            if (isShipped) {
+                shippedOrders += 1;
+            }
+
+            // Governorate Aggregation
+            const rawGov = (order.governorate || order.city || 'غير محدد').trim();
+            const govName = normalizeGovName(rawGov);
+            governorateStats[govName] = (governorateStats[govName] || 0) + 1;
+
+            if (!govMap[govName]) {
+                govMap[govName] = {
+                    name: govName,
+                    ordersCount: 0,
+                    deliveredCount: 0,
+                    cancelledCount: 0,
+                    returnedCount: 0,
+                    revenue: 0,
+                    shippingCost: 0
+                };
+            }
+            govMap[govName].ordersCount += 1;
+            govMap[govName].revenue += total;
+            govMap[govName].shippingCost += shipping;
+            if (isDelivered) govMap[govName].deliveredCount += 1;
+            if (isCancelled) govMap[govName].cancelledCount += 1;
+            if (isReturned) govMap[govName].returnedCount += 1;
+
+            // Shipping Courier / Branch Aggregation
+            const branchName = (order.turboBranchName || order.shipments?.[0]?.shippingCompany?.name || (order.turboShipmentId ? 'شركة Turbo' : 'شحن داخلي / مناديب')).trim();
+            if (!shippingMap[branchName]) {
+                shippingMap[branchName] = {
+                    name: branchName,
+                    totalOrders: 0,
+                    deliveredOrders: 0,
+                    cancelledOrders: 0,
+                    returnedOrders: 0,
+                    inTransitOrders: 0,
+                    totalRevenue: 0,
+                    codCollected: 0,
+                    lostShipping: 0
+                };
+            }
+            shippingMap[branchName].totalOrders += 1;
+            shippingMap[branchName].totalRevenue += total;
+            if (isDelivered) {
+                shippingMap[branchName].deliveredOrders += 1;
+                shippingMap[branchName].codCollected += total;
+            } else if (isReturned) {
+                shippingMap[branchName].returnedOrders += 1;
+                shippingMap[branchName].lostShipping += (shipping > 0 ? shipping : 45);
+            } else if (isCancelled) {
+                shippingMap[branchName].cancelledOrders += 1;
+            } else {
+                shippingMap[branchName].inTransitOrders += 1;
+            }
+
+            // Daily Trend Aggregation
+            const dayKey = order.createdAt ? formatInTimeZone(order.createdAt, timeZone, 'yyyy-MM-dd') : 'other';
+            if (!dailyMap[dayKey]) {
+                dailyMap[dayKey] = {
+                    date: dayKey,
+                    orders: 0,
+                    revenue: 0,
+                    delivered: 0,
+                    cancelled: 0,
+                    returned: 0
+                };
+            }
+            dailyMap[dayKey].orders += 1;
+            dailyMap[dayKey].revenue += total;
+            if (isDelivered) dailyMap[dayKey].delivered += 1;
+            if (isCancelled) dailyMap[dayKey].cancelled += 1;
+            if (isReturned) dailyMap[dayKey].returned += 1;
         });
 
         // جلب توزيع القطع لكل حالة عبر استعلام خفيف وآمن
@@ -786,8 +963,6 @@ const getDetailedOrderReport = async (req, res) => {
             }
         }
 
-        const totalOrders = orderAgg._count?.id || 0;
-        const totalRevenue = Number(orderAgg._sum?.total || 0);
         const totalPieces = Number(piecesAgg._sum?.quantity || 0);
         const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
         const avgPiecesPerOrder = totalOrders > 0 ? Number((totalPieces / totalOrders).toFixed(1)) : 0;
@@ -795,6 +970,32 @@ const getDetailedOrderReport = async (req, res) => {
         const dayMs = 24 * 60 * 60 * 1000;
         const daysInPeriod = Math.max(1, Math.round((end - start) / dayMs));
         const avgOrdersPerDay = totalOrders > 0 ? Number((totalOrders / daysInPeriod).toFixed(1)) : 0;
+
+        const pendingOrders = Math.max(0, totalOrders - (deliveredOrders + cancelledOrders + returnedOrders));
+        const deliveryRate = totalOrders > 0 ? Number(((deliveredOrders / totalOrders) * 100).toFixed(1)) : 0;
+        const cancellationRate = totalOrders > 0 ? Number(((cancelledOrders / totalOrders) * 100).toFixed(1)) : 0;
+        const returnRate = totalOrders > 0 ? Number(((returnedOrders / totalOrders) * 100).toFixed(1)) : 0;
+        const codCollectionRate = codOrdersCount > 0 ? Number(((codDeliveredCount / codOrdersCount) * 100).toFixed(1)) : 0;
+        const netRealizedRevenue = deliveredRevenue;
+
+        const governorateDetails = Object.values(govMap)
+            .map(g => ({
+                ...g,
+                sharePct: totalOrders > 0 ? Number(((g.ordersCount / totalOrders) * 100).toFixed(1)) : 0,
+                deliveryRate: g.ordersCount > 0 ? Number(((g.deliveredCount / g.ordersCount) * 100).toFixed(1)) : 0,
+                returnRate: g.ordersCount > 0 ? Number(((g.returnedCount / g.ordersCount) * 100).toFixed(1)) : 0
+            }))
+            .sort((a, b) => b.ordersCount - a.ordersCount);
+
+        const shippingPerformance = Object.values(shippingMap)
+            .map(s => ({
+                ...s,
+                deliveryRate: s.totalOrders > 0 ? Number(((s.deliveredOrders / s.totalOrders) * 100).toFixed(1)) : 0,
+                returnRate: s.totalOrders > 0 ? Number(((s.returnedOrders / s.totalOrders) * 100).toFixed(1)) : 0
+            }))
+            .sort((a, b) => b.totalOrders - a.totalOrders);
+
+        const dailyTrend = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date));
 
         res.json({
             success: true,
@@ -810,7 +1011,32 @@ const getDetailedOrderReport = async (req, res) => {
                 statusDistribution,
                 statusPiecesDistribution,
                 governorateStats,
-                paymentStats
+                paymentStats,
+                metrics: {
+                    deliveredOrders,
+                    cancelledOrders,
+                    returnedOrders,
+                    pendingOrders,
+                    shippedOrders,
+                    deliveryRate,
+                    cancellationRate,
+                    returnRate,
+                    netRealizedRevenue,
+                    deliveredRevenue,
+                    returnedRevenue,
+                    cancelledRevenue,
+                    codOrdersCount,
+                    codOrdersRevenue,
+                    codDeliveredCount,
+                    codDeliveredRevenue,
+                    codCollectionRate,
+                    prepaidOrdersCount,
+                    prepaidOrdersRevenue,
+                    totalShippingFees
+                },
+                governorateDetails,
+                shippingPerformance,
+                dailyTrend
             }
         });
     } catch (error) {
