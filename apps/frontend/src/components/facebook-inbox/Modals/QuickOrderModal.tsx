@@ -48,6 +48,7 @@ import {
   CustomerBlockEvaluation,
 } from "../../../services/customerBlocklistService";
 import { GovernorateAreaSearch } from "../../../components/ui/GovernorateAreaSearch";
+import { extractVariantDisplayDetails } from "../../../pages/admin/ManualOrder/utils/variantAttributes";
 
 
 const overlayStyle: React.CSSProperties = {
@@ -248,6 +249,7 @@ interface CartItem {
   sku?: string;
   color?: string;
   size?: string;
+  attributes?: Record<string, string>;
 }
 
 interface CouponInfo {
@@ -934,7 +936,11 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   }, [city]);
 
   // Add to cart
-  const handleAddToCart = (product: Product, variant?: ProductVariant) => {
+  const handleAddToCart = (
+    product: Product,
+    variant?: ProductVariant,
+    attributes?: Record<string, string>,
+  ) => {
     const itemId = variant ? `${product.id}-${variant.id}` : product.id;
 
     const existing = cartItems.find((item) => {
@@ -966,14 +972,27 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       const stock = variant ? variant.stock : product.stock;
       const sku = variant ? variant.sku : product.sku;
 
-      let variantName = "";
-      if (variant) {
-        const parts = [];
-        if (variant.color) parts.push(variant.color);
-        if (variant.size) parts.push(variant.size);
-        if (parts.length === 0 && variant.name) parts.push(variant.name);
-        variantName = parts.join(" / ");
-      }
+      const variantDetails = extractVariantDisplayDetails(variant);
+      const color =
+        attributes?.["اللون"] ||
+        attributes?.["color"] ||
+        attributes?.["Color"] ||
+        attributes?.["لون"] ||
+        variantDetails.color ||
+        undefined;
+      const size =
+        attributes?.["المقاس"] ||
+        attributes?.["size"] ||
+        attributes?.["Size"] ||
+        attributes?.["مقاس"] ||
+        variantDetails.size ||
+        undefined;
+
+      const variantName =
+        variantDetails.summary ||
+        [color, size].filter(Boolean).join(" / ") ||
+        variant?.name ||
+        "";
 
       setCartItems((prev) => [
         ...prev,
@@ -988,8 +1007,12 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           image,
           stock,
           sku,
-          color: variant?.color,
-          size: variant?.size,
+          color,
+          size,
+          attributes:
+            attributes && Object.keys(attributes).length > 0
+              ? attributes
+              : undefined,
         },
       ]);
       tToast.success("QuickOrderModal.msg_e784");
@@ -1203,6 +1226,14 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           productColor: item.color ? String(item.color) : null,
           productSize: item.size != null ? String(item.size) : null,
           productImage: item.image,
+          attributes:
+            item.attributes ||
+            (item.color || item.size
+              ? {
+                  ...(item.color ? { "اللون": item.color } : {}),
+                  ...(item.size ? { "المقاس": item.size } : {}),
+                }
+              : undefined),
         })),
         customerId: convCustomerId,
         customerPhone: phone,
@@ -2710,7 +2741,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
               setSelectedAttributes((prev) => ({ ...prev, [attrName]: value }));
             }}
             onVariantSelect={(variant) => {
-              handleAddToCart(selectedProduct, variant);
+              handleAddToCart(selectedProduct, variant, selectedAttributes);
               setSelectedAttributes({});
             }}
             onClose={() => {

@@ -61,6 +61,8 @@ class OrderCreateConfirmedInput(BaseModel):
     customer_name: str | None = Field(default=None, description="Customer name (optional, falls back to profile or phone)")
     customer_phone: str = Field(description="Customer phone number")
     product_name: str = Field(description="Product name or ID")
+    product_id: str | None = Field(default=None, description="Product ID (if known)")
+    variant_id: str | None = Field(default=None, description="Variant ID (if known)")
     product_price: float | None = Field(default=None, description="Confirmed product unit price")
     product_size: str | None = Field(default=None, description="Confirmed product size")
     product_color: str | None = Field(default=None, description="Confirmed product color")
@@ -243,6 +245,8 @@ async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[
         "customerName": input_data.customer_name,
         "customerPhone": input_data.customer_phone,
         "productName": input_data.product_name,
+        "productId": input_data.product_id,
+        "variantId": input_data.variant_id,
         "productPrice": input_data.product_price if input_data.product_price is not None else input_data.total,
         "productSize": input_data.product_size,
         "productColor": input_data.product_color,

@@ -274,14 +274,52 @@ class OrderRepository(BaseRepository):
             "cid": company_id,
         })
 
+        product_id = order_data.get("productId") or None
+        variant_id = order_data.get("variantId") or None
+        product_color = order_data.get("productColor") or None
+        product_size = str(order_data.get("productSize")) if order_data.get("productSize") is not None else None
+        product_sku = order_data.get("productSku") or order_data.get("sku") or None
+
+        if not product_id and product_name:
+            prod_row = await self._session.execute(text("""
+                SELECT id, sku FROM products
+                WHERE "companyId" = :cid AND (name ILIKE :pname OR sku ILIKE :pname)
+                AND "deletedAt" IS NULL
+                LIMIT 1
+            """), {"cid": company_id, "pname": product_name.strip()})
+            prod = prod_row.first()
+            if prod:
+                product_id = prod.id
+                if not product_sku:
+                    product_sku = prod.sku
+
+        # Fallback extract color or size from product_name if missing
+        if (not product_color or not product_size) and product_name:
+            import re
+            if not product_size:
+                size_match = re.search(r'(\d{2,3}(?:\.\d+)?|\b(?:xxs|xs|s|m|l|xl|xxl|xxxl|[2-5]xl)\b)', product_name, re.IGNORECASE)
+                if size_match:
+                    product_size = size_match.group(1)
+            if not product_color:
+                colors_ar = ['أسود', 'أبيض', 'أحمر', 'أزرق', 'أخضر', 'أصفر', 'بني', 'رمادي', 'وردي', 'بنفسجي', 'بيج', 'كحلي', 'سماوي', 'برتقالي', 'فضي', 'ذهبي', 'نيلي']
+                for c in colors_ar:
+                    if c in product_name:
+                        product_color = c
+                        break
+
         item_id = str(uuid.uuid4())
         await self._session.execute(text("""
-            INSERT INTO order_items (id, "orderId", "productName", quantity, price, total)
-            VALUES (:id, :oid, :pname, :qty, :price, :total)
+            INSERT INTO order_items (id, "orderId", "productId", "variantId", "productName", "productColor", "productSize", "productSku", quantity, price, total)
+            VALUES (:id, :oid, :pid, :vid, :pname, :pcolor, :psize, :sku, :qty, :price, :total)
         """), {
             "id": item_id,
             "oid": order_id,
+            "pid": product_id,
+            "vid": variant_id,
             "pname": product_name,
+            "pcolor": product_color,
+            "psize": product_size,
+            "sku": product_sku,
             "qty": qty,
             "price": order_data.get("productPrice") or 0,
             "total": total,
@@ -292,6 +330,9 @@ class OrderRepository(BaseRepository):
             "orderNumber": str(next_num),
             "status": "PENDING",
             "customerName": order_data.get("customerName", ""),
+            "productName": product_name,
+            "productColor": product_color,
+            "productSize": product_size,
             "shippingAddress": full_shipping_address,
             "shippingAmount": shipping_amount,
             "total": total,

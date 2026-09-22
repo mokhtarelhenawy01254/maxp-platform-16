@@ -28,6 +28,7 @@ const {
   resolveShippingClass
 } = require('../utils/shippingClassUtils');
 const { safeJsonParse } = require('../utils/jsonUtils');
+const { resolveVariantAttributes } = require('../utils/productNormalizationUtils');
 const { sanitizeOrderAttribution } = require('../utils/orderAttribution');
 const { buildSessionDetails } = require('../utils/sessionDetailsHelper');
 const { isPreOrderEligible } = require('../utils/preOrderUtils');
@@ -1004,6 +1005,46 @@ router.post('/', async (req, res) => {
         }
       }
 
+      const activeVariants = (product.productVariants || []).filter(v => v.isActive !== false);
+
+      // Auto-resolve variantId from attributes or color/size if not provided
+      if (!item.variantId && activeVariants.length > 0) {
+        const itemColor = (
+          item.productColor ||
+          getAttributeValue(item.attributes, ['اللون', 'color', 'Color', 'colour', 'لون']) ||
+          ''
+        ).trim().toLowerCase();
+        const itemSize = (
+          item.productSize ||
+          getAttributeValue(item.attributes, ['المقاس', 'size', 'Size', 'مقاس']) ||
+          ''
+        ).trim().toLowerCase();
+
+        if (itemColor || itemSize) {
+          const matchedVariant = activeVariants.find((v) => {
+            const vAttrs = resolveVariantAttributes(v);
+            const vColor = (v.color || vAttrs.Color || vAttrs['اللون'] || '').trim().toLowerCase();
+            const vSize = (v.size || vAttrs.Size || vAttrs['المقاس'] || '').trim().toLowerCase();
+            const colorMatches = !itemColor || vColor === itemColor || v.name?.toLowerCase().includes(itemColor);
+            const sizeMatches = !itemSize || vSize === itemSize || v.name?.toLowerCase().includes(itemSize);
+            return colorMatches && sizeMatches;
+          });
+          if (matchedVariant) {
+            item.variantId = matchedVariant.id;
+            console.log(`✨ [CREATE-ORDER] Auto-resolved variantId ${matchedVariant.id} from attributes (Color: ${itemColor}, Size: ${itemSize})`);
+          }
+        } else if (activeVariants.length === 1 && (!activeVariants[0].name || activeVariants[0].name.toLowerCase() === 'default' || activeVariants[0].name === 'افتراضي')) {
+          item.variantId = activeVariants[0].id;
+        } else if (!req.headers['x-admin-convert']) {
+          console.log('❌ [CREATE-ORDER] Missing required variant selection for product:', product.name);
+          saveCheckoutError(cartId, company.id, 'variant_required', `يرجى اختيار المقاس أو اللون للمنتج: ${item.name || product.name}`, { productId: product.id });
+          return res.status(400).json({
+            success: false,
+            error: `يرجى اختيار المقاس أو اللون للمنتج: ${item.name || product.name}`
+          });
+        }
+      }
+
       // Check variant stock if variantId is provided
       let selectedVariant = null;
 
@@ -1162,6 +1203,16 @@ router.post('/', async (req, res) => {
           const itemSku = product?.sku || product?.barcode || '';
           item.sku = itemSku;
           item.productSku = itemSku;
+        }
+        if (!item.productColor) {
+          item.productColor =
+            getAttributeValue(item.attributes, ['اللون', 'color', 'Color', 'colour', 'لون']) ||
+            '';
+        }
+        if (!item.productSize) {
+          item.productSize =
+            getAttributeValue(item.attributes, ['المقاس', 'size', 'Size', 'مقاس']) ||
+            '';
         }
       }
 
@@ -2450,17 +2501,30 @@ router.post('/', async (req, res) => {
             id: item.productId,
             companyId: company.id,
           },
-          include: { merchantProducts: true }
+          include: { merchantProducts: true, productVariants: true }
         });
         const merchantProduct = product?.merchantProducts?.[0];
-        const productColor =
+        let productColor =
           item.productColor ||
-          getAttributeValue(item.attributes, ['color', 'colour', 'اللون']) ||
+          getAttributeValue(item.attributes, ['color', 'colour', 'اللون', 'Color', 'لون']) ||
           null;
-        const productSize =
+        let productSize =
           item.productSize ||
-          getAttributeValue(item.attributes, ['size', 'المقاس']) ||
+          getAttributeValue(item.attributes, ['size', 'المقاس', 'Size', 'مقاس']) ||
           null;
+
+        if ((!productColor || !productSize) && item.variantId) {
+          const matchedVariant = product?.productVariants?.find(v => v.id === item.variantId);
+          if (matchedVariant) {
+            const vAttrs = resolveVariantAttributes(matchedVariant);
+            if (!productColor) productColor = vAttrs.Color || matchedVariant.color || null;
+            if (!productSize) productSize = vAttrs.Size || matchedVariant.size || null;
+            if (!productColor && !productSize && matchedVariant.name) {
+              if (matchedVariant.type === 'color') productColor = matchedVariant.name;
+              else if (matchedVariant.type === 'size') productSize = matchedVariant.name;
+            }
+          }
+        }
         const productImage = item.productImage || item.image || null;
 
         return {

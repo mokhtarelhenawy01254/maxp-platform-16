@@ -1389,6 +1389,25 @@ class EnhancedOrderService {
               }
 
               // استخراج اللون والمقاس من الـ variant
+              if ((!extractedColor || !extractedSize) && variant.name) {
+                const nameParts = variant.name.split(/\s*[\/|–-]\s*/).map(p => p.trim()).filter(Boolean);
+                if (nameParts.length >= 2) {
+                  const [p1, p2] = nameParts;
+                  const isP1Size = /\d+/.test(p1) || /^(xxs|xs|s|m|l|xl|xxl|xxxl|[2-5]xl)$/i.test(p1);
+                  const isP2Size = /\d+/.test(p2) || /^(xxs|xs|s|m|l|xl|xxl|xxxl|[2-5]xl)$/i.test(p2);
+                  if (isP1Size && !isP2Size) {
+                    if (!extractedSize) extractedSize = p1;
+                    if (!extractedColor) extractedColor = p2;
+                  } else if (!isP1Size && isP2Size) {
+                    if (!extractedColor) extractedColor = p1;
+                    if (!extractedSize) extractedSize = p2;
+                  } else {
+                    if (!extractedColor) extractedColor = p1;
+                    if (!extractedSize) extractedSize = p2;
+                  }
+                }
+              }
+
               if (variant.type === 'color' && !extractedColor) {
                 extractedColor = variant.name;
                 console.log(`   ✅ Extracted color from variant: ${extractedColor}`);
@@ -1409,7 +1428,26 @@ class EnhancedOrderService {
               console.log(`   ⚠️ Variant not found in database for ID: ${productItem.variantId}`);
             }
           } else {
-            console.log(`   ℹ️ No variantId provided, will try to extract from product name`);
+            console.log(`   ℹ️ No variantId provided, attempting auto-match or extraction`);
+            if (product?.productVariants?.length > 0) {
+              const checkColor = (extractedColor || '').trim().toLowerCase();
+              const checkSize = (extractedSize || '').trim().toLowerCase();
+              if (checkColor || checkSize) {
+                const matched = product.productVariants.find(v => {
+                  const vAttrs = resolveVariantAttributes(v);
+                  const vColor = (vAttrs.Color || v.color || '').trim().toLowerCase();
+                  const vSize = (vAttrs.Size || v.size || '').trim().toLowerCase();
+                  const colorMatches = !checkColor || vColor === checkColor || v.name?.toLowerCase().includes(checkColor);
+                  const sizeMatches = !checkSize || vSize === checkSize || v.name?.toLowerCase().includes(checkSize);
+                  return colorMatches && sizeMatches;
+                });
+                if (matched) {
+                  variant = matched;
+                  productItem.variantId = matched.id;
+                  console.log(`✨ [ENHANCED-ORDER] Auto-matched variantId ${matched.id} from color/size (${checkColor}, ${checkSize})`);
+                }
+              }
+            }
           }
 
           // ✨ إذا لم نجد بيانات، حاول استخراج من اسم المنتج
