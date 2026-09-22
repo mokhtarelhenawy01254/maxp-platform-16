@@ -65,6 +65,16 @@ exports.createShipment = async (req, res) => {
       });
     }
 
+    // 🛡️ منع شحن الطلب إذا كان بانتظار اعتماد الخصم
+    const orderMetadata = typeof order.metadata === 'string' ? JSON.parse(order.metadata || '{}') : (order.metadata || {});
+    if (orderMetadata.discountApprovalStatus === 'PENDING_APPROVAL') {
+      return res.status(400).json({
+        success: false,
+        code: 'DISCOUNT_APPROVAL_PENDING',
+        error: 'لا يمكن شحن هذا الطلب لـ QP Express قبل اعتماد الخصم من قِبل الإدارة أو إلغائه'
+      });
+    }
+
     // 2. Prepare order payload for QP Express
     const customerName = order.customerName || order.customer?.name || order.customer?.fullName || 'عميل';
     const customerPhone = order.customerPhone || order.customer?.phone || order.phone || '';

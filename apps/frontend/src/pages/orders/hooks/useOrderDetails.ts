@@ -530,6 +530,34 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
             simpleOrder.discountReason ||
             (simpleOrder.metadata as any)?.discountReason ||
             null,
+          needsDiscountApproval: Boolean(
+            simpleOrder.needsDiscountApproval ??
+            (simpleOrder.metadata as any)?.needsDiscountApproval
+          ),
+          discountApprovalStatus:
+            simpleOrder.discountApprovalStatus ||
+            (simpleOrder.metadata as any)?.discountApprovalStatus ||
+            null,
+          discountApprovedBy:
+            simpleOrder.discountApprovedBy ||
+            (simpleOrder.metadata as any)?.discountApprovedBy ||
+            null,
+          discountApprovedAt:
+            simpleOrder.discountApprovedAt ||
+            (simpleOrder.metadata as any)?.discountApprovedAt ||
+            null,
+          discountRejectedBy:
+            simpleOrder.discountRejectedBy ||
+            (simpleOrder.metadata as any)?.discountRejectedBy ||
+            null,
+          discountRejectedAt:
+            simpleOrder.discountRejectedAt ||
+            (simpleOrder.metadata as any)?.discountRejectedAt ||
+            null,
+          discountRejectionReason:
+            simpleOrder.discountRejectionReason ||
+            (simpleOrder.metadata as any)?.discountRejectionReason ||
+            null,
           tax: parsedTax,
           shipping: resolvedShipping,
           total: resolvedTotal,
@@ -963,6 +991,40 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     }
   };
 
+  const handleDiscountApproval = async (
+    action: "APPROVE" | "REJECT",
+    reason?: string,
+  ) => {
+    if (!orderNumber) return;
+    try {
+      setUpdating(true);
+      const response = await apiClient.post(
+        `/orders-new/simple/${encodedOrderNumber}/discount-approval`,
+        {
+          action,
+          reason,
+        },
+      );
+      if (response.data?.success) {
+        toast.success(
+          action === "APPROVE"
+            ? "تم اعتماد الخصم بنجاح"
+            : "تم رفض وإلغاء الخصم بنجاح",
+        );
+        await fetchOrderDetails();
+      }
+    } catch (error: any) {
+      console.error("Error in discount approval:", error);
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "فشل في معالجة اعتماد/رفض الخصم";
+      toast.error(msg);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   return {
     order,
     setOrder, // Exposed for real-time updates
@@ -995,6 +1057,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     updateStatus,
     updatePaymentStatus,
     verifyWalletProof,
+    handleDiscountApproval,
     addNote,
     updateNote,
     deleteNote,

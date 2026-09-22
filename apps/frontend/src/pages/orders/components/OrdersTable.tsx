@@ -345,6 +345,14 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                               order.discountReason ||
                               (order.metadata as any)?.discountReason;
 
+                            const discountApprovalStatus =
+                              order.discountApprovalStatus ||
+                              (order.metadata as any)?.discountApprovalStatus;
+
+                            const isPendingDiscountApproval =
+                              discountApprovalStatus === "PENDING_APPROVAL" ||
+                              Boolean(order.needsDiscountApproval || (order.metadata as any)?.needsDiscountApproval);
+
                             return (
                               <div className="flex flex-col items-start gap-0.5">
                                 <span className="text-sm font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
@@ -362,6 +370,11 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                                       </span>
                                     )}
                                   </div>
+                                )}
+                                {isPendingDiscountApproval && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-300 dark:border-amber-800">
+                                    بانتظار اعتماد الخصم
+                                  </span>
                                 )}
                               </div>
                             );

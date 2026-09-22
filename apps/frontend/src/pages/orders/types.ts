@@ -108,6 +108,13 @@ export interface OrderDetailsType {
   subtotal: number;
   discount: number;
   discountReason?: string | null;
+  needsDiscountApproval?: boolean;
+  discountApprovalStatus?: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | null;
+  discountApprovedBy?: string | null;
+  discountApprovedAt?: string | null;
+  discountRejectedBy?: string | null;
+  discountRejectedAt?: string | null;
+  discountRejectionReason?: string | null;
   tax: number;
   shipping: number;
   total: number;

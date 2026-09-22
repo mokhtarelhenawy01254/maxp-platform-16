@@ -22,6 +22,7 @@ import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOper
 
 // Components
 import OrderHeader from "./components/OrderHeader";
+import OrderDiscountApprovalBanner from "./components/OrderDiscountApprovalBanner";
 import OrderItemsCard from "./components/OrderItemsCard";
 import CustomerInfoCard from "./components/CustomerInfoCard";
 import OrderPaymentCard from "./components/OrderPaymentCard";
@@ -125,6 +126,7 @@ const OrderDetails: React.FC = () => {
     updateStatus,
     updatePaymentStatus,
     verifyWalletProof,
+    handleDiscountApproval,
     addNote,
     updateNote,
     deleteNote,
@@ -1107,6 +1109,14 @@ const OrderDetails: React.FC = () => {
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-flow-col-dense lg:grid-cols-3">
         {/* RIGHT COLUMN (Main Info) */}
         <div className="space-y-6 lg:col-span-2">
+          {/* Discount Approval Banner */}
+          <OrderDiscountApprovalBanner
+            order={order}
+            onApprove={() => handleDiscountApproval("APPROVE")}
+            onReject={(reason) => handleDiscountApproval("REJECT", reason)}
+            loading={updating}
+          />
+
           {/* Items Card */}
           <OrderItemsCard
             isEditing={canEditOrderDetails && isEditing}

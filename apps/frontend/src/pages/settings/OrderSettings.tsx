@@ -18,6 +18,7 @@ import {
   XCircle,
   Volume2,
   ArrowLeftRight,
+  ShieldAlert,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import OrderStatusManager from "./OrderStatusManager";
@@ -37,6 +38,7 @@ import CancellationSettingsPage from "../cancellations/CancellationSettingsPage"
 import EasyWarehouseSettings from "./EasyWarehouseSettings";
 import OrderSoundSettings from "./OrderSoundSettings";
 import ExchangeReturnSettings from "./ExchangeReturnSettings";
+import DiscountApprovalSettings from "./DiscountApprovalSettings";
 
 // ═══════════════════════════════════════════════════════════════
 // 📦 Order Settings Page with Sidebar Tabs
@@ -59,7 +61,8 @@ type TabId =
   | "cancellation_reasons"
   | "easy_warehouse"
   | "sound"
-  | "exchange_return";
+  | "exchange_return"
+  | "discount_approval";
 
 const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "status",
@@ -79,6 +82,7 @@ const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "easy_warehouse",
   "sound",
   "exchange_return",
+  "discount_approval",
 ];
 
 const isOrderSettingsTabId = (value: string): value is TabId =>
@@ -239,6 +243,12 @@ const OrderSettings: React.FC = () => {
       icon: ArrowLeftRight,
       description: "اشتراط وجود طلب سابق للعميل",
     },
+    {
+      id: "discount_approval",
+      label: "اعتماد وحظر الخصومات",
+      icon: ShieldAlert,
+      description: "الموافقة على الخصومات وحظر التلقائي",
+    },
   ];
 
   return (
@@ -330,6 +340,7 @@ const OrderSettings: React.FC = () => {
             {activeTab === "easy_warehouse" && <EasyWarehouseSettings />}
             {activeTab === "sound" && <OrderSoundSettings />}
             {activeTab === "exchange_return" && <ExchangeReturnSettings />}
+            {activeTab === "discount_approval" && <DiscountApprovalSettings />}
           </div>
         </div>
       </div>

@@ -4,6 +4,17 @@ import { render, screen } from "@testing-library/react";
 
 import OrderSettings from "../OrderSettings";
 
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        "orderSettings.title": "إعدادات الطلبات",
+      };
+      return translations[key] || key;
+    },
+  }),
+}));
+
 jest.mock("../OrderStatusManager", () => () => <div>Order Status Mock</div>);
 jest.mock("../ScheduledOrderSettings", () => () => (
   <div>Scheduled Orders Mock</div>
@@ -43,6 +54,18 @@ jest.mock("../EasyWarehouseSettings", () => () => (
 ));
 jest.mock("../OrderSoundSettings", () => () => (
   <div>Order Sound Mock</div>
+));
+jest.mock("../LateCancellationSettings", () => () => (
+  <div>Late Cancellation Mock</div>
+));
+jest.mock("../../cancellations/CancellationSettingsPage", () => () => (
+  <div>Cancellation Settings Mock</div>
+));
+jest.mock("../ExchangeReturnSettings", () => () => (
+  <div>Exchange Return Mock</div>
+));
+jest.mock("../DiscountApprovalSettings", () => () => (
+  <div>Discount Approval Mock</div>
 ));
 
 describe("OrderSettings", () => {

@@ -46,6 +46,16 @@ exports.createShipment = async (req, res) => {
       });
     }
 
+    // 🛡️ منع شحن الطلب إذا كان بانتظار اعتماد الخصم
+    const orderMetadata = typeof order.metadata === 'string' ? JSON.parse(order.metadata || '{}') : (order.metadata || {});
+    if (orderMetadata.discountApprovalStatus === 'PENDING_APPROVAL') {
+      return res.status(400).json({
+        success: false,
+        code: 'DISCOUNT_APPROVAL_PENDING',
+        error: 'لا يمكن شحن هذا الطلب لبوسطة قبل اعتماد الخصم من قِبل الإدارة أو إلغائه'
+      });
+    }
+
     const payload = service.formatOrderForBosta(order, order.customer);
     const result = await service.createDelivery(payload);
 

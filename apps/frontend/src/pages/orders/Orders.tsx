@@ -75,6 +75,8 @@ export interface Order {
   subtotal: number | null;
   discount?: number | null;
   discountReason?: string | null;
+  needsDiscountApproval?: boolean;
+  discountApprovalStatus?: string | null;
   tax: number;
   shipping: number;
   total: number | null;
@@ -171,6 +173,8 @@ type RawOrder = {
   subtotal?: string | number | null;
   discount?: string | number | null;
   discountReason?: string | null;
+  needsDiscountApproval?: boolean;
+  discountApprovalStatus?: string | null;
   tax?: string | number | null;
   shipping?: string | number | null;
   total?: string | number | null;
@@ -518,6 +522,14 @@ const transformOrder = (order: RawOrder): Order => {
     order.discountReason ||
     (order.metadata as any)?.discountReason ||
     null;
+  const discountApprovalStatus =
+    order.discountApprovalStatus ||
+    (order.metadata as any)?.discountApprovalStatus ||
+    null;
+  const needsDiscountApproval = Boolean(
+    order.needsDiscountApproval ||
+    (order.metadata as any)?.needsDiscountApproval
+  );
   const calculatedTotal = (subtotal > 0 || shipping > 0)
     ? Math.max(0, subtotal + shipping + tax - discount)
     : 0;
@@ -552,6 +564,8 @@ const transformOrder = (order: RawOrder): Order => {
     subtotal,
     discount,
     discountReason,
+    needsDiscountApproval,
+    discountApprovalStatus,
     tax,
     shipping,
     total:

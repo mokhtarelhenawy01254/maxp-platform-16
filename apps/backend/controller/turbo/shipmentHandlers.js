@@ -45,6 +45,16 @@ const createShipment = async (req, res) => {
       });
     }
 
+    // 🛡️ منع شحن الطلب إذا كان بانتظار اعتماد الخصم
+    const orderMetadata = typeof order.metadata === 'string' ? JSON.parse(order.metadata || '{}') : (order.metadata || {});
+    if (orderMetadata.discountApprovalStatus === 'PENDING_APPROVAL') {
+      return res.status(400).json({
+        success: false,
+        code: 'DISCOUNT_APPROVAL_PENDING',
+        error: 'لا يمكن شحن هذا الطلب لتربو قبل اعتماد الخصم من قِبل الإدارة أو إلغائه'
+      });
+    }
+
     // 🛡️ التحقق من وجود شحنة نشطة سابقة لنفس العميل خلال آخر 48 ساعة
     const forceDuplicate = req.body?.forceDuplicateShipping === true || req.body?.forceDuplicateShipping === 'true';
     if (!forceDuplicate) {
@@ -222,6 +232,12 @@ const bulkCreateShipments = async (req, res) => {
           continue;
         }
 
+        const batchOrderMeta = typeof order.metadata === 'string' ? JSON.parse(order.metadata || '{}') : (order.metadata || {});
+        if (batchOrderMeta.discountApprovalStatus === 'PENDING_APPROVAL') {
+          results.skipped.push({ orderNumber: order.orderNumber, reason: 'الطلب بانتظار اعتماد الخصم من قِبل الإدارة' });
+          continue;
+        }
+
         const rawPhone = order.customerPhone || order.customer?.phone || '';
         const cleanPhone = String(rawPhone)
           .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
@@ -329,6 +345,12 @@ const bulkCreateShipments = async (req, res) => {
 
         if (invalidShippingStatuses.includes(String(guest.status || '').toUpperCase())) {
           results.skipped.push({ orderNumber: guest.orderNumber, reason: `حالة الطلب غير مؤهلة للشحن (${guest.status})`, isGuest: true });
+          continue;
+        }
+
+        const batchGuestMeta = typeof guest.metadata === 'string' ? JSON.parse(guest.metadata || '{}') : (guest.metadata || {});
+        if (batchGuestMeta.discountApprovalStatus === 'PENDING_APPROVAL') {
+          results.skipped.push({ orderNumber: guest.orderNumber, reason: 'الطلب بانتظار اعتماد الخصم من قِبل الإدارة', isGuest: true });
           continue;
         }
 

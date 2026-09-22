@@ -213,6 +213,11 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                             {order.discountReason || "خصم"}
                           </span>
                         )}
+                        {((order.discountApprovalStatus || (order.metadata as any)?.discountApprovalStatus) === "PENDING_APPROVAL" || order.needsDiscountApproval) && (
+                          <span className="text-[8px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-1 py-0.2 rounded border border-amber-300 dark:border-amber-800">
+                            بانتظار الاعتماد
+                          </span>
+                        )}
                       </div>
 
                       <span
@@ -276,6 +281,11 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                               title={order.discountReason ? `خصم: ${order.discountReason}` : "خصم"}
                             >
                               {order.discountReason || "خصم"}
+                            </span>
+                          )}
+                          {((order.discountApprovalStatus || (order.metadata as any)?.discountApprovalStatus) === "PENDING_APPROVAL" || order.needsDiscountApproval) && (
+                            <span className="text-[9px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-1 py-0.2 rounded border border-amber-300 dark:border-amber-800">
+                              بانتظار الاعتماد
                             </span>
                           )}
                         </div>

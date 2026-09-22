@@ -1408,37 +1408,55 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Company settings for discount approval & auto-discounts
+    const companySettingsRaw = company?.settings || (await prisma.company.findUnique({
+      where: { id: company.id },
+      select: { settings: true }
+    }))?.settings;
+    const parsedCompanySettings = typeof companySettingsRaw === 'string'
+      ? JSON.parse(companySettingsRaw || '{}')
+      : (companySettingsRaw || {});
+
+    const disableAutoDiscountsWithoutApproval = parsedCompanySettings.disableAutoDiscountsWithoutApproval !== undefined
+      ? Boolean(parsedCompanySettings.disableAutoDiscountsWithoutApproval)
+      : true;
+    const requireDiscountApproval = parsedCompanySettings.requireDiscountApproval !== undefined
+      ? Boolean(parsedCompanySettings.requireDiscountApproval)
+      : true;
+
     // Store-wide promotion discount
     let promoDiscount = 0;
     let promoLabel = '';
-    const storePromotion = await prisma.storePromotion.findFirst({
-      where: {
-        companyId: company.id,
-        isActive: true,
-        AND: [
-          { OR: [{ startDate: null }, { startDate: { lte: new Date() } }] },
-          { OR: [{ endDate: null }, { endDate: { gte: new Date() } }] },
-        ],
-      },
-    });
-    if (storePromotion) {
-      if (storePromotion.disableOtherDiscounts) {
-        discountAmount = 0;
-      }
-      const promoCartItems = cartItems.map(i => ({
-        productId: i.productId || i.id,
-        price: i.basePrice || i.price,
-        comparePrice: i.comparePrice || 0,
-        quantity: i.quantity,
-      }));
-      const result = calcStorePromotionDiscount({
-        cartItems: promoCartItems,
-        tiers: storePromotion.tiers,
-        disableOtherDiscounts: storePromotion.disableOtherDiscounts,
+    if (!disableAutoDiscountsWithoutApproval) {
+      const storePromotion = await prisma.storePromotion.findFirst({
+        where: {
+          companyId: company.id,
+          isActive: true,
+          AND: [
+            { OR: [{ startDate: null }, { startDate: { lte: new Date() } }] },
+            { OR: [{ endDate: null }, { endDate: { gte: new Date() } }] },
+          ],
+        },
       });
-      promoDiscount = result.discount;
-      promoLabel = result.tier?.label || storePromotion.title || 'عرض الكمية';
-      discountAmount += promoDiscount;
+      if (storePromotion) {
+        if (storePromotion.disableOtherDiscounts) {
+          discountAmount = 0;
+        }
+        const promoCartItems = cartItems.map(i => ({
+          productId: i.productId || i.id,
+          price: i.basePrice || i.price,
+          comparePrice: i.comparePrice || 0,
+          quantity: i.quantity,
+        }));
+        const result = calcStorePromotionDiscount({
+          cartItems: promoCartItems,
+          tiers: storePromotion.tiers,
+          disableOtherDiscounts: storePromotion.disableOtherDiscounts,
+        });
+        promoDiscount = result.discount;
+        promoLabel = result.tier?.label || storePromotion.title || 'عرض الكمية';
+        discountAmount += promoDiscount;
+      }
     }
 
     // مزايا مستوى الولاء (شحن مجاني + خصم تلقائي) / أو كوبون الخصم التلقائي
@@ -1452,7 +1470,7 @@ router.post('/', async (req, res) => {
       if (loyaltyCustomer) {
         const autoDiscountService = require('../services/autoDiscountService');
         const loyaltySettings = await autoDiscountService.getSettings(company.id);
-        const autoActive = loyaltySettings.autoDiscountEnabled === true && loyaltySettings.enabled !== false;
+        const autoActive = !disableAutoDiscountsWithoutApproval && loyaltySettings.autoDiscountEnabled === true && loyaltySettings.enabled !== false;
         const hasTiers = await prisma.customerLoyaltyTier.count({ where: { companyId: company.id } });
         const tiersActive = loyaltySettings.tiersEnabled === true || hasTiers > 0;
         const discountCombination = loyaltySettings.discountCombination || 'ADDITIVE';
@@ -1995,6 +2013,12 @@ router.post('/', async (req, res) => {
           pointsApplied,
           totalDiscount: discountAmount
         });
+
+        if (requireDiscountApproval) {
+          orderMetadata.needsDiscountApproval = true;
+          orderMetadata.discountApprovalStatus = 'PENDING_APPROVAL';
+          orderMetadata.discountApprovalRequestedAt = new Date().toISOString();
+        }
       }
 
       if (sanitizedAttribution) {
@@ -2459,6 +2483,7 @@ router.post('/', async (req, res) => {
       }));
 
       // Check for affiliate referral from guestOrder metadata
+      const regularOrderMetadata = {};
       let affiliateReferralId = null;
       let affiliateId = null;
       let orderSource = 'REGULAR';
@@ -2525,12 +2550,35 @@ router.post('/', async (req, res) => {
           if (metadata.couponCode) {
             couponCodeMetadata = metadata.couponCode;
           }
+          if (metadata.needsDiscountApproval !== undefined) {
+            regularOrderMetadata.needsDiscountApproval = metadata.needsDiscountApproval;
+          }
+          if (metadata.discountApprovalStatus) {
+            regularOrderMetadata.discountApprovalStatus = metadata.discountApprovalStatus;
+          }
+          if (metadata.discountApprovalRequestedAt) {
+            regularOrderMetadata.discountApprovalRequestedAt = metadata.discountApprovalRequestedAt;
+          }
+          if (metadata.discountApprovedBy) {
+            regularOrderMetadata.discountApprovedBy = metadata.discountApprovedBy;
+          }
+          if (metadata.discountApprovedAt) {
+            regularOrderMetadata.discountApprovedAt = metadata.discountApprovedAt;
+          }
+          if (metadata.discountRejectedBy) {
+            regularOrderMetadata.discountRejectedBy = metadata.discountRejectedBy;
+          }
+          if (metadata.discountRejectedAt) {
+            regularOrderMetadata.discountRejectedAt = metadata.discountRejectedAt;
+          }
+          if (metadata.discountRejectionReason) {
+            regularOrderMetadata.discountRejectionReason = metadata.discountRejectionReason;
+          }
         } catch (e) {
           // Ignore metadata parsing errors
         }
       }
-
-      const regularOrderMetadata = {};
+ 
       if (discountReasonMetadata) {
         regularOrderMetadata.discountReason = discountReasonMetadata;
       }

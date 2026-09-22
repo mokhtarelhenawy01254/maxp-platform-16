@@ -66,6 +66,21 @@ router.get('/', async (req, res) => {
         const orderService = require('../services/orderService');
         const exchangeReturnPolicy = await orderService.getExchangeReturnPolicy(companyId);
 
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: { settings: true }
+        });
+        const companySettings = typeof company?.settings === 'string'
+            ? JSON.parse(company.settings || '{}')
+            : (company?.settings || {});
+
+        const requireDiscountApproval = companySettings.requireDiscountApproval !== undefined
+            ? Boolean(companySettings.requireDiscountApproval)
+            : true;
+        const disableAutoDiscountsWithoutApproval = companySettings.disableAutoDiscountsWithoutApproval !== undefined
+            ? Boolean(companySettings.disableAutoDiscountsWithoutApproval)
+            : true;
+
         res.json({
             success: true,
             data: {
@@ -80,6 +95,8 @@ router.get('/', async (req, res) => {
                 minimumOrderEnabled: Boolean(settings.minimumOrderEnabled),
                 minimumOrderAmount: Number(settings.minimumOrderAmount || 0),
                 minimumOrderMessage: settings.minimumOrderMessage || DEFAULT_MINIMUM_ORDER_MESSAGE,
+                requireDiscountApproval,
+                disableAutoDiscountsWithoutApproval,
                 exchangeReturnPolicy
             }
         });
@@ -109,7 +126,9 @@ router.put('/', async (req, res) => {
             minimumOrderEnabled,
             minimumOrderAmount,
             minimumOrderMessage,
-            exchangeReturnPolicy
+            exchangeReturnPolicy,
+            requireDiscountApproval,
+            disableAutoDiscountsWithoutApproval
         } = req.body;
 
         if (!companyId) {
@@ -300,7 +319,8 @@ router.put('/', async (req, res) => {
         }
 
         let savedPolicy = null;
-        if (exchangeReturnPolicy !== undefined) {
+        let savedCompanySettings = null;
+        if (exchangeReturnPolicy !== undefined || requireDiscountApproval !== undefined || disableAutoDiscountsWithoutApproval !== undefined) {
             try {
                 const company = await prisma.company.findUnique({
                     where: { id: companyId },
@@ -310,25 +330,34 @@ router.put('/', async (req, res) => {
                     ? JSON.parse(company.settings || '{}')
                     : (company?.settings || {});
 
-                savedPolicy = {
-                    requirePreviousOrder: parseBooleanSetting(exchangeReturnPolicy.requirePreviousOrder),
-                    allowedStatuses: Array.isArray(exchangeReturnPolicy.allowedStatuses) && exchangeReturnPolicy.allowedStatuses.length > 0
-                        ? exchangeReturnPolicy.allowedStatuses
-                        : ['DELIVERED'],
-                    timeLimitDays: Number.isFinite(Number(exchangeReturnPolicy.timeLimitDays))
-                        ? Number(exchangeReturnPolicy.timeLimitDays)
-                        : 14,
-                    requireExplicitOrderLink: parseBooleanSetting(exchangeReturnPolicy.requireExplicitOrderLink)
-                };
+                if (exchangeReturnPolicy !== undefined) {
+                    savedPolicy = {
+                        requirePreviousOrder: parseBooleanSetting(exchangeReturnPolicy.requirePreviousOrder),
+                        allowedStatuses: Array.isArray(exchangeReturnPolicy.allowedStatuses) && exchangeReturnPolicy.allowedStatuses.length > 0
+                            ? exchangeReturnPolicy.allowedStatuses
+                            : ['DELIVERED'],
+                        timeLimitDays: Number.isFinite(Number(exchangeReturnPolicy.timeLimitDays))
+                            ? Number(exchangeReturnPolicy.timeLimitDays)
+                            : 14,
+                        requireExplicitOrderLink: parseBooleanSetting(exchangeReturnPolicy.requireExplicitOrderLink)
+                    };
+                    companySettings.exchangeReturnPolicy = savedPolicy;
+                }
 
-                companySettings.exchangeReturnPolicy = savedPolicy;
+                if (requireDiscountApproval !== undefined) {
+                    companySettings.requireDiscountApproval = parseBooleanSetting(requireDiscountApproval);
+                }
+                if (disableAutoDiscountsWithoutApproval !== undefined) {
+                    companySettings.disableAutoDiscountsWithoutApproval = parseBooleanSetting(disableAutoDiscountsWithoutApproval);
+                }
 
                 await prisma.company.update({
                     where: { id: companyId },
                     data: { settings: JSON.stringify(companySettings) }
                 });
+                savedCompanySettings = companySettings;
             } catch (policyErr) {
-                console.warn('⚠️ [EXCHANGE-RETURN-POLICY] Error saving policy:', policyErr.message);
+                console.warn('⚠️ [COMPANY-SETTINGS] Error saving settings:', policyErr.message);
             }
         }
 
@@ -336,6 +365,25 @@ router.put('/', async (req, res) => {
             const orderService = require('../services/orderService');
             savedPolicy = await orderService.getExchangeReturnPolicy(companyId);
         }
+
+        if (!savedCompanySettings) {
+            try {
+                const company = await prisma.company.findUnique({
+                    where: { id: companyId },
+                    select: { settings: true }
+                });
+                savedCompanySettings = typeof company?.settings === 'string'
+                    ? JSON.parse(company.settings || '{}')
+                    : (company?.settings || {});
+            } catch (_) {}
+        }
+
+        const effectiveRequireDiscountApproval = savedCompanySettings?.requireDiscountApproval !== undefined
+            ? Boolean(savedCompanySettings.requireDiscountApproval)
+            : true;
+        const effectiveDisableAutoDiscounts = savedCompanySettings?.disableAutoDiscountsWithoutApproval !== undefined
+            ? Boolean(savedCompanySettings.disableAutoDiscountsWithoutApproval)
+            : true;
 
         res.json({
             success: true,
@@ -354,6 +402,8 @@ router.put('/', async (req, res) => {
                 minimumOrderEnabled: Boolean(settings.minimumOrderEnabled),
                 minimumOrderAmount: Number(settings.minimumOrderAmount || 0),
                 minimumOrderMessage: settings.minimumOrderMessage || DEFAULT_MINIMUM_ORDER_MESSAGE,
+                requireDiscountApproval: effectiveRequireDiscountApproval,
+                disableAutoDiscountsWithoutApproval: effectiveDisableAutoDiscounts,
                 exchangeReturnPolicy: savedPolicy
             }
         });

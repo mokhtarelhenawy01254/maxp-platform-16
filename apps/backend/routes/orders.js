@@ -3753,6 +3753,13 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         shipping: order.shipping,
         discount: Number(order.discount || 0),
         discountReason: resolveDiscountReason(order, orderMetadata),
+        needsDiscountApproval: Boolean(orderMetadata?.needsDiscountApproval),
+        discountApprovalStatus: orderMetadata?.discountApprovalStatus || null,
+        discountApprovedBy: orderMetadata?.discountApprovedBy || null,
+        discountApprovedAt: orderMetadata?.discountApprovedAt || null,
+        discountRejectedBy: orderMetadata?.discountRejectedBy || null,
+        discountRejectedAt: orderMetadata?.discountRejectedAt || null,
+        discountRejectionReason: orderMetadata?.discountRejectionReason || null,
         status: effectiveStatus,
         paymentStatus: derivePaymentStatusForDisplay(order, orderMetadata),
         paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
@@ -3884,6 +3891,13 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         shipping: guestAmounts.shipping,
         discount: guestAmounts.discount,
         discountReason: resolveDiscountReason(order, metadata),
+        needsDiscountApproval: Boolean(metadata?.needsDiscountApproval),
+        discountApprovalStatus: metadata?.discountApprovalStatus || null,
+        discountApprovedBy: metadata?.discountApprovedBy || null,
+        discountApprovedAt: metadata?.discountApprovedAt || null,
+        discountRejectedBy: metadata?.discountRejectedBy || null,
+        discountRejectedAt: metadata?.discountRejectedAt || null,
+        discountRejectionReason: metadata?.discountRejectionReason || null,
         status: guestDisplayStatus,
         paymentStatus: derivePaymentStatusForDisplay(order, metadata),
         paymentMethod: order.paymentMethod?.toLowerCase() || 'cash_on_delivery',
@@ -4188,6 +4202,17 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
     let scopedMerchantOrder = null;
 
     if (order) {
+      const currentOrderMeta = parseOrderMetadata(order.metadata);
+      if (
+        currentOrderMeta?.discountApprovalStatus === 'PENDING_APPROVAL' &&
+        !['CANCELLED', 'CANCELED', 'REJECTED', 'PENDING', 'CALL_ATTEMPT'].includes(statusUpper)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'لا يمكن تأكيد أو تجهيز أو شحن هذا الطلب قبل اعتماد الخصم من قِبل الإدارة أو إلغائه'
+        });
+      }
+
       if (merchant) {
         const merchantOrder = order.merchantOrders?.[0];
         if (!merchantOrder) {
@@ -4427,6 +4452,16 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
 
     // 🔒 Enforce the "problem hold" rules for guest orders too.
     const guestMetadata = parseOrderMetadata(guestOrder.metadata);
+    if (
+      guestMetadata?.discountApprovalStatus === 'PENDING_APPROVAL' &&
+      !['CANCELLED', 'CANCELED', 'REJECTED', 'PENDING', 'CALL_ATTEMPT'].includes(statusUpper)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'لا يمكن تأكيد أو تجهيز أو شحن هذا الطلب قبل اعتماد الخصم من قِبل الإدارة أو إلغائه'
+      });
+    }
+
     await preparationQueueService.assertPreparationHoldRule({
       currentPreparationStatus:
         guestMetadata.preparationStatus || guestOrder.status,
@@ -5323,6 +5358,249 @@ router.delete('/simple/notes/:noteId', verifyToken.authenticateToken, async (req
   }
 });
 
+// اعتماد أو رفض خصم الطلب
+router.post('/simple/:orderNumber/discount-approval', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const { action, reason } = req.body || {}; // action: 'APPROVE' | 'REJECT'
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+
+    if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
+
+    if (!['APPROVE', 'REJECT'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'الإجراء غير صالح. يجب أن يكون APPROVE أو REJECT'
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const userName = `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || 'مدير النظام';
+    const userId = req.user?.id || 'SYSTEM';
+    const nowIso = new Date().toISOString();
+
+    // 1. Check Regular Order
+    const regularOrder = await prisma.order.findFirst({
+      where: {
+        OR: [{ id: orderNumber, companyId }, { orderNumber, companyId }]
+      }
+    });
+
+    if (regularOrder) {
+      const metadata = parseOrderMetadata(regularOrder.metadata) || {};
+      const currentDiscount = Number(regularOrder.discount || 0);
+
+      if (action === 'APPROVE') {
+        metadata.needsDiscountApproval = false;
+        metadata.discountApprovalStatus = 'APPROVED';
+        metadata.discountApprovedBy = userName;
+        metadata.discountApprovedById = userId;
+        metadata.discountApprovedAt = nowIso;
+
+        const updatedOrder = await prisma.order.update({
+          where: { id: regularOrder.id },
+          data: {
+            metadata: JSON.stringify(metadata),
+            statusHistory: {
+              create: {
+                status: regularOrder.status,
+                oldStatus: regularOrder.status,
+                reason: `اعتماد الخصم بقيمة ${currentDiscount} ج.م بواسطة ${userName}${reason ? `: ${reason}` : ''}`,
+                changedBy: userId,
+                userName
+              }
+            }
+          }
+        });
+
+        try {
+          if (socketService?.getIO()) {
+            socketService.getIO().to(`company_${companyId}`).emit('order:updated', {
+              orderNumber: updatedOrder.orderNumber,
+              discountApprovalStatus: 'APPROVED'
+            });
+          }
+        } catch (_) {}
+
+        return res.json({
+          success: true,
+          message: 'تم اعتماد الخصم بنجاح',
+          data: {
+            orderNumber: updatedOrder.orderNumber,
+            discountApprovalStatus: 'APPROVED',
+            discount: updatedOrder.discount,
+            total: updatedOrder.total
+          }
+        });
+      } else {
+        // REJECT action: strip discount and recalculate total
+        metadata.needsDiscountApproval = false;
+        metadata.discountApprovalStatus = 'REJECTED';
+        metadata.discountRejectedBy = userName;
+        metadata.discountRejectedById = userId;
+        metadata.discountRejectedAt = nowIso;
+        metadata.discountRejectionReason = reason || 'تم رفض الخصم من قِبل الإدارة';
+        metadata.discountReason = null;
+        metadata.coupon = null;
+        metadata.couponCode = null;
+
+        const subtotal = Number(regularOrder.subtotal || 0);
+        const shipping = Number(regularOrder.shipping || 0);
+        const tax = Number(regularOrder.tax || 0);
+        const newTotal = Number((subtotal + shipping + tax).toFixed(2));
+
+        const updatedOrder = await prisma.order.update({
+          where: { id: regularOrder.id },
+          data: {
+            discount: 0,
+            total: newTotal,
+            metadata: JSON.stringify(metadata),
+            statusHistory: {
+              create: {
+                status: regularOrder.status,
+                oldStatus: regularOrder.status,
+                reason: `إلغاء ورفض الخصم (كان ${currentDiscount} ج.م) وتعديل الإجمالي إلى ${newTotal} ج.م بواسطة ${userName}${reason ? `: ${reason}` : ''}`,
+                changedBy: userId,
+                userName
+              }
+            }
+          }
+        });
+
+        try {
+          if (socketService?.getIO()) {
+            socketService.getIO().to(`company_${companyId}`).emit('order:updated', {
+              orderNumber: updatedOrder.orderNumber,
+              discountApprovalStatus: 'REJECTED',
+              discount: 0,
+              total: newTotal
+            });
+          }
+        } catch (_) {}
+
+        return res.json({
+          success: true,
+          message: 'تم رفض وإلغاء الخصم وتحديث إجمالي الطلب بنجاح',
+          data: {
+            orderNumber: updatedOrder.orderNumber,
+            discountApprovalStatus: 'REJECTED',
+            discount: 0,
+            total: newTotal
+          }
+        });
+      }
+    }
+
+    // 2. Check Guest Order
+    const guestOrder = await prisma.guestOrder.findFirst({
+      where: {
+        OR: [{ id: orderNumber, companyId }, { orderNumber, companyId }]
+      }
+    });
+
+    if (guestOrder) {
+      const metadata = parseOrderMetadata(guestOrder.metadata) || {};
+      const currentDiscount = Number(guestOrder.discountAmount || 0);
+
+      if (action === 'APPROVE') {
+        metadata.needsDiscountApproval = false;
+        metadata.discountApprovalStatus = 'APPROVED';
+        metadata.discountApprovedBy = userName;
+        metadata.discountApprovedById = userId;
+        metadata.discountApprovedAt = nowIso;
+
+        const updatedGuest = await prisma.guestOrder.update({
+          where: { id: guestOrder.id },
+          data: {
+            metadata: JSON.stringify(metadata)
+          }
+        });
+
+        try {
+          if (socketService?.getIO()) {
+            socketService.getIO().to(`company_${companyId}`).emit('order:updated', {
+              orderNumber: updatedGuest.orderNumber,
+              discountApprovalStatus: 'APPROVED'
+            });
+          }
+        } catch (_) {}
+
+        return res.json({
+          success: true,
+          message: 'تم اعتماد الخصم بنجاح',
+          data: {
+            orderNumber: updatedGuest.orderNumber,
+            discountApprovalStatus: 'APPROVED',
+            discount: updatedGuest.discountAmount,
+            total: updatedGuest.finalTotal
+          }
+        });
+      } else {
+        // REJECT action: strip discount and recalculate
+        metadata.needsDiscountApproval = false;
+        metadata.discountApprovalStatus = 'REJECTED';
+        metadata.discountRejectedBy = userName;
+        metadata.discountRejectedById = userId;
+        metadata.discountRejectedAt = nowIso;
+        metadata.discountRejectionReason = reason || 'تم رفض الخصم من قِبل الإدارة';
+        metadata.discountReason = null;
+        metadata.coupon = null;
+        metadata.couponCode = null;
+
+        const cartTotal = Number(guestOrder.total || 0);
+        const shippingCost = Number(guestOrder.shippingCost || 0);
+        const newFinalTotal = Number((cartTotal + shippingCost).toFixed(2));
+
+        const updatedGuest = await prisma.guestOrder.update({
+          where: { id: guestOrder.id },
+          data: {
+            discountAmount: 0,
+            finalTotal: newFinalTotal,
+            metadata: JSON.stringify(metadata)
+          }
+        });
+
+        try {
+          if (socketService?.getIO()) {
+            socketService.getIO().to(`company_${companyId}`).emit('order:updated', {
+              orderNumber: updatedGuest.orderNumber,
+              discountApprovalStatus: 'REJECTED',
+              discount: 0,
+              total: newFinalTotal
+            });
+          }
+        } catch (_) {}
+
+        return res.json({
+          success: true,
+          message: 'تم رفض وإلغاء الخصم وتحديث إجمالي الطلب بنجاح',
+          data: {
+            orderNumber: updatedGuest.orderNumber,
+            discountApprovalStatus: 'REJECTED',
+            discount: 0,
+            total: newFinalTotal
+          }
+        });
+      }
+    }
+
+    return res.status(404).json({
+      success: false,
+      message: 'الطلب غير موجود'
+    });
+  } catch (error) {
+    console.error('❌ Error in discount approval endpoint:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في معالجة اعتماد/رفض الخصم',
+      error: error.message
+    });
+  }
+});
+
 // الحصول على طلب بسيط محدد بالرقم
 // Verify / reject a wallet payment proof uploaded by the customer at checkout
 router.post('/simple/:orderNumber/wallet-proof/verify', verifyToken.authenticateToken, async (req, res) => {
@@ -5924,6 +6202,13 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         shipping: guestAmounts.shipping,
         discount: guestAmounts.discount,
         discountReason: resolveDiscountReason(guestOrder, safeParseOrderMetadata(guestOrder.metadata)),
+        needsDiscountApproval: Boolean(safeParseOrderMetadata(guestOrder.metadata)?.needsDiscountApproval),
+        discountApprovalStatus: safeParseOrderMetadata(guestOrder.metadata)?.discountApprovalStatus || null,
+        discountApprovedBy: safeParseOrderMetadata(guestOrder.metadata)?.discountApprovedBy || null,
+        discountApprovedAt: safeParseOrderMetadata(guestOrder.metadata)?.discountApprovedAt || null,
+        discountRejectedBy: safeParseOrderMetadata(guestOrder.metadata)?.discountRejectedBy || null,
+        discountRejectedAt: safeParseOrderMetadata(guestOrder.metadata)?.discountRejectedAt || null,
+        discountRejectionReason: safeParseOrderMetadata(guestOrder.metadata)?.discountRejectionReason || null,
         status: guestOrder.status?.toLowerCase() || 'pending',
         paymentStatus: derivePaymentStatusForDisplay(
           guestOrder,
@@ -6125,6 +6410,13 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         shipping: order.shipping,
         discount: order.discount,
         discountReason: resolveDiscountReason(order, orderMetadata),
+        needsDiscountApproval: Boolean(orderMetadata?.needsDiscountApproval),
+        discountApprovalStatus: orderMetadata?.discountApprovalStatus || null,
+        discountApprovedBy: orderMetadata?.discountApprovedBy || null,
+        discountApprovedAt: orderMetadata?.discountApprovedAt || null,
+        discountRejectedBy: orderMetadata?.discountRejectedBy || null,
+        discountRejectedAt: orderMetadata?.discountRejectedAt || null,
+        discountRejectionReason: orderMetadata?.discountRejectionReason || null,
         status: detailEffectiveStatus,
         paymentStatus: derivePaymentStatusForDisplay(order, orderMetadata),
         paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
@@ -6628,6 +6920,21 @@ router.post('/:orderNumber/confirm', verifyToken.authenticateToken, async (req, 
     }
     // ----------------------------
 
+    const existingOrder = await getSharedPrismaClient().order.findFirst({
+      where: { OR: [{ id: orderNumber, companyId }, { orderNumber, companyId }] },
+      select: { metadata: true }
+    }) || await getSharedPrismaClient().guestOrder.findFirst({
+      where: { OR: [{ id: orderNumber, companyId }, { orderNumber, companyId }] },
+      select: { metadata: true }
+    });
+    const orderMeta = parseOrderMetadata(existingOrder?.metadata);
+    if (orderMeta?.discountApprovalStatus === 'PENDING_APPROVAL') {
+      return res.status(400).json({
+        success: false,
+        message: 'لا يمكن تأكيد هذا الطلب قبل اعتماد الخصم من قِبل الإدارة أو إلغائه'
+      });
+    }
+
     const order = await orderService.confirmOrder(orderNumber, companyId, shippingAddress);
 
     res.json({
@@ -7106,6 +7413,22 @@ router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
     // Update regular and guest orders through the same path so trash/restore behaves consistently.
     for (const id of orderIds) {
       try {
+        if (!['CANCELLED', 'CANCELED', 'REJECTED', 'PENDING', 'CALL_ATTEMPT'].includes(normalizedStatus)) {
+          const prisma = getSharedPrismaClient();
+          const target = await prisma.order.findFirst({
+            where: { OR: [{ id }, { orderNumber: id }], companyId },
+            select: { metadata: true }
+          }) || await prisma.guestOrder.findFirst({
+            where: { OR: [{ id }, { orderNumber: id }], companyId },
+            select: { metadata: true }
+          });
+          const meta = parseOrderMetadata(target?.metadata);
+          if (meta?.discountApprovalStatus === 'PENDING_APPROVAL') {
+            results.push({ id, success: false, error: 'لا يمكن تأكيد أو تجهيز هذا الطلب قبل اعتماد الخصم' });
+            continue;
+          }
+        }
+
         const updateResult = await updateAnyOrderStatus({
           orderIdentifier: id,
           companyId,
