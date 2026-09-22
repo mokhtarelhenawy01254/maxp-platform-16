@@ -5208,7 +5208,7 @@ const AppContent = () => {
                   path="/cafe/recipes"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['cafe-restaurant-pro', 'pos-pro', 'store-pro']}>
+                      <AppAccessRoute requiredAppSlugs={['cafe-restaurant-pro']}>
                         <RecipeManagementPage />
                       </AppAccessRoute>
                     </Layout>
@@ -5218,7 +5218,7 @@ const AppContent = () => {
                   path="/cafe/audits"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['cafe-restaurant-pro', 'pos-pro', 'store-pro']}>
+                      <AppAccessRoute requiredAppSlugs={['cafe-restaurant-pro']}>
                         <StockCountSessionPage />
                       </AppAccessRoute>
                     </Layout>
@@ -5228,7 +5228,7 @@ const AppContent = () => {
                   path="/cafe/modifiers"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['cafe-restaurant-pro', 'pos-pro', 'store-pro']}>
+                      <AppAccessRoute requiredAppSlugs={['cafe-restaurant-pro']}>
                         <ModifiersManagementPage />
                       </AppAccessRoute>
                     </Layout>

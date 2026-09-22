@@ -449,7 +449,7 @@ export const getSidebarConfig = (
                     { to: '/cafe/modifiers', icon: Sliders, label: 'خيارات المشروبات' },
                     { to: '/pos', icon: CreditCard, label: 'نقطة البيع POS' },
                 ],
-                hidden: !isAnyAppActive(['cafe-restaurant-pro', 'pos-pro']),
+                hidden: !isAnyAppActive(['cafe-restaurant-pro']),
             },
             {
                 id: 'orders',
@@ -845,7 +845,7 @@ export const getSidebarConfig = (
                 { to: '/cafe/modifiers', icon: Sliders, label: isEn ? 'Drink Modifiers' : 'خيارات المشروبات' },
                 { to: '/pos', icon: CreditCard, label: isEn ? 'Cloud POS' : 'نقطة البيع POS' },
             ],
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['cafe-restaurant-pro', 'pos-pro'])
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['cafe-restaurant-pro'])
         },
 
         // 4️⃣.35 الخزينة والنفقات ورأس المال

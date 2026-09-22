@@ -216,7 +216,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     appSlug: "cafe-restaurant-pro",
     appLabel: "نظام الكافيهات والمطاعم",
     currentGate: "cafe-restaurant-pro",
-    legacyGate: "pos-pro",
+    legacyGate: "cafe-restaurant-pro",
     routes: [
       { path: "/cafe/recipes", label: "معايير الرسيبي" },
       { path: "/cafe/audits", label: "جلسات الجرد" },
