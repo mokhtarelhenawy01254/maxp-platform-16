@@ -534,7 +534,7 @@ export const TasksTab: React.FC = () => {
       {/* Unified 2026 Control Bar: Views + Status Filters + Action Controls */}
       <div style={styles.unifiedControlBar}>
         {/* Left Side: View Switcher & Status Filters */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <div style={styles.segmented}>
             <button
               onClick={() => setActiveView('my-tasks')}
@@ -774,16 +774,16 @@ export const TasksTab: React.FC = () => {
             <div style={{ flex: 1, minWidth: 0 }}>
               <span style={styles.tableColLabel}>المهمة</span>
             </div>
-            <div style={{ width: 95, textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ width: 105, textAlign: 'right', flexShrink: 0 }}>
               <span style={styles.tableColLabel}>{activeView === 'my-tasks' ? 'المنشئ' : 'المكلف'}</span>
             </div>
-            <div style={{ width: 65, textAlign: 'center', flexShrink: 0 }}>
+            <div style={{ width: 50, textAlign: 'center', flexShrink: 0 }}>
               <span style={styles.tableColLabel}>المقدر</span>
             </div>
-            <div style={{ width: 105, textAlign: 'center', flexShrink: 0 }}>
+            <div style={{ width: 80, textAlign: 'center', flexShrink: 0 }}>
               <span style={styles.tableColLabel}>الاستحقاق</span>
             </div>
-            <div style={{ width: 220, textAlign: 'left', flexShrink: 0, paddingLeft: 6 }}>
+            <div style={{ width: 130, textAlign: 'left', flexShrink: 0, paddingLeft: 6 }}>
               <span style={styles.tableColLabel}>الإجراءات</span>
             </div>
           </div>
@@ -1036,12 +1036,13 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'var(--bg-surface)',
     border: '1px solid var(--border-default)',
     borderRadius: 8,
-    padding: '7px 12px',
+    padding: '6px 12px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
+    overflowX: 'auto',
   },
   syncPulseDot: {
     width: 6,
@@ -1248,23 +1249,27 @@ const styles: Record<string, React.CSSProperties> = {
   segBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
-    padding: '5px 12px',
+    gap: 5,
+    padding: '4px 10px',
     fontSize: 11,
     border: 'none',
     borderRadius: 4,
     cursor: 'pointer',
     fontFamily: 'inherit',
+    outline: 'none',
+    whiteSpace: 'nowrap',
     transition: 'all 120ms ease-out',
   },
   statusFilterBtn: {
-    padding: '4px 10px',
+    padding: '3px 8px',
     fontSize: 11,
-    borderRadius: 6,
+    borderRadius: 5,
     border: '1px solid',
     cursor: 'pointer',
     fontFamily: 'inherit',
     fontVariantNumeric: 'tabular-nums',
+    outline: 'none',
+    whiteSpace: 'nowrap',
     transition: 'all 120ms ease-out',
   },
   list: {

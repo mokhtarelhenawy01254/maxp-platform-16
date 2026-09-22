@@ -304,12 +304,16 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : 'var(--text-dim)',
                 fontWeight: isOverdue ? 600 : 400,
               }}
+              title={new Date(task.dueDate).toLocaleString('ar-EG')}
             >
-              {new Date(task.dueDate).toLocaleDateString('ar-EG', {
-                month: 'numeric',
-                day: 'numeric',
-              })}
-              {isOverdue && ` (${getOverdueText()})`}
+              <span dir="ltr">
+                {new Date(task.dueDate).getDate()}/{new Date(task.dueDate).getMonth() + 1}
+              </span>
+              {isOverdue && (
+                <span style={{ marginRight: 3, fontSize: 10, opacity: 0.85 }}>
+                  · {getOverdueText()}
+                </span>
+              )}
             </span>
           ) : (
             <span style={rowStyles.emptyCell}>—</span>
@@ -638,7 +642,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   personCol: {
-    width: 95,
+    width: 105,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
@@ -650,16 +654,17 @@ const rowStyles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    maxWidth: 95,
   },
   estCol: {
-    width: 65,
+    width: 50,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
   dueCol: {
-    width: 105,
+    width: 80,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
@@ -676,12 +681,12 @@ const rowStyles: Record<string, React.CSSProperties> = {
     fontSize: 11,
   },
   actionsCol: {
-    width: 220,
+    width: 130,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: 6,
+    gap: 4,
   },
   hoverTools: {
     display: 'flex',
@@ -699,6 +704,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
+    outline: 'none',
   },
   expandBtn: {
     background: 'none',
@@ -711,20 +717,22 @@ const rowStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 2,
+    outline: 'none',
   },
   startBtn: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#0284c7',
-    border: 'none',
+    gap: 4,
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    border: '1px solid rgba(56, 189, 248, 0.3)',
     borderRadius: 5,
-    padding: '3px 10px',
+    padding: '3px 9px',
     fontSize: 11,
     fontWeight: 600,
-    color: '#ffffff',
+    color: '#38bdf8',
     cursor: 'pointer',
     fontFamily: 'inherit',
+    outline: 'none',
     transition: 'all 120ms ease-out',
   },
   pauseBtn: {
@@ -740,6 +748,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     color: 'var(--accent-green)',
     cursor: 'pointer',
     fontFamily: 'inherit',
+    outline: 'none',
   },
   submitBtn: {
     display: 'inline-flex',
@@ -754,30 +763,34 @@ const rowStyles: Record<string, React.CSSProperties> = {
     color: '#c084fc',
     cursor: 'pointer',
     fontFamily: 'inherit',
+    outline: 'none',
   },
   approveBtn: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#16a34a',
-    border: 'none',
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    border: '1px solid rgba(34, 197, 94, 0.3)',
     borderRadius: 5,
-    padding: '3px 9px',
+    padding: '3px 8px',
     fontSize: 11,
     fontWeight: 600,
-    color: '#ffffff',
+    color: '#22c55e',
     cursor: 'pointer',
     fontFamily: 'inherit',
+    outline: 'none',
+    transition: 'all 120ms ease-out',
   },
   returnBtn: {
     display: 'inline-flex',
     alignItems: 'center',
     backgroundColor: 'rgba(245, 158, 11, 0.1)',
-    border: '1px solid rgba(245, 158, 11, 0.3)',
+    border: '1px solid rgba(245, 158, 11, 0.25)',
     borderRadius: 5,
     padding: '3px 6px',
     cursor: 'pointer',
     fontFamily: 'inherit',
+    outline: 'none',
   },
   secondaryBtn: {
     display: 'inline-flex',
@@ -792,6 +805,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     color: 'var(--text-secondary)',
     cursor: 'pointer',
     fontFamily: 'inherit',
+    outline: 'none',
   },
   pendingBadge: {
     fontSize: 10,
