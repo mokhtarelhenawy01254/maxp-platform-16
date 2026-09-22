@@ -129,6 +129,27 @@ const DEFAULT_SPECIALTIES = [
       'notification-automation',
     ],
   },
+  {
+    id: 'bizsp_cafe_restaurant',
+    slug: 'cafe-restaurant',
+    nameAr: 'الكافيهات والمطاعم',
+    nameEn: 'Cafes & Restaurants',
+    descriptionAr: 'تشغيل متكامل للكافيهات والمطاعم: منيو إلكتروني، كاشير POS، رسيبي ومقادير، جرد ومخازن، ومشتريات وموردين.',
+    descriptionEn: 'Complete operating suite for cafes and restaurants: QR menu, cloud POS, recipe BOM, stock audits, and procurement.',
+    icon: 'Coffee',
+    sortOrder: 12,
+    themeId: 'cafe-demo',
+    appSlugs: [
+      'cafe-restaurant-pro',
+      'pos-pro',
+      'inventory-pro',
+      'procurement-pro',
+      'store',
+      'analytics-basic',
+      'crm-lite',
+      'notification-automation',
+    ],
+  },
 ];
 
 function getPrisma(prisma) {
