@@ -13,6 +13,7 @@ import {
   Pause,
   RotateCcw,
   AlertTriangle,
+  AlertCircle,
   ImageIcon,
   Check,
   Edit3,
@@ -21,6 +22,7 @@ import {
   EyeOff,
   Send,
   ClipboardCheck,
+  Calendar,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
 import { TaskDependencyBadge } from './TaskDependencyBadge';
@@ -39,7 +41,7 @@ interface TaskItemCardProps {
   activeRunnerSeconds?: number;
   onStartTask?: (task: any) => void;
   onStopTask?: () => void;
-  viewType?: 'my-tasks' | 'assigned-by-me';
+  viewType?: 'my-tasks' | 'assigned-by-me' | 'all';
 }
 
 export const TaskItemCard: React.FC<TaskItemCardProps> = ({
@@ -93,20 +95,13 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
     }
   };
 
-  const priorityColor = (p: string) => {
-    const norm = String(p || '').toUpperCase();
-    if (norm === 'URGENT' || norm === 'HIGH') return '#ef4444';
-    if (norm === 'MEDIUM') return '#38bdf8';
-    return '#a1a1aa';
-  };
-
-  const priorityLabel = (p: string) => {
-    const norm = String(p || '').toUpperCase();
-    if (norm === 'URGENT') return 'عاجل جداً';
-    if (norm === 'HIGH') return 'مرتفع';
-    if (norm === 'MEDIUM') return 'عادي';
-    return 'منخفض';
-  };
+  const isUrgent = String(task.priority || '').toUpperCase() === 'URGENT';
+  const isHigh = String(task.priority || '').toUpperCase() === 'HIGH';
+  const isAssignedToMe = !task.assignedTo || task.assignedTo === currentUserId;
+  const isCreatedByMe = task.createdBy === currentUserId;
+  const canRunTask = isAssignedToMe;
+  const canEditTask = isCreatedByMe || isAssignedToMe || isAdmin;
+  const canApprove = isCreatedByMe || isAdmin;
 
   const recurringLabel = (rule: string) => {
     const norm = String(rule || '').toUpperCase();
@@ -120,7 +115,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
     task.createdByName ||
     `${task.creator?.firstName || ''} ${task.creator?.lastName || ''}`.trim() ||
     task.creator?.email ||
-    'غير محدد';
+    '';
 
   const assigneeName =
     task.assignedToName ||
@@ -166,13 +161,6 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
     window.open(targetUrl, '_blank');
   };
 
-  const isUrgent = String(task.priority || '').toUpperCase() === 'URGENT';
-  const isAssignedToMe = !task.assignedTo || task.assignedTo === currentUserId;
-  const isCreatedByMe = task.createdBy === currentUserId;
-  const canRunTask = isAssignedToMe;
-  const canEditTask = isCreatedByMe || isAssignedToMe || isAdmin;
-  const canApprove = isCreatedByMe || isAdmin;
-
   const resolveAttachmentUrl = (rawPath: string) => {
     if (!rawPath) return '';
     if (rawPath.startsWith('data:') || rawPath.startsWith('blob:')) {
@@ -214,29 +202,33 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
       style={{
         ...cardStyles.card,
         opacity: isCompleted ? 0.72 : 1,
-        borderColor: isUrgent && !isCompleted
-          ? 'rgba(239, 68, 68, 0.65)'
+        // Architectural edge indicator instead of glowing full box-shadow
+        borderRight: isUrgent && !isCompleted
+          ? '3px solid #ef4444'
           : isRunning
-          ? 'rgba(56, 189, 248, 0.45)'
+          ? '3px solid #0284c7'
+          : isCompleted
+          ? '3px solid var(--border-subtle)'
+          : '3px solid transparent',
+        borderColor: isUrgent && !isCompleted
+          ? 'rgba(239, 68, 68, 0.3)'
+          : isRunning
+          ? 'rgba(56, 189, 248, 0.35)'
           : isCompleted
           ? 'var(--border-subtle)'
           : 'var(--border-default)',
-        boxShadow: isUrgent && !isCompleted
-          ? '0 0 16px rgba(239, 68, 68, 0.15)'
-          : isRunning
-          ? '0 0 16px rgba(56, 189, 248, 0.1)'
-          : 'none',
         background: isUrgent && !isCompleted
-          ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, var(--bg-surface) 100%)'
+          ? 'linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, var(--bg-surface) 100%)'
           : 'var(--bg-surface)',
       }}
     >
-      {/* Main Row */}
+      {/* Top Row: Title + Primary Action + Compact Tools */}
       <div style={cardStyles.mainRow}>
-        {/* Info Column */}
+        {/* Left / Info Cluster */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={cardStyles.titleRow}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
+            {/* Title & Urgent Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
               <span
                 style={{
                   ...cardStyles.taskTitle,
@@ -247,49 +239,23 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 {task.title}
               </span>
 
-              {/* Urgent Badge */}
+              {/* Urgent indicator: Clean, zero-emoji badge */}
               {isUrgent && !isCompleted && (
-                <span
-                  style={{
-                    background: 'rgba(239, 68, 68, 0.18)',
-                    color: 'var(--accent-red-dim)',
-                    border: '1px solid rgba(239, 68, 68, 0.45)',
-                    padding: '2px 8px',
-                    borderRadius: 999,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
-                >
-                  🚨 عاجل وفوري
+                <span style={cardStyles.urgentChip} title="مهمة ذات أولوية قصوى عاجلة">
+                  <AlertCircle size={10} color="#ef4444" />
+                  <span>عاجل</span>
                 </span>
               )}
 
               {/* Blocking Dependencies Badge */}
               {hasBlocking && !isCompleted && (
-                <span
-                  style={{
-                    background: 'rgba(245, 158, 11, 0.1)',
-                    color: '#b45309',
-                    border: '1px solid rgba(245, 158, 11, 0.3)',
-                    padding: '2px 8px',
-                    borderRadius: 999,
-                    fontSize: 10,
-                    fontWeight: 600,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
-                  title="المهمة متوقفة على مهام أخرى"
-                >
-                  <AlertTriangle size={10} />
-                  محظورة بـ {incompleteBlockingDeps.length}
+                <span style={cardStyles.blockingChip} title="المهمة متوقفة على مهام أخرى">
+                  <AlertTriangle size={10} color="#f59e0b" />
+                  <span>محظورة ({incompleteBlockingDeps.length})</span>
                 </span>
               )}
 
-              {/* Live Stopwatch Badge on Card (if this task is running) */}
+              {/* Live Running Stopwatch on Card */}
               {isRunning && (
                 <span style={cardStyles.runningTimerChip}>
                   <span style={cardStyles.pulsingDot} />
@@ -301,27 +267,9 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               )}
             </div>
 
-            {/* Smart Action Buttons (One-Click Status Transitions) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-              {/* Edit Button for Authorized Users */}
-              {canEditTask && onEdit && !isCompleted && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(task);
-                  }}
-                  style={cardStyles.actionBtn}
-                  title="تعديل تفاصيل المهمة"
-                  onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-                  onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-                >
-                  <Edit3 size={11} color="#38bdf8" />
-                  <span>تعديل</span>
-                </button>
-              )}
-
-              {/* If Task is COMPLETED: Reopen button */}
+            {/* Smart Progressive Actions: Primary CTA + Utility Icons */}
+            <div style={cardStyles.actionsGroup}>
+              {/* PRIMARY ACTION BASED ON STATE & ROLE */}
               {isCompleted ? (
                 <button
                   type="button"
@@ -334,7 +282,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                       onToggleStatus(task.id, task.status);
                     }
                   }}
-                  style={cardStyles.reopenBtn}
+                  style={cardStyles.secondaryBtn}
                   title="إعادة فتح المهمة والعمل عليها"
                   onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                   onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
@@ -343,65 +291,49 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                   <span>إعادة فتح</span>
                 </button>
               ) : isInReview ? (
-                <>
-                  {/* Task is under review */}
-                  {canApprove ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          audioAlerts.playTaskComplete();
-                          onUpdateStatus?.(task.id, 'COMPLETED');
-                        }}
-                        style={cardStyles.quickDoneBtn}
-                        title="اعتماد تسليم المهمة وإغلاقها كـ مكتملة ومعتمدة 100%"
-                        onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-                        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-                      >
-                        <ClipboardCheck size={11} color="#22c55e" />
-                        <span>اعتماد وإنجاز</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          audioAlerts.playTaskReopen();
-                          onUpdateStatus?.(task.id, 'IN_PROGRESS');
-                        }}
-                        style={cardStyles.returnBtn}
-                        title="إعادة المهمة للمنفذ مع طلب تعديلات"
-                        onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-                        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-                      >
-                        <RotateCcw size={11} color="#f59e0b" />
-                        <span>طلب تعديلات</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: '#c084fc',
-                        background: 'rgba(168, 85, 247, 0.1)',
-                        padding: '3px 8px',
-                        borderRadius: 6,
-                        border: '1px solid rgba(168, 85, 247, 0.3)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5,
+                canApprove ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        audioAlerts.playTaskComplete();
+                        onUpdateStatus?.(task.id, 'COMPLETED');
                       }}
-                      title="تم تسليم العمل وبانتظار اعتماد المكلّف / الإدارة"
+                      style={cardStyles.primarySuccessBtn}
+                      title="اعتماد تسليم المهمة وإغلاقها كـ مكتملة ومعتمدة 100%"
+                      onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                      onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                     >
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#c084fc' }} />
-                      <span>بانتظار الاعتماد</span>
-                    </span>
-                  )}
-                </>
+                      <CheckCircle2 size={12} color="#ffffff" />
+                      <span>اعتماد</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        audioAlerts.playTaskReopen();
+                        onUpdateStatus?.(task.id, 'IN_PROGRESS');
+                      }}
+                      style={cardStyles.secondaryWarningBtn}
+                      title="إعادة المهمة للمنفذ مع طلب تعديلات"
+                      onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                      onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                    >
+                      <RotateCcw size={11} color="#f59e0b" />
+                      <span>طلب تعديلات</span>
+                    </button>
+                  </div>
+                ) : (
+                  <span style={cardStyles.pendingReviewBadge} title="تم تسليم العمل وبانتظار اعتماد المكلّف أو الإدارة">
+                    <Clock size={11} color="#c084fc" />
+                    <span>بانتظار الاعتماد</span>
+                  </span>
+                )
               ) : (
-                <>
-                  {/* Start / Pause Task Runner (Locked if not assigned to me) */}
+                /* Task is In-Progress or Pending */
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   {canRunTask ? (
                     isRunning ? (
                       <button
@@ -410,7 +342,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                           e.stopPropagation();
                           onStopTask?.();
                         }}
-                        style={cardStyles.activeRunnerBtn}
+                        style={cardStyles.pauseRunnerBtn}
                         title="المشغل يعمل الآن — انقر للإيقاف المؤقت"
                         onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                         onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
@@ -426,96 +358,48 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                           audioAlerts.playTaskStart();
                           onStartTask?.(task);
                         }}
-                        style={cardStyles.startRunnerBtn}
+                        style={cardStyles.primaryStartBtn}
                         title="بدء تشغيل المهمة واحتساب وقت الإنجاز"
                         onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                         onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                       >
-                        <Play size={10} fill="#38bdf8" color="#38bdf8" />
+                        <Play size={10} fill="#ffffff" color="#ffffff" />
                         <span>بدء العمل</span>
                       </button>
                     )
                   ) : isInProgress ? (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: '#38bdf8',
-                        background: 'rgba(56, 189, 248, 0.1)',
-                        padding: '3px 8px',
-                        borderRadius: 6,
-                        border: '1px solid rgba(56, 189, 248, 0.3)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5,
-                      }}
-                      title={`المهمة قيد التنفيذ حالياً بواسطة: ${assigneeName}`}
-                    >
+                    <span style={cardStyles.inProgressOtherBadge} title={`المهمة قيد التنفيذ حالياً بواسطة: ${assigneeName}`}>
                       <span style={cardStyles.pulsingDot} />
                       <span>جاري العمل: {assigneeName}</span>
                     </span>
                   ) : (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: 'var(--text-dim)',
-                        background: 'var(--bg-elevated)',
-                        padding: '3px 8px',
-                        borderRadius: 6,
-                        border: '1px solid var(--border-subtle)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                      }}
-                      title={`المهمة موكلة للزميل: ${assigneeName}`}
-                    >
-                      <Lock size={11} color="#71717a" />
+                    <span style={cardStyles.assignedOtherBadge} title={`المهمة موكلة للزميل: ${assigneeName}`}>
+                      <Lock size={10} color="#71717a" />
                       <span>موكلة لـ {assigneeName}</span>
                     </span>
                   )}
 
-                  {/* Submit for Review or Direct Complete */}
+                  {/* Submission Actions */}
                   {canApprove ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          audioAlerts.playTaskComplete();
-                          if (onUpdateStatus) {
-                            onUpdateStatus(task.id, 'IN_REVIEW');
-                          } else {
-                            onToggleStatus(task.id, 'IN_REVIEW');
-                          }
-                        }}
-                        style={cardStyles.submitReviewBtn}
-                        title="إرسال المهمة للمراجعة والاعتماد (نقلها لقيد الاعتماد)"
-                        onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-                        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-                      >
-                        <Send size={11} color="#c084fc" />
-                        <span>تسليم للمراجعة</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          audioAlerts.playTaskComplete();
-                          if (onUpdateStatus) {
-                            onUpdateStatus(task.id, 'COMPLETED');
-                          } else {
-                            onToggleStatus(task.id, task.status);
-                          }
-                        }}
-                        style={cardStyles.quickDoneBtn}
-                        title="اعتماد وإنجاز المهمة مباشرة (المكتمل)"
-                        onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-                        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-                      >
-                        <Check size={11} color="#22c55e" />
-                        <span>إنجاز مباشر</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        audioAlerts.playTaskComplete();
+                        if (onUpdateStatus) {
+                          onUpdateStatus(task.id, 'COMPLETED');
+                        } else {
+                          onToggleStatus(task.id, task.status);
+                        }
+                      }}
+                      style={cardStyles.directCompleteBtn}
+                      title="اعتماد وإنجاز المهمة مباشرة (المكتمل)"
+                      onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                      onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                    >
+                      <Check size={11} color="#22c55e" />
+                      <span>إنجاز مباشر</span>
+                    </button>
                   ) : canRunTask ? (
                     <button
                       type="button"
@@ -534,57 +418,75 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                       onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                     >
                       <Send size={11} color="#c084fc" />
-                      <span>تسليم للمراجعة</span>
+                      <span>تسليم</span>
                     </button>
                   ) : null}
-                </>
+                </div>
               )}
 
-              {/* Expand description toggle */}
-              {task.description && task.description !== task.title && (
+              {/* SECONDARY UTILITY ACTIONS CLUSTER (Clean Icon-Only Buttons) */}
+              <div style={cardStyles.utilityActionsCluster}>
+                {/* Edit Button */}
+                {canEditTask && onEdit && !isCompleted && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(task);
+                    }}
+                    style={cardStyles.iconActionBtn}
+                    title="تعديل تفاصيل المهمة"
+                  >
+                    <Edit3 size={13} color="#94a3b8" />
+                  </button>
+                )}
+
+                {/* Watch / Unwatch quick button */}
+                {currentUserId && (
+                  <button
+                    type="button"
+                    onClick={handleToggleWatch}
+                    style={{
+                      ...cardStyles.iconActionBtn,
+                      color: isWatching ? '#38bdf8' : '#71717a',
+                      backgroundColor: isWatching ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+                    }}
+                    title={
+                      isWatching
+                        ? 'أنت تتابع هذه المهمة (انقر لإلغاء المتابعة)'
+                        : 'متابعة المهمة لتلقي الإشعارات الفورية'
+                    }
+                  >
+                    {isWatching ? <Eye size={13} color="#38bdf8" /> : <EyeOff size={13} color="#71717a" />}
+                  </button>
+                )}
+
+                {/* Expand description toggle */}
+                {task.description && task.description !== task.title && (
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(!expanded)}
+                    style={cardStyles.iconActionBtn}
+                    title={expanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل والملاحظات'}
+                  >
+                    {expanded ? <ChevronUp size={13} color="#94a3b8" /> : <ChevronDown size={13} color="#94a3b8" />}
+                  </button>
+                )}
+
+                {/* Web link */}
                 <button
                   type="button"
-                  onClick={() => setExpanded(!expanded)}
-                  style={cardStyles.iconBtn}
-                  title="عرض التفاصيل والملاحظات"
+                  onClick={handleOpenInWeb}
+                  style={cardStyles.iconActionBtn}
+                  title="فتح في لوحة التحكم الكاملة على الويب"
                 >
-                  {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  <ExternalLink size={13} color="#94a3b8" />
                 </button>
-              )}
-
-              {/* Watch / Unwatch quick button */}
-              {currentUserId && (
-                <button
-                  type="button"
-                  onClick={handleToggleWatch}
-                  style={{
-                    ...cardStyles.iconBtn,
-                    color: isWatching ? '#38bdf8' : '#71717a',
-                    backgroundColor: isWatching ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
-                  }}
-                  title={
-                    isWatching
-                      ? 'أنت تتابع هذه المهمة (انقر لإلغاء المتابعة)'
-                      : 'متابعة المهمة لتلقي الإشعارات الفورية'
-                  }
-                >
-                  {isWatching ? <Eye size={13} color="#38bdf8" /> : <EyeOff size={13} />}
-                </button>
-              )}
-
-              {/* Web link */}
-              <button
-                type="button"
-                onClick={handleOpenInWeb}
-                style={cardStyles.iconBtn}
-                title="فتح في لوحة التحكم الكاملة على الويب"
-              >
-                <ExternalLink size={13} />
-              </button>
+              </div>
             </div>
           </div>
 
-          {/* Expanded Description and Dependencies */}
+          {/* Expanded Description & Dependencies */}
           {expanded && (
             <>
               {task.description && (
@@ -594,9 +496,9 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             </>
           )}
 
-          {/* Meta Chips Row */}
+          {/* Bottom Row: Disciplined Metadata Chips (Zero Emoji Littering) */}
           <div style={cardStyles.metaRow}>
-            {/* Status Chip */}
+            {/* Status Indicator */}
             <span
               style={{
                 ...cardStyles.statusPill,
@@ -610,76 +512,83 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                   ? '#f59e0b'
                   : 'var(--text-secondary)',
                 backgroundColor: isCompleted
-                  ? 'var(--accent-green-bg)'
+                  ? 'rgba(34, 197, 94, 0.08)'
                   : isInReview
-                  ? 'rgba(168, 85, 247, 0.12)'
+                  ? 'rgba(168, 85, 247, 0.08)'
                   : isInProgress
-                  ? 'rgba(56, 189, 248, 0.1)'
+                  ? 'rgba(56, 189, 248, 0.08)'
                   : isOnHold
-                  ? 'rgba(245, 158, 11, 0.1)'
-                  : 'var(--border-subtle)',
+                  ? 'rgba(245, 158, 11, 0.08)'
+                  : 'rgba(255, 255, 255, 0.04)',
                 borderColor: isCompleted
-                  ? 'var(--accent-green-border)'
+                  ? 'rgba(34, 197, 94, 0.25)'
                   : isInReview
-                  ? 'rgba(168, 85, 247, 0.35)'
+                  ? 'rgba(168, 85, 247, 0.25)'
                   : isInProgress
                   ? 'rgba(56, 189, 248, 0.25)'
                   : isOnHold
                   ? 'rgba(245, 158, 11, 0.25)'
-                  : 'var(--border-default)',
+                  : 'var(--border-subtle)',
               }}
             >
-              {isCompleted
-                ? '✓ مكتملة ومعتمدة'
-                : isInReview
-                ? '📋 قيد المراجعة والاعتماد'
-                : isInProgress
-                ? '⚡ قيد التنفيذ'
-                : isOnHold
-                ? '⏸ معلقة'
-                : '⏳ قيد الانتظار'}
+              {isCompleted ? (
+                <>
+                  <CheckCircle2 size={11} color="var(--accent-green)" />
+                  <span>مكتملة</span>
+                </>
+              ) : isInReview ? (
+                <>
+                  <ClipboardCheck size={11} color="#c084fc" />
+                  <span>قيد الاعتماد</span>
+                </>
+              ) : isInProgress ? (
+                <>
+                  <Play size={10} fill="#38bdf8" color="#38bdf8" />
+                  <span>قيد التنفيذ</span>
+                </>
+              ) : isOnHold ? (
+                <>
+                  <Pause size={10} color="#f59e0b" />
+                  <span>معلقة</span>
+                </>
+              ) : (
+                <>
+                  <Clock size={11} color="var(--text-secondary)" />
+                  <span>قيد الانتظار</span>
+                </>
+              )}
             </span>
 
-            {/* Priority */}
-            <span
-              style={{
-                ...cardStyles.pill,
-                color: priorityColor(task.priority),
-                backgroundColor: `${priorityColor(task.priority)}15`,
-                borderColor: `${priorityColor(task.priority)}30`,
-              }}
-            >
-              {priorityLabel(task.priority)}
-            </span>
-
-            {/* Estimated Time */}
-            {(task.estimatedMinutes || task.estimatedHours) && (
-              <span
-                style={{
-                  ...cardStyles.pill,
-                  color: '#38bdf8',
-                  backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                  borderColor: 'rgba(56, 189, 248, 0.25)',
-                }}
-                title="الوقت المقدر لإنجاز المهمة"
-              >
-                <Clock size={11} color="#38bdf8" />
-                <span>المتوقع: {task.estimatedMinutes || (task.estimatedHours * 60)} دقيقة</span>
+            {/* High Priority Badge (Only show if HIGH - URGENT is already in header) */}
+            {isHigh && !isCompleted && (
+              <span style={cardStyles.highPriorityPill}>
+                <AlertCircle size={10} color="#ef4444" />
+                <span>أولوية مرتفعة</span>
               </span>
             )}
 
-            {/* Creator Chip (Always visible in my-tasks so employee knows who created it) */}
-            {viewType === 'my-tasks' && creatorName && creatorName !== 'غير محدد' && (
-              <span style={cardStyles.creatorPill} title={`أنشأها: ${creatorName}`}>
-                <UserCheck size={11} color="#38bdf8" />
+            {/* Estimated Time with Tabular Nums */}
+            {(task.estimatedMinutes || task.estimatedHours) && (
+              <span style={cardStyles.neutralPill} title="الوقت المقدر لإنجاز المهمة">
+                <Clock size={11} color="#71717a" />
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {task.estimatedMinutes || task.estimatedHours * 60} دقيقة مقدرة
+                </span>
+              </span>
+            )}
+
+            {/* Creator Chip */}
+            {creatorName && creatorName !== 'غير محدد' && (
+              <span style={cardStyles.neutralPill} title={`أنشأها: ${creatorName}`}>
+                <UserCheck size={11} color="#71717a" />
                 <span>أنشأها: {creatorName}</span>
               </span>
             )}
 
-            {/* Assignee Chip */}
-            {viewType === 'assigned-by-me' && (
-              <span style={cardStyles.assigneePill} title={`المكلف بالتنفيذ: ${assigneeName}`}>
-                <User size={11} color="#94a3b8" />
+            {/* Assignee Chip (Visible in Team View) */}
+            {(viewType === 'assigned-by-me' || viewType === 'all') && (
+              <span style={cardStyles.neutralPill} title={`المكلف بالتنفيذ: ${assigneeName}`}>
+                <User size={11} color="#71717a" />
                 <span>المكلف: {assigneeName}</span>
               </span>
             )}
@@ -692,17 +601,31 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               </span>
             )}
 
-            {/* Due Date */}
+            {/* Unified Due Date / Overdue badge */}
             {task.dueDate && (
               <span
                 style={{
                   ...cardStyles.duePill,
-                  color: isOverdue ? '#f87171' : '#94a3b8',
-                  borderColor: isOverdue ? 'rgba(239, 68, 68, 0.3)' : 'var(--border-subtle)',
-                  backgroundColor: isOverdue ? 'var(--accent-red-bg)' : 'transparent',
+                  color: isOverdue ? '#f87171' : isDueSoon ? '#f59e0b' : 'var(--text-muted)',
+                  borderColor: isOverdue
+                    ? 'rgba(239, 68, 68, 0.3)'
+                    : isDueSoon
+                    ? 'rgba(245, 158, 11, 0.3)'
+                    : 'var(--border-subtle)',
+                  backgroundColor: isOverdue
+                    ? 'rgba(239, 68, 68, 0.08)'
+                    : isDueSoon
+                    ? 'rgba(245, 158, 11, 0.08)'
+                    : 'transparent',
                 }}
               >
-                <Clock size={11} />
+                {isOverdue ? (
+                  <AlertTriangle size={11} color="#ef4444" />
+                ) : isDueSoon ? (
+                  <Clock size={11} color="#f59e0b" />
+                ) : (
+                  <Calendar size={11} color="#71717a" />
+                )}
                 <span>
                   {new Date(task.dueDate).toLocaleDateString('ar-EG', {
                     month: 'short',
@@ -710,43 +633,24 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
+                  {isOverdue && ` (${getOverdueText()})`}
+                  {isDueSoon && ` (${getDueSoonText()})`}
                 </span>
-              </span>
-            )}
-
-            {/* Overdue Badge */}
-            {isOverdue && (
-              <span style={cardStyles.overduePill}>
-                <AlertTriangle size={11} color="#ef4444" />
-                <span>{getOverdueText()}</span>
-              </span>
-            )}
-
-            {/* Due Soon Badge */}
-            {isDueSoon && (
-              <span style={cardStyles.dueSoonPill}>
-                <Clock size={11} color="#f59e0b" />
-                <span>{getDueSoonText()}</span>
               </span>
             )}
 
             {/* Attachments Count Badge */}
             {attachments.length > 0 && (
-              <span style={cardStyles.attCountPill}>
-                <Paperclip size={11} />
-                <span>{attachments.length} مرفق</span>
+              <span style={cardStyles.neutralPill} title={`${attachments.length} مرفقات`}>
+                <Paperclip size={11} color="#71717a" />
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{attachments.length}</span>
               </span>
             )}
 
             {/* Watchers Count Badge */}
             {watchers.length > 0 && (
               <span
-                style={{
-                  ...cardStyles.pill,
-                  color: '#c084fc',
-                  backgroundColor: 'rgba(192, 132, 252, 0.1)',
-                  borderColor: 'rgba(192, 132, 252, 0.25)',
-                }}
+                style={cardStyles.neutralPill}
                 title={`المتابعون للمهمة: ${watchers
                   .map((w: any) =>
                     w.user
@@ -756,15 +660,15 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                   .filter(Boolean)
                   .join('، ')}`}
               >
-                <Eye size={11} color="#c084fc" />
-                <span>{watchers.length} متابع</span>
+                <Eye size={11} color="#71717a" />
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{watchers.length}</span>
               </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Attachments Gallery (Clean Visual Thumbnails for Screenshots/Photos) */}
+      {/* Attachments Gallery: Dark-Mode Ergonomic Thumbnails */}
       {attachments.length > 0 && (
         <div style={cardStyles.attachRow}>
           {attachments.map((att: any, idx: number) => {
@@ -791,12 +695,12 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                       }}
                     />
                     <div style={cardStyles.imgOverlay}>
-                      <ImageIcon size={12} color="#ffffff" />
+                      <ImageIcon size={10} color="#ffffff" />
                     </div>
                   </div>
                 ) : (
                   <div style={cardStyles.docThumb}>
-                    <Paperclip size={16} color="#38bdf8" />
+                    <Paperclip size={13} color="#94a3b8" />
                   </div>
                 )}
                 <div style={cardStyles.attInfo}>
@@ -821,11 +725,12 @@ const cardStyles: Record<string, React.CSSProperties> = {
     backgroundColor: 'var(--bg-surface)',
     border: '1px solid var(--border-default)',
     borderRadius: 8,
-    padding: '12px 14px',
+    padding: '11px 14px',
     display: 'flex',
     flexDirection: 'column',
     gap: 8,
-    transition: 'all 150ms ease-out',
+    transition: 'all 140ms ease-out',
+    boxShadow: 'none',
   },
   mainRow: {
     display: 'flex',
@@ -836,22 +741,49 @@ const cardStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: 10,
+    flexWrap: 'wrap',
   },
   taskTitle: {
     fontSize: 13,
     fontWeight: 600,
     lineHeight: 1.4,
+    color: 'var(--text-primary)',
+    letterSpacing: '-0.01em',
+  },
+  urgentChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    border: '1px solid rgba(239, 68, 68, 0.3)',
+    color: '#ef4444',
+    fontSize: 10,
+    fontWeight: 700,
+    padding: '1px 6px',
+    borderRadius: 4,
+  },
+  blockingChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+    border: '1px solid rgba(245, 158, 11, 0.25)',
+    color: '#f59e0b',
+    fontSize: 10,
+    fontWeight: 600,
+    padding: '1px 6px',
+    borderRadius: 4,
   },
   runningTimerChip: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'var(--accent-green-bg)',
-    border: '1px solid var(--accent-green-border)',
+    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+    border: '1px solid rgba(34, 197, 94, 0.25)',
     color: 'var(--accent-green)',
     fontSize: 11,
-    padding: '2px 7px',
+    padding: '1px 7px',
     borderRadius: 5,
   },
   pulsingDot: {
@@ -862,54 +794,35 @@ const cardStyles: Record<string, React.CSSProperties> = {
     boxShadow: '0 0 6px rgba(34, 197, 94, 0.9)',
     display: 'inline-block',
   },
-  iconBtn: {
-    background: 'none',
-    border: 'none',
-    color: 'var(--text-dim)',
-    cursor: 'pointer',
-    padding: 3,
-    borderRadius: 4,
+  actionsGroup: {
     display: 'flex',
     alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
   },
-  actionBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    background: 'var(--bg-elevated)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: 5,
-    padding: '3px 8px',
-    fontSize: 11,
-    fontWeight: 500,
-    color: 'var(--text-muted)',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    transition: 'all 140ms ease-out',
-  },
-  startRunnerBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    background: 'rgba(56, 189, 248, 0.1)',
-    border: '1px solid rgba(56, 189, 248, 0.3)',
-    borderRadius: 5,
-    padding: '3px 8px',
-    fontSize: 11,
-    fontWeight: 600,
-    color: '#38bdf8',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    transition: 'all 140ms ease-out',
-  },
-  activeRunnerBtn: {
+  primaryStartBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: 5,
-    background: 'var(--accent-green-bg)',
-    border: '1px solid var(--accent-green-border)',
-    borderRadius: 5,
-    padding: '3px 8px',
+    backgroundColor: '#0284c7',
+    border: '1px solid #0369a1',
+    borderRadius: 6,
+    padding: '4px 10px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#ffffff',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  pauseRunnerBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    border: '1px solid rgba(34, 197, 94, 0.3)',
+    borderRadius: 6,
+    padding: '4px 10px',
     fontSize: 11,
     fontWeight: 600,
     color: 'var(--accent-green)',
@@ -917,32 +830,59 @@ const cardStyles: Record<string, React.CSSProperties> = {
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
   },
-  quickDoneBtn: {
+  primarySuccessBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: 4,
-    background: 'var(--accent-green-bg)',
-    border: '1px solid var(--accent-green-border)',
-    borderRadius: 5,
-    padding: '3px 8px',
+    gap: 5,
+    backgroundColor: '#16a34a',
+    border: '1px solid #15803d',
+    borderRadius: 6,
+    padding: '4px 10px',
     fontSize: 11,
     fontWeight: 600,
-    color: 'var(--accent-green)',
+    color: '#ffffff',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
   },
-  reopenBtn: {
+  secondaryWarningBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: 4,
-    background: 'var(--bg-elevated)',
-    border: '1px solid var(--border-default)',
-    borderRadius: 5,
-    padding: '3px 8px',
+    gap: 5,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    border: '1px solid rgba(245, 158, 11, 0.3)',
+    borderRadius: 6,
+    padding: '4px 9px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#f59e0b',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  pendingReviewBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(168, 85, 247, 0.08)',
+    border: '1px solid rgba(168, 85, 247, 0.25)',
+    color: '#c084fc',
     fontSize: 11,
     fontWeight: 500,
-    color: 'var(--text-secondary)',
+    padding: '3px 8px',
+    borderRadius: 5,
+  },
+  directCompleteBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+    border: '1px solid rgba(34, 197, 94, 0.25)',
+    borderRadius: 6,
+    padding: '4px 9px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: 'var(--accent-green)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
@@ -951,10 +891,10 @@ const cardStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 4,
-    background: 'rgba(168, 85, 247, 0.12)',
-    border: '1px solid rgba(168, 85, 247, 0.35)',
-    borderRadius: 5,
-    padding: '3px 8px',
+    backgroundColor: 'rgba(168, 85, 247, 0.08)',
+    border: '1px solid rgba(168, 85, 247, 0.25)',
+    borderRadius: 6,
+    padding: '4px 9px',
     fontSize: 11,
     fontWeight: 600,
     color: '#c084fc',
@@ -962,20 +902,62 @@ const cardStyles: Record<string, React.CSSProperties> = {
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
   },
-  returnBtn: {
+  secondaryBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: 4,
-    background: 'rgba(245, 158, 11, 0.12)',
-    border: '1px solid rgba(245, 158, 11, 0.35)',
-    borderRadius: 5,
-    padding: '3px 8px',
+    backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 6,
+    padding: '4px 9px',
     fontSize: 11,
-    fontWeight: 600,
-    color: '#f59e0b',
+    fontWeight: 500,
+    color: 'var(--text-secondary)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
+  },
+  inProgressOtherBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(56, 189, 248, 0.08)',
+    border: '1px solid rgba(56, 189, 248, 0.2)',
+    color: '#38bdf8',
+    fontSize: 11,
+    padding: '3px 8px',
+    borderRadius: 5,
+  },
+  assignedOtherBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border-subtle)',
+    color: 'var(--text-muted)',
+    fontSize: 11,
+    padding: '3px 8px',
+    borderRadius: 5,
+  },
+  utilityActionsCluster: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 2,
+    borderRight: '1px solid var(--border-subtle)',
+    paddingRight: 6,
+    marginRight: 4,
+  },
+  iconActionBtn: {
+    background: 'none',
+    border: 'none',
+    color: 'var(--text-dim)',
+    cursor: 'pointer',
+    padding: '4px 5px',
+    borderRadius: 5,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 120ms ease-out',
   },
   descBox: {
     marginTop: 6,
@@ -995,73 +977,59 @@ const cardStyles: Record<string, React.CSSProperties> = {
     marginTop: 6,
   },
   statusPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
     fontSize: 10,
     fontWeight: 600,
-    padding: '2px 6px',
+    padding: '2px 7px',
     borderRadius: 4,
     border: '1px solid',
   },
-  pill: {
-    fontSize: 10,
-    fontWeight: 600,
-    padding: '2px 6px',
-    borderRadius: 4,
-    border: '1px solid transparent',
-  },
-  creatorPill: {
-    display: 'flex',
+  highPriorityPill: {
+    display: 'inline-flex',
     alignItems: 'center',
     gap: 4,
     fontSize: 10,
     fontWeight: 600,
-    color: '#0284c7',
-    backgroundColor: 'var(--accent-blue-bg)',
-    border: '1px solid var(--accent-blue-border)',
+    color: '#ef4444',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    border: '1px solid rgba(239, 68, 68, 0.25)',
     padding: '2px 7px',
     borderRadius: 4,
   },
-  assigneePill: {
-    display: 'flex',
+  neutralPill: {
+    display: 'inline-flex',
     alignItems: 'center',
     gap: 4,
     fontSize: 10,
+    fontWeight: 500,
     color: 'var(--text-secondary)',
-    backgroundColor: 'var(--bg-elevated)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     border: '1px solid var(--border-subtle)',
-    padding: '2px 6px',
+    padding: '2px 7px',
     borderRadius: 4,
   },
   recurringPill: {
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
     gap: 4,
     fontSize: 10,
     color: '#c084fc',
-    backgroundColor: 'rgba(168, 85, 247, 0.1)',
-    border: '1px solid rgba(168, 85, 247, 0.25)',
-    padding: '2px 6px',
+    backgroundColor: 'rgba(168, 85, 247, 0.08)',
+    border: '1px solid rgba(168, 85, 247, 0.2)',
+    padding: '2px 7px',
     borderRadius: 4,
   },
   duePill: {
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
     gap: 4,
     fontSize: 10,
-    padding: '2px 6px',
+    padding: '2px 7px',
     borderRadius: 4,
     border: '1px solid',
     fontVariantNumeric: 'tabular-nums',
-  },
-  attCountPill: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    fontSize: 10,
-    color: '#0284c7',
-    backgroundColor: 'var(--accent-blue-bg)',
-    border: '1px solid var(--accent-blue-border)',
-    padding: '2px 6px',
-    borderRadius: 4,
   },
   attachRow: {
     display: 'flex',
@@ -1075,23 +1043,24 @@ const cardStyles: Record<string, React.CSSProperties> = {
   attCard: {
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
-    padding: '4px 8px',
-    backgroundColor: 'var(--bg-elevated)',
-    border: '1px solid var(--border-default)',
+    gap: 7,
+    padding: '3px 8px',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid var(--border-subtle)',
     borderRadius: 6,
     cursor: 'pointer',
-    maxWidth: 220,
+    maxWidth: 180,
     flexShrink: 0,
     transition: 'all 120ms ease-out',
   },
   imgWrap: {
     position: 'relative',
-    width: 44,
-    height: 44,
+    width: 30,
+    height: 30,
     borderRadius: 4,
     overflow: 'hidden',
-    backgroundColor: 'var(--bg-elevated)',
+    backgroundColor: '#18181b',
+    border: '1px solid var(--border-subtle)',
     flexShrink: 0,
   },
   thumbImg: {
@@ -1101,20 +1070,21 @@ const cardStyles: Record<string, React.CSSProperties> = {
   },
   imgOverlay: {
     position: 'absolute',
-    bottom: 2,
-    right: 2,
-    backgroundColor: 'var(--bg-overlay)',
-    borderRadius: 3,
-    padding: 2,
+    bottom: 1,
+    right: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    borderRadius: 2,
+    padding: 1,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
   docThumb: {
-    width: 44,
-    height: 44,
+    width: 30,
+    height: 30,
     borderRadius: 4,
     backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border-subtle)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1124,7 +1094,7 @@ const cardStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
-    gap: 2,
+    gap: 1,
   },
   thumbName: {
     fontSize: 10,
@@ -1133,37 +1103,11 @@ const cardStyles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    maxWidth: 140,
+    maxWidth: 110,
   },
   thumbSize: {
     fontSize: 9,
     color: 'var(--text-dim)',
-    fontVariantNumeric: 'tabular-nums',
-  },
-  overduePill: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    fontSize: 10,
-    fontWeight: 600,
-    color: 'var(--accent-red)',
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
-    border: '1px solid rgba(239, 68, 68, 0.3)',
-    padding: '2px 7px',
-    borderRadius: 4,
-    fontVariantNumeric: 'tabular-nums',
-  },
-  dueSoonPill: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    fontSize: 10,
-    fontWeight: 600,
-    color: 'var(--accent-yellow)',
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-    border: '1px solid rgba(245, 158, 11, 0.3)',
-    padding: '2px 7px',
-    borderRadius: 4,
     fontVariantNumeric: 'tabular-nums',
   },
 };

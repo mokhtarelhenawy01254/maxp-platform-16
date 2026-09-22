@@ -531,30 +531,81 @@ export const TasksTab: React.FC = () => {
 
   return (
     <div style={styles.container}>
-      {/* Top Header Card */}
-      <div style={styles.headerCard}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={styles.iconBox}>
-            <CheckSquare size={16} color="#38bdf8" />
+      {/* Unified 2026 Control Bar: Views + Status Filters + Action Controls */}
+      <div style={styles.unifiedControlBar}>
+        {/* Left Side: View Switcher & Status Filters */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div style={styles.segmented}>
+            <button
+              onClick={() => setActiveView('my-tasks')}
+              style={{
+                ...styles.segBtn,
+                backgroundColor: activeView === 'my-tasks' ? 'var(--bg-elevated)' : 'transparent',
+                color: activeView === 'my-tasks' ? 'var(--text-primary)' : 'var(--text-muted)',
+                fontWeight: activeView === 'my-tasks' ? 600 : 400,
+                boxShadow: activeView === 'my-tasks' ? 'var(--shadow-card)' : 'none',
+              }}
+            >
+              <span>مهامي الموكلة إليّ</span>
+            </button>
+            <button
+              onClick={() => setActiveView('assigned-by-me')}
+              style={{
+                ...styles.segBtn,
+                backgroundColor: activeView === 'assigned-by-me' ? 'var(--bg-elevated)' : 'transparent',
+                color: activeView === 'assigned-by-me' ? 'var(--text-primary)' : 'var(--text-muted)',
+                fontWeight: activeView === 'assigned-by-me' ? 600 : 400,
+                boxShadow: activeView === 'assigned-by-me' ? 'var(--shadow-card)' : 'none',
+              }}
+            >
+              <Users size={12} />
+              <span>مهام أنشأتها للزملاء</span>
+            </button>
+            <button
+              onClick={() => setActiveView('all')}
+              style={{
+                ...styles.segBtn,
+                backgroundColor: activeView === 'all' ? 'var(--bg-elevated)' : 'transparent',
+                color: activeView === 'all' ? 'var(--text-primary)' : 'var(--text-muted)',
+                fontWeight: activeView === 'all' ? 600 : 400,
+                boxShadow: activeView === 'all' ? 'var(--shadow-card)' : 'none',
+              }}
+            >
+              <Layers size={12} />
+              <span>كل مهام الفريق</span>
+            </button>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={styles.headerTitle}>قائمة مهام العمل</span>
-            <span style={styles.cloudBadge}>مزامنة فورية</span>
+
+          <div style={{ width: 1, height: 16, backgroundColor: 'var(--border-subtle)' }} />
+
+          {/* Status Filters */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {(['IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                style={{
+                  ...styles.statusFilterBtn,
+                  backgroundColor: statusFilter === s ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                  borderColor: statusFilter === s ? 'var(--border-strong)' : 'transparent',
+                  color: statusFilter === s ? 'var(--text-primary)' : 'var(--text-dim)',
+                  fontWeight: statusFilter === s ? 600 : 500,
+                }}
+              >
+                {s === 'IN_PROGRESS' && `قيد التنفيذ (${inProgressCount})`}
+                {s === 'IN_REVIEW' && `قيد الاعتماد (${inReviewCount})`}
+                {s === 'COMPLETED' && `المكتملة (${completedCount})`}
+              </button>
+            ))}
           </div>
         </div>
 
+        {/* Right Side: Sync Status + Refresh + Quick Create */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            onClick={() => setIsCreateOpen(true)}
-            style={styles.addBtn}
-            title="إنشاء مهمة جديدة (Ctrl + N)"
-            onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-            onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-          >
-            <Plus size={14} />
-            <span>مهمة جديدة</span>
-            <span style={styles.kbdChip}>Ctrl+N</span>
-          </button>
+          <div style={styles.cloudBadge} title="مزامنة فورية مشفرة مع السيرفر السحابي">
+            <span style={styles.syncPulseDot} />
+            <span>مزامنة فورية</span>
+          </div>
 
           <button
             onClick={loadData}
@@ -562,7 +613,19 @@ export const TasksTab: React.FC = () => {
             style={styles.refreshBtn}
             title="تحديث ومزامنة المهام (Ctrl + R)"
           >
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+          </button>
+
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            style={styles.addBtn}
+            title="إنشاء مهمة جديدة (Ctrl + N)"
+            onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+            onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+          >
+            <Plus size={13} />
+            <span>مهمة جديدة</span>
+            <span style={styles.kbdChip}>Ctrl+N</span>
           </button>
         </div>
       </div>
@@ -701,69 +764,7 @@ export const TasksTab: React.FC = () => {
         </div>
       )}
 
-      {/* Main View Switcher (Assigned to Me vs Assigned by Me vs All Team Tasks) */}
-      <div style={styles.viewRow}>
-        <div style={styles.segmented}>
-          <button
-            onClick={() => setActiveView('my-tasks')}
-            style={{
-              ...styles.segBtn,
-              backgroundColor: activeView === 'my-tasks' ? 'var(--bg-elevated)' : 'transparent',
-              color: activeView === 'my-tasks' ? 'var(--text-primary)' : 'var(--text-muted)',
-              fontWeight: activeView === 'my-tasks' ? 600 : 400,
-              boxShadow: activeView === 'my-tasks' ? 'var(--shadow-card)' : 'none',
-            }}
-          >
-            <span>مهامي الموكلة إليّ</span>
-          </button>
-          <button
-            onClick={() => setActiveView('assigned-by-me')}
-            style={{
-              ...styles.segBtn,
-              backgroundColor: activeView === 'assigned-by-me' ? 'var(--bg-elevated)' : 'transparent',
-              color: activeView === 'assigned-by-me' ? 'var(--text-primary)' : 'var(--text-muted)',
-              fontWeight: activeView === 'assigned-by-me' ? 600 : 400,
-              boxShadow: activeView === 'assigned-by-me' ? 'var(--shadow-card)' : 'none',
-            }}
-          >
-            <Users size={12} />
-            <span>مهام أنشأتها للزملاء</span>
-          </button>
-          <button
-            onClick={() => setActiveView('all')}
-            style={{
-              ...styles.segBtn,
-              backgroundColor: activeView === 'all' ? 'var(--bg-elevated)' : 'transparent',
-              color: activeView === 'all' ? 'var(--text-primary)' : 'var(--text-muted)',
-              fontWeight: activeView === 'all' ? 600 : 400,
-              boxShadow: activeView === 'all' ? 'var(--shadow-card)' : 'none',
-            }}
-          >
-            <Layers size={12} />
-            <span>كل مهام الفريق</span>
-          </button>
-        </div>
 
-        {/* Status Filters (Focused Workflow: No Cluttered ALL option) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {(['IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              style={{
-                ...styles.statusFilterBtn,
-                backgroundColor: statusFilter === s ? 'var(--bg-elevated)' : 'transparent',
-                borderColor: statusFilter === s ? 'var(--border-strong)' : 'var(--border-subtle)',
-                color: statusFilter === s ? 'var(--text-primary)' : 'var(--text-dim)',
-              }}
-            >
-              {s === 'IN_PROGRESS' && `قيد التنفيذ (${inProgressCount})`}
-              {s === 'IN_REVIEW' && `قيد الاعتماد (${inReviewCount})`}
-              {s === 'COMPLETED' && `المكتملة (${completedCount})`}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Tasks List */}
       <div style={styles.list}>
@@ -1010,14 +1011,24 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: 12,
   },
-  headerCard: {
+  unifiedControlBar: {
     backgroundColor: 'var(--bg-surface)',
     border: '1px solid var(--border-default)',
     borderRadius: 8,
-    padding: '12px 14px',
+    padding: '7px 12px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  syncPulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: 'var(--accent-green)',
+    boxShadow: '0 0 6px var(--accent-green-dim)',
+    display: 'inline-block',
   },
   runnerDock: {
     backgroundColor: 'var(--bg-surface)',
@@ -1151,7 +1162,10 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'var(--accent-green-bg)',
     border: '1px solid var(--accent-green-border)',
     borderRadius: 4,
-    padding: '1px 6px',
+    padding: '2px 7px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
   },
   headerSub: {
     display: 'block',

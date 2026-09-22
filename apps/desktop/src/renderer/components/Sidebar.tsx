@@ -129,8 +129,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => onSelectTab(item.id)}
               style={{
                 ...styles.navItem,
-                background: isActive ? 'var(--bg-elevated)' : 'transparent',
-                borderColor: isActive ? 'var(--border-strong)' : 'transparent',
+                background: isActive ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
+                border: '1px solid',
+                borderColor: isActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                borderRight: isActive ? '2.5px solid var(--accent-green)' : '2.5px solid transparent',
                 color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
               }}
               onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)'; }}
