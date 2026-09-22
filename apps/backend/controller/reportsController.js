@@ -771,7 +771,16 @@ const getDetailedOrderReport = async (req, res) => {
         let codDeliveredRevenue = 0;
         let prepaidOrdersCount = 0;
         let prepaidOrdersRevenue = 0;
+        let prepaidDeliveredCount = 0;
+        let prepaidDeliveredRevenue = 0;
         let totalShippingFees = 0;
+
+        let delayedShipmentsCount = 0;
+        let delayedShipmentsRevenue = 0;
+        let pendingFulfillmentCount = 0;
+        let uncollectedCodAmount = 0;
+
+        const branchMap = {};
 
         const totalOrders = ordersList.length;
 
@@ -833,6 +842,9 @@ const getDetailedOrderReport = async (req, res) => {
                 if (isCOD) {
                     codDeliveredCount += 1;
                     codDeliveredRevenue += total;
+                } else {
+                    prepaidDeliveredCount += 1;
+                    prepaidDeliveredRevenue += total;
                 }
             } else if (isCancelled) {
                 cancelledOrders += 1;
@@ -844,6 +856,27 @@ const getDetailedOrderReport = async (req, res) => {
 
             if (isShipped) {
                 shippedOrders += 1;
+            }
+
+            // Operational Action Center Metrics
+            const isPendingFulfillment = !isShipped && !isDelivered && !isCancelled && !isReturned &&
+                ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'READY_TO_SHIP'].includes(effectiveStatus);
+            if (isPendingFulfillment) {
+                pendingFulfillmentCount += 1;
+            }
+
+            const isInTransit = isShipped && !isDelivered && !isCancelled && !isReturned;
+            if (isInTransit) {
+                if (isCOD) {
+                    uncollectedCodAmount += total;
+                }
+                if (order.createdAt) {
+                    const hoursSinceCreation = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60);
+                    if (hoursSinceCreation > 48) {
+                        delayedShipmentsCount += 1;
+                        delayedShipmentsRevenue += total;
+                    }
+                }
             }
 
             // Governorate Aggregation
@@ -869,33 +902,68 @@ const getDetailedOrderReport = async (req, res) => {
             if (isCancelled) govMap[govName].cancelledCount += 1;
             if (isReturned) govMap[govName].returnedCount += 1;
 
-            // Shipping Courier / Branch Aggregation
-            const branchName = (order.turboBranchName || order.shipments?.[0]?.shippingCompany?.name || (order.turboShipmentId ? 'شركة Turbo' : 'شحن داخلي / مناديب')).trim();
-            if (!shippingMap[branchName]) {
-                shippingMap[branchName] = {
+            // Accurate Shipping Courier vs Branch Aggregation
+            const isTurbo = Boolean(order.turboShipmentId || order.turboTrackingNumber || order.turboBranchName);
+            const carrierName = order.shipments?.[0]?.shippingCompany?.name || (isTurbo ? 'شركة Turbo' : 'شحن داخلي / مناديب');
+            const branchName = (order.turboBranchName || 'الفرع الرئيسي').trim();
+
+            // ONLY dispatched shipments are evaluated for courier delivery performance
+            if (isShipped) {
+                if (!shippingMap[carrierName]) {
+                    shippingMap[carrierName] = {
+                        name: carrierName,
+                        totalOrders: 0,
+                        deliveredOrders: 0,
+                        cancelledOrders: 0,
+                        returnedOrders: 0,
+                        inTransitOrders: 0,
+                        totalRevenue: 0,
+                        codCollected: 0,
+                        uncollectedCash: 0,
+                        lostShipping: 0
+                    };
+                }
+                shippingMap[carrierName].totalOrders += 1;
+                shippingMap[carrierName].totalRevenue += total;
+                if (isDelivered) {
+                    shippingMap[carrierName].deliveredOrders += 1;
+                    shippingMap[carrierName].codCollected += total;
+                } else if (isReturned) {
+                    shippingMap[carrierName].returnedOrders += 1;
+                    shippingMap[carrierName].lostShipping += (shipping > 0 ? shipping : 45);
+                } else if (isCancelled) {
+                    shippingMap[carrierName].cancelledOrders += 1;
+                } else {
+                    shippingMap[carrierName].inTransitOrders += 1;
+                    if (isCOD) {
+                        shippingMap[carrierName].uncollectedCash += total;
+                    }
+                }
+            }
+
+            // Warehouse / Branch Fulfillment Tracking
+            if (!branchMap[branchName]) {
+                branchMap[branchName] = {
                     name: branchName,
                     totalOrders: 0,
+                    dispatchedOrders: 0,
+                    pendingDispatch: 0,
                     deliveredOrders: 0,
-                    cancelledOrders: 0,
                     returnedOrders: 0,
-                    inTransitOrders: 0,
-                    totalRevenue: 0,
-                    codCollected: 0,
-                    lostShipping: 0
+                    cancelledOrders: 0,
+                    revenue: 0
                 };
             }
-            shippingMap[branchName].totalOrders += 1;
-            shippingMap[branchName].totalRevenue += total;
-            if (isDelivered) {
-                shippingMap[branchName].deliveredOrders += 1;
-                shippingMap[branchName].codCollected += total;
-            } else if (isReturned) {
-                shippingMap[branchName].returnedOrders += 1;
-                shippingMap[branchName].lostShipping += (shipping > 0 ? shipping : 45);
-            } else if (isCancelled) {
-                shippingMap[branchName].cancelledOrders += 1;
+            branchMap[branchName].totalOrders += 1;
+            branchMap[branchName].revenue += total;
+            if (isShipped) {
+                branchMap[branchName].dispatchedOrders += 1;
+                if (isDelivered) branchMap[branchName].deliveredOrders += 1;
+                if (isReturned) branchMap[branchName].returnedOrders += 1;
+                if (isCancelled) branchMap[branchName].cancelledOrders += 1;
             } else {
-                shippingMap[branchName].inTransitOrders += 1;
+                if (isCancelled) branchMap[branchName].cancelledOrders += 1;
+                else branchMap[branchName].pendingDispatch += 1;
             }
 
             // Daily Trend Aggregation
@@ -975,8 +1043,8 @@ const getDetailedOrderReport = async (req, res) => {
         const deliveryRate = totalOrders > 0 ? Number(((deliveredOrders / totalOrders) * 100).toFixed(1)) : 0;
         const cancellationRate = totalOrders > 0 ? Number(((cancelledOrders / totalOrders) * 100).toFixed(1)) : 0;
         const returnRate = totalOrders > 0 ? Number(((returnedOrders / totalOrders) * 100).toFixed(1)) : 0;
-        const codCollectionRate = codOrdersCount > 0 ? Number(((codDeliveredCount / codOrdersCount) * 100).toFixed(1)) : 0;
-        const netRealizedRevenue = deliveredRevenue;
+        const prepaidDeliveryRate = prepaidOrdersCount > 0 ? Number(((prepaidDeliveredCount / prepaidOrdersCount) * 100).toFixed(1)) : 0;
+        const codDeliveryRate = codOrdersCount > 0 ? Number(((codDeliveredCount / codOrdersCount) * 100).toFixed(1)) : 0;
 
         const governorateDetails = Object.values(govMap)
             .map(g => ({
@@ -992,6 +1060,14 @@ const getDetailedOrderReport = async (req, res) => {
                 ...s,
                 deliveryRate: s.totalOrders > 0 ? Number(((s.deliveredOrders / s.totalOrders) * 100).toFixed(1)) : 0,
                 returnRate: s.totalOrders > 0 ? Number(((s.returnedOrders / s.totalOrders) * 100).toFixed(1)) : 0
+            }))
+            .sort((a, b) => b.totalOrders - a.totalOrders);
+
+        const branchPerformance = Object.values(branchMap)
+            .map(b => ({
+                ...b,
+                deliveryRate: b.dispatchedOrders > 0 ? Number(((b.deliveredOrders / b.dispatchedOrders) * 100).toFixed(1)) : 0,
+                returnRate: b.dispatchedOrders > 0 ? Number(((b.returnedOrders / b.dispatchedOrders) * 100).toFixed(1)) : 0
             }))
             .sort((a, b) => b.totalOrders - a.totalOrders);
 
@@ -1029,11 +1105,24 @@ const getDetailedOrderReport = async (req, res) => {
                     codOrdersRevenue,
                     codDeliveredCount,
                     codDeliveredRevenue,
-                    codCollectionRate,
+                    codCollectionRate: codDeliveryRate,
                     prepaidOrdersCount,
                     prepaidOrdersRevenue,
+                    prepaidDeliveredCount,
+                    prepaidDeliveredRevenue,
+                    prepaidDeliveryRate,
                     totalShippingFees
                 },
+                actionCenter: {
+                    delayedShipmentsCount,
+                    delayedShipmentsRevenue,
+                    pendingFulfillmentCount,
+                    uncollectedCodAmount,
+                    prepaidDeliveryRate,
+                    codDeliveryRate,
+                    prepaidAdvantage: Number((prepaidDeliveryRate - codDeliveryRate).toFixed(1))
+                },
+                branchPerformance,
                 governorateDetails,
                 shippingPerformance,
                 dailyTrend
