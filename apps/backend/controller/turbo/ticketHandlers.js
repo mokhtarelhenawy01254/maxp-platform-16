@@ -134,7 +134,15 @@ const getInquiriesTypes = async (req, res) => {
 const getTickets = async (req, res) => {
   try {
     const currentCompanyId = resolveCompanyId(req);
-    const { page = 1, per_page = 15, status, search, account } = req.query;
+    const { page = 1, per_page = 15, status, search, account, category, category_id, categoryId } = req.query;
+
+    let targetCategoryId = category_id || categoryId || null;
+    if (!targetCategoryId && category && category !== 'all' && category !== 'unread') {
+      const catKey = String(category).toLowerCase().trim();
+      if (catKey === 'shipments' || catKey === 'delivery') targetCategoryId = 2;
+      else if (catKey === 'finance' || catKey === 'financial') targetCategoryId = 49;
+      else if (catKey === 'support' || catKey === 'inquiries' || catKey === 'inquiry') targetCategoryId = 1;
+    }
 
     const accessibleCompanies = await resolveAccessibleTurboCompanies(req);
 
@@ -171,7 +179,7 @@ const getTickets = async (req, res) => {
     const fetchPromises = targetCompanies.map(async (comp) => {
       try {
         const turboService = new TurboService(null, comp.id);
-        const result = await turboService.getTickets(p, pp, { status, search });
+        const result = await turboService.getTickets(p, pp, { status, search, category_id: targetCategoryId });
         if (result && Array.isArray(result.tickets)) {
           const tagged = result.tickets.map(t => ({
             ...t,

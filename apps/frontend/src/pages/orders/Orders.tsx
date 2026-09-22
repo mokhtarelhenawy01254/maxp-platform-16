@@ -169,6 +169,8 @@ type RawOrder = {
   status?: unknown;
   items?: RawOrderItem[];
   subtotal?: string | number | null;
+  discount?: string | number | null;
+  discountReason?: string | null;
   tax?: string | number | null;
   shipping?: string | number | null;
   total?: string | number | null;
@@ -508,7 +510,17 @@ const transformOrder = (order: RawOrder): Order => {
     typeof order.tax === "string"
       ? parseFloat(order.tax) || 0
       : (order.tax ?? 0);
-  const calculatedTotal = subtotal + shipping + tax;
+  const discount =
+    typeof order.discount === "string"
+      ? parseFloat(order.discount) || 0
+      : (order.discount ?? 0);
+  const discountReason =
+    order.discountReason ||
+    (order.metadata as any)?.discountReason ||
+    null;
+  const calculatedTotal = (subtotal > 0 || shipping > 0)
+    ? Math.max(0, subtotal + shipping + tax - discount)
+    : 0;
 
   return {
     id: order.id || order.orderNumber || "",
@@ -538,13 +550,15 @@ const transformOrder = (order: RawOrder): Order => {
       }))
       : [],
     subtotal,
+    discount,
+    discountReason,
     tax,
     shipping,
     total:
-      calculatedTotal ||
       (typeof order.total === "string"
         ? parseFloat(order.total) || 0
-        : (order.total ?? 0)),
+        : (order.total ?? 0)) ||
+      calculatedTotal,
     paymentMethod: order.paymentMethod || "",
     paymentStatus: normalizePaymentStatus(order.paymentStatus, isGuestOrder, order),
     shippingAddress: isRecord(order.shippingAddress)

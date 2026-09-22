@@ -2475,6 +2475,7 @@ router.post('/', async (req, res) => {
       let discountReasonMetadata = null;
       let couponMetadata = null;
       let couponCodeMetadata = null;
+      let sessionDetailsMetadata = null;
 
       if (order.metadata) {
         try {
@@ -2490,6 +2491,9 @@ router.post('/', async (req, res) => {
           }
           if (metadata.attribution) {
             attributionMetadata = sanitizeOrderAttribution(metadata.attribution);
+          }
+          if (metadata.sessionDetails) {
+            sessionDetailsMetadata = metadata.sessionDetails;
           }
           if (metadata.freeShipping) {
             freeShippingMetadata = metadata.freeShipping;
@@ -2541,6 +2545,9 @@ router.post('/', async (req, res) => {
       }
       if (attributionMetadata) {
         regularOrderMetadata.attribution = attributionMetadata;
+      }
+      if (sessionDetailsMetadata) {
+        regularOrderMetadata.sessionDetails = sessionDetailsMetadata;
       }
       if (freeShippingMetadata) {
         regularOrderMetadata.freeShipping = freeShippingMetadata;

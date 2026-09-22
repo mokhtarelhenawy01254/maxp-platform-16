@@ -89,6 +89,7 @@ export interface InvoiceData {
   tax?: number | string;
   shipping?: number | string;
   discount?: number | string;
+  discountReason?: string | null;
   totalAmount?: number | string;
   order?: {
     orderNumber?: string;
@@ -153,9 +154,16 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
   const currency = invoice.currency || "EGP";
   
   // Total calculation
+  const discountVal = parseNumber(invoice.discount);
+  const discountReasonVal =
+    invoice.discountReason ||
+    (invoice as any).metadata?.discountReason ||
+    (invoice.order as any)?.discountReason ||
+    (invoice.order as any)?.metadata?.discountReason ||
+    null;
   const totalAmount = invoice.totalAmount != null 
     ? parseNumber(invoice.totalAmount) 
-    : parseNumber(invoice.subtotal) + parseNumber(invoice.shipping) + parseNumber(invoice.tax) - parseNumber(invoice.discount);
+    : parseNumber(invoice.subtotal) + parseNumber(invoice.shipping) + parseNumber(invoice.tax) - discountVal;
   
   const addressText = invoice.customerAddress ? formatAddress(invoice.customerAddress) : "";
   const items = page?.chunkItems ?? (invoice.order?.orderItems || []);
@@ -372,7 +380,14 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
         </div>
 
         {/* Row 7: Shipping Barcode & Total (Footer) */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.2fr", minHeight: compact ? "50px" : "65px", alignItems: "stretch" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: discountVal > 0 ? "1.1fr 0.9fr 1fr 1.2fr" : "1.2fr 1fr 1.2fr",
+            minHeight: compact ? "50px" : "65px",
+            alignItems: "stretch",
+          }}
+        >
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
              {showShipBarcode && trackingNumberVal ? (
                 <InvoiceBarcode value={String(trackingNumberVal)} label={i18n.t("invoiceContent.shippingCode")} height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
@@ -384,6 +399,17 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
               <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>{i18n.t("invoiceContent.shippingCost")}</div>
              <div style={{ ...valueStyle, textAlign: "center", fontWeight: 700 }}>{fm(parseNumber(invoice.shipping))}</div>
            </div>
+           {discountVal > 0 && (
+             <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 6px" : "8px 10px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+               <div style={{ ...titleStyle, textAlign: "center", marginBottom: "2px", color: "#dc2626" }}>الخصم</div>
+               <div style={{ ...valueStyle, textAlign: "center", fontWeight: 700, color: "#dc2626" }}>-{fm(discountVal)}</div>
+               {discountReasonVal && (
+                 <div style={{ fontSize: compact ? "9px" : "10px", color: "#475569", fontWeight: 600, textAlign: "center", marginTop: "2px" }}>
+                   {discountReasonVal}
+                 </div>
+               )}
+             </div>
+           )}
            <div style={{ padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
               <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>{i18n.t("invoiceContent.amountToCollect")}</div>
              <div style={{ ...valueStyle, textAlign: "center", fontWeight: 900, fontSize: compact ? "16px" : "20px" }}>{fm(totalAmount)}</div>

@@ -45,6 +45,92 @@ const formatRelativeDays = (dateStr?: string | null): string => {
   }
 };
 
+const EGYPTIAN_GOVERNORATES_EN_TO_AR: Record<string, string> = {
+  cairo: "القاهرة",
+  "al qahirah": "القاهرة",
+  giza: "الجيزة",
+  "al jizah": "الجيزة",
+  alexandria: "الإسكندرية",
+  "al iskandariyah": "الإسكندرية",
+  dakahlia: "الدقهلية",
+  "ad daqahliyah": "الدقهلية",
+  mansoura: "الدقهلية",
+  gharbia: "الغربية",
+  "al gharbiyah": "الغربية",
+  tanta: "الغربية",
+  sharqia: "الشرقية",
+  "ash sharqiyah": "الشرقية",
+  zagazig: "الشرقية",
+  qalyubia: "القليوبية",
+  "al qalyubiyah": "القليوبية",
+  banha: "القليوبية",
+  beheira: "البحيرة",
+  "al buhayrah": "البحيرة",
+  damanhur: "البحيرة",
+  monufia: "المنوفية",
+  "al minufiyah": "المنوفية",
+  damietta: "دمياط",
+  dumyat: "دمياط",
+  "port said": "بورسعيد",
+  "bur said": "بورسعيد",
+  ismailia: "الإسماعيلية",
+  "al ismailiyah": "الإسماعيلية",
+  suez: "السويس",
+  "as suways": "السويس",
+  fayoum: "الفيوم",
+  "al fayyum": "الفيوم",
+  "beni suef": "بني سويف",
+  "bani suwayf": "بني سويف",
+  minya: "المنيا",
+  "al minya": "المنيا",
+  asyut: "أسيوط",
+  sohag: "سوهاج",
+  suhaj: "سوهاج",
+  qena: "قنا",
+  qina: "قنا",
+  luxor: "الأقصر",
+  "al uqsur": "الأقصر",
+  aswan: "أسوان",
+  "red sea": "البحر الأحمر",
+  "al bahr al ahmar": "البحر الأحمر",
+  hurghada: "البحر الأحمر",
+  "south sinai": "جنوب سيناء",
+  "janub sina": "جنوب سيناء",
+  "sharm el-sheikh": "جنوب سيناء",
+  "north sinai": "شمال سيناء",
+  "shamal sina": "شمال سيناء",
+  matrouh: "مطروح",
+  matruh: "مطروح",
+  "new valley": "الوادي الجديد",
+  "al wadi al jadid": "الوادي الجديد",
+  "kafr el sheikh": "كفر الشيخ",
+  "kafr ash shaykh": "كفر الشيخ",
+  cai: "القاهرة",
+  giz: "الجيزة",
+  alx: "الإسكندرية",
+  dk: "الدقهلية",
+};
+
+const COMMON_CITIES_EN_TO_AR: Record<string, string> = {
+  "al mansurah": "المنصورة",
+  mansoura: "المنصورة",
+  tanta: "طنطا",
+  zagazig: "الزقازيق",
+  damanhur: "دمنهور",
+  banha: "بنها",
+  "sharm el-sheikh": "شرم الشيخ",
+  hurghada: "الغردقة",
+  cairo: "القاهرة",
+  giza: "الجيزة",
+  alexandria: "الإسكندرية",
+};
+
+const formatLocationPart = (val?: string | null): string => {
+  if (!val || typeof val !== "string") return "";
+  const clean = val.toLowerCase().trim();
+  return EGYPTIAN_GOVERNORATES_EN_TO_AR[clean] || COMMON_CITIES_EN_TO_AR[clean] || val;
+};
+
 export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = ({
   sessionDetails,
   firstOrderInfo,
@@ -76,7 +162,9 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
     setTimeout(() => setCopiedIp(false), 2000);
   };
 
-  const locationDisplay = [governorate, city]
+  const normalizedGov = formatLocationPart(governorate);
+  const normalizedCity = formatLocationPart(city);
+  const locationDisplay = [normalizedGov, normalizedCity]
     .filter(Boolean)
     .filter((item, idx, arr) => arr.indexOf(item) === idx)
     .join(" - ");

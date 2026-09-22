@@ -153,6 +153,7 @@ export const TurboTicketsCockpit: React.FC = () => {
       currentFilter = statusFilter,
       currentSearch = searchQuery,
       currentAccount = selectedAccount,
+      currentCategory = categoryFilter,
       isSilent = false
     ) => {
       try {
@@ -166,6 +167,9 @@ export const TurboTicketsCockpit: React.FC = () => {
         }
         if (currentAccount && currentAccount !== "all") {
           url += `&account=${encodeURIComponent(currentAccount)}`;
+        }
+        if (currentCategory && currentCategory !== "all" && currentCategory !== "unread") {
+          url += `&category=${encodeURIComponent(currentCategory)}`;
         }
 
         const res = await apiClient.get<any>(url);
@@ -281,7 +285,7 @@ export const TurboTicketsCockpit: React.FC = () => {
         if (!isSilent) setLoadingList(false);
       }
     },
-    [statusFilter, searchQuery, selectedAccount]
+    [statusFilter, searchQuery, selectedAccount, categoryFilter]
   );
 
   // 5. Fetch Active Ticket Details with Fast SWR Cache (stable ref, zero infinite loop)
@@ -334,7 +338,7 @@ export const TurboTicketsCockpit: React.FC = () => {
       if (isMounted && enabled) {
         loadAccounts();
         loadUnreadCount();
-        loadTickets(1, statusFilter, urlSearch, "all");
+        loadTickets(1, statusFilter, urlSearch, "all", "all");
       }
     })();
     return () => {
@@ -358,7 +362,7 @@ export const TurboTicketsCockpit: React.FC = () => {
     const poll = () => {
       if (document.hidden) return;
       loadUnreadCount();
-      loadTickets(page, statusFilter, searchQuery, selectedAccount, true);
+      loadTickets(page, statusFilter, searchQuery, selectedAccount, categoryFilter, true);
       const curId = selectedTicketIdRef.current;
       if (curId) {
         loadActiveTicketDetails(curId, true);
@@ -385,6 +389,7 @@ export const TurboTicketsCockpit: React.FC = () => {
     statusFilter,
     searchQuery,
     selectedAccount,
+    categoryFilter,
     loadUnreadCount,
     loadTickets,
     loadActiveTicketDetails,
@@ -429,27 +434,33 @@ export const TurboTicketsCockpit: React.FC = () => {
     }, 1200);
   };
 
+  const handleCategoryChange = (cat: TurboCategoryTab) => {
+    setCategoryFilter(cat);
+    setPage(1);
+    loadTickets(1, statusFilter, searchQuery, selectedAccount, cat);
+  };
+
   const handleAccountChange = (account: string) => {
     setSelectedAccount(account);
     setPage(1);
-    loadTickets(1, statusFilter, searchQuery, account);
+    loadTickets(1, statusFilter, searchQuery, account, categoryFilter);
   };
 
   const handleFilterChange = (filter: string) => {
     setStatusFilter(filter);
     setPage(1);
-    loadTickets(1, filter, searchQuery, selectedAccount);
+    loadTickets(1, filter, searchQuery, selectedAccount, categoryFilter);
   };
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
     setPage(1);
-    loadTickets(1, statusFilter, query, selectedAccount);
+    loadTickets(1, statusFilter, query, selectedAccount, categoryFilter);
   };
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-    loadTickets(newPage, statusFilter, searchQuery, selectedAccount);
+    loadTickets(newPage, statusFilter, searchQuery, selectedAccount, categoryFilter);
   };
 
   // On mobile, when viewing chat, mark body as chat-active so bottom nav is suppressed
@@ -524,7 +535,7 @@ export const TurboTicketsCockpit: React.FC = () => {
             unreadCount={unreadCount}
             loading={loadingList}
             onRefresh={() => {
-              loadTickets(page, statusFilter, searchQuery, selectedAccount);
+              loadTickets(page, statusFilter, searchQuery, selectedAccount, categoryFilter);
               loadUnreadCount();
             }}
             page={page}
@@ -534,7 +545,7 @@ export const TurboTicketsCockpit: React.FC = () => {
             statusFilter={statusFilter}
             onChangeStatusFilter={handleFilterChange}
             categoryFilter={categoryFilter}
-            onChangeCategoryFilter={setCategoryFilter}
+            onChangeCategoryFilter={handleCategoryChange}
             searchQuery={searchQuery}
             onChangeSearchQuery={handleSearchChange}
             accounts={accounts}
@@ -571,7 +582,7 @@ export const TurboTicketsCockpit: React.FC = () => {
         accounts={accounts}
         onClose={() => setIsNewModalOpen(false)}
         onSuccess={(newId) => {
-          loadTickets(1, statusFilter, searchQuery, selectedAccount);
+          loadTickets(1, statusFilter, searchQuery, selectedAccount, categoryFilter);
           loadUnreadCount();
           if (newId) setSelectedTicketId(Number(newId));
         }}

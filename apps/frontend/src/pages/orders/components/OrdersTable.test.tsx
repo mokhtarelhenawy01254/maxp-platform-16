@@ -111,4 +111,25 @@ describe("OrdersTable", () => {
 
     expect(document.querySelectorAll(".skeleton-shimmer").length).toBeGreaterThan(0);
   });
+
+  it("renders discount and discount reason badge when an order has a discount", () => {
+    const discountedOrder = makeOrder({
+      id: "o3",
+      orderNumber: "ORD-300",
+      customerName: "Mona Zaki",
+      subtotal: 200,
+      discount: 30,
+      discountReason: "كوبون: EID30",
+      total: 170,
+    });
+
+    render(
+      <MemoryRouter>
+        <OrdersTable {...baseProps} orders={[discountedOrder]} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("كوبون: EID30")).toBeInTheDocument();
+    expect(screen.getByText("-30 EGP")).toBeInTheDocument();
+  });
 });

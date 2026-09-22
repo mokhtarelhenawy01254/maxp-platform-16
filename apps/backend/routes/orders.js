@@ -6261,23 +6261,55 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       ? formattedOrder.metadata
       : safeParseOrderMetadata(formattedOrder.metadata);
 
-    const orderSessionDetails = resolvedOrderMeta?.sessionDetails || (resolvedOrderMeta?.attribution ? {
-      trafficSource: {
-        source: resolvedOrderMeta.attribution.source || 'direct',
-        medium: resolvedOrderMeta.attribution.medium,
-        campaignName: resolvedOrderMeta.attribution.campaignName,
-        campaignId: resolvedOrderMeta.attribution.campaignId,
-        adSetId: resolvedOrderMeta.attribution.adSetId,
-        adId: resolvedOrderMeta.attribution.adId,
-        referrer: resolvedOrderMeta.attribution.referrer,
-        landingPath: resolvedOrderMeta.attribution.landingPath,
-      },
-      ip: null,
-      pagesVisited: resolvedOrderMeta.attribution.landingPath ? [{ path: resolvedOrderMeta.attribution.landingPath, title: 'صفحة الهبوط', timestamp: formattedOrder.createdAt }] : [],
-      durationSeconds: 0,
-      sessionCount: 1,
-      firstSeenAt: formattedOrder.createdAt,
-    } : null);
+    let orderSessionDetails = resolvedOrderMeta?.sessionDetails || null;
+
+    // Fallback: If regular order doesn't have sessionDetails or is missing IP, look up linked guestOrder
+    if ((!orderSessionDetails || !orderSessionDetails.ip) && (resolvedOrderMeta?.guestOrderId || formattedOrder.orderNumber)) {
+      try {
+        const linkedGuestOrder = await getSharedPrismaClient().guestOrder.findFirst({
+          where: {
+            OR: [
+              ...(resolvedOrderMeta?.guestOrderId ? [{ id: resolvedOrderMeta.guestOrderId }] : []),
+              ...(formattedOrder.orderNumber ? [{ orderNumber: formattedOrder.orderNumber, companyId }] : [])
+            ]
+          },
+          select: { id: true, metadata: true }
+        });
+        if (linkedGuestOrder?.metadata) {
+          const guestMeta = safeParseOrderMetadata(linkedGuestOrder.metadata);
+          if (guestMeta?.sessionDetails) {
+            orderSessionDetails = guestMeta.sessionDetails;
+            const updatedMeta = { ...resolvedOrderMeta, sessionDetails: guestMeta.sessionDetails };
+            getSharedPrismaClient().order.update({
+              where: { id: formattedOrder.id },
+              data: { metadata: JSON.stringify(updatedMeta) }
+            }).catch(() => {});
+          }
+        }
+      } catch (err) {
+        console.error('⚠️ [ORDER-DETAIL] Error resolving guest sessionDetails fallback:', err.message);
+      }
+    }
+
+    if (!orderSessionDetails && resolvedOrderMeta?.attribution) {
+      orderSessionDetails = {
+        trafficSource: {
+          source: resolvedOrderMeta.attribution.source || 'direct',
+          medium: resolvedOrderMeta.attribution.medium,
+          campaignName: resolvedOrderMeta.attribution.campaignName,
+          campaignId: resolvedOrderMeta.attribution.campaignId,
+          adSetId: resolvedOrderMeta.attribution.adSetId,
+          adId: resolvedOrderMeta.attribution.adId,
+          referrer: resolvedOrderMeta.attribution.referrer,
+          landingPath: resolvedOrderMeta.attribution.landingPath,
+        },
+        ip: null,
+        pagesVisited: resolvedOrderMeta.attribution.landingPath ? [{ path: resolvedOrderMeta.attribution.landingPath, title: 'صفحة الهبوط', timestamp: formattedOrder.createdAt }] : [],
+        durationSeconds: 0,
+        sessionCount: 1,
+        firstSeenAt: formattedOrder.createdAt,
+      };
+    }
 
     const firstOrderInfo = await getCustomerFirstOrderInfo(getSharedPrismaClient(), companyId, {
       phone: formattedOrder.customerPhone,

@@ -316,25 +316,57 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                       </td>
                     )}
                     {columns.includes("amount") && (
-                      <td className={`${cellPadding} whitespace-nowrap text-sm font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100`}>
+                      <td className={`${cellPadding} whitespace-nowrap`}>
                         {(() => {
                           try {
                             const subtotal =
                               typeof order.subtotal === "number"
                                 ? order.subtotal
-                                : 0;
+                                : parseFloat(order.subtotal as any) || 0;
                             const shipping =
                               typeof order.shipping === "number"
                                 ? order.shipping
-                                : 0;
+                                : parseFloat(order.shipping as any) || 0;
                             const tax =
-                              typeof order.tax === "number" ? order.tax : 0;
+                              typeof order.tax === "number"
+                                ? order.tax
+                                : parseFloat(order.tax as any) || 0;
+                            const discount =
+                              typeof order.discount === "number"
+                                ? order.discount
+                                : parseFloat(order.discount as any) || 0;
 
                             const amount =
-                              subtotal + shipping + tax || order.total || 0;
-                            return formatPrice(amount);
+                              order.total != null && order.total > 0
+                                ? order.total
+                                : Math.max(0, subtotal + shipping + tax - discount);
+
+                            const discountReason =
+                              order.discountReason ||
+                              (order.metadata as any)?.discountReason;
+
+                            return (
+                              <div className="flex flex-col items-start gap-0.5">
+                                <span className="text-sm font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
+                                  {formatPrice(amount)}
+                                </span>
+                                {discount > 0 && (
+                                  <div
+                                    className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-700 dark:text-rose-300 max-w-[170px] truncate"
+                                    title={discountReason ? `خصم: -${formatPrice(discount)} (${discountReason})` : `خصم: -${formatPrice(discount)}`}
+                                  >
+                                    <span className="font-mono tabular-nums text-rose-600 dark:text-rose-400">-{formatPrice(discount)}</span>
+                                    {discountReason && (
+                                      <span className="truncate text-slate-600 dark:text-slate-300 text-[10px] bg-rose-50 dark:bg-rose-950/40 px-1 py-0.5 rounded border border-rose-200/80 dark:border-rose-900/50 font-normal">
+                                        {discountReason}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
                           } catch (e) {
-                            return "0.00";
+                            return <span className="text-sm font-mono font-bold text-slate-900 dark:text-slate-100">0.00</span>;
                           }
                         })()}
                       </td>

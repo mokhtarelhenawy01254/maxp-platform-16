@@ -201,9 +201,19 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                         {compactTime}
                       </span>
 
-                      <span className="text-xs font-black font-mono tabular-nums text-slate-900 dark:text-white shrink-0">
-                        {formatPrice(getOrderAmount(order))}
-                      </span>
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs font-black font-mono tabular-nums text-slate-900 dark:text-white shrink-0">
+                          {formatPrice(getOrderAmount(order))}
+                        </span>
+                        {Boolean(order.discount && Number(order.discount) > 0) && (
+                          <span
+                            className="text-[9px] text-rose-600 dark:text-rose-400 font-medium truncate max-w-[70px] leading-tight"
+                            title={order.discountReason ? `خصم: ${order.discountReason}` : "خصم"}
+                          >
+                            {order.discountReason || "خصم"}
+                          </span>
+                        )}
+                      </div>
 
                       <span
                         className={`${unifiedStatus.className} text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 shadow-sm`}
@@ -256,9 +266,19 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-xs sm:text-sm font-black font-mono tabular-nums text-slate-900 dark:text-white shrink-0">
-                          {formatPrice(getOrderAmount(order))}
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-xs sm:text-sm font-black font-mono tabular-nums text-slate-900 dark:text-white shrink-0">
+                            {formatPrice(getOrderAmount(order))}
+                          </span>
+                          {Boolean(order.discount && Number(order.discount) > 0) && (
+                            <span
+                              className="text-[10px] text-rose-600 dark:text-rose-400 font-medium truncate max-w-[100px] leading-tight"
+                              title={order.discountReason ? `خصم: ${order.discountReason}` : "خصم"}
+                            >
+                              {order.discountReason || "خصم"}
+                            </span>
+                          )}
+                        </div>
 
                         <ChevronLeftIcon className="h-3.5 w-3.5 text-slate-300 group-hover:text-slate-500 group-active:-translate-x-0.5 dark:text-slate-600 dark:group-hover:text-slate-400 shrink-0 transition-transform duration-150" />
                       </div>

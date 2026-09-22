@@ -1,6 +1,11 @@
+const { describe, it } = require('node:test');
+const assert = require('node:assert');
 const { resolveDiscountReason, buildCompositeDiscountReason } = require('../orderDiscountUtils');
 
-describe('orderDiscountUtils', () => {
+const expect = (actual) => ({
+  toBe: (expected) => assert.strictEqual(actual, expected),
+  toBeNull: () => assert.strictEqual(actual, null),
+});
   describe('resolveDiscountReason', () => {
     it('returns null when order is null or has 0 discount', () => {
       expect(resolveDiscountReason(null)).toBeNull();

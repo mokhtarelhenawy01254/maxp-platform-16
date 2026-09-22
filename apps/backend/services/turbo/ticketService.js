@@ -106,6 +106,9 @@ class TicketService {
       if (options.search) {
         url += `&search=${encodeURIComponent(options.search)}`;
       }
+      if (options.category_id || options.categoryId) {
+        url += `&category_id=${encodeURIComponent(options.category_id || options.categoryId)}`;
+      }
       const response = await axios.get(url, { headers, timeout: this._client.timeout });
       const result = response.data;
       const isSuccess = result.success === 1 || result.success === true;

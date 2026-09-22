@@ -12,7 +12,7 @@ import { BellAlertIcon } from "@heroicons/react/24/solid";
 import { TurboTicketItem, TurboAccountItem } from "./types";
 import { parseSafeDate, formatSafeDate } from "./ticketDateUtils";
 
-export type TurboCategoryTab = "all" | "courier" | "complaint" | "support" | "unread";
+export type TurboCategoryTab = "all" | "shipments" | "finance" | "support" | "unread";
 
 interface TurboTicketListPanelProps {
   tickets: TurboTicketItem[];
@@ -133,9 +133,9 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
 
   const categoryTabs: { key: TurboCategoryTab; label: string; count?: number }[] = [
     { key: "all", label: "الكل" },
-    { key: "courier", label: "محادثات المناديب" },
-    { key: "complaint", label: "الشكاوى" },
-    { key: "support", label: "تذاكر الدعم" },
+    { key: "shipments", label: "شكاوى الشحنات" },
+    { key: "finance", label: "المعاملات المالية" },
+    { key: "support", label: "استفسارات عامة" },
     { key: "unread", label: "غير مقروءة", count: unreadCount },
   ];
 
@@ -162,49 +162,51 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
         );
         return u > 0;
       });
-    } else if (activeCategory === "courier") {
+    } else if (activeCategory === "shipments") {
       list = list.filter((t) => {
         const catId = Number(t.category_id || t.category?.id || 0);
         const catName = (t.category_name || t.category?.name || "").toLowerCase();
-        const rel = (t.category?.related_to || "").toLowerCase();
+        const rel = (t.category?.related_to || t.related_to || "").toLowerCase();
+        // IDs: 2 (شكوى), 9 (تسليم الطرد), 19 (تأخير التسليم), 22 (تبديل فى التسليم), 23 (تلف الطرد), 26 (مشكلة مع الكابتن), 63 (طرد مفقود), 64 (جزء مفقود), 65 (إفادة وهمية), 67 (مرتجع على الراسل غير مستحق), 68 (خارج التغطية), 14 (استلام Pickup), 40, 41, 42, 44
+        const shipmentCatIds = [2, 9, 19, 22, 23, 26, 63, 64, 65, 67, 68, 14, 40, 41, 42, 44];
         return (
-          [26, 44, 14, 16].includes(catId) ||
-          catName.includes("مندوب") ||
-          catName.includes("كابتن") ||
-          catName.includes("استلام") ||
-          catName.includes("pickup") ||
+          shipmentCatIds.includes(catId) ||
+          rel === "shipments" ||
           rel === "branches" ||
-          rel === "representatives"
+          Boolean(t.code) ||
+          catName.includes("تسليم") ||
+          catName.includes("كابتن") ||
+          catName.includes("طرد") ||
+          catName.includes("مرتجع") ||
+          catName.includes("تأخير") ||
+          catName.includes("شكوى")
         );
       });
-    } else if (activeCategory === "complaint") {
+    } else if (activeCategory === "finance") {
       list = list.filter((t) => {
         const catId = Number(t.category_id || t.category?.id || 0);
         const catName = (t.category_name || t.category?.name || "").toLowerCase();
-        const subj = (t.subject || t.description || "").toLowerCase();
+        // IDs: 49 (معاملات مالية), 59 (تأخير تحويل التوريد), 60 (خطأ في الحسابات المالية)
         return (
-          catId === 2 ||
-          [9, 19, 20, 21, 22, 23, 24, 25, 27, 28, 63].includes(catId) ||
-          catName.includes("شكوى") ||
-          catName.includes("تأخير") ||
-          catName.includes("مفقود") ||
-          catName.includes("تلف") ||
-          subj.includes("شكوى")
+          [49, 59, 60].includes(catId) ||
+          catName.includes("مالي") ||
+          catName.includes("توريد") ||
+          catName.includes("حسابات")
         );
       });
     } else if (activeCategory === "support") {
       list = list.filter((t) => {
         const catId = Number(t.category_id || t.category?.id || 0);
         const catName = (t.category_name || t.category?.name || "").toLowerCase();
+        // IDs: 1 (استفسار), 3 (شكر), 4 (مقترح), 5, 6, 7, 8, 10, 16, 28, 29, 61, 62, 69
         return (
-          catId === 1 ||
-          catId === 3 ||
-          catId === 4 ||
+          [1, 3, 4, 5, 6, 7, 8, 10, 16, 28, 29, 61, 62, 69].includes(catId) ||
           catName.includes("استفسار") ||
-          catName.includes("دعم") ||
           catName.includes("مقترح") ||
           catName.includes("شكر") ||
-          (![26, 44, 14, 16, 2].includes(catId) && !catName.includes("مندوب") && !catName.includes("شكوى"))
+          catName.includes("سيستم") ||
+          catName.includes("أخرى") ||
+          catName.includes("دعم")
         );
       });
     }
@@ -426,6 +428,12 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
             <p className="font-semibold text-zinc-700 dark:text-zinc-300">
               {activeCategory === "unread"
                 ? "لا توجد رسائل غير مقروءة حالياً"
+                : activeCategory === "shipments"
+                ? "لا توجد تذاكر في شكاوى الشحنات"
+                : activeCategory === "finance"
+                ? "لا توجد تذاكر في المعاملات المالية"
+                : activeCategory === "support"
+                ? "لا توجد استفسارات عامة حالياً"
                 : statusFilter === "open"
                 ? "لا توجد تذاكر مفتوحة حالياً"
                 : "لا توجد تذاكر مطابقة"}
