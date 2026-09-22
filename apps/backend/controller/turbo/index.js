@@ -17,6 +17,7 @@ const {
   getCanCreateTicket,
   getTotalOpenTickets,
   rateTicket,
+  getTurboAccounts,
 } = require('./ticketHandlers');
 
 module.exports = {
@@ -49,4 +50,5 @@ module.exports = {
   getCanCreateTicket,
   getTotalOpenTickets,
   rateTicket,
+  getTurboAccounts,
 };

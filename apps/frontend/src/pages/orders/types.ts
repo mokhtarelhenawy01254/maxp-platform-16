@@ -107,6 +107,7 @@ export interface OrderDetailsType {
   items: OrderItem[];
   subtotal: number;
   discount: number;
+  discountReason?: string | null;
   tax: number;
   shipping: number;
   total: number;

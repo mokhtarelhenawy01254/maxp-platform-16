@@ -7,13 +7,14 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
-import { TurboTicketCategory } from "./types";
+import { TurboTicketCategory, TurboAccountItem } from "./types";
 
 interface TurboNewTicketModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (createdTicketId?: any) => void;
   initialShipmentCode?: string;
+  accounts?: TurboAccountItem[];
 }
 
 export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
@@ -21,15 +22,24 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
   onClose,
   onSuccess,
   initialShipmentCode = "",
+  accounts,
 }) => {
   const [categories, setCategories] = useState<TurboTicketCategory[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | number>("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [shipmentCode, setShipmentCode] = useState(initialShipmentCode);
   const [content, setContent] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && accounts && accounts.length > 0) {
+      const cur = accounts.find((a) => a.isCurrent) || accounts[0];
+      if (cur) setSelectedCompanyId(cur.id);
+    }
+  }, [isOpen, accounts]);
 
   useEffect(() => {
     if (isOpen && initialShipmentCode) {
@@ -118,6 +128,10 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
         related_to: relatedTo,
       };
 
+      if (selectedCompanyId) {
+        payload["targetCompanyId"] = selectedCompanyId;
+      }
+
       if (trimmedCode) {
         payload["code"] = trimmedCode;
       }
@@ -191,6 +205,27 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-4 space-y-3.5 overflow-y-auto">
+          {/* Store Account Selector */}
+          {accounts && accounts.length > 1 && (
+            <div>
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                المتجر / حساب الشحن *
+              </label>
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                className="w-full text-xs rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2.5 text-zinc-900 dark:text-white focus:outline-hidden focus:border-zinc-500"
+              >
+                {accounts.map((acc) => (
+                  <option key={acc.id} value={acc.id}>
+                    {acc.name} {acc.clientCode ? `(كود ${acc.clientCode})` : ""}{" "}
+                    {acc.isCurrent ? "★ (الحالي)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Category */}
           <div>
             <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">

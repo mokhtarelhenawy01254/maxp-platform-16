@@ -6,7 +6,7 @@ import { TurboTicketListPanel, TurboCategoryTab } from "./TurboTicketListPanel";
 import { TurboTicketChatPanel } from "./TurboTicketChatPanel";
 import { TurboNewTicketModal } from "./TurboNewTicketModal";
 import { TurboTicketLogsModal } from "./TurboTicketLogsModal";
-import { TurboTicketItem } from "./types";
+import { TurboTicketItem, TurboAccountItem } from "./types";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { playTicketNotificationChime } from "./ticketSoundUtils";
 import {
@@ -42,6 +42,10 @@ export const TurboTicketsCockpit: React.FC = () => {
   // Settings & Status
   const [turboEnabled, setTurboEnabled] = useState<boolean | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Multi-account Turbo state
+  const [accounts, setAccounts] = useState<TurboAccountItem[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState<string>("all");
 
   // Notification Permission State
   const [notificationPerm, setNotificationPerm] = useState<
@@ -95,7 +99,20 @@ export const TurboTicketsCockpit: React.FC = () => {
     return false;
   }, []);
 
-  // 2. Fetch Unread Count
+  // 2. Fetch Connected Turbo Accounts
+  const loadAccounts = useCallback(async () => {
+    try {
+      const res = await apiClient.get<any>("/turbo/accounts");
+      if (res.data?.success) {
+        const accs = res.data?.accounts || res.data?.data?.accounts || [];
+        setAccounts(accs);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // 3. Fetch Unread Count
   const loadUnreadCount = useCallback(async () => {
     try {
       const res = await apiClient.get<any>("/turbo/tickets/unread-count");
@@ -129,12 +146,13 @@ export const TurboTicketsCockpit: React.FC = () => {
     }
   };
 
-  // 3. Fetch Tickets List
+  // 4. Fetch Tickets List
   const loadTickets = useCallback(
     async (
       currentPage = 1,
       currentFilter = statusFilter,
       currentSearch = searchQuery,
+      currentAccount = selectedAccount,
       isSilent = false
     ) => {
       try {
@@ -145,6 +163,9 @@ export const TurboTicketsCockpit: React.FC = () => {
         }
         if (currentSearch.trim()) {
           url += `&search=${encodeURIComponent(currentSearch.trim())}`;
+        }
+        if (currentAccount && currentAccount !== "all") {
+          url += `&account=${encodeURIComponent(currentAccount)}`;
         }
 
         const res = await apiClient.get<any>(url);
@@ -260,10 +281,10 @@ export const TurboTicketsCockpit: React.FC = () => {
         if (!isSilent) setLoadingList(false);
       }
     },
-    [statusFilter, searchQuery]
+    [statusFilter, searchQuery, selectedAccount]
   );
 
-  // 4. Fetch Active Ticket Details with Fast SWR Cache (stable ref, zero infinite loop)
+  // 5. Fetch Active Ticket Details with Fast SWR Cache (stable ref, zero infinite loop)
   const loadActiveTicketDetails = useCallback(
     async (ticketId: number, isSilent = false) => {
       try {
@@ -311,8 +332,9 @@ export const TurboTicketsCockpit: React.FC = () => {
     (async () => {
       const enabled = await checkTurboStatus();
       if (isMounted && enabled) {
+        loadAccounts();
         loadUnreadCount();
-        loadTickets(1, statusFilter, urlSearch);
+        loadTickets(1, statusFilter, urlSearch, "all");
       }
     })();
     return () => {
@@ -336,7 +358,7 @@ export const TurboTicketsCockpit: React.FC = () => {
     const poll = () => {
       if (document.hidden) return;
       loadUnreadCount();
-      loadTickets(page, statusFilter, searchQuery, true);
+      loadTickets(page, statusFilter, searchQuery, selectedAccount, true);
       const curId = selectedTicketIdRef.current;
       if (curId) {
         loadActiveTicketDetails(curId, true);
@@ -362,6 +384,7 @@ export const TurboTicketsCockpit: React.FC = () => {
     page,
     statusFilter,
     searchQuery,
+    selectedAccount,
     loadUnreadCount,
     loadTickets,
     loadActiveTicketDetails,
@@ -406,21 +429,27 @@ export const TurboTicketsCockpit: React.FC = () => {
     }, 1200);
   };
 
+  const handleAccountChange = (account: string) => {
+    setSelectedAccount(account);
+    setPage(1);
+    loadTickets(1, statusFilter, searchQuery, account);
+  };
+
   const handleFilterChange = (filter: string) => {
     setStatusFilter(filter);
     setPage(1);
-    loadTickets(1, filter, searchQuery);
+    loadTickets(1, filter, searchQuery, selectedAccount);
   };
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
     setPage(1);
-    loadTickets(1, statusFilter, query);
+    loadTickets(1, statusFilter, query, selectedAccount);
   };
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-    loadTickets(newPage, statusFilter, searchQuery);
+    loadTickets(newPage, statusFilter, searchQuery, selectedAccount);
   };
 
   // On mobile, when viewing chat, mark body as chat-active so bottom nav is suppressed
@@ -495,7 +524,7 @@ export const TurboTicketsCockpit: React.FC = () => {
             unreadCount={unreadCount}
             loading={loadingList}
             onRefresh={() => {
-              loadTickets(page);
+              loadTickets(page, statusFilter, searchQuery, selectedAccount);
               loadUnreadCount();
             }}
             page={page}
@@ -508,6 +537,9 @@ export const TurboTicketsCockpit: React.FC = () => {
             onChangeCategoryFilter={setCategoryFilter}
             searchQuery={searchQuery}
             onChangeSearchQuery={handleSearchChange}
+            accounts={accounts}
+            selectedAccount={selectedAccount}
+            onChangeAccount={handleAccountChange}
             desktopNotificationPermission={notificationPerm}
             onRequestNotificationPermission={handleRequestNotificationPermission}
           />
@@ -536,9 +568,10 @@ export const TurboTicketsCockpit: React.FC = () => {
       <TurboNewTicketModal
         isOpen={isNewModalOpen}
         initialShipmentCode={urlShipmentCode}
+        accounts={accounts}
         onClose={() => setIsNewModalOpen(false)}
         onSuccess={(newId) => {
-          loadTickets(1);
+          loadTickets(1, statusFilter, searchQuery, selectedAccount);
           loadUnreadCount();
           if (newId) setSelectedTicketId(Number(newId));
         }}

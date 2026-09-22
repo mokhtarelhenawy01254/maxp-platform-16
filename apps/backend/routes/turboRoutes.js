@@ -215,8 +215,14 @@ router.post('/tickets/:id/rate', verifyToken.authenticateToken, checkAppAccess('
 router.get('/tickets/:id', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getTicket);
 
 /**
+ * GET /api/turbo/accounts
+ * جلب قائمة حسابات Turbo المتاحة للمستخدم (متاجر سوان، تالا ستور، إلخ)
+ */
+router.get('/accounts', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getTurboAccounts);
+
+/**
  * GET /api/turbo/tickets
- * جلب قائمة التذاكر من Turbo
+ * جلب قائمة التذاكر من Turbo (يدعم التجميع عبر جميع الحسابات)
  */
 router.get('/tickets', verifyToken.authenticateToken, checkAppAccess('order-shipping-turbo'), turboController.getTickets);
 

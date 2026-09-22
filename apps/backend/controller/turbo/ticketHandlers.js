@@ -25,10 +25,78 @@ const resolveCompanyId = (req) => {
   );
 };
 
+const resolveAccessibleTurboCompanies = async (req) => {
+  const prisma = getSharedPrismaClient();
+  const userId = req.user?.id;
+  const currentCompanyId = resolveCompanyId(req);
+
+  const companyIds = new Set();
+  if (currentCompanyId) companyIds.add(currentCompanyId);
+
+  if (userId) {
+    const userCompanies = await safeQuery(() => prisma.userCompany.findMany({
+      where: { userId, isActive: true },
+      select: { companyId: true }
+    }), 2).catch(() => []);
+    userCompanies.forEach(uc => {
+      if (uc.companyId) companyIds.add(uc.companyId);
+    });
+
+    if (req.user?.companyId) companyIds.add(req.user.companyId);
+  }
+
+  const idsArray = Array.from(companyIds).filter(Boolean);
+  if (idsArray.length === 0) return [];
+
+  const companies = await safeQuery(() => prisma.company.findMany({
+    where: {
+      id: { in: idsArray },
+      turboApiKey: { not: null },
+      turboMainClientCode: { not: null }
+    },
+    select: {
+      id: true,
+      name: true,
+      turboApiKey: true,
+      turboMainClientCode: true
+    }
+  }), 2).catch(() => []);
+
+  // Filter unique by turboMainClientCode to avoid duplicate API calls
+  const unique = [];
+  const seenCodes = new Set();
+  for (const c of companies) {
+    const code = Number(c.turboMainClientCode);
+    if (!seenCodes.has(code)) {
+      seenCodes.add(code);
+      unique.push(c);
+    }
+  }
+
+  return unique;
+};
+
+const getTurboAccounts = async (req, res) => {
+  try {
+    const currentCompanyId = resolveCompanyId(req);
+    const companies = await resolveAccessibleTurboCompanies(req);
+    const accounts = companies.map(c => ({
+      id: c.id,
+      name: c.name,
+      clientCode: c.turboMainClientCode,
+      isCurrent: c.id === currentCompanyId
+    }));
+    res.json({ success: true, accounts });
+  } catch (error) {
+    console.error('❌ [TURBO-CONTROLLER] Error getting turbo accounts:', error);
+    res.status(500).json({ success: false, error: error.message, accounts: [] });
+  }
+};
+
 const addTicket = async (req, res) => {
   try {
-    const { description, content, type, categoryId, category_id, inquiryTypeId, inquiry_type_id, complaintTypeId, complaint_type_id, code, media, priority, relatedTo, related_to } = req.body;
-    const companyId = resolveCompanyId(req);
+    const { description, content, type, categoryId, category_id, inquiryTypeId, inquiry_type_id, complaintTypeId, complaint_type_id, code, media, priority, relatedTo, related_to, targetCompanyId } = req.body;
+    const companyId = targetCompanyId || resolveCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, error: 'Company ID is required', message: 'يرجى اختيار شركة أولاً' });
     const ticketContent = content || description || '';
     if (!ticketContent.trim()) return res.status(400).json({ success: false, error: 'Content/Description is required' });
@@ -65,9 +133,12 @@ const getInquiriesTypes = async (req, res) => {
 
 const getTickets = async (req, res) => {
   try {
-    const companyId = resolveCompanyId(req);
-    const { page = 1, per_page = 15, status, search } = req.query;
-    if (!companyId) {
+    const currentCompanyId = resolveCompanyId(req);
+    const { page = 1, per_page = 15, status, search, account } = req.query;
+
+    const accessibleCompanies = await resolveAccessibleTurboCompanies(req);
+
+    if (accessibleCompanies.length === 0 && !currentCompanyId) {
       return res.json({
         success: true,
         data: { tickets: [], pagination: { total: 0, page: 1, per_page: 15, pages: 0, total_pages: 0 } },
@@ -75,90 +146,179 @@ const getTickets = async (req, res) => {
         message: 'يرجى اختيار شركة لعرض التذاكر'
       });
     }
-    const turboService = new TurboService(null, companyId);
-    const result = await turboService.getTickets(parseInt(page), parseInt(per_page), { status, search });
 
-    if (result && Array.isArray(result.tickets) && result.tickets.length > 0) {
-      // 1. Strict Smart Sorting (Unread first -> Open/In Progress -> Highest ID / Newest created)
-      result.tickets.sort((a, b) => {
-        const unreadA = Number(a.un_read_messages_count || a.unread_messages_count || (a.unread ? 1 : 0) || 0);
-        const unreadB = Number(b.un_read_messages_count || b.unread_messages_count || (b.unread ? 1 : 0) || 0);
-        if (unreadB !== unreadA) return unreadB - unreadA;
-
-        const isClosedA = a.is_closed === true || a.status?.value === 'closed' || a.status === 'closed';
-        const isClosedB = b.is_closed === true || b.status?.value === 'closed' || b.status === 'closed';
-        if (isClosedA !== isClosedB) return isClosedA ? 1 : -1;
-
-        const idA = Number(a.id) || 0;
-        const idB = Number(b.id) || 0;
-        if (idB !== idA) return idB - idA;
-
-        const timeA = new Date(a.created_at || a.updated_at || 0).getTime();
-        const timeB = new Date(b.created_at || b.updated_at || 0).getTime();
-        return timeB - timeA;
-      });
-
-      // 2. Batch order matching for badges
-      try {
-        const prisma = getSharedPrismaClient();
-        const ticketCodes = new Set();
-        result.tickets.forEach((t) => {
-          if (t.code) ticketCodes.add(String(t.code).trim());
-          if (t.related_value) ticketCodes.add(String(t.related_value).trim());
-          if (t.related_model?.id) ticketCodes.add(String(t.related_model.id).trim());
-        });
-
-        const codesList = Array.from(ticketCodes).filter(Boolean);
-        if (codesList.length > 0) {
-          const matchedOrders = await safeQuery(() => prisma.order.findMany({
-            where: {
-              companyId,
-              OR: [
-                { turboTrackingNumber: { in: codesList } },
-                { turboShipmentId: { in: codesList } },
-                { orderNumber: { in: codesList } }
-              ]
-            },
-            select: {
-              id: true,
-              orderNumber: true,
-              status: true,
-              turboShipmentStatus: true,
-              turboTrackingNumber: true,
-              turboShipmentId: true,
-              customerName: true
-            }
-          }), 2).catch(() => []);
-
-          const orderMap = new Map();
-          matchedOrders.forEach((ord) => {
-            if (ord.turboTrackingNumber) orderMap.set(String(ord.turboTrackingNumber).trim(), ord);
-            if (ord.turboShipmentId) orderMap.set(String(ord.turboShipmentId).trim(), ord);
-            if (ord.orderNumber) orderMap.set(String(ord.orderNumber).trim(), ord);
-          });
-
-          result.tickets.forEach((t) => {
-            const code1 = t.code ? String(t.code).trim() : '';
-            const code2 = t.related_value ? String(t.related_value).trim() : '';
-            const code3 = t.related_model?.id ? String(t.related_model.id).trim() : '';
-            const matched = orderMap.get(code1) || orderMap.get(code2) || orderMap.get(code3);
-            if (matched) {
-              t.matchedOrderSummary = {
-                id: matched.id,
-                orderNumber: matched.orderNumber,
-                status: matched.status,
-                customerName: matched.customerName,
-                shippingStatus: matched.turboShipmentStatus
-              };
-            }
-          });
-        }
-      } catch (matchErr) {
-        console.warn('⚠️ [TURBO-CONTROLLER] Error matching tickets with orders:', matchErr.message);
+    // Determine target companies to fetch tickets from
+    let targetCompanies = [];
+    if (account && account !== 'all') {
+      targetCompanies = accessibleCompanies.filter(c => c.id === account || String(c.turboMainClientCode) === String(account));
+      if (targetCompanies.length === 0 && currentCompanyId) {
+        targetCompanies = accessibleCompanies.filter(c => c.id === currentCompanyId);
       }
+    } else {
+      // Default: fetch all accessible companies
+      targetCompanies = accessibleCompanies.length > 0
+        ? accessibleCompanies
+        : [{ id: currentCompanyId, name: 'الحساب الحالي', turboMainClientCode: null }];
     }
 
-    res.json({ success: true, data: result });
+    const p = parseInt(page) || 1;
+    const pp = parseInt(per_page) || 15;
+
+    let allTickets = [];
+    let combinedTotal = 0;
+    let maxLastPage = 1;
+
+    const fetchPromises = targetCompanies.map(async (comp) => {
+      try {
+        const turboService = new TurboService(null, comp.id);
+        const result = await turboService.getTickets(p, pp, { status, search });
+        if (result && Array.isArray(result.tickets)) {
+          const tagged = result.tickets.map(t => ({
+            ...t,
+            storeName: comp.name,
+            clientCode: comp.turboMainClientCode,
+            companyId: comp.id
+          }));
+          return {
+            tickets: tagged,
+            total: Number(result.pagination?.total ?? tagged.length),
+            lastPage: Number(result.pagination?.lastPage ?? 1)
+          };
+        }
+      } catch (err) {
+        console.warn(`⚠️ [TURBO-CONTROLLER] Error fetching tickets for ${comp.name}:`, err.message);
+      }
+      return { tickets: [], total: 0, lastPage: 1 };
+    });
+
+    const results = await Promise.all(fetchPromises);
+    results.forEach(r => {
+      allTickets.push(...r.tickets);
+      combinedTotal += r.total;
+      if (r.lastPage > maxLastPage) maxLastPage = r.lastPage;
+    });
+
+    // 1. Strict Smart Sorting:
+    // a. Active open/in-progress tickets with unread messages come first
+    // b. Active open/in-progress tickets come next
+    // c. Chronological newest tickets (by Ticket ID & created date) come next so newly created tickets are never buried
+    allTickets.sort((a, b) => {
+      const isOpenA = a.is_closed !== true && a.status?.value !== 'closed' && a.status !== 'closed';
+      const isOpenB = b.is_closed !== true && b.status?.value !== 'closed' && b.status !== 'closed';
+
+      const unreadA = Number(a.un_read_messages_count || a.unread_messages_count || (a.unread ? 1 : 0) || 0);
+      const unreadB = Number(b.un_read_messages_count || b.unread_messages_count || (b.unread ? 1 : 0) || 0);
+
+      const activeUnreadA = isOpenA && unreadA > 0;
+      const activeUnreadB = isOpenB && unreadB > 0;
+      if (activeUnreadA !== activeUnreadB) return activeUnreadA ? -1 : 1;
+
+      if (isOpenA !== isOpenB) return isOpenA ? -1 : 1;
+
+      // Higher ticket ID = newer ticket created in Turbo
+      const idA = Number(a.id) || 0;
+      const idB = Number(b.id) || 0;
+      if (idB !== idA) return idB - idA;
+
+      const timeA = new Date(a.created_at || a.updated_at || 0).getTime();
+      const timeB = new Date(b.created_at || b.updated_at || 0).getTime();
+      return timeB - timeA;
+    });
+
+    // If multi-company and we fetched from >1 company, slice to per_page
+    const paginatedTickets = targetCompanies.length > 1
+      ? allTickets.slice(0, pp)
+      : allTickets;
+
+    // 2. Batch order matching for badges across companies
+    try {
+      const prisma = getSharedPrismaClient();
+      const ticketCodes = new Set();
+      paginatedTickets.forEach((t) => {
+        if (t.code) ticketCodes.add(String(t.code).trim());
+        if (t.related_value) ticketCodes.add(String(t.related_value).trim());
+        if (t.related_model?.id) ticketCodes.add(String(t.related_model.id).trim());
+      });
+
+      const codesList = Array.from(ticketCodes).filter(Boolean);
+      if (codesList.length > 0) {
+        const companyIdsFilter = targetCompanies.map(c => c.id);
+        const matchedOrders = await safeQuery(() => prisma.order.findMany({
+          where: {
+            companyId: { in: companyIdsFilter },
+            OR: [
+              { turboTrackingNumber: { in: codesList } },
+              { turboShipmentId: { in: codesList } },
+              { orderNumber: { in: codesList } }
+            ]
+          },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            turboShipmentStatus: true,
+            turboTrackingNumber: true,
+            turboShipmentId: true,
+            customerName: true
+          }
+        }), 2).catch(() => []);
+
+        const orderMap = new Map();
+        matchedOrders.forEach((ord) => {
+          if (ord.turboTrackingNumber) orderMap.set(String(ord.turboTrackingNumber).trim(), ord);
+          if (ord.turboShipmentId) orderMap.set(String(ord.turboShipmentId).trim(), ord);
+          if (ord.orderNumber) orderMap.set(String(ord.orderNumber).trim(), ord);
+        });
+
+        paginatedTickets.forEach((t) => {
+          const code1 = t.code ? String(t.code).trim() : '';
+          const code2 = t.related_value ? String(t.related_value).trim() : '';
+          const code3 = t.related_model?.id ? String(t.related_model.id).trim() : '';
+          const matched = orderMap.get(code1) || orderMap.get(code2) || orderMap.get(code3);
+          if (matched) {
+            t.matchedOrderSummary = {
+              id: matched.id,
+              orderNumber: matched.orderNumber,
+              status: matched.status,
+              customerName: matched.customerName,
+              shippingStatus: matched.turboShipmentStatus
+            };
+          }
+        });
+      }
+    } catch (matchErr) {
+      console.warn('⚠️ [TURBO-CONTROLLER] Error matching tickets with orders:', matchErr.message);
+    }
+
+    const accountsSummary = accessibleCompanies.map(c => ({
+      id: c.id,
+      name: c.name,
+      clientCode: c.turboMainClientCode,
+      isCurrent: c.id === currentCompanyId
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        tickets: paginatedTickets,
+        pagination: {
+          total: combinedTotal,
+          page: p,
+          per_page: pp,
+          pages: Math.ceil(combinedTotal / pp),
+          lastPage: Math.max(maxLastPage, Math.ceil(combinedTotal / pp))
+        },
+        accounts: accountsSummary
+      },
+      accounts: accountsSummary,
+      tickets: paginatedTickets,
+      pagination: {
+        total: combinedTotal,
+        page: p,
+        per_page: pp,
+        lastPage: Math.max(maxLastPage, Math.ceil(combinedTotal / pp))
+      }
+    });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error getting tickets:', error);
     const isConfigError = isTurboConfigError(error);
@@ -176,24 +336,64 @@ const getTickets = async (req, res) => {
 
 const getTicket = async (req, res) => {
   try {
-    const companyId = resolveCompanyId(req);
+    const currentCompanyId = resolveCompanyId(req);
     const { id } = req.params;
-    if (!companyId) return res.status(400).json({ success: false, error: 'Company ID is required', message: 'يرجى اختيار شركة أولاً' });
+    const requestedCompanyId = req.query?.companyId || req.headers['x-target-company-id'];
+
     if (!id) return res.status(400).json({ success: false, error: 'Ticket ID is required' });
 
-    // Redis SWR fast-cache (15s)
-    const cacheKey = `turbo:ticket:${companyId}:${id}`;
-    const cachedData = await redisCacheService.get(cacheKey).catch(() => null);
-    if (cachedData) {
-      return res.json({ success: true, data: cachedData, cached: true });
+    const accessibleCompanies = await resolveAccessibleTurboCompanies(req);
+
+    // Build list of companies to search
+    const companiesToTry = [];
+    if (requestedCompanyId) {
+      const found = accessibleCompanies.find(c => c.id === requestedCompanyId);
+      if (found) companiesToTry.push(found);
+    }
+    if (currentCompanyId && !companiesToTry.some(c => c.id === currentCompanyId)) {
+      const found = accessibleCompanies.find(c => c.id === currentCompanyId) || { id: currentCompanyId };
+      companiesToTry.push(found);
+    }
+    accessibleCompanies.forEach(c => {
+      if (!companiesToTry.some(t => t.id === c.id)) companiesToTry.push(c);
+    });
+
+    let foundResult = null;
+    let foundCompany = null;
+
+    for (const comp of companiesToTry) {
+      try {
+        const cacheKey = `turbo:ticket:${comp.id}:${id}`;
+        const cachedData = await redisCacheService.get(cacheKey).catch(() => null);
+        if (cachedData) {
+          return res.json({ success: true, data: cachedData, cached: true });
+        }
+
+        const turboService = new TurboService(null, comp.id);
+        const result = await turboService.getTicket(id);
+        if (result && result.success && result.ticket) {
+          foundResult = result;
+          foundCompany = comp;
+          break;
+        }
+      } catch {}
     }
 
-    const turboService = new TurboService(null, companyId);
-    const result = await turboService.getTicket(id);
-    if (!result.success) return res.status(400).json({ success: false, error: result.error, message: result.message, ticket: null });
+    if (!foundResult) {
+      return res.status(404).json({
+        success: false,
+        error: 'التذكرة غير موجودة',
+        message: 'عذراً، لم يتم العثور على التذكرة المطلوبة في أي من حسابات Turbo المرتبطة',
+        ticket: null
+      });
+    }
 
-    const ticket = result.ticket || result.data?.ticket || result.data;
-    if (ticket) {
+    const ticket = foundResult.ticket || foundResult.data?.ticket || foundResult.data;
+    if (ticket && foundCompany) {
+      ticket.storeName = foundCompany.name;
+      ticket.companyId = foundCompany.id;
+      ticket.clientCode = foundCompany.turboMainClientCode;
+
       // Complete Order details linking
       try {
         const prisma = getSharedPrismaClient();
@@ -207,7 +407,7 @@ const getTicket = async (req, res) => {
         if (codeCandidates.length > 0) {
           const matchedOrder = await safeQuery(() => prisma.order.findFirst({
             where: {
-              companyId,
+              companyId: foundCompany.id,
               OR: [
                 { turboTrackingNumber: { in: codeCandidates } },
                 { turboShipmentId: { in: codeCandidates } },
@@ -274,7 +474,7 @@ const getTicket = async (req, res) => {
       }
 
       // Ensure sender orientation and attribution in messages
-      if (ticket && Array.isArray(ticket.messages)) {
+      if (Array.isArray(ticket.messages)) {
         const agentId = ticket.agent?.id ? String(ticket.agent.id) : null;
         ticket.messages.forEach((msg) => {
           if (msg.is_client_message === undefined || msg.is_client_message === null) {
@@ -293,10 +493,11 @@ const getTicket = async (req, res) => {
         });
       }
 
-      await redisCacheService.set(cacheKey, result, 15).catch(() => {});
+      const cacheKey = `turbo:ticket:${foundCompany.id}:${id}`;
+      await redisCacheService.set(cacheKey, ticket, 15).catch(() => {});
     }
 
-    res.json({ success: true, data: result });
+    res.json({ success: true, data: ticket, ticket });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error getting ticket:', error);
     const isConfigError = isTurboConfigError(error);
@@ -306,51 +507,101 @@ const getTicket = async (req, res) => {
 
 const getTicketLog = async (req, res) => {
   try {
-    const companyId = resolveCompanyId(req);
+    const currentCompanyId = resolveCompanyId(req);
     const { id } = req.params;
-    if (!companyId) return res.status(400).json({ success: false, error: 'Company ID is required', message: 'يرجى اختيار شركة أولاً' });
+    const requestedCompanyId = req.query?.companyId;
     if (!id) return res.status(400).json({ success: false, error: 'Ticket ID is required' });
-    const turboService = new TurboService(null, companyId);
-    const result = await turboService.getTicketLog(id);
-    if (!result.success) return res.status(400).json({ success: false, error: result.error, message: result.message, ticket: null, logs: [] });
-    res.json({ success: true, data: result });
+
+    const accessibleCompanies = await resolveAccessibleTurboCompanies(req);
+    const companiesToTry = [];
+    if (requestedCompanyId) {
+      const found = accessibleCompanies.find(c => c.id === requestedCompanyId);
+      if (found) companiesToTry.push(found);
+    }
+    if (currentCompanyId && !companiesToTry.some(c => c.id === currentCompanyId)) {
+      const found = accessibleCompanies.find(c => c.id === currentCompanyId) || { id: currentCompanyId };
+      companiesToTry.push(found);
+    }
+    accessibleCompanies.forEach(c => {
+      if (!companiesToTry.some(t => t.id === c.id)) companiesToTry.push(c);
+    });
+
+    for (const comp of companiesToTry) {
+      try {
+        const turboService = new TurboService(null, comp.id);
+        const result = await turboService.getTicketLog(id);
+        if (result && result.success && (result.logs?.length > 0 || result.ticket)) {
+          return res.json({ success: true, data: result });
+        }
+      } catch {}
+    }
+
+    res.json({ success: true, data: { ticket: null, logs: [] } });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error getting ticket log:', error);
-    const isConfigError = isTurboConfigError(error);
-    res.status(isConfigError ? 400 : 500).json({ success: false, error: error.message || 'Failed to get ticket log', ticket: null, logs: [] });
+    res.status(500).json({ success: false, error: error.message || 'Failed to get ticket log', ticket: null, logs: [] });
   }
 };
 
 const replyToTicket = async (req, res) => {
   try {
-    const companyId = resolveCompanyId(req);
     const { id } = req.params;
-    const { message } = req.body;
+    const { message, companyId: targetCompanyId } = req.body;
     const imageFile = req.file;
-    if (!companyId) return res.status(400).json({ success: false, error: 'Company ID is required', message: 'يرجى اختيار شركة أولاً' });
     if (!id) return res.status(400).json({ success: false, error: 'Ticket ID is required' });
-    if (!message) return res.status(400).json({ success: false, error: 'Message is required' });
-    const turboService = new TurboService(null, companyId);
+    if (!message || !message.trim()) return res.status(400).json({ success: false, error: 'Message is required' });
+
+    const currentCompanyId = targetCompanyId || resolveCompanyId(req);
+    const accessibleCompanies = await resolveAccessibleTurboCompanies(req);
+
+    const companiesToTry = [];
+    if (currentCompanyId) {
+      const found = accessibleCompanies.find(c => c.id === currentCompanyId) || { id: currentCompanyId };
+      companiesToTry.push(found);
+    }
+    accessibleCompanies.forEach(c => {
+      if (!companiesToTry.some(t => t.id === c.id)) companiesToTry.push(c);
+    });
+
     let imageData = null;
     if (imageFile?.buffer) imageData = { buffer: imageFile.buffer, originalname: imageFile.originalname || 'image.jpg', mimetype: imageFile.mimetype || 'image/jpeg', size: imageFile.size };
-    const result = await turboService.replyToTicket(id, message, imageData);
-    if (!result.success) return res.status(400).json({ success: false, error: result.error, message: result.message });
 
-    // Invalidate Redis cache on new reply
-    await redisCacheService.del(`turbo:ticket:${companyId}:${id}`).catch(() => {});
+    let successResult = null;
+    let successfulCompanyId = null;
 
-    res.json({ success: true, data: result });
+    for (const comp of companiesToTry) {
+      try {
+        const turboService = new TurboService(null, comp.id);
+        const result = await turboService.replyToTicket(id, message.trim(), imageData);
+        if (result && result.success) {
+          successResult = result;
+          successfulCompanyId = comp.id;
+          await redisCacheService.del(`turbo:ticket:${comp.id}:${id}`).catch(() => {});
+          break;
+        }
+      } catch {}
+    }
+
+    if (!successResult) {
+      return res.status(400).json({ success: false, error: 'فشل إرسال الرد على التذكرة في Turbo' });
+    }
+
+    res.json({ success: true, data: successResult, message: 'تم إرسال الرد بنجاح' });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error replying to ticket:', error);
-    const isConfigError = isTurboConfigError(error);
-    res.status(isConfigError ? 400 : 500).json({ success: false, error: error.message || 'Failed to reply to ticket' });
+    res.status(400).json({ success: false, error: error.message || 'Failed to reply to ticket' });
   }
 };
 
 const getUnreadTicketsCount = async (req, res) => {
   try {
-    const companyId = resolveCompanyId(req);
-    if (!companyId) {
+    const currentCompanyId = resolveCompanyId(req);
+    const accessibleCompanies = await resolveAccessibleTurboCompanies(req);
+    const targetCompanies = accessibleCompanies.length > 0
+      ? accessibleCompanies
+      : (currentCompanyId ? [{ id: currentCompanyId }] : []);
+
+    if (targetCompanies.length === 0) {
       return res.status(200).json({
         success: true,
         data: { counts: { tickets: 0, missions: 0, orders: 0 } },
@@ -358,21 +609,35 @@ const getUnreadTicketsCount = async (req, res) => {
         unconfigured: true,
       });
     }
-    const turboService = new TurboService(null, companyId);
-    const result = await turboService.getUnreadTicketsCount();
-    res.json({ success: true, data: result });
+
+    let totalUnread = 0;
+    let totalMissions = 0;
+    let totalOrders = 0;
+
+    await Promise.all(targetCompanies.map(async (comp) => {
+      try {
+        const turboService = new TurboService(null, comp.id);
+        const result = await turboService.getUnreadTicketsCount();
+        if (result?.success && result.counts) {
+          totalUnread += Number(result.counts.tickets || result.counts.unread || 0);
+          totalMissions += Number(result.counts.missions || 0);
+          totalOrders += Number(result.counts.orders || 0);
+        }
+      } catch {}
+    }));
+
+    res.json({
+      success: true,
+      data: { counts: { tickets: totalUnread, missions: totalMissions, orders: totalOrders } },
+      counts: { tickets: totalUnread, missions: totalMissions, orders: totalOrders }
+    });
   } catch (error) {
-    const isConfig = isTurboConfigError(error);
-    if (isConfig) {
-      return res.status(200).json({
-        success: true,
-        data: { counts: { tickets: 0, missions: 0, orders: 0 } },
-        counts: { tickets: 0, missions: 0, orders: 0 },
-        unconfigured: true,
-      });
-    }
     console.error('❌ [TURBO-CONTROLLER] Error getting unread tickets count:', error);
-    res.status(500).json({ success: false, error: error.message || 'Failed to get unread tickets count', counts: { tickets: 0, missions: 0, orders: 0 } });
+    res.status(200).json({
+      success: true,
+      data: { counts: { tickets: 0, missions: 0, orders: 0 } },
+      counts: { tickets: 0, missions: 0, orders: 0 }
+    });
   }
 };
 
@@ -472,4 +737,5 @@ module.exports = {
   getCanCreateTicket,
   getTotalOpenTickets,
   rateTicket,
+  getTurboAccounts,
 };

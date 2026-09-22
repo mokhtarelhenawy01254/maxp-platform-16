@@ -71,8 +71,6 @@ describe("OrderSessionDetailsCard", () => {
     // First order badge
     expect(screen.getByText("عميل جديد")).toBeInTheDocument();
     expect(screen.getByText(/هذا هو أول طلب للعميل على المتجر/)).toBeInTheDocument();
-    // Traffic Source rendered
-    expect(screen.getByText("إعلان فيسبوك (Facebook Ads)")).toBeInTheDocument();
     // Pages visited path rendered
     expect(screen.getByText("حذاء سوان الفاخر")).toBeInTheDocument();
   });

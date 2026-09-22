@@ -9,7 +9,7 @@ import {
   BellIcon,
 } from "@heroicons/react/24/outline";
 import { BellAlertIcon } from "@heroicons/react/24/solid";
-import { TurboTicketItem } from "./types";
+import { TurboTicketItem, TurboAccountItem } from "./types";
 import { parseSafeDate, formatSafeDate } from "./ticketDateUtils";
 
 export type TurboCategoryTab = "all" | "courier" | "complaint" | "support" | "unread";
@@ -32,6 +32,9 @@ interface TurboTicketListPanelProps {
   onChangeSearchQuery: (q: string) => void;
   categoryFilter?: TurboCategoryTab;
   onChangeCategoryFilter?: (cat: TurboCategoryTab) => void;
+  accounts?: TurboAccountItem[];
+  selectedAccount?: string;
+  onChangeAccount?: (account: string) => void;
   desktopNotificationPermission?: NotificationPermission | "unsupported";
   onRequestNotificationPermission?: () => void;
 }
@@ -54,6 +57,9 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
   onChangeSearchQuery,
   categoryFilter,
   onChangeCategoryFilter,
+  accounts,
+  selectedAccount = "all",
+  onChangeAccount,
   desktopNotificationPermission,
   onRequestNotificationPermission,
 }) => {
@@ -306,6 +312,47 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
           </div>
         </div>
 
+        {/* Multi-Store Account Filter Chips */}
+        {accounts && accounts.length > 1 && (
+          <div className="flex items-center gap-1 p-0.5 bg-zinc-100/90 dark:bg-zinc-800/80 rounded-lg text-[11px] font-medium overflow-x-auto scrollbar-none border border-zinc-200/60 dark:border-zinc-700/50">
+            <button
+              type="button"
+              onClick={() => onChangeAccount && onChangeAccount("all")}
+              className={`flex-1 min-w-max py-1 px-2.5 rounded-md transition text-center whitespace-nowrap text-xs ${
+                selectedAccount === "all" || !selectedAccount
+                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-bold"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+              }`}
+            >
+              كل الحسابات ({accounts.length})
+            </button>
+            {accounts.map((acc) => {
+              const isSelected =
+                selectedAccount === acc.id ||
+                selectedAccount === String(acc.clientCode);
+              return (
+                <button
+                  key={acc.id}
+                  type="button"
+                  onClick={() => onChangeAccount && onChangeAccount(acc.id)}
+                  className={`flex-1 min-w-max py-1 px-2.5 rounded-md transition text-center whitespace-nowrap text-xs flex items-center justify-center gap-1 ${
+                    isSelected
+                      ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-2xs font-bold"
+                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  <span>{acc.name}</span>
+                  {acc.clientCode && (
+                    <span className="text-[10px] opacity-60 tabular-nums">
+                      #{acc.clientCode}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Category Classification Tabs */}
         <div className="flex items-center gap-1 p-0.5 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg text-[11px] font-medium overflow-x-auto scrollbar-none">
           {categoryTabs.map((tab) => {
@@ -460,6 +507,14 @@ export const TurboTicketListPanel: React.FC<TurboTicketListPanelProps> = ({
                     <span className="font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
                       #{t.id}
                     </span>
+                    {t.storeName && (
+                      <span
+                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-500/10 text-violet-700 dark:text-violet-400 border border-violet-500/20 truncate max-w-[110px]"
+                        title={`المتجر: ${t.storeName}${t.clientCode ? ` (#${t.clientCode})` : ""}`}
+                      >
+                        {t.storeName}
+                      </span>
+                    )}
                     {t.code && String(t.code).trim() !== String(t.id).trim() && (
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 truncate max-w-[120px]">
                         شحنة: {t.code}

@@ -3,12 +3,10 @@ import {
   GlobeAltIcon,
   MapPinIcon,
   ClockIcon,
-  MegaphoneIcon,
   ShoppingBagIcon,
   CalendarDaysIcon,
   DocumentDuplicateIcon,
   CheckIcon,
-  ArrowTopRightOnSquareIcon,
   LinkIcon,
 } from "@heroicons/react/24/outline";
 import { OrderSessionDetailsData, CustomerFirstOrderInfo } from "../types";
@@ -47,19 +45,6 @@ const formatRelativeDays = (dateStr?: string | null): string => {
   }
 };
 
-const resolveSourceLabel = (source?: string, platform?: string): string => {
-  const s = String(source || platform || "").toLowerCase().trim();
-  if (s.includes("facebook") || s === "fb") return "إعلان فيسبوك (Facebook Ads)";
-  if (s.includes("instagram") || s === "ig") return "إعلان إنستجرام (Instagram)";
-  if (s.includes("tiktok") || s === "tt") return "إعلان تيك توك (TikTok Ads)";
-  if (s.includes("google") || s.includes("cpc")) return "بحث جوجل (Google Ads / Search)";
-  if (s === "direct" || s === "none") return "دخول مباشر (Direct Traffic)";
-  if (s.includes("whatsapp")) return "واتساب (WhatsApp Referral)";
-  if (s === "audience_network" || s === "audience-network") return "Audience Network";
-  if (s) return s;
-  return "دخول مباشر (Direct Traffic)";
-};
-
 export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = ({
   sessionDetails,
   firstOrderInfo,
@@ -74,7 +59,6 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
   const governorate = sessionDetails?.ipGovernorate;
   const city = sessionDetails?.ipCity;
   const country = sessionDetails?.ipCountry;
-  const traffic = sessionDetails?.trafficSource;
   const pagesVisited = sessionDetails?.pagesVisited || [];
   const durationSeconds = sessionDetails?.durationSeconds;
   const sessionCount = sessionDetails?.sessionCount;
@@ -83,7 +67,7 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
   const isManualOrder =
     sourceType === "manual" ||
     orderSource === "MANUAL" ||
-    (!sessionDetails && !traffic && !ip);
+    (!sessionDetails && !ip);
 
   const handleCopyIp = () => {
     if (!ip) return;
@@ -110,7 +94,7 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
               تفاصيل الجلسة
             </h2>
             <p className="text-[11px] text-gray-500 dark:text-gray-400">
-              الموقع الجغرافي للـ IP، مصدر الدخول، ورحلة التصفح
+              الموقع الجغرافي للـ IP ورحلة التصفح
             </p>
           </div>
         </div>
@@ -177,56 +161,6 @@ export const OrderSessionDetailsCard: React.FC<OrderSessionDetailsCardProps> = (
                 )}
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Source & Acquisition */}
-        <div className="rounded-lg border border-gray-100 bg-gray-50/70 p-3 dark:border-gray-700/60 dark:bg-gray-900/20">
-          <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 font-medium">
-            <MegaphoneIcon className="h-4 w-4 text-amber-500" />
-            <span>مصدر الدخول على الموقع</span>
-          </div>
-
-          <div className="mt-2 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-gray-400 dark:text-gray-500">المصدر:</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-200">
-                {resolveSourceLabel(traffic?.source, traffic?.platform)}
-              </span>
-            </div>
-
-            {traffic?.campaignName && (
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] text-gray-400 dark:text-gray-500">اسم الحملة:</span>
-                <span className="font-mono text-xs font-medium text-amber-700 dark:text-amber-300">
-                  {traffic.campaignName}
-                </span>
-              </div>
-            )}
-
-            {traffic?.referrer && (
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-[11px] text-gray-400 dark:text-gray-500 shrink-0">الرابط المرجعي:</span>
-                <a
-                  href={traffic.referrer}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-mono text-[11px] text-blue-600 hover:underline truncate max-w-[200px] dir-ltr text-right dark:text-blue-400"
-                  title={traffic.referrer}
-                >
-                  {traffic.referrer}
-                </a>
-              </div>
-            )}
-
-            {traffic?.landingPath && (
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] text-gray-400 dark:text-gray-500 shrink-0">صفحة الهبوط:</span>
-                <span className="font-mono text-[11px] text-gray-600 dark:text-gray-400 truncate max-w-[200px] dir-ltr text-right">
-                  {traffic.landingPath}
-                </span>
-              </div>
-            )}
           </div>
         </div>
 

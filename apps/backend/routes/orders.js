@@ -19,6 +19,7 @@ const orderDetailsUpdateService = require('../services/orderDetailsUpdateService
 const cashbackService = require('../services/cashbackService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const preparationQueueService = require('../services/preparationQueueService');
+const { resolveDiscountReason } = require('../utils/orderDiscountUtils');
 const {
   extractAttributionFromCheckoutData
 } = require('../utils/orderAttribution');
@@ -3750,6 +3751,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         subtotal: order.subtotal,
         tax: order.tax,
         shipping: order.shipping,
+        discount: Number(order.discount || 0),
+        discountReason: resolveDiscountReason(order, orderMetadata),
         status: effectiveStatus,
         paymentStatus: derivePaymentStatusForDisplay(order, orderMetadata),
         paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
@@ -3879,6 +3882,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         subtotal: guestAmounts.subtotal,
         tax: 0,
         shipping: guestAmounts.shipping,
+        discount: guestAmounts.discount,
+        discountReason: resolveDiscountReason(order, metadata),
         status: guestDisplayStatus,
         paymentStatus: derivePaymentStatusForDisplay(order, metadata),
         paymentMethod: order.paymentMethod?.toLowerCase() || 'cash_on_delivery',
@@ -5918,6 +5923,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         tax: 0,
         shipping: guestAmounts.shipping,
         discount: guestAmounts.discount,
+        discountReason: resolveDiscountReason(guestOrder, safeParseOrderMetadata(guestOrder.metadata)),
         status: guestOrder.status?.toLowerCase() || 'pending',
         paymentStatus: derivePaymentStatusForDisplay(
           guestOrder,
@@ -6118,6 +6124,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         tax: order.tax,
         shipping: order.shipping,
         discount: order.discount,
+        discountReason: resolveDiscountReason(order, orderMetadata),
         status: detailEffectiveStatus,
         paymentStatus: derivePaymentStatusForDisplay(order, orderMetadata),
         paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
@@ -7345,7 +7352,7 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
-    const { items, total, subtotal, tax, shipping } = req.body;
+    const { items, total, subtotal, tax, shipping, discount, discountReason } = req.body;
     const merchant = isMerchantUser(req.user)
       ? await requireMerchantAccountForUser(req.user)
       : null;
@@ -7378,6 +7385,19 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
       await assertOrderStatusEditable(getSharedPrismaClient(), companyId, regularOrder.status);
 
+      const oldDiscount = Number(regularOrder.discount) || 0;
+      const nextDiscount = discount !== undefined ? Math.max(0, parseFloat(discount) || 0) : oldDiscount;
+      const currentMetadata = safeParseOrderMetadata(regularOrder.metadata);
+      if (discountReason !== undefined) {
+        currentMetadata.discountReason = discountReason ? String(discountReason).trim() : null;
+      } else if (nextDiscount > 0 && !currentMetadata.discountReason) {
+        currentMetadata.discountReason = 'خصم يدوي';
+      }
+
+      const calculatedTotal = Number.isFinite(Number(total))
+        ? Number(total)
+        : Math.max(0, (Number(subtotal) || 0) + (Number(shipping) || 0) + (Number(tax) || 0) - nextDiscount);
+
       const { computeOrderItemsDiff } = require('../utils/orderDiffHelper');
       const oldOrderItems = await getSharedPrismaClient().orderItem.findMany({
         where: { orderId: regularOrder.id }
@@ -7388,11 +7408,14 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
         shipping: Number(regularOrder.shipping) || 0,
       };
       const newTotals = {
-        total: Number(total) || 0,
+        total: calculatedTotal,
         subtotal: Number(subtotal) || 0,
         shipping: Number(shipping) || 0,
       };
       const itemDiffs = computeOrderItemsDiff(oldOrderItems, items, oldTotals, newTotals);
+      if (nextDiscount !== oldDiscount) {
+        itemDiffs.push(`الخصم: ${oldDiscount} ← ${nextDiscount}${currentMetadata.discountReason ? ` (${currentMetadata.discountReason})` : ''}`);
+      }
       let itemsReason = 'تعديل منتجات الطلب';
       if (itemDiffs.length > 0) {
         itemsReason = `تعديل منتجات الطلب:\n• ${itemDiffs.join('\n• ')}`;
@@ -7448,10 +7471,12 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
         await prisma.order.update({
           where: { id: regularOrder.id },
           data: {
-            total,
+            total: calculatedTotal,
             subtotal,
             tax,
             shipping,
+            discount: nextDiscount,
+            metadata: JSON.stringify(currentMetadata),
             updatedAt: new Date()
           }
         });
@@ -7500,11 +7525,20 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
       await assertOrderStatusEditable(getSharedPrismaClient(), companyId, guestOrder.status);
 
+      const oldGuestDiscount = Number(guestOrder.discountAmount) || 0;
+      const nextGuestDiscount = discount !== undefined ? Math.max(0, parseFloat(discount) || 0) : oldGuestDiscount;
+      const guestMetadata = safeParseOrderMetadata(guestOrder.metadata);
+      if (discountReason !== undefined) {
+        guestMetadata.discountReason = discountReason ? String(discountReason).trim() : null;
+      } else if (nextGuestDiscount > 0 && !guestMetadata.discountReason) {
+        guestMetadata.discountReason = 'خصم يدوي';
+      }
+
       const nextSubtotal = toSafeOrderAmount(subtotal);
       const nextShipping = toSafeOrderAmount(shipping);
       const nextFinalTotal = Number.isFinite(Number(total))
         ? Number(total)
-        : Math.max(0, nextSubtotal + nextShipping);
+        : Math.max(0, nextSubtotal + nextShipping - nextGuestDiscount);
 
       const { computeOrderItemsDiff, parseJsonObject } = require('../utils/orderDiffHelper');
       const oldGuestItems = parseJsonObject(guestOrder.items, []);
@@ -7519,6 +7553,9 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
         shipping: nextShipping,
       };
       const guestItemDiffs = computeOrderItemsDiff(oldGuestItems, items, oldGuestTotals, newGuestTotals);
+      if (nextGuestDiscount !== oldGuestDiscount) {
+        guestItemDiffs.push(`الخصم: ${oldGuestDiscount} ← ${nextGuestDiscount}${guestMetadata.discountReason ? ` (${guestMetadata.discountReason})` : ''}`);
+      }
       let guestItemsReason = 'تعديل منتجات الطلب';
       if (guestItemDiffs.length > 0) {
         guestItemsReason = `تعديل منتجات الطلب:\n• ${guestItemDiffs.join('\n• ')}`;
@@ -7531,7 +7568,9 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
           items: JSON.stringify(items),
           total: nextSubtotal,
           shippingCost: nextShipping,
+          discountAmount: nextGuestDiscount,
           finalTotal: nextFinalTotal,
+          metadata: JSON.stringify(guestMetadata),
           updatedAt: new Date()
         }
       });

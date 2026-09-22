@@ -392,6 +392,18 @@ class OrderService {
         console.error('❌ [AUTO-DISCOUNT] Failed to apply auto discount on conversation order:', autoDiscountError.message);
       }
 
+      let conversationDiscountReason = null;
+      if (appliedDiscount > 0) {
+        const reasons = [];
+        if (rewards && rewards.discountPercent > 0) {
+          reasons.push(`مكافأة ولاء (${rewards.discountPercent}%)`);
+        }
+        if (autoDiscountVoucherId) {
+          reasons.push('كوبون خصم تلقائي');
+        }
+        conversationDiscountReason = reasons.length > 0 ? reasons.join(' + ') : 'خصم خاص';
+      }
+
       const explicitShipping = toFiniteNumberOrNull(data.shippingAmount ?? data.shippingCost ?? data.shipping);
       const shipping = explicitShipping !== null
         ? explicitShipping
@@ -524,6 +536,7 @@ class OrderService {
               ...(autoDiscountVoucherId && { autoDiscountApplied: autoDiscountAppliedValue }),
               ...(conversationId && { conversationId }),
               ...(conversationAttribution && { attribution: conversationAttribution }),
+              ...(conversationDiscountReason && { discountReason: conversationDiscountReason }),
             }),
             orderItems: {
               create: [orderItem],

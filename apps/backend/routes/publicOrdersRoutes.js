@@ -44,6 +44,7 @@ const {
   getVolumeDiscountsFromMetadata,
 } = require('../utils/volumeDiscountUtils');
 const { calculateDiscount: calcStorePromotionDiscount } = require('../utils/storePromotionUtils');
+const { buildCompositeDiscountReason } = require('../utils/orderDiscountUtils');
 const customerBlocklistService = require('../services/customerBlocklistService');
 
 /**
@@ -1962,6 +1963,40 @@ router.post('/', async (req, res) => {
         };
       }
 
+      if (appliedCoupon) {
+        orderMetadata.coupon = {
+          code: appliedCoupon.code,
+          name: appliedCoupon.name || null,
+          type: appliedCoupon.type,
+          value: appliedCoupon.value,
+          discountAmount: Number(discountAmount.toFixed(2))
+        };
+        orderMetadata.couponCode = appliedCoupon.code;
+      }
+
+      if (promoDiscount > 0) {
+        orderMetadata.storePromotion = {
+          discount: promoDiscount,
+          label: promoLabel
+        };
+      }
+
+      if (discountAmount > 0) {
+        orderMetadata.discountReason = buildCompositeDiscountReason({
+          coupon: appliedCoupon,
+          promoLabel,
+          promoDiscount,
+          loyaltyTierTitle: loyaltyTierInfo?.nameAr || loyaltyTierInfo?.name,
+          loyaltyDiscount,
+          hasAutoDiscount: Boolean(autoDiscountVoucherId),
+          walletDiscountPercent,
+          walletDiscount,
+          pointsUsed,
+          pointsApplied,
+          totalDiscount: discountAmount
+        });
+      }
+
       if (sanitizedAttribution) {
         orderMetadata.attribution = sanitizedAttribution;
       }
@@ -2437,6 +2472,9 @@ router.post('/', async (req, res) => {
       let walletCustomerIdMetadata = null;
       let walletBalanceBeforeMetadata = null;
       let walletBalanceAfterMetadata = null;
+      let discountReasonMetadata = null;
+      let couponMetadata = null;
+      let couponCodeMetadata = null;
 
       if (order.metadata) {
         try {
@@ -2474,12 +2512,30 @@ router.post('/', async (req, res) => {
           if (metadata.walletBalanceAfter !== undefined && metadata.walletBalanceAfter !== null) {
             walletBalanceAfterMetadata = metadata.walletBalanceAfter;
           }
+          if (metadata.discountReason) {
+            discountReasonMetadata = metadata.discountReason;
+          }
+          if (metadata.coupon) {
+            couponMetadata = metadata.coupon;
+          }
+          if (metadata.couponCode) {
+            couponCodeMetadata = metadata.couponCode;
+          }
         } catch (e) {
           // Ignore metadata parsing errors
         }
       }
 
       const regularOrderMetadata = {};
+      if (discountReasonMetadata) {
+        regularOrderMetadata.discountReason = discountReasonMetadata;
+      }
+      if (couponMetadata) {
+        regularOrderMetadata.coupon = couponMetadata;
+      }
+      if (couponCodeMetadata) {
+        regularOrderMetadata.couponCode = couponCodeMetadata;
+      }
       if (duplicateMetadata) {
         regularOrderMetadata.duplicate = duplicateMetadata;
       }

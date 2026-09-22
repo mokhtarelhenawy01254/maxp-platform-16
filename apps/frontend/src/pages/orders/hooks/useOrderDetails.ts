@@ -130,6 +130,8 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     items: [] as any[],
     shipping: 0,
     tax: 0,
+    discount: 0,
+    discountReason: "",
   });
   const [selectedGovernmentId, setSelectedGovernmentId] = useState<
     number | null
@@ -524,6 +526,10 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
           }),
           subtotal: parsedSubtotal,
           discount: parsedDiscount,
+          discountReason:
+            simpleOrder.discountReason ||
+            (simpleOrder.metadata as any)?.discountReason ||
+            null,
           tax: parsedTax,
           shipping: resolvedShipping,
           total: resolvedTotal,
@@ -570,6 +576,8 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
           items: JSON.parse(JSON.stringify(enhancedOrder.items)),
           shipping: enhancedOrder.shipping || 0,
           tax: enhancedOrder.tax || 0,
+          discount: enhancedOrder.discount || 0,
+          discountReason: enhancedOrder.discountReason || "",
         });
 
         // Logic to set selectedGovernmentId moved to separate useEffect
@@ -925,7 +933,11 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
           typeof editForm.tax === "number"
             ? editForm.tax
             : parseFloat(editForm.tax) || 0;
-        const newTotal = newSubtotal + currentShipping + currentTax;
+        const currentDiscount =
+          typeof editForm.discount === "number"
+            ? editForm.discount
+            : parseFloat(editForm.discount) || 0;
+        const newTotal = Math.max(0, newSubtotal + currentShipping + currentTax - currentDiscount);
 
         await apiClient.put(`/orders-new/simple/${encodedOrderNumber}/items`, {
           items: newItems,
@@ -933,6 +945,8 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
           total: newTotal,
           tax: currentTax,
           shipping: currentShipping,
+          discount: currentDiscount,
+          discountReason: editForm.discountReason?.trim() || null,
         });
       }
 

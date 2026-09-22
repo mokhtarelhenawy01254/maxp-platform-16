@@ -73,6 +73,8 @@ export interface Order {
     };
   }>;
   subtotal: number | null;
+  discount?: number | null;
+  discountReason?: string | null;
   tax: number;
   shipping: number;
   total: number | null;
@@ -631,11 +633,15 @@ const normalizeOrderTableColumns = (value: unknown): OrderTableColumn[] => {
 };
 
 const getOrderAmount = (order: Order) => {
+  if (typeof order.total === "number" && order.total > 0) {
+    return order.total;
+  }
   const subtotal = typeof order.subtotal === "number" ? order.subtotal : 0;
   const shipping = typeof order.shipping === "number" ? order.shipping : 0;
   const tax = typeof order.tax === "number" ? order.tax : 0;
+  const discount = typeof order.discount === "number" ? order.discount : 0;
 
-  return subtotal + shipping + tax || order.total || 0;
+  return Math.max(0, subtotal + shipping + tax - discount);
 };
 
 const getOrdersLoadErrorMessage = (error: unknown) => {

@@ -105,6 +105,16 @@ export interface TurboTicketItem {
     total: number;
     customerName?: string;
   };
+  storeName?: string;
+  clientCode?: number | string;
+  companyId?: string;
+}
+
+export interface TurboAccountItem {
+  id: string;
+  name: string;
+  clientCode?: number | string;
+  isCurrent?: boolean;
 }
 
 export interface TurboMatchedOrderItem {

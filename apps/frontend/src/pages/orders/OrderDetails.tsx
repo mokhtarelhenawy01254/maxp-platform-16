@@ -300,6 +300,10 @@ const OrderDetails: React.FC = () => {
       editForm.customerAddress !== (order.customerAddress || "") ||
       editForm.city !== (order.city || "") ||
       editForm.notes !== (order.notes || "") ||
+      editForm.shipping !== (order.shipping || 0) ||
+      editForm.tax !== (order.tax || 0) ||
+      editForm.discount !== (order.discount || 0) ||
+      editForm.discountReason !== (order.discountReason || "") ||
       JSON.stringify(editForm.items) !== JSON.stringify(order.items);
 
     return hasChanges;
@@ -323,7 +327,7 @@ const OrderDetails: React.FC = () => {
         shipping,
         tax,
         discount,
-        total: subtotal + shipping + tax - discount,
+        total: Math.max(0, subtotal + shipping + tax - discount),
       };
     }
 
@@ -341,11 +345,14 @@ const OrderDetails: React.FC = () => {
       typeof editForm.tax === "number" && !isNaN(editForm.tax)
         ? editForm.tax
         : parseFloat(editForm.tax) || 0;
-    const discount = order?.discount || 0;
-    const total = subtotal + shipping + tax - discount;
+    const discount =
+      typeof editForm.discount === "number" && !isNaN(editForm.discount)
+        ? editForm.discount
+        : parseFloat(editForm.discount) || 0;
+    const total = Math.max(0, subtotal + shipping + tax - discount);
 
     return { subtotal, shipping, tax, discount, total };
-  }, [isEditing, editForm.items, editForm.shipping, editForm.tax, order]);
+  }, [isEditing, editForm.items, editForm.shipping, editForm.tax, editForm.discount, order]);
 
   // Handlers
   const handlePrintInvoice = async () => {
@@ -993,7 +1000,16 @@ const OrderDetails: React.FC = () => {
         }}
         onCancel={() => {
           setIsEditing(false);
-          if (order) setEditForm({ ...editForm, items: order.items });
+          if (order) {
+            setEditForm({
+              ...editForm,
+              items: order.items,
+              shipping: order.shipping || 0,
+              tax: order.tax || 0,
+              discount: order.discount || 0,
+              discountReason: order.discountReason || "",
+            });
+          }
         }}
         onSave={saveChanges}
         onPrint={handlePrintInvoice}
@@ -1097,6 +1113,14 @@ const OrderDetails: React.FC = () => {
             items={canEditOrderDetails && isEditing ? editForm.items : order.items}
             currency={order.currency}
             totals={calculatedTotals}
+            discountReason={order.discountReason}
+            editDiscountReason={editForm.discountReason}
+            onDiscountChange={(val) =>
+              setEditForm((prev) => ({ ...prev, discount: val }))
+            }
+            onDiscountReasonChange={(val) =>
+              setEditForm((prev) => ({ ...prev, discountReason: val }))
+            }
             onAddItem={() => {
               if (canEditOrderDetails) setShowAddProductModal(true);
             }}
