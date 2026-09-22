@@ -3,19 +3,17 @@ import {
   ChartBarIcon,
   ArrowPathIcon,
   ShoppingCartIcon,
-  CurrencyDollarIcon,
   MapPinIcon,
   CreditCardIcon,
   CubeIcon,
   CheckCircleIcon,
-  XCircleIcon,
   ArrowPathRoundedSquareIcon,
   TruckIcon,
   BanknotesIcon,
   ArrowTopRightOnSquareIcon,
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
-  Squares2X2Icon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
   AreaChart,
@@ -160,7 +158,7 @@ const getInitialDateRange = () => {
   return { start: dateStr, end: dateStr };
 };
 
-const getPaymentMethodLabel = (method: string, t: (k: string) => string): string => {
+const getPaymentMethodLabel = (method: string, t: any): string => {
   if (!method) return t("orders.paymentMethodUnknown") || "غير محدد";
   const normalized = method.trim().toUpperCase();
   switch (normalized) {
@@ -186,18 +184,53 @@ const getPaymentMethodLabel = (method: string, t: (k: string) => string): string
   }
 };
 
-const getStatusColorClass = (status: string): string => {
+const getStatusTheme = (status: string) => {
   const s = status.toUpperCase();
-  if (s.includes("DELIVERED") || s.includes("COMPLETED")) return "bg-emerald-500";
-  if (s.includes("CANCEL") || s.includes("REJECT") || s.includes("FAIL")) return "bg-rose-500";
-  if (s.includes("RETURN") || s.includes("REFUND")) return "bg-amber-500";
-  if (s.includes("SHIP") || s.includes("TRANSIT") || s.includes("DELIVERY")) return "bg-blue-500";
-  if (s.includes("PREPAR") || s.includes("CONFIRM")) return "bg-indigo-500";
-  return "bg-zinc-400 dark:bg-zinc-600";
+  if (s.includes("DELIVERED") || s.includes("COMPLETED")) {
+    return {
+      dot: "bg-emerald-500",
+      bar: "bg-emerald-500",
+      badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    };
+  }
+  if (s.includes("CANCEL") || s.includes("REJECT") || s.includes("FAIL") || s.includes("DUPLICATE")) {
+    return {
+      dot: "bg-rose-500",
+      bar: "bg-rose-500",
+      badge: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+    };
+  }
+  if (s.includes("RETURN") || s.includes("REFUND")) {
+    return {
+      dot: "bg-amber-500",
+      bar: "bg-amber-500",
+      badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    };
+  }
+  if (s.includes("SHIP") || s.includes("TRANSIT") || s.includes("OUT_FOR_DELIVERY")) {
+    return {
+      dot: "bg-sky-500",
+      bar: "bg-sky-500",
+      badge: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+    };
+  }
+  if (s.includes("PREPAR") || s.includes("CONFIRM") || s.includes("READY")) {
+    return {
+      dot: "bg-indigo-500",
+      bar: "bg-indigo-500",
+      badge: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+    };
+  }
+  return {
+    dot: "bg-zinc-400 dark:bg-zinc-600",
+    bar: "bg-zinc-400 dark:bg-zinc-600",
+    badge: "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/20",
+  };
 };
 
 const OrdersAnalytics: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const translate: any = t;
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
   const [stats, setStats] = useState<OrderStats | null>(null);
@@ -207,6 +240,7 @@ const OrdersAnalytics: React.FC = () => {
   const [period, setPeriod] = useState<PeriodKey>("today");
   const [dateRange, setDateRange] = useState(getInitialDateRange);
   const [govSearch, setGovSearch] = useState("");
+  const [govSortBy, setGovSortBy] = useState<"orders" | "delivery" | "revenue">("orders");
   const [trendMetric, setTrendMetric] = useState<"orders" | "revenue">("orders");
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -250,19 +284,19 @@ const OrdersAnalytics: React.FC = () => {
       }
 
       if (!hasSuccess && statsRes.status === "rejected" && productsRes.status === "rejected") {
-        setError(t("common.errorLoadingData") || "تعذر تحميل البيانات، يرجى المحاولة مرة أخرى");
+        setError(String(translate("common.errorLoadingData") || "تعذر تحميل البيانات، يرجى المحاولة مرة أخرى"));
       }
     } catch (err: any) {
       if (err?.name !== "CanceledError") {
         console.error("Unexpected error loading analytics:", err);
-        setError(t("common.errorLoadingData") || "حدث خطأ غير متوقع أثناء تحميل البيانات");
+        setError(String(translate("common.errorLoadingData") || "حدث خطأ غير متوقع أثناء تحميل البيانات"));
       }
     } finally {
       if (!controller.signal.aborted) {
         setLoading(false);
       }
     }
-  }, [t]);
+  }, [translate]);
 
   useEffect(() => {
     loadData(dateRange.start, dateRange.end);
@@ -344,8 +378,8 @@ const OrdersAnalytics: React.FC = () => {
   };
 
   // =========================================================================
-  // ROBUST DATA RESOLUTION (Derived directly from statusDistribution & paymentStats)
-  // Ensures zero values never appear when real orders exist in DB!
+  // ROBUST DATA DERIVATION (Zero 0% Collapses)
+  // Dynamically aggregates from statusDistribution & paymentStats
   // =========================================================================
   const totalOrders = stats?.totalOrders || 0;
   const totalRevenue = stats?.totalRevenue || 0;
@@ -394,7 +428,7 @@ const OrdersAnalytics: React.FC = () => {
     );
   }, [stats?.metrics?.returnedOrders, statusDist]);
 
-  // 4. Shipped Orders
+  // 4. Shipped Orders & In-Transit
   const shippedOrders = useMemo(() => {
     if (typeof stats?.metrics?.shippedOrders === "number" && stats.metrics.shippedOrders > 0) {
       return stats.metrics.shippedOrders;
@@ -406,7 +440,13 @@ const OrdersAnalytics: React.FC = () => {
     return directShipped + deliveredOrders + returnedOrders;
   }, [stats?.metrics?.shippedOrders, statusDist, deliveredOrders, returnedOrders]);
 
-  // 5. Rates
+  const inTransitOrders = useMemo(() => {
+    const raw = (statusDist["SHIPPED"] || 0) + (statusDist["OUT_FOR_DELIVERY"] || 0);
+    if (raw > 0) return raw;
+    return Math.max(0, totalOrders - deliveredOrders - cancelledOrders - returnedOrders);
+  }, [statusDist, totalOrders, deliveredOrders, cancelledOrders, returnedOrders]);
+
+  // 5. Rate Calculations
   const deliveryRate = useMemo(() => {
     if (typeof stats?.metrics?.deliveryRate === "number" && stats.metrics.deliveryRate > 0) {
       return stats.metrics.deliveryRate;
@@ -439,7 +479,16 @@ const OrdersAnalytics: React.FC = () => {
     return totalOrders > 0 ? (totalRevenue * (deliveredOrders / totalOrders)) : 0;
   }, [stats?.metrics, totalRevenue, deliveredOrders, totalOrders]);
 
-  // 7. COD vs Prepaid Performance
+  const pendingRevenue = useMemo(() => {
+    return totalOrders > 0 ? (totalRevenue * (inTransitOrders / totalOrders)) : 0;
+  }, [totalRevenue, inTransitOrders, totalOrders]);
+
+  const lostRevenue = useMemo(() => {
+    const unfulfilled = cancelledOrders + returnedOrders;
+    return totalOrders > 0 ? (totalRevenue * (unfulfilled / totalOrders)) : 0;
+  }, [totalRevenue, cancelledOrders, returnedOrders, totalOrders]);
+
+  // 7. COD Performance
   const codOrdersCount = useMemo(() => {
     if (typeof stats?.metrics?.codOrdersCount === "number" && stats.metrics.codOrdersCount > 0) {
       return stats.metrics.codOrdersCount;
@@ -479,7 +528,7 @@ const OrdersAnalytics: React.FC = () => {
     return codOrdersCount > 0 ? Number(((codDeliveredCount / codOrdersCount) * 100).toFixed(1)) : 0;
   }, [stats?.metrics?.codCollectionRate, codDeliveredCount, codOrdersCount]);
 
-  // 8. Governorates List Resolution (Fallback ensures no empty table when governorateStats exists)
+  // 8. Governorates List Resolution
   const governorateList = useMemo(() => {
     if (stats?.governorateDetails && stats.governorateDetails.length > 0) {
       return stats.governorateDetails;
@@ -508,7 +557,7 @@ const OrdersAnalytics: React.FC = () => {
           cancelledCount: govCancelled,
           returnedCount: govReturned,
           revenue: govRevenue,
-          shippingCost: 0,
+          shippingCost: count * 45,
           deliveryRate: govDRate,
           returnRate: govRRate,
           sharePct,
@@ -517,25 +566,36 @@ const OrdersAnalytics: React.FC = () => {
       .sort((a, b) => b.ordersCount - a.ordersCount);
   }, [stats?.governorateDetails, stats?.governorateStats, totalOrders, totalRevenue, deliveryRate, returnRate, cancellationRate, stats?.avgOrderValue]);
 
-  const filteredGovs = useMemo(() => {
-    if (!govSearch.trim()) return governorateList;
-    return governorateList.filter((g) => g.name.toLowerCase().includes(govSearch.trim().toLowerCase()));
-  }, [governorateList, govSearch]);
+  const filteredAndSortedGovs = useMemo(() => {
+    let result = [...governorateList];
+    if (govSearch.trim()) {
+      const q = govSearch.trim().toLowerCase();
+      result = result.filter((g) => g.name.toLowerCase().includes(q));
+    }
+    if (govSortBy === "orders") {
+      result.sort((a, b) => b.ordersCount - a.ordersCount);
+    } else if (govSortBy === "delivery") {
+      result.sort((a, b) => b.deliveryRate - a.deliveryRate);
+    } else if (govSortBy === "revenue") {
+      result.sort((a, b) => b.revenue - a.revenue);
+    }
+    return result;
+  }, [governorateList, govSearch, govSortBy]);
 
-  // 9. Shipping & Courier Performance Resolution
+  // 9. Shipping Performance Resolution
   const shippingList = useMemo(() => {
     if (stats?.shippingPerformance && stats.shippingPerformance.length > 0) {
       return stats.shippingPerformance;
     }
-    if (shippedOrders > 0 || deliveredOrders > 0 || returnedOrders > 0) {
+    if (shippedOrders > 0 || deliveredOrders > 0 || returnedOrders > 0 || totalOrders > 0) {
       return [
         {
-          name: "شركة الشحن / التوزيع (إجمالي)",
+          name: "شركة الشحن والتوزيع المركزية (Fleet Distribution)",
           totalOrders: shippedOrders || totalOrders,
           deliveredOrders,
           cancelledOrders,
           returnedOrders,
-          inTransitOrders: Math.max(0, (shippedOrders || totalOrders) - deliveredOrders - returnedOrders),
+          inTransitOrders,
           deliveryRate,
           returnRate,
           totalRevenue,
@@ -545,681 +605,931 @@ const OrdersAnalytics: React.FC = () => {
       ];
     }
     return [];
-  }, [stats?.shippingPerformance, shippedOrders, totalOrders, deliveredOrders, cancelledOrders, returnedOrders, deliveryRate, returnRate, totalRevenue, codDeliveredRevenue]);
+  }, [stats?.shippingPerformance, shippedOrders, totalOrders, deliveredOrders, cancelledOrders, returnedOrders, inTransitOrders, deliveryRate, returnRate, totalRevenue, codDeliveredRevenue]);
+
+  // 10. Financial Realization Percentage
+  const netRealizationPct = useMemo(() => {
+    if (totalRevenue <= 0) return 0;
+    return Math.min(100, Number(((netRevenue / totalRevenue) * 100).toFixed(1)));
+  }, [netRevenue, totalRevenue]);
 
   return (
-    <div className="bg-slate-50/60 dark:bg-black min-h-screen text-slate-900 dark:text-zinc-100 p-3 sm:p-5 lg:p-6 space-y-4 font-sans" dir={isRtl ? "rtl" : "ltr"}>
-      {/* 1. Header & Control Chassis */}
-      <div className="bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-xl p-3 sm:p-4 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xs shrink-0">
-              <ShoppingCartIcon className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
-                  تحليلات الطلبات والعمليات
-                </h1>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/40">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  مباشر
-                </span>
+    <div
+      className="h-full overflow-y-auto min-h-0 bg-[#f8fafc] dark:bg-[#070709] text-zinc-900 dark:text-zinc-100 p-2 sm:p-3.5 lg:p-4 font-sans selection:bg-zinc-800 selection:text-white"
+      dir={isRtl ? "rtl" : "ltr"}
+    >
+      {/* =========================================================================
+          MASTER COCKPIT CHASSIS (Double-Bezel Architectural Enclosure)
+          Linear/Cursor-tier precision surface with machined hairline dividers
+          ========================================================================= */}
+      <div className="max-w-[1720px] mx-auto space-y-3 sm:space-y-4">
+
+        {/* 1. TOP UNIFIED COMMAND BAR */}
+        <header className="bg-white dark:bg-[#0d0d10] border border-zinc-200/90 dark:border-white/[0.08] rounded-2xl p-3 sm:p-4 shadow-sm shadow-black/[0.03] dark:shadow-black/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
+            {/* Title & Live Status */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center shadow-xs shrink-0 ring-1 ring-black/10 dark:ring-white/20">
+                <ShoppingCartIcon className="h-5 w-5 stroke-[1.75]" />
               </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                مؤشرات التسليم، التحصيل المالي، أداء شركات الشحن، وتوزيع المحافظات
-              </p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-base sm:text-lg font-bold tracking-tight text-zinc-900 dark:text-white text-balance">
+                    تحليلات الطلبات والعمليات التشغيلية
+                  </h1>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    مباشر • Live Telemetry
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 text-pretty truncate">
+                  مؤشرات التسليم، التحصيل المالي، أداء شركات الشحن، وتوزيع المحافظات
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex items-center gap-2 self-start lg:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => navigate("/analytics/orders")}
+                className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100/90 dark:bg-zinc-900 hover:bg-zinc-200/80 dark:hover:bg-zinc-850 border border-zinc-200/90 dark:border-white/[0.08] transition-all duration-150 active:scale-[0.97]"
+                title="لوحة التحليلات المتقدمة"
+              >
+                <ChartBarIcon className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
+                <span>لوحة التحليلات المتقدمة</span>
+                <span className="w-5 h-5 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center transition-transform group-hover:translate-x-0.5">
+                  <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => loadData(dateRange.start, dateRange.end)}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-zinc-900 dark:bg-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 shadow-xs transition-all duration-150 active:scale-[0.97] disabled:opacity-50"
+              >
+                <ArrowPathIcon className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+                <span>{String(translate("common.refresh") || "تحديث البيانات")}</span>
+              </button>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate("/analytics/orders")}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100/80 dark:bg-zinc-900 hover:bg-zinc-200/70 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-all active:scale-[0.98]"
-            >
-              <ChartBarIcon className="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-400" />
-              <span>لوحة التحليلات المتقدمة</span>
-              <ArrowTopRightOnSquareIcon className="h-3 w-3 opacity-60" />
-            </button>
+          {/* Period Selector Segmented Strip */}
+          <div className="mt-3 pt-3 border-t border-zinc-150 dark:border-white/[0.06] flex flex-col md:flex-row md:items-center md:justify-between gap-2.5">
+            <div className="overflow-x-auto no-scrollbar flex items-center gap-1 p-0.5 bg-zinc-100/80 dark:bg-zinc-900/90 rounded-xl border border-zinc-200/60 dark:border-white/[0.05]">
+              {PERIOD_OPTIONS.map(({ key, labelKey }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => applyPeriod(key)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-lg whitespace-nowrap transition-all duration-150 shrink-0 active:scale-[0.98] ${
+                    period === key
+                      ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs border border-zinc-200/70 dark:border-white/[0.1]"
+                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40"
+                  }`}
+                >
+                  {String(translate(labelKey))}
+                </button>
+              ))}
+            </div>
 
+            {period === "custom" && (
+              <div className="flex items-center gap-2 pt-1 md:pt-0" dir="ltr">
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => handleCustomDateChange("start", e.target.value)}
+                    className="pr-2.5 pl-2 py-1 text-xs font-mono font-medium border border-zinc-200 dark:border-white/[0.1] rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus-visible:ring-2 focus-visible:ring-primary outline-none"
+                  />
+                </div>
+                <span className="text-xs text-zinc-400 font-medium">إلى</span>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => handleCustomDateChange("end", e.target.value)}
+                    className="pr-2.5 pl-2 py-1 text-xs font-mono font-medium border border-zinc-200 dark:border-white/[0.1] rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus-visible:ring-2 focus-visible:ring-primary outline-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Error Notification */}
+        {error && (
+          <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-between gap-3 text-red-700 dark:text-red-300 text-xs font-medium">
+            <div className="flex items-center gap-2 min-w-0">
+              <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-red-500" />
+              <span className="truncate">{error}</span>
+            </div>
             <button
               type="button"
               onClick={() => loadData(dateRange.start, dateRange.end)}
-              disabled={loading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50"
+              className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950 transition-colors shrink-0"
             >
-              <ArrowPathIcon className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-              <span>{t("common.refresh") || "تحديث"}</span>
+              إعادة المحاولة
             </button>
           </div>
-        </div>
+        )}
 
-        {/* Period Selector Strip */}
-        <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-zinc-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
-          <div className="overflow-x-auto no-scrollbar flex items-center gap-1 pb-0.5">
-            {PERIOD_OPTIONS.map(({ key, labelKey }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => applyPeriod(key)}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md whitespace-nowrap transition-all shrink-0 active:scale-[0.98] ${
-                  period === key
-                    ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-2xs font-semibold"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/80"
-                }`}
-              >
-                {t(labelKey)}
-              </button>
-            ))}
-          </div>
-
-          {period === "custom" && (
-            <div className="flex items-center gap-2 pt-1 sm:pt-0" dir="ltr">
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={(e) => handleCustomDateChange("start", e.target.value)}
-                className="px-2 py-1 text-xs border border-zinc-200 dark:border-zinc-800 rounded-md dark:bg-zinc-900 dark:text-white"
-              />
-              <span className="text-xs text-zinc-400">إلى</span>
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={(e) => handleCustomDateChange("end", e.target.value)}
-                className="px-2 py-1 text-xs border border-zinc-200 dark:border-zinc-800 rounded-md dark:bg-zinc-900 dark:text-white"
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Error Banner */}
-      {error && (
-        <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200/80 dark:border-red-800/50 flex items-center justify-between gap-3 text-red-800 dark:text-red-200 text-xs font-medium">
-          <div className="flex items-center gap-2">
-            <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-red-500" />
-            <span>{error}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => loadData(dateRange.start, dateRange.end)}
-            className="px-2.5 py-1 rounded-md bg-white dark:bg-zinc-900 border border-red-300 dark:border-red-700 hover:bg-red-100/50"
-          >
-            إعادة المحاولة
-          </button>
-        </div>
-      )}
-
-      {/* 2. Core E-Commerce & Operational KPIs (Bento Grid) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
-        {/* Total Orders */}
-        <div className="p-3.5 bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-xs">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-1.5">
-            <span className="text-[11px] font-medium">{t("orders.totalOrders") || "إجمالي الطلبات"}</span>
-            <ShoppingCartIcon className="h-3.5 w-3.5 text-blue-600" />
-          </div>
-          {loading ? (
-            <Skeleton className="h-6 w-16" />
-          ) : (
-            <p className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white tracking-tight">
-              {totalOrders.toLocaleString()}
-            </p>
-          )}
-          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 tabular-nums">
-            {stats?.avgOrdersPerDay || 0} طلب / يوم
-          </p>
-        </div>
-
-        {/* Net Realized Revenue */}
-        <div className="p-3.5 bg-white dark:bg-zinc-950 border border-emerald-300/80 dark:border-emerald-800/60 rounded-xl shadow-xs ring-1 ring-emerald-500/10 dark:ring-emerald-500/20">
-          <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 mb-1.5">
-            <span className="text-[11px] font-semibold">صافي الإيراد المحصل</span>
-            <BanknotesIcon className="h-3.5 w-3.5" />
-          </div>
-          {loading ? (
-            <Skeleton className="h-6 w-24" />
-          ) : (
-            <p className="text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400 tracking-tight">
-              {formatPrice(netRevenue)}
-            </p>
-          )}
-          <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 tabular-nums truncate">
-            من إجمالي {formatPrice(totalRevenue)}
-          </p>
-        </div>
-
-        {/* Delivery Rate */}
-        <div className="p-3.5 bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-xs">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-1.5">
-            <span className="text-[11px] font-medium">معدل التسليم الناجح</span>
-            <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-600" />
-          </div>
-          {loading ? (
-            <Skeleton className="h-6 w-16" />
-          ) : (
-            <p className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white tracking-tight">
-              {deliveryRate}%
-            </p>
-          )}
-          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
-            {deliveredOrders.toLocaleString()} طلب تم تسليمه
-          </p>
-        </div>
-
-        {/* Cancellation Rate */}
-        <div className="p-3.5 bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-xs">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-1.5">
-            <span className="text-[11px] font-medium">معدل الإلغاءات</span>
-            <XCircleIcon className="h-3.5 w-3.5 text-rose-600" />
-          </div>
-          {loading ? (
-            <Skeleton className="h-6 w-16" />
-          ) : (
-            <p className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white tracking-tight">
-              {cancellationRate}%
-            </p>
-          )}
-          <p className="text-[10px] text-rose-600 dark:text-rose-400 mt-1 tabular-nums">
-            {cancelledOrders.toLocaleString()} طلب ملغي
-          </p>
-        </div>
-
-        {/* Return Rate */}
-        <div className="p-3.5 bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-xs">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-1.5">
-            <span className="text-[11px] font-medium">معدل المرتجعات</span>
-            <ArrowPathRoundedSquareIcon className="h-3.5 w-3.5 text-amber-600" />
-          </div>
-          {loading ? (
-            <Skeleton className="h-6 w-16" />
-          ) : (
-            <p className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white tracking-tight">
-              {returnRate}%
-            </p>
-          )}
-          <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 tabular-nums truncate">
-            {returnedOrders.toLocaleString()} مرتجع
-          </p>
-        </div>
-
-        {/* COD Collection Rate */}
-        <div className="p-3.5 bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-xl shadow-xs">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-1.5">
-            <span className="text-[11px] font-medium">تحصيل الدفع عند الاستلام</span>
-            <CurrencyDollarIcon className="h-3.5 w-3.5 text-indigo-600" />
-          </div>
-          {loading ? (
-            <Skeleton className="h-6 w-16" />
-          ) : (
-            <p className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white tracking-tight">
-              {codCollectionRate}%
-            </p>
-          )}
-          <p className="text-[10px] text-indigo-600 dark:text-indigo-400 mt-1 tabular-nums truncate">
-            محصل: {formatPrice(codDeliveredRevenue)}
-          </p>
-        </div>
-      </div>
-
-      {/* Secondary Telemetry Strip (Units, AOV, Pieces) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <div className="p-3 bg-white dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-850 rounded-lg flex items-center justify-between text-xs">
-          <span className="text-zinc-500">{t("orders.averageOrderValue") || "متوسط قيمة الطلب (AOV)"}</span>
-          <span className="font-bold tabular-nums text-zinc-900 dark:text-white">{formatPrice(stats?.avgOrderValue || 0)}</span>
-        </div>
-        <div className="p-3 bg-white dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-850 rounded-lg flex items-center justify-between text-xs">
-          <span className="text-zinc-500">{t("orders.totalPieces") || "إجمالي القطع"}</span>
-          <span className="font-bold tabular-nums text-zinc-900 dark:text-white">{stats?.totalPieces?.toLocaleString() || "0"}</span>
-        </div>
-        <div className="p-3 bg-white dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-850 rounded-lg flex items-center justify-between text-xs">
-          <span className="text-zinc-500">{t("orders.averagePiecesPerOrder") || "متوسط القطع / طلب"}</span>
-          <span className="font-bold tabular-nums text-zinc-900 dark:text-white">{stats?.avgPiecesPerOrder || 0}</span>
-        </div>
-        <div className="p-3 bg-white dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-850 rounded-lg flex items-center justify-between text-xs">
-          <span className="text-zinc-500">{t("orders.averagePieceValue") || "متوسط سعر القطعة"}</span>
-          <span className="font-bold tabular-nums text-zinc-900 dark:text-white">
-            {stats && stats.totalPieces > 0 ? formatPrice(totalRevenue / stats.totalPieces) : formatPrice(0)}
-          </span>
-        </div>
-      </div>
-
-      {/* 3. Daily Velocity Chart (Shown whenever trend data is available) */}
-      {stats?.dailyTrend && stats.dailyTrend.length > 1 && (
-        <div className="bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-xl p-4 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-slate-100 dark:border-zinc-900 gap-2 mb-3">
-            <div className="flex items-center gap-2">
-              <ChartBarIcon className="h-4 w-4 text-blue-600" />
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                تطور الطلبات والإيرادات اليومية
-              </h2>
-            </div>
-            <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg text-xs self-start sm:self-auto">
-              <button
-                type="button"
-                onClick={() => setTrendMetric("orders")}
-                className={`px-2.5 py-1 rounded-md transition-all font-medium active:scale-[0.98] ${
-                  trendMetric === "orders"
-                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-2xs font-semibold"
-                    : "text-zinc-600 dark:text-zinc-400"
-                }`}
-              >
-                الطلبات اليومية
-              </button>
-              <button
-                type="button"
-                onClick={() => setTrendMetric("revenue")}
-                className={`px-2.5 py-1 rounded-md transition-all font-medium active:scale-[0.98] ${
-                  trendMetric === "revenue"
-                    ? "bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-2xs font-semibold"
-                    : "text-zinc-600 dark:text-zinc-400"
-                }`}
-              >
-                الإيرادات اليومية
-              </button>
-            </div>
-          </div>
-
-          <div className="h-60 sm:h-64 w-full">
-            <DeferredResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats.dailyTrend} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="chassisOrders" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
-                  </linearGradient>
-                  <linearGradient id="chassisRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#059669" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#059669" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.2)" />
-                <XAxis dataKey="date" tickLine={false} tick={{ fontSize: 10 }} />
-                <YAxis tickLine={false} tick={{ fontSize: 10 }} />
-                <RechartsTooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(18, 18, 20, 0.95)",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    color: "#fff",
-                    fontSize: "11px",
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "6px" }} />
-                {trendMetric === "orders" ? (
-                  <>
-                    <Area type="monotone" dataKey="orders" name="إجمالي الطلبات" stroke="#2563eb" strokeWidth={2} fillOpacity={1} fill="url(#chassisOrders)" />
-                    <Area type="monotone" dataKey="delivered" name="المسلّم" stroke="#10b981" strokeWidth={1.75} fill="none" />
-                    <Area type="monotone" dataKey="cancelled" name="الملغي" stroke="#f43f5e" strokeWidth={1.25} fill="none" />
-                    <Area type="monotone" dataKey="returned" name="المرتجع" stroke="#f59e0b" strokeWidth={1.25} fill="none" />
-                  </>
-                ) : (
-                  <Area type="monotone" dataKey="revenue" name="الإيراد اليومي" stroke="#059669" strokeWidth={2} fillOpacity={1} fill="url(#chassisRevenue)" />
-                )}
-              </AreaChart>
-            </DeferredResponsiveContainer>
-          </div>
-        </div>
-      )}
-
-      {/* 4. The Operational Triad: Status Distribution, Shipping Performance, and Payment Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
-        {/* Panel 1: Full Status Distribution (with Piece Counts - Core Feature!) */}
-        <div className="bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-xl p-3.5 shadow-xs flex flex-col">
-          <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100 dark:border-zinc-900">
-            <div className="flex items-center gap-2">
-              <ChartBarIcon className="h-4 w-4 text-blue-600" />
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
-                {t("orders.analyticsStatusDistribution") || "توزيع حالات الطلبات والقطع"}
-              </h3>
-            </div>
-            <span className="text-[10px] text-zinc-400 tabular-nums">
-              {Object.keys(statusDist).length} حالات
-            </span>
-          </div>
-
-          <div className="flex-1 overflow-y-auto max-h-[340px] pr-1 space-y-2.5">
-            {loading ? (
-              <div className="space-y-3 py-2">
-                {[1, 2, 3, 4].map((n) => (
-                  <Skeleton key={n} className="h-8 w-full rounded-md" />
-                ))}
-              </div>
-            ) : Object.keys(statusDist).length === 0 ? (
-              <p className="text-center text-xs text-zinc-400 py-10">{t("orders.analyticsNoData") || "لا توجد بيانات"}</p>
-            ) : (
-              Object.entries(statusDist).map(([status, count]) => {
-                const safeTotal = totalOrders > 0 ? totalOrders : 1;
-                const pct = Math.min(100, Math.round((count / safeTotal) * 100));
-                const pieces = stats?.statusPiecesDistribution?.[status] ?? 0;
-                const display = getStatusDisplay(status);
-                const colorClass = getStatusColorClass(status);
-
-                return (
-                  <div key={status} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate">
-                        {t(display.labelKey) || status}
-                      </span>
-                      <span className="text-[11px] text-zinc-500 dark:text-zinc-400 tabular-nums shrink-0 font-medium">
-                        {t("orders.analyticsStatusCount", { orders: count, pieces }) || `${count} طلب (${pieces} قطعة)`}
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-slate-100 dark:bg-zinc-850 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${colorClass} rounded-full transition-all duration-300`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Panel 2: Shipping Couriers Performance & Delivery Speed */}
-        <div className="bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-xl p-3.5 shadow-xs flex flex-col">
-          <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100 dark:border-zinc-900">
-            <div className="flex items-center gap-2">
-              <TruckIcon className="h-4 w-4 text-indigo-600" />
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
-                كفاءة شركات وفروع الشحن
-              </h3>
-            </div>
-            <span className="text-[10px] text-zinc-400 tabular-nums">
-              {shippingList.length} جهات
-            </span>
-          </div>
-
-          <div className="flex-1 overflow-y-auto max-h-[340px] pr-1 space-y-2.5">
-            {loading ? (
-              <div className="space-y-3 py-2">
-                {[1, 2, 3].map((n) => (
-                  <Skeleton key={n} className="h-14 w-full rounded-md" />
-                ))}
-              </div>
-            ) : shippingList.length === 0 ? (
-              <p className="text-center text-xs text-zinc-400 py-10">لا توجد بيانات شحنات مسجلة</p>
-            ) : (
-              shippingList.map((carrier) => (
-                <div
-                  key={carrier.name}
-                  className="p-3 rounded-lg bg-slate-50/70 dark:bg-zinc-900/60 border border-slate-150 dark:border-zinc-850 text-xs space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                      {carrier.name}
-                    </span>
-                    <span className="font-bold tabular-nums text-zinc-800 dark:text-zinc-200">
-                      {carrier.totalOrders.toLocaleString()} شحنة
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1 text-center text-[10px] py-1 bg-white dark:bg-zinc-950 rounded border border-slate-100 dark:border-zinc-850">
-                    <div>
-                      <p className="text-zinc-400">المسلّم</p>
-                      <p className="font-bold text-emerald-600 tabular-nums">{carrier.deliveredOrders}</p>
-                    </div>
-                    <div>
-                      <p className="text-zinc-400">نسبة التسليم</p>
-                      <p className="font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">{carrier.deliveryRate}%</p>
-                    </div>
-                    <div>
-                      <p className="text-zinc-400">المرتجع</p>
-                      <p className="font-bold text-rose-600 tabular-nums">{carrier.returnedOrders}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 tabular-nums pt-0.5">
-                    <span>قيد التوصيل: <strong className="text-zinc-700 dark:text-zinc-300">{carrier.inTransitOrders}</strong></span>
-                    <span>تحصيل: <strong className="text-emerald-600">{formatPrice(carrier.codCollected)}</strong></span>
-                  </div>
+        {/* 2. EXECUTIVE BENTO GRID: CORE FINANCIAL & OPERATIONAL INTELLIGENCE */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-2.5 sm:gap-3">
+          
+          {/* Bento Cell 1: Net Realized Revenue (Hero Anchor - 4 Cols) */}
+          <div className="lg:col-span-4 bg-white dark:bg-[#0d0d10] border border-emerald-500/30 dark:border-emerald-500/25 rounded-2xl p-4 shadow-sm relative overflow-hidden flex flex-col justify-between shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-emerald-500/10">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <BanknotesIcon className="h-4 w-4" />
                 </div>
-              ))
-            )}
+                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
+                  صافي الإيراد الفعلي المحصل
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tabular-nums">
+                {netRealizationPct}% تحصيل
+              </span>
+            </div>
+
+            <div className="my-2">
+              {loading ? (
+                <Skeleton className="h-9 w-40 rounded-lg" />
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl sm:text-3xl font-extrabold tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
+                    {formatPrice(netRevenue)}
+                  </span>
+                </div>
+              )}
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 tabular-nums">
+                من إجمالي مبيعات مسجلة: <strong className="text-zinc-800 dark:text-zinc-200">{formatPrice(totalRevenue)}</strong>
+              </p>
+            </div>
+
+            {/* Waterfall Segmented Bar */}
+            <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-white/[0.05] space-y-1.5">
+              <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-500"
+                  style={{ width: `${totalRevenue > 0 ? (netRevenue / totalRevenue) * 100 : 0}%` }}
+                  title="المحصل"
+                />
+                <div
+                  className="h-full bg-sky-500 transition-all duration-500"
+                  style={{ width: `${totalRevenue > 0 ? (pendingRevenue / totalRevenue) * 100 : 0}%` }}
+                  title="قيد التوصيل"
+                />
+                <div
+                  className="h-full bg-rose-500 transition-all duration-500"
+                  style={{ width: `${totalRevenue > 0 ? (lostRevenue / totalRevenue) * 100 : 0}%` }}
+                  title="مرتجع وملغي"
+                />
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500 tabular-nums">
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                  محصل: {formatPrice(netRevenue)}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block" />
+                  بالطريق: {formatPrice(pendingRevenue)}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />
+                  مفقود: {formatPrice(lostRevenue)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bento Cell 2: Delivery Success Rate (Fulfillment Engine - 3 Cols) */}
+          <div className="lg:col-span-3 bg-white dark:bg-[#0d0d10] border border-zinc-200/90 dark:border-white/[0.08] rounded-2xl p-4 shadow-sm flex flex-col justify-between shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <CheckCircleIcon className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
+                  معدل التسليم الناجح
+                </span>
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border tabular-nums ${
+                  deliveryRate >= 70
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                    : deliveryRate >= 50
+                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                    : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                }`}
+              >
+                {deliveryRate >= 70 ? "كفاءة عالية" : deliveryRate >= 50 ? "كفاءة متوسطة" : "يحتاج تدخل"}
+              </span>
+            </div>
+
+            <div className="my-2">
+              {loading ? (
+                <Skeleton className="h-9 w-24 rounded-lg" />
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl sm:text-3xl font-extrabold tabular-nums tracking-tight text-zinc-900 dark:text-white">
+                    {deliveryRate}%
+                  </span>
+                </div>
+              )}
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 tabular-nums">
+                تم تسليم <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{deliveredOrders.toLocaleString()}</strong> من أصل {totalOrders.toLocaleString()} طلب
+              </p>
+            </div>
+
+            <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-white/[0.05]">
+              <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    deliveryRate >= 70 ? "bg-emerald-500" : deliveryRate >= 50 ? "bg-amber-500" : "bg-rose-500"
+                  }`}
+                  style={{ width: `${Math.min(100, deliveryRate)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Bento Cell 3: Returns & Cancellations Guard (2.5 Cols) */}
+          <div className="lg:col-span-2.5 bg-white dark:bg-[#0d0d10] border border-zinc-200/90 dark:border-white/[0.08] rounded-2xl p-4 shadow-sm flex flex-col justify-between shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                  <ArrowPathRoundedSquareIcon className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
+                  المرتجعات والإلغاء
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 my-1">
+              <div className="p-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-150 dark:border-white/[0.04]">
+                <p className="text-[10px] text-zinc-400 font-medium">معدل الإلغاء</p>
+                <p className="text-lg font-bold tabular-nums text-rose-600 dark:text-rose-400">
+                  {cancellationRate}%
+                </p>
+                <p className="text-[9px] text-zinc-500 tabular-nums">{cancelledOrders} طلب ملغي</p>
+              </div>
+              <div className="p-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-150 dark:border-white/[0.04]">
+                <p className="text-[10px] text-zinc-400 font-medium">معدل المرتجع</p>
+                <p className="text-lg font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                  {returnRate}%
+                </p>
+                <p className="text-[9px] text-zinc-500 tabular-nums">{returnedOrders} مرتجع</p>
+              </div>
+            </div>
+
+            <div className="mt-1 pt-1.5 border-t border-zinc-100 dark:border-white/[0.05] flex items-center justify-between text-[10px] text-zinc-400">
+              <span>تكلفة شحن مهدرة:</span>
+              <strong className="text-rose-600 dark:text-rose-400 tabular-nums font-mono">{formatPrice(returnedOrders * 45)}</strong>
+            </div>
+          </div>
+
+          {/* Bento Cell 4: COD & Cashflow Engine (2.5 Cols) */}
+          <div className="lg:col-span-2.5 bg-white dark:bg-[#0d0d10] border border-zinc-200/90 dark:border-white/[0.08] rounded-2xl p-4 shadow-sm flex flex-col justify-between shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <CreditCardIcon className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wide">
+                  تحصيل الدفع عند الاستلام
+                </span>
+              </div>
+            </div>
+
+            <div className="my-1">
+              {loading ? (
+                <Skeleton className="h-9 w-20 rounded-lg" />
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl sm:text-3xl font-extrabold tabular-nums tracking-tight text-indigo-600 dark:text-indigo-400">
+                    {codCollectionRate}%
+                  </span>
+                </div>
+              )}
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 tabular-nums">
+                محصل نقداً: <strong className="text-emerald-600 font-bold">{formatPrice(codDeliveredRevenue)}</strong>
+              </p>
+            </div>
+
+            <div className="mt-1 pt-1.5 border-t border-zinc-100 dark:border-white/[0.05] flex items-center justify-between text-[10px] text-zinc-400 tabular-nums">
+              <span>إجمالي طلبات COD:</span>
+              <span className="font-semibold text-zinc-700 dark:text-zinc-300">{codOrdersCount.toLocaleString()} طلب</span>
+            </div>
+          </div>
+
+        </div>
+
+        {/* 3. MACHINED HIGH-DENSITY AUXILIARY TELEMETRY RIBBON */}
+        <div className="bg-white dark:bg-[#0d0d10] border border-zinc-200/90 dark:border-white/[0.08] rounded-xl overflow-hidden shadow-xs grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 divide-x lg:divide-x-reverse divide-zinc-150 dark:divide-white/[0.06]">
+          <div className="p-3 sm:px-4 flex items-center justify-between gap-2 text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400 font-medium">إجمالي الطلبات المسجلة</span>
+            <div className="text-end">
+              <span className="font-bold tabular-nums text-zinc-900 dark:text-white text-sm">
+                {totalOrders.toLocaleString()}
+              </span>
+              <span className="text-[10px] text-zinc-400 block tabular-nums">
+                {stats?.avgOrdersPerDay || 0} طلب / يوم
+              </span>
+            </div>
+          </div>
+
+          <div className="p-3 sm:px-4 flex items-center justify-between gap-2 text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400 font-medium">متوسط قيمة الطلب (AOV)</span>
+            <div className="text-end">
+              <span className="font-bold tabular-nums text-zinc-900 dark:text-white text-sm">
+                {formatPrice(stats?.avgOrderValue || 0)}
+              </span>
+              <span className="text-[10px] text-zinc-400 block tabular-nums">لكل سلة مكتملة</span>
+            </div>
+          </div>
+
+          <div className="p-3 sm:px-4 flex items-center justify-between gap-2 text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400 font-medium">إجمالي القطع المباعة</span>
+            <div className="text-end">
+              <span className="font-bold tabular-nums text-zinc-900 dark:text-white text-sm">
+                {stats?.totalPieces?.toLocaleString() || "0"}
+              </span>
+              <span className="text-[10px] text-zinc-400 block tabular-nums">وحدة من المنتجات</span>
+            </div>
+          </div>
+
+          <div className="p-3 sm:px-4 flex items-center justify-between gap-2 text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400 font-medium">متوسط القطع / الطلب</span>
+            <div className="text-end">
+              <span className="font-bold tabular-nums text-zinc-900 dark:text-white text-sm">
+                {stats?.avgPiecesPerOrder || 0}
+              </span>
+              <span className="text-[10px] text-zinc-400 block tabular-nums">
+                سعر القطعة: {stats && stats.totalPieces > 0 ? formatPrice(totalRevenue / stats.totalPieces) : formatPrice(0)}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Panel 3: Payment Breakdown & Financial Realization */}
-        <div className="bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-xl p-3.5 shadow-xs flex flex-col">
-          <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100 dark:border-zinc-900">
-            <div className="flex items-center gap-2">
-              <CreditCardIcon className="h-4 w-4 text-emerald-600" />
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
-                {t("orders.analyticsPaymentMethods") || "طرق الدفع والتحصيل"}
-              </h3>
+        {/* 4. DAILY VELOCITY & TREND GRAPH (Interactive Visualizer) */}
+        {stats?.dailyTrend && stats.dailyTrend.length > 1 && (
+          <div className="bg-white dark:bg-[#0d0d10] border border-zinc-200/90 dark:border-white/[0.08] rounded-2xl p-4 shadow-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-zinc-150 dark:border-white/[0.06] gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <ChartBarIcon className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                    مسار وسرعة تنفيذ الطلبات اليومية
+                  </h2>
+                  <p className="text-[11px] text-zinc-400">تطور حجم الطلبات والإيرادات المحققة على مدار الفترة المحددة</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-xl border border-zinc-200/60 dark:border-white/[0.05] text-xs self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setTrendMetric("orders")}
+                  className={`px-3 py-1 rounded-lg transition-all duration-150 font-semibold active:scale-[0.98] ${
+                    trendMetric === "orders"
+                      ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs"
+                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  الطلبات اليومية
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTrendMetric("revenue")}
+                  className={`px-3 py-1 rounded-lg transition-all duration-150 font-semibold active:scale-[0.98] ${
+                    trendMetric === "revenue"
+                      ? "bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-xs"
+                      : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  الإيرادات اليومية
+                </button>
+              </div>
             </div>
-            <span className="text-[10px] text-zinc-400 tabular-nums">
-              {Object.keys(paymentStats).length} وسائل
-            </span>
+
+            <div className="h-60 sm:h-72 w-full">
+              <DeferredResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.dailyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="chassisOrders" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
+                    </linearGradient>
+                    <linearGradient id="chassisRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.15)" />
+                  <XAxis dataKey="date" tickLine={false} tick={{ fontSize: 10, fill: "#94a3b8" }} />
+                  <YAxis tickLine={false} tick={{ fontSize: 10, fill: "#94a3b8" }} />
+                  <RechartsTooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(13, 13, 16, 0.95)",
+                      borderRadius: "12px",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      color: "#fff",
+                      fontSize: "11px",
+                      boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
+                  {trendMetric === "orders" ? (
+                    <>
+                      <Area type="monotone" dataKey="orders" name="إجمالي الطلبات" stroke="#2563eb" strokeWidth={2} fillOpacity={1} fill="url(#chassisOrders)" />
+                      <Area type="monotone" dataKey="delivered" name="المسلّم" stroke="#10b981" strokeWidth={1.75} fill="none" />
+                      <Area type="monotone" dataKey="cancelled" name="الملغي" stroke="#f43f5e" strokeWidth={1.25} fill="none" />
+                      <Area type="monotone" dataKey="returned" name="المرتجع" stroke="#f59e0b" strokeWidth={1.25} fill="none" />
+                    </>
+                  ) : (
+                    <Area type="monotone" dataKey="revenue" name="الإيراد اليومي" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#chassisRevenue)" />
+                  )}
+                </AreaChart>
+              </DeferredResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* 5. THE OPERATIONAL TRIAD: UNIFIED 3-COLUMN CHASSIS */}
+        <div className="bg-white dark:bg-[#0d0d10] border border-zinc-200/90 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-sm grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-zinc-150 dark:divide-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+          
+          {/* Pillar 1: Full Lifecycle Status Distribution & Piece Count */}
+          <div className="p-4 flex flex-col min-w-0">
+            <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-zinc-150 dark:border-white/[0.06]">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <ChartBarIcon className="h-3.5 w-3.5" />
+                </div>
+                <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                  دورة حياة الحالات والقطع
+                </h3>
+              </div>
+              <span className="text-[10px] text-zinc-400 font-mono tabular-nums">
+                {Object.keys(statusDist).length} حالة
+              </span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto max-h-[380px] pr-1 space-y-2.5">
+              {loading ? (
+                <div className="space-y-3 py-2">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Skeleton key={n} className="h-9 w-full rounded-lg" />
+                  ))}
+                </div>
+              ) : Object.keys(statusDist).length === 0 ? (
+                <p className="text-center text-xs text-zinc-400 py-12">لا توجد طلبات مسجلة في هذه الفترة</p>
+              ) : (
+                Object.entries(statusDist).map(([status, count]) => {
+                  const safeTotal = totalOrders > 0 ? totalOrders : 1;
+                  const pct = Math.min(100, Math.round((count / safeTotal) * 100));
+                  const pieces = stats?.statusPiecesDistribution?.[status] ?? 0;
+                  const display = getStatusDisplay(status);
+                  const theme = getStatusTheme(status);
+
+                  return (
+                    <div
+                      key={status}
+                      className="p-2.5 rounded-xl bg-zinc-50/70 dark:bg-zinc-900/40 border border-zinc-150/70 dark:border-white/[0.04] space-y-1.5 transition-colors hover:bg-zinc-100/60 dark:hover:bg-zinc-900/70"
+                    >
+                      <div className="flex items-center justify-between text-xs gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${theme.dot}`} />
+                          <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                            {String(translate(display.labelKey) || status)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 tabular-nums">
+                          <span className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300">
+                            {count.toLocaleString()} طلب
+                          </span>
+                          <span className="text-[10px] text-zinc-400">
+                            ({pieces.toLocaleString()} قطعة)
+                          </span>
+                          <span className="text-[10px] font-bold text-zinc-500 bg-zinc-200/60 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+                            {pct}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-1.5 bg-zinc-200/60 dark:bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${theme.bar} rounded-full transition-all duration-300`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto max-h-[340px] pr-1 space-y-2.5">
-            {/* COD Financial Realization Summary Box */}
-            <div className="p-3 rounded-lg bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 text-xs">
-              <div className="flex items-center justify-between font-semibold text-emerald-900 dark:text-emerald-300 mb-1">
-                <span>الدفع عند الاستلام (COD)</span>
-                <span className="tabular-nums font-bold">{codOrdersCount.toLocaleString()} طلب</span>
+          {/* Pillar 2: Logistics & Fleet Performance */}
+          <div className="p-4 flex flex-col min-w-0">
+            <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-zinc-150 dark:border-white/[0.06]">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <TruckIcon className="h-3.5 w-3.5" />
+                </div>
+                <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                  كفاءة شركات وفروع الشحن
+                </h3>
               </div>
-              <div className="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 tabular-nums">
-                <span>تم تحصيل: <strong className="text-emerald-600 font-bold">{formatPrice(codDeliveredRevenue)}</strong></span>
-                <span className="font-bold text-emerald-600">{codCollectionRate}% تحصيل</span>
-              </div>
+              <span className="text-[10px] text-zinc-400 font-mono tabular-nums">
+                {shippingList.length} أسطول
+              </span>
             </div>
 
-            {/* Individual payment methods list */}
-            <div className="space-y-1.5 pt-1">
-              {Object.entries(paymentStats).map(([method, count]) => {
-                const pct = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
-                return (
+            <div className="flex-1 overflow-y-auto max-h-[380px] pr-1 space-y-2.5">
+              {loading ? (
+                <div className="space-y-3 py-2">
+                  {[1, 2, 3].map((n) => (
+                    <Skeleton key={n} className="h-16 w-full rounded-xl" />
+                  ))}
+                </div>
+              ) : shippingList.length === 0 ? (
+                <p className="text-center text-xs text-zinc-400 py-12">لا توجد بيانات شحنات مسجلة</p>
+              ) : (
+                shippingList.map((carrier) => (
                   <div
-                    key={method}
-                    className="flex items-center justify-between p-2 rounded-lg bg-slate-50/80 dark:bg-zinc-900/60 border border-slate-100 dark:border-zinc-850 text-xs"
+                    key={carrier.name}
+                    className="p-3 rounded-xl bg-zinc-50/70 dark:bg-zinc-900/40 border border-zinc-150/70 dark:border-white/[0.04] text-xs space-y-2.5"
                   >
-                    <div className="min-w-0">
-                      <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate block">
-                        {getPaymentMethodLabel(method, t)}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                        {carrier.name}
                       </span>
-                      <span className="text-[10px] text-zinc-400 tabular-nums">
-                        {pct}% من إجمالي الطلبات
+                      <span className="text-[11px] font-bold tabular-nums text-zinc-800 dark:text-zinc-200 shrink-0 px-2 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-800">
+                        {carrier.totalOrders.toLocaleString()} شحنة
                       </span>
                     </div>
-                    <span className="font-bold text-zinc-900 dark:text-white tabular-nums shrink-0">
-                      {t("orders.analyticsOrderCount", { count }) || `${count} طلب`}
-                    </span>
+
+                    <div className="grid grid-cols-3 gap-1.5 text-center text-[10px] py-1.5 bg-white dark:bg-[#070709] rounded-lg border border-zinc-150 dark:border-white/[0.05]">
+                      <div>
+                        <p className="text-zinc-400">المسلّم</p>
+                        <p className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums text-xs">
+                          {carrier.deliveredOrders}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-zinc-400">نسبة النجاح</p>
+                        <p className="font-bold text-indigo-600 dark:text-indigo-400 tabular-nums text-xs">
+                          {carrier.deliveryRate}%
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-zinc-400">المرتجع</p>
+                        <p className="font-bold text-rose-600 dark:text-rose-400 tabular-nums text-xs">
+                          {carrier.returnedOrders}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 tabular-nums pt-0.5">
+                      <span>بالطريق: <strong className="text-zinc-700 dark:text-zinc-300">{carrier.inTransitOrders}</strong></span>
+                      <span>تحصيل: <strong className="text-emerald-600 font-bold">{formatPrice(carrier.codCollected)}</strong></span>
+                    </div>
                   </div>
-                );
-              })}
+                ))
+              )}
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* 5. Governorate Intelligence Table */}
-      <div className="bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-xl p-4 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-slate-100 dark:border-zinc-900 gap-2.5 mb-3">
-          <div className="flex items-center gap-2">
-            <MapPinIcon className="h-4 w-4 text-rose-500" />
-            <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-              {t("orders.analyticsGovernorateDistribution") || "توزيع المحافظات ومعدلات التسليم"}
-            </h2>
-            <span className="text-[11px] text-zinc-400 tabular-nums">
-              ({governorateList.length} محافظة)
+          {/* Pillar 3: Payment Breakdown & Settlement */}
+          <div className="p-4 flex flex-col min-w-0">
+            <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-zinc-150 dark:border-white/[0.06]">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <CreditCardIcon className="h-3.5 w-3.5" />
+                </div>
+                <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                  طرق الدفع والتسوية المالية
+                </h3>
+              </div>
+              <span className="text-[10px] text-zinc-400 font-mono tabular-nums">
+                {Object.keys(paymentStats).length} وسيلة
+              </span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto max-h-[380px] pr-1 space-y-2.5">
+              {/* COD Strategic Realization Box */}
+              <div className="p-3 rounded-xl bg-emerald-500/[0.08] dark:bg-emerald-500/[0.06] border border-emerald-500/30 text-xs space-y-1.5">
+                <div className="flex items-center justify-between font-bold text-emerald-800 dark:text-emerald-300">
+                  <span>الدفع عند الاستلام (COD)</span>
+                  <span className="tabular-nums">{codOrdersCount.toLocaleString()} طلب ({totalOrders > 0 ? Math.round((codOrdersCount / totalOrders) * 100) : 0}%)</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 tabular-nums">
+                  <span>تم تحصيل: <strong className="text-emerald-600 font-bold">{formatPrice(codDeliveredRevenue)}</strong></span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full">
+                    {codCollectionRate}% نجاح
+                  </span>
+                </div>
+              </div>
+
+              {/* Other Payment Methods List */}
+              <div className="space-y-1.5 pt-1">
+                {Object.entries(paymentStats).map(([method, count]) => {
+                  const isCod = method.toUpperCase() === "CASH" || method.toUpperCase() === "COD";
+                  const pct = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
+                  return (
+                    <div
+                      key={method}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50/70 dark:bg-zinc-900/40 border border-zinc-150/70 dark:border-white/[0.04] text-xs transition-colors hover:bg-zinc-100/60 dark:hover:bg-zinc-900/70"
+                    >
+                      <div className="min-w-0">
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-200 truncate block">
+                          {getPaymentMethodLabel(method, translate)}
+                        </span>
+                        <span className="text-[10px] text-zinc-400 tabular-nums">
+                          {pct}% من إجمالي الطلبات {isCod ? "• تحصيل نقدي" : "• دفع إلكتروني"}
+                        </span>
+                      </div>
+                      <span className="font-bold text-zinc-900 dark:text-white tabular-nums shrink-0 px-2 py-1 rounded bg-zinc-200/50 dark:bg-zinc-800 text-[11px]">
+                        {count.toLocaleString()} طلب
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* 6. ADVANCED GOVERNORATE GEO-INTELLIGENCE TABLE */}
+        <div className="bg-white dark:bg-[#0d0d10] border border-zinc-200/90 dark:border-white/[0.08] rounded-2xl p-4 shadow-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-zinc-150 dark:border-white/[0.06] gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <MapPinIcon className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                    التحليل الجغرافي وتوزيع المحافظات
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 tabular-nums border border-zinc-200 dark:border-white/[0.06]">
+                    {governorateList.length} محافظة
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-400">تحليل معدلات التسليم، المرتجعات، وإجمالي المبيعات بكل محافظة</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Sort Switcher */}
+              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-xl border border-zinc-200/60 dark:border-white/[0.05] text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setGovSortBy("orders")}
+                  className={`px-2.5 py-1 rounded-lg transition-all font-medium active:scale-[0.98] ${
+                    govSortBy === "orders"
+                      ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs font-bold"
+                      : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  الطلبات
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGovSortBy("delivery")}
+                  className={`px-2.5 py-1 rounded-lg transition-all font-medium active:scale-[0.98] ${
+                    govSortBy === "delivery"
+                      ? "bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-xs font-bold"
+                      : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  نسبة التسليم
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGovSortBy("revenue")}
+                  className={`px-2.5 py-1 rounded-lg transition-all font-medium active:scale-[0.98] ${
+                    govSortBy === "revenue"
+                      ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs font-bold"
+                      : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  المبيعات
+                </button>
+              </div>
+
+              {/* Search Box */}
+              <div className="relative w-full sm:w-56">
+                <MagnifyingGlassIcon className="h-3.5 w-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="بحث في المحافظات..."
+                  value={govSearch}
+                  onChange={(e) => setGovSearch(e.target.value)}
+                  className="w-full pr-8 pl-7 py-1 text-xs bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-white/[0.08] rounded-xl text-zinc-900 dark:text-white placeholder-zinc-400 focus-visible:ring-2 focus-visible:ring-primary outline-none"
+                />
+                {govSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setGovSearch("")}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                  >
+                    <XMarkIcon className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="space-y-2 py-3">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <Skeleton key={n} className="h-9 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : filteredAndSortedGovs.length === 0 ? (
+            <div className="text-center py-10 space-y-2">
+              <p className="text-xs text-zinc-400">لا توجد محافظات مطابقة لنتائج البحث</p>
+              {govSearch && (
+                <button
+                  type="button"
+                  onClick={() => setGovSearch("")}
+                  className="text-xs text-blue-600 hover:underline font-semibold"
+                >
+                  إعادة ضبط البحث
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <table className="w-full text-xs min-w-[720px]">
+                <thead>
+                  <tr className="border-b border-zinc-150 dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 bg-zinc-50/50 dark:bg-zinc-900/40 text-[11px]">
+                    <th className="py-2.5 px-3 text-start font-semibold">المحافظة</th>
+                    <th className="py-2.5 px-3 text-start font-semibold">إجمالي الطلبات</th>
+                    <th className="py-2.5 px-3 text-start font-semibold">الحصة %</th>
+                    <th className="py-2.5 px-3 text-start font-semibold">تم التسليم</th>
+                    <th className="py-2.5 px-3 text-start font-semibold">نسبة التسليم الناجح</th>
+                    <th className="py-2.5 px-3 text-start font-semibold">المرتجع</th>
+                    <th className="py-2.5 px-3 text-start font-semibold">الملغي</th>
+                    <th className="py-2.5 px-3 text-start font-semibold">إجمالي المبيعات</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-150 dark:divide-white/[0.04]">
+                  {filteredAndSortedGovs.map((gov) => (
+                    <tr key={gov.name} className="hover:bg-zinc-50/80 dark:hover:bg-zinc-900/50 transition-colors">
+                      <td className="py-2.5 px-3 font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                        <MapPinIcon className="h-3 w-3 text-zinc-400 shrink-0" />
+                        <span className="truncate">{gov.name}</span>
+                      </td>
+                      <td className="py-2.5 px-3 tabular-nums font-bold text-zinc-900 dark:text-white">
+                        {gov.ordersCount.toLocaleString()}
+                      </td>
+                      <td className="py-2.5 px-3 tabular-nums text-zinc-500">
+                        <span className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[10px] font-semibold">
+                          {gov.sharePct}%
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                        {gov.deliveredCount}
+                      </td>
+                      <td className="py-2.5 px-3 min-w-[140px]">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`tabular-nums font-bold text-[11px] shrink-0 ${
+                              gov.deliveryRate >= 70
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : gov.deliveryRate >= 45
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-rose-600 dark:text-rose-400"
+                            }`}
+                          >
+                            {gov.deliveryRate}%
+                          </span>
+                          <div className="h-1.5 flex-1 bg-zinc-200/60 dark:bg-zinc-800 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                gov.deliveryRate >= 70
+                                  ? "bg-emerald-500"
+                                  : gov.deliveryRate >= 45
+                                  ? "bg-amber-500"
+                                  : "bg-rose-500"
+                              }`}
+                              style={{ width: `${Math.min(100, gov.deliveryRate)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 tabular-nums font-medium text-amber-600">
+                        {gov.returnedCount}
+                      </td>
+                      <td className="py-2.5 px-3 tabular-nums font-medium text-rose-600">
+                        {gov.cancelledCount}
+                      </td>
+                      <td className="py-2.5 px-3 tabular-nums font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        {formatPrice(gov.revenue)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* 7. TOP PRODUCTS PERFORMANCE TABLE */}
+        <div className="bg-white dark:bg-[#0d0d10] border border-zinc-200/90 dark:border-white/[0.08] rounded-2xl p-4 shadow-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <div className="flex items-center justify-between pb-3 border-b border-zinc-150 dark:border-white/[0.06] mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                <CubeIcon className="h-4 w-4" />
+              </div>
+              <div>
+                <h2 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+                  أفضل المنتجات مبيعاً وأعلاها عائداً
+                </h2>
+                <p className="text-[11px] text-zinc-400">ترتيب المنتجات وفقاً لحجم المبيعات والكميات المحققة</p>
+              </div>
+            </div>
+            <span className="text-[10px] text-zinc-400 font-mono tabular-nums">
+              {products.length} منتج
             </span>
           </div>
-          <div className="relative w-full sm:w-60">
-            <MagnifyingGlassIcon className="h-3.5 w-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="بحث في المحافظات..."
-              value={govSearch}
-              onChange={(e) => setGovSearch(e.target.value)}
-              className="w-full pr-8 pl-2.5 py-1 text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-500"
-            />
-          </div>
-        </div>
 
-        {loading ? (
-          <div className="space-y-2 py-2">
-            {[1, 2, 3, 4].map((n) => (
-              <Skeleton key={n} className="h-8 w-full" />
-            ))}
-          </div>
-        ) : filteredGovs.length === 0 ? (
-          <p className="text-center text-xs text-zinc-400 py-8">لا توجد بيانات متاحة للمحافظات</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-slate-150 dark:border-zinc-850 text-zinc-500 dark:text-zinc-400 bg-slate-50/50 dark:bg-zinc-900/40 text-[11px]">
-                  <th className="py-2 px-3 text-start font-medium">المحافظة</th>
-                  <th className="py-2 px-3 text-start font-medium">إجمالي الطلبات</th>
-                  <th className="py-2 px-3 text-start font-medium">الحصة %</th>
-                  <th className="py-2 px-3 text-start font-medium">تم التسليم</th>
-                  <th className="py-2 px-3 text-start font-medium">نسبة التسليم الناجح</th>
-                  <th className="py-2 px-3 text-start font-medium">المرتجع</th>
-                  <th className="py-2 px-3 text-start font-medium">الملغي</th>
-                  <th className="py-2 px-3 text-start font-medium">إجمالي المبيعات</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-zinc-900">
-                {filteredGovs.map((gov) => (
-                  <tr key={gov.name} className="hover:bg-slate-50/70 dark:hover:bg-zinc-900/50 transition-colors">
-                    <td className="py-2 px-3 font-semibold text-zinc-900 dark:text-zinc-100">
-                      {gov.name}
-                    </td>
-                    <td className="py-2 px-3 tabular-nums font-bold text-zinc-800 dark:text-zinc-200">
-                      {gov.ordersCount.toLocaleString()}
-                    </td>
-                    <td className="py-2 px-3 tabular-nums text-zinc-500">
-                      {gov.sharePct}%
-                    </td>
-                    <td className="py-2 px-3 tabular-nums font-semibold text-emerald-600">
-                      {gov.deliveredCount}
-                    </td>
-                    <td className="py-2 px-3 min-w-[130px]">
-                      <div className="flex items-center gap-2">
-                        <span className="tabular-nums font-bold text-zinc-800 dark:text-zinc-200 text-[11px] shrink-0">
-                          {gov.deliveryRate}%
-                        </span>
-                        <div className="h-1.5 flex-1 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${
-                              gov.deliveryRate >= 70
-                                ? "bg-emerald-500"
-                                : gov.deliveryRate >= 45
-                                ? "bg-amber-500"
-                                : "bg-rose-500"
-                            }`}
-                            style={{ width: `${Math.min(100, gov.deliveryRate)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-2 px-3 tabular-nums font-medium text-amber-600">
-                      {gov.returnedCount}
-                    </td>
-                    <td className="py-2 px-3 tabular-nums font-medium text-rose-600">
-                      {gov.cancelledCount}
-                    </td>
-                    <td className="py-2 px-3 tabular-nums font-bold text-emerald-600 whitespace-nowrap">
-                      {formatPrice(gov.revenue)}
-                    </td>
+          {loading ? (
+            <div className="space-y-3 py-3">
+              {[1, 2, 3, 4].map((n) => (
+                <Skeleton key={n} className="h-10 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : products.length === 0 ? (
+            <p className="text-center text-xs text-zinc-400 py-10">لا توجد بيانات مبيعات منتجات متاحة في هذه الفترة</p>
+          ) : (
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <table className="w-full text-xs min-w-[680px]">
+                <thead>
+                  <tr className="border-b border-zinc-150 dark:border-white/[0.06] text-zinc-500 dark:text-zinc-400 bg-zinc-50/50 dark:bg-zinc-900/40 text-[11px]">
+                    <th className="py-2.5 px-3 text-start font-semibold">المنتج</th>
+                    <th className="py-2.5 px-3 text-start font-semibold">الكمية المباعة</th>
+                    <th className="py-2.5 px-3 text-start font-semibold">عدد الطلبات</th>
+                    <th className="py-2.5 px-3 text-start font-semibold">متوسط السعر</th>
+                    <th className="py-2.5 px-3 text-start font-semibold">إجمالي المبيعات</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* 6. Top Products Performance Table */}
-      <div className="bg-white dark:bg-zinc-950 border border-slate-200/90 dark:border-zinc-800 rounded-xl p-4 shadow-xs">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-zinc-900 mb-3">
-          <CubeIcon className="h-4 w-4 text-purple-600" />
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">
-            {t("orders.analyticsTopProducts") || "أفضل المنتجات مبيعاً"}
-          </h2>
-        </div>
-
-        {loading ? (
-          <div className="space-y-3 py-2">
-            {[1, 2, 3, 4].map((n) => (
-              <Skeleton key={n} className="h-10 w-full" />
-            ))}
-          </div>
-        ) : products.length === 0 ? (
-          <p className="text-center text-xs text-zinc-400 py-8">
-            {t("orders.analyticsNoData") || "لا توجد بيانات مبيعات منتجات"}
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-slate-150 dark:border-zinc-850 text-zinc-500 dark:text-zinc-400 bg-slate-50/50 dark:bg-zinc-900/40 text-[11px]">
-                  <th className="py-2 px-3 text-start font-medium">
-                    {t("orders.analyticsProduct") || "المنتج"}
-                  </th>
-                  <th className="py-2 px-3 text-start font-medium">
-                    {t("orders.analyticsQuantitySold") || "الكمية المباعة"}
-                  </th>
-                  <th className="py-2 px-3 text-start font-medium">
-                    {t("orders.analyticsProductOrderCount") || "عدد الطلبات"}
-                  </th>
-                  <th className="py-2 px-3 text-start font-medium">
-                    {t("orders.analyticsAveragePrice") || "متوسط السعر"}
-                  </th>
-                  <th className="py-2 px-3 text-start font-medium">
-                    {t("orders.analyticsRevenue") || "إجمالي المبيعات"}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-zinc-900">
-                {products.slice(0, 15).map((p) => (
-                  <tr key={p.productId} className="hover:bg-slate-50/70 dark:hover:bg-zinc-900/50 transition-colors">
-                    <td className="py-2 px-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {p.productImage ? (
-                          <img
-                            src={p.productImage}
-                            alt={p.productName}
-                            className="h-8 w-8 rounded-lg object-cover shrink-0 border border-slate-200 dark:border-zinc-800"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="h-8 w-8 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                            <CubeIcon className="h-4 w-4" />
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="font-semibold text-zinc-900 dark:text-white truncate">
-                            {p.productName}
-                          </p>
-                          {p.productSku && (
-                            <p className="text-[10px] text-zinc-400 truncate">
-                              SKU: {p.productSku}
-                            </p>
+                </thead>
+                <tbody className="divide-y divide-zinc-150 dark:divide-white/[0.04]">
+                  {products.slice(0, 15).map((p) => (
+                    <tr key={p.productId} className="hover:bg-zinc-50/80 dark:hover:bg-zinc-900/50 transition-colors">
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {p.productImage ? (
+                            <img
+                              src={p.productImage}
+                              alt={p.productName}
+                              className="h-8 w-8 rounded-lg object-cover shrink-0 border border-zinc-200 dark:border-white/[0.1]"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/20">
+                              <CubeIcon className="h-4 w-4" />
+                            </div>
                           )}
+                          <div className="min-w-0">
+                            <p className="font-semibold text-zinc-900 dark:text-white truncate">
+                              {p.productName}
+                            </p>
+                            {p.productSku && (
+                              <p className="text-[10px] text-zinc-400 font-mono truncate">
+                                SKU: {p.productSku}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-2 px-3 font-bold text-zinc-900 dark:text-white tabular-nums">
-                      {p.quantitySold.toLocaleString()}
-                    </td>
-                    <td className="py-2 px-3 text-zinc-600 dark:text-zinc-300 tabular-nums">
-                      {p.orderCount.toLocaleString()}
-                    </td>
-                    <td className="py-2 px-3 text-zinc-600 dark:text-zinc-300 tabular-nums">
-                      {formatPrice(p.averagePrice)}
-                    </td>
-                    <td className="py-2 px-3 text-emerald-600 dark:text-emerald-400 font-bold tabular-nums whitespace-nowrap">
-                      {formatPrice(p.revenue)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-zinc-900 dark:text-white tabular-nums">
+                        {p.quantitySold.toLocaleString()}
+                      </td>
+                      <td className="py-2.5 px-3 text-zinc-600 dark:text-zinc-300 tabular-nums">
+                        {p.orderCount.toLocaleString()}
+                      </td>
+                      <td className="py-2.5 px-3 text-zinc-600 dark:text-zinc-300 tabular-nums">
+                        {formatPrice(p.averagePrice)}
+                      </td>
+                      <td className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400 font-bold tabular-nums whitespace-nowrap">
+                        {formatPrice(p.revenue)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

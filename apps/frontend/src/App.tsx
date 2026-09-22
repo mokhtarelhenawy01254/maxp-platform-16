@@ -487,6 +487,9 @@ const StockCountSessionPage = React.lazy(
 const ModifiersManagementPage = React.lazy(
   () => import("./pages/cafe/ModifiersManagementPage"),
 );
+const WasteTrackingPage = React.lazy(
+  () => import("./pages/cafe/WasteTrackingPage"),
+);
 const WholesaleDashboard = React.lazy(
   () => import("./pages/wholesale/WholesaleDashboard"),
 );
@@ -4874,7 +4877,7 @@ const AppContent = () => {
                 <Route
                   path="/orders/analytics"
                   element={
-                    <Layout>
+                    <Layout fullWidth>
                       <OrdersAnalytics />
                     </Layout>
                   }
@@ -5230,6 +5233,16 @@ const AppContent = () => {
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['cafe-restaurant-pro']}>
                         <ModifiersManagementPage />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/cafe/waste"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['cafe-restaurant-pro']}>
+                        <WasteTrackingPage />
                       </AppAccessRoute>
                     </Layout>
                   }
