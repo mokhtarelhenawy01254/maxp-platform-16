@@ -92,6 +92,7 @@ const ADMIN_ROUTE_TITLES: Array<{ prefix: string; title: string }> = [
   { prefix: "/posts", title: "إدارة المنشورات" },
   { prefix: "/marketing", title: "التسويق والحملات" },
   { prefix: "/inventory", title: "المخزون والمستودعات" },
+  { prefix: "/cafe", title: "نظام الكافيهات والمطاعم" },
   { prefix: "/analytics", title: "التحليلات والتقارير" },
   { prefix: "/reports", title: "التقارير المالية والتشغيلية" },
   { prefix: "/treasury-expenses", title: "الخزينة والنفقات ورأس المال" },

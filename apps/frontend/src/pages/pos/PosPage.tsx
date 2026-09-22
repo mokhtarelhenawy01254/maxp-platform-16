@@ -44,6 +44,7 @@ interface Product {
   category: string;
   stock: number;
   sku: string;
+  trackInventory?: boolean;
 }
 interface CartItem extends Product {
   qty: number;
@@ -92,6 +93,7 @@ interface PosApiProduct {
   image?: unknown;
   images?: unknown;
   stock?: number | string | null;
+  trackInventory?: boolean | null;
 }
 
 interface PosProductImageProps {
@@ -323,6 +325,7 @@ const PosPage = () => {
             category: p.category?.name || t("posPage.notSpecified"),
             images: getImageCandidates(p.mainImage, p.image, p.images),
             stock: Number(p.stock || 0),
+            trackInventory: p.trackInventory !== false,
           }));
           setProducts(prods);
           setCategories([
@@ -355,11 +358,11 @@ const PosPage = () => {
   });
 
   const addToCart = (p: Product) => {
-    if (p.stock <= 0) return alert(t("posPage.notAvailable"));
+    if (p.trackInventory !== false && p.stock <= 0) return alert(t("posPage.notAvailable"));
     setCart((prev) => {
       const ex = prev.find((i) => i.id === p.id);
       if (ex) {
-        if (ex.qty >= p.stock) return prev;
+        if (p.trackInventory !== false && ex.qty >= p.stock) return prev;
         return prev.map((i) => (i.id === p.id ? { ...i, qty: i.qty + 1 } : i));
       }
       return [...prev, { ...p, qty: 1 }];
@@ -368,11 +371,11 @@ const PosPage = () => {
 
   const updateQty = (id: string, d: number) =>
     setCart((prev) =>
-      prev.map((i) =>
-        i.id === id
-          ? { ...i, qty: Math.max(1, Math.min(i.stock, i.qty + d)) }
-          : i,
-      ),
+      prev.map((i) => {
+        if (i.id !== id) return i;
+        const maxQty = i.trackInventory === false ? 9999 : i.stock;
+        return { ...i, qty: Math.max(1, Math.min(maxQty, i.qty + d)) };
+      }),
     );
   const removeItem = (id: string) =>
     setCart((prev) => prev.filter((i) => i.id !== id));
@@ -389,13 +392,13 @@ const PosPage = () => {
         const sku = barcodeBuffer.current;
         const p = products.find((x) => x.sku === sku || x.id === sku);
         if (p) {
-          if (p.stock <= 0) {
+          if (p.trackInventory !== false && p.stock <= 0) {
             alert(t("posPage.notAvailable"));
           } else {
             setCart((prev) => {
               const ex = prev.find((i) => i.id === p.id);
               if (ex) {
-                if (ex.qty >= p.stock) return prev;
+                if (p.trackInventory !== false && ex.qty >= p.stock) return prev;
                 return prev.map((i) =>
                   i.id === p.id ? { ...i, qty: i.qty + 1 } : i,
                 );
@@ -578,6 +581,41 @@ const PosPage = () => {
         '<div class="hr"></div><p class="c">' +
           t("posPage.thankYou") +
           '</p></body></html>',
+      );
+      w.document.close();
+      setTimeout(() => {
+        w.print();
+        w.close();
+      }, 300);
+    }
+  };
+
+  const printKitchenTicket = () => {
+    if (!lastOrder) return;
+    const locale = i18n.language === "ar" ? "ar-EG" : "en-US";
+    const w = window.open("", "", "width=400,height=500");
+    if (w) {
+      w.document.write(
+        '<html dir="rtl"><head><style>body{font:13px monospace;max-width:280px;margin:auto;padding:15px}.c{text-align:center}.r{display:flex;justify-content:space-between;margin:5px 0;font-weight:bold;font-size:15px}.hr{border-top:2px dashed #000;margin:8px 0}</style></head><body>',
+      );
+      w.document.write(
+        '<div class="c"><h2 style="margin:0">تذكرة تجهيز بار / مطبخ</h2><h1 style="margin:4px 0;font-size:22px">#' +
+          lastOrder.orderNumber +
+          '</h1><p style="margin:0">' +
+          lastOrder.date.toLocaleTimeString(locale) +
+          '</p></div><div class="hr"></div>',
+      );
+      lastOrder.items.forEach((i) =>
+        w.document.write(
+          '<div class="r"><span>' +
+            i.name +
+            '</span><span>x ' +
+            i.qty +
+            '</span></div>',
+        ),
+      );
+      w.document.write(
+        '<div class="hr"></div><p class="c" style="font-size:10px">تذكرة تشغيلية للأقسام</p></body></html>',
       );
       w.document.close();
       setTimeout(() => {
@@ -1035,17 +1073,24 @@ const PosPage = () => {
                   </p>
                 </div>
               )}
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <button
                 onClick={printReceipt}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 text-xs sm:text-sm"
               >
-                <Printer className="h-5 w-5" />
+                <Printer className="h-4 w-4" />
                 {t('pos.k_54')}
               </button>
               <button
+                onClick={printKitchenTicket}
+                className="flex-1 border border-amber-500/50 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-700 dark:text-amber-400 py-3 rounded-xl font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 text-xs sm:text-sm"
+              >
+                <Coffee className="h-4 w-4" />
+                تذكرة البار
+              </button>
+              <button
                 onClick={() => setShowReceipt(false)}
-                className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs sm:text-sm"
               >
                 {t('pos.k_55')}
               </button>

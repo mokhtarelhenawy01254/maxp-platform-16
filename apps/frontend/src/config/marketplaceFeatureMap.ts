@@ -208,6 +208,23 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     action: "تم فصل المخزون وربطه بـ inventory-pro مع fallback مؤقت على ecommerce-basic.",
   },
   {
+    id: "cafe-restaurant-suite",
+    area: "operations",
+    label: "نظام الكافيهات والمطاعم",
+    description: "معايير تصنيع المشروبات، تفكيك الخامات، جلسات الجرد، وخيارات التعديل.",
+    status: "covered",
+    appSlug: "cafe-restaurant-pro",
+    appLabel: "نظام الكافيهات والمطاعم",
+    currentGate: "cafe-restaurant-pro",
+    legacyGate: "pos-pro",
+    routes: [
+      { path: "/cafe/recipes", label: "معايير الرسيبي" },
+      { path: "/cafe/audits", label: "جلسات الجرد" },
+      { path: "/cafe/modifiers", label: "خيارات المشروبات" },
+    ],
+    action: "تم ربط منظومة الكافيهات والمطاعم بـ cafe-restaurant-pro.",
+  },
+  {
     id: "crm-customers",
     area: "crm",
     label: "CRM والعملاء",

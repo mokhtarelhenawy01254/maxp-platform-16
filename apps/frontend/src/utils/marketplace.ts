@@ -159,6 +159,7 @@ export const APP_ROUTE_MAP: Record<string, string> = {
   "blog-pro": "/articles",
   "order-shipping-turbo": "/shipping",
   "procurement-pro": "/procurement/dashboard",
+  "cafe-restaurant-pro": "/cafe/recipes",
   "hr-basic": "/hr",
   "unified-inbox": "/unified-inbox",
   "abandoned-cart-recovery": "/orders",

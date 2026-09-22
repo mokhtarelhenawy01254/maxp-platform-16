@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 import { APP_REGISTRY } from './appRegistry';
 import { STORE_APP_SLUGS } from '../utils/storeShortcut';
@@ -440,6 +440,18 @@ export const getSidebarConfig = (
                 hidden: !isAnyAppActive(['procurement-pro', 'store-pro']),
             },
             {
+                id: 'cafe',
+                title: 'الكافيه والمطعم',
+                icon: Coffee,
+                items: [
+                    { to: '/cafe/recipes', icon: FlaskConical, label: 'معايير الرسيبي' },
+                    { to: '/cafe/audits', icon: ClipboardCheck, label: 'جلسات الجرد' },
+                    { to: '/cafe/modifiers', icon: Sliders, label: 'خيارات المشروبات' },
+                    { to: '/pos', icon: CreditCard, label: 'نقطة البيع POS' },
+                ],
+                hidden: !isAnyAppActive(['cafe-restaurant-pro', 'pos-pro']),
+            },
+            {
                 id: 'orders',
                 title: t('sidebar.ordersSection'),
                 icon: Archive,
@@ -820,6 +832,20 @@ export const getSidebarConfig = (
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['procurement-pro'])
+        },
+
+        // 4️⃣.34 الكافيه والمطعم
+        {
+            id: 'cafe',
+            title: isEn ? 'Cafe & Restaurant' : 'الكافيه والمطعم',
+            icon: Coffee,
+            items: [
+                { to: '/cafe/recipes', icon: FlaskConical, label: isEn ? 'Recipes (BOM)' : 'معايير الرسيبي' },
+                { to: '/cafe/audits', icon: ClipboardCheck, label: isEn ? 'Stock Audits' : 'جلسات الجرد' },
+                { to: '/cafe/modifiers', icon: Sliders, label: isEn ? 'Drink Modifiers' : 'خيارات المشروبات' },
+                { to: '/pos', icon: CreditCard, label: isEn ? 'Cloud POS' : 'نقطة البيع POS' },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['cafe-restaurant-pro', 'pos-pro'])
         },
 
         // 4️⃣.35 الخزينة والنفقات ورأس المال
