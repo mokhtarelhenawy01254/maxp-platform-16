@@ -6,6 +6,8 @@ const expect = (actual) => ({
   toBe: (expected) => assert.strictEqual(actual, expected),
   toBeNull: () => assert.strictEqual(actual, null),
 });
+
+describe('orderDiscountUtils', () => {
   describe('resolveDiscountReason', () => {
     it('returns null when order is null or has 0 discount', () => {
       expect(resolveDiscountReason(null)).toBeNull();
