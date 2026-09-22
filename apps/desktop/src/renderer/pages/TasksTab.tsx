@@ -13,6 +13,7 @@ import {
   Play,
   Pause,
   Send,
+  Search,
 } from 'lucide-react';
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
@@ -49,6 +50,7 @@ export const TasksTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'my-tasks' | 'assigned-by-me' | 'all'>('my-tasks');
   const [statusFilter, setStatusFilter] = useState<'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'>('IN_PROGRESS');
+  const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<any[]>([]);
   const [teamActiveTimers, setTeamActiveTimers] = useState<TeamActiveTimer[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -508,6 +510,16 @@ export const TasksTab: React.FC = () => {
     return !isDone && !isReview;
   });
 
+  const displayTasks = filteredTasks.filter((t) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const title = (t.title || '').toLowerCase();
+    const desc = (t.description || '').toLowerCase();
+    const creator = (t.createdByName || t.creator?.name || '').toLowerCase();
+    const assignee = (t.assignedToName || t.assignee?.name || '').toLowerCase();
+    return title.includes(q) || desc.includes(q) || creator.includes(q) || assignee.includes(q);
+  });
+
   const completedCount = tasks.filter(
     (t) => String(t.status || '').toUpperCase() === 'COMPLETED'
   ).length;
@@ -522,6 +534,10 @@ export const TasksTab: React.FC = () => {
     return s !== 'COMPLETED' && s !== 'IN_REVIEW' && s !== 'PENDING_REVIEW';
   }).length;
 
+  const urgentCount = tasks.filter(
+    (t) => String(t.priority || '').toUpperCase() === 'URGENT' && String(t.status || '').toUpperCase() !== 'COMPLETED'
+  ).length;
+
   const activeTaskObj = tasks.find((t) => t.id === activeTask?.id);
   const isCreatorOfActive = !!(
     activeTaskObj &&
@@ -531,84 +547,62 @@ export const TasksTab: React.FC = () => {
 
   return (
     <div style={styles.container}>
-      {/* Unified 2026 Control Bar: Views + Status Filters + Action Controls */}
-      <div style={styles.unifiedControlBar}>
-        {/* Left Side: View Switcher & Status Filters */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <div style={styles.segmented}>
-            <button
-              onClick={() => setActiveView('my-tasks')}
-              style={{
-                ...styles.segBtn,
-                backgroundColor: activeView === 'my-tasks' ? 'var(--bg-elevated)' : 'transparent',
-                color: activeView === 'my-tasks' ? 'var(--text-primary)' : 'var(--text-muted)',
-                fontWeight: activeView === 'my-tasks' ? 600 : 400,
-                boxShadow: activeView === 'my-tasks' ? 'var(--shadow-card)' : 'none',
-              }}
-            >
-              <span>مهامي الموكلة إليّ</span>
-            </button>
-            <button
-              onClick={() => setActiveView('assigned-by-me')}
-              style={{
-                ...styles.segBtn,
-                backgroundColor: activeView === 'assigned-by-me' ? 'var(--bg-elevated)' : 'transparent',
-                color: activeView === 'assigned-by-me' ? 'var(--text-primary)' : 'var(--text-muted)',
-                fontWeight: activeView === 'assigned-by-me' ? 600 : 400,
-                boxShadow: activeView === 'assigned-by-me' ? 'var(--shadow-card)' : 'none',
-              }}
-            >
-              <Users size={12} />
-              <span>مهام أنشأتها للزملاء</span>
-            </button>
-            <button
-              onClick={() => setActiveView('all')}
-              style={{
-                ...styles.segBtn,
-                backgroundColor: activeView === 'all' ? 'var(--bg-elevated)' : 'transparent',
-                color: activeView === 'all' ? 'var(--text-primary)' : 'var(--text-muted)',
-                fontWeight: activeView === 'all' ? 600 : 400,
-                boxShadow: activeView === 'all' ? 'var(--shadow-card)' : 'none',
-              }}
-            >
-              <Layers size={12} />
-              <span>كل مهام الفريق</span>
-            </button>
-          </div>
-
-          <div style={{ width: 1, height: 16, backgroundColor: 'var(--border-subtle)' }} />
-
-          {/* Status Filters */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            {(['IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                style={{
-                  ...styles.statusFilterBtn,
-                  backgroundColor: statusFilter === s ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                  borderColor: statusFilter === s ? 'var(--border-strong)' : 'transparent',
-                  color: statusFilter === s ? 'var(--text-primary)' : 'var(--text-dim)',
-                  fontWeight: statusFilter === s ? 600 : 500,
-                }}
-              >
-                {s === 'IN_PROGRESS' && `قيد التنفيذ (${inProgressCount})`}
-                {s === 'IN_REVIEW' && `قيد الاعتماد (${inReviewCount})`}
-                {s === 'COMPLETED' && `المكتملة (${completedCount})`}
-              </button>
-            ))}
-          </div>
+      {/* Top Scope & Action Bar (Zero Overflow 2026 Strip) */}
+      <div style={styles.topControlStrip}>
+        {/* Right Side: Scope Segmented Switcher */}
+        <div style={styles.segmented}>
+          <button
+            onClick={() => setActiveView('my-tasks')}
+            style={{
+              ...styles.segBtn,
+              backgroundColor: activeView === 'my-tasks' ? 'var(--bg-elevated)' : 'transparent',
+              color: activeView === 'my-tasks' ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: activeView === 'my-tasks' ? 600 : 400,
+              boxShadow: activeView === 'my-tasks' ? 'var(--shadow-card)' : 'none',
+            }}
+            title="المهام المسندة إليّ والمطلوب مني تنفيذها"
+          >
+            <span>مهامي</span>
+          </button>
+          <button
+            onClick={() => setActiveView('assigned-by-me')}
+            style={{
+              ...styles.segBtn,
+              backgroundColor: activeView === 'assigned-by-me' ? 'var(--bg-elevated)' : 'transparent',
+              color: activeView === 'assigned-by-me' ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: activeView === 'assigned-by-me' ? 600 : 400,
+              boxShadow: activeView === 'assigned-by-me' ? 'var(--shadow-card)' : 'none',
+            }}
+            title="المهام التي قمت بإنشائها وتكليف زملائي بها"
+          >
+            <Users size={12} />
+            <span>مهام أنشأتها</span>
+          </button>
+          <button
+            onClick={() => setActiveView('all')}
+            style={{
+              ...styles.segBtn,
+              backgroundColor: activeView === 'all' ? 'var(--bg-elevated)' : 'transparent',
+              color: activeView === 'all' ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: activeView === 'all' ? 600 : 400,
+              boxShadow: activeView === 'all' ? 'var(--shadow-card)' : 'none',
+            }}
+            title="عرض جميع مهام الفريق على مستوى الشركة"
+          >
+            <Layers size={12} />
+            <span>مهام الفريق</span>
+          </button>
         </div>
 
-        {/* Right Side: Sync Status + Refresh + Quick Create */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {/* Left Side: Sync Status + Refresh + Primary New Task Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={styles.cloudBadge} title="مزامنة فورية مشفرة مع السيرفر السحابي">
             <span style={styles.syncPulseDot} />
-            <span>مزامنة فورية</span>
+            <span style={{ fontSize: 10 }}>مزامنة فورية</span>
           </div>
 
           <button
-            onClick={loadData}
+            onClick={() => loadData(true)}
             disabled={loading}
             style={styles.refreshBtn}
             title="تحديث ومزامنة المهام (Ctrl + R)"
@@ -766,24 +760,93 @@ export const TasksTab: React.FC = () => {
 
 
 
-      {/* Linear-Style Tasks Surface Chassis */}
+      {/* Linear-Style Tasks Surface Chassis (Unified Single-Surface) */}
       <div style={styles.list}>
+        {/* Table Filter & Status Ribbon (Directly integrated into the top of the chassis) */}
+        <div style={styles.tableFilterRibbon}>
+          {/* Status Tabs */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {(['IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const).map((s) => {
+              const count = s === 'IN_PROGRESS' ? inProgressCount : s === 'IN_REVIEW' ? inReviewCount : completedCount;
+              const isSelected = statusFilter === s;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  style={{
+                    ...styles.statusTabBtn,
+                    backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                    borderColor: isSelected ? 'var(--border-strong)' : 'transparent',
+                    color: isSelected ? 'var(--text-primary)' : 'var(--text-dim)',
+                    fontWeight: isSelected ? 600 : 500,
+                  }}
+                >
+                  <span>
+                    {s === 'IN_PROGRESS' && 'قيد التنفيذ'}
+                    {s === 'IN_REVIEW' && 'قيد الاعتماد'}
+                    {s === 'COMPLETED' && 'المكتملة'}
+                  </span>
+                  <span
+                    style={{
+                      ...styles.countBadge,
+                      backgroundColor: isSelected
+                        ? s === 'IN_REVIEW' && inReviewCount > 0
+                          ? 'rgba(168, 85, 247, 0.25)'
+                          : 'rgba(255, 255, 255, 0.12)'
+                        : 'rgba(255, 255, 255, 0.04)',
+                      color: isSelected
+                        ? s === 'IN_REVIEW' && inReviewCount > 0
+                          ? '#c084fc'
+                          : 'var(--text-primary)'
+                        : 'var(--text-dim)',
+                    }}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick Live Search Input */}
+          <div style={styles.searchBox}>
+            <Search size={12} color="var(--text-dim)" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="بحث سريع في المهام…"
+              style={styles.searchInput}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={styles.searchClearBtn}
+                title="إلغاء البحث"
+              >
+                <X size={10} />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Table Column Headers (Linear / Raycast 2026 Style) */}
-        {filteredTasks.length > 0 && (
+        {displayTasks.length > 0 && (
           <div style={styles.tableHeaderRow}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <span style={styles.tableColLabel}>المهمة</span>
             </div>
-            <div style={{ width: 105, textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ width: 95, textAlign: 'right', flexShrink: 0 }}>
               <span style={styles.tableColLabel}>{activeView === 'my-tasks' ? 'المنشئ' : 'المكلف'}</span>
             </div>
-            <div style={{ width: 50, textAlign: 'center', flexShrink: 0 }}>
+            <div style={{ width: 48, textAlign: 'center', flexShrink: 0 }}>
               <span style={styles.tableColLabel}>المقدر</span>
             </div>
-            <div style={{ width: 80, textAlign: 'center', flexShrink: 0 }}>
+            <div style={{ width: 76, textAlign: 'center', flexShrink: 0 }}>
               <span style={styles.tableColLabel}>الاستحقاق</span>
             </div>
-            <div style={{ width: 130, textAlign: 'left', flexShrink: 0, paddingLeft: 6 }}>
+            <div style={{ width: 120, textAlign: 'left', flexShrink: 0, paddingLeft: 6 }}>
               <span style={styles.tableColLabel}>الإجراءات</span>
             </div>
           </div>
@@ -791,34 +854,35 @@ export const TasksTab: React.FC = () => {
 
         {loading && tasks.length === 0 ? (
           <div style={styles.emptyState}>جاري جلب المهام من السيرفر السحابي…</div>
-        ) : filteredTasks.length === 0 ? (
+        ) : displayTasks.length === 0 ? (
           <div style={styles.emptyState}>
-            <div>لا توجد مهام في هذا التصنيف حالياً.</div>
-            {activeView === 'my-tasks' && (
-              <button
-                onClick={() => setActiveView('all')}
-                style={{
-                  marginTop: 10,
-                  padding: '6px 14px',
-                  borderRadius: 8,
-                  border: '1px solid var(--border-subtle)',
-                  background: 'var(--bg-elevated)',
-                  color: '#38bdf8',
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <Layers size={13} />
-                <span>عرض جميع مهام الفريق والشركة</span>
-              </button>
+            {searchQuery ? (
+              <div>
+                <div>لم يتم العثور على أي مهمة تطابق البحث "{searchQuery}".</div>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  style={styles.emptyResetBtn}
+                >
+                  إعادة ضبط البحث
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div>لا توجد مهام في هذا التصنيف حالياً.</div>
+                {activeView === 'my-tasks' && (
+                  <button
+                    onClick={() => setActiveView('all')}
+                    style={styles.emptySwitchBtn}
+                  >
+                    <Layers size={13} />
+                    <span>عرض جميع مهام الفريق والشركة</span>
+                  </button>
+                )}
+              </div>
             )}
           </div>
         ) : (
-          filteredTasks.map((t) => (
+          displayTasks.map((t) => (
             <TaskItemCard
               key={t.id}
               task={t}
@@ -840,6 +904,33 @@ export const TasksTab: React.FC = () => {
             />
           ))
         )}
+
+        {/* Table Telemetry Footer Bar (Eliminates abrupt bottom cutoff & anchors chassis) */}
+        <div style={styles.tableFooterRow}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={styles.tableFooterText}>
+              عرض {displayTasks.length} من {tasks.length} مهمة
+            </span>
+            {urgentCount > 0 && (
+              <span style={styles.footerUrgentBadge}>
+                {urgentCount} عاجل
+              </span>
+            )}
+            {inReviewCount > 0 && (
+              <span style={styles.footerReviewBadge}>
+                {inReviewCount} بانتظار الاعتماد
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={styles.footerKbdHint}>
+              <kbd style={styles.kbdTiny}>Ctrl+N</kbd> مهمة جديدة
+            </span>
+            <span style={styles.footerKbdHint}>
+              <kbd style={styles.kbdTiny}>Ctrl+R</kbd> تحديث
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Create Task Modal */}
@@ -1032,7 +1123,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: 12,
   },
-  unifiedControlBar: {
+  topControlStrip: {
     backgroundColor: 'var(--bg-surface)',
     border: '1px solid var(--border-default)',
     borderRadius: 8,
@@ -1041,8 +1132,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    flexWrap: 'nowrap',
-    overflowX: 'auto',
+    flexWrap: 'wrap',
   },
   syncPulseDot: {
     width: 6,
@@ -1260,17 +1350,64 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
     transition: 'all 120ms ease-out',
   },
-  statusFilterBtn: {
-    padding: '3px 8px',
+  tableFilterRibbon: {
+    padding: '6px 12px',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderBottom: '1px solid var(--border-default)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  statusTabBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '4px 10px',
     fontSize: 11,
-    borderRadius: 5,
-    border: '1px solid',
+    borderRadius: 6,
+    border: '1px solid transparent',
     cursor: 'pointer',
     fontFamily: 'inherit',
-    fontVariantNumeric: 'tabular-nums',
     outline: 'none',
-    whiteSpace: 'nowrap',
     transition: 'all 120ms ease-out',
+  },
+  countBadge: {
+    fontSize: 10,
+    fontWeight: 700,
+    padding: '1px 6px',
+    borderRadius: 10,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  searchBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 6,
+    padding: '3px 8px',
+    width: 170,
+  },
+  searchInput: {
+    background: 'none',
+    border: 'none',
+    outline: 'none',
+    color: 'var(--text-primary)',
+    fontSize: 11,
+    fontFamily: 'inherit',
+    width: '100%',
+  },
+  searchClearBtn: {
+    background: 'none',
+    border: 'none',
+    color: 'var(--text-dim)',
+    cursor: 'pointer',
+    padding: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   list: {
     display: 'flex',
@@ -1279,12 +1416,13 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border-default)',
     borderRadius: 8,
     overflow: 'hidden',
+    boxShadow: 'var(--shadow-card)',
   },
   tableHeaderRow: {
     minHeight: 28,
     height: 28,
     padding: '0 14px',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: 'rgba(255, 255, 255, 0.015)',
     borderBottom: '1px solid var(--border-default)',
     display: 'flex',
     alignItems: 'center',
@@ -1303,10 +1441,86 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '36px 16px',
     fontSize: 12,
     color: 'var(--text-dim)',
-    backgroundColor: 'var(--bg-sidebar)',
-    borderRadius: 8,
-    border: '1px dashed var(--border-subtle)',
+    backgroundColor: 'transparent',
     lineHeight: 1.6,
+  },
+  emptyResetBtn: {
+    marginTop: 8,
+    padding: '4px 12px',
+    borderRadius: 6,
+    border: '1px solid var(--border-subtle)',
+    background: 'var(--bg-elevated)',
+    color: '#38bdf8',
+    cursor: 'pointer',
+    fontSize: 11,
+    fontWeight: 600,
+  },
+  emptySwitchBtn: {
+    marginTop: 10,
+    padding: '6px 14px',
+    borderRadius: 8,
+    border: '1px solid var(--border-subtle)',
+    background: 'var(--bg-elevated)',
+    color: '#38bdf8',
+    cursor: 'pointer',
+    fontSize: 12,
+    fontWeight: 600,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tableFooterRow: {
+    minHeight: 30,
+    padding: '5px 14px',
+    backgroundColor: 'rgba(255, 255, 255, 0.015)',
+    borderTop: '1px solid var(--border-subtle)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    fontSize: 11,
+    color: 'var(--text-dim)',
+    flexWrap: 'wrap',
+  },
+  tableFooterText: {
+    fontVariantNumeric: 'tabular-nums',
+    fontWeight: 500,
+  },
+  footerUrgentBadge: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: '#ef4444',
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    border: '1px solid rgba(239, 68, 68, 0.25)',
+    padding: '1px 6px',
+    borderRadius: 4,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  footerReviewBadge: {
+    fontSize: 10,
+    fontWeight: 600,
+    color: '#c084fc',
+    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+    border: '1px solid rgba(168, 85, 247, 0.25)',
+    padding: '1px 6px',
+    borderRadius: 4,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  footerKbdHint: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 10,
+    color: 'var(--text-dim)',
+  },
+  kbdTiny: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 3,
+    padding: '1px 4px',
+    fontSize: 9,
+    fontFamily: 'monospace',
+    color: 'var(--text-secondary)',
   },
   lightboxOverlay: {
     position: 'fixed',

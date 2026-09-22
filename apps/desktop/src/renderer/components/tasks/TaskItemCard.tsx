@@ -231,10 +231,13 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             )}
           </div>
 
-          {/* Task Title */}
+          {/* Task Title with BiDi protection (auto-detects LTR English vs RTL Arabic to prevent start clipping) */}
           <span
+            dir="auto"
             style={{
               ...rowStyles.taskTitle,
+              unicodeBidi: 'plaintext',
+              textAlign: 'start',
               textDecoration: isCompleted ? 'line-through' : 'none',
               color: isCompleted ? 'var(--text-muted)' : 'var(--text-primary)',
             }}
@@ -243,15 +246,18 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             {task.title}
           </span>
 
-          {/* Priority Chips (Only shown if elevated) */}
+          {/* Sleek Ergonomic Priority Indicators */}
           {isUrgent && !isCompleted && (
-            <span style={rowStyles.urgentBadge}>
-              <AlertCircle size={10} />
+            <span style={rowStyles.urgentBadge} title="أولوية قصوى - عاجل">
+              <AlertCircle size={11} />
               <span>عاجل</span>
             </span>
           )}
           {isHigh && !isCompleted && !isUrgent && (
-            <span style={rowStyles.highBadge}>مرتفع</span>
+            <span style={rowStyles.highBadge} title="أولوية مرتفعة">
+              <span style={rowStyles.highDot} />
+              <span>مرتفع</span>
+            </span>
           )}
 
           {/* Blocking Dependencies Badge */}
@@ -449,9 +455,12 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               <span>بدء العمل</span>
             </button>
           ) : (
-            <span style={rowStyles.assignedChip}>
-              <Lock size={10} />
-              <span>{assigneeName}</span>
+            <span
+              style={rowStyles.assignedChip}
+              title={`المهمة مسندة للزميل: ${assigneeName} (لا تملك صلاحية تشغيلها)`}
+            >
+              <Lock size={10} color="#71717a" />
+              <span>مكلفة لزميل</span>
             </span>
           )}
 
@@ -607,6 +616,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
   highBadge: {
     display: 'inline-flex',
     alignItems: 'center',
+    gap: 4,
     backgroundColor: 'rgba(245, 158, 11, 0.1)',
     border: '1px solid rgba(245, 158, 11, 0.25)',
     color: '#f59e0b',
@@ -615,6 +625,13 @@ const rowStyles: Record<string, React.CSSProperties> = {
     padding: '1px 5px',
     borderRadius: 4,
     flexShrink: 0,
+  },
+  highDot: {
+    width: 5,
+    height: 5,
+    borderRadius: '50%',
+    backgroundColor: '#f59e0b',
+    display: 'inline-block',
   },
   blockBadge: {
     display: 'inline-flex',
@@ -642,7 +659,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   personCol: {
-    width: 105,
+    width: 95,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
@@ -654,17 +671,17 @@ const rowStyles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    maxWidth: 95,
+    maxWidth: 82,
   },
   estCol: {
-    width: 50,
+    width: 48,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
   dueCol: {
-    width: 80,
+    width: 76,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
@@ -681,7 +698,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     fontSize: 11,
   },
   actionsCol: {
-    width: 130,
+    width: 120,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
@@ -832,7 +849,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border-subtle)',
     padding: '2px 6px',
     borderRadius: 4,
-    maxWidth: 120,
+    maxWidth: 85,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
