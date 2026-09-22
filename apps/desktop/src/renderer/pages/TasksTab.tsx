@@ -837,16 +837,16 @@ export const TasksTab: React.FC = () => {
             <div style={{ flex: 1, minWidth: 0 }}>
               <span style={styles.tableColLabel}>المهمة</span>
             </div>
-            <div style={{ width: 95, textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ width: 90, textAlign: 'right', flexShrink: 0 }}>
               <span style={styles.tableColLabel}>{activeView === 'my-tasks' ? 'المنشئ' : 'المكلف'}</span>
             </div>
-            <div style={{ width: 48, textAlign: 'center', flexShrink: 0 }}>
+            <div style={{ width: 44, textAlign: 'center', flexShrink: 0 }}>
               <span style={styles.tableColLabel}>المقدر</span>
             </div>
-            <div style={{ width: 76, textAlign: 'center', flexShrink: 0 }}>
+            <div style={{ width: 72, textAlign: 'center', flexShrink: 0 }}>
               <span style={styles.tableColLabel}>الاستحقاق</span>
             </div>
-            <div style={{ width: 120, textAlign: 'left', flexShrink: 0, paddingLeft: 6 }}>
+            <div style={{ width: 135, textAlign: 'left', flexShrink: 0, paddingLeft: 4 }}>
               <span style={styles.tableColLabel}>الإجراءات</span>
             </div>
           </div>
@@ -922,12 +922,14 @@ export const TasksTab: React.FC = () => {
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <span style={styles.footerKbdHint}>
-              <kbd style={styles.kbdTiny}>Ctrl+N</kbd> مهمة جديدة
+              <kbd style={styles.kbdTiny} dir="ltr">Ctrl+N</kbd>
+              <span>مهمة جديدة</span>
             </span>
             <span style={styles.footerKbdHint}>
-              <kbd style={styles.kbdTiny}>Ctrl+R</kbd> تحديث
+              <kbd style={styles.kbdTiny} dir="ltr">Ctrl+R</kbd>
+              <span>تحديث</span>
             </span>
           </div>
         </div>
@@ -1470,21 +1472,24 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 6,
   },
   tableFooterRow: {
-    minHeight: 30,
-    padding: '5px 14px',
+    minHeight: 28,
+    padding: '4px 12px',
     backgroundColor: 'rgba(255, 255, 255, 0.015)',
     borderTop: '1px solid var(--border-subtle)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 8,
     fontSize: 11,
     color: 'var(--text-dim)',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
+    overflow: 'hidden',
   },
   tableFooterText: {
     fontVariantNumeric: 'tabular-nums',
     fontWeight: 500,
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
   },
   footerUrgentBadge: {
     fontSize: 10,
@@ -1495,6 +1500,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '1px 6px',
     borderRadius: 4,
     fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
   },
   footerReviewBadge: {
     fontSize: 10,
@@ -1505,6 +1512,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '1px 6px',
     borderRadius: 4,
     fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
   },
   footerKbdHint: {
     display: 'inline-flex',
@@ -1512,6 +1521,8 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
     fontSize: 10,
     color: 'var(--text-dim)',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
   },
   kbdTiny: {
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
@@ -1521,6 +1532,10 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 9,
     fontFamily: 'monospace',
     color: 'var(--text-secondary)',
+    display: 'inline-block',
+    lineHeight: '13px',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
   },
   lightboxOverlay: {
     position: 'fixed',

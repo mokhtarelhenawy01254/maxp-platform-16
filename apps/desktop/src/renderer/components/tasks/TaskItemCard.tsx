@@ -328,48 +328,44 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
         {/* Col 5: Actions Area (Hover Tools + Primary CTA) */}
         <div style={rowStyles.actionsCol} onClick={(e) => e.stopPropagation()}>
-          {/* Hover Action Tools (Fade in on hover for quiet ergonomics) */}
-          <div
-            style={{
-              ...rowStyles.hoverTools,
-              opacity: isHovered ? 1 : 0,
-              pointerEvents: isHovered ? 'auto' : 'none',
-            }}
-          >
-            {canEditTask && onEdit && !isCompleted && (
+          {/* Hover Action Tools (Rendered ONLY when hovered to prevent taking up space when idle) */}
+          {isHovered && (
+            <div style={rowStyles.hoverTools}>
+              {canEditTask && onEdit && !isCompleted && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(task)}
+                  style={rowStyles.iconBtn}
+                  title="تعديل المهمة"
+                >
+                  <Edit3 size={11} color="#94a3b8" />
+                </button>
+              )}
+
+              {currentUserId && (
+                <button
+                  type="button"
+                  onClick={handleToggleWatch}
+                  style={{
+                    ...rowStyles.iconBtn,
+                    color: isWatching ? '#38bdf8' : '#71717a',
+                  }}
+                  title={isWatching ? 'إلغاء المتابعة' : 'متابعة المهمة'}
+                >
+                  {isWatching ? <Eye size={11} color="#38bdf8" /> : <EyeOff size={11} color="#71717a" />}
+                </button>
+              )}
+
               <button
                 type="button"
-                onClick={() => onEdit(task)}
+                onClick={handleOpenInWeb}
                 style={rowStyles.iconBtn}
-                title="تعديل المهمة"
+                title="فتح على الويب"
               >
-                <Edit3 size={12} color="#94a3b8" />
+                <ExternalLink size={11} color="#94a3b8" />
               </button>
-            )}
-
-            {currentUserId && (
-              <button
-                type="button"
-                onClick={handleToggleWatch}
-                style={{
-                  ...rowStyles.iconBtn,
-                  color: isWatching ? '#38bdf8' : '#71717a',
-                }}
-                title={isWatching ? 'إلغاء المتابعة' : 'متابعة المهمة'}
-              >
-                {isWatching ? <Eye size={12} color="#38bdf8" /> : <EyeOff size={12} color="#71717a" />}
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={handleOpenInWeb}
-              style={rowStyles.iconBtn}
-              title="فتح على الويب"
-            >
-              <ExternalLink size={12} color="#94a3b8" />
-            </button>
-          </div>
+            </div>
+          )}
 
           {/* SINGLE DYNAMIC PRIMARY ACTION */}
           {isCompleted ? (
@@ -659,7 +655,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   personCol: {
-    width: 95,
+    width: 90,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
@@ -671,17 +667,17 @@ const rowStyles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    maxWidth: 82,
+    maxWidth: 78,
   },
   estCol: {
-    width: 48,
+    width: 44,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
   dueCol: {
-    width: 76,
+    width: 72,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
@@ -698,7 +694,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     fontSize: 11,
   },
   actionsCol: {
-    width: 120,
+    width: 135,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
@@ -709,19 +705,20 @@ const rowStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 2,
-    transition: 'opacity 120ms ease-out',
+    flexShrink: 0,
   },
   iconBtn: {
     background: 'none',
     border: 'none',
     color: 'var(--text-dim)',
     cursor: 'pointer',
-    padding: '3px 4px',
+    padding: '2px 3px',
     borderRadius: 4,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     outline: 'none',
+    flexShrink: 0,
   },
   expandBtn: {
     background: 'none',
@@ -735,6 +732,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     marginRight: 2,
     outline: 'none',
+    flexShrink: 0,
   },
   startBtn: {
     display: 'inline-flex',
@@ -743,13 +741,16 @@ const rowStyles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(56, 189, 248, 0.12)',
     border: '1px solid rgba(56, 189, 248, 0.3)',
     borderRadius: 5,
-    padding: '3px 9px',
+    padding: '3px 8px',
     fontSize: 11,
     fontWeight: 600,
     color: '#38bdf8',
     cursor: 'pointer',
     fontFamily: 'inherit',
     outline: 'none',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+    height: 24,
     transition: 'all 120ms ease-out',
   },
   pauseBtn: {
@@ -766,6 +767,9 @@ const rowStyles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontFamily: 'inherit',
     outline: 'none',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+    height: 24,
   },
   submitBtn: {
     display: 'inline-flex',
@@ -781,6 +785,9 @@ const rowStyles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontFamily: 'inherit',
     outline: 'none',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+    height: 24,
   },
   approveBtn: {
     display: 'inline-flex',
@@ -796,6 +803,9 @@ const rowStyles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontFamily: 'inherit',
     outline: 'none',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+    height: 24,
     transition: 'all 120ms ease-out',
   },
   returnBtn: {
@@ -808,6 +818,9 @@ const rowStyles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontFamily: 'inherit',
     outline: 'none',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+    height: 24,
   },
   secondaryBtn: {
     display: 'inline-flex',
@@ -823,6 +836,9 @@ const rowStyles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     fontFamily: 'inherit',
     outline: 'none',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+    height: 24,
   },
   pendingBadge: {
     fontSize: 10,
@@ -832,12 +848,18 @@ const rowStyles: Record<string, React.CSSProperties> = {
     padding: '2px 7px',
     borderRadius: 4,
     whiteSpace: 'nowrap',
+    flexShrink: 0,
+    height: 22,
+    display: 'inline-flex',
+    alignItems: 'center',
   },
   runningTimerChip: {
     fontSize: 11,
     fontWeight: 700,
     color: 'var(--accent-green)',
     fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
   },
   assignedChip: {
     display: 'inline-flex',
@@ -847,12 +869,11 @@ const rowStyles: Record<string, React.CSSProperties> = {
     color: 'var(--text-dim)',
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
     border: '1px solid var(--border-subtle)',
-    padding: '2px 6px',
+    padding: '2px 7px',
     borderRadius: 4,
-    maxWidth: 85,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    flexShrink: 0,
+    height: 22,
   },
   expandedPanel: {
     padding: '10px 14px 12px 14px',
