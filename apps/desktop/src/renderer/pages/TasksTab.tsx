@@ -766,8 +766,29 @@ export const TasksTab: React.FC = () => {
 
 
 
-      {/* Tasks List */}
+      {/* Linear-Style Tasks Surface Chassis */}
       <div style={styles.list}>
+        {/* Table Column Headers (Linear / Raycast 2026 Style) */}
+        {filteredTasks.length > 0 && (
+          <div style={styles.tableHeaderRow}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={styles.tableColLabel}>المهمة</span>
+            </div>
+            <div style={{ width: 95, textAlign: 'right', flexShrink: 0 }}>
+              <span style={styles.tableColLabel}>{activeView === 'my-tasks' ? 'المنشئ' : 'المكلف'}</span>
+            </div>
+            <div style={{ width: 65, textAlign: 'center', flexShrink: 0 }}>
+              <span style={styles.tableColLabel}>المقدر</span>
+            </div>
+            <div style={{ width: 105, textAlign: 'center', flexShrink: 0 }}>
+              <span style={styles.tableColLabel}>الاستحقاق</span>
+            </div>
+            <div style={{ width: 220, textAlign: 'left', flexShrink: 0, paddingLeft: 6 }}>
+              <span style={styles.tableColLabel}>الإجراءات</span>
+            </div>
+          </div>
+        )}
+
         {loading && tasks.length === 0 ? (
           <div style={styles.emptyState}>جاري جلب المهام من السيرفر السحابي…</div>
         ) : filteredTasks.length === 0 ? (
@@ -1249,7 +1270,28 @@ const styles: Record<string, React.CSSProperties> = {
   list: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 8,
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  tableHeaderRow: {
+    minHeight: 28,
+    height: 28,
+    padding: '0 14px',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderBottom: '1px solid var(--border-default)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    userSelect: 'none',
+  },
+  tableColLabel: {
+    fontSize: 10,
+    fontWeight: 600,
+    color: 'var(--text-dim)',
+    letterSpacing: '0.02em',
   },
   emptyState: {
     textAlign: 'center',
