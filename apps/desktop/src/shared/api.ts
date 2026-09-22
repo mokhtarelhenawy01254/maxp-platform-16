@@ -41,9 +41,8 @@ class MonitorApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401 && this.onUnauthorized) {
-          console.warn('[ApiClient] 401 Unauthorized detected — triggering session logout');
-          this.onUnauthorized();
+        if (error.response?.status === 401) {
+          console.warn('[ApiClient] 401 Unauthorized — token may be expired (no auto-logout)');
         }
         return Promise.reject(error);
       }
@@ -188,11 +187,12 @@ class MonitorApiClient {
 
     try {
       let res;
+      const loginHeaders = { 'X-Client': 'maxp-desktop-monitor' };
       try {
         res = await axios.post(
           url,
           { email: cleanEmail, password: cleanPassword },
-          { timeout: 15_000 }
+          { timeout: 15_000, headers: loginHeaders }
         );
       } catch (err: any) {
         if (err.response?.status === 404) {
@@ -200,7 +200,7 @@ class MonitorApiClient {
           res = await axios.post(
             `${cleanUrl}/api/auth/login`,
             { email: cleanEmail, password: cleanPassword },
-            { timeout: 15_000 }
+            { timeout: 15_000, headers: loginHeaders }
           );
         } else {
           throw err;

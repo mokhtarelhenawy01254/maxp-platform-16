@@ -172,23 +172,19 @@ app.whenReady().then(async () => {
   if (savedToken && savedServer) {
     const savedUser = store.get('user', null) as any;
     apiClient.configure(savedServer, savedToken, savedUser?.companyId);
-    apiClient.setOnUnauthorized(() => {
-      console.warn('[Main] Auth token expired / invalid — forcing clean logout');
-      logout();
-    });
 
-    // Pre-flight session validation: ensure credentials are still valid on server
+    // Pre-flight session validation: update user profile if still valid, but NEVER auto-logout
     apiClient.validateToken().then(({ valid, user }) => {
       if (valid) {
         if (user) store.set('user', user);
-        startTracking();
-        setTimeout(() => { triggerAutoClockIn(); }, 3000);
       } else {
-        console.warn('[Main] Saved session is no longer valid on server — clearing session');
-        logout();
+        console.warn('[Main] Token expired on server — continuing local tracking (no auto-logout)');
       }
+      // Always start tracking regardless of token validity
+      startTracking();
+      setTimeout(() => { triggerAutoClockIn(); }, 3000);
     }).catch(() => {
-      // In case of network errors, still allow local tracking
+      // Network error — still allow local tracking
       startTracking();
     });
   }
@@ -797,10 +793,6 @@ function registerIpcHandlers(): void {
       store.set('serverUrl', serverUrl);
       store.set('user', user);
       apiClient.configure(serverUrl, token, user?.companyId);
-      apiClient.setOnUnauthorized(() => {
-        console.warn('[Main] Auth token expired / invalid — forcing clean logout');
-        logout();
-      });
       resetTaskPollerState();
       await startTracking();
       updateTrayMenu();

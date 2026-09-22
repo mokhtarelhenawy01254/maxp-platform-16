@@ -20,6 +20,18 @@ const getSessionExpiryConfig = (req) => {
     req.headers['x-platform'] === 'capacitor' ||
     /Capacitor|Android.*wv|maxp-mobile/i.test(req.headers['user-agent'] || '');
 
+  const isDesktopClient =
+    req.headers['x-client'] === 'maxp-desktop-monitor';
+
+  if (isDesktopClient) {
+    return {
+      isMobileClient: false,
+      tokenExpiry: '365d',
+      refreshTokenExpiry: '365d',
+      refreshTokenMaxAge: 365 * 24 * 60 * 60 * 1000,
+    };
+  }
+
   return {
     isMobileClient,
     tokenExpiry: isMobileClient ? '7d' : '8h',
