@@ -93,6 +93,9 @@ ADVANCED_TOOL_NAMES: set[str] = {
     "followup_suggestions",
     "deal_params",
     "purchase_prediction",
+    # Storefront management
+    "conversion_tools_read",
+    "payment_settings_read",
 }
 
 READ_TOOL_NAMES: set[str] = CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
@@ -128,6 +131,10 @@ WRITE_TOOL_NAMES: set[str] = {
     "shipping_update",
     "hotel_reserve",
     "hotel_cancel_reservation",
+    # Storefront management
+    "conversion_tool_toggle",
+    "conversion_tool_set_threshold",
+    "payment_methods_configure",
 }
 
 DIRECT_WRITE_TOOL_NAMES: set[str] = {

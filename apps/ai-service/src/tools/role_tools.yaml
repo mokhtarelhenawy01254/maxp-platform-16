@@ -79,6 +79,9 @@ roles:
     - competitor_search
     - competitor_price_compare
     - inventory_check
+    - conversion_tools_read
+    - conversion_tool_toggle
+    - conversion_tool_set_threshold
     - agent_handoff_to
 
 
@@ -102,6 +105,9 @@ roles:
     - session_search
     - delegate_task
     - manage_todo
+    - conversion_tools_read
+    - conversion_tool_toggle
+    - conversion_tool_set_threshold
 
   MEDIA_BUYER:
     - product_search
@@ -298,4 +304,9 @@ roles:
     - delegate_task
     - company_snapshot
     - audit_read
+    - conversion_tools_read
+    - conversion_tool_toggle
+    - conversion_tool_set_threshold
+    - payment_settings_read
+    - payment_methods_configure
 

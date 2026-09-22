@@ -36,6 +36,8 @@ def test_get_read_tools():
 
 
 def test_get_write_tools():
+    from src.tools.registry import DIRECT_WRITE_TOOL_NAMES
+
     tools = get_write_tools()
     assert len(tools) >= 3
     assert all(isinstance(t, FunctionTool) for t in tools)
@@ -45,7 +47,9 @@ def test_get_write_tools():
     assert "order_create_confirmed" not in names
     assert "message_broadcast" in names
     assert "agent_spawn" in names
-    assert all(t.approval_mode == "always_require" for t in tools)
+    assert all(
+        t.approval_mode == "always_require" for t in tools if t.name not in DIRECT_WRITE_TOOL_NAMES
+    )
 
 
 def test_read_tools_do_not_require_approval():
@@ -237,10 +241,11 @@ def test_unknown_role_gets_core_tools_only():
     assert "discount_create" not in tools
 
 
-def test_ceo_role_has_no_tools():
-    """CEO role should have an empty tool list (explicitly configured)."""
+def test_ceo_role_has_minimal_executive_tools():
+    """CEO role is a minimal delegation cockpit, not an empty role."""
     ceo_tools = get_tool_names_for_role("CEO")
-    assert ceo_tools == []
+    assert "delegate_task" in ceo_tools
+    assert "company_snapshot" in ceo_tools
 
 
 def test_helpers_write_result():
@@ -269,8 +274,12 @@ def test_registry_has_all_tools():
 
 
 def test_write_tool_approval_modes():
-    """All write tools should require approval."""
+    """All write tools should require approval, except deliberate DIRECT_WRITE tools."""
+    from src.tools.registry import DIRECT_WRITE_TOOL_NAMES
+
     for tool in get_write_tools():
+        if tool.name in DIRECT_WRITE_TOOL_NAMES:
+            continue
         assert tool.approval_mode == "always_require", f"{tool.name} should require approval"
 
 

@@ -666,6 +666,21 @@ python -m scripts.seed_agent_templates
 
 ---
 
+## ❽.12 أدوات إدارة المتجر (Storefront Management Tools Standard)
+
+* **المعيار الإلزامي (The 2026 Storefront Tool Standard):**
+  1. **إعدادات تطبيقات الماركت بليس تُكتب بـ Read-Merge-Write فقط (CompanyApp Read-Merge-Write Law):**
+     * إعدادات أدوات التحويل (conversion-suite / quantity-offers-pro / commerce-advanced / ugc-reviews-pro) مخزّنة كـ JSON في `CompanyApp.settings`، ونقطة النهاية `PUT /my-apps/:id/settings` **تستبدل الكائن كاملاً بدون دمج**.
+     * أي أداة وكيل تعدّل هذه الإعدادات يجب أن تقرأ الإعدادات الحالية أولاً، تدمج التغيير بشكل عميق (`deep merge`)، ثم ترسل الكائن كاملاً — إرسال كائن جزئي يمسح باقي إعدادات التاجر ويُعدّ خللاً حرجاً.
+     * عند تفعيل أي موديول من الأدوات يجب اتّباع دلالات الواجهة الأمامية: التفعيل (`enable=true`) يشغّل الموديول **ويُعيد تفعيل المجموعة كلها** (`general.enabled=true`)، بينما الإيقاف يوقف الموديول فقط.
+  2. **أدوات الدفع لا تكشف المفاتيح أبداً ولا تعدّلها (Payment Tools Secret-Blind Posture):**
+     * قراءة إعدادات الدفع تُرجع **أعلام وجود فقط** (`configured: true/false`)، ووضع البوابة (test/live)، وطرق الدفع المفعّلة (`cod` / `card` / `wallet`) — ويُحظر إرجاع قيم `apiKey` / `secretKey` / `merchantId` حتى لو كانت مقنّعة من السيرفر.
+     * تسجيل/تعديل مفاتيح بوابة الدفع (Kashier) يبقى عملياً يدوياً من لوحة التحكم حصرياً؛ أدوات الوكيل تُفعّل الطرق وتضبط العربون والمحفظة فقط، وترفض تفعيل `card` بدون بوابة مسجّلة و`wallet` بدون رقم محفظة برسائل عربية إرشادية صريحة بدلاً من كسر الـ Checkout.
+     * `enabledPaymentMethods` تُخزّن كنص JSON (`'["cod"]'`) وليس مصفوفة — أدوات الكتابة يجب أن تسلسلها (`json.dumps`) وتتعامل مع الأشكال المختلفة عند القراءة.
+  3. **الأدوات المرجعية المنفذة:** `conversion_tools_read` + `conversion_tool_toggle` + `conversion_tool_set_threshold` في `src/tools/definitions/conversion_tools.py`، و`payment_settings_read` + `payment_methods_configure` في `src/tools/definitions/payments.py` — كلها مسجّلة في `role_tools.yaml` (القراءة لـ PRODUCT_CREATOR/MARKETING/CEO، والكتابة بموافقة إلزامية `always_require` عبر `WRITE_TOOL_NAMES`).
+
+---
+
 ## ❾ بروتوكول التغذية العكسية والتطوير المستمر (Continuous Improvement Protocol)
 
 هذه المهارة كائن حي يتطور مع كل اكتشاف وتجربة عملية في المنصة:
@@ -744,6 +759,8 @@ python -m scripts.seed_agent_templates
 - [ ] هل قواعد التحويل (Handoff) واعية بطوبولوجيا المتجر (Topology-Aware) وتمنع استدعاء `agent_handoff_to` عشوائياً إذا كان الوكيل وحيداً في المتجر (Single-Agent Mode) ويمتلك الأداة اللازمة لتنفيذ طلب العميل؟
 - [ ] هل ترخيص الأدوات يعتمد على معيار الصلاحيات تقود السلوك (Capability-Driven Authority) ومخططات Pydantic الغنية في المانيفست دون تلويث الـ System Prompt بحقن نصوص بدائية أو إبطال الـ Prompt Caching؟
 - [ ] هل تم تشغيل سكربت `seed_agent_templates.py` لترحيل القالب لقاعدة البيانات؟
+- [ ] هل أدوات إعدادات المتجر (التحويل/الدفع) تقرأ الحالة أولاً وتعرضها للتاجر قبل أي تفعيل، وترفض التكوينات الكاسرة (بطاقات بدون بوابة، محفظة بدون رقم) برسائل عربية إرشادية؟
+- [ ] هل أدوات `CompanyApp.settings` تلتزم بقانون Read-Merge-Write (السيرفر يستبدل الكائن كاملاً) وتحفظ مفاتيح الدفع سرية (أعلام وجود فقط بلا أي قيم)؟
 - [ ] الالتزام بقاعدة النشر التلقائي للـ Git مع رسالة توضيحية.
 
 

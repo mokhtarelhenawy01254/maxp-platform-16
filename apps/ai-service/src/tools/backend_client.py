@@ -855,6 +855,44 @@ class BackendClient:
             headers={"X-Company-Id": company_id},
         )
 
+    async def get_storefront_settings(self, company_id: str) -> dict[str, Any]:
+        """Fetch tenant storefront settings (payment methods, gateway status masked server-side, COD deposit)."""
+        return await self._request(
+            "GET",
+            "/api/v1/storefront-settings",
+            params={"companyId": company_id},
+        )
+
+    async def update_storefront_settings(self, company_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Partially update tenant storefront settings; only provided keys are changed."""
+        return await self._request(
+            "PUT",
+            "/api/v1/storefront-settings",
+            params={"companyId": company_id},
+            json_body=payload,
+        )
+
+    async def list_company_apps(self, company_id: str) -> list[dict[str, Any]]:
+        """List installed marketplace apps (TRIAL/ACTIVE) with their settings JSON."""
+        result = await self._request(
+            "GET",
+            "/api/v1/my-apps",
+            params={"companyId": company_id},
+        )
+        data = result.get("data", [])
+        return data if isinstance(data, list) else []
+
+    async def update_company_app_settings(
+        self, company_id: str, app_id: str, settings: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Replace a CompanyApp settings JSON. Callers must read-merge-write; backend replaces wholesale."""
+        return await self._request(
+            "PUT",
+            f"/api/v1/my-apps/{app_id}/settings",
+            params={"companyId": company_id},
+            json_body={"settings": settings},
+        )
+
 
 
 _backend_client: BackendClient | None = None
