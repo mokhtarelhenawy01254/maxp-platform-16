@@ -333,15 +333,16 @@
 .business-sidebar-logo {
   width: 2.75rem;
   height: 2.75rem;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 0.875rem;
   border: 1px solid var(--sb-border);
+  padding: 0.125rem;
 }
 
 .business-sidebar-company-logo {
   width: 2.25rem;
   height: 2.25rem;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 0.625rem;
 }
 
