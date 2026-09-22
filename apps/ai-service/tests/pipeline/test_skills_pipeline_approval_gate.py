@@ -58,10 +58,10 @@ async def test_write_tool_is_blocked_and_not_executed():
     # pipeline injects company_id into the args before the gate — kept in the draft
     assert result["action_args"] == {"tool_key": "freeShippingBar", "enable": True, "company_id": "comp1"}
     assert result["company_id"] == "comp1"
-    # The LLM-visible payload must explicitly frame this as pending approval
-    # (not a failure), so the model never claims success or apologizes.
-    assert "موافقة" in result["result"]["message"]
-    assert "مش خطأ ولا فشل" in result["result"]["message"]
+    # The LLM-visible payload must give a literal reply template framing the
+    # block as a pending approval — never as a failure or an execution.
+    assert "مستني موافقتك" in result["result"]["message"]
+    assert "ممنوع" in result["result"]["message"]
 
 
 @pytest.mark.asyncio
