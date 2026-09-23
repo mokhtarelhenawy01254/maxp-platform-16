@@ -6,6 +6,7 @@ import {
   ArchiveBoxIcon,
   XMarkIcon,
   ChevronRightIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { authService } from "../../../../services/authService";
 import { config } from "../../../../config";
@@ -171,6 +172,9 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
             image: getPrimaryImageUrl(p.mainImage, p.image, p.images),
             variants: (p.variants || p.productVariants || []).map((v) => ({
               ...v,
+              sku: String(v.sku || ""),
+              name: String(v.name || ""),
+              price: v.price !== undefined && v.price !== null ? (v.price as number | string) : Number(p.price || 0),
               image: getPrimaryImageUrl(v.image, v.images),
               stock: resolveStock(
                 v.availableStock,
