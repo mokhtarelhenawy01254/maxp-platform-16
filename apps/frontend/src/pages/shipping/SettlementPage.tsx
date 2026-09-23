@@ -194,13 +194,23 @@ const SettlementPage: React.FC = () => {
 
   return (
     <div className="space-y-6" dir="rtl">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("shippingSettlement.title", "تسويات شركات الشحن")}
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {t("shippingSettlement.description", "تقفيل حسابات الشحنات المسلّمة مع شركات الشحن")}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {t("shippingSettlement.title", "تسويات شركات الشحن")}
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {t("shippingSettlement.description", "تقفيل حسابات الشحنات المسلّمة مع شركات الشحن")}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/shipping/courier-settlements"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+          >
+            تسويات المناديب والتوصيل الداخلي ←
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

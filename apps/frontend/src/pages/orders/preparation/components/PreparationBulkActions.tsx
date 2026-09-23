@@ -30,6 +30,7 @@ interface PreparationBulkActionsProps {
   onClearSelection: () => void;
   onSendToTurbo?: () => void;
   onSendToShipping?: () => void;
+  onSendToInternalCourier?: () => void;
   onPrintInvoices?: () => void;
 }
 
@@ -54,6 +55,7 @@ const PreparationBulkActions = ({
   onClearSelection,
   onSendToTurbo,
   onSendToShipping,
+  onSendToInternalCourier,
   onPrintInvoices,
 }: PreparationBulkActionsProps) => {
   const { t } = useTranslation();
@@ -194,6 +196,17 @@ const PreparationBulkActions = ({
           )}
           {t("preparation.bulkActions.sendToShipping", "شحن الطلبات المحددة")}
         </button>
+
+        {onSendToInternalCourier ? (
+          <button
+            onClick={onSendToInternalCourier}
+            disabled={selectedOrdersCount === 0 || sendingToTurbo}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-3.5 py-2 text-sm font-medium transition hover:bg-slate-50 dark:hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 max-sm:flex-1"
+          >
+            <TruckIcon className="h-4 w-4 text-emerald-600" />
+            <span>مندوب داخلي</span>
+          </button>
+        ) : null}
       </div>
 
       {!bulkStatusUpdateEnabled ? (

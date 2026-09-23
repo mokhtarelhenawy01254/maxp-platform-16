@@ -745,6 +745,11 @@ model Shipment {
   destinationCity        String?
   destinationAddress     String?
   metadata               String?
+  courierId              String?
+  deliveryRunId          String?
+  collectedAmount        Decimal?         @db.Decimal(10, 2)
+  collectedAt            DateTime?
+  deliveryNotes          String?
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
   company                Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -753,6 +758,8 @@ model Shipment {
   merchant               Merchant?        @relation(fields: [merchantId], references: [id], onDelete: SetNull)
   warehouse              Warehouse?       @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
   shippingCompany        ShippingCompany? @relation(fields: [shippingCompanyId], references: [id], onDelete: SetNull)
+  courier                Courier?         @relation(fields: [courierId], references: [id], onDelete: SetNull)
+  deliveryRun            DeliveryRun?     @relation(fields: [deliveryRunId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([orderId])
@@ -760,6 +767,8 @@ model Shipment {
   @@index([fulfillmentSource])
   @@index([warehouseId])
   @@index([shippingCompanyId])
+  @@index([courierId])
+  @@index([deliveryRunId])
   @@index([status])
   @@map("shipments")
 }

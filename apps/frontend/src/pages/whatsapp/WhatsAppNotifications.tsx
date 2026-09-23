@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   AlertTriangle,
+  BarChart3,
   Bell,
   Briefcase,
   CheckCircle,
@@ -61,6 +62,7 @@ import {
   WhatsAppPageShell,
   WhatsAppSurfaceCard,
 } from "./components/WhatsAppPageShell";
+import { WhatsAppScheduledReportsTab } from "./scheduled-reports/WhatsAppScheduledReportsTab";
 
 interface NotificationSettings {
   id: string;
@@ -173,7 +175,8 @@ type TabId =
   | "marketing"
   | "company"
   | "hr"
-  | "tasks";
+  | "tasks"
+  | "reports";
 
 const _categoryBadgeClasses: Record<string, string> = {
   ORDERS:
@@ -411,6 +414,11 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
         },
         { id: "hr", label: t("whatsappNotifications.tabs.hr"), icon: Briefcase },
         { id: "tasks", label: "المهام", icon: Briefcase },
+        {
+          id: "reports",
+          label: t("whatsappNotifications.tabs.reports", i18n.language === "ar" ? "التقارير المجدولة" : "Scheduled Reports"),
+          icon: BarChart3,
+        },
       ] satisfies Array<{
         id: TabId;
         label: string;
@@ -1919,6 +1927,12 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
             </div>
           </WhatsAppSurfaceCard>
         </TabsContent>
+
+        {!superAdminMode && (
+          <TabsContent value="reports" className="space-y-4">
+            <WhatsAppScheduledReportsTab companyId={companyId} />
+          </TabsContent>
+        )}
       </Tabs>
 
       <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>

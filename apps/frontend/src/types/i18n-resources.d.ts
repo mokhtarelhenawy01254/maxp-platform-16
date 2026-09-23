@@ -6200,7 +6200,9 @@ declare module 'react-i18next' {
         delete: {
           title: string;
           confirm: string;
-          irreversible: string;
+          confirmPrefix: string;
+          confirmSuffix: string;
+          note: string;
           cancel: string;
           deleting: string;
           confirmButton: string;
@@ -9541,6 +9543,7 @@ declare module 'react-i18next' {
           abandonedCart: string;
           marketing: string;
           hr: string;
+          reports: string;
           templates: string;
           logs: string;
         };

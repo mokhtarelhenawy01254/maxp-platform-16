@@ -125,3 +125,29 @@ model CustomerJourney {
   @@index([customerId])
   @@map("customer_journeys")
 }
+
+model WhatsAppScheduledReport {
+  id              String    @id @default(cuid())
+  companyId       String
+  name            String    @default("تقرير العمليات والمبيعات")
+  isEnabled       Boolean   @default(false)
+  reportType      String    @default("DAILY_EOD") // DAILY_EOD | WEEKLY_DIGEST | MORNING_BRIEF
+  frequency       String    @default("DAILY")     // DAILY | WEEKLY
+  sendTime        String    @default("21:00")     // "HH:mm" in company timezone
+  daysOfWeek      String?   @default("ALL")       // "ALL" or comma-separated "0,1,2,3,4,5,6"
+  recipients      String    @db.Text              // comma-separated phone numbers: "2010xxxx,2012xxxx"
+  includeSales    Boolean   @default(true)        // Revenue, order count, AOV, payment methods
+  includeOps      Boolean   @default(true)        // Confirmed, preparing, shipped, delivered, canceled
+  includeStock    Boolean   @default(true)        // Low stock alerts (< 5 items)
+  includeTopItems Boolean   @default(true)        // Top 3 best selling items today
+  sessionId       String?                         // Optional specific WhatsApp session ID
+  lastSentAt      DateTime?                       // Idempotency: timestamp of last successful send
+  lastSentStatus  String?                         // SUCCESS | FAILED
+  lastError       String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, isEnabled])
+  @@map("whatsapp_scheduled_reports")
+}

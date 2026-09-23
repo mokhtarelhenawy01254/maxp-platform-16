@@ -69,6 +69,7 @@ import PreparationStatusChangeDialog from "./preparation/components/PreparationS
 import ProblemHoldReasonDialog from "./preparation/components/ProblemHoldReasonDialog";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
 import DispatchCarrierModal, { type ActiveCarrier } from "./preparation/components/DispatchCarrierModal";
+import DispatchInternalCourierModal from "./preparation/components/DispatchInternalCourierModal";
 
 type BulkStatusResult = {
   id?: string | number | null;
@@ -242,6 +243,7 @@ const PreparationQueue: React.FC = () => {
   const [sendingToTurbo, setSendingToTurbo] = useState(false);
   const [activeCarriers, setActiveCarriers] = useState<ActiveCarrier[]>([]);
   const [showDispatchModal, setShowDispatchModal] = useState(false);
+  const [showInternalCourierModal, setShowInternalCourierModal] = useState(false);
   const [printingInvoices, setPrintingInvoices] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<PreparationTableColumn[]>(() => {
     if (typeof window === "undefined") return [...PREPARATION_TABLE_COLUMNS];
@@ -2054,6 +2056,7 @@ const PreparationQueue: React.FC = () => {
             onClearSelection={() => uiActions.clearBulkControls()}
             onSendToTurbo={() => void handleOpenDispatchModal()}
             onSendToShipping={() => void handleOpenDispatchModal()}
+            onSendToInternalCourier={() => setShowInternalCourierModal(true)}
             onPrintInvoices={() => void handlePrintInvoices()}
           />
         </div>
@@ -2440,6 +2443,19 @@ const PreparationQueue: React.FC = () => {
         carriers={activeCarriers}
         onConfirm={(carrier) => void handleDispatchToCarrier(carrier)}
         loading={sendingToTurbo}
+      />
+
+      <DispatchInternalCourierModal
+        isOpen={showInternalCourierModal}
+        onClose={() => setShowInternalCourierModal(false)}
+        orderIds={selectedOrders.map((o) => String(o.id))}
+        onSuccess={(runId, runNumber) => {
+          setShowInternalCourierModal(false);
+          toast.success(`تم إنشاء مأمورية التوزيع ${runNumber} وتكليف المندوب بنجاح`);
+          uiActions.clearBulkControls();
+          void fetchOrders();
+          navigate('/shipping/delivery-runs');
+        }}
       />
     </div>
   );

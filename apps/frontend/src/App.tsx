@@ -6664,6 +6664,34 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/shipping/couriers"
+                  element={
+                    <Layout>
+                      <CourierManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping/delivery-runs"
+                  element={
+                    <Layout>
+                      <DeliveryRunsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping/courier-settlements"
+                  element={
+                    <Layout>
+                      <CourierSettlementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/courier/run/:id"
+                  element={<CourierMobileRunPage />}
+                />
+                <Route
                   path="/orders/bulk-status"
                   element={
                     <Layout>
