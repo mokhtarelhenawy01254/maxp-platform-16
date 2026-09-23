@@ -24,21 +24,63 @@ async function sendMessage(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    const { message, sessionId } = req.body;
+    const { message, sessionId, agentId, agentSlug } = req.body;
     if (!message?.trim()) {
       return res.status(400).json({ success: false, error: 'message is required' });
     }
 
-    const result = await aiSdkClient.sendChatMessage({
-      companyId,
-      customerId: userId,
-      message,
-      threadId: sessionId,
-    });
+    let result = null;
+    const targetAgentId = agentId || agentSlug;
+
+    if (targetAgentId && targetAgentId !== 'CEO' && targetAgentId !== 'ceo-agent') {
+      try {
+        const aiServiceAdminClient = require('../services/aiServiceAdminClient');
+        const agentChatResult = await aiServiceAdminClient.chatWithAgent({
+          companyId,
+          agentId: targetAgentId,
+          message,
+          threadId: sessionId,
+        });
+
+        if (agentChatResult && (agentChatResult.reply || agentChatResult.tool_calls || agentChatResult.status === 'ok')) {
+          result = {
+            reply: agentChatResult.reply || 'تم استلام الرد بنجاح.',
+            toolCalls: agentChatResult.tool_calls || [],
+            threadId: agentChatResult.thread_id || sessionId,
+            agentInfo: {
+              id: targetAgentId,
+              status: agentChatResult.status,
+            },
+            modelSelection: agentChatResult.model ? { model: agentChatResult.model } : null,
+            session: { id: agentChatResult.thread_id || sessionId },
+          };
+        }
+      } catch (agentErr) {
+        console.warn('[AI-CHAT-CTRL] chatWithAgent fallback to default chat:', agentErr.message);
+      }
+    }
+
+    if (!result) {
+      const fallbackResult = await aiSdkClient.sendChatMessage({
+        companyId,
+        customerId: userId,
+        message,
+        threadId: sessionId,
+      });
+      result = {
+        reply: fallbackResult.reply,
+        toolCalls: fallbackResult.toolCalls || fallbackResult.tool_calls || [],
+        agentInfo: fallbackResult.agentInfo || null,
+        modelSelection: fallbackResult.modelSelection || null,
+        conversationId: fallbackResult.conversationId || fallbackResult.threadId,
+        session: fallbackResult.session || { id: fallbackResult.threadId },
+      };
+    }
 
     return res.json({
       success: true,
       reply: result.reply,
+      toolCalls: result.toolCalls || [],
       agentInfo: result.agentInfo || null,
       modelSelection: result.modelSelection || null,
       conversationId: result.conversationId || result.threadId,

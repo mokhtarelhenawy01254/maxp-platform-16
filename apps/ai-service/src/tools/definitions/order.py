@@ -83,8 +83,26 @@ class OrderSummaryInput(BaseModel):
 
 
 class OrderRecentListInput(BaseModel):
-    limit: int = Field(default=10, description="Number of recent orders")
-    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    status: str | None = Field(
+        default=None,
+        description="Filter orders by status: CONFIRMED, PENDING, SHIPPED, DELIVERED, CANCELLED. Case-insensitive.",
+    )
+    period: str | None = Field(
+        default=None,
+        description="Filter orders by time period: 'today', 'yesterday', 'week', 'month', 'all'. Always use period='yesterday' when asked about yesterday's orders.",
+    )
+    date: str | None = Field(
+        default=None,
+        description="Filter orders by specific date in YYYY-MM-DD format (e.g. '2026-09-22') or 'yesterday' or 'today'.",
+    )
+    limit: int = Field(
+        default=25,
+        description="Max number of orders to return (1-100, default 25).",
+    )
+    company_id: str | None = Field(
+        default=None,
+        description="Tenant ID (auto-injected)",
+    )
 
 
 class OrderConfirmInput(BaseModel):
@@ -285,13 +303,25 @@ async def order_summary(input_data: OrderSummaryInput) -> dict[str, Any]:
 async def order_recent_list(input_data: OrderRecentListInput) -> dict[str, Any]:
     company_id = input_data.company_id or ""
     if not company_id:
-        return {"orders": []}
+        return {"orders": [], "count": 0}
 
     sf = _db_mod.async_session
     async with sf() as sess:
         repo = OrderRepository(sess)
-        orders = await repo.get_recent_orders(company_id, input_data.limit)
-    return {"orders": orders}
+        orders = await repo.get_recent_orders(
+            company_id=company_id,
+            limit=input_data.limit,
+            status=input_data.status,
+            period=input_data.period,
+            date=input_data.date,
+        )
+    return {
+        "orders": orders,
+        "count": len(orders),
+        "period": input_data.period,
+        "status": input_data.status,
+        "date": input_data.date,
+    }
 
 
 async def order_cancel(input_data: OrderCancelInput) -> dict[str, Any]:
@@ -488,7 +518,7 @@ order_summary_tool = FunctionTool(
 
 order_recent_list_tool = FunctionTool(
     name="order_recent_list",
-    description="List the most recent orders.",
+    description="List and browse store orders. Supports filtering by status ('CONFIRMED', 'PENDING', 'SHIPPED', 'DELIVERED', 'CANCELLED'), period ('today', 'yesterday', 'week', 'month', 'all'), or specific date ('YYYY-MM-DD'). ALWAYS pass period='yesterday' when merchant asks for yesterday's orders, and status='CONFIRMED' for confirmed orders.",
     func=order_recent_list,
     input_model=OrderRecentListInput,
 )

@@ -145,14 +145,18 @@ export const AgentStudioChatFeed: React.FC<AgentStudioChatFeedProps> = ({
     if ((!textToSend && readyImages.length === 0) || loading) return;
 
     const finalText = textToSend || "يرجى فحص صورة المنتج المرفقة وتحليل مواصفاته وإنشائه في المتجر والمخزن.";
-    onSendMessage(finalText, readyImages.length > 0 ? readyImages : undefined);
     setInputMessage("");
     setPendingImages([]);
+    try {
+      onSendMessage(finalText, readyImages.length > 0 ? readyImages : undefined);
+    } catch (err) {
+      console.error("[AgentStudioChatFeed] onSendMessage error:", err);
+    }
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !(e.nativeEvent as any).isComposing) {
       e.preventDefault();
       handleSend();
     }

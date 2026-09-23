@@ -111,7 +111,12 @@ export const AgentChatStudioPage: React.FC = () => {
             status: a.status || "ACTIVE",
           }));
           setAgents(mapped);
-          setSelectedAgent(mapped[0]);
+          setSelectedAgent((prev) => {
+            const matched = mapped.find(
+              (a) => a.id === prev.id || (a.slug && prev.slug && a.slug === prev.slug)
+            );
+            return matched || mapped[0];
+          });
         }
       } catch (err) {
         console.warn("[AgentChatStudio] Could not fetch live agents, using default team squad:", err);
@@ -145,10 +150,10 @@ export const AgentChatStudioPage: React.FC = () => {
 
   // Handle Sending Message
   const handleSendMessage = useCallback(
-    async (text: string) => {
-      if (!text.trim() || loading) return;
+    async (text: string, images?: string[]) => {
+      if ((!text.trim() && (!images || images.length === 0)) || loading) return;
 
-      appendUserMessage(text);
+      appendUserMessage(text, images);
       setLoading(true);
 
       try {
@@ -161,6 +166,7 @@ export const AgentChatStudioPage: React.FC = () => {
           const res = await apiClient.post("/facebook-ads/ai/chat", {
             message: text,
             threadId: activeSession.id,
+            images,
             activeProduct: selectedProduct
               ? {
                   id: selectedProduct.id,
@@ -183,10 +189,12 @@ export const AgentChatStudioPage: React.FC = () => {
             sessionId: activeSession.id,
             agentId: selectedAgent.id,
             agentSlug: selectedAgent.slug,
+            images,
           });
 
           const reply = res.data?.reply || res.data?.message || "تم استلام الرد بنجاح.";
-          appendAgentResponse(reply);
+          const toolCalls = res.data?.toolCalls || res.data?.tool_calls || [];
+          appendAgentResponse(reply, { toolCalls });
           if (res.data?.telemetry || res.data?.modelSelection) {
             setTelemetry({
               model: res.data?.modelSelection?.model || selectedAgent.model,
@@ -330,7 +338,6 @@ export const AgentChatStudioPage: React.FC = () => {
                         onClick={() => {
                           setSelectedAgent(agent);
                           setIsAgentDrawerOpen(false);
-                          createNewSession();
                         }}
                         className={`w-full text-right p-3 rounded-xl border transition flex items-start gap-3 cursor-pointer ${
                           isCurrent

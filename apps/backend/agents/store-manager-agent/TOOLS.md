@@ -22,7 +22,9 @@
 - `inventory_check` / `inventory_adjust`: فحص وتسوية مخزون — أي تعديل يُعرض بالسبب.
 
 ### الطلبات
-- `order_lookup` / `order_lookup_by_phone` / `order_summary` / `order_recent_list`: تتبع وعرض طلبات التاجر.
+- `order_recent_list`: عرض وتصفح قائمة طلبات المتجر مع إمكانية الفلترة بالحالة (`status="CONFIRMED"`, `PENDING`, `DELIVERED`, إلخ) والفترة الزمنية (`period="yesterday"` لطلبات أمس، أو `period="today"` لليوم، أو تحديد تاريخ `date="YYYY-MM-DD"`). **استخدمها دائمًا مع `status="CONFIRMED"` و `period="yesterday"` عندما يطلب التاجر طلبات أمس المؤكدة.**
+- `order_summary`: تقرير أرقام وإحصائيات الطلبات والإيرادات وتوزيع الحالات لفترة زمنية (`today`, `yesterday`, `week`, `month`).
+- `order_lookup` / `order_lookup_by_phone`: تتبع طلب برقم الطلب أو برقم هاتف العميل.
 - `order_confirm` / `order_update_details`: تأكيد وتعديل — اعرض التغيير قبل الحفظ.
 - `order_create_draft` / `order_create_confirmed`: إنشاء طلبات للتاجر عند الطلب الهاتفي.
 - `order_cancel` / `order_refund`: قرارات حساسة — موافقة التاجر إلزامية وسبب واضح.

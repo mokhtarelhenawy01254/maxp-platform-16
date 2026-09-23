@@ -33,6 +33,54 @@ function createDefaultSession(prefix: string, welcomeText: string, title?: unkno
   };
 }
 
+function loadStoredSessions(sessionsKey: string, prefix: string, welcomeText: string): StudioSession[] {
+  try {
+    const raw = localStorage.getItem(sessionsKey);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((s: any) => {
+          let messages = Array.isArray(s?.messages) ? s.messages : [];
+          // Keep welcome greeting updated if session has no user interaction yet
+          if (
+            messages.length === 1 &&
+            messages[0].sender === "agent" &&
+            typeof messages[0].id === "string" &&
+            messages[0].id.startsWith("welcome")
+          ) {
+            messages = [
+              {
+                ...messages[0],
+                text: welcomeText,
+              },
+            ];
+          }
+          return {
+            ...s,
+            title: typeof s?.title === "string" && s.title.trim() ? s.title : "جلسة جديدة",
+            messages,
+          };
+        });
+      }
+    }
+  } catch (e) {
+    console.warn(`[useAgentStudioSessions:${prefix}] Failed reading local cache:`, e);
+  }
+  return [createDefaultSession(prefix, welcomeText)];
+}
+
+function loadStoredActiveId(activeIdKey: string, sessions: StudioSession[]): string {
+  try {
+    const savedActive = localStorage.getItem(activeIdKey);
+    if (savedActive && sessions.some((s) => s.id === savedActive)) {
+      return savedActive;
+    }
+  } catch (e) {
+    console.warn(`[useAgentStudioSessions] Failed reading active id:`, e);
+  }
+  return sessions[0]?.id || "";
+}
+
 export function useAgentStudioSessions({
   storagePrefix,
   companyId,
@@ -47,38 +95,27 @@ export function useAgentStudioSessions({
   const isMountedRef = useRef(true);
 
   // 1. Local Cache State for instantaneous paint
-  const [sessions, setSessions] = useState<StudioSession[]>(() => {
-    try {
-      const raw = localStorage.getItem(SESSIONS_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((s: any) => ({
-            ...s,
-            title: typeof s?.title === "string" && s.title.trim() ? s.title : "جلسة جديدة",
-            messages: Array.isArray(s?.messages) ? s.messages : [],
-          }));
-        }
-      }
-    } catch (e) {
-      console.warn(`[useAgentStudioSessions:${storagePrefix}] Failed reading local cache:`, e);
-    }
-    return [createDefaultSession(storagePrefix, defaultWelcomeText)];
-  });
+  const [sessions, setSessions] = useState<StudioSession[]>(() =>
+    loadStoredSessions(SESSIONS_KEY, storagePrefix, defaultWelcomeText)
+  );
 
-  const [activeSessionId, setActiveSessionId] = useState<string>(() => {
-    try {
-      const savedActive = localStorage.getItem(ACTIVE_ID_KEY);
-      if (savedActive && sessions.some((s) => s.id === savedActive)) {
-        return savedActive;
-      }
-    } catch (e) {
-      console.warn(`[useAgentStudioSessions:${storagePrefix}] Failed reading active id:`, e);
-    }
-    return sessions[0]?.id || "";
-  });
+  const [activeSessionId, setActiveSessionId] = useState<string>(() =>
+    loadStoredActiveId(ACTIVE_ID_KEY, sessions)
+  );
 
   const [isLoadingCloud, setIsLoadingCloud] = useState<boolean>(false);
+
+  // Handle prefix or company changes synchronously during render
+  const [prevPrefix, setPrevPrefix] = useState(storagePrefix);
+  const [prevSuffix, setPrevSuffix] = useState(storageSuffix);
+
+  if (prevPrefix !== storagePrefix || prevSuffix !== storageSuffix) {
+    setPrevPrefix(storagePrefix);
+    setPrevSuffix(storageSuffix);
+    const loaded = loadStoredSessions(SESSIONS_KEY, storagePrefix, defaultWelcomeText);
+    setSessions(loaded);
+    setActiveSessionId(loadStoredActiveId(ACTIVE_ID_KEY, loaded));
+  }
 
   // 2. Fetch from Cloud Database and Auto-Migrate
   useEffect(() => {
@@ -131,10 +168,12 @@ export function useAgentStudioSessions({
     return () => {
       isMountedRef.current = false;
     };
-  }, [companyId]);
+  }, [companyId, storagePrefix]);
 
   // Sync to localStorage
   useEffect(() => {
+    if (prevPrefix !== storagePrefix || prevSuffix !== storageSuffix) return;
+
     try {
       localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
       if (activeSessionId) {
@@ -143,7 +182,7 @@ export function useAgentStudioSessions({
     } catch (e) {
       console.warn(`[useAgentStudioSessions:${storagePrefix}] Local storage write failed:`, e);
     }
-  }, [sessions, activeSessionId, SESSIONS_KEY, ACTIVE_ID_KEY]);
+  }, [sessions, activeSessionId, SESSIONS_KEY, ACTIVE_ID_KEY, prevPrefix, prevSuffix, storagePrefix, storageSuffix]);
 
   const activeSession = useMemo(() => {
     const found = sessions.find((s) => s.id === activeSessionId);
@@ -232,14 +271,83 @@ export function useAgentStudioSessions({
     [activeSessionId, companyId, saveCloudSession, storagePrefix]
   );
 
+  const appendUserMessage = useCallback(
+    (text: string, images?: string[]): StudioMessage => {
+      const userMsg: StudioMessage = {
+        id: `user-${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        sender: "user",
+        text,
+        images: images && images.length > 0 ? images : undefined,
+        timestamp: new Date().toISOString(),
+      };
+      addMessageToActiveSession(userMsg);
+      return userMsg;
+    },
+    [addMessageToActiveSession]
+  );
+
+  const appendAgentResponse = useCallback(
+    (text: string, options?: { toolCalls?: any[]; metadata?: any }): StudioMessage => {
+      const agentMsg: StudioMessage = {
+        id: `agent-${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        sender: "agent",
+        text,
+        toolCalls: options?.toolCalls,
+        timestamp: new Date().toISOString(),
+      };
+      addMessageToActiveSession(agentMsg);
+      return agentMsg;
+    },
+    [addMessageToActiveSession]
+  );
+
+  const rewindActiveSession = useCallback(async (): Promise<boolean> => {
+    setSessions((prev) =>
+      prev.map((s) => {
+        if (s.id !== activeSessionId) return s;
+        const msgs = [...s.messages];
+        if (msgs.length > 1 && msgs[msgs.length - 1].sender === "agent") {
+          msgs.pop();
+        }
+        if (msgs.length > 0 && msgs[msgs.length - 1].sender === "user") {
+          msgs.pop();
+        }
+        if (msgs.length === 0) {
+          msgs.push({
+            id: `welcome-${Date.now()}`,
+            sender: "agent",
+            text: defaultWelcomeText,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        const updated: StudioSession = {
+          ...s,
+          messages: msgs,
+          updatedAt: new Date().toISOString(),
+        };
+        if (companyId && saveCloudSession) {
+          saveCloudSession(updated).catch((err) =>
+            console.warn(`[useAgentStudioSessions:${storagePrefix}] Save rewind failed:`, err)
+          );
+        }
+        return updated;
+      })
+    );
+    return true;
+  }, [activeSessionId, companyId, saveCloudSession, storagePrefix, defaultWelcomeText]);
+
   return {
     sessions,
     activeSession,
     activeSessionId,
+    totalCount: sessions.length,
     isLoadingCloud,
     switchSession,
     createNewSession,
     deleteSession,
     addMessageToActiveSession,
+    appendUserMessage,
+    appendAgentResponse,
+    rewindActiveSession,
   };
 }

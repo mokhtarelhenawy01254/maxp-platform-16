@@ -228,11 +228,20 @@ class BackendClient:
             return None
 
     async def list_recent_orders(
-        self, company_id: str, limit: int = 5, status: str | None = None
+        self,
+        company_id: str,
+        limit: int = 25,
+        status: str | None = None,
+        period: str | None = None,
+        date: str | None = None,
     ) -> list[dict[str, Any]]:
         params: dict[str, Any] = {"limit": limit, "companyId": company_id}
         if status:
             params["status"] = status
+        if period:
+            params["period"] = period
+        if date:
+            params["date"] = date
         result = await self._request("GET", "/api/v1/orders-v2/simple", params=params)
         return result.get("data", result.get("orders", []))
 

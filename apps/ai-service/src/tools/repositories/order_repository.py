@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import text
 
 from src.tools.repositories.base import BaseRepository
-from src.tools.definitions._helpers import period_start_date
+from src.tools.definitions._helpers import period_date_range, period_start_date
 
 
 class OrderRepository(BaseRepository):
@@ -118,27 +118,34 @@ class OrderRepository(BaseRepository):
         return merged[:limit]
 
     async def get_order_summary(self, company_id: str, period: str = "today") -> dict[str, Any]:
-        start_date = period_start_date(period)
-        sql = text("""
+        start_date, end_date = period_date_range(period)
+        where_clauses = ['"companyId" = :cid', '"createdAt" >= :start']
+        params: dict[str, Any] = {"cid": company_id, "start": start_date}
+        if end_date:
+            where_clauses.append('"createdAt" < :end')
+            params["end"] = end_date
+        where_sql = " AND ".join(where_clauses)
+
+        sql = text(f"""
             SELECT
               COUNT(*)::int AS total_orders,
-              COALESCE(SUM(total) FILTER (WHERE status = 'DELIVERED' OR paymentStatus = 'COMPLETED'), 0) AS paid_revenue,
-              COUNT(*) FILTER (WHERE status = 'DELIVERED' OR paymentStatus = 'COMPLETED')::int AS paid_count,
-              COALESCE(AVG(total) FILTER (WHERE status = 'DELIVERED' OR paymentStatus = 'COMPLETED'), 0) AS avg_value
+              COALESCE(SUM(total) FILTER (WHERE status = 'DELIVERED' OR "paymentStatus" = 'COMPLETED'), 0) AS paid_revenue,
+              COUNT(*) FILTER (WHERE status = 'DELIVERED' OR "paymentStatus" = 'COMPLETED')::int AS paid_count,
+              COALESCE(AVG(total) FILTER (WHERE status = 'DELIVERED' OR "paymentStatus" = 'COMPLETED'), 0) AS avg_value
             FROM orders
-            WHERE "companyId" = :cid AND "createdAt" >= :start
+            WHERE {where_sql}
         """)
-        row = await self._session.execute(sql, {"cid": company_id, "start": start_date})
+        row = await self._session.execute(sql, params)
         first = row.first()
         agg = dict(first._mapping) if first else {}
 
-        status_sql = text("""
+        status_sql = text(f"""
             SELECT status, COUNT(*)::int AS cnt
             FROM orders
-            WHERE "companyId" = :cid AND "createdAt" >= :start
+            WHERE {where_sql}
             GROUP BY status
         """)
-        status_rows = await self._session.execute(status_sql, {"cid": company_id, "start": start_date})
+        status_rows = await self._session.execute(status_sql, params)
         by_status = {r.status.lower() if r.status else "unknown": r.cnt for r in status_rows}
 
         return {
@@ -150,33 +157,140 @@ class OrderRepository(BaseRepository):
             "byStatus": by_status,
         }
 
-    async def get_recent_orders(self, company_id: str, limit: int = 5, status: str | None = None) -> list[dict[str, Any]]:
-        where_extra = 'AND o.status = :status' if status else ''
-        params: dict[str, Any] = {"cid": company_id, "lim": min(limit, 100)}
-        if status:
-            params["status"] = status
+    async def get_recent_orders(
+        self,
+        company_id: str,
+        limit: int = 25,
+        status: str | None = None,
+        period: str | None = None,
+        date: str | None = None,
+    ) -> list[dict[str, Any]]:
+        from datetime import datetime, timedelta
 
-        sql = text(f"""
+        start_date: datetime | None = None
+        end_date: datetime | None = None
+
+        raw_date = (date or "").strip()
+        raw_period = (period or "").strip().lower()
+
+        if raw_date:
+            if raw_date.lower() == "yesterday":
+                start_date, end_date = period_date_range("yesterday")
+            elif raw_date.lower() == "today":
+                start_date, end_date = period_date_range("today")
+            else:
+                try:
+                    dt = datetime.strptime(raw_date, "%Y-%m-%d")
+                    start_date = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+                    end_date = start_date + timedelta(days=1)
+                except Exception:
+                    start_date, end_date = period_date_range(raw_date)
+        elif raw_period:
+            start_date, end_date = period_date_range(raw_period)
+
+        params: dict[str, Any] = {"cid": company_id, "lim": max(1, min(limit, 100))}
+        if start_date:
+            params["start"] = start_date
+        if end_date:
+            params["end"] = end_date
+
+        order_conditions = ['o."companyId" = :cid']
+        guest_conditions = ['g."companyId" = :cid']
+
+        is_confirmed_query = False
+        if status:
+            st = status.strip().upper()
+            if st == "CONFIRMED":
+                is_confirmed_query = True
+                order_conditions.append('(o.status = \'CONFIRMED\' OR o."confirmedAt" IS NOT NULL)')
+                guest_conditions.append('(UPPER(g.status) = \'CONFIRMED\' OR g."confirmationNotifiedAt" IS NOT NULL)')
+            else:
+                params["status"] = st
+                order_conditions.append('o.status = :status')
+                guest_conditions.append('UPPER(g.status) = :status')
+
+        if start_date:
+            if is_confirmed_query:
+                if end_date:
+                    order_conditions.append(
+                        '((o."confirmedAt" >= :start AND o."confirmedAt" < :end) '
+                        'OR (o."createdAt" >= :start AND o."createdAt" < :end))'
+                    )
+                    guest_conditions.append(
+                        '((g."confirmationNotifiedAt" >= :start AND g."confirmationNotifiedAt" < :end) '
+                        'OR (g."createdAt" >= :start AND g."createdAt" < :end))'
+                    )
+                else:
+                    order_conditions.append('(o."confirmedAt" >= :start OR o."createdAt" >= :start)')
+                    guest_conditions.append('(g."confirmationNotifiedAt" >= :start OR g."createdAt" >= :start)')
+            else:
+                if end_date:
+                    order_conditions.append('(o."createdAt" >= :start AND o."createdAt" < :end)')
+                    guest_conditions.append('(g."createdAt" >= :start AND g."createdAt" < :end)')
+                else:
+                    order_conditions.append('o."createdAt" >= :start')
+                    guest_conditions.append('g."createdAt" >= :start')
+
+        where_orders = " AND ".join(order_conditions)
+        order_sql = text(f"""
             SELECT o."orderNumber", o."customerName", o."customerPhone",
-                   o.status, o."paymentStatus", o.total, o."createdAt" AS date
+                   o.status, o."paymentStatus", o.total, o."createdAt" AS date,
+                   o."confirmedAt", o.city, o.governorate
             FROM orders o
-            WHERE o."companyId" = :cid {where_extra}
-            ORDER BY o."createdAt" DESC
+            WHERE {where_orders}
+            ORDER BY COALESCE(o."confirmedAt", o."createdAt") DESC
             LIMIT :lim
         """)
-        rows = await self._session.execute(sql, params)
-        return [
+        rows = await self._session.execute(order_sql, params)
+        regular = [
             {
                 "orderNumber": r.orderNumber,
-                "customerName": r.customerName,
-                "phone": r.customerPhone,
-                "status": r.status,
-                "paymentStatus": r.paymentStatus,
+                "customerName": r.customerName or "",
+                "phone": r.customerPhone or "",
+                "status": r.status or "",
+                "paymentStatus": r.paymentStatus or "",
                 "total": str(r.total or 0),
                 "date": str(r.date or ""),
+                "confirmedAt": str(r.confirmedAt or "") if getattr(r, "confirmedAt", None) else "",
+                "city": r.city or "",
+                "governorate": r.governorate or "",
             }
             for r in rows
         ]
+
+        where_guest = " AND ".join(guest_conditions)
+        guest_sql = text(f"""
+            SELECT g."orderNumber", g."guestName" AS "customerName", g."guestPhone" AS "customerPhone",
+                   g.status, 'PENDING' AS "paymentStatus", g.total, g."createdAt" AS date,
+                   g."confirmationNotifiedAt" AS "confirmedAt", '' AS city, '' AS governorate
+            FROM guest_orders g
+            WHERE {where_guest}
+            ORDER BY COALESCE(g."confirmationNotifiedAt", g."createdAt") DESC
+            LIMIT :lim
+        """)
+        try:
+            g_rows = await self._session.execute(guest_sql, params)
+            guest = [
+                {
+                    "orderNumber": r.orderNumber,
+                    "customerName": r.customerName or "",
+                    "phone": r.customerPhone or "",
+                    "status": r.status or "",
+                    "paymentStatus": r.paymentStatus or "",
+                    "total": str(r.total or 0),
+                    "date": str(r.date or ""),
+                    "confirmedAt": str(r.confirmedAt or "") if getattr(r, "confirmedAt", None) else "",
+                    "city": "",
+                    "governorate": "",
+                }
+                for r in g_rows
+            ]
+        except Exception:
+            guest = []
+
+        merged = regular + guest
+        merged.sort(key=lambda o: o.get("confirmedAt") or o.get("date") or "", reverse=True)
+        return merged[:limit]
 
     async def cancel_order(self, company_id: str, order_number: str) -> dict[str, Any]:
         row = await self._session.execute(text("""
