@@ -1884,6 +1884,36 @@ const updateCase = async (req, res) => {
       }
     }
 
+    // مزامنة الفواتير غير المسددة وسجل الحالة عند تغيير الطبيب
+    if ('doctorId' in body && body.doctorId !== existing.doctorId) {
+      if (body.syncInvoices !== false) {
+        await prisma.dentalInvoice.updateMany({
+          where: {
+            caseId: id,
+            companyId,
+            status: { notIn: ['PAID', 'VOID'] },
+          },
+          data: {
+            doctorId: data.doctorId || null,
+            doctorName: data.doctorName || null,
+          },
+        }).catch((err) => console.warn('Could not sync open invoices on doctor change:', err.message));
+      }
+
+      await prisma.dentalCaseStatusHistory.create({
+        data: {
+          companyId,
+          caseId: id,
+          dimension: 'ORDER',
+          status: 'TRANSFER_DOCTOR',
+          oldStatus: existing.status,
+          changedBy: req.user?.id || req.user?.email || null,
+          userName: adminDisplayName(req),
+          reason: body.transferReason || `نقل الحالة من الطبيب (${existing.doctorName || 'غير محدد'}) إلى (${data.doctorName || 'غير محدد'})`,
+        },
+      }).catch(() => null);
+    }
+
     res.json({ success: true, data: serializeDentalCaseDetail(dentalCase) });
   } catch (error) {
     console.error('Error updating dental case:', error);
@@ -3990,10 +4020,13 @@ const updateSettings = async (req, res) => {
 const listCustomFields = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
-    if (!companyId) return;
-    const { isActive } = req.query;
+    const { isActive, includeInactive } = req.query;
     const where = { companyId };
-    if (isActive !== undefined && isActive !== '') where.isActive = normalizeBool(isActive);
+    if (isActive !== undefined && isActive !== '') {
+      where.isActive = normalizeBool(isActive);
+    } else if (includeInactive !== 'true') {
+      where.isActive = true;
+    }
     const { pageNum, limitNum, skip } = parsePagination(req.query);
     const prisma = getSharedPrismaClient();
     const [items, total] = await Promise.all([
