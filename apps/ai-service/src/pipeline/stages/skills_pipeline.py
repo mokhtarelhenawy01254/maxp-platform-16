@@ -277,9 +277,9 @@ async def _build_active_order_block(ctx: PipelineContext) -> str:
                         "to_char(o.\"createdAt\", 'YYYY-MM-DD') AS created_at "
                         "FROM public.orders o "
                         'WHERE o."companyId" = :cid AND ('
-                        "(:conv IS NOT NULL AND o.\"conversationId\" = :conv) OR "
-                        "(:cust IS NOT NULL AND o.\"customerId\" = :cust) OR "
-                        "(:phone IS NOT NULL AND o.\"customerPhone\" = :phone)"
+                        "(CAST(:conv AS text) IS NOT NULL AND o.\"conversationId\" = CAST(:conv AS text)) OR "
+                        "(CAST(:cust AS text) IS NOT NULL AND o.\"customerId\" = CAST(:cust AS text)) OR "
+                        "(CAST(:phone AS text) IS NOT NULL AND o.\"customerPhone\" = CAST(:phone AS text))"
                         ") "
                         "AND o.\"createdAt\" > now() - interval '30 days' "
                         "AND o.status NOT IN ('DELIVERED','CANCELLED','DUPLICATE_ORDER','REFUNDED',"
