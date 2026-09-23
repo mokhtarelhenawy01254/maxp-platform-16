@@ -1645,6 +1645,8 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
       let messageType = 'TEXT';
       let content = messageText || '';
       let attachmentsData = [];
+      let originalMediaUrls = [];
+      let mediaArchivedCount = 0;
 
       if (attachments && attachments.length > 0) {
         // حفظ جميع المرفقات
@@ -1657,22 +1659,36 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
           detail: 'high'
         })).filter(a => a.url);
 
+        // 📎 [MEDIA-ARCHIVE] SKILL 8.9.14: Meta/CDN media URLs are signed and
+        // short-lived. Download ONCE now (handler runs after the webhook ack)
+        // and re-host locally, or the agent's later run hits a dead link and
+        // replies hours late or blind.
+        try {
+          const { archiveAttachments } = require('../services/chatMediaArchiveService');
+          const archiveResult = await archiveAttachments(attachmentsData);
+          attachmentsData = archiveResult.attachments;
+          originalMediaUrls = archiveResult.originals.map(o => o.original);
+          mediaArchivedCount = archiveResult.archivedCount;
+        } catch (archiveError) {
+          console.warn(`📎 [MEDIA-ARCHIVE] Unexpected archive failure (keeping original URLs): ${archiveError.message}`);
+        }
+
         // تحديد نوع الرسالة بناءً على أول مرفق
         const attachment = attachments[0];
         const attachmentType = attachment.type.toLowerCase();
 
         if (attachmentType === 'image') {
           messageType = 'IMAGE';
-          content = attachment.payload?.url || content;
+          content = attachmentsData[0]?.url || attachment.payload?.url || content;
         } else if (attachmentType === 'video') {
           messageType = 'VIDEO';
-          content = attachment.payload?.url || content;
+          content = attachmentsData[0]?.url || attachment.payload?.url || content;
         } else if (attachmentType === 'audio') {
           messageType = 'AUDIO';
-          content = attachment.payload?.url || content;
+          content = attachmentsData[0]?.url || attachment.payload?.url || content;
         } else if (attachmentType === 'file') {
           messageType = 'FILE';
-          content = attachment.payload?.url || content;
+          content = attachmentsData[0]?.url || attachment.payload?.url || content;
         } else if (attachmentType === 'template') {
           // معالجة الرسائل التي تحتوي على أزرار (template)
           messageType = 'TEMPLATE';
@@ -1878,6 +1894,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
           customerName: `${customer.firstName} ${customer.lastName}`.trim(),
           facebookMessageId: fbMessageId,
           replyToFacebookMessageId: replyToMid,
+          ...(originalMediaUrls.length > 0 ? { originalMediaUrls, mediaArchivedCount } : {}),
           ...replyMeta
         }),
         createdAt: timestamp,

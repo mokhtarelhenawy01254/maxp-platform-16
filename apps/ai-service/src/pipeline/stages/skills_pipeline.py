@@ -194,12 +194,160 @@ def _compact_history_for_budget(
     return messages, total_tokens
 
 
+_CUSTOMER_CHANNELS = {"chat", "facebook", "facebook_messenger", "messenger", "whatsapp", "telegram"}
+_CUID_RE = None
+
+
+def _looks_like_cuid(value: str | None) -> bool:
+    global _CUID_RE
+    if _CUID_RE is None:
+        import re as _re
+        _CUID_RE = _re.compile(r"^c[a-z0-9]{20,}$")
+    return bool(value and _CUID_RE.match(str(value)))
+
+
+async def _resolve_customer_phone(ctx: PipelineContext) -> str | None:
+    """Resolve the customer's phone from the conversation/customer ids when
+    they reference real platform rows (messenger/whatsapp conversations)."""
+    try:
+        import src.db.session as _db_mod
+        from sqlalchemy import text as _text
+
+        if _db_mod.async_session is None:
+            return None
+        async with _db_mod.async_session() as sess:
+            if _looks_like_cuid(ctx.conversation_id):
+                row = (
+                    await sess.execute(
+                        _text(
+                            'SELECT c.phone FROM public.conversations conv '
+                            'JOIN public.customers c ON c.id = conv."customerId" '
+                            "WHERE conv.id = :cid AND c.phone IS NOT NULL AND c.phone <> '' "
+                            "LIMIT 1"
+                        ),
+                        {"cid": ctx.conversation_id},
+                    )
+                ).scalar()
+                if row:
+                    return str(row).strip()
+            if _looks_like_cuid(ctx.customer_id):
+                row = (
+                    await sess.execute(
+                        _text(
+                            "SELECT phone FROM public.customers "
+                            "WHERE id = :cust AND phone IS NOT NULL AND phone <> '' LIMIT 1"
+                        ),
+                        {"cust": ctx.customer_id},
+                    )
+                ).scalar()
+                if row:
+                    return str(row).strip()
+    except Exception as exc:
+        logger.debug("active_order_phone_resolve_failed", error=str(exc))
+    return None
+
+
+async def _build_active_order_block(ctx: PipelineContext) -> str:
+    """Minimal high-signal <active_order> block for customer-facing turns.
+
+    2026 context-engineering consensus: pre-fetch the ONE active entity into
+    context instead of hoping the model calls a lookup tool — the merchant's
+    customer should never be re-asked for size/color/address that are already
+    on the order. Deliberately tiny (no JSON dumps) and injected late in the
+    prompt (dynamic suffix) to protect the static-prefix cache."""
+    try:
+        channel = str(getattr(ctx, "channel", "") or "").lower()
+        if channel not in _CUSTOMER_CHANNELS:
+            return ""
+
+        phone = await _resolve_customer_phone(ctx)
+        if not phone:
+            return ""
+
+        import src.db.session as _db_mod
+        from sqlalchemy import text as _text
+
+        if _db_mod.async_session is None:
+            return ""
+        async with _db_mod.async_session() as sess:
+            order = (
+                await sess.execute(
+                    _text(
+                        'SELECT o."orderNumber", o.status::text AS status, '
+                        'o."paymentMethod"::text AS payment_method, o."paymentStatus"::text AS payment_status, '
+                        "o.total::float8 AS total, o.currency, "
+                        "coalesce(o.\"customerAddress\", o.\"shippingAddress\", '') AS address, "
+                        "coalesce(o.governorate, '') AS governorate, coalesce(o.city, '') AS city, "
+                        "to_char(o.\"createdAt\", 'YYYY-MM-DD') AS created_at "
+                        "FROM public.orders o "
+                        'WHERE o."companyId" = :cid AND o."customerPhone" = :phone '
+                        "AND o.\"createdAt\" > now() - interval '30 days' "
+                        "AND o.status NOT IN ('DELIVERED','CANCELLED','DUPLICATE_ORDER','REFUNDED',"
+                        "'RETURNED','PARTIALLY_RETURNED','EXCHANGED','PARTIALLY_REFUNDED') "
+                        "ORDER BY o.\"createdAt\" DESC LIMIT 1"
+                    ),
+                    {"cid": ctx.company_id, "phone": phone},
+                )
+            ).mappings().first()
+            if not order:
+                return ""
+
+            items = (
+                await sess.execute(
+                    _text(
+                        "SELECT coalesce(\"productName\", '') AS name, coalesce(\"productSize\", '') AS size, "
+                        "coalesce(\"productColor\", '') AS color, quantity "
+                        "FROM public.order_items WHERE \"orderId\" = ("
+                        'SELECT id FROM public.orders WHERE "orderNumber" = :num LIMIT 1) LIMIT 3'
+                    ),
+                    {"num": order["orderNumber"]},
+                )
+            ).mappings().all()
+
+        item_lines = []
+        for it in items:
+            parts = [it["name"] or "منتج"]
+            if it["size"]:
+                parts.append(f"مقاس {it['size']}")
+            if it["color"]:
+                parts.append(f"لون {it['color']}")
+            item_lines.append(f"  - {' — '.join(parts)} × {it['quantity']}")
+        address_ar = "، ".join(p for p in [order["governorate"], order["city"], order["address"]] if p)
+
+        lines = [
+            "<active_order>",
+            f"الأوردر النشط للعميل: {order['orderNumber']} | الحالة: {order['status']} | "
+            f"الدفع: {order['payment_method']} ({order['payment_status']}) | الإجمالي: {order['total']} {order['currency']}",
+        ]
+        if item_lines:
+            lines.append("المنتجات:\n" + "\n".join(item_lines))
+        if address_ar:
+            lines.append(f"عنوان التسليم: {address_ar}")
+        lines.append(f"تاريخ الطلب: {order['created_at']}")
+        lines.append(
+            "استخدم هذه الحقائق مباشرة ولا تعيد سؤال العميل عنها إلا إذا طلب تغييرها صراحةً."
+        )
+        lines.append("</active_order>")
+        return "\n".join(lines)
+    except Exception as exc:
+        logger.warning("active_order_block_failed", error=str(exc))
+        return ""
+
+
 async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     """Replace resolve_intent + route_to_tools + execute_tools with one call.
 
     Uses LLM function calling: the LLM receives all available skills as tools,
     decides which (if any) to call, and returns the final reply in one pass.
     """
+    # 0. Active-order context (customer-facing channels only): the facts the
+    # model would otherwise re-ask the customer for. Computed once per turn.
+    try:
+        ctx.active_order_block = await _build_active_order_block(ctx)
+    except Exception as exc:
+        logger.debug("active_order_block_skipped", error=str(exc))
+        ctx.active_order_block = ""
+
     # 1. Input guardrails
     for guardrail in INPUT_GUARDRAILS:
         result = await guardrail.validate(ctx, ctx.message)
@@ -578,6 +726,9 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
     from datetime import datetime as _dt_now
     _now = _dt_now.now()
     time_ctx = f"[Time: {_now.strftime('%H:%M')} UTC]"
+    active_order_ctx = getattr(ctx, "active_order_block", "") or ""
+    if active_order_ctx:
+        time_ctx = f"{time_ctx}\n\n{active_order_ctx}"
     if isinstance(user_content, str):
         user_content = f"{user_content}\n\n{time_ctx}"
     elif isinstance(user_content, list):
@@ -847,6 +998,9 @@ async def _build_followup_messages(
     from datetime import datetime as _dt_now
     _now = _dt_now.now()
     time_ctx = f"[Time: {_now.strftime('%H:%M')} UTC]"
+    active_order_ctx = getattr(ctx, "active_order_block", "") or ""
+    if active_order_ctx:
+        time_ctx = f"{time_ctx}\n\n{active_order_ctx}"
     if isinstance(user_content, str):
         user_content = f"{user_content}\n\n{time_ctx}"
     elif isinstance(user_content, list):

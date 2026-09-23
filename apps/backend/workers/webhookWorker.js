@@ -104,6 +104,15 @@ function startWebhookWorker() {
 // Start if executed directly
 if (require.main === module) {
     startWebhookWorker();
+
+    // ⏰ Proactive stale-order alerts (WISMO defense — notify the merchant
+    // when orders sit 48h+ in an active status).
+    try {
+        const { startStaleOrderAlertLoop } = require('../services/staleOrderAlertService');
+        startStaleOrderAlertLoop();
+    } catch (err) {
+        console.warn(`⏰ [STALE-ORDERS] loop unavailable: ${err.message}`);
+    }
 }
 
 module.exports = { startWebhookWorker };
