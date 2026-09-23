@@ -25,15 +25,36 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
     const companyId = settings?.company?.id;
     if (!companyId) return;
 
-    footerSettingsService.getPublicSettings(companyId)
-      .then((res) => {
-        if (res?.success && res?.data) {
-          setFooterSettings(res.data as FooterSettings);
+    let isMounted = true;
+    const fetchFooter = () => {
+      footerSettingsService
+        .getPublicSettings(companyId)
+        .then((res) => {
+          if (isMounted && res?.success && res?.data) {
+            setFooterSettings(res.data as FooterSettings);
+          }
+        })
+        .catch(() => {
+          // Ignore errors, theme.footer will be used as fallback
+        });
+    };
+
+    // Defer footer settings request so it never competes with above-the-fold catalog images
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const handle = (window as any).requestIdleCallback(fetchFooter, { timeout: 2500 });
+      return () => {
+        isMounted = false;
+        if ("cancelIdleCallback" in window) {
+          (window as any).cancelIdleCallback(handle);
         }
-      })
-      .catch(() => {
-        // Ignore errors, theme.footer will be used as fallback
-      });
+      };
+    } else {
+      const timer = setTimeout(fetchFooter, 1000);
+      return () => {
+        isMounted = false;
+        clearTimeout(timer);
+      };
+    }
   }, [settings?.company?.id]);
   const normalizedPath = location.pathname.replace(/\/+$/, '') || '/';
   const shouldForceDocumentNavigation =

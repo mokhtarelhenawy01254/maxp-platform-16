@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useCategories } from '../hooks/useCategories';
 import { useProducts } from '../hooks/useProducts';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { getDefaultRegisteredVariantId, hasRegisteredVariant } from '../variants';
+import { isKhemetLuxeTheme } from '../utils/navigationGuards';
 import { CatalogSortValue,
   applyCatalogFilters,
   clearCatalogFilters,
@@ -99,6 +100,7 @@ const normalizeShopCommandBarVariant = (rawVariant: unknown): ShopCommandBarVari
 
 const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const { theme } = useStorefrontTheme();
   const controlId = React.useId();
   const prefersArabicCopy = theme.direction === 'rtl';
@@ -161,12 +163,24 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
     setSearchParams((prev) => clearCatalogFilters(prev));
   };
 
+  const catalogLimit = useMemo(() => {
+    const isSale = location.pathname.endsWith('/sale');
+    const sections = (isSale ? theme.pages?.sale?.sections : theme.pages?.shop?.sections) as
+      | Array<{ type?: string; settings?: { limit?: number } }>
+      | undefined;
+    const gridSection = sections?.find((s) => s.type === 'product-grid');
+    if (typeof gridSection?.settings?.limit === 'number' && gridSection.settings.limit > 0) {
+      return gridSection.settings.limit;
+    }
+    return isKhemetLuxeTheme(theme.id) ? (isSale ? 12 : 16) : 12;
+  }, [theme, location.pathname]);
+
   const productQuery = useMemo(
     () => ({
-      limit: 1,
+      limit: catalogLimit,
       ...getCatalogProductQuery(searchParams),
     }),
-    [searchParams],
+    [catalogLimit, searchParams],
   );
   const { pagination, isLoading } = useProducts(productQuery);
 

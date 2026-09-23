@@ -202,11 +202,11 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     setUsersLoading(true); setPagesLoading(true); setTicketsLoading(true); setActivitiesLoading(true); setError("");
     try {
       const [detailResult, usersResult, pagesResult, ticketsResult, activitiesResult] = await Promise.allSettled([
-        apiClient.get(`/admin/companies/${companyId}`),
-        apiClient.get(`/admin/companies/${companyId}/users`, { params: { limit: 100, sortBy: "createdAt", sortOrder: "desc" } }),
-        apiClient.get(`/admin/companies/${companyId}/facebook-pages`),
-        apiClient.get(`/support/admin/tickets`, { params: { companyId, limit: 20 } }),
-        apiClient.get(`/activity/company/activities`, { params: { companyId, limit: 10 } }),
+        apiClient.get(`/admin/companies/${companyId}`, getCompanyScopedRequestConfig()),
+        apiClient.get(`/admin/companies/${companyId}/users`, getCompanyScopedRequestConfig({ params: { limit: 100, sortBy: "createdAt", sortOrder: "desc" } })),
+        apiClient.get(`/admin/companies/${companyId}/facebook-pages`, getCompanyScopedRequestConfig()),
+        apiClient.get(`/support/admin/tickets`, getCompanyScopedRequestConfig({ params: { companyId, limit: 20 } })),
+        apiClient.get(`/activity/company/activities`, getCompanyScopedRequestConfig({ params: { companyId, limit: 10 } })),
       ]);
       const detailData: any = detailResult.status === "fulfilled" ? detailResult.value.data : null;
       const usersData: any = usersResult.status === "fulfilled" ? usersResult.value.data : null;
@@ -284,7 +284,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
         website: editForm["website"].trim(), currency: editForm["currency"], isActive: editForm["isActive"],
         notes: editForm["notes"].trim(),
         businessSpecialtyId: editForm["businessSpecialtyId"] === "none" ? null : (editForm["businessSpecialtyId"] || null),
-      });
+      }, getCompanyScopedRequestConfig());
       if (response.data?.success) { tToast.success("companyDetails.success_update_a26a"); setEditOpen(false); await refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في تحديث الشركة");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في تحديث الشركة")); }
@@ -308,7 +308,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
       const response: any = await apiClient.post(`/admin/companies/${companyId}/employees`, {
         firstName: addEmployeeForm["firstName"].trim(), lastName: addEmployeeForm["lastName"].trim(),
         email: addEmployeeForm["email"].trim(), password: addEmployeeForm["password"], role: addEmployeeForm["role"],
-      });
+      }, getCompanyScopedRequestConfig());
       if (response.data?.success) { tToast.success("companyDetails.msg_ba2c"); setAddEmployeeOpen(false); setAddEmployeeForm(INITIAL_EMPLOYEE_FORM); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في إضافة العضو");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في إضافة العضو")); }
@@ -335,7 +335,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     if (!companyId) return;
     try {
       setDeleteUserLoading(true);
-      const response: any = await apiClient.delete(`/admin/companies/${companyId}/users/${userId}`);
+      const response: any = await apiClient.delete(`/admin/companies/${companyId}/users/${userId}`, getCompanyScopedRequestConfig());
       if (response.data?.success) { tToast.success("companyDetails.success_delete_c4fc"); setDeleteConfirmUserId(null); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في حذف العضو");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في حذف العضو")); }
@@ -366,7 +366,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     if (!companyId || !changeOwnerTargetUserId) return;
     try {
       setTransferLoading(true);
-      const response: any = await apiClient.post(`/admin/companies/${companyId}/transfer-ownership`, { targetUserId: changeOwnerTargetUserId });
+      const response: any = await apiClient.post(`/admin/companies/${companyId}/transfer-ownership`, { targetUserId: changeOwnerTargetUserId }, getCompanyScopedRequestConfig());
       if (response.data?.success) { tToast.success("companyDetails.msg_c925"); setTransferOpen(false); setChangeOwnerTargetUserId(""); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في نقل الملكية");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في نقل الملكية")); }
@@ -376,7 +376,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const handleLoginAsAdmin = async (): Promise<void> => {
     if (!companyId) return;
     try {
-      const response: any = await apiClient.post(`/admin/companies/${companyId}/login-as-admin`);
+      const response: any = await apiClient.post(`/admin/companies/${companyId}/login-as-admin`, {}, getCompanyScopedRequestConfig());
       if (response.data?.success) {
         const currentSuperToken = tokenManager.getAccessToken();
         if (currentSuperToken) localStorage.setItem("superAuth", currentSuperToken);
@@ -431,7 +431,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     if (!Number.isFinite(days) || days <= 0) { toast.error("حدد مدة الفترة التجريبية بالأيام (رقم أكبر من صفر)"); return; }
     try {
       setTrialSaving(true);
-      const response: any = await apiClient.post(`/admin/companies/${companyId}/trial`, { action: "activate", durationDays: days });
+      const response: any = await apiClient.post(`/admin/companies/${companyId}/trial`, { action: "activate", durationDays: days }, getCompanyScopedRequestConfig());
       if (response.data?.success) { toast.success(response.data.message || `تم تفعيل الفترة التجريبية لمدة ${days} يوم`); setTrialOpen(false); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في تفعيل الفترة التجريبية");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في تفعيل الفترة التجريبية")); }
@@ -442,7 +442,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     if (!companyId) return;
     try {
       setTrialDeactivating(true);
-      const response: any = await apiClient.post(`/admin/companies/${companyId}/trial`, { action: "deactivate" });
+      const response: any = await apiClient.post(`/admin/companies/${companyId}/trial`, { action: "deactivate" }, getCompanyScopedRequestConfig());
       if (response.data?.success) { toast.success(response.data.message || "تم إيقاف الفترة التجريبية وتجميد التطبيقات"); setTrialOpen(false); void refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في إيقاف الفترة التجريبية");
     } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في إيقاف الفترة التجريبية")); }
@@ -466,7 +466,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     if (!companyId) return;
     setToggleFeatureLoading(true);
     try {
-      const response: any = await apiClient.put(`/admin/companies/${companyId}/features`, { feature, enabled });
+      const response: any = await apiClient.put(`/admin/companies/${companyId}/features`, { feature, enabled }, getCompanyScopedRequestConfig());
       if (response.data?.success) {
         toast.success(`تم ${enabled ? "تفعيل" : "إيقاف"} الخاصية بنجاح`);
         await refreshCompanyWorkspace({ background: true });

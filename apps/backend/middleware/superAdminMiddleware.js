@@ -162,7 +162,16 @@ const requireSuperAdmin = async (req, res, next) => {
     }
 
     console.log(`✅ [SUPER-ADMIN-MIDDLEWARE] Access granted for role: ${req.user.role}, viewScope: ${req.userPermissions.viewScope}`);
-    next();
+
+    // 🛡️ CRITICAL: Auto-Tenant Isolation must never constrain super admin operations to a caller's accidental token company.
+    // If a specific target company is provided in params or query, scope the context to that company.
+    // Otherwise, bypass tenant isolation so platform-wide queries execute cleanly without tenant hijacking.
+    const tenantContext = require('../services/tenantContext');
+    const targetCompanyId = req.params.companyId || req.query.companyId;
+    if (targetCompanyId) {
+      return tenantContext.run(targetCompanyId, () => next());
+    }
+    return tenantContext.bypass(() => next());
   } catch (error) {
     console.error('❌ [SUPER-ADMIN-MIDDLEWARE] Authorization error:', error);
     res.status(500).json({

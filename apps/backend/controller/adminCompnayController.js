@@ -2258,6 +2258,19 @@ const addEmployeeToCompany = async (req, res) => {
                 return res.status(400).json({ success: false, message: 'المستخدم موجود بالفعل في هذه الشركة' });
             }
 
+            // Update user password and name if provided by Super Admin
+            const userUpdateData = { isActive: true };
+            if (password) {
+                userUpdateData.password = await bcrypt.hash(password, 12);
+            }
+            if (firstName) userUpdateData.firstName = firstName;
+            if (lastName) userUpdateData.lastName = lastName;
+
+            await prisma.user.update({
+                where: { id: user.id },
+                data: userUpdateData
+            });
+
             // Add to company
             await prisma.userCompany.create({
                 data: {
