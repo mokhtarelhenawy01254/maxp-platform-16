@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../hooks/useAuthSimple";
-import { buildApiUrl } from "../../../utils/urlHelper";
-import { tokenManager } from "../../../utils/tokenManager";
+import { companyAwareApi } from "../../../services/companyAwareApi";
 import { socketService } from "../../../services/socketService";
 
 const REFRESH_INTERVAL_MS = 30000;
@@ -16,33 +15,27 @@ export function useSidebarBadges(): SidebarBadges {
   const [newOrders, setNewOrders] = useState<string | undefined>(undefined);
   const [unreadTickets, setUnreadTickets] = useState<string | undefined>(undefined);
 
+  const activeApps = useMemo(() => {
+    return (
+      (user as any)?.company?.activeApps ||
+      (user as any)?.companies?.find((c: any) => c.id === (user as any)?.companyId)?.activeApps ||
+      []
+    );
+  }, [user]);
+
   const fetchNewOrders = useCallback(async () => {
     if (!user || !isAuthenticated) return;
-    const token = tokenManager.getAccessToken();
-    if (!token) return;
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(buildApiUrl("orders-v2/simple/new-count"), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
+      const response = await companyAwareApi.get<any>("orders-v2/simple/new-count", {
+        timeout: 5000,
       });
 
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          const count = data.data.count || 0;
-          setNewOrders(
-            count > 0 ? (count > 99 ? "99+" : String(count)) : undefined,
-          );
-        }
+      if (response.data?.success && response.data?.data) {
+        const count = response.data.data.count || 0;
+        setNewOrders(
+          count > 0 ? (count > 99 ? "99+" : String(count)) : undefined,
+        );
       }
     } catch (error) {
       // silent fail
@@ -51,41 +44,32 @@ export function useSidebarBadges(): SidebarBadges {
 
   const fetchUnreadTickets = useCallback(async () => {
     if (!user || !isAuthenticated) return;
-    const activeApps = (user as any)?.company?.activeApps;
-    if (Array.isArray(activeApps) && activeApps.length > 0 && !activeApps.some((a: string) => ['order-shipping-turbo', 'order-shipping-hub', 'order-shipping'].includes(a))) {
+    if (
+      Array.isArray(activeApps) &&
+      activeApps.length > 0 &&
+      !activeApps.some((a: string) =>
+        ["order-shipping-turbo", "order-shipping-hub", "order-shipping"].includes(a),
+      )
+    ) {
       return;
     }
-    const token = tokenManager.getAccessToken();
-    if (!token) return;
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(buildApiUrl("turbo/tickets/unread-count"), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
+      const response = await companyAwareApi.get<any>("turbo/tickets/unread-count", {
+        timeout: 5000,
       });
 
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const counts = data.data?.counts || data.counts || {};
-          const count = Number(counts.tickets || 0);
-          setUnreadTickets(
-            count > 0 ? (count > 99 ? "99+" : String(count)) : undefined,
-          );
-        }
+      if (response.data?.success) {
+        const counts = response.data.data?.counts || response.data.counts || {};
+        const count = Number(counts.tickets || 0);
+        setUnreadTickets(
+          count > 0 ? (count > 99 ? "99+" : String(count)) : undefined,
+        );
       }
     } catch {
       // silent fail if turbo not configured or company has no shipping app
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, activeApps]);
 
   useEffect(() => {
     fetchNewOrders();

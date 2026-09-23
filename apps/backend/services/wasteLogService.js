@@ -83,7 +83,6 @@ async function recordWaste({
     // 5. Create StockMovement (type: OUT, reason: DAMAGE)
     await tx.stockMovement.create({
       data: {
-        companyId,
         warehouseId,
         productId,
         type: 'OUT',
