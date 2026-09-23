@@ -338,7 +338,21 @@ async def _build_active_order_block(ctx: PipelineContext) -> str:
             if it["color"]:
                 parts.append(f"لون {it['color']}")
             item_lines.append(f"  - {' — '.join(parts)} × {it['quantity']}")
-        address_ar = "، ".join(p for p in [order["governorate"], order["city"], order["address"]] if p)
+
+        raw_address = order["address"] or ""
+        if raw_address.startswith("{"):
+            try:
+                import json as _json
+
+                addr_obj = _json.loads(raw_address)
+                if isinstance(addr_obj, dict):
+                    raw_address = "، ".join(
+                        str(v) for k, v in addr_obj.items()
+                        if isinstance(v, str) and v.strip() and k not in {"city", "governorate"}
+                    )
+            except Exception:
+                pass
+        address_ar = "، ".join(p for p in [order["governorate"], order["city"], raw_address] if p)
 
         lines = [
             "<active_order>",
