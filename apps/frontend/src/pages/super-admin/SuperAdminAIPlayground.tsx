@@ -24,7 +24,7 @@ const PROVIDERS = [
   { value: "OPENAI", label: "OpenAI" }, { value: "ANTHROPIC", label: "Anthropic" }, { value: "OLLAMA", label: "Ollama" }, { value: "HUGGINGFACE", label: "HuggingFace" },
 ];
 
-const DEFAULT_MODELS: Record<string, string> = { GOOGLE: "gemini-2.5-flash", DEEPSEEK: "deepseek-v4-flash", OPENAI: "gpt-4o-mini", ANTHROPIC: "claude-sonnet-4-20250514", HUGGINGFACE: "mistralai/Mistral-7B-Instruct-v0.3", OLLAMA: "llama3.2", GROQ: "openai/gpt-oss-120b", OPENROUTER: "openrouter/auto", NVIDIA: "openai/gpt-oss-120b", CEREBRAS: "qwen-3-235b-a22b-instruct-2507", GITHUB: "gpt-4o", SAMBANOVA: "DeepSeek-V3.1", MISTRAL: "mistral-large-latest" };
+const DEFAULT_MODELS: Record<string, string> = { GOOGLE: "gemini-2.5-flash", DEEPSEEK: "deepseek-flash", OPENAI: "gpt-4o-mini", ANTHROPIC: "claude-sonnet-4-20250514", HUGGINGFACE: "mistralai/Mistral-7B-Instruct-v0.3", OLLAMA: "llama3.2", GROQ: "openai/gpt-oss-120b", OPENROUTER: "openrouter/auto", NVIDIA: "openai/gpt-oss-120b", CEREBRAS: "qwen-3-235b-a22b-instruct-2507", GITHUB: "gpt-4o", SAMBANOVA: "DeepSeek-V3.1", MISTRAL: "mistral-large-latest" };
 
 const SuperAdminAIPlayground = () => {
   const [provider, setProvider] = useState("GOOGLE");

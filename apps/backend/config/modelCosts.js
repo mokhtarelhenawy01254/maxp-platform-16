@@ -12,8 +12,10 @@ const MODEL_COSTS_PER_M = {
   'gemini-2.0-flash': { input: 0.075, output: 0.30 },
   'gemini-1.5-pro': { input: 0.625, output: 2.50 },
   'gemini-1.5-flash': { input: 0.075, output: 0.30 },
+  // DeepSeek V4.1-Flash (GA 2026-09-10) — official id is `deepseek-flash`; off-peak rates (peak = 2x)
+  'deepseek-flash': { input: 0.15, output: 0.60 },
   'deepseek-v4-flash': { input: 0.14, output: 0.28 },
-  'deepseek-v4-pro': { input: 0.435, output: 0.87 },
+  'deepseek-v4-pro': { input: 0.15, output: 0.60 },
   'openai/gpt-oss-120b': { input: 0.15, output: 0.60 },
   'openai/gpt-oss-20b': { input: 0.075, output: 0.30 },
   'llama-3.3-70b': { input: 0.59, output: 0.79 },

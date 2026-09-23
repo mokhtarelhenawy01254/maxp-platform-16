@@ -32,8 +32,8 @@ async function seedDeepSeek() {
 
         // 2. Add DeepSeek Models
         const models = [
-            { name: 'deepseek-v4-flash', priority: 1 },
-            { name: 'deepseek-v4-pro', priority: 2 }
+            { name: 'deepseek-flash', priority: 1 },
+            { name: 'deepseek-v4-flash', priority: 2 }
         ];
 
         for (const m of models) {

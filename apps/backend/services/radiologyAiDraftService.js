@@ -28,7 +28,7 @@ const MODEL_DEFAULTS = {
   OPENROUTER: 'openai/gpt-4o-mini',
   OPENAI: 'gpt-4o-mini',
   GROQ: 'qwen/qwen3.8-27b',
-  DEEPSEEK: 'deepseek-v4-flash',
+  DEEPSEEK: 'deepseek-flash',
   ANTHROPIC: 'claude-3-5-haiku-latest',
   GOOGLE: 'gemini-2.5-flash',
   MISTRAL: 'mistral-small-latest',

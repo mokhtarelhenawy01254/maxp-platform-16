@@ -17,8 +17,8 @@ const MODEL_COSTS: Record<string, { input: number; output: number }> = {
   "claude-3-5-sonnet": { input: 0.003, output: 0.015 },
   "gemini-2.5-flash": { input: 0.000075, output: 0.0003 },
   "gemini-2.5-pro": { input: 0.00125, output: 0.01 },
+  "deepseek-flash": { input: 0.00015, output: 0.0006 },
   "deepseek-v4-flash": { input: 0.00014, output: 0.00028 },
-  "deepseek-v4-pro": { input: 0.000435, output: 0.00087 },
   "llama-3.3-70b": { input: 0.00059, output: 0.00079 },
   "mistral-large": { input: 0.002, output: 0.006 },
 };

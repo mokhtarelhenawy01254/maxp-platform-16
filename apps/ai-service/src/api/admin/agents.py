@@ -375,7 +375,7 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
                 "id": f"runtime-{template.slug}-{secrets.token_hex(4)}",
                 "name": template.name,
                 "role": template.role,
-                "model": template.model_policy.get("default", "deepseek-v4-flash") if template.model_policy else "deepseek-v4-flash",
+                "model": template.model_policy.get("default", "deepseek-flash") if template.model_policy else "deepseek-flash",
                 "persona": {
                     "agentsInstructions": template.instructions_agents or "",
                     "soulInstructions": template.instructions_soul or "",

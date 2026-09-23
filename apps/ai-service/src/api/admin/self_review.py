@@ -21,7 +21,7 @@ router = APIRouter()
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 AVAILABLE_REVIEW_MODELS = [
-    "deepseek-v4-flash",
+    "deepseek-flash",
     "gemini-2.5-flash",
     "gpt-5.4-nano",
 ]

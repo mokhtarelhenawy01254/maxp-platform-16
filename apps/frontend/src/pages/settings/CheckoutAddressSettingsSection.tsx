@@ -241,7 +241,7 @@ const CheckoutAddressSettingsSection: React.FC<{
               >
                 <option value="gemini-2.5-flash">Gemini 2.5 Flash (سريع)</option>
                 <option value="gemini-2.5-pro">Gemini 2.5 Pro (دقيق)</option>
-                <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
+                <option value="deepseek-flash">DeepSeek V4.1 Flash</option>
               </select>
             </div>
             <div>

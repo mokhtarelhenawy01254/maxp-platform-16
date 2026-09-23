@@ -670,7 +670,7 @@ function AddKeyDialog({ providers, onClose, onCreated, createKeyMutation }: {
             <div><label className="text-sm font-medium mb-1.5 block">حد الطلبات/اليوم</label><Input type="number" value={maxRequests} onChange={(e) => setMaxRequests(e.target.value)} min={1} /></div>
           </div>
           <div><label className="text-sm font-medium mb-1.5 block">الموديلات (موديل واحد في كل سطر)</label>
-            <Textarea value={modelsText} onChange={(e) => setModelsText(e.target.value)} placeholder={provider === "OPENROUTER" ? "openrouter/auto" : "deepseek-v4-flash\ngpt-4o-mini"} rows={3} />
+            <Textarea value={modelsText} onChange={(e) => setModelsText(e.target.value)} placeholder={provider === "OPENROUTER" ? "openrouter/auto" : "deepseek-flash\ngpt-4o-mini"} rows={3} />
           </div>
         </div>
         <DialogFooter className="mt-4">

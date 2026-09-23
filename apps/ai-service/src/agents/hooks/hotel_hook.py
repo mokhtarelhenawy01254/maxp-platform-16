@@ -133,7 +133,7 @@ async def _extract_booking_data(
     from src.llm.model_manager import model_manager
 
     try:
-        routing = await model_manager.get_next_key("deepseek-v4-flash", ctx.company_id)
+        routing = await model_manager.get_next_key("deepseek-flash", ctx.company_id)
         client = LLMClient(
             provider=routing.provider,
             model=routing.model,

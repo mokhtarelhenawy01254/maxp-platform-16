@@ -4,7 +4,7 @@
   "role": "INVENTORY",
   "version": "1.0.0",
   "modelPolicy": {
-    "default": "deepseek-v4-flash",
+    "default": "deepseek-flash",
     "fallback": "groq/openai/gpt-oss-120b"
   },
   "instructions": {

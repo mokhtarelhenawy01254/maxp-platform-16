@@ -4,7 +4,7 @@
   "role": "DENTAL",
   "version": "1.0.0",
   "modelPolicy": {
-    "default": "deepseek-v4-flash",
+    "default": "deepseek-flash",
     "fallback": "gemini-2.5-flash"
   },
   "instructions": {
