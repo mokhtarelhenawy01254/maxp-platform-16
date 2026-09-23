@@ -1726,6 +1726,19 @@ class OrderService {
             }
           }
 
+          // ⭐ إعادة حساب وتصنيف مستوى العميل آلياً (ضعيف - جيد - ممتاز)
+          const terminalRatingStatuses = ['DELIVERED', 'PARTIALLY_DELIVERED', 'RETURNED', 'PARTIALLY_RETURNED', 'CANCELLED', 'REFUNDED', 'LOST'];
+          if (order.customerId && (terminalRatingStatuses.includes(status) || terminalRatingStatuses.includes(order.status))) {
+            try {
+              const { recalculateCustomerRating } = require('./customerRatingService');
+              recalculateCustomerRating(order.customerId, order.companyId).catch(err => {
+                console.warn(`⚠️ [CUSTOMER-RATING-BG] Failed for order ${orderNumber}:`, err.message);
+              });
+            } catch (ratingErr) {
+              console.warn('CustomerRatingService require failed:', ratingErr.message);
+            }
+          }
+
           // 📱 WhatsApp Notification (with duplicate check)
           try {
             const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
@@ -1982,6 +1995,21 @@ class OrderService {
             } catch (cashbackError) {
               console.error('❌ [CASHBACK] Failed to add cashback on guest order delivered:', cashbackError?.message);
             }
+          }
+
+          // ⭐ إعادة حساب وتصنيف مستوى العميل لطلبات الضيوف المرتبطة برقم الهاتف
+          const terminalGuestRatingStatuses = ['DELIVERED', 'PARTIALLY_DELIVERED', 'RETURNED', 'PARTIALLY_RETURNED', 'CANCELLED', 'REFUNDED', 'LOST'];
+          if (terminalGuestRatingStatuses.includes(status) || terminalGuestRatingStatuses.includes(guestOrder.status)) {
+            try {
+              const targetPhone = updatedGuestOrder.guestPhone || guestOrder.guestPhone;
+              if (targetPhone) {
+                const { findCustomerByPhone } = require('../utils/customerIdentity');
+                const { recalculateCustomerRating } = require('./customerRatingService');
+                findCustomerByPhone(this.getPrisma(), targetPhone, companyId).then(cust => {
+                  if (cust?.id) recalculateCustomerRating(cust.id, companyId);
+                }).catch(() => {});
+              }
+            } catch (rErr) {}
           }
 
           try {

@@ -49,14 +49,14 @@ export const TeamExecutiveSummary: React.FC<TeamExecutiveSummaryProps> = ({
         {isSuperOrOwner && (
           <div className="flex items-center gap-2">
             {archiveSuccess && (
-              <span className="text-[11px] font-medium text-emerald-400">
+              <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                 {archiveSuccess}
               </span>
             )}
             <button
               onClick={onTriggerArchive}
               disabled={archiving}
-              className="flex h-7 items-center gap-1.5 rounded-md border border-border/40 bg-zinc-900/60 px-2.5 text-[11px] font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-foreground active:scale-95"
+              className="flex h-7 items-center gap-1.5 rounded-md border border-border/50 bg-muted/60 dark:bg-zinc-900/60 px-2.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted dark:hover:bg-zinc-800 transition active:scale-95"
               title="أرشفة السجلات التفصيلية الأقدم من 60 يوماً وتفريغ مساحة التخزين"
             >
               <Archive className={`h-3 w-3 ${archiving ? 'animate-spin' : ''}`} />
@@ -67,7 +67,7 @@ export const TeamExecutiveSummary: React.FC<TeamExecutiveSummaryProps> = ({
       </div>
 
       {/* Telemetry Summary Text */}
-      <div className="mt-3 rounded-lg border border-border/30 bg-zinc-950/40 p-3 text-xs text-zinc-300">
+      <div className="mt-3 rounded-lg border border-border/40 bg-muted/40 dark:bg-zinc-950/40 p-3 text-xs text-foreground">
         <div className="flex flex-wrap items-center gap-y-2 gap-x-6">
           <div className="flex items-center gap-1.5">
             <span className="text-muted-foreground">حالة الفريق الحالية:</span>
@@ -78,18 +78,18 @@ export const TeamExecutiveSummary: React.FC<TeamExecutiveSummaryProps> = ({
 
           <div className="flex items-center gap-1.5">
             <span className="text-muted-foreground">ساعات العمل الموثقة:</span>
-            <span className="font-semibold text-sky-400 tabular-nums">
+            <span className="font-semibold text-sky-600 dark:text-sky-400 tabular-nums">
               {stats.totalHoursTracked} ساعة عمل
             </span>
           </div>
 
           <div className="flex items-center gap-1.5">
             <span className="text-muted-foreground">إجمالي المهام:</span>
-            <span className="font-semibold text-emerald-400 tabular-nums">
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
               {stats.totalTasksCompleted || 0} منجزة
             </span>
             {(stats.totalTasksCreated || 0) > 0 && (
-              <span className="font-medium text-sky-400 tabular-nums">
+              <span className="font-medium text-sky-600 dark:text-sky-400 tabular-nums">
                 • {stats.totalTasksCreated} منشأة
               </span>
             )}
