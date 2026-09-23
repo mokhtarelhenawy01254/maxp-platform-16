@@ -139,6 +139,7 @@ const PreparationQueue: React.FC = () => {
   const { settings: invoiceSettings } = useInvoiceSettings();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialOverrides = useMemo(() => getInitialPreparationState(searchParams), []);
+  const { state: uiState, actions: uiActions } = usePreparationQueueUiState(initialOverrides);
   const isMerchantUser = user?.role === "MERCHANT";
 
   const isInternalCourierAppActive = useMemo(() => {
@@ -2473,12 +2474,15 @@ const PreparationQueue: React.FC = () => {
       <DispatchInternalCourierModal
         isOpen={showInternalCourierModal}
         onClose={() => setShowInternalCourierModal(false)}
-        orderIds={selectedOrders.map((o) => String(o.id))}
+        orderIds={selectedOrders
+          .map((orderNumber) => getOrderByNumber(orderNumber)?.id)
+          .filter((id): id is string | number => id !== undefined && id !== null)
+          .map(String)}
         onSuccess={(runId, runNumber) => {
           setShowInternalCourierModal(false);
           toast.success(`تم إنشاء مأمورية التوزيع ${runNumber} وتكليف المندوب بنجاح`);
           uiActions.clearBulkControls();
-          void fetchOrders();
+          void fetchAll();
           navigate('/shipping/delivery-runs');
         }}
       />
