@@ -39,9 +39,9 @@ router.delete('/agents/:id', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-    const permanent = req.query.permanent === 'true';
+    const isArchive = req.query.archive === 'true';
     let result;
-    if (permanent) {
+    if (!isArchive) {
       result = await aiServiceAdminClient.deleteAgentPermanently(req.params.id, companyId);
       console.log('[AGENT] Agent permanently deleted via ai-service:', req.params.id);
     } else {

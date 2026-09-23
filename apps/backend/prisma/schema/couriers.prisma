@@ -1,0 +1,58 @@
+model Courier {
+  id               String        @id @default(cuid())
+  companyId        String
+  name             String
+  phone            String
+  nationalId       String?
+  vehicleType      String        @default("MOTORCYCLE") /// MOTORCYCLE, CAR, VAN, BICYCLE, ON_FOOT
+  plateNumber      String?
+  governorates     String?       /// JSON array or comma-separated list of governorates/zones
+  commissionType   String        @default("FIXED_PER_ORDER") /// FIXED_PER_ORDER, PERCENTAGE, SALARY_ONLY
+  commissionAmount Decimal       @default(0.0) @db.Decimal(10, 2)
+  isActive         Boolean       @default(true)
+  status           String        @default("AVAILABLE") /// AVAILABLE, ON_DUTY, OFF_DUTY
+  notes            String?
+  userId           String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  company          Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shipments        Shipment[]
+  deliveryRuns     DeliveryRun[]
+
+  @@index([companyId])
+  @@index([isActive])
+  @@index([phone])
+  @@map("couriers")
+}
+
+model DeliveryRun {
+  id                    String      @id @default(cuid())
+  companyId             String
+  courierId             String
+  runNumber             String      /// e.g. RUN-20260923-001
+  status                String      @default("DISPATCHED") /// DRAFT, DISPATCHED, COMPLETED, SETTLED, CANCELLED
+  dispatchDate          DateTime    @default(now())
+  totalShipments        Int         @default(0)
+  totalCODExpected      Decimal     @default(0.0) @db.Decimal(10, 2)
+  totalCODCollected     Decimal     @default(0.0) @db.Decimal(10, 2)
+  totalReturnedCount    Int         @default(0)
+  notes                 String?
+  settledAt             DateTime?
+  settledBy             String?
+  treasuryAccountId     String?
+  treasuryTransactionId  String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  courier               Courier     @relation(fields: [courierId], references: [id], onDelete: Cascade)
+  shipments             Shipment[]
+
+  @@unique([companyId, runNumber])
+  @@index([companyId])
+  @@index([courierId])
+  @@index([status])
+  @@index([dispatchDate])
+  @@map("delivery_runs")
+}

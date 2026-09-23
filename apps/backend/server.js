@@ -436,6 +436,7 @@ const treasuryExpensesRoutes = require("./routes/treasuryExpensesRoutes");
 // Billing Cron Service
 const billingCronService = require("./services/billingCronService");
 const whatsappNotificationRoutes = require("./routes/whatsappNotificationRoutes");
+const whatsappScheduledReportRoutes = require("./routes/whatsappScheduledReportRoutes");
 const whatsappMetaTemplateRoutes = require("./routes/whatsappMetaTemplateRoutes");
 const leadFollowUpRoutes = require("./routes/leadFollowUpRoutes");
 const leadCategoryRoutes = require("./routes/leadCategoryRoutes");
@@ -922,6 +923,8 @@ app.use("/api/v1/telegram", telegramRoutes);
 app.use("/api/v1/telegram-advanced", telegramAdvancedRoutes);
 app.use("/api/v1/userbot", userbotRoutes);
 app.use("/api/v1/whatsapp-notifications", whatsappNotificationRoutes);
+app.use("/api/v1/whatsapp/scheduled-reports", whatsappScheduledReportRoutes);
+app.use("/api/whatsapp/scheduled-reports", whatsappScheduledReportRoutes);
 app.use("/api/v1/whatsapp-templates", whatsappMetaTemplateRoutes);
 app.use("/api/v1/whatsapp/lead-followup", leadFollowUpRoutes);
 app.use("/api/v1/whatsapp/lead-categories", leadCategoryRoutes);
@@ -1474,6 +1477,15 @@ try {
   console.log("✅ [TRIAL-EXPIRY-CRON] Trial expiry cron started (runs every 30 min)");
 } catch (error) {
   console.error("❌ [TRIAL-EXPIRY-CRON] Failed to start trial expiry cron:", error);
+}
+
+// Start Scheduled WhatsApp Report cron (operations & sales periodic summary)
+try {
+  const { startScheduledReportCron } = require("./cron/scheduledReportCron");
+  startScheduledReportCron();
+  console.log("✅ [SCHEDULED-REPORT-CRON] Scheduled WhatsApp report cron started (runs every 15 min)");
+} catch (error) {
+  console.error("❌ [SCHEDULED-REPORT-CRON] Failed to start scheduled report cron:", error);
 }
 
 // Start QP Express automated background status sync cron

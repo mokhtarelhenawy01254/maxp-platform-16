@@ -252,8 +252,8 @@ export default function AgentProfileHeader({
               size="icon"
               className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
               onClick={onDelete}
-              aria-label={t("agentProfiles.header.deleteTitle", "أرشفة الوكيل")}
-              title={t("agentProfiles.header.deleteTitle", "أرشفة الوكيل")}
+              aria-label={t("agentProfiles.header.deleteTitle", "حذف الوكيل")}
+              title={t("agentProfiles.header.deleteTitle", "حذف الوكيل")}
             >
               <Trash2 className="size-3.5" />
             </Button>
@@ -352,8 +352,8 @@ export default function AgentProfileHeader({
               size="icon"
               className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 lg:hidden shrink-0"
               onClick={onDelete}
-              aria-label={t("agentProfiles.header.deleteTitle", "أرشفة الوكيل")}
-              title={t("agentProfiles.header.deleteTitle", "أرشفة الوكيل")}
+              aria-label={t("agentProfiles.header.deleteTitle", "حذف الوكيل")}
+              title={t("agentProfiles.header.deleteTitle", "حذف الوكيل")}
             >
               <Trash2 className="size-3.5" />
             </Button>

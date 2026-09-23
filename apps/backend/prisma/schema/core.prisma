@@ -58,6 +58,8 @@ model Company {
   trialEndsAt                     DateTime?
   merchants                       Merchant[]
   shipments                       Shipment[]
+  couriers                        Courier[]
+  deliveryRuns                    DeliveryRun[]
   projects                        Project[]
   SupportTicket                   SupportTicket[]
   tasks                           Task[]
@@ -274,6 +276,7 @@ model Company {
   whatsAppQuickReplies            WhatsAppQuickReply[]
   whatsAppSessions                WhatsAppSession[]
   whatsAppSettings                WhatsAppSettings?
+  whatsappScheduledReports        WhatsAppScheduledReport[]
   whatsappFollowUpFlows           WhatsAppFollowUpFlow[]
   customerJourneys                CustomerJourney[]
   leadCategories                  LeadCategory[]

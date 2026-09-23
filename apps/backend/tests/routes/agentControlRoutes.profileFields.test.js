@@ -4,6 +4,8 @@ const request = require('supertest');
 const mockAiServiceAdminClient = {
   spawnAgent: jest.fn(),
   updateAgent: jest.fn(),
+  deleteAgentPermanently: jest.fn(),
+  archiveAgent: jest.fn(),
 };
 
 jest.mock('../../utils/verifyToken', () => ({
@@ -37,6 +39,14 @@ describe('agentControlRoutes profile fields', () => {
       name: 'Mobile Accessories Sales',
     });
     mockAiServiceAdminClient.updateAgent.mockResolvedValue({
+      success: true,
+      id: 'agent_1',
+    });
+    mockAiServiceAdminClient.deleteAgentPermanently.mockResolvedValue({
+      success: true,
+      id: 'agent_1',
+    });
+    mockAiServiceAdminClient.archiveAgent.mockResolvedValue({
       success: true,
       id: 'agent_1',
     });
@@ -123,5 +133,23 @@ describe('agentControlRoutes profile fields', () => {
         policies: { guardrails: { maxDiscountPercent: 10 } },
       })
     );
+  });
+
+  test('permanently deletes an agent by default when calling DELETE /agent/agents/:id', async () => {
+    const response = await request(app)
+      .delete('/agent/agents/agent_1');
+
+    expect(response.status).toBe(200);
+    expect(mockAiServiceAdminClient.deleteAgentPermanently).toHaveBeenCalledWith('agent_1', 'company_1');
+    expect(mockAiServiceAdminClient.archiveAgent).not.toHaveBeenCalled();
+  });
+
+  test('archives an agent when calling DELETE /agent/agents/:id?archive=true', async () => {
+    const response = await request(app)
+      .delete('/agent/agents/agent_1?archive=true');
+
+    expect(response.status).toBe(200);
+    expect(mockAiServiceAdminClient.archiveAgent).toHaveBeenCalledWith('agent_1', 'company_1');
+    expect(mockAiServiceAdminClient.deleteAgentPermanently).not.toHaveBeenCalled();
   });
 });

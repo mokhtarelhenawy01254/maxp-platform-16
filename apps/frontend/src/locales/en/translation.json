@@ -6162,7 +6162,7 @@
         "active_toggle": "Activate",
         "paused_toggle": "Pause"
       },
-      "deleteTitle": "Delete",
+      "deleteTitle": "Delete Agent",
       "noSelection": "No assistant selected",
       "chatWithManager": "Chat",
       "saved": "Saved",
@@ -6206,11 +6206,13 @@
     },
     "delete": {
       "title": "Delete Agent",
-      "confirm": "Are you sure?",
-      "irreversible": "This action cannot be undone.",
+      "confirm": "Are you sure you want to delete agent {{name}}?",
+      "confirmPrefix": "Are you sure you want to delete agent",
+      "confirmSuffix": "?",
+      "note": "This agent and all its settings and data will be permanently deleted. This action cannot be undone.",
       "cancel": "Cancel",
       "deleting": "Deleting...",
-      "confirmButton": "Delete"
+      "confirmButton": "Delete Agent"
     },
     "toast": {
       "invalidSkillsJson": "Invalid Skills JSON",
@@ -6218,8 +6220,8 @@
       "saveFailed": "Save failed",
       "createSuccess": "Created successfully",
       "createFailed": "Create failed",
-      "deleteSuccess": "Deleted successfully",
-      "deleteFailed": "Delete failed"
+      "deleteSuccess": "Agent deleted successfully",
+      "deleteFailed": "Failed to delete agent"
     },
     "empty": {
       "title": "Start building your smart team",
@@ -9548,6 +9550,7 @@
       "abandonedCart": "Abandoned Cart",
       "marketing": "Marketing",
       "hr": "HR",
+      "reports": "Scheduled Reports",
       "templates": "Templates",
       "logs": "Logs"
     },
@@ -13663,18 +13666,7 @@
     "closeCancel": "Close / Cancel",
     "ok": "OK",
     "coupon_applied": "Coupon applied! Discount {{amount}} EGP",
-    "available_count": "Available: {{count}}",
-    "outOfStock": "Out of stock",
-    "inStock": "In stock",
-    "andSeparator": " and ",
-    "notSpecified": "Not specified",
-    "fetchFailed": "Failed to fetch products",
-    "affiliateProducts": "Available company products",
-    "products": "Products",
-    "noAffiliateProducts": "No products available for this affiliate",
-    "noProducts": "No products found",
-    "refreshProducts": "Refresh products & stock",
-    "productsRefreshed": "Products & stock refreshed successfully"
+    "available_count": "Available: {{count}}"
   },
   "orderDetails": {
     "orderNotFound": "Order Not Found",

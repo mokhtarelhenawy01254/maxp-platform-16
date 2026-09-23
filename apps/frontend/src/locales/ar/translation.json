@@ -6162,7 +6162,7 @@
         "active_toggle": "تفعيل",
         "paused_toggle": "إيقاف"
       },
-      "deleteTitle": "حذف",
+      "deleteTitle": "حذف الوكيل",
       "noSelection": "لم يتم تحديد مساعد",
       "chatWithManager": "محادثة",
       "saved": "تم الحفظ",
@@ -6206,11 +6206,13 @@
     },
     "delete": {
       "title": "حذف الوكيل",
-      "confirm": "هل أنت متأكد؟",
-      "irreversible": "لا يمكن التراجع عن هذا الإجراء.",
+      "confirm": "هل أنت متأكد من حذف الوكيل {{name}}؟",
+      "confirmPrefix": "هل أنت متأكد من حذف الوكيل",
+      "confirmSuffix": "؟",
+      "note": "سيتم حذف هذا الوكيل نهائياً مع كافة إعداداته وبياناته ولا يمكن التراجع عن هذا الإجراء.",
       "cancel": "إلغاء",
       "deleting": "جارٍ الحذف...",
-      "confirmButton": "حذف"
+      "confirmButton": "حذف الوكيل"
     },
     "toast": {
       "invalidSkillsJson": "مهارات JSON غير صالحة",
@@ -6218,8 +6220,8 @@
       "saveFailed": "فشل الحفظ",
       "createSuccess": "تم الإنشاء بنجاح",
       "createFailed": "فشل الإنشاء",
-      "deleteSuccess": "تم الحذف بنجاح",
-      "deleteFailed": "فشل الحذف"
+      "deleteSuccess": "تم حذف الوكيل بنجاح",
+      "deleteFailed": "فشل حذف الوكيل"
     },
     "empty": {
       "title": "ابدأ بناء فريقك الذكي",
@@ -9548,6 +9550,7 @@
       "abandonedCart": "العربة المتروكة",
       "marketing": "التسويق",
       "hr": "الموارد البشرية",
+      "reports": "التقارير المجدولة",
       "templates": "القوالب",
       "logs": "السجلات"
     },
@@ -13663,18 +13666,7 @@
     "closeCancel": "إغلاق / إلغاء",
     "ok": "حسناً",
     "coupon_applied": "تم تطبيق الكوبون! خصم {{amount}} ج.م",
-    "available_count": "متاح: {{count}}",
-    "outOfStock": "نفدت الكمية",
-    "inStock": "متاح",
-    "andSeparator": " و ",
-    "notSpecified": "غير محدد",
-    "fetchFailed": "فشل في جلب المنتجات",
-    "affiliateProducts": "منتجات الشركة المتاحة",
-    "products": "المنتجات",
-    "noAffiliateProducts": "لا توجد منتجات متاحة لهذا المسوق",
-    "noProducts": "لا توجد منتجات",
-    "refreshProducts": "تحديث المنتجات والمخزون",
-    "productsRefreshed": "تم تحديث المنتجات والمخزون بنجاح"
+    "available_count": "متاح: {{count}}"
   },
   "orderDetails": {
     "orderNotFound": "الطلب غير موجود",

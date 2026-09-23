@@ -64,7 +64,7 @@
       "active_toggle": "تفعيل",
       "paused_toggle": "إيقاف"
     },
-    "deleteTitle": "حذف",
+    "deleteTitle": "حذف الوكيل",
     "noSelection": "لم يتم تحديد مساعد",
     "chatWithManager": "محادثة",
     "saved": "تم الحفظ",
@@ -120,8 +120,8 @@
     "saveFailed": "فشل الحفظ",
     "createSuccess": "تم الإنشاء بنجاح",
     "createFailed": "فشل الإنشاء",
-    "deleteSuccess": "تم الحذف بنجاح",
-    "deleteFailed": "فشل الحذف"
+    "deleteSuccess": "تم حذف الوكيل بنجاح",
+    "deleteFailed": "فشل حذف الوكيل"
   },
   "empty": {
     "title": "ابدأ بناء فريقك الذكي",
@@ -242,6 +242,16 @@
     "cancel": "إلغاء",
     "archiving": "جارٍ الأرشفة...",
     "confirmButton": "أرشفة"
+  },
+  "delete": {
+    "title": "حذف الوكيل",
+    "confirm": "هل أنت متأكد من حذف الوكيل {{name}}؟",
+    "confirmPrefix": "هل أنت متأكد من حذف الوكيل",
+    "confirmSuffix": "؟",
+    "note": "سيتم حذف هذا الوكيل نهائياً مع كافة إعداداته وبياناته ولا يمكن التراجع عن هذا الإجراء.",
+    "cancel": "إلغاء",
+    "deleting": "جارٍ الحذف...",
+    "confirmButton": "حذف الوكيل"
   },
   "guardrails": {
     "saveSuccess": "تم توليد قاعدة العمل وتفعيلها بنجاح 🛡️",
