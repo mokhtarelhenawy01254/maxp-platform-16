@@ -633,7 +633,7 @@ const resolveOAuthCallbackContext = (state, fallbackType) => {
 // وطلبه من فيسبوك كان بيمنع الصفحات اللي محتاجته من الظهور في /me/accounts.
 // (يُضاف لاحقًا عند تفعيل الكومنتات/المنشورات بعد App Review)
 const FACEBOOK_PAGE_SCOPES =
-  "public_profile,email,pages_show_list,pages_manage_posts,pages_manage_metadata,pages_messaging,instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_read_user_content,pages_manage_engagement";
+  "public_profile,email,pages_show_list,pages_manage_metadata,pages_messaging,pages_read_user_content,pages_manage_engagement";
 
 // Facebook OAuth Scopes - Pixel/Ads (بـ business_management للوصول للأعمال)
 const FACEBOOK_PIXEL_SCOPES =
