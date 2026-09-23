@@ -20,7 +20,9 @@ import {
   ExternalLink,
   ShieldCheck,
   Activity,
+  Share2,
 } from "lucide-react";
+import { OrderWebhookDocsModal, FULL_MARKDOWN_DOCS } from "./components/OrderWebhookDocsModal";
 
 interface WebhookConfig {
   id: string;
@@ -80,7 +82,6 @@ const OrderWebhookSettings: React.FC = () => {
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
-  const [activeCodeTab, setActiveCodeTab] = useState<"node" | "python" | "php">("node");
 
   useEffect(() => {
     fetchWebhooks();
@@ -261,6 +262,41 @@ const OrderWebhookSettings: React.FC = () => {
           >
             <Plus className="w-4 h-4" />
             <span>إضافة ويب هوك</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 📘 Developer Quick Documentation Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5 text-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+            <Share2 className="w-4 h-4" />
+          </div>
+          <div>
+            <h4 className="font-bold text-foreground">هل تقوم بالربط مع مبرمج خارجي أو نظام CRM / ERP؟</h4>
+            <p className="text-muted-foreground text-[11px] mt-0.5">
+              يمكنك نسخ التوثيق التقني ونموذج الـ Payload الكامل لترسله لمطورك بضغطة واحدة، أو استعراض الأكواد.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(FULL_MARKDOWN_DOCS);
+              toast.success("تم نسخ التوثيق كاملاً بصيغة Markdown لإرساله للمطور!");
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition shadow-sm"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            <span>نسخ التوثيق للمطور</span>
+          </button>
+          <button
+            onClick={() => setShowDocs(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground transition font-medium"
+          >
+            <Code2 className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>عرض التوثيق والـ Payload</span>
           </button>
         </div>
       </div>
@@ -647,89 +683,8 @@ const OrderWebhookSettings: React.FC = () => {
         </div>
       )}
 
-      {/* Developer Signature Verification Modal */}
-      {showDocs && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-xl w-full max-w-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2">
-                <Code2 className="w-5 h-5 text-primary" />
-                <h3 className="text-sm font-bold text-foreground">دليل المطور: التحقق من أمان الـ Webhook</h3>
-              </div>
-              <button
-                onClick={() => setShowDocs(false)}
-                className="text-muted-foreground hover:text-foreground text-lg leading-none"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs leading-relaxed text-muted-foreground flex-1 overflow-y-auto pr-1">
-              <p>
-                يتم إرسال توقيع HMAC-SHA256 المشفر في رأس الطلب <code>X-Webhook-Signature</code> بصيغة{" "}
-                <code>sha256=HEX_SIGNATURE</code> وأيضاً <code>X-MaxP-Signature</code>. للتحقق من هوية المرسل:
-              </p>
-
-              <div className="flex gap-2 border-b border-border pb-2">
-                {(["node", "python", "php"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveCodeTab(tab)}
-                    className={`px-3 py-1 rounded text-xs font-mono font-semibold transition ${
-                      activeCodeTab === tab
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {tab.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-
-              {activeCodeTab === "node" && (
-                <pre className="p-3 rounded-lg bg-zinc-950 text-zinc-100 font-mono text-[11px] overflow-x-auto select-all">
-{`const crypto = require('crypto');
-
-function verifyMaxPWebhook(rawBody, signatureHeader, secret) {
-  const cleanSecret = secret.startsWith('whsec_') ? secret.slice(6) : secret;
-  const signature = signatureHeader.replace('sha256=', '');
-  const computed = crypto.createHmac('sha256', cleanSecret).update(rawBody).digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(computed));
-}`}
-                </pre>
-              )}
-
-              {activeCodeTab === "python" && (
-                <pre className="p-3 rounded-lg bg-zinc-950 text-zinc-100 font-mono text-[11px] overflow-x-auto select-all">
-{`import hmac
-import hashlib
-
-def verify_maxp_webhook(raw_body_bytes, signature_header, secret):
-    clean_secret = secret.replace("whsec_", "")
-    signature = signature_header.replace("sha256=", "")
-    computed = hmac.new(clean_secret.encode('utf-8'), raw_body_bytes, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(signature, computed)`}
-                </pre>
-              )}
-
-              {activeCodeTab === "php" && (
-                <pre className="p-3 rounded-lg bg-zinc-950 text-zinc-100 font-mono text-[11px] overflow-x-auto select-all">
-{`function verifyMaxPWebhook($rawBody, $signatureHeader, $secret) {
-    $cleanSecret = str_replace('whsec_', '', $secret);
-    $signature = str_replace('sha256=', '', $signatureHeader);
-    $computed = hash_hmac('sha256', $rawBody, $cleanSecret);
-    return hash_equals($signature, $computed);
-}`}
-                </pre>
-              )}
-
-              <p className="text-[11px] text-muted-foreground/80">
-                * ملاحظة: يجب قراءة الـ Raw Body كما هو قبل أي معالجة JSON لتطابق التوقيع بدقة 100%.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Developer Docs & Payload Modal */}
+      <OrderWebhookDocsModal isOpen={showDocs} onClose={() => setShowDocs(false)} />
     </div>
   );
 };
