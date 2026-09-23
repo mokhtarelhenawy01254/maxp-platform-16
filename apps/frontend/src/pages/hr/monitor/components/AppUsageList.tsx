@@ -67,12 +67,12 @@ export const AppUsageList: React.FC<AppUsageListProps> = ({
           }}
           className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium transition active:scale-95 ${
             currentCat === 'productive'
-              ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-inset ring-emerald-500/30 hover:bg-emerald-500/25'
+              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:border-transparent dark:bg-emerald-500/15 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/25'
               : currentCat === 'unproductive'
-              ? 'bg-rose-500/15 text-rose-400 ring-1 ring-inset ring-rose-500/30 hover:bg-rose-500/25'
+              ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:border-transparent dark:bg-rose-500/15 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/25'
               : currentCat === 'neutral'
-              ? 'bg-zinc-500/15 text-zinc-300 ring-1 ring-inset ring-zinc-500/30 hover:bg-zinc-500/25'
-              : 'bg-sky-500/15 text-sky-400 ring-1 ring-inset ring-sky-500/30 hover:bg-sky-500/25'
+              ? 'bg-muted text-foreground border border-border/50 dark:border-transparent dark:bg-zinc-500/15 dark:text-zinc-300 hover:bg-muted/80 dark:hover:bg-zinc-500/25'
+              : 'bg-sky-50 text-sky-700 border border-sky-200 dark:border-transparent dark:bg-sky-500/15 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-500/25'
           }`}
           title="انقر لتغيير تصنيف إنتاجية هذا التطبيق"
         >
@@ -95,7 +95,7 @@ export const AppUsageList: React.FC<AppUsageListProps> = ({
         {/* Dropdown Menu */}
         {isDropdownOpen && (
           <div
-            className="absolute left-0 z-30 mt-1 w-32 rounded-lg border border-border/60 bg-zinc-950 p-1 shadow-xl backdrop-blur-md"
+            className="absolute left-0 z-30 mt-1 w-32 rounded-lg border border-border/60 bg-popover text-popover-foreground p-1 shadow-xl backdrop-blur-md"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground border-b border-border/30">
@@ -104,7 +104,7 @@ export const AppUsageList: React.FC<AppUsageListProps> = ({
             <button
               onClick={() => handleUpdateCategory(appName, 'productive')}
               disabled={savingApp === appName}
-              className="flex w-full items-center justify-between rounded px-2 py-1 text-right text-xs text-emerald-400 hover:bg-emerald-500/10"
+              className="flex w-full items-center justify-between rounded px-2 py-1 text-right text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
             >
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-3 w-3" /> منتج
@@ -114,7 +114,7 @@ export const AppUsageList: React.FC<AppUsageListProps> = ({
             <button
               onClick={() => handleUpdateCategory(appName, 'neutral')}
               disabled={savingApp === appName}
-              className="flex w-full items-center justify-between rounded px-2 py-1 text-right text-xs text-zinc-300 hover:bg-zinc-800"
+              className="flex w-full items-center justify-between rounded px-2 py-1 text-right text-xs text-foreground hover:bg-muted dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               <span className="flex items-center gap-1.5">
                 <MinusCircle className="h-3 w-3" /> محايد
@@ -124,7 +124,7 @@ export const AppUsageList: React.FC<AppUsageListProps> = ({
             <button
               onClick={() => handleUpdateCategory(appName, 'unproductive')}
               disabled={savingApp === appName}
-              className="flex w-full items-center justify-between rounded px-2 py-1 text-right text-xs text-rose-400 hover:bg-rose-500/10"
+              className="flex w-full items-center justify-between rounded px-2 py-1 text-right text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-500/10"
             >
               <span className="flex items-center gap-1.5">
                 <AlertTriangle className="h-3 w-3" /> غير منتج
@@ -141,7 +141,7 @@ export const AppUsageList: React.FC<AppUsageListProps> = ({
     <div className="rounded-xl border border-border/40 bg-card/60 p-4 text-card-foreground shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Laptop className="h-4 w-4 text-sky-400" />
+          <Laptop className="h-4 w-4 text-sky-600 dark:text-sky-400" />
           <h3 className="text-sm font-semibold tracking-tight text-foreground">
             البرامج والتطبيقات المستخدمة ({apps.length})
           </h3>
@@ -165,7 +165,7 @@ export const AppUsageList: React.FC<AppUsageListProps> = ({
             return (
               <div
                 key={idx}
-                className="group relative rounded-lg border border-border/30 bg-zinc-900/40 p-2.5 transition-colors hover:border-border/60 hover:bg-zinc-900/70"
+                className="group relative rounded-lg border border-border/40 bg-muted/30 dark:bg-zinc-900/40 p-2.5 transition-colors hover:border-border/60 hover:bg-muted/60 dark:hover:bg-zinc-900/70"
               >
                 <div className="mb-1.5 flex items-center justify-between text-xs">
                   <div className="flex min-w-0 items-center gap-2">
@@ -184,13 +184,13 @@ export const AppUsageList: React.FC<AppUsageListProps> = ({
 
                 {/* Window Title Subtext */}
                 {app.windowTitle && app.windowTitle !== app.appName && (
-                  <p className="mb-1.5 truncate text-[11px] text-zinc-400">
+                  <p className="mb-1.5 truncate text-[11px] text-muted-foreground">
                     {app.windowTitle}
                   </p>
                 )}
 
                 {/* Progress Bar */}
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-800">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${
                       currentCat === 'productive'

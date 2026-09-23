@@ -191,7 +191,7 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleBack}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/40 bg-zinc-900/60 text-muted-foreground transition hover:bg-zinc-800 hover:text-foreground active:scale-95"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/50 bg-muted/50 dark:bg-zinc-900/60 text-muted-foreground transition hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground active:scale-95"
             title="العودة إلى لوحة المراقبة العامة"
           >
             <ArrowRight className="h-4 w-4" />
@@ -202,27 +202,27 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
               <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
                 تقرير النشاط الميداني: {employeeName}
               </h1>
-              <span className="rounded-full bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-400 ring-1 ring-inset ring-sky-500/20">
+              <span className="rounded-full bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-600 dark:text-sky-400 ring-1 ring-inset ring-sky-500/20">
                 {departmentName}
               </span>
               {data.summary?.status === 'active' && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
                   متصل ويعمل الآن
                 </span>
               )}
               {data.summary?.status === 'idle' && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400 ring-1 ring-inset ring-amber-500/20">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 ring-1 ring-inset ring-amber-500/20">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400" />
                   خامل (الجهاز مفتوح)
                 </span>
               )}
               {data.summary?.status === 'offline' && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-400 ring-1 ring-inset ring-border/20">
-                  <span className="h-1.5 w-1.5 rounded-full bg-zinc-500" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted dark:bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-muted-foreground dark:text-zinc-400 ring-1 ring-inset ring-border/30">
+                  <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
                   غير متصل (مغلق)
                   {data.summary?.lastSeenTime && (
-                    <span className="mr-1 text-[10px] text-zinc-400 tabular-nums">
+                    <span className="mr-1 text-[10px] text-muted-foreground dark:text-zinc-400 tabular-nums">
                       (آخر ظهور: {new Date(data.summary.lastSeenTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })})
                     </span>
                   )}
@@ -236,11 +236,11 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
 
           {/* Next / Previous Employee Fast Switcher */}
           {teamMembersProp.length > 1 && currentMemberIndex >= 0 && (
-            <div className="flex items-center gap-1 rounded-lg border border-border/40 bg-zinc-900/60 p-1 text-xs">
+            <div className="flex items-center gap-1 rounded-lg border border-border/50 bg-muted/50 dark:bg-zinc-900/60 p-1 text-xs">
               <button
                 onClick={() => handleSwitchEmployee(teamMembersProp[currentMemberIndex - 1].employeeId)}
                 disabled={!hasPrevMember}
-                className="flex h-7 items-center gap-1 rounded px-2 font-medium text-muted-foreground transition hover:bg-zinc-800 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
+                className="flex h-7 items-center gap-1 rounded px-2 font-medium text-muted-foreground transition hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
                 title={hasPrevMember ? `الانتقال إلى: ${teamMembersProp[currentMemberIndex - 1].employeeName}` : ''}
               >
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -254,7 +254,7 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
               <button
                 onClick={() => handleSwitchEmployee(teamMembersProp[currentMemberIndex + 1].employeeId)}
                 disabled={!hasNextMember}
-                className="flex h-7 items-center gap-1 rounded px-2 font-medium text-muted-foreground transition hover:bg-zinc-800 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
+                className="flex h-7 items-center gap-1 rounded px-2 font-medium text-muted-foreground transition hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent"
                 title={hasNextMember ? `الانتقال إلى: ${teamMembersProp[currentMemberIndex + 1].employeeName}` : ''}
               >
                 <span className="hidden sm:inline">التالي</span>
@@ -271,7 +271,7 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
             <button
               onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
               className={`rounded-md px-2 py-1 text-xs font-medium transition ${
-                isToday ? 'bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30' : 'text-muted-foreground hover:bg-zinc-800 hover:text-foreground'
+                isToday ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 ring-1 ring-sky-500/30' : 'text-muted-foreground hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground'
               }`}
             >
               اليوم
@@ -279,7 +279,7 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
             <button
               onClick={() => setSelectedDate(yesterdayStr)}
               className={`rounded-md px-2 py-1 text-xs font-medium transition ${
-                selectedDate === yesterdayStr ? 'bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30' : 'text-muted-foreground hover:bg-zinc-800 hover:text-foreground'
+                selectedDate === yesterdayStr ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 ring-1 ring-sky-500/30' : 'text-muted-foreground hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground'
               }`}
             >
               أمس
@@ -287,10 +287,10 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
           </div>
 
           {/* Stepper Controls with Native Picker */}
-          <div className="flex items-center rounded-lg border border-border/40 bg-zinc-900/60 p-0.5 text-xs">
+          <div className="flex items-center rounded-lg border border-border/50 bg-muted/50 dark:bg-zinc-900/60 p-0.5 text-xs">
             <button
               onClick={() => handleDateStep(-1)}
-              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-zinc-800 hover:text-foreground active:scale-95"
+              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground active:scale-95"
               title="اليوم السابق"
             >
               <ChevronRight className="h-3.5 w-3.5" />
@@ -309,7 +309,7 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
             <button
               onClick={() => handleDateStep(1)}
               disabled={isToday}
-              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-zinc-800 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent active:scale-95"
+              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent active:scale-95"
               title="اليوم التالي"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -319,7 +319,7 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
           <button
             onClick={fetchDetails}
             disabled={loading}
-            className="flex h-8 items-center gap-1.5 rounded-lg border border-border/40 bg-zinc-900/60 px-3 text-xs font-medium text-muted-foreground transition hover:bg-zinc-800 hover:text-foreground active:scale-95"
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-border/50 bg-muted/50 dark:bg-zinc-900/60 px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground active:scale-95"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">تحديث</span>
@@ -333,14 +333,14 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
         <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>وقت العمل الفعلي</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
               <Clock className="h-3.5 w-3.5" />
             </span>
           </div>
           <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
             {formatSeconds(totalActive)}
           </div>
-          <div className="mt-1 text-[11px] text-emerald-400">
+          <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">
             تفاعل مستمر وموثق عبر الماوس والكيبورد
           </div>
         </div>
@@ -349,14 +349,14 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
         <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>وقت الاستراحة والتوقف</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-inset ring-amber-500/20">
               <Coffee className="h-3.5 w-3.5" />
             </span>
           </div>
           <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
             {formatSeconds(totalIdle)}
           </div>
-          <div className="mt-1 text-[11px] text-amber-400">
+          <div className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
             فترات راحة مصرحة وخمول معتمد
           </div>
         </div>
@@ -365,14 +365,14 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
         <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>معدل الإنتاجية اليومية</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 ring-1 ring-inset ring-sky-500/20">
               <Activity className="h-3.5 w-3.5" />
             </span>
           </div>
           <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
             {prodScore}%
           </div>
-          <div className="mt-1 text-[11px] text-sky-400">
+          <div className="mt-1 text-[11px] text-sky-600 dark:text-sky-400">
             {prodScore >= 75 ? 'مستوى أداء ممتاز' : prodScore >= 50 ? 'مستوى أداء معتدل' : 'يحتاج متابعة وتوجيه'}
           </div>
         </div>
@@ -381,7 +381,7 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
         <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>البصمة وأول نشاط للجهاز</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/10 text-purple-400 ring-1 ring-inset ring-purple-500/20">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 ring-1 ring-inset ring-purple-500/20">
               <ShieldCheck className="h-3.5 w-3.5" />
             </span>
           </div>
@@ -393,7 +393,7 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
                 {clockInStr ? (
                   <>
                     <span className="font-semibold text-foreground tabular-nums">{clockInStr}</span>
-                    <span className="rounded bg-purple-500/15 px-1.5 py-0.5 text-[10px] font-medium text-purple-300">
+                    <span className="rounded bg-purple-50 text-purple-700 border border-purple-200 dark:border-transparent dark:bg-purple-500/15 dark:text-purple-300 px-1.5 py-0.5 text-[10px] font-medium">
                       {getCheckInMethodLabel(data.summary?.checkInMethod)}
                     </span>
                   </>
@@ -413,11 +413,11 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
             {activityLagMinutes !== null && (
               <div className="pt-1">
                 {activityLagMinutes <= 5 ? (
-                  <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400">
+                  <span className="inline-flex items-center gap-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 dark:border-transparent dark:bg-emerald-500/10 dark:text-emerald-400 px-1.5 py-0.5 text-[10px] font-semibold">
                     {activityLagMinutes < 0 ? `نشاط مبكر (${Math.abs(activityLagMinutes)} د قبل الحضور)` : 'نشاط فوري (متطابق)'}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-400">
+                  <span className="inline-flex items-center gap-1 rounded bg-amber-50 text-amber-700 border border-amber-200 dark:border-transparent dark:bg-amber-500/10 dark:text-amber-400 px-1.5 py-0.5 text-[10px] font-semibold">
                     تأخر بدء النشاط: +{activityLagMinutes} دقيقة
                   </span>
                 )}
@@ -433,13 +433,13 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
           onClick={() => setActiveTab('tasks')}
           className={`flex items-center gap-1.5 rounded-t-lg border-b-2 px-3 py-2 font-semibold transition ${
             activeTab === 'tasks'
-              ? 'border-emerald-400 text-emerald-400 bg-emerald-500/5'
-              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-zinc-800/40'
+              ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted dark:hover:bg-zinc-800/40'
           }`}
         >
           <ListTodo className="h-4 w-4" />
           <span>المهام واستغلال الوقت</span>
-          <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.2 text-[10px] font-bold text-emerald-400 tabular-nums">
+          <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
             {data.taskPerformance?.tasksCompletedCount || 0}
           </span>
         </button>
@@ -448,14 +448,14 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
           onClick={() => setActiveTab('timeline')}
           className={`flex items-center gap-1.5 rounded-t-lg border-b-2 px-3 py-2 font-semibold transition ${
             activeTab === 'timeline'
-              ? 'border-sky-400 text-sky-400 bg-sky-500/5'
-              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-zinc-800/40'
+              ? 'border-sky-500 text-sky-600 dark:text-sky-400 bg-sky-500/10'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted dark:hover:bg-zinc-800/40'
           }`}
         >
           <History className="h-4 w-4" />
           <span>المخطط الزمني وفترات الاستراحة</span>
           {data.breaksSummary?.totalBreaksCount ? (
-            <span className="rounded-full bg-amber-500/15 px-1.5 py-0.2 text-[10px] font-bold text-amber-400 tabular-nums">
+            <span className="rounded-full bg-amber-500/15 px-1.5 py-0.2 text-[10px] font-bold text-amber-600 dark:text-amber-400 tabular-nums">
               {data.breaksSummary.totalBreaksCount} بريك
             </span>
           ) : null}
@@ -465,13 +465,13 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
           onClick={() => setActiveTab('apps')}
           className={`flex items-center gap-1.5 rounded-t-lg border-b-2 px-3 py-2 font-semibold transition ${
             activeTab === 'apps'
-              ? 'border-purple-400 text-purple-400 bg-purple-500/5'
-              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-zinc-800/40'
+              ? 'border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-500/10'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted dark:hover:bg-zinc-800/40'
           }`}
         >
           <Grid className="h-4 w-4" />
           <span>البرامج والمواقع المستخدمة</span>
-          <span className="rounded-full bg-purple-500/15 px-1.5 py-0.2 text-[10px] font-bold text-purple-400 tabular-nums">
+          <span className="rounded-full bg-purple-500/15 px-1.5 py-0.2 text-[10px] font-bold text-purple-600 dark:text-purple-400 tabular-nums">
             {(data.apps?.length || 0) + (data.websites?.length || 0)}
           </span>
         </button>

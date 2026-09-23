@@ -78,12 +78,12 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400 ring-1 ring-emerald-500/20 tabular-nums">
+          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20 tabular-nums">
             <CheckCircle2 className="h-3.5 w-3.5" />
             <span>{tasksCount} مهام منفذة اليوم</span>
           </span>
           {createdTasksCount > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-sky-500/10 px-2.5 py-1 text-xs font-semibold text-sky-400 ring-1 ring-sky-500/20 tabular-nums">
+            <span className="inline-flex items-center gap-1 rounded-md bg-sky-500/10 px-2.5 py-1 text-xs font-semibold text-sky-600 dark:text-sky-400 ring-1 ring-sky-500/20 tabular-nums">
               <ListTodo className="h-3.5 w-3.5" />
               <span>{createdTasksCount} مهام تم إنشاؤها وتكليفها</span>
             </span>
@@ -94,10 +94,10 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
       {/* 3 Quantitative Metric Strips */}
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {/* Metric 1: Tasks Completed & Avg Active Time */}
-        <div className="rounded-lg border border-border/30 bg-zinc-900/40 p-3">
+        <div className="rounded-lg border border-border/40 bg-muted/40 dark:bg-zinc-900/40 p-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>متوسط وقت العمل الفعلي لكل مهمة</span>
-            <Clock className="h-3.5 w-3.5 text-emerald-400" />
+            <Clock className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="mt-2 text-lg font-bold text-foreground tabular-nums">
             {tasksCount > 0 ? formatDuration(taskPerformance?.avgActiveSecondsPerTask || 0) : '—'}
@@ -110,10 +110,10 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
         </div>
 
         {/* Metric 2: Idle Time per Task */}
-        <div className="rounded-lg border border-border/30 bg-zinc-900/40 p-3">
+        <div className="rounded-lg border border-border/40 bg-muted/40 dark:bg-zinc-900/40 p-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>متوسط وقت التوقف والخمول لكل مهمة</span>
-            <PauseCircle className="h-3.5 w-3.5 text-amber-400" />
+            <PauseCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
           </div>
           <div className="mt-2 text-lg font-bold text-foreground tabular-nums">
             {tasksCount > 0 ? formatDuration(taskPerformance?.avgIdleSecondsPerTask || 0) : '—'}
@@ -126,10 +126,10 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
         </div>
 
         {/* Metric 3: Active vs Idle Ratio Factor */}
-        <div className="rounded-lg border border-border/30 bg-zinc-900/40 p-3">
+        <div className="rounded-lg border border-border/40 bg-muted/40 dark:bg-zinc-900/40 p-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>معامل استغلال الوقت (نشاط مقابل خمول)</span>
-            <AlertCircle className="h-3.5 w-3.5 text-sky-400" />
+            <AlertCircle className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
           </div>
           <div className="mt-2 text-lg font-bold text-foreground tabular-nums">
             {activePct}% عمل <span className="text-xs font-normal text-muted-foreground">({idleMultiplier}x خمول)</span>
@@ -141,16 +141,16 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
       </div>
 
       {/* Visual Work vs Inactivity Comparison Bar */}
-      <div className="mt-3 space-y-1 rounded-lg border border-border/30 bg-zinc-950/40 p-3">
+      <div className="mt-3 space-y-1 rounded-lg border border-border/40 bg-muted/40 dark:bg-zinc-950/40 p-3">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-medium text-emerald-400 tabular-nums">
+          <span className="font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">
             وقت العمل الفعلي: {formatDuration(totalActiveSeconds)} ({activePct}%)
           </span>
-          <span className="font-medium text-amber-400 tabular-nums">
+          <span className="font-medium text-amber-600 dark:text-amber-400 tabular-nums">
             وقت التوقف والخمول: {formatDuration(totalIdleSeconds)} ({idlePct}%)
           </span>
         </div>
-        <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-zinc-800">
+        <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-800">
           <div
             className="bg-emerald-500 transition-all duration-300"
             style={{ width: `${activePct}%` }}
@@ -166,8 +166,8 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
 
       {/* Completed Tasks List Table / Feed */}
       {tasks.length > 0 ? (
-        <div className="mt-3 overflow-hidden rounded-lg border border-border/30 bg-zinc-950/30">
-          <div className="border-b border-border/30 bg-zinc-900/50 px-3 py-2 text-xs font-semibold text-foreground">
+        <div className="mt-3 overflow-hidden rounded-lg border border-border/40 bg-card dark:bg-zinc-950/30">
+          <div className="border-b border-border/40 bg-muted/50 dark:bg-zinc-900/50 px-3 py-2 text-xs font-semibold text-foreground">
             المهام المنفذة والمسجلة اليوم ({tasks.length})
           </div>
           <div className="divide-y divide-border/20">
@@ -182,12 +182,12 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
               const isReview = task.status === 'IN_REVIEW';
 
               return (
-                <div key={task.id} className="flex items-center justify-between p-2.5 text-xs transition-colors hover:bg-zinc-900/40">
+                <div key={task.id} className="flex items-center justify-between p-2.5 text-xs transition-colors hover:bg-muted/50 dark:hover:bg-zinc-900/40">
                   <div className="flex items-center gap-2">
                     {isReview ? (
-                      <Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                      <Clock className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
                     ) : (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
                     )}
                     <div>
                       <div className="font-semibold text-foreground">{task.title}</div>
@@ -198,16 +198,16 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
                   </div>
                   <div className="flex items-center gap-2 tabular-nums">
                     {isReview ? (
-                      <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-300 ring-1 ring-amber-500/20">
+                      <span className="rounded bg-amber-50 text-amber-700 border border-amber-200 dark:border-transparent dark:bg-amber-500/10 dark:text-amber-300 px-1.5 py-0.5 text-[10px] font-medium">
                         قيد الاعتماد
                       </span>
                     ) : (
-                      <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-400 ring-1 ring-emerald-500/20">
+                      <span className="rounded bg-emerald-50 text-emerald-700 border border-emerald-200 dark:border-transparent dark:bg-emerald-500/10 dark:text-emerald-400 px-1.5 py-0.5 text-[10px] font-medium">
                         معتمدة
                       </span>
                     )}
                     {task.priority && (
-                      <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-300">
+                      <span className="rounded bg-muted dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] text-muted-foreground dark:text-zinc-300">
                         {task.priority}
                       </span>
                     )}
@@ -222,7 +222,7 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
         </div>
       ) : (
         <div className="mt-3 flex items-center gap-2 rounded-lg border border-dashed border-border/40 p-3 text-xs text-muted-foreground">
-          <AlertCircle className="h-4 w-4 text-amber-400 shrink-0" />
+          <AlertCircle className="h-4 w-4 text-amber-500 dark:text-amber-400 shrink-0" />
           <span>
             لم تُسجل مهام رسمية مكتملة اليوم على النظام. قد يكون وقت العمل الفعلي ({formatDuration(totalActiveSeconds)}) مستهلكاً في اجتماعات، تواصل، أو مهام غير مسندة في النظام.
           </span>
@@ -231,8 +231,8 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
 
       {/* Created / Delegated Tasks List */}
       {createdTasks.length > 0 && (
-        <div className="mt-3 overflow-hidden rounded-lg border border-border/30 bg-zinc-950/30">
-          <div className="flex items-center gap-1.5 border-b border-border/30 bg-zinc-900/50 px-3 py-2 text-xs font-semibold text-sky-400">
+        <div className="mt-3 overflow-hidden rounded-lg border border-border/40 bg-card dark:bg-zinc-950/30">
+          <div className="flex items-center gap-1.5 border-b border-border/40 bg-muted/50 dark:bg-zinc-900/50 px-3 py-2 text-xs font-semibold text-sky-600 dark:text-sky-400">
             <ListTodo className="h-3.5 w-3.5" />
             <span>المهام التي قام الموظف بإنشائها وتكليفها اليوم ({createdTasks.length})</span>
           </div>
@@ -246,19 +246,19 @@ export const TaskPerformanceCard: React.FC<TaskPerformanceCardProps> = ({
                 : '—';
 
               return (
-                <div key={task.id} className="flex items-center justify-between p-2.5 text-xs transition-colors hover:bg-zinc-900/40">
+                <div key={task.id} className="flex items-center justify-between p-2.5 text-xs transition-colors hover:bg-muted/50 dark:hover:bg-zinc-900/40">
                   <div className="flex items-center gap-2">
-                    <ListTodo className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                    <ListTodo className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
                     <div>
                       <div className="font-semibold text-foreground">{task.title}</div>
                       <div className="text-[11px] text-muted-foreground">
-                        المشروع: {task.projectName || 'عام'} • المكلّف به: <span className="text-zinc-300 font-medium">{task.assignedToName}</span>
+                        المشروع: {task.projectName || 'عام'} • المكلّف به: <span className="text-foreground font-medium">{task.assignedToName}</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 tabular-nums">
                     {task.priority && (
-                      <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-300">
+                      <span className="rounded bg-muted dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] text-muted-foreground dark:text-zinc-300">
                         {task.priority}
                       </span>
                     )}

@@ -27,7 +27,7 @@ export const TeamExecutiveSummary: React.FC<TeamExecutiveSummaryProps> = ({
     <div className="relative overflow-hidden rounded-xl border border-border/40 bg-card/60 p-4 shadow-sm backdrop-blur-md">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/25">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 ring-1 ring-inset ring-sky-500/25">
             <Activity className="h-4 w-4" />
           </div>
           <div>
@@ -35,7 +35,7 @@ export const TeamExecutiveSummary: React.FC<TeamExecutiveSummaryProps> = ({
               <h3 className="text-sm font-bold text-foreground">
                 الموجز الرقمي المباشر لإنتاجية الدوام (Executive Telemetry)
               </h3>
-              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
                 تحديث لحظي
               </span>
             </div>

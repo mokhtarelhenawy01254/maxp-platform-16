@@ -312,7 +312,7 @@ export const MonitorDashboard: React.FC = () => {
       {/* Top Unified Control Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/40 bg-card/60 p-4 shadow-sm backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/25">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 ring-1 ring-inset ring-sky-500/25">
             <Activity className="h-5 w-5" />
           </div>
           <div>
@@ -320,7 +320,7 @@ export const MonitorDashboard: React.FC = () => {
               <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
                 مراقبة وإنتاجية الأجهزة (MaxP Workspace)
               </h1>
-              <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+              <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>{stats.activeNow} نشط الآن</span>
               </span>
