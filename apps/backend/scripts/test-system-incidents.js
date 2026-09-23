@@ -72,6 +72,22 @@ async function runTests() {
     assert(hasAutomation, 'automation_lifecycle must be in DEFAULT_NOTIFICATION_TYPES');
     console.log('✅ 5. Notification types registration verified.');
 
+    // 6. Test 2026 Batch/Storm Protection on automation step failures
+    systemIncidentAlertService.cooldowns.clear();
+    const metaReason = { reason: 'meta_template_not_approved' };
+    const step1Cool = systemIncidentAlertService.isCoolingDown('comp_storm', 'AUTOMATION_STEP_FAILED', 'journey_1', 30, metaReason);
+    assert.strictEqual(step1Cool, false, 'First failure in batch should not be cooled down');
+
+    systemIncidentAlertService.markIncidentSent('comp_storm', 'AUTOMATION_STEP_FAILED', 'journey_1', metaReason);
+    // Second failure for a DIFFERENT customer/journey but SAME reason should be cooled down!
+    const step2Cool = systemIncidentAlertService.isCoolingDown('comp_storm', 'AUTOMATION_STEP_FAILED', 'journey_2', 30, metaReason);
+    assert.strictEqual(step2Cool, true, 'Second failure with same reason should be cooled down (storm protection)');
+
+    // Different reason should NOT be cooled down
+    const differentReasonCool = systemIncidentAlertService.isCoolingDown('comp_storm', 'AUTOMATION_STEP_FAILED', 'journey_3', 30, { reason: 'phone_invalid' });
+    assert.strictEqual(differentReasonCool, false, 'Different failure reason should not be cooled down');
+    console.log('✅ 6. Batch storm protection for automation failures verified.');
+
     console.log('🎉 ALL SYSTEM INCIDENT ALERT TESTS PASSED SUCCESSFULLY!');
 }
 

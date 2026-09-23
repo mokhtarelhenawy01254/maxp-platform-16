@@ -452,11 +452,57 @@ async function createSession(req, res) {
             ? JSON.stringify(metadataObj)
             : undefined;
 
+        let resolvedMetaToken = metaAccessToken ? String(metaAccessToken).trim() : '';
+        const eaaIdx = resolvedMetaToken.indexOf('EAA');
+        if (eaaIdx > 0) {
+            resolvedMetaToken = resolvedMetaToken.substring(eaaIdx).trim();
+        }
+
+        let resolvedDisplayPhone = metaDisplayPhoneNumber || null;
+        let resolvedCleanPhone = cleanPhone;
+
         if (isMetaProvider) {
-            if (!metaAccessToken || !metaPhoneNumberId) {
+            if (!resolvedMetaToken || !metaPhoneNumberId) {
                 return res.status(400).json({
                     error: 'بيانات Meta غير مكتملة (Access Token و Phone Number ID مطلوبان لكل جلسة)'
                 });
+            }
+
+            const axios = require('axios');
+            const graphVersion = metaApiVersion || process.env.META_GRAPH_API_VERSION || 'v26.0';
+            const graphBase = `https://graph.facebook.com/${graphVersion}`;
+
+            // Auto-fetch verified phone and display phone number if missing
+            try {
+                const phoneRes = await axios.get(`${graphBase}/${metaPhoneNumberId}`, {
+                    params: {
+                        access_token: resolvedMetaToken,
+                        fields: 'display_phone_number,verified_name,status'
+                    },
+                    timeout: 10000
+                });
+                if (phoneRes.data?.display_phone_number) {
+                    resolvedDisplayPhone = resolvedDisplayPhone || phoneRes.data.display_phone_number;
+                    const digits = phoneRes.data.display_phone_number.replace(/\D/g, '');
+                    if (digits) {
+                        resolvedCleanPhone = digits;
+                    }
+                }
+            } catch (pErr) {
+                console.warn('⚠️ [createSession] Could not verify/fetch Meta phone info:', pErr.response?.data?.error?.message || pErr.message);
+            }
+
+            // Auto-subscribe WABA to webhooks so incoming messages and statuses arrive
+            if (metaWabaId) {
+                try {
+                    await axios.post(`${graphBase}/${metaWabaId}/subscribed_apps`, null, {
+                        params: { access_token: resolvedMetaToken },
+                        timeout: 15000
+                    });
+                    console.log(`✅ [createSession] Subscribed WABA ${metaWabaId} to webhooks`);
+                } catch (subErr) {
+                    console.warn('⚠️ [createSession] Could not subscribe WABA webhooks:', subErr.response?.data?.error?.message || subErr.message);
+                }
             }
         }
 
@@ -471,16 +517,16 @@ async function createSession(req, res) {
                 loadBalanceWeight,
                 provider,
                 status: isMetaProvider ? 'CONNECTED' : 'QR_PENDING',
-                phoneNumber: cleanPhone || undefined,
+                phoneNumber: resolvedCleanPhone || undefined,
                 metadata,
                 metaPhoneNumberId,
                 metaWabaId,
                 metaBusinessId,
-                metaAccessToken: metaAccessToken ? encryptTokenIfNeeded(metaAccessToken) : undefined,
+                metaAccessToken: resolvedMetaToken ? encryptTokenIfNeeded(resolvedMetaToken) : undefined,
                 metaApiVersion,
                 metaWebhookVerifyToken,
                 metaWebhookSecret,
-                metaDisplayPhoneNumber,
+                metaDisplayPhoneNumber: resolvedDisplayPhone,
                 updatedAt: new Date()
             }
         });

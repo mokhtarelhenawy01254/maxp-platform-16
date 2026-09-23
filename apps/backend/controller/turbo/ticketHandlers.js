@@ -601,6 +601,10 @@ const replyToTicket = async (req, res) => {
   }
 };
 
+// 2026 Resiliency Cache: cache unread counts for 90s to avoid repeated blocking calls to Turbo
+const unreadCountsCache = new Map();
+const UNREAD_CACHE_TTL_MS = 90 * 1000;
+
 const getUnreadTicketsCount = async (req, res) => {
   try {
     const currentCompanyId = resolveCompanyId(req);
@@ -615,6 +619,20 @@ const getUnreadTicketsCount = async (req, res) => {
         data: { counts: { tickets: 0, missions: 0, orders: 0 } },
         counts: { tickets: 0, missions: 0, orders: 0 },
         unconfigured: true,
+      });
+    }
+
+    const cacheKey = targetCompanies.map(c => c.id).sort().join(',');
+    const cached = unreadCountsCache.get(cacheKey);
+    const now = Date.now();
+
+    // Serve from cache if fresh
+    if (cached && cached.expiresAt > now) {
+      return res.json({
+        success: true,
+        data: cached.counts,
+        counts: cached.counts,
+        fromCache: true
       });
     }
 
@@ -634,17 +652,25 @@ const getUnreadTicketsCount = async (req, res) => {
       } catch {}
     }));
 
+    const responseCounts = { tickets: totalUnread, missions: totalMissions, orders: totalOrders };
+    unreadCountsCache.set(cacheKey, { counts: responseCounts, expiresAt: now + UNREAD_CACHE_TTL_MS });
+
     res.json({
       success: true,
-      data: { counts: { tickets: totalUnread, missions: totalMissions, orders: totalOrders } },
-      counts: { tickets: totalUnread, missions: totalMissions, orders: totalOrders }
+      data: { counts: responseCounts },
+      counts: responseCounts
     });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error getting unread tickets count:', error);
+    // Graceful fallback: return stale cache or zeros
+    const currentCompanyId = resolveCompanyId(req);
+    const cached = currentCompanyId ? unreadCountsCache.get(currentCompanyId) : null;
+    const fallbackCounts = cached?.counts || { tickets: 0, missions: 0, orders: 0 };
     res.status(200).json({
       success: true,
-      data: { counts: { tickets: 0, missions: 0, orders: 0 } },
-      counts: { tickets: 0, missions: 0, orders: 0 }
+      data: { counts: fallbackCounts },
+      counts: fallbackCounts,
+      fallback: true
     });
   }
 };

@@ -565,10 +565,16 @@ class ApiClient {
       return;
     }
 
-    // Don't show toast for timeout errors on markAsRead endpoint
+    // 2026 Resiliency: Don't show disruptive error toasts for timeout on background counter & poll endpoints
+    const isBackgroundPollUrl =
+      originalRequest.url?.includes("/unread") ||
+      originalRequest.url?.includes("/new-count") ||
+      originalRequest.url?.includes("/whatsapp/messages/read") ||
+      originalRequest.url?.includes("/analytics/realtime");
+
     if (
-      error.message?.includes("timeout") &&
-      originalRequest.url?.includes("/whatsapp/messages/read")
+      (error.code === "ECONNABORTED" || error.message?.includes("timeout")) &&
+      isBackgroundPollUrl
     ) {
       return;
     }

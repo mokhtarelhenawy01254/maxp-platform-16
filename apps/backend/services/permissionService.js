@@ -212,7 +212,24 @@ const setUserRole = async (userId, companyId, roleId, actorId) => {
 };
 
 const getUserPermissions = async (userId, companyId) => {
+  if (!userId) return [];
   const prisma = getSharedPrismaClient();
+
+  // If no companyId is provided (e.g. platform SUPER_ADMIN), resolve platform permissions safely
+  if (!companyId) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+      if (user?.role === 'SUPER_ADMIN') {
+        const allPermissions = await prisma.permission.findMany({ select: { key: true } });
+        return allPermissions.map(p => p.key);
+      }
+    } catch {}
+    return [];
+  }
+
   const userCompany = await prisma.userCompany.findUnique({
     where: { userId_companyId: { userId, companyId } },
     include: {

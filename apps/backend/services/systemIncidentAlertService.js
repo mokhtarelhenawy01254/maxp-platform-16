@@ -74,22 +74,40 @@ class SystemIncidentAlertService {
     /**
      * التحقق مما إذا كان الحادث في فترة التهدئة لمنع التكرار المزعج
      */
-    isCoolingDown(companyId, incidentType, entityId, cooldownMinutes = this.defaultCooldownMinutes) {
+    isCoolingDown(companyId, incidentType, entityId, cooldownMinutes = this.defaultCooldownMinutes, metadata = null) {
         const key = `${companyId}:${incidentType}:${entityId || 'general'}`;
         const lastSent = this.cooldowns.get(key);
-        if (!lastSent) return false;
-
-        const elapsedMs = Date.now() - lastSent;
         const cooldownMs = cooldownMinutes * 60 * 1000;
-        return elapsedMs < cooldownMs;
+        if (lastSent && (Date.now() - lastSent < cooldownMs)) {
+            return true;
+        }
+
+        // 2026 Batch/Storm Protection:
+        // For automation step failures or batch sync errors with explicit reason, throttle by company + incidentType + reason
+        // to avoid event-loop blocking when a batch of 100+ items fails with the same error in a loop.
+        if (metadata?.reason && (incidentType === INCIDENT_TYPES.AUTOMATION_STEP_FAILED || incidentType === INCIDENT_TYPES.ORDER_SYNC_STOPPAGE)) {
+            const reasonKey = `${companyId}:${incidentType}:reason:${metadata.reason}`;
+            const lastReasonSent = this.cooldowns.get(reasonKey);
+            const batchCooldownMs = Math.min(cooldownMs, 10 * 60 * 1000); // 10 minutes
+            if (lastReasonSent && (Date.now() - lastReasonSent < batchCooldownMs)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
      * تسجيل وقت إرسال الحادث
      */
-    markIncidentSent(companyId, incidentType, entityId) {
+    markIncidentSent(companyId, incidentType, entityId, metadata = null) {
         const key = `${companyId}:${incidentType}:${entityId || 'general'}`;
         this.cooldowns.set(key, Date.now());
+
+        if (metadata?.reason && (incidentType === INCIDENT_TYPES.AUTOMATION_STEP_FAILED || incidentType === INCIDENT_TYPES.ORDER_SYNC_STOPPAGE)) {
+            const reasonKey = `${companyId}:${incidentType}:reason:${metadata.reason}`;
+            this.cooldowns.set(reasonKey, Date.now());
+        }
 
         // تنظيف الكاش القديم دورياً إذا زاد الحجم عن 2000 عنصر
         if (this.cooldowns.size > 2000) {
@@ -166,7 +184,7 @@ class SystemIncidentAlertService {
         }
 
         // فحص الـ Cooldown
-        if (!force && this.isCoolingDown(companyId, incidentType, entityId, cooldownMinutes)) {
+        if (!force && this.isCoolingDown(companyId, incidentType, entityId, cooldownMinutes, metadata)) {
             console.log(`⏳ [SYSTEM-INCIDENT] Suppressed by cooldown (${incidentType} on company ${companyId})`);
             return { sent: false, reason: 'in_cooldown' };
         }
@@ -291,7 +309,7 @@ class SystemIncidentAlertService {
         }
 
         // تسجيل إتمام الإرسال في الكاش
-        this.markIncidentSent(companyId, incidentType, entityId);
+        this.markIncidentSent(companyId, incidentType, entityId, metadata);
 
         console.log(`🚨 [SYSTEM-INCIDENT] Incident dispatched (${incidentType} - ${severity}):`, {
             companyId,
