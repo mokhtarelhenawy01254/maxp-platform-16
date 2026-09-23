@@ -207,5 +207,37 @@ describe('OrderWebhookService', () => {
       expect(payload.order.telemetry.ipGovernorate).toBe('Giza');
       expect(payload.order.telemetry.durationSeconds).toBe(210);
     });
+
+    test('buildFullOrderPayload handles order.status_updated with statusUpdate metadata', () => {
+      const dummyOrder = {
+        id: 'ord_status_test_1',
+        orderNumber: 'ORD-STATUS-001',
+        status: 'SHIPPED',
+        customerName: 'كريم عادل',
+        customerPhone: '01011112222',
+        subtotal: 500,
+        shipping: 40,
+        total: 540,
+      };
+
+      const payload = buildFullOrderPayload({
+        order: dummyOrder,
+        company: { id: 'comp_1', name: 'Test Store' },
+        event: 'order.status_updated',
+        extraData: {
+          previousStatus: 'CONFIRMED',
+          currentStatus: 'SHIPPED',
+          statusChangeNotes: 'تم تسليم الشحنة لمندوب التوصيل',
+        },
+      });
+
+      expect(payload.event).toBe('order.status_updated');
+      expect(payload.statusUpdate).toBeDefined();
+      expect(payload.statusUpdate.previousStatus).toBe('CONFIRMED');
+      expect(payload.statusUpdate.currentStatus).toBe('SHIPPED');
+      expect(payload.statusUpdate.statusChangeNotes).toBe('تم تسليم الشحنة لمندوب التوصيل');
+      expect(payload.order.status).toBe('SHIPPED');
+    });
   });
 });
+

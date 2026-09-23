@@ -129,7 +129,7 @@ function parseAddress(rawAddress) {
 /**
  * 📦 Build the rich, comprehensive payload containing EVERY detail of the order
  */
-function buildFullOrderPayload({ order, company, event = 'order.created', deliveryId = null }) {
+function buildFullOrderPayload({ order, company, event = 'order.created', deliveryId = null, extraData = null }) {
   const parsedMetadata = typeof order.metadata === 'string'
     ? safeJsonParse(order.metadata, {})
     : (order.metadata || {});
@@ -238,6 +238,7 @@ function buildFullOrderPayload({ order, company, event = 'order.created', delive
     event,
     eventId: deliveryId || crypto.randomUUID(),
     timestamp: new Date().toISOString(),
+    ...(extraData ? { statusUpdate: extraData } : {}),
     company: {
       id: company?.id || order.companyId,
       name: company?.name || null,
@@ -534,6 +535,77 @@ function triggerOrderCreated(orderId, companyId) {
 }
 
 /**
+ * 🔔 Trigger outgoing webhook when order status changes (order.status_updated)
+ * Runs asynchronously and never blocks or throws errors.
+ */
+function triggerOrderStatusUpdated(orderId, companyId, previousStatus, currentStatus, notes = null) {
+  if (!orderId || !companyId) return;
+
+  setImmediate(async () => {
+    try {
+      await ensureTablesExist();
+      const prisma = getSharedPrismaClient();
+
+      const activeWebhooks = await prisma.$queryRawUnsafe(`
+        SELECT * FROM "order_webhook_configs"
+        WHERE "companyId" = $1 AND "isActive" = true
+      `, companyId);
+
+      if (!activeWebhooks || activeWebhooks.length === 0) return;
+
+      const matchedWebhooks = activeWebhooks.filter((wh) => {
+        const events = (wh.events || '').split(',').map(e => e.trim().toLowerCase());
+        return (
+          events.includes('order.status_updated') ||
+          events.includes('order.updated') ||
+          events.includes('*') ||
+          events.includes('all')
+        );
+      });
+
+      if (matchedWebhooks.length === 0) return;
+
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          orderItems: {
+            include: {
+              product: true,
+              productVariant: true,
+            },
+          },
+          customer: true,
+          company: {
+            select: { id: true, name: true, slug: true, currency: true },
+          },
+        },
+      });
+
+      if (!order) return;
+
+      const payload = buildFullOrderPayload({
+        order,
+        company: order.company,
+        event: 'order.status_updated',
+        extraData: {
+          previousStatus: previousStatus || null,
+          currentStatus: currentStatus || order.status,
+          statusChangeNotes: notes || null,
+        },
+      });
+
+      for (const webhook of matchedWebhooks) {
+        sendWebhook(webhook, 'order.status_updated', payload, order.id, order.orderNumber).catch(err => {
+          console.warn(`⚠️ [ORDER-WEBHOOK] Status update webhook failed for ${webhook.url}:`, err.message);
+        });
+      }
+    } catch (err) {
+      console.error('❌ [ORDER-WEBHOOK] triggerOrderStatusUpdated error:', err.message);
+    }
+  });
+}
+
+/**
  * 🧪 Send a sample test webhook event
  */
 async function testWebhook(webhookId, companyId) {
@@ -683,5 +755,6 @@ module.exports = {
   buildFullOrderPayload,
   sendWebhook,
   triggerOrderCreated,
+  triggerOrderStatusUpdated,
   testWebhook,
 };

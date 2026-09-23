@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { apiClient } from "../../services/api";
 import {
@@ -17,38 +16,11 @@ import {
   CheckCircle2,
   XCircle,
   Code2,
-  ExternalLink,
-  ShieldCheck,
-  Activity,
   Share2,
 } from "lucide-react";
 import { OrderWebhookDocsModal, FULL_MARKDOWN_DOCS } from "./components/OrderWebhookDocsModal";
-
-interface WebhookConfig {
-  id: string;
-  name: string | null;
-  url: string;
-  secret: string;
-  isActive: boolean;
-  events: string;
-  lastTriggeredAt: string | null;
-  lastStatusCode: number | null;
-  lastError: string | null;
-  successCount: number;
-  failureCount: number;
-  createdAt: string;
-}
-
-interface WebhookLog {
-  id: string;
-  event: string;
-  orderNumber: string | null;
-  responseStatus: number | null;
-  durationMs: number | null;
-  isSuccess: boolean;
-  error: string | null;
-  createdAt: string;
-}
+import { OrderWebhookFormModal, WebhookConfig } from "./components/OrderWebhookFormModal";
+import { OrderWebhookLogsModal } from "./components/OrderWebhookLogsModal";
 
 interface TestResult {
   deliveryId: string;
@@ -60,28 +32,20 @@ interface TestResult {
 }
 
 const OrderWebhookSettings: React.FC = () => {
-  const { t } = useTranslation();
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSecretMap, setShowSecretMap] = useState<Record<string, boolean>>({});
   const [copiedSecretId, setCopiedSecretId] = useState<string | null>(null);
 
   // Modal states
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingWebhook, setEditingWebhook] = useState<WebhookConfig | null>(null);
-  const [formName, setFormName] = useState("");
-  const [formUrl, setFormUrl] = useState("");
-  const [formSecret, setFormSecret] = useState("");
-  const [formIsActive, setFormIsActive] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [logsModalWebhook, setLogsModalWebhook] = useState<WebhookConfig | null>(null);
+  const [showDocs, setShowDocs] = useState(false);
 
-  // Test & Logs modal states
+  // Test state
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
-  const [logsModalWebhook, setLogsModalWebhook] = useState<WebhookConfig | null>(null);
-  const [logs, setLogs] = useState<WebhookLog[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(false);
-  const [showDocs, setShowDocs] = useState(false);
 
   useEffect(() => {
     fetchWebhooks();
@@ -101,74 +65,14 @@ const OrderWebhookSettings: React.FC = () => {
     }
   };
 
-  const handleOpenAddModal = async () => {
+  const handleOpenAdd = () => {
     setEditingWebhook(null);
-    setFormName("");
-    setFormUrl("");
-    setFormIsActive(true);
-    try {
-      const res = await apiClient.post("/order-webhooks/generate-secret");
-      setFormSecret(res.data?.data?.secret || "");
-    } catch {
-      setFormSecret("whsec_" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
-    }
-    setIsModalOpen(true);
+    setIsFormModalOpen(true);
   };
 
-  const handleOpenEditModal = (webhook: WebhookConfig) => {
+  const handleOpenEdit = (webhook: WebhookConfig) => {
     setEditingWebhook(webhook);
-    setFormName(webhook.name || "");
-    setFormUrl(webhook.url);
-    setFormSecret(webhook.secret);
-    setFormIsActive(webhook.isActive);
-    setIsModalOpen(true);
-  };
-
-  const handleGenerateNewSecret = async () => {
-    try {
-      const res = await apiClient.post("/order-webhooks/generate-secret");
-      setFormSecret(res.data?.data?.secret || "");
-      toast.success("تم توليد سيكريت أمان جديد بنجاح");
-    } catch {
-      toast.error("فشل توليد السيكريت");
-    }
-  };
-
-  const handleSaveWebhook = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formUrl.trim().startsWith("http://") && !formUrl.trim().startsWith("https://")) {
-      toast.error("الرابط يجب أن يبدأ بـ http:// أو https://");
-      return;
-    }
-
-    try {
-      setSaving(true);
-      if (editingWebhook) {
-        await apiClient.put(`/order-webhooks/${editingWebhook.id}`, {
-          name: formName.trim() || "Webhook Endpoint",
-          url: formUrl.trim(),
-          secret: formSecret.trim(),
-          isActive: formIsActive,
-          events: "order.created",
-        });
-        toast.success("تم تحديث الويب هوك بنجاح");
-      } else {
-        await apiClient.post("/order-webhooks", {
-          name: formName.trim() || "Webhook Endpoint",
-          url: formUrl.trim(),
-          secret: formSecret.trim(),
-          isActive: formIsActive,
-          events: "order.created",
-        });
-        toast.success("تم إنشاء الويب هوك بنجاح");
-      }
-      setIsModalOpen(false);
-      fetchWebhooks();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || "حدث خطأ أثناء حفظ الويب هوك");
-    } finally {
-      setSaving(false);
-    }
+    setIsFormModalOpen(true);
   };
 
   const handleDeleteWebhook = async (id: string) => {
@@ -215,19 +119,6 @@ const OrderWebhookSettings: React.FC = () => {
     }
   };
 
-  const handleViewLogs = async (webhook: WebhookConfig) => {
-    setLogsModalWebhook(webhook);
-    try {
-      setLoadingLogs(true);
-      const res = await apiClient.get(`/order-webhooks/${webhook.id}/logs?limit=30`);
-      setLogs(res.data?.data || []);
-    } catch {
-      toast.error("فشل تحميل السجلات");
-    } finally {
-      setLoadingLogs(false);
-    }
-  };
-
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedSecretId(id);
@@ -257,7 +148,7 @@ const OrderWebhookSettings: React.FC = () => {
             <span>دليل التحقق</span>
           </button>
           <button
-            onClick={handleOpenAddModal}
+            onClick={handleOpenAdd}
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground transition shadow-sm"
           >
             <Plus className="w-4 h-4" />
@@ -313,10 +204,10 @@ const OrderWebhookSettings: React.FC = () => {
           </div>
           <h3 className="text-sm font-semibold text-foreground">لا توجد روابط ويب هوك مضافة بعد</h3>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
-            أضف رابط الويب هوك الخاص بك لبدء استقبال كافة تفاصيل الطلبات الجديدة (الاسم، الهواتف، العناوين، المنتجات والمتغيرات، الماليات، الـ IP و UTM) فور وصولها.
+            أضف رابط الويب هوك الخاص بك لبدء استقبال كافة تفاصيل الطلبات الجديدة وتحديثات الحالات فور وصولها.
           </p>
           <button
-            onClick={handleOpenAddModal}
+            onClick={handleOpenAdd}
             className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition"
           >
             <Plus className="w-4 h-4" />
@@ -376,15 +267,14 @@ const OrderWebhookSettings: React.FC = () => {
                       <span>اختبار</span>
                     </button>
                     <button
-                      onClick={() => handleViewLogs(wh)}
+                      onClick={() => setLogsModalWebhook(wh)}
                       className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-md font-medium bg-muted hover:bg-muted/80 border border-border text-foreground transition"
                       title="عرض سجلات الإرسال"
                     >
-                      <Activity className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>السجلات</span>
                     </button>
                     <button
-                      onClick={() => handleOpenEditModal(wh)}
+                      onClick={() => handleOpenEdit(wh)}
                       className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition"
                       title="تعديل"
                     >
@@ -405,7 +295,6 @@ const OrderWebhookSettings: React.FC = () => {
                   {/* Secret Display */}
                   <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-muted/50 border border-border/80">
                     <div className="flex items-center gap-2 min-w-0">
-                      <ShieldCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       <span className="text-muted-foreground flex-shrink-0">Secret:</span>
                       <span className="font-mono text-foreground truncate select-all">
                         {isVisible ? wh.secret : `${wh.secret.slice(0, 10)}••••••••••••${wh.secret.slice(-4)}`}
@@ -477,7 +366,7 @@ const OrderWebhookSettings: React.FC = () => {
         </div>
       )}
 
-      {/* Test Result Card / Callout */}
+      {/* Test Result Card */}
       {testResult && (
         <div
           className={`border rounded-xl p-4 space-y-2 text-xs transition animate-in fade-in ${
@@ -500,7 +389,7 @@ const OrderWebhookSettings: React.FC = () => {
             </div>
             <button
               onClick={() => setTestResult(null)}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground text-sm font-bold"
             >
               ×
             </button>
@@ -514,177 +403,23 @@ const OrderWebhookSettings: React.FC = () => {
         </div>
       )}
 
-      {/* Add / Edit Webhook Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-xl w-full max-w-lg p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="text-base font-bold text-foreground">
-                {editingWebhook ? "تعديل الويب هوك" : "إضافة ويب هوك جديد"}
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground text-lg leading-none"
-              >
-                ×
-              </button>
-            </div>
+      {/* Modals */}
+      <OrderWebhookFormModal
+        isOpen={isFormModalOpen}
+        onClose={() => setIsFormModalOpen(false)}
+        editingWebhook={editingWebhook}
+        onSuccess={fetchWebhooks}
+      />
 
-            <form onSubmit={handleSaveWebhook} className="space-y-4 text-xs">
-              <div className="space-y-1.5">
-                <label className="font-semibold text-foreground">الاسم التعريفي (اختياري)</label>
-                <input
-                  type="text"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="مثال: الربط مع شيت جوجل أو المحاسبة"
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
-                />
-              </div>
+      <OrderWebhookLogsModal
+        webhook={logsModalWebhook}
+        onClose={() => setLogsModalWebhook(null)}
+      />
 
-              <div className="space-y-1.5">
-                <label className="font-semibold text-foreground">رابط الويب هوك (Endpoint URL) *</label>
-                <input
-                  type="url"
-                  required
-                  value={formUrl}
-                  onChange={(e) => setFormUrl(e.target.value)}
-                  placeholder="https://example.com/api/webhooks/orders"
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:ring-1 focus:ring-primary focus:outline-none font-mono"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="font-semibold text-foreground">مفتاح التشفير (Secret Key) *</label>
-                  <button
-                    type="button"
-                    onClick={handleGenerateNewSecret}
-                    className="text-primary hover:underline text-[11px]"
-                  >
-                    توليد سيكريت جديد
-                  </button>
-                </div>
-                <div className="relative">
-                  <input
-                    type="text"
-                    required
-                    value={formSecret}
-                    onChange={(e) => setFormSecret(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2 rounded-lg border border-border bg-background text-foreground focus:ring-1 focus:ring-primary focus:outline-none font-mono text-[11px]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(formSecret, "form_secret")}
-                    className="absolute left-2.5 top-2 text-muted-foreground hover:text-foreground"
-                    title="نسخ"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  يُستخدم هذا المفتاح في التحقق من صحة التوقيع عبر رأس <code>X-Webhook-Signature</code>.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="active_toggle"
-                  checked={formIsActive}
-                  onChange={(e) => setFormIsActive(e.target.checked)}
-                  className="rounded border-border text-primary focus:ring-primary"
-                />
-                <label htmlFor="active_toggle" className="font-medium text-foreground cursor-pointer">
-                  تفعيل استقبال الأحداث فوراً
-                </label>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-border hover:bg-muted text-foreground transition"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-semibold transition disabled:opacity-50"
-                >
-                  {saving ? "جاري الحفظ..." : "حفظ الويب هوك"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Logs Modal */}
-      {logsModalWebhook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-xl w-full max-w-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div>
-                <h3 className="text-sm font-bold text-foreground">
-                  سجلات إرسال الويب هوك ({logsModalWebhook.name || "Endpoint"})
-                </h3>
-                <p className="text-xs text-muted-foreground truncate">{logsModalWebhook.url}</p>
-              </div>
-              <button
-                onClick={() => setLogsModalWebhook(null)}
-                className="text-muted-foreground hover:text-foreground text-lg leading-none"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
-              {loadingLogs ? (
-                <div className="text-center py-8 text-muted-foreground">جاري تحميل السجلات...</div>
-              ) : logs.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">لا توجد سجلات إرسال سابقة بعد.</div>
-              ) : (
-                logs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="p-3 rounded-lg border border-border bg-muted/40 space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 font-mono">
-                        <span
-                          className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${
-                            log.isSuccess
-                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                              : "bg-destructive/10 text-destructive"
-                          }`}
-                        >
-                          {log.responseStatus ? `HTTP ${log.responseStatus}` : "FAILED"}
-                        </span>
-                        <span className="font-semibold text-foreground">
-                          {log.orderNumber || "طلب بدون رقم"}
-                        </span>
-                        <span className="text-muted-foreground text-[10px]">{log.event}</span>
-                      </div>
-                      <span className="text-[11px] text-muted-foreground tabular-nums">
-                        {log.durationMs ? `${log.durationMs}ms` : "—"} |{" "}
-                        {new Date(log.createdAt).toLocaleString("ar-EG")}
-                      </span>
-                    </div>
-                    {log.error && (
-                      <p className="font-mono text-destructive text-[11px] break-all">{log.error}</p>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Developer Docs & Payload Modal */}
-      <OrderWebhookDocsModal isOpen={showDocs} onClose={() => setShowDocs(false)} />
+      <OrderWebhookDocsModal
+        isOpen={showDocs}
+        onClose={() => setShowDocs(false)}
+      />
     </div>
   );
 };

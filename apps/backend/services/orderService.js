@@ -1809,6 +1809,14 @@ class OrderService {
             console.warn('⚠️ [PUSH-STATUS] Failed to bootstrap:', pushImportErr?.message || pushImportErr);
           }
 
+          // 🌐 Dispatch Outgoing Webhook for Order Status Update
+          try {
+            const { triggerOrderStatusUpdated } = require('./orderWebhookService');
+            triggerOrderStatusUpdated(order.id, order.companyId, currentStatus, status, notes);
+          } catch (webhookErr) {
+            console.warn('⚠️ [ORDER-WEBHOOK] Status update hook error:', webhookErr?.message || webhookErr);
+          }
+
           // 🧾 Auto Invoice Generation
           try {
             const prisma = this.getPrisma();
