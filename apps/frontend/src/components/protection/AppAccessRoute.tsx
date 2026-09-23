@@ -1,6 +1,8 @@
 import React, { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 import AccessDenied from "./AccessDenied";
+import { appRegistry } from "../../config/appRegistry";
 
 interface AppAccessRouteProps {
   children: ReactNode;
@@ -15,6 +17,7 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
   children,
   requiredAppSlugs,
 }) => {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
 
   if (!isAuthenticated || !user) {
@@ -62,7 +65,26 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
   });
 
   if (!hasAccess) {
-    return <AccessDenied message="هذه الميزة تتطلب تفعيل تطبيق مخصص. يرجى تفعيل التطبيق من متجر التطبيقات." />;
+    const formattedAppNames = requiredAppSlugs
+      .map((slug) => {
+        const reg = appRegistry.find((a) => a.id.toLowerCase() === slug.trim().toLowerCase());
+        if (reg) {
+          const translated = t(reg.nameKey);
+          if (translated && translated !== reg.nameKey) return translated;
+          return reg.displayName || slug;
+        }
+        return slug;
+      })
+      .join(" أو ");
+
+    return (
+      <AccessDenied
+        title="تطبيق غير مفعّل"
+        message={`هذه الصفحة تتطلب تفعيل تطبيق «${formattedAppNames}». يرجى تفعيل التطبيق من متجر التطبيقات للمتابعة.`}
+        primaryActionText={`الانتقال لمتجر التطبيقات لتفعيل «${formattedAppNames}»`}
+        primaryActionPath={`/marketplace?search=${encodeURIComponent(requiredAppSlugs[0] || "")}`}
+      />
+    );
   }
 
   return <>{children}</>;

@@ -747,17 +747,22 @@ class OrderWorkflowService {
     }
 
     /**
-     * Get Global Audit Logs (Recent activity)
+     * Get Global Audit Logs (Recent activity, optionally filtered by user/employee)
      */
-    async getGlobalAuditLogs(companyId, limit = 20, offset = 0) {
+    async getGlobalAuditLogs(companyId, limit = 20, offset = 0, userId = null) {
+        const where = { companyId };
+        if (userId && userId !== 'ALL' && userId !== '') {
+            where.changedBy = userId;
+        }
+
         return await this.prisma.orderWorkflowAuditLog.findMany({
-            where: { companyId },
+            where,
             include: {
                 fromStatus: true,
                 toStatus: true,
                 order: { select: { orderNumber: true } },
-                user: { select: { firstName: true, lastName: true } },
-                approver: { select: { firstName: true, lastName: true } }
+                user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } },
+                approver: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } }
             },
             orderBy: { createdAt: 'desc' },
             take: limit,

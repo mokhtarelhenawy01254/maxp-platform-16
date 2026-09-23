@@ -49,7 +49,10 @@ const orderWorkflowService = {
     reviewApproval: (id: string, action: 'approve' | 'reject', reason?: string) =>
         api.post(`/order-workflow/approvals/${id}/review`, { action, reason }).then(res => res.data),
 
-    getGlobalAuditLogs: (limit: number = 20, offset: number = 0) => api.get(`/order-workflow/audit-logs?limit=${limit}&offset=${offset}`).then(res => res.data),
+    getGlobalAuditLogs: (limit: number = 20, offset: number = 0, userId?: string) => {
+        const userQuery = userId && userId !== 'ALL' ? `&userId=${encodeURIComponent(userId)}` : '';
+        return api.get(`/order-workflow/audit-logs?limit=${limit}&offset=${offset}${userQuery}`).then(res => res.data);
+    },
     getAuditLogs: (orderId: string) => api.get(`/order-workflow/audit-logs/${orderId}`).then(res => res.data),
 
     getAllowedTransitions: (currentStatusCode: string) =>
