@@ -7,12 +7,13 @@ const LEGACY_APP_SLUG_ALIASES = {
   'order-core': [...STORE_CORE_SLUGS, 'pos-pro', 'cafe-restaurant-pro'],
   'order-invoicing': STORE_CORE_SLUGS,
   // Grandfathering: companies with old monolithic store apps keep access to new granular apps
-  'pos-pro': STORE_APP_SLUGS,
+  'pos-pro': [...STORE_APP_SLUGS, 'cafe-restaurant-pro'],
+  'cafe-restaurant-pro': ['pos-pro', ...STORE_APP_SLUGS],
   'coupons-pro': STORE_APP_SLUGS,
   'woocommerce-pro': STORE_APP_SLUGS,
-  'inventory-pro': ['multi-warehouse-pro', ...STORE_APP_SLUGS],
+  'inventory-pro': ['multi-warehouse-pro', 'cafe-restaurant-pro', ...STORE_APP_SLUGS],
   'multi-warehouse-pro': ['inventory-pro', 'store-pro'],
-  'procurement-pro': ['store-pro'],
+  'procurement-pro': ['store-pro', 'cafe-restaurant-pro', 'pos-pro'],
   'order-accounting-sources': ['store-pro', 'order-source-tracking'],
   // Grandfathering only for monolithic apps that historically included manual orders.
   // order-core / ecommerce-basic / store-basic do NOT open manual orders anymore —
@@ -113,7 +114,32 @@ const checkAppAccess = (appSlug) => {
       const company = await executeWithRetry(async () => {
         return await getSharedPrismaClient().company.findUnique({
           where: { id: companyId },
-          select: { activeApps: true, trialModeEnabled: true, trialEndsAt: true, turboEnabled: true, turboApiKey: true, bostaApiKey: true, bostaEnabled: true }
+          select: {
+            trialModeEnabled: true,
+            trialEndsAt: true,
+            turboEnabled: true,
+            turboApiKey: true,
+            bostaApiKey: true,
+            bostaEnabled: true,
+            installedApps: {
+              where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
+              select: {
+                id: true,
+                status: true,
+                trialEndsAt: true,
+                app: {
+                  select: {
+                    id: true,
+                    slug: true,
+                    name: true,
+                    icon: true,
+                    monthlyPrice: true,
+                    pricingModel: true
+                  }
+                }
+              }
+            }
+          }
         });
       });
 
@@ -131,10 +157,27 @@ const checkAppAccess = (appSlug) => {
       // Find all marketplace apps matching any candidate slug
       const candidateSlugs = getCandidateAppSlugs(appSlug);
 
-      // Check if company.activeApps directly includes any candidate slug
-      if (Array.isArray(company?.activeApps) && company.activeApps.some((slug) => candidateSlugs.includes(slug))) {
-        return next();
+      // ⚡ Fast path: Check if company.installedApps directly satisfies any candidate slug
+      const matchedInstalledApp = (company?.installedApps || []).find((ca) =>
+        candidateSlugs.includes(ca.app?.slug)
+      );
+
+      if (matchedInstalledApp) {
+        // If it's a TRIAL, check expiry
+        if (matchedInstalledApp.status === 'TRIAL' && matchedInstalledApp.trialEndsAt && new Date() > new Date(matchedInstalledApp.trialEndsAt)) {
+          if (isCompanyInActiveTrial) {
+            req.companyApp = matchedInstalledApp;
+            req.marketplaceApp = matchedInstalledApp.app;
+            return next();
+          }
+          // Expired trial, continue below to show proper renewal message
+        } else {
+          req.companyApp = matchedInstalledApp;
+          req.marketplaceApp = matchedInstalledApp.app;
+          return next();
+        }
       }
+
       const candidateApps = await executeWithRetry(async () => {
         const prisma = getSharedPrismaClient();
         return await prisma.marketplaceApp.findMany({
