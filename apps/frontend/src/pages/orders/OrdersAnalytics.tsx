@@ -66,6 +66,15 @@ export const OrdersAnalytics: React.FC = () => {
     governorateList,
     statusDist,
     statusPieces,
+    totalPieces,
+    avgPiecesPerOrder,
+    avgPiecesPerDay,
+    deliveredPieces,
+    inTransitPieces,
+    warehousePieces,
+    unprocessedPieces,
+    cancelledPieces,
+    returnedPieces,
     paymentStats,
     isDateRangeInvalid,
     translate,
@@ -222,19 +231,25 @@ export const OrdersAnalytics: React.FC = () => {
           loading={loading}
           totalOrders={totalOrders}
           totalRevenue={totalRevenue}
-          totalPieces={stats?.totalPieces || 0}
+          totalPieces={totalPieces}
           deliveredOrders={deliveredOrders}
           deliveredPct={deliveredPct}
+          deliveredPieces={deliveredPieces}
           inTransitOrders={inTransitOrders}
           inTransitPct={inTransitPct}
+          inTransitPieces={inTransitPieces}
           warehouseOrders={warehouseOrders}
           warehousePct={warehousePct}
+          warehousePieces={warehousePieces}
           unprocessedOrders={unprocessedOrders}
           unprocessedPct={unprocessedPct}
+          unprocessedPieces={unprocessedPieces}
           cancelledOrders={cancelledOrders}
           cancelledPct={cancelledPct}
+          cancelledPieces={cancelledPieces}
           returnedOrders={returnedOrders}
           returnedPct={returnedPct}
+          returnedPieces={returnedPieces}
           formatPrice={formatPrice}
           onFilterStatus={handleFilterStatus}
         />
@@ -247,6 +262,8 @@ export const OrdersAnalytics: React.FC = () => {
           avgDeliveredPerDay={avgDeliveredPerDay}
           avgCancelledPerDay={avgCancelledPerDay}
           avgReturnedPerDay={avgReturnedPerDay}
+          avgPiecesPerOrder={avgPiecesPerOrder}
+          avgPiecesPerDay={avgPiecesPerDay}
           netRevenue={netRevenue}
           pendingRevenue={pendingRevenue}
           lostRevenue={lostRevenue}

@@ -209,7 +209,9 @@ def _looks_like_cuid(value: str | None) -> bool:
 async def _resolve_order_identifiers(ctx: PipelineContext) -> dict:
     """Resolve every identifier that can locate the customer's order:
     the conversation id itself (AI-created orders store it), the platform
-    customer id, and the customer phone (when present)."""
+    customer id, the customer phone — and as a last bridge, the phone the
+    customer typed inside the conversation (customer rows are frequently
+    duplicated or phone-less while the order carries the real one)."""
     out = {"conv": None, "cust": None, "phone": None}
     try:
         if _looks_like_cuid(ctx.conversation_id):
@@ -238,9 +240,32 @@ async def _resolve_order_identifiers(ctx: PipelineContext) -> dict:
                         out["cust"] = str(row["cust"])
                     if row["phone"]:
                         out["phone"] = str(row["phone"]).strip()
+
+                if not out["phone"]:
+                    msgs = (
+                        await sess.execute(
+                            _text(
+                                "SELECT m.content FROM public.messages m "
+                                "WHERE m.\"conversationId\" = :cid AND m.\"isFromCustomer\" = true "
+                                "ORDER BY m.\"createdAt\" DESC LIMIT 40"
+                            ),
+                            {"cid": ctx.conversation_id},
+                        )
+                    ).scalars().all()
+                    phone_re = _re_phone()
+                    for content in msgs:
+                        match = phone_re.search(str(content or ""))
+                        if match:
+                            out["phone"] = match.group(0)
+                            break
     except Exception as exc:
         logger.debug("order_identifier_resolve_failed", error=str(exc))
     return out
+
+
+def _re_phone():
+    import re as _re
+    return _re.compile(r"(?<!\d)(?:\+?20)?01[0125]\d{8}(?!\d)")
 
 
 async def _build_active_order_block(ctx: PipelineContext) -> str:

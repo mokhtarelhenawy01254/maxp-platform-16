@@ -16,6 +16,8 @@ interface OrdersDailyAveragesStripProps {
   avgDeliveredPerDay: number;
   avgCancelledPerDay: number;
   avgReturnedPerDay: number;
+  avgPiecesPerOrder?: number;
+  avgPiecesPerDay?: number;
   netRevenue: number;
   pendingRevenue: number;
   lostRevenue: number;
@@ -36,6 +38,8 @@ export const OrdersDailyAveragesStrip: React.FC<OrdersDailyAveragesStripProps> =
   avgDeliveredPerDay,
   avgCancelledPerDay,
   avgReturnedPerDay,
+  avgPiecesPerOrder = 0,
+  avgPiecesPerDay = 0,
   netRevenue,
   pendingRevenue,
   lostRevenue,
@@ -124,6 +128,24 @@ export const OrdersDailyAveragesStrip: React.FC<OrdersDailyAveragesStripProps> =
                 </span>
                 <span className="block text-[9px] text-zinc-400 mt-0.5">طلب / يوم</span>
               </div>
+            </div>
+          )}
+
+          {avgPiecesPerOrder > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] text-zinc-500 dark:text-zinc-400 mt-2.5 pt-2 border-t border-zinc-200/60 dark:border-white/[0.06] tabular-nums">
+              <span>
+                معدل حجم السلة:{" "}
+                <strong className="text-zinc-900 dark:text-zinc-100 font-bold">
+                  {avgPiecesPerOrder}&nbsp;قطعة / طلب
+                </strong>
+              </span>
+              <span className="hidden sm:inline text-zinc-300 dark:text-zinc-700">|</span>
+              <span>
+                معدل خروج البضاعة:{" "}
+                <strong className="text-zinc-900 dark:text-zinc-100 font-bold">
+                  {avgPiecesPerDay}&nbsp;قطعة / يوم
+                </strong>
+              </span>
             </div>
           )}
         </div>

@@ -17,16 +17,22 @@ interface OrdersMetricsStripProps {
   totalPieces: number;
   deliveredOrders: number;
   deliveredPct: number;
+  deliveredPieces?: number;
   inTransitOrders: number;
   inTransitPct: number;
+  inTransitPieces?: number;
   warehouseOrders: number;
   warehousePct: number;
+  warehousePieces?: number;
   unprocessedOrders: number;
   unprocessedPct: number;
+  unprocessedPieces?: number;
   cancelledOrders: number;
   cancelledPct: number;
+  cancelledPieces?: number;
   returnedOrders: number;
   returnedPct: number;
+  returnedPieces?: number;
   formatPrice: (amount: number) => string;
   onFilterStatus?: (status: string) => void;
 }
@@ -38,16 +44,22 @@ export const OrdersMetricsStrip: React.FC<OrdersMetricsStripProps> = ({
   totalPieces,
   deliveredOrders,
   deliveredPct,
+  deliveredPieces = 0,
   inTransitOrders,
   inTransitPct,
+  inTransitPieces = 0,
   warehouseOrders,
   warehousePct,
+  warehousePieces = 0,
   unprocessedOrders,
   unprocessedPct,
+  unprocessedPieces = 0,
   cancelledOrders,
   cancelledPct,
+  cancelledPieces = 0,
   returnedOrders,
   returnedPct,
+  returnedPieces = 0,
   formatPrice,
   onFilterStatus,
 }) => {
@@ -167,6 +179,11 @@ export const OrdersMetricsStrip: React.FC<OrdersMetricsStripProps> = ({
               </span>
               <span className="text-[11px] text-zinc-500">طلب ناجح</span>
             </div>
+            {deliveredPieces > 0 && (
+              <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums mt-0.5">
+                {deliveredPieces.toLocaleString()}&nbsp;قطعة مسلّمة
+              </span>
+            )}
           </div>
 
           {/* Stage 2: In Transit */}
@@ -190,6 +207,11 @@ export const OrdersMetricsStrip: React.FC<OrdersMetricsStripProps> = ({
               </span>
               <span className="text-[11px] text-zinc-500">مع المندوب</span>
             </div>
+            {inTransitPieces > 0 && (
+              <span className="text-[10px] font-semibold text-sky-700 dark:text-sky-400 tabular-nums mt-0.5">
+                {inTransitPieces.toLocaleString()}&nbsp;قطعة بالشحن
+              </span>
+            )}
           </div>
 
           {/* Stage 3: Warehouse Pending */}
@@ -213,6 +235,11 @@ export const OrdersMetricsStrip: React.FC<OrdersMetricsStripProps> = ({
               </span>
               <span className="text-[11px] text-zinc-500">جاهز للتسليم</span>
             </div>
+            {warehousePieces > 0 && (
+              <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 tabular-nums mt-0.5">
+                {warehousePieces.toLocaleString()}&nbsp;قطعة بالمخزن
+              </span>
+            )}
           </div>
 
           {/* Stage 4: Unprocessed / New */}
@@ -236,6 +263,11 @@ export const OrdersMetricsStrip: React.FC<OrdersMetricsStripProps> = ({
               </span>
               <span className="text-[11px] text-zinc-500">قيد التأكيد</span>
             </div>
+            {unprocessedPieces > 0 && (
+              <span className="text-[10px] font-semibold text-indigo-700 dark:text-indigo-400 tabular-nums mt-0.5">
+                {unprocessedPieces.toLocaleString()}&nbsp;قطعة جديدة
+              </span>
+            )}
           </div>
 
           {/* Stage 5: Cancelled */}
@@ -259,6 +291,11 @@ export const OrdersMetricsStrip: React.FC<OrdersMetricsStripProps> = ({
               </span>
               <span className="text-[11px] text-zinc-500">طلب ملغي</span>
             </div>
+            {cancelledPieces > 0 && (
+              <span className="text-[10px] font-semibold text-rose-700 dark:text-rose-400 tabular-nums mt-0.5">
+                {cancelledPieces.toLocaleString()}&nbsp;قطعة ملغاة
+              </span>
+            )}
           </div>
 
           {/* Stage 6: Returned */}
@@ -282,6 +319,11 @@ export const OrdersMetricsStrip: React.FC<OrdersMetricsStripProps> = ({
               </span>
               <span className="text-[11px] text-zinc-500">طلب مرتجع</span>
             </div>
+            {returnedPieces > 0 && (
+              <span className="text-[10px] font-semibold text-red-700 dark:text-red-400 tabular-nums mt-0.5">
+                {returnedPieces.toLocaleString()}&nbsp;قطعة مرتجعة
+              </span>
+            )}
           </div>
 
         </div>

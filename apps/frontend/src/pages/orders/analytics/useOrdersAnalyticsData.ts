@@ -226,6 +226,51 @@ export const useOrdersAnalyticsData = () => {
   // 6. Unprocessed
   const unprocessedOrders = useMemo(() => Math.max(0, totalOrders - deliveredOrders - inTransitOrders - warehouseOrders - cancelledOrders - returnedOrders), [totalOrders, deliveredOrders, inTransitOrders, warehouseOrders, cancelledOrders, returnedOrders]);
 
+  // Pieces & Basket Size Intelligence
+  const totalPieces = stats?.totalPieces || 0;
+  const avgPiecesPerOrder = totalOrders > 0 && totalPieces > 0
+    ? Number((totalPieces / totalOrders).toFixed(1))
+    : (stats?.avgPiecesPerOrder || 0);
+  const avgPiecesPerDay = daysCount > 0 && totalPieces > 0
+    ? Number((totalPieces / daysCount).toFixed(1))
+    : 0;
+
+  const deliveredPieces = useMemo(() => {
+    const raw = (statusPieces["DELIVERED"] || 0) + (statusPieces["PARTIALLY_DELIVERED"] || 0) + (statusPieces["COMPLETED"] || 0) + (statusPieces["delivered"] || 0);
+    if (raw > 0) return raw;
+    return deliveredOrders > 0 && avgPiecesPerOrder > 0 ? Math.round(deliveredOrders * avgPiecesPerOrder) : 0;
+  }, [statusPieces, deliveredOrders, avgPiecesPerOrder]);
+
+  const inTransitPieces = useMemo(() => {
+    const raw = (statusPieces["SHIPPED"] || 0) + (statusPieces["OUT_FOR_DELIVERY"] || 0) + (statusPieces["in_transit"] || 0);
+    if (raw > 0) return raw;
+    return inTransitOrders > 0 && avgPiecesPerOrder > 0 ? Math.round(inTransitOrders * avgPiecesPerOrder) : 0;
+  }, [statusPieces, inTransitOrders, avgPiecesPerOrder]);
+
+  const warehousePieces = useMemo(() => {
+    const raw = (statusPieces["READY_FOR_SHIPPING"] || 0) + (statusPieces["PROCESSING_WAREHOUSE"] || 0) + (statusPieces["PACKED"] || 0) + (statusPieces["PREPARING"] || 0);
+    if (raw > 0) return raw;
+    return warehouseOrders > 0 && avgPiecesPerOrder > 0 ? Math.round(warehouseOrders * avgPiecesPerOrder) : 0;
+  }, [statusPieces, warehouseOrders, avgPiecesPerOrder]);
+
+  const cancelledPieces = useMemo(() => {
+    const raw = (statusPieces["CANCELLED"] || 0) + (statusPieces["REJECTED"] || 0) + (statusPieces["FAILED"] || 0) + (statusPieces["DUPLICATE_ORDER"] || 0) + (statusPieces["cancelled"] || 0);
+    if (raw > 0) return raw;
+    return cancelledOrders > 0 && avgPiecesPerOrder > 0 ? Math.round(cancelledOrders * avgPiecesPerOrder) : 0;
+  }, [statusPieces, cancelledOrders, avgPiecesPerOrder]);
+
+  const returnedPieces = useMemo(() => {
+    const raw = (statusPieces["RETURNED"] || 0) + (statusPieces["PARTIALLY_RETURNED"] || 0) + (statusPieces["RETURNED_TO_COMPANY"] || 0) + (statusPieces["REFUNDED"] || 0) + (statusPieces["PARTIALLY_REFUNDED"] || 0) + (statusPieces["returned"] || 0);
+    if (raw > 0) return raw;
+    return returnedOrders > 0 && avgPiecesPerOrder > 0 ? Math.round(returnedOrders * avgPiecesPerOrder) : 0;
+  }, [statusPieces, returnedOrders, avgPiecesPerOrder]);
+
+  const unprocessedPieces = useMemo(() => {
+    const raw = (statusPieces["PENDING"] || 0) + (statusPieces["CONFIRMED"] || 0);
+    if (raw > 0) return raw;
+    return Math.max(0, totalPieces - (deliveredPieces + cancelledPieces + returnedPieces + inTransitPieces + warehousePieces));
+  }, [statusPieces, totalPieces, deliveredPieces, cancelledPieces, returnedPieces, inTransitPieces, warehousePieces]);
+
   // Percentages (Guaranteed exact distribution)
   const safeTotal = totalOrders > 0 ? totalOrders : 1;
   const deliveredPct = totalOrders > 0 ? Number(((deliveredOrders / safeTotal) * 100).toFixed(1)) : 0;
@@ -418,6 +463,15 @@ export const useOrdersAnalyticsData = () => {
     governorateList,
     statusDist,
     statusPieces,
+    totalPieces,
+    avgPiecesPerOrder,
+    avgPiecesPerDay,
+    deliveredPieces,
+    inTransitPieces,
+    warehousePieces,
+    unprocessedPieces,
+    cancelledPieces,
+    returnedPieces,
     paymentStats,
     isDateRangeInvalid,
     translate: t,
