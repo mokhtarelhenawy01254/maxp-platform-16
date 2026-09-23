@@ -156,5 +156,17 @@
   "closeCancel": "إغلاق / إلغاء",
   "ok": "حسناً",
   "coupon_applied": "تم تطبيق الكوبون! خصم {{amount}} ج.م",
-  "available_count": "متاح: {{count}}"
+  "available_count": "متاح: {{count}}",
+  "outOfStock": "نفدت الكمية",
+  "inStock": "متاح",
+  "andSeparator": " و ",
+  "notSpecified": "غير محدد",
+  "fetchFailed": "فشل في جلب المنتجات",
+  "affiliateProducts": "منتجات الشركة المتاحة",
+  "products": "المنتجات",
+  "noAffiliateProducts": "لا توجد منتجات متاحة لهذا المسوق",
+  "noProducts": "لا توجد منتجات",
+  "searchPlaceholder": "بحث باسم المنتج أو SKU...",
+  "refreshProducts": "تحديث المنتجات والمخزون",
+  "productsRefreshed": "تم تحديث المنتجات والمخزون بنجاح"
 }

@@ -199,11 +199,16 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
       }
     } catch (error) {
       console.error("Error fetching products:", error);
-      toast.error(t('manualOrder.k_2'));
+      toast.error(t('manualOrder.fetchFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
+
+  const handleRefresh = async () => {
+    await fetchProducts(searchQuery);
+    toast.success(t('manualOrder.productsRefreshed'));
+  };
 
   useEffect(() => {
     fetchProducts();
@@ -299,14 +304,26 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
     >
       {/* Search Header */}
       <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
-        <h2 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">
-          {isAffiliateMode ? t('manualOrder.k_3') : t('manualOrder.k_4')}
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">
+            {isAffiliateMode ? t('manualOrder.affiliateProducts') : t('manualOrder.products')}
+          </h2>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={loading}
+            title={t('manualOrder.refreshProducts')}
+            className="p-1.5 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+            aria-label={t('manualOrder.refreshProducts')}
+          >
+            <ArrowPathIcon className={`w-4 h-4 ${loading ? "animate-spin text-blue-600 dark:text-blue-400" : ""}`} />
+          </button>
+        </div>
         <div className="relative">
           <input
             id="manual-order-product-search"
             type="text"
-            placeholder={t('manualOrder.k_139')}
+            placeholder={t('manualOrder.searchPlaceholder')}
             className="w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
             value={searchQuery}
             onChange={(e) => {
@@ -346,8 +363,8 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
             <ArchiveBoxIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p>
               {isAffiliateMode
-                ? t('manualOrder.k_5')
-                : t('manualOrder.k_6')}
+                ? t('manualOrder.noAffiliateProducts')
+                : t('manualOrder.noProducts')}
             </p>
           </div>
         ) : (
@@ -503,13 +520,13 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                             {matchedVariant.price} {t('manualOrder.k_75')}
                           </div>
                           <div
-                            className={`text-sm ${isInStock(matchedVariant) ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}
+                            className={`text-sm ${isInStock(matchedVariant) ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400 font-medium"}`}
                           >
                             {isInStock(matchedVariant)
                               ? matchedVariant.trackInventory === false
-                                ? t('manualOrder.k_7')
+                                ? t('manualOrder.inStock')
                                 : t('manualOrder.available_count', { count: matchedVariant.stock })
-                              : t('manualOrder.k_8')}
+                              : t('manualOrder.outOfStock')}
                           </div>
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -541,7 +558,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                       {productAttributes
                         .filter((a) => !selectedAttributes[a.name])
                         .map((a) => a.name)
-                        .join(t('manualOrder.k_9'))}
+                        .join(t('manualOrder.andSeparator'))}
                     </div>
                   )}
                 </div>
@@ -563,7 +580,7 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                     >
                       <div className="flex flex-col items-start">
                         <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">
-                          {variant.name || t('manualOrder.k_10')}
+                          {variant.name || t('manualOrder.notSpecified')}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           SKU: {variant.sku}
@@ -574,13 +591,13 @@ const ProductSearchColumn: React.FC<ProductSearchColumnProps> = ({
                           {variant.price} {t('manualOrder.k_75')}
                         </div>
                         <div
-                          className={`text-xs mt-0.5 ${isInStock(variant) ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}
+                          className={`text-xs mt-0.5 ${isInStock(variant) ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400 font-medium"}`}
                         >
                           {isInStock(variant)
                             ? variant.trackInventory === false
-                              ? t('manualOrder.k_7')
+                              ? t('manualOrder.inStock')
                               : t('manualOrder.available_count', { count: variant.stock })
-                            : t('manualOrder.k_8')}
+                            : t('manualOrder.outOfStock')}
                         </div>
                       </div>
                     </button>

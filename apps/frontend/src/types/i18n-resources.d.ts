@@ -13660,6 +13660,18 @@ declare module 'react-i18next' {
         ok: string;
         coupon_applied: string;
         available_count: string;
+        outOfStock: string;
+        inStock: string;
+        andSeparator: string;
+        notSpecified: string;
+        fetchFailed: string;
+        affiliateProducts: string;
+        products: string;
+        noAffiliateProducts: string;
+        noProducts: string;
+        searchPlaceholder: string;
+        refreshProducts: string;
+        productsRefreshed: string;
       };
       orderDetails: {
         orderNotFound: string;

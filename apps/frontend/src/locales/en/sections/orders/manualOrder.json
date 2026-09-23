@@ -156,5 +156,17 @@
   "closeCancel": "Close / Cancel",
   "ok": "OK",
   "coupon_applied": "Coupon applied! Discount {{amount}} EGP",
-  "available_count": "Available: {{count}}"
+  "available_count": "Available: {{count}}",
+  "outOfStock": "Out of stock",
+  "inStock": "In stock",
+  "andSeparator": " and ",
+  "notSpecified": "Not specified",
+  "fetchFailed": "Failed to fetch products",
+  "affiliateProducts": "Available company products",
+  "products": "Products",
+  "noAffiliateProducts": "No products available for this affiliate",
+  "noProducts": "No products found",
+  "searchPlaceholder": "Search by product name or SKU...",
+  "refreshProducts": "Refresh products & stock",
+  "productsRefreshed": "Products & stock refreshed successfully"
 }
