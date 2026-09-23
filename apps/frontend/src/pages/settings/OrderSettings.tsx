@@ -19,6 +19,7 @@ import {
   Volume2,
   ArrowLeftRight,
   ShieldAlert,
+  Webhook,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import OrderStatusManager from "./OrderStatusManager";
@@ -39,6 +40,7 @@ import EasyWarehouseSettings from "./EasyWarehouseSettings";
 import OrderSoundSettings from "./OrderSoundSettings";
 import ExchangeReturnSettings from "./ExchangeReturnSettings";
 import DiscountApprovalSettings from "./DiscountApprovalSettings";
+import OrderWebhookSettings from "./OrderWebhookSettings";
 
 // ═══════════════════════════════════════════════════════════════
 // 📦 Order Settings Page with Sidebar Tabs
@@ -62,7 +64,8 @@ type TabId =
   | "easy_warehouse"
   | "sound"
   | "exchange_return"
-  | "discount_approval";
+  | "discount_approval"
+  | "webhooks";
 
 const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "status",
@@ -83,6 +86,7 @@ const ORDER_SETTINGS_TAB_IDS: TabId[] = [
   "sound",
   "exchange_return",
   "discount_approval",
+  "webhooks",
 ];
 
 const isOrderSettingsTabId = (value: string): value is TabId =>
@@ -249,6 +253,12 @@ const OrderSettings: React.FC = () => {
       icon: ShieldAlert,
       description: "الموافقة على الخصومات وحظر التلقائي",
     },
+    {
+      id: "webhooks",
+      label: "الويب هوك (Webhooks)",
+      icon: Webhook,
+      description: "إرسال بيانات الطلبات فور وصولها مع سيكريت مشفر",
+    },
   ];
 
   return (
@@ -341,6 +351,7 @@ const OrderSettings: React.FC = () => {
             {activeTab === "sound" && <OrderSoundSettings />}
             {activeTab === "exchange_return" && <ExchangeReturnSettings />}
             {activeTab === "discount_approval" && <DiscountApprovalSettings />}
+            {activeTab === "webhooks" && <OrderWebhookSettings />}
           </div>
         </div>
       </div>

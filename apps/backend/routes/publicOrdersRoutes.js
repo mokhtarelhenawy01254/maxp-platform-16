@@ -2854,6 +2854,14 @@ router.post('/', async (req, res) => {
           internalSyncService.pushOrderToProvider(createdOrder.id, company.id).catch(err => {
             console.error(`❌ [GUEST-ORDER] Failed to push order ${createdOrder.id} to provider:`, err.message);
           });
+
+          // ⚡ إرسال الويب هوك الصادر للطلبات (Outgoing Webhook)
+          try {
+            const orderWebhookService = require('../services/orderWebhookService');
+            orderWebhookService.triggerOrderCreated(createdOrder.id, company.id);
+          } catch (webhookErr) {
+            console.warn('⚠️ [GUEST-ORDER] Failed to trigger order webhook:', webhookErr.message);
+          }
         } else {
           console.warn('⚠️ [GUEST-ORDER] Skipping external sync because dropshipping routing failed');
         }

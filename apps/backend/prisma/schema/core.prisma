@@ -204,6 +204,7 @@ model Company {
   orderWorkflowAuditLogs         OrderWorkflowAuditLog[]
   orderConfirmationSettings      OrderConfirmationSettings?
   orderAssignments               OrderAssignment[]
+  orderWebhookConfigs            OrderWebhookConfig[]
    orders                          Order[]
    bulkOrders                      BulkOrder[]
    bulkOrderItems                  BulkOrderItem[]

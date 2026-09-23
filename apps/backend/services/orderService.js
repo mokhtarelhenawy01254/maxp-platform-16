@@ -573,6 +573,14 @@ class OrderService {
         internalSyncService.pushOrderToProvider(order.id, companyId).catch(err => {
           console.error(`❌ [INTERNAL-SYNC] Failed to push order ${order.id} to provider:`, err.message);
         });
+
+        // ⚡ إرسال الويب هوك الصادر للطلبات (Outgoing Webhook)
+        try {
+          const orderWebhookService = require('./orderWebhookService');
+          orderWebhookService.triggerOrderCreated(order.id, companyId);
+        } catch (webhookErr) {
+          console.warn('⚠️ [ORDER-SERVICE] Failed to trigger order webhook:', webhookErr.message);
+        }
       }
 
       // Trigger auto-distribution immediately

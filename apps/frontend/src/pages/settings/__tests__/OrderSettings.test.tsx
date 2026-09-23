@@ -67,6 +67,9 @@ jest.mock("../ExchangeReturnSettings", () => () => (
 jest.mock("../DiscountApprovalSettings", () => () => (
   <div>Discount Approval Mock</div>
 ));
+jest.mock("../OrderWebhookSettings", () => () => (
+  <div>Order Webhooks Mock</div>
+));
 
 describe("OrderSettings", () => {
   it("does not list customer block settings inside the order settings tabs", async () => {

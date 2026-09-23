@@ -7652,6 +7652,15 @@ router.post('/create', verifyToken.authenticateToken, async (req, res) => {
       console.log('⚠️ [WHATSAPP] Failed to send notification:', whatsappError.message);
     }
 
+    // ⚡ إرسال الويب هوك الصادر للطلبات (Outgoing Webhook)
+    try {
+      const orderWebhookService = require('../services/orderWebhookService');
+      const companyId = req.user?.effectiveCompanyId || req.user?.companyId || order.companyId;
+      orderWebhookService.triggerOrderCreated(order.id, companyId);
+    } catch (webhookErr) {
+      console.warn('⚠️ [ORDERS] Failed to trigger order webhook:', webhookErr.message);
+    }
+
     res.status(201).json({
       success: true,
       message: 'تم إنشاء الطلب بنجاح',

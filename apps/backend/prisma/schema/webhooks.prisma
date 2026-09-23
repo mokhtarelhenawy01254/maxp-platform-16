@@ -1,0 +1,45 @@
+model OrderWebhookConfig {
+  id              String            @id @default(cuid())
+  companyId       String
+  name            String?           @default("Webhook Endpoint")
+  url             String
+  secret          String
+  isActive        Boolean           @default(true)
+  events          String            @default("order.created")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  lastTriggeredAt DateTime?
+  lastStatusCode  Int?
+  lastError       String?
+  failureCount    Int               @default(0)
+  successCount    Int               @default(0)
+  company         Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  logs            OrderWebhookLog[]
+
+  @@index([companyId])
+  @@index([companyId, isActive])
+  @@map("order_webhook_configs")
+}
+
+model OrderWebhookLog {
+  id             String             @id @default(cuid())
+  webhookId      String
+  companyId      String
+  event          String
+  orderId        String?
+  orderNumber    String?
+  payload        Json?
+  requestHeaders Json?
+  responseStatus Int?
+  responseBody   String?
+  durationMs     Int?
+  isSuccess      Boolean            @default(false)
+  error          String?
+  createdAt      DateTime           @default(now())
+  webhook        OrderWebhookConfig @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId, createdAt])
+  @@index([companyId, createdAt])
+  @@index([orderId])
+  @@map("order_webhook_logs")
+}
