@@ -94,23 +94,25 @@ export const StudioPageSelector: React.FC<StudioPageSelectorProps> = ({
           <ActiveIcon className="h-3.5 w-3.5" />
         </span>
 
-        {/* Page Prefix & Label */}
-        <span className="hidden items-center gap-1 text-[11px] font-medium text-muted-foreground sm:inline-flex">
+        {/* Page Prefix */}
+        <span className="hidden items-center text-[11px] font-medium text-muted-foreground sm:inline-flex">
           الصفحة:
         </span>
-        <span className="font-black text-foreground text-xs">{activePageDef.label}</span>
 
-        {/* Total Pages Counter Badge */}
-        <span className="hidden md:inline-flex rounded-full bg-muted/80 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-          {STUDIO_PAGES.length}
+        {/* Word + Arrow Group (Crystal clear indication of dropdown options) */}
+        <span className="inline-flex items-center gap-1.5 font-black text-foreground text-xs sm:text-sm">
+          <span>{activePageDef.label}</span>
+          <ChevronDownIcon
+            className={`h-4 w-4 text-primary stroke-[2.5] transition-transform duration-200 group-hover:scale-110 ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
         </span>
 
-        {/* Visible Chevron Down Arrow that indicates it's a dropdown */}
-        <ChevronDownIcon
-          className={`h-4 w-4 text-muted-foreground transition-transform duration-200 group-hover:text-foreground ${
-            isOpen ? "rotate-180 text-primary" : ""
-          }`}
-        />
+        {/* Total Pages Counter Badge */}
+        <span className="hidden md:inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+          {STUDIO_PAGES.length}
+        </span>
       </button>
 
       {/* Dropdown Menu */}
