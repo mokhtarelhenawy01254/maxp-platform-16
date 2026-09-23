@@ -110,7 +110,19 @@ jobs:
 
       - name: Publish the report back into the repo
         if: always()
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
         run: |
+          # Channel 1 — a temporary text file in the nginx webroot, readable over HTTPS
+          # (https://maxp.online/seed-status.txt). The next frontend deploy wipes dist anyway.
+          if [ -f "$REPORT" ]; then
+            scp -4 -i "$HOME/.ssh/maxp_deploy_key" -P "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new \
+              "$REPORT" "$SERVER_USER@$SERVER_HOST:/var/www/frontend2/dist/seed-status.txt" \
+              || echo "⚠️ مقدرتش أكتب ملف الحالة في الـwebroot"
+          fi
+          # Channel 2 — commit the report into the repo (needs write permission on the workflow token)
           git config user.name "academy-seed-bot"
           git config user.email "actions@users.noreply.github.com"
           git add -A docs/seed-reports || true
