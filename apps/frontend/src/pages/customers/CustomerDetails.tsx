@@ -24,6 +24,7 @@ import {
   BanknotesIcon,
   ClockIcon,
   SparklesIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ import {
   CustomerBlockReasonCode,
   CustomerBlockRule,
 } from "../../services/customerBlocklistService";
+import { CustomerRatingBadge } from "../../components/orders/CustomerRatingBadge";
 import CustomerLoyaltyTab from "./CustomerLoyaltyTab";
 import CustomerJourneyTab from "./CustomerJourneyTab";
 
@@ -55,6 +57,9 @@ interface CustomerDetailsData {
     birthday?: string;
     status: string;
     customerRating?: string;
+    deliveryRate?: number;
+    totalDelivered?: number;
+    totalOrdersCount?: number;
     createdAt: string;
     updatedAt: string;
   };
@@ -63,6 +68,10 @@ interface CustomerDetailsData {
     conversationsCount: number;
     totalSpent: number;
     averageOrderValue: number;
+    deliveryRate?: number;
+    totalDelivered?: number;
+    totalOrdersCount?: number;
+    customerRating?: string;
   };
   recentOrders: Array<{
     id: string;
@@ -151,12 +160,29 @@ const CustomerDetails: React.FC = () => {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
   const [isUnblocking, setIsUnblocking] = useState(false);
+  const [isRecalculatingRating, setIsRecalculatingRating] = useState(false);
   const [blockForm, setBlockForm] = useState({
     reasonCode: "REPEATED_REFUSAL" as CustomerBlockReasonCode,
     reasonNote: "",
     action: "BLOCK_ORDERS" as CustomerBlockAction,
     expiresAt: "",
   });
+
+  const handleRecalculateRating = async () => {
+    if (!id) return;
+    setIsRecalculatingRating(true);
+    try {
+      const res = await apiClient.post(`/customers/${id}/recalculate-rating`);
+      toast.success(
+        `تم إعادة حساب التقييم: ${res.data?.data?.rating || "UNKNOWN"} (نسبة الاستلام: ${res.data?.data?.deliveryRate ?? 0}%)`
+      );
+      loadCustomerDetails();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "تعذر إعادة حساب التقييم");
+    } finally {
+      setIsRecalculatingRating(false);
+    }
+  };
 
   useEffect(() => {
     loadCustomerDetails();
@@ -504,13 +530,27 @@ const CustomerDetails: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {customer.firstName} {customer.lastName}
             </h1>
-            <div className="flex gap-2 mt-1">
+            <div className="flex gap-2 mt-1 items-center flex-wrap">
               <span
                 className={`px-2 py-1 rounded-full text-xs ${getStatusBadge(customer.status)}`}
               >
                 {customer.status}
               </span>
-              {getRatingBadge(customer.customerRating)}
+              <CustomerRatingBadge
+                rating={customer.customerRating}
+                customerId={customer.id}
+                deliveryRate={customer.deliveryRate ?? stats.deliveryRate}
+                totalDelivered={customer.totalDelivered ?? stats.totalDelivered}
+                totalAttempts={customer.totalOrdersCount ?? stats.totalOrdersCount}
+                interactive={true}
+                size="sm"
+                onRatingChange={(newRating) => {
+                  setData((prev) => prev ? {
+                    ...prev,
+                    customer: { ...prev.customer, customerRating: newRating }
+                  } : prev);
+                }}
+              />
             </div>
           </div>
         </div>
@@ -595,7 +635,38 @@ const CustomerDetails: React.FC = () => {
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Delivery Reliability Card */}
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-slate-100 dark:border-slate-700/60">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                <CheckCircleIcon className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 font-medium">مستوى العميل ونسبة الاستلام</p>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <span className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+                    {Math.round((customer.deliveryRate ?? stats.deliveryRate ?? 0) * 10) / 10}%
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    ({customer.totalDelivered ?? stats.totalDelivered ?? 0} من {customer.totalOrdersCount ?? stats.totalOrdersCount ?? stats.ordersCount} طلب)
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={isRecalculatingRating}
+              onClick={handleRecalculateRating}
+              title="إعادة حساب التقييم آلياً"
+              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-gray-700 rounded-md transition-colors"
+            >
+              <ArrowPathIcon className={`h-4 w-4 ${isRecalculatingRating ? "animate-spin text-indigo-600" : ""}`} />
+            </button>
+          </div>
+        </div>
+
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
           <div className="flex items-center gap-3">
             <ShoppingBagIcon className="h-8 w-8 text-indigo-500" />

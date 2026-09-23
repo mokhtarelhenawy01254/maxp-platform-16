@@ -237,32 +237,45 @@ const CustomerList: React.FC = () => {
     );
   };
 
-  const getRatingBadge = (rating: string | undefined) => {
-    if (!rating) return null;
+  const getRatingBadge = (rating: string | undefined, deliveryRate?: number | null) => {
+    if (!rating || rating === "UNKNOWN") return null;
     const r = rating.toLowerCase();
     switch (r) {
       case "excellent":
         return (
-          <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full ring-1 ring-purple-600/20">
-            {t("customers.rating.excellent")}
+          <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 px-2 py-0.5 rounded-full ring-1 ring-emerald-600/20 font-medium inline-flex items-center gap-1">
+            <span>عميل ممتاز</span>
+            {deliveryRate !== undefined && deliveryRate !== null && deliveryRate > 0 && (
+              <span className="opacity-80 text-[10px]">({Math.round(deliveryRate)}%)</span>
+            )}
           </span>
         );
       case "good":
         return (
-          <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ring-1 ring-blue-600/20">
-            {t("customers.rating.good")}
+          <span className="ml-2 text-xs bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 px-2 py-0.5 rounded-full ring-1 ring-sky-600/20 font-medium inline-flex items-center gap-1">
+            <span>عميل جيد</span>
+            {deliveryRate !== undefined && deliveryRate !== null && deliveryRate > 0 && (
+              <span className="opacity-80 text-[10px]">({Math.round(deliveryRate)}%)</span>
+            )}
           </span>
         );
       case "average":
         return (
-          <span className="ml-2 text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full ring-1 ring-gray-600/20">
-            {t("customers.rating.average")}
+          <span className="ml-2 text-xs bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 px-2 py-0.5 rounded-full ring-1 ring-amber-600/20 font-medium inline-flex items-center gap-1">
+            <span>عميل متوسط</span>
+            {deliveryRate !== undefined && deliveryRate !== null && deliveryRate > 0 && (
+              <span className="opacity-80 text-[10px]">({Math.round(deliveryRate)}%)</span>
+            )}
           </span>
         );
+      case "poor":
       case "bad":
         return (
-          <span className="ml-2 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full ring-1 ring-red-600/20">
-            {t("customers.rating.bad")}
+          <span className="ml-2 text-xs bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 px-2 py-0.5 rounded-full ring-1 ring-rose-600/20 font-medium inline-flex items-center gap-1">
+            <span>عميل ضعيف</span>
+            {deliveryRate !== undefined && deliveryRate !== null && (
+              <span className="opacity-80 text-[10px]">({Math.round(deliveryRate)}%)</span>
+            )}
           </span>
         );
       default:
@@ -575,7 +588,7 @@ const CustomerList: React.FC = () => {
                         <div className="mr-4">
                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
                             {customer.firstName || ""} {customer.lastName || ""}
-                            {getRatingBadge(customer.customerRating)}
+                            {getRatingBadge(customer.customerRating, (customer as any).deliveryRate)}
                             {getTierBadge(customer.loyaltyTier)}
                             {getAutoDiscountBadge(customer.autoDiscountStatus)}
                           </div>

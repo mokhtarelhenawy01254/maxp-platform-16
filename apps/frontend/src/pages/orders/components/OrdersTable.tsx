@@ -319,6 +319,9 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                               rating={order.customerRating || order.customer?.customerRating}
                               orderNumber={order.orderNumber}
                               customerId={order.customer?.id || (order as any).customerId}
+                              deliveryRate={(order as any).deliveryRate ?? order.customer?.deliveryRate}
+                              totalDelivered={(order as any).totalDelivered ?? order.customer?.totalDelivered}
+                              totalAttempts={(order as any).totalOrdersCount ?? order.customer?.totalOrdersCount}
                               interactive={true}
                               size="xs"
                               onRatingChange={(newRating) => {
