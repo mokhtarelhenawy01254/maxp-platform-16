@@ -1501,7 +1501,15 @@ const UsersManagement: React.FC = () => {
             <p className="text-sm text-muted-foreground">{t("users.pageDescription")}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" className="h-11 rounded-2xl" onClick={openAddUser}>
+            <Button
+              type="button"
+              className="h-11 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm transition-all active:scale-95"
+              onClick={() => setEmployeeInviteModalOpen(true)}
+            >
+              <Link2 className="size-4 ml-1.5" />
+              دعوة موظف برابط
+            </Button>
+            <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={openAddUser}>
               <Plus className="size-4" />
               {t("users.addNewUser")}
             </Button>
@@ -2504,6 +2512,15 @@ const UsersManagement: React.FC = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <EmployeeInviteModal
+          open={employeeInviteModalOpen}
+          onOpenChange={setEmployeeInviteModalOpen}
+          onInvitationCreated={() => {
+            void fetchUsers();
+            void fetchInvitations();
+          }}
+        />
       </div>
     </TooltipProvider>
   );

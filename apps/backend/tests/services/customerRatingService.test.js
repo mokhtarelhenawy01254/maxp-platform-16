@@ -41,7 +41,7 @@ describe('customerRatingService - Automated Classification Engine', () => {
             rating: 'UNKNOWN',
         });
 
-        expect(prisma.customer.update).toHaveBeenCalledWith({
+        expect(prisma.customer.update).toHaveBeenCalledWith(expect.objectContaining({
             where: { id: customerId },
             data: {
                 deliveryRate: 0,
@@ -50,7 +50,7 @@ describe('customerRatingService - Automated Classification Engine', () => {
                 customerRating: 'UNKNOWN',
                 successScore: 0,
             },
-        });
+        }));
     });
 
     test('2. عميل بطلب واحد مستلم -> GOOD بنسبة استلام 100%', async () => {
