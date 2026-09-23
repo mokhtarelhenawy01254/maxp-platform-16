@@ -274,6 +274,9 @@ const requirePermission = (permission) => {
     // AI_SERVICE: shared service-token identity (no DB user record).
     if (userRole === 'AI_SERVICE') return next();
 
+    // Company OWNER has unrestricted access
+    if (userRole === 'OWNER') return next();
+
     // DB-based permissions only (loaded by authenticateToken / requireCompanyAccess)
     const permissions = req.user.userPermissions;
     if (!permissions || !Array.isArray(permissions) || !permissions.includes(permission)) {
@@ -304,6 +307,9 @@ const requireDbPermission = (permissionKey) => {
     // AI_SERVICE: shared service-token identity (no DB user record).
     // Trust the service token; the secret itself is the gate.
     if (req.user.role === 'AI_SERVICE' || req.user.service === true) return next();
+
+    // Company OWNER has unrestricted access to company resources
+    if (req.user.role === 'OWNER') return next();
 
     const companyId = req.user.effectiveCompanyId || req.user.companyId;
     if (!companyId) {

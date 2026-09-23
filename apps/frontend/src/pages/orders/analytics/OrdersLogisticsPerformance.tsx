@@ -4,8 +4,7 @@ import {
   ChartBarIcon,
   CreditCardIcon,
   BuildingStorefrontIcon,
-  CheckCircleIcon,
-  ArrowRightIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { ShippingPerformance, BranchPerformance } from "./types";
@@ -80,29 +79,25 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
   };
 
   return (
-    <div className="border-b border-zinc-200/80 dark:border-white/[0.08] grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-zinc-200/80 dark:divide-white/[0.08] bg-white dark:bg-[#0a0a0c]">
+    <div className="border-b border-zinc-200/80 dark:border-white/[0.08] grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-zinc-200/80 dark:divide-white/[0.08] bg-white dark:bg-[#070709]">
       
       {/* Column 1: Order Lifecycle & Status Distribution */}
       <div className="p-3.5 sm:p-4 flex flex-col min-w-0">
-        <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-zinc-150 dark:border-white/[0.06]">
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-200/60 dark:border-white/[0.06]">
           <div className="flex items-center gap-1.5">
-            <div className="w-6 h-6 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <div className="w-6 h-6 rounded-md bg-zinc-500/10 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shrink-0">
               <ChartBarIcon className="h-3.5 w-3.5" />
             </div>
-            <div>
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
-                دورة حياة الحالات والقطع
-              </h3>
-            </div>
+            <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+              دورة حياة الحالات والقطع
+            </h3>
           </div>
           <span className="text-[10px] text-zinc-400 font-mono tabular-nums">
             {Object.keys(statusDist).length} حالة
           </span>
         </div>
 
-        <p className="text-[10px] text-zinc-400 mb-2">انقر على أي حالة لتصفية الطلبات فوراً في جدول العمليات</p>
-
-        <div className="flex-1 overflow-y-auto max-h-[340px] pr-0.5 space-y-1.5 no-scrollbar">
+        <div className="flex-1 overflow-y-auto max-h-[320px] divide-y divide-zinc-100 dark:divide-white/[0.04] no-scrollbar">
           {loading ? (
             <div className="space-y-2 py-2">
               {[1, 2, 3, 4, 5].map((n) => (
@@ -123,7 +118,7 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
                 <div
                   key={status}
                   onClick={() => onFilterStatus && onFilterStatus(status)}
-                  className="p-2 rounded-md hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60 transition-colors cursor-pointer border border-transparent hover:border-zinc-200/60 dark:hover:border-white/[0.06] space-y-1"
+                  className="py-2 px-1 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors cursor-pointer space-y-1"
                   title="انقر لتصفية هذه الحالة"
                 >
                   <div className="flex items-center justify-between text-xs gap-2">
@@ -145,7 +140,7 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
                       </span>
                     </div>
                   </div>
-                  <div className="h-1 bg-zinc-150 dark:bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-1 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                     <div
                       className={`h-full ${colorDot} rounded-full transition-all duration-300`}
                       style={{ width: `${pct}%` }}
@@ -160,16 +155,14 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
 
       {/* Column 2: Accurate Logistics SLA (Carriers vs Branches) */}
       <div className="p-3.5 sm:p-4 flex flex-col min-w-0">
-        <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-zinc-150 dark:border-white/[0.06]">
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-200/60 dark:border-white/[0.06]">
           <div className="flex items-center gap-1.5">
-            <div className="w-6 h-6 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <div className="w-6 h-6 rounded-md bg-zinc-500/10 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shrink-0">
               <TruckIcon className="h-3.5 w-3.5" />
             </div>
-            <div>
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
-                كفاءة الشحن والتوزيع
-              </h3>
-            </div>
+            <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+              كفاءة الشحن والتوزيع
+            </h3>
           </div>
 
           {/* Toggle between Carriers and Branches */}
@@ -183,7 +176,7 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
                   : "text-zinc-500 hover:text-zinc-900"
               }`}
             >
-              وجهات وشركات الشحن
+              شركات ووجهات الشحن
             </button>
             <button
               type="button"
@@ -199,17 +192,11 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
           </div>
         </div>
 
-        <p className="text-[10px] text-zinc-400 mb-2">
-          {logisticsView === "carriers"
-            ? "تقييم كفاءة التسليم للشحنات المسلّمة فعلياً للمشغل اللوجستي"
-            : "متابعة تدفق الطلبات وحالات الفروع والمستودعات المركزية"}
-        </p>
-
-        <div className="flex-1 overflow-y-auto max-h-[340px] pr-0.5 space-y-1.5 no-scrollbar">
+        <div className="flex-1 overflow-y-auto max-h-[320px] divide-y divide-zinc-100 dark:divide-white/[0.04] no-scrollbar">
           {loading ? (
             <div className="space-y-2 py-2">
               {[1, 2].map((n) => (
-                <Skeleton key={n} className="h-16 w-full rounded" />
+                <Skeleton key={n} className="h-14 w-full rounded" />
               ))}
             </div>
           ) : logisticsView === "carriers" ? (
@@ -219,18 +206,26 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
               shippingList.map((carrier) => (
                 <div
                   key={carrier.name}
-                  className="p-2 rounded-lg bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200/50 dark:border-white/[0.04] text-xs space-y-1 hover:bg-zinc-100/60 dark:hover:bg-zinc-900/60 transition-colors"
+                  className="py-2.5 px-1 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors text-xs space-y-1.5"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-[11px]">
+                    <span className="font-bold text-zinc-900 dark:text-zinc-100 truncate text-[11px]">
                       {carrier.name}
                     </span>
-                    <span className="text-[10px] font-bold tabular-nums text-zinc-700 dark:text-zinc-300 px-1.5 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-800">
-                      {carrier.totalOrders.toLocaleString()} مسلّمة للشحن
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {carrier.avgDeliveryDays && (
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded tabular-nums">
+                          <ClockIcon className="h-3 w-3 text-zinc-400" />
+                          <span>{carrier.avgDeliveryDays} يوم سرعة</span>
+                        </span>
+                      )}
+                      <span className="text-[10px] font-bold tabular-nums text-zinc-700 dark:text-zinc-300 px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800">
+                        {carrier.totalOrders.toLocaleString()} مسلّمة للناقل
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-zinc-200/50 dark:border-white/[0.04] tabular-nums">
+                  <div className="flex items-center justify-between text-[11px] tabular-nums">
                     <span className="flex items-center gap-1">
                       <span className="text-zinc-400 text-[10px]">تسليم:</span>
                       <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{carrier.deliveryRate}%</strong>
@@ -244,13 +239,9 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
                       <span className="text-zinc-400 text-[10px]">بالطريق:</span>
                       <strong className="text-zinc-700 dark:text-zinc-300">{carrier.inTransitOrders}</strong>
                     </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-[10px] text-zinc-500 tabular-nums">
-                    <span>كاش محصل: <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">{formatPrice(carrier.codCollected)}</strong></span>
-                    {carrier.lostShipping > 0 && (
-                      <span className="text-rose-600 dark:text-rose-400">فاقد: {formatPrice(carrier.lostShipping)}</span>
-                    )}
+                    <span className="text-zinc-500 text-[10px]">
+                      كاش: <strong className="text-emerald-600 dark:text-emerald-400">{formatPrice(carrier.codCollected)}</strong>
+                    </span>
                   </div>
                 </div>
               ))
@@ -262,22 +253,22 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
               branchList.map((branch) => (
                 <div
                   key={branch.name}
-                  className="p-2 rounded-lg bg-zinc-50/60 dark:bg-zinc-900/40 border border-zinc-200/50 dark:border-white/[0.04] text-xs space-y-1 hover:bg-zinc-100/60 dark:hover:bg-zinc-900/60 transition-colors"
+                  className="py-2.5 px-1 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors text-xs space-y-1.5"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-[11px] flex items-center gap-1">
+                    <span className="font-bold text-zinc-900 dark:text-zinc-100 truncate text-[11px] flex items-center gap-1">
                       <BuildingStorefrontIcon className="h-3 w-3 text-zinc-400 shrink-0" />
                       <span>{branch.name}</span>
                     </span>
-                    <span className="text-[10px] font-bold tabular-nums text-zinc-700 dark:text-zinc-300 px-1.5 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-800">
+                    <span className="text-[10px] font-bold tabular-nums text-zinc-700 dark:text-zinc-300 px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800">
                       {branch.totalOrders.toLocaleString()} إجمالي
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-zinc-200/50 dark:border-white/[0.04] tabular-nums">
+                  <div className="flex items-center justify-between text-[11px] tabular-nums">
                     <span className="flex items-center gap-1">
                       <span className="text-zinc-400 text-[10px]">خرج للشحن:</span>
-                      <strong className="text-blue-600 dark:text-blue-400 font-bold">{branch.dispatchedOrders}</strong>
+                      <strong className="text-sky-600 dark:text-sky-400 font-bold">{branch.dispatchedOrders}</strong>
                     </span>
                     <span className="flex items-center gap-1">
                       <span className="text-zinc-400 text-[10px]">تم تسليمه:</span>
@@ -298,66 +289,60 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
 
       {/* Column 3: Payment Breakdown & Settlement */}
       <div className="p-3.5 sm:p-4 flex flex-col min-w-0">
-        <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-zinc-150 dark:border-white/[0.06]">
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-200/60 dark:border-white/[0.06]">
           <div className="flex items-center gap-1.5">
-            <div className="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="w-6 h-6 rounded-md bg-zinc-500/10 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shrink-0">
               <CreditCardIcon className="h-3.5 w-3.5" />
             </div>
-            <div>
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
-                طرق الدفع والتسوية
-              </h3>
-            </div>
+            <h3 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+              طرق الدفع والتسوية
+            </h3>
           </div>
           <span className="text-[10px] text-zinc-400 font-mono tabular-nums">
             {Object.keys(paymentStats).length} وسيلة
           </span>
         </div>
 
-        <p className="text-[10px] text-zinc-400 mb-2">توزيع السيولة بين التحصيل عند الاستلام والدفع الإلكتروني المسبق</p>
-
-        <div className="flex-1 overflow-y-auto max-h-[340px] pr-0.5 space-y-2 no-scrollbar">
-          {/* COD Summary Banner */}
-          <div className="p-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] text-xs space-y-1">
-            <div className="flex items-center justify-between font-semibold text-emerald-800 dark:text-emerald-300">
+        <div className="flex-1 overflow-y-auto max-h-[320px] divide-y divide-zinc-100 dark:divide-white/[0.04] no-scrollbar">
+          {/* COD Summary Strip (Seamless, No heavy boxed border) */}
+          <div className="py-2 px-1 space-y-1">
+            <div className="flex items-center justify-between font-bold text-zinc-900 dark:text-white text-xs">
               <span>الدفع عند الاستلام (COD)</span>
-              <span className="tabular-nums font-bold">
+              <span className="tabular-nums">
                 {codOrdersCount.toLocaleString()} طلب ({totalOrders > 0 ? Math.round((codOrdersCount / totalOrders) * 100) : 0}%)
               </span>
             </div>
-            <div className="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 tabular-nums">
-              <span>محصل فعلياً: <strong className="text-emerald-700 dark:text-emerald-400">{formatPrice(codDeliveredRevenue)}</strong></span>
-              <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">
+            <div className="flex items-center justify-between text-[11px] text-zinc-500 tabular-nums">
+              <span>محصل فعلياً: <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">{formatPrice(codDeliveredRevenue)}</strong></span>
+              <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded text-[10px]">
                 {codCollectionRate}% نجاح
               </span>
             </div>
           </div>
 
           {/* Payment Methods List */}
-          <div className="space-y-1.5 pt-0.5">
-            {Object.entries(paymentStats).map(([method, count]) => {
-              const isCod = method.toUpperCase() === "CASH" || method.toUpperCase() === "COD";
-              const pct = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
-              return (
-                <div
-                  key={method}
-                  className="flex items-center justify-between p-2 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors border border-zinc-150 dark:border-white/[0.04] text-xs"
-                >
-                  <div className="min-w-0">
-                    <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate block text-[11px]">
-                      {getPaymentMethodLabel(method)}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 tabular-nums">
-                      {pct}% من الطلبات {isCod ? "• تحصيل كاش" : "• دفع مسبق"}
-                    </span>
-                  </div>
-                  <span className="font-bold text-zinc-900 dark:text-white tabular-nums shrink-0 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[11px]">
-                    {count.toLocaleString()}
+          {Object.entries(paymentStats).map(([method, count]) => {
+            const isCod = method.toUpperCase() === "CASH" || method.toUpperCase() === "COD";
+            const pct = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
+            return (
+              <div
+                key={method}
+                className="flex items-center justify-between py-2 px-1 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors text-xs"
+              >
+                <div className="min-w-0">
+                  <span className="font-medium text-zinc-800 dark:text-zinc-200 truncate block text-[11px]">
+                    {getPaymentMethodLabel(method)}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 tabular-nums">
+                    {pct}% من الطلبات {isCod ? "• كاش عند الاستلام" : "• دفع مسبق"}
                   </span>
                 </div>
-              );
-            })}
-          </div>
+                <span className="font-bold text-zinc-900 dark:text-white tabular-nums shrink-0 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[11px]">
+                  {count.toLocaleString()}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 

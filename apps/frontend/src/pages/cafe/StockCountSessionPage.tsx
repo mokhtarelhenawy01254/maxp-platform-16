@@ -48,7 +48,7 @@ interface WarehouseOption {
 }
 
 export const StockCountSessionPage: React.FC = () => {
-  const { formatCurrency } = useCurrency();
+  const { formatPrice } = useCurrency();
   const [sessions, setSessions] = useState<AuditSession[]>([]);
   const [warehouses, setWarehouses] = useState<WarehouseOption[]>([]);
   const [currentSession, setCurrentSession] = useState<AuditSession | null>(null);
@@ -373,7 +373,7 @@ export const StockCountSessionPage: React.FC = () => {
             <div className="p-2.5 rounded border border-border/60 bg-card text-center">
               <span className="text-[10px] text-muted-foreground block">صافي الفارق المالي</span>
               <span className={`text-sm font-bold tabular-nums ${sessionStats.totalVarianceCost < 0 ? 'text-destructive' : 'text-emerald-500'}`}>
-                {formatCurrency(sessionStats.totalVarianceCost)}
+                {formatPrice(sessionStats.totalVarianceCost)}
               </span>
             </div>
           </div>
@@ -445,7 +445,7 @@ export const StockCountSessionPage: React.FC = () => {
                       <td className="p-2.5 text-center font-mono tabular-nums">
                         {diffCost !== null ? (
                           <span className={diffCost < 0 ? 'text-destructive' : 'text-emerald-500'}>
-                            {formatCurrency(diffCost)}
+                            {formatPrice(diffCost)}
                           </span>
                         ) : (
                           '—'
@@ -493,7 +493,7 @@ export const StockCountSessionPage: React.FC = () => {
                       {new Date(s.startedAt).toLocaleDateString('ar-EG')}
                     </td>
                     <td className="p-3 text-center font-mono tabular-nums">
-                      {formatCurrency(s.totalVarianceValue || 0)}
+                      {formatPrice(s.totalVarianceValue || 0)}
                     </td>
                     <td className="p-3 text-left">
                       <button

@@ -51,6 +51,10 @@ export function useSidebarBadges(): SidebarBadges {
 
   const fetchUnreadTickets = useCallback(async () => {
     if (!user || !isAuthenticated) return;
+    const activeApps = (user as any)?.company?.activeApps;
+    if (Array.isArray(activeApps) && activeApps.length > 0 && !activeApps.some((a: string) => ['order-shipping-turbo', 'order-shipping-hub', 'order-shipping'].includes(a))) {
+      return;
+    }
     const token = tokenManager.getAccessToken();
     if (!token) return;
 

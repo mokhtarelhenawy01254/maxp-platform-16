@@ -135,3 +135,78 @@ async def test_followup_surfaces_approval_message_not_generic_error():
     assert "Execution failed" not in content
     parsed = _json.loads(content.split("\n\n[Directive]")[0])
     assert parsed["status"] == "awaiting_approval"
+
+
+# ── 2026 hardening: read/write partitioning, compaction, tool budget ────────
+
+@pytest.mark.asyncio
+async def test_direct_write_tools_execute_sequentially_and_in_order():
+    """2026 review fix: state-mutating tools must never run in parallel."""
+    import asyncio
+
+    from src.pipeline.stages.skills_pipeline import _execute_tool_calls
+
+    active_writes = 0
+    max_concurrent_writes = 0
+    call_log: list[str] = []
+
+    def make_tool(name: str, is_write: bool, delay: float):
+        async def func(input_data):
+            nonlocal active_writes, max_concurrent_writes
+            if is_write:
+                active_writes += 1
+                max_concurrent_writes = max(max_concurrent_writes, active_writes)
+            await asyncio.sleep(delay)
+            call_log.append(name)
+            if is_write:
+                active_writes -= 1
+            return {"ok": True, "tool": name}
+        return SimpleNamespace(
+            name=name,
+            func=func,
+            input_model=lambda **kw: SimpleNamespace(**kw),
+            approval_mode="never_require",
+        )
+
+    registry = SimpleNamespace(resolve=lambda name: tools_by_name.get(name))
+    tools_by_name = {
+        "order_update_details": make_tool("order_update_details", True, 0.05),
+        "order_confirm": make_tool("order_confirm", True, 0.05),
+        "product_search": make_tool("product_search", False, 0.05),
+    }
+
+    tool_calls = [
+        {"function": {"name": "order_update_details", "arguments": "{}"}},
+        {"function": {"name": "product_search", "arguments": "{}"}},
+        {"function": {"name": "order_confirm", "arguments": "{}"}},
+    ]
+
+    results = await _execute_tool_calls(_ctx(), registry, tool_calls)
+
+    assert [r["tool"] for r in results] == ["order_update_details", "product_search", "order_confirm"]
+    assert max_concurrent_writes == 1, "two writes overlapped — race condition"
+    assert call_log == ["order_update_details", "product_search", "order_confirm"]
+
+
+def test_compaction_tames_oversized_results_and_preserves_awaiting():
+    from src.pipeline.stages.skills_pipeline import _compact_for_llm
+
+    big_catalog = {"products": [{"id": f"p{i}", "name": f"منتج {i}", "description": "وصف طويل " * 30} for i in range(80)]}
+    compacted = _compact_for_llm(big_catalog, tool_name="product_search")
+    import json as _json
+
+    assert len(_json.dumps(compacted, ensure_ascii=False)) < len(_json.dumps(big_catalog, ensure_ascii=False))
+
+    awaiting = {"status": "awaiting_approval", "message": "قالب: التعديل جاهز ومستني موافقتك"}
+    assert _compact_for_llm(awaiting, tool_name="conversion_tool_toggle") == awaiting
+
+
+def test_max_tool_calls_reads_agent_budget():
+    from src.pipeline.stages.skills_pipeline import _max_tool_calls
+
+    ctx = _ctx()
+    assert _max_tool_calls(ctx) == 10  # default without agent
+    ctx.agent = SimpleNamespace(config=SimpleNamespace(budget={"maxToolCallsPerRun": 6}))
+    assert _max_tool_calls(ctx) == 6
+    ctx.agent = SimpleNamespace(config=SimpleNamespace(budget={"maxToolCallsPerRun": "bad"}))
+    assert _max_tool_calls(ctx) == 10

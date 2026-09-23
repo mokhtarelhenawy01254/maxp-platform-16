@@ -62,7 +62,7 @@ interface ProductOption {
 }
 
 export const RecipeManagementPage: React.FC = () => {
-  const { formatCurrency } = useCurrency();
+  const { formatPrice } = useCurrency();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -276,13 +276,13 @@ export const RecipeManagementPage: React.FC = () => {
                 <div>
                   <div className="text-[10px] text-muted-foreground">سعر البيع</div>
                   <div className="text-xs font-semibold tabular-nums">
-                    {formatCurrency(Number(recipe.product?.price || 0))}
+                    {formatPrice(Number(recipe.product?.price || 0))}
                   </div>
                 </div>
                 <div>
                   <div className="text-[10px] text-muted-foreground">تكلفة الخامات</div>
                   <div className="text-xs font-semibold text-amber-500 tabular-nums">
-                    {formatCurrency(recipe.liveTheoreticalCost || recipe.estimatedCost || 0)}
+                    {formatPrice(recipe.liveTheoreticalCost || recipe.estimatedCost || 0)}
                   </div>
                 </div>
                 <div>
@@ -352,7 +352,7 @@ export const RecipeManagementPage: React.FC = () => {
                   <option value="">اختر المشروب…</option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({formatCurrency(p.price)})
+                      {p.name} ({formatPrice(p.price)})
                     </option>
                   ))}
                 </select>
@@ -406,7 +406,7 @@ export const RecipeManagementPage: React.FC = () => {
                         <option value="">اختر المادة الخام…</option>
                         {products.map((p) => (
                           <option key={p.id} value={p.id}>
-                            {p.name} (تكلفة: {formatCurrency(p.cost || 0)})
+                            {p.name} (تكلفة: {formatPrice(p.cost || 0)})
                           </option>
                         ))}
                       </select>
@@ -448,7 +448,7 @@ export const RecipeManagementPage: React.FC = () => {
                 <div className="mt-3 pt-2 border-t border-border flex justify-between items-center text-xs">
                   <span className="text-muted-foreground">التكلفة التقديرية المحسوبة للمشروب:</span>
                   <span className="font-bold text-amber-500 tabular-nums">
-                    {formatCurrency(liveModalCost)}
+                    {formatPrice(liveModalCost)}
                   </span>
                 </div>
               </div>

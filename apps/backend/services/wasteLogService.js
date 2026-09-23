@@ -39,7 +39,7 @@ async function recordWaste({
         warehouseId,
         productId,
         quantity: numQty,
-        unit: unit || product.unit || 'G',
+        unit: unit || 'G',
         reason,
         costPerUnit,
         totalCost,
@@ -48,10 +48,10 @@ async function recordWaste({
       },
       include: {
         product: {
-          select: { id: true, name: true, sku: true, unit: true }
+          select: { id: true, name: true, sku: true }
         },
         warehouse: {
-          select: { id: true, name: true, code: true }
+          select: { id: true, name: true, type: true }
         }
       }
     });
@@ -116,10 +116,10 @@ async function listWasteLogs(companyId, { page = 1, limit = 50, reason, warehous
       take: limit,
       include: {
         product: {
-          select: { id: true, name: true, sku: true, unit: true }
+          select: { id: true, name: true, sku: true }
         },
         warehouse: {
-          select: { id: true, name: true, code: true }
+          select: { id: true, name: true, type: true }
         }
       },
       orderBy: { createdAt: 'desc' }

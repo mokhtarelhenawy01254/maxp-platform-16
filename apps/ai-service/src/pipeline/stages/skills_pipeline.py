@@ -78,6 +78,89 @@ async def _execute_one_tool(ctx: PipelineContext, registry: Any, tc: dict) -> di
 
 
 
+def _is_direct_write_tool(func_name: str) -> bool:
+    """True for tools that mutate state AND execute directly (no approval gate)."""
+    try:
+        from src.tools.registry import DIRECT_WRITE_TOOL_NAMES
+
+        return func_name in DIRECT_WRITE_TOOL_NAMES
+    except Exception:
+        return False
+
+
+async def _execute_tool_calls(ctx: PipelineContext, registry: Any, tool_calls: list[dict]) -> list[dict]:
+    """Execute tool calls with read/write partitioning.
+
+    Direct-write tools (order_confirm, order_update_details, ...) run
+    SEQUENTIALLY in call order to avoid racing two mutations of the same
+    entity (2026 review fix). Reads and approval-gated calls (which never
+    execute) run in parallel. Returned results preserve tool_calls order —
+    _build_followup_messages zips them by index.
+    """
+    results: list[dict | None] = [None] * len(tool_calls)
+    parallel_idx: list[int] = []
+    sequential_idx: list[int] = []
+
+    for idx, tc in enumerate(tool_calls):
+        name = tc.get("function", {}).get("name", "")
+        if _is_direct_write_tool(name):
+            sequential_idx.append(idx)
+        else:
+            parallel_idx.append(idx)
+
+    if parallel_idx:
+        parallel_results = await asyncio.gather(
+            *[_execute_one_tool(ctx, registry, tool_calls[i]) for i in parallel_idx]
+        )
+        for i, res in zip(parallel_idx, parallel_results):
+            results[i] = res
+
+    for i in sequential_idx:
+        results[i] = await _execute_one_tool(ctx, registry, tool_calls[i])
+
+    return [r or {"tool": "unknown", "status": "error", "error": "tool result missing"} for r in results]
+
+
+def _compact_for_llm(result: Any, tool_name: str = "") -> Any:
+    """Compact oversized tool results before they enter the LLM message list.
+
+    Full-fidelity results stay in ctx.executed_tools/tool_evidence for the
+    validators; only what the model sees is compacted (Hermes ❽.9 law).
+    Awaiting-approval payloads pass through untouched (the reply template
+    inside must survive verbatim).
+    """
+    try:
+        from src.agents.compactor import ToolResultCompactor
+
+        compacted = ToolResultCompactor.compact(result, tool_name=tool_name)
+    except Exception:
+        compacted = result
+
+    try:
+        serialized = json.dumps(compacted, ensure_ascii=False, default=str)
+        if len(serialized) > 8000:
+            compacted = {
+                "truncated": True,
+                "note": "نتيجة الأداة ضخمة واتقتصت — استعلم بحدود أصغر لو محتاج تفاصيل أكتر.",
+                "preview": serialized[:6000],
+            }
+    except Exception:
+        pass
+    return compacted
+
+
+def _max_tool_calls(ctx: PipelineContext) -> int:
+    """Per-run tool call budget from the agent manifest (default 10)."""
+    agent = getattr(ctx, "agent", None)
+    budget = getattr(getattr(agent, "config", None), "budget", None)
+    if isinstance(budget, dict):
+        try:
+            return max(1, int(budget.get("maxToolCallsPerRun", 10)))
+        except (TypeError, ValueError):
+            pass
+    return 10
+
+
 async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     """Replace resolve_intent + route_to_tools + execute_tools with one call.
 
@@ -212,7 +295,13 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 }
                 break
 
-        results = await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in provider_response.tool_calls])
+        # Per-run tool call budget (agent.json budget.maxToolCallsPerRun)
+        call_cap = _max_tool_calls(ctx)
+        if len(provider_response.tool_calls) > call_cap:
+            logger.warning("tool_calls_capped_first_round", kept=call_cap, total=len(provider_response.tool_calls))
+            provider_response.tool_calls = provider_response.tool_calls[:call_cap]
+
+        results = await _execute_tool_calls(ctx, registry, provider_response.tool_calls)
         for item in results:
             executed.append(item)
             if item["status"] == "success":
@@ -226,7 +315,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             tool_dicts = _build_skill_tool_dicts(skills, ctx)
             retry_response = await _raw_llm_call(ctx, retry_messages, tools=tool_dicts)
             if retry_response.tool_calls:
-                retry_results = await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in retry_response.tool_calls])
+                retry_results = await _execute_tool_calls(ctx, registry, retry_response.tool_calls)
                 ri = 0
                 for i, item in enumerate(executed):
                     if ri >= len(retry_results):
@@ -282,8 +371,20 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             max_rounds = 4
             current_round = 0
             final_response = provider_response
+            call_cap = _max_tool_calls(ctx)
             while current_round < max_rounds:
                 current_round += 1
+                if len(executed) >= call_cap:
+                    logger.warning("tool_call_budget_exhausted", executed=len(executed), cap=call_cap)
+                    followup_messages.append({
+                        "role": "system",
+                        "content": (
+                            f"[Budget]: وصلت الحد الأقصى لعدد الأدوات في الجلسة ({call_cap}). "
+                            "متستدعيش أي أداة تانية — لخص للعميل النتيجة بالمتاح فورًا."
+                        ),
+                    })
+                    final_response = await _raw_llm_call(ctx, followup_messages, tools=[], tool_choice="none")
+                    break
                 final_response = await _raw_llm_call(ctx, followup_messages, tools=tool_dicts, tool_choice="auto")
                 if final_response.tool_calls:
                     # 🛡️ 2026 Stall Guard & Failure Deduplication
@@ -362,6 +463,8 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                         tc_name = tc.get("function", {}).get("name", "")
                         tc_args = tc.get("function", {}).get("arguments", {})
                         result_content = loop_guard.stub_if_duplicate(tc_name, tc_args, result_content)
+                        if status == "success":
+                            result_content = _compact_for_llm(result_content, tool_name=tc_name)
 
                         followup_messages.append({
                             "role": "tool",
@@ -761,7 +864,8 @@ async def _build_followup_messages(
         is_last = (idx == len(tool_calls) - 1)
 
         if status == "success":
-            content_str = json.dumps(result, ensure_ascii=False, cls=DecimalEncoder, default=str)
+            compacted = _compact_for_llm(result, tool_name=item.get("tool", ""))
+            content_str = json.dumps(compacted, ensure_ascii=False, cls=DecimalEncoder, default=str)
             if is_last and followup_directive:
                 content_str += f"\n\n[Directive]: {followup_directive}"
             messages.append(

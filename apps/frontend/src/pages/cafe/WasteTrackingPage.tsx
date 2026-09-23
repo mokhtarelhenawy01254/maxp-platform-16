@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { config } from '../../config';
 import { authService } from '../../services/authService';
+import { companyAwareApi } from '../../services/companyAwareApi';
 import CreateWasteModal from './CreateWasteModal';
 
 interface WasteLog {
@@ -71,15 +72,12 @@ export default function WasteTrackingPage() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const token = authService.getAccessToken();
       const params = new URLSearchParams();
       if (selectedReasonFilter) params.append('reason', selectedReasonFilter);
 
-      const res = await fetch(`${config.apiUrl}/cafe/waste?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success && data.data) {
+      const res = await companyAwareApi.get<any>(`/cafe/waste?${params.toString()}`);
+      const data = res.data;
+      if (data?.success && data.data) {
         setLogs(data.data.logs || []);
         setTotalWasteValue(data.data.totalWasteValue || 0);
         setTotalWasteQty(data.data.totalWasteQuantity || 0);
@@ -94,15 +92,14 @@ export default function WasteTrackingPage() {
 
   const fetchMeta = async () => {
     try {
-      const token = authService.getAccessToken();
       const [prodRes, whRes] = await Promise.all([
-        fetch(`${config.apiUrl}/products?limit=150`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${config.apiUrl}/warehouses`, { headers: { Authorization: `Bearer ${token}` } })
+        companyAwareApi.get<any>('/products?limit=150'),
+        companyAwareApi.get<any>('/warehouses')
       ]);
-      const prodData = await prodRes.json();
-      const whData = await whRes.json();
+      const prodData = prodRes.data;
+      const whData = whRes.data;
 
-      if (prodData.success && prodData.data) {
+      if (prodData?.success && prodData.data) {
         const rawOnly = prodData.data.map((p: any) => ({
           id: p.id,
           name: p.name,
@@ -117,7 +114,7 @@ export default function WasteTrackingPage() {
         }
       }
 
-      if (whData.success && whData.data) {
+      if (whData?.success && whData.data) {
         setWarehouses(whData.data);
         if (whData.data.length > 0) setFormWarehouseId(whData.data[0].id);
       }
@@ -141,21 +138,13 @@ export default function WasteTrackingPage() {
   }) => {
     try {
       setSubmitting(true);
-      const token = authService.getAccessToken();
-      const res = await fetch(`${config.apiUrl}/cafe/waste`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-      const data = await res.json();
-      if (data.success) {
+      const res = await companyAwareApi.post<any>('/cafe/waste', formData);
+      const data = res.data;
+      if (data?.success) {
         setShowLogModal(false);
         await fetchLogs();
       } else {
-        alert(data.message || 'فشل تسجيل الهدر');
+        alert(data?.message || 'فشل تسجيل الهدر');
       }
     } catch (err) {
       console.error(err);
@@ -174,27 +163,19 @@ export default function WasteTrackingPage() {
     if (!window.confirm(`هل تريد تسجيل هدر معايرة مطحنة 50 جم لـ "${coffeeProd.name}" فوراً؟`)) return;
 
     try {
-      const token = authService.getAccessToken();
-      const res = await fetch(`${config.apiUrl}/cafe/waste`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          productId: coffeeProd.id,
-          warehouseId: formWarehouseId,
-          quantity: 50,
-          unit: 'G',
-          reason: 'CALIBRATION_DIAL_IN',
-          notes: 'معايرة سريعة لضبط استخلاص الإسبريسو الصباحي'
-        })
+      const res = await companyAwareApi.post<any>('/cafe/waste', {
+        productId: coffeeProd.id,
+        warehouseId: formWarehouseId,
+        quantity: 50,
+        unit: 'G',
+        reason: 'CALIBRATION_DIAL_IN',
+        notes: 'معايرة سريعة لضبط استخلاص الإسبريسو الصباحي'
       });
-      const data = await res.json();
-      if (data.success) {
+      const data = res.data;
+      if (data?.success) {
         await fetchLogs();
       } else {
-        alert(data.message);
+        alert(data?.message);
       }
     } catch (err) {
       console.error(err);

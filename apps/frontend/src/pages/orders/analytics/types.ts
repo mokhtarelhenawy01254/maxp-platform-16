@@ -32,6 +32,8 @@ export interface GovernorateDetail {
   returnedCount: number;
   revenue: number;
   shippingCost: number;
+  lostShippingCost?: number;
+  avgShippingCost?: number;
   deliveryRate: number;
   returnRate: number;
   sharePct: number;
@@ -46,6 +48,7 @@ export interface ShippingPerformance {
   inTransitOrders: number;
   deliveryRate: number;
   returnRate: number;
+  avgDeliveryDays?: number;
   totalRevenue: number;
   codCollected: number;
   uncollectedCash?: number;

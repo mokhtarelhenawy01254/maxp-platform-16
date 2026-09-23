@@ -66,6 +66,36 @@ async function seedCafeDemo() {
     console.log("   Updated user password and company:", user.id);
   }
 
+  console.log("2.5. Binding user to company in UserCompany table...");
+  const ownerRole = await p.role.findFirst({
+    where: { key: 'OWNER', isBuiltIn: true }
+  });
+  console.log("   Found OWNER role:", ownerRole?.id);
+
+  await p.userCompany.upsert({
+    where: {
+      userId_companyId: {
+        userId: user.id,
+        companyId: company.id
+      }
+    },
+    create: {
+      userId: user.id,
+      companyId: company.id,
+      role: 'OWNER',
+      roleId: ownerRole?.id || null,
+      isActive: true,
+      isDefault: true
+    },
+    update: {
+      role: 'OWNER',
+      roleId: ownerRole?.id || null,
+      isActive: true,
+      isDefault: true
+    }
+  });
+  console.log("   UserCompany binding verified.");
+
   console.log("3. Installing marketplace apps...");
   const targetAppSlugs = ['cafe-restaurant-pro', 'pos-pro', 'inventory-pro'];
   for (const slug of targetAppSlugs) {

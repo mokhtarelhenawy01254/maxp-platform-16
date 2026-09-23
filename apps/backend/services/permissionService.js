@@ -226,7 +226,48 @@ const getUserPermissions = async (userId, companyId) => {
     },
   });
 
-  if (!userCompany) return [];
+  if (!userCompany) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, role: true, companyId: true },
+      });
+      if (user && user.companyId === companyId) {
+        const roleKey = user.role === 'OWNER' ? 'OWNER' : (user.role || 'AGENT');
+        const dbRole = await prisma.role.findFirst({
+          where: { key: roleKey, isBuiltIn: true, OR: [{ companyId: '__system__' }, { companyId: null }] },
+          include: { permissions: { include: { permission: true } } },
+        });
+        const VALID_ROLE_ENUMS = ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER', 'AGENT', 'AFFILIATE'];
+        userCompany = await prisma.userCompany.create({
+          data: {
+            userId,
+            companyId,
+            role: VALID_ROLE_ENUMS.includes(roleKey) ? roleKey : 'AGENT',
+            roleId: dbRole?.id || null,
+            isActive: true,
+            isDefault: true,
+          },
+          include: {
+            roleRef: {
+              include: {
+                permissions: {
+                  include: { permission: true }
+                }
+              }
+            }
+          }
+        }).catch(() => null);
+
+        if (dbRole?.permissions?.length) {
+          return dbRole.permissions.map(rp => rp.permission.key);
+        }
+      }
+    } catch (e) {
+      console.warn('[PERMISSIONS] Auto-heal userCompany failed:', e.message);
+    }
+    return [];
+  }
 
   if (userCompany.roleRef) {
     const perms = userCompany.roleRef.permissions.map(rp => rp.permission.key);

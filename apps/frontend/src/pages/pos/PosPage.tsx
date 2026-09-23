@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { config } from "../../config";
 import { authService } from "../../services/authService";
+import { companyAwareApi } from "../../services/companyAwareApi";
 import { useTheme } from "../../hooks/useTheme";
 import {
   buildOptimizedUploadImageUrl,
@@ -293,26 +294,20 @@ const PosPage = () => {
 
   const fetchCloudTabs = useCallback(async () => {
     try {
-      const token = authService.getAccessToken();
-      const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = "Bearer " + token;
-      const res = await fetch(`${config.apiUrl}/cafe/tables`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && Array.isArray(data.data)) {
-          const mapped: OpenTab[] = data.data.map((t: any) => ({
-            id: t.id,
-            name: t.tableName,
-            items: Array.isArray(t.items) ? t.items : [],
-            customer: t.customerName ? { id: "guest", name: t.customerName, phone: t.customerPhone || "" } : null,
-            createdAt: t.createdAt,
-            subtotal: t.subtotal,
-            total: t.total,
-            kotPrintedAt: t.kotPrintedAt
-          }));
-          setOpenTabs(mapped);
-          localStorage.setItem("pos_open_tabs", JSON.stringify(mapped));
-        }
+      const res = await companyAwareApi.get<any>("/cafe/tables");
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        const mapped: OpenTab[] = res.data.data.map((t: any) => ({
+          id: t.id,
+          name: t.tableName,
+          items: Array.isArray(t.items) ? t.items : [],
+          customer: t.customerName ? { id: "guest", name: t.customerName, phone: t.customerPhone || "" } : null,
+          createdAt: t.createdAt,
+          subtotal: t.subtotal,
+          total: t.total,
+          kotPrintedAt: t.kotPrintedAt
+        }));
+        setOpenTabs(mapped);
+        localStorage.setItem("pos_open_tabs", JSON.stringify(mapped));
       }
     } catch {
       // offline fallback
@@ -321,15 +316,9 @@ const PosPage = () => {
 
   const fetchModifiers = useCallback(async () => {
     try {
-      const token = authService.getAccessToken();
-      const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = "Bearer " + token;
-      const res = await fetch(`${config.apiUrl}/cafe/modifiers`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && Array.isArray(data.data)) {
-          setModifierGroups(data.data);
-        }
+      const res = await companyAwareApi.get<any>("/cafe/modifiers");
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        setModifierGroups(res.data.data);
       }
     } catch {
       // non-cafe tenant or offline
@@ -342,22 +331,15 @@ const PosPage = () => {
     const tabName = parkTableName.trim() || activeTabName || `طاولة ${openTabs.length + 1}`;
 
     try {
-      const token = authService.getAccessToken();
-      const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = "Bearer " + token;
-      await fetch(`${config.apiUrl}/cafe/tables`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          tabId: activeTabId || undefined,
-          tableName: tabName,
-          items: cart,
-          subtotal,
-          tax,
-          total,
-          customerName: customer?.name,
-          customerPhone: customer?.phone
-        })
+      await companyAwareApi.post("/cafe/tables", {
+        tabId: activeTabId || undefined,
+        tableName: tabName,
+        items: cart,
+        subtotal,
+        tax,
+        total,
+        customerName: customer?.name,
+        customerPhone: customer?.phone
       });
       await fetchCloudTabs();
     } catch {
@@ -401,13 +383,7 @@ const PosPage = () => {
     e.stopPropagation();
     if (!window.confirm("هل تريد إلغاء هذه الطاولة المعلقة وحذفها؟")) return;
     try {
-      const token = authService.getAccessToken();
-      const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = "Bearer " + token;
-      await fetch(`${config.apiUrl}/cafe/tables/${tabId}`, {
-        method: "DELETE",
-        headers
-      });
+      await companyAwareApi.delete(`/cafe/tables/${tabId}`);
     } catch {
       // offline
     }
@@ -430,13 +406,7 @@ const PosPage = () => {
     setKotFiring(true);
     try {
       if (activeTabId) {
-        const token = authService.getAccessToken();
-        const headers: HeadersInit = { "Content-Type": "application/json" };
-        if (token) headers["Authorization"] = "Bearer " + token;
-        await fetch(`${config.apiUrl}/cafe/tables/${activeTabId}/fire-kot`, {
-          method: "POST",
-          headers
-        });
+        await companyAwareApi.post(`/cafe/tables/${activeTabId}/fire-kot`, {});
       }
 
       const locale = i18n.language === "ar" ? "ar-EG" : "en-US";

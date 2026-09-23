@@ -4,7 +4,7 @@ const STORE_APP_SLUGS = ['store-pro', 'store', 'store-basic', 'ecommerce-basic',
 const STORE_CORE_SLUGS = ['ecommerce-basic', 'store-basic', 'store'];
 
 const LEGACY_APP_SLUG_ALIASES = {
-  'order-core': STORE_CORE_SLUGS,
+  'order-core': [...STORE_CORE_SLUGS, 'pos-pro', 'cafe-restaurant-pro'],
   'order-invoicing': STORE_CORE_SLUGS,
   // Grandfathering: companies with old monolithic store apps keep access to new granular apps
   'pos-pro': STORE_APP_SLUGS,

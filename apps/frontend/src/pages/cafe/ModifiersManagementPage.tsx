@@ -33,7 +33,7 @@ interface ProductOption {
 }
 
 export const ModifiersManagementPage: React.FC = () => {
-  const { formatCurrency } = useCurrency();
+  const { formatPrice } = useCurrency();
   const [groups, setGroups] = useState<ModifierGroup[]>([]);
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -216,7 +216,7 @@ export const ModifiersManagementPage: React.FC = () => {
                   <div key={idx} className="flex justify-between items-center text-xs py-1">
                     <span className="text-muted-foreground">{opt.name}</span>
                     <span className="font-mono tabular-nums font-medium">
-                      {opt.additionalPrice > 0 ? `+${formatCurrency(opt.additionalPrice)}` : 'مجاناً'}
+                      {opt.additionalPrice > 0 ? `+${formatPrice(opt.additionalPrice)}` : 'مجاناً'}
                     </span>
                   </div>
                 ))}

@@ -4,9 +4,8 @@ import {
   ClockIcon,
   BanknotesIcon,
   TruckIcon,
-  SparklesIcon,
   ArrowTopRightOnSquareIcon,
-  ExclamationCircleIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 
 interface OrdersActionCenterProps {
@@ -25,156 +24,146 @@ export const OrdersActionCenter: React.FC<OrdersActionCenterProps> = ({
   delayedRevenue,
   uncollectedCod,
   pendingFulfillmentCount,
-  returnedCount,
   returnedCost,
-  prepaidAdvantage,
   formatPrice,
 }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="border-b border-zinc-200/80 dark:border-white/[0.08] p-3 sm:p-4 bg-zinc-50/60 dark:bg-[#070709]">
-      <div className="flex items-center justify-between gap-2 mb-3">
+    <div className="border-b border-zinc-200/80 dark:border-white/[0.08] bg-white dark:bg-[#070709]">
+      {/* Sleek Command Bar Header */}
+      <div className="px-3.5 sm:px-4 py-2 border-b border-zinc-200/60 dark:border-white/[0.06] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-            <ExclamationCircleIcon className="h-4 w-4" />
-          </div>
-          <div>
-            <h2 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-              <span>مركز التدخل السريع والعمليات اليومية</span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
-                مطلوب اتخاذ قرار
-              </span>
-            </h2>
-          </div>
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <h2 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
+            مركز التدخل السريع والعمليات اليومية
+          </h2>
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-white/10 text-zinc-600 dark:text-zinc-300">
+            أولويات الإدارة
+          </span>
         </div>
-        <p className="text-[11px] text-zinc-400 hidden sm:block">
-          مهام تشغيلية حرجة تحتاج مراجعتك صباح اليوم لتجنب تلف الشحنات أو تأخر التحصيل
-        </p>
+        <div className="text-[11px] text-zinc-400 font-mono hidden sm:block">
+          SLA Live Dispatch & Cash Flow
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
+      {/* Single-Surface 4-Action Grid: ZERO Box-in-Box, Pure Vertical Dividers */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x sm:divide-x-reverse divide-zinc-200/80 dark:divide-white/[0.08]">
         
-        {/* Action 1: Delayed In-Transit Shipments */}
-        <div className="p-3 rounded-lg bg-white dark:bg-[#0d0d10] border border-amber-500/30 shadow-xs flex flex-col justify-between space-y-2">
-          <div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                <ClockIcon className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                <span>شحنات متأخرة بالطريق</span>
-              </span>
-              <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 tabular-nums">
-                {delayedCount > 0 ? `${delayedCount} شحنة` : "لا يوجد تأخير"}
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
-              شحنات خرجت مع شركات الشحن منذ أكثر من 48 ساعة ولم تسلم حتى الآن، تحتاج تتبعاً فورياً مع المناديب.
-            </p>
-          </div>
-
-          <div className="pt-2 border-t border-zinc-100 dark:border-white/[0.06] flex items-center justify-between">
-            <span className="text-[10px] text-zinc-400 tabular-nums">
-              قيمة: <strong className="text-zinc-700 dark:text-zinc-300">{formatPrice(delayedRevenue)}</strong>
+        {/* 1. Delayed In-Transit (>48h) */}
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between space-y-2 hover:bg-amber-500/[0.03] transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+              <ClockIcon className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>شحنات متأخرة بالطريق</span>
             </span>
-            <button
-              type="button"
-              onClick={() => navigate("/orders?status=SHIPPED")}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-800 hover:underline active:scale-[0.98]"
-            >
-              <span>تصفية الشحنات</span>
-              <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-            </button>
+            <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 tabular-nums">
+              {delayedCount > 0 ? `${delayedCount} شحنة` : "0 شحنة"}
+            </span>
           </div>
+
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400">قيمة الشحنات:</span>
+            <span className="font-bold text-zinc-900 dark:text-white tabular-nums">
+              {formatPrice(delayedRevenue)}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate("/orders?status=SHIPPED")}
+            className="w-full py-1.5 px-2.5 rounded-md text-[11px] font-semibold bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-500/20 flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
+          >
+            <span>تتبع وتصفية الشحنات</span>
+            <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+          </button>
         </div>
 
-        {/* Action 2: Uncollected COD Cash on the street */}
-        <div className="p-3 rounded-lg bg-white dark:bg-[#0d0d10] border border-blue-500/30 shadow-xs flex flex-col justify-between space-y-2">
-          <div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                <BanknotesIcon className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                <span>سيولة معلقة في الشارع</span>
-              </span>
-              <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 tabular-nums">
-                {formatPrice(uncollectedCod)}
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
-              أموال شحنات COD قيد التوصيل والتحصيل مع مناديب وشركات الشحن، بانتظار التسوية والتوريد.
-            </p>
+        {/* 2. Uncollected COD Cash */}
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between space-y-2 hover:bg-sky-500/[0.03] transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+              <BanknotesIcon className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
+              <span>سيولة في ذمة المناديب</span>
+            </span>
+            <span className="text-[11px] font-bold text-sky-700 dark:text-sky-400 tabular-nums">
+              قيد التحصيل
+            </span>
           </div>
 
-          <div className="pt-2 border-t border-zinc-100 dark:border-white/[0.06] flex items-center justify-between">
-            <span className="text-[10px] text-zinc-400">ذمة المناديب</span>
-            <button
-              type="button"
-              onClick={() => navigate("/shipping/settlements")}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline active:scale-[0.98]"
-            >
-              <span>سجل التسويات</span>
-              <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-            </button>
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400">المبلغ المعلق:</span>
+            <span className="font-bold text-zinc-900 dark:text-white tabular-nums">
+              {formatPrice(uncollectedCod)}
+            </span>
           </div>
+
+          <button
+            type="button"
+            onClick={() => navigate("/shipping/settlements")}
+            className="w-full py-1.5 px-2.5 rounded-md text-[11px] font-semibold bg-sky-500/10 text-sky-800 dark:text-sky-300 hover:bg-sky-500/20 flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
+          >
+            <span>مراجعة سجل التسويات</span>
+            <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+          </button>
         </div>
 
-        {/* Action 3: Pending Warehouse Dispatch */}
-        <div className="p-3 rounded-lg bg-white dark:bg-[#0d0d10] border border-zinc-200 dark:border-white/10 shadow-xs flex flex-col justify-between space-y-2">
-          <div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                <TruckIcon className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                <span>بانتظار التجهيز والشحن</span>
-              </span>
-              <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
-                {pendingFulfillmentCount.toLocaleString()} طلب
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
-              طلبات مؤكدة من العملاء داخل المستودع تنتظر الطباعة والتجهيز لتسليمها لشركة الشحن لتقليل زمن التسليم.
-            </p>
+        {/* 3. Pending Fulfillment */}
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between space-y-2 hover:bg-emerald-500/[0.03] transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+              <TruckIcon className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>بانتظار التجهيز والشحن</span>
+            </span>
+            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
+              {pendingFulfillmentCount.toLocaleString()} طلب
+            </span>
           </div>
 
-          <div className="pt-2 border-t border-zinc-100 dark:border-white/[0.06] flex items-center justify-between">
-            <span className="text-[10px] text-zinc-400">سرعة الشحن ترفع التسليم</span>
-            <button
-              type="button"
-              onClick={() => navigate("/orders?status=CONFIRMED")}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline active:scale-[0.98]"
-            >
-              <span>بدء التجهيز</span>
-              <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-            </button>
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400">الحالة التشغيلية:</span>
+            <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+              جاهز للطباعة والتسليم
+            </span>
           </div>
+
+          <button
+            type="button"
+            onClick={() => navigate("/orders?status=CONFIRMED")}
+            className="w-full py-1.5 px-2.5 rounded-md text-[11px] font-semibold bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-500/20 flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
+          >
+            <span>بدء تجهيز الشحنات</span>
+            <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+          </button>
         </div>
 
-        {/* Action 4: High ROI AI Strategic Recommendation */}
-        <div className="p-3 rounded-lg bg-gradient-to-br from-indigo-50/70 to-purple-50/50 dark:from-indigo-950/30 dark:to-purple-950/20 border border-indigo-500/20 shadow-xs flex flex-col justify-between space-y-2">
-          <div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
-                <SparklesIcon className="h-3.5 w-3.5 text-purple-600 shrink-0" />
-                <span>توصية الدفع المسبق والعربون</span>
-              </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
-                ROI مضاعف
-              </span>
-            </div>
-            <p className="text-[11px] text-zinc-600 dark:text-zinc-300 mt-1 line-clamp-2">
-              تحويل 10% من طلبات COD إلى دفع مسبق أو عربون شحن (50 ج.م إنستاباي) يوفر ما يقارب {formatPrice(returnedCost > 0 ? returnedCost * 0.4 : 12000)} شهرياً من هدر الشحن.
-            </p>
+        {/* 4. Shipping Deposit Strategy */}
+        <div className="p-3 sm:p-3.5 flex flex-col justify-between space-y-2 hover:bg-zinc-500/[0.03] transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+              <ShieldCheckIcon className="h-4 w-4 text-zinc-700 dark:text-zinc-300 shrink-0" />
+              <span>وفر عربون الشحن التقديري</span>
+            </span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-200/80 dark:bg-white/10 text-zinc-800 dark:text-zinc-200">
+              حماية الأرباح
+            </span>
           </div>
 
-          <div className="pt-2 border-t border-indigo-200/50 dark:border-white/[0.06] flex items-center justify-between">
-            <span className="text-[10px] text-indigo-700 dark:text-indigo-300 font-medium">عربون الشحن</span>
-            <button
-              type="button"
-              onClick={() => navigate("/store/checkout-settings")}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 dark:text-purple-300 hover:underline active:scale-[0.98]"
-            >
-              <span>تفعيل العربون</span>
-              <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-            </button>
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400">وفر هدر الشحن:</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+              +{formatPrice(returnedCost > 0 ? returnedCost * 0.4 : 12000)}/شهرياً
+            </span>
           </div>
+
+          <button
+            type="button"
+            onClick={() => navigate("/store/checkout-settings")}
+            className="w-full py-1.5 px-2.5 rounded-md text-[11px] font-semibold bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 flex items-center justify-center gap-1.5 transition-all active:scale-[0.97]"
+          >
+            <span>ضبط اشتراط العربون</span>
+            <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+          </button>
         </div>
 
       </div>
