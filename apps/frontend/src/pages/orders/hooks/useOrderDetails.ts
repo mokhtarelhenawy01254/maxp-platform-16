@@ -132,6 +132,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     tax: 0,
     discount: 0,
     discountReason: "",
+    customerRating: "UNKNOWN",
   });
   const [selectedGovernmentId, setSelectedGovernmentId] = useState<
     number | null
@@ -606,6 +607,10 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
           tax: enhancedOrder.tax || 0,
           discount: enhancedOrder.discount || 0,
           discountReason: enhancedOrder.discountReason || "",
+          customerRating:
+            enhancedOrder.customerRating ||
+            enhancedOrder.customer?.customerRating ||
+            "UNKNOWN",
         });
 
         // Logic to set selectedGovernmentId moved to separate useEffect
@@ -921,6 +926,16 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
         `/orders-new/simple/${encodedOrderNumber}`,
         detailsBody,
       );
+
+      // 1.1 Update Customer Rating if changed
+      if (editForm.customerRating && editForm.customerRating !== order?.customerRating) {
+        await apiClient.put(
+          `/orders-new/simple/${encodedOrderNumber}/customer-rating`,
+          { rating: editForm.customerRating }
+        ).catch((err) => {
+          console.warn("Failed to update customer rating during order save:", err.message);
+        });
+      }
 
       // 2. Update Items
       const itemsToUpdate = editForm.items || [];

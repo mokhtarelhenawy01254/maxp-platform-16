@@ -100,6 +100,8 @@ export interface Order {
   createdAt: string;
   conversationId?: string;
   updatedAt: string;
+  customerId?: string;
+  customerRating?: string;
   // Enhanced fields
   confidence?: number;
   extractionMethod?: string;
@@ -110,6 +112,7 @@ export interface Order {
     phone?: string;
     email?: string;
     facebookId?: string;
+    customerRating?: string;
   };
   conversation?: {
     id: string;
@@ -618,6 +621,8 @@ const transformOrder = (order: RawOrder): Order => {
     extractionMethod:
       order.extractionMethod || order.metadata?.extractionMethod,
     customer: order.customer,
+    customerId: order.customerId || order.customer?.id,
+    customerRating: order.customerRating || order.customer?.customerRating,
     conversation: order.conversation,
     metadata: order.metadata || {},
     // Scheduled order fields
@@ -3051,6 +3056,22 @@ const Orders: React.FC = () => {
     ],
   );
 
+  const handleCustomerRatingChange = (orderNumber: string, newRating: string) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.orderNumber === orderNumber || o.id === orderNumber
+          ? {
+              ...o,
+              customerRating: newRating,
+              customer: o.customer
+                ? { ...o.customer, customerRating: newRating }
+                : undefined,
+            }
+          : o
+      )
+    );
+  };
+
   return (
     <div
       data-orders-page="true"
@@ -3174,7 +3195,7 @@ const Orders: React.FC = () => {
         ]}
       />
 
-            <OrdersMobileList
+      <OrdersMobileList
         orders={orders}
         loading={loading}
         ordersLoadError={ordersLoadError}
@@ -3189,6 +3210,7 @@ const Orders: React.FC = () => {
         onToggleSelection={toggleOrderSelection}
         onMarkAsViewed={handleMarkAsViewed}
         onClearFilters={clearAllFilters}
+        onCustomerRatingChange={handleCustomerRatingChange}
       />
 
       <OrdersTable
@@ -3216,6 +3238,7 @@ const Orders: React.FC = () => {
         onPageChange={handlePageChange}
         onLimitChange={handleLimitChange}
         onDensityChange={changeTableDensity}
+        onCustomerRatingChange={handleCustomerRatingChange}
       />
 
       {!loading && orders.length > 0 && (

@@ -7,10 +7,10 @@ import {
   ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import { summarizeOrderDocumentItems } from "../../../utils/orderDocumentQuantityOffers";
-import { toStandardDigits } from "../../../utils/validation";
 import { OrdersSkeleton } from "./OrdersSkeleton";
 import { OrdersEmptyState } from "./OrdersEmptyState";
 import { OrdersPagination } from "./OrdersPagination";
+import { CustomerRatingBadge } from "../../../components/orders/CustomerRatingBadge";
 import type { Order } from "../Orders";
 
 const toStandardDigits = (str?: string | null): string => {
@@ -82,6 +82,7 @@ interface OrdersTableProps {
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
   onDensityChange: (density: "comfortable" | "compact") => void;
+  onCustomerRatingChange?: (orderNumber: string, newRating: string) => void;
 }
 
 export const OrdersTable: React.FC<OrdersTableProps> = ({
@@ -109,6 +110,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
   onPageChange,
   onLimitChange,
   onDensityChange,
+  onCustomerRatingChange,
 }) => {
   const { t } = useTranslation();
   const {
@@ -300,18 +302,30 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                     )}
                     {columns.includes("customer") && (
                       <td className={cellPadding}>
-                        <div className="flex flex-col leading-tight">
+                        <div className="flex flex-col gap-1 leading-tight">
                           <span className="truncate max-w-[190px] text-sm font-medium text-slate-900 dark:text-slate-100">
                             {getCustomerDisplayName(order)}
                           </span>
-                          {order.customerPhone && (
-                            <span
-                              className="text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums self-start mt-0.5"
-                              dir="ltr"
-                            >
-                              {toStandardDigits(order.customerPhone)}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {order.customerPhone && (
+                              <span
+                                className="text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums"
+                                dir="ltr"
+                              >
+                                {toStandardDigits(order.customerPhone)}
+                              </span>
+                            )}
+                            <CustomerRatingBadge
+                              rating={order.customerRating || order.customer?.customerRating}
+                              orderNumber={order.orderNumber}
+                              customerId={order.customer?.id || (order as any).customerId}
+                              interactive={true}
+                              size="xs"
+                              onRatingChange={(newRating) => {
+                                onCustomerRatingChange?.(order.orderNumber, newRating);
+                              }}
+                            />
+                          </div>
                         </div>
                       </td>
                     )}

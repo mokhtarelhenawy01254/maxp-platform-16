@@ -7972,6 +7972,125 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
   }
 });
 
+// ⭐ تحديث تقييم العميل المرتبط بالطلب (سواء كان طلب مسجل أو طلب ضيف)
+const handleCustomerRatingUpdate = async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const { rating } = req.body;
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
+    }
+
+    const validRatings = {
+      EXCELLENT: 'EXCELLENT',
+      GOOD: 'GOOD',
+      AVERAGE: 'AVERAGE',
+      POOR: 'POOR',
+      BAD: 'POOR',
+      UNKNOWN: 'UNKNOWN'
+    };
+    const normalizedRating = validRatings[String(rating || '').trim().toUpperCase()];
+    if (!normalizedRating) {
+      return res.status(400).json({ success: false, message: 'قيمة التقييم غير صالحة. القيم المسموحة: EXCELLENT, GOOD, AVERAGE, POOR, UNKNOWN' });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    // 1. فحص الطلب المسجل (Regular Order)
+    let regularOrder = await prisma.order.findFirst({
+      where: {
+        companyId,
+        OR: [{ id: orderNumber }, { orderNumber }]
+      },
+      include: { customer: true }
+    });
+
+    let customer = regularOrder?.customer || null;
+    let customerId = regularOrder?.customerId || regularOrder?.customer?.id;
+
+    if (regularOrder && customerId) {
+      customer = await prisma.customer.update({
+        where: { id: customerId },
+        data: { customerRating: normalizedRating }
+      });
+    } else {
+      // 2. البحث عن رقم هاتف العميل من الطلب المسجل أو طلب الضيف
+      let phone = regularOrder?.customerPhone || regularOrder?.customer?.phone;
+      let customerName = regularOrder?.customerName || '';
+
+      if (!regularOrder) {
+        const guestOrder = await prisma.guestOrder.findFirst({
+          where: {
+            companyId,
+            OR: [{ id: orderNumber }, { orderNumber }]
+          }
+        });
+        if (guestOrder) {
+          phone = guestOrder.guestPhone;
+          customerName = guestOrder.guestName || '';
+        }
+      }
+
+      if (!phone) {
+        return res.status(404).json({ success: false, message: 'الطلب غير موجود أو لا يحتوي على هاتف للعميل' });
+      }
+
+      const { findCustomerByPhone, createCustomerByPhone } = require('../utils/customerIdentity');
+      customer = await findCustomerByPhone(prisma, phone, companyId);
+
+      if (customer) {
+        customer = await prisma.customer.update({
+          where: { id: customer.id },
+          data: { customerRating: normalizedRating }
+        });
+      } else {
+        const nameParts = String(customerName || '').trim().split(/\s+/);
+        const firstName = nameParts[0] || 'عميل';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        customer = await createCustomerByPhone(prisma, {
+          companyId,
+          phone,
+          data: {
+            firstName,
+            lastName,
+            customerRating: normalizedRating
+          }
+        });
+      }
+
+      // ربط الطلب المسجل بالعميل إذا لم يكن مربوطاً
+      if (regularOrder && customer?.id && !regularOrder.customerId) {
+        await prisma.order.update({
+          where: { id: regularOrder.id },
+          data: { customerId: customer.id }
+        }).catch(() => {});
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        orderNumber,
+        customerId: customer.id,
+        customerRating: customer.customerRating
+      },
+      message: 'تم تحديث تقييم العميل بنجاح'
+    });
+  } catch (error) {
+    console.error('❌ [ORDER-CUSTOMER-RATING] Error updating rating:', error);
+    res.status(500).json({ success: false, message: 'خطأ في تحديث تقييم العميل', error: error.message });
+  }
+};
+
+router.put('/simple/:orderNumber/customer-rating', verifyToken.authenticateToken, handleCustomerRatingUpdate);
+router.post('/simple/:orderNumber/customer-rating', verifyToken.authenticateToken, handleCustomerRatingUpdate);
+
 // Update Order Items
 router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (req, res) => {
   try {

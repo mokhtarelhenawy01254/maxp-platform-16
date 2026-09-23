@@ -18,6 +18,11 @@ import { GovernorateAreaSearch } from "../../../components/ui/GovernorateAreaSea
 import { validateEgyptianPhone, toStandardDigits } from "../../../utils/validation";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import {
+  CustomerRatingBadge,
+  CUSTOMER_RATING_OPTIONS,
+  normalizeRatingLevel,
+} from "../../../components/orders/CustomerRatingBadge";
+import {
   customerBlocklistService,
   CustomerBlockAction,
   CustomerBlockEvaluation,
@@ -248,24 +253,22 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
     <>
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
         <div className="mb-4 flex items-start justify-between gap-3">
-          <h3 className="flex min-w-0 items-center text-lg font-medium text-gray-900 dark:text-gray-100">
-            <UserIcon className="h-5 w-5 text-gray-400 dark:text-gray-500 ml-2" />{" "}
-            {t("orderDetails.customerInfo")}
-            {order.customerRating && (
-              <span
-                className={`mr-2 px-2 py-0.5 rounded-full text-xs ${
-                  order.customerRating === "EXCELLENT"
-                    ? "bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-400"
-                    : order.customerRating === "GOOD"
-                      ? "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400"
-                      : order.customerRating === "BAD"
-                        ? "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
-                }`}
-              >
-                {order.customerRating}
-              </span>
-            )}
+          <h3 className="flex min-w-0 items-center text-lg font-medium text-gray-900 dark:text-gray-100 flex-wrap gap-2">
+            <span className="flex items-center">
+              <UserIcon className="h-5 w-5 text-gray-400 dark:text-gray-500 ml-2" />{" "}
+              {t("orderDetails.customerInfo")}
+            </span>
+            <CustomerRatingBadge
+              rating={order.customerRating || (order as any).customer?.customerRating}
+              orderNumber={order.orderNumber}
+              customerId={order.customerId || (order as any).customer?.id}
+              interactive={true}
+              size="sm"
+              onRatingChange={(newRating) => {
+                order.customerRating = newRating;
+                setEditForm({ ...editForm, customerRating: newRating });
+              }}
+            />
           </h3>
 
           {isBlockAdmin && hasBlockIdentifier && !isEditing && (
@@ -347,6 +350,31 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
         )}
 
         <div className="space-y-3">
+        {isEditing && (
+          <div>
+            <label className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-1">
+              تقييم العميل
+            </label>
+            <select
+              value={
+                editForm.customerRating ||
+                normalizeRatingLevel(
+                  order.customerRating || (order as any).customer?.customerRating
+                )
+              }
+              onChange={(e) =>
+                setEditForm({ ...editForm, customerRating: e.target.value })
+              }
+              className="w-full border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-100 py-2 px-3 focus:ring-primary focus:border-primary"
+            >
+              {CUSTOMER_RATING_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-1">
             {t("orderDetails.nameLabel")}

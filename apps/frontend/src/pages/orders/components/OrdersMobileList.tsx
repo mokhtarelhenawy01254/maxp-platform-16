@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { OrdersSkeleton } from "./OrdersSkeleton";
 import { OrdersEmptyState } from "./OrdersEmptyState";
+import { CustomerRatingBadge } from "../../../components/orders/CustomerRatingBadge";
 import type { Order } from "../Orders";
 
 export interface OrdersMobileListHelpers {
@@ -41,6 +42,7 @@ interface OrdersMobileListProps {
   onToggleSelection: (orderNumber: string) => void;
   onMarkAsViewed: (orderNumber: string) => void;
   onClearFilters: () => void;
+  onCustomerRatingChange?: (orderNumber: string, newRating: string) => void;
 }
 
 const toCompactRelativeTime = (timeStr: string): string => {
@@ -71,6 +73,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
   onToggleSelection,
   onMarkAsViewed,
   onClearFilters,
+  onCustomerRatingChange,
 }) => {
   const { t } = useTranslation();
   const {
@@ -188,9 +191,22 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                         )}
                       </div>
 
-                      <span className="truncate text-xs font-semibold text-slate-800 dark:text-slate-200 min-w-0 flex-1">
-                        {customerName}
-                      </span>
+                      <div className="flex items-center gap-1 min-w-0 flex-1">
+                        <span className="truncate text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          {customerName}
+                        </span>
+                        <CustomerRatingBadge
+                          rating={order.customerRating || order.customer?.customerRating}
+                          orderNumber={order.orderNumber}
+                          customerId={order.customer?.id || (order as any).customerId}
+                          interactive={true}
+                          size="xs"
+                          showLabel={false}
+                          onRatingChange={(newRating) => {
+                            onCustomerRatingChange?.(order.orderNumber, newRating);
+                          }}
+                        />
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -324,6 +340,18 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                             </span>
                           </>
                         )}
+
+                        <span className="text-slate-300 dark:text-slate-600 shrink-0">•</span>
+                        <CustomerRatingBadge
+                          rating={order.customerRating || order.customer?.customerRating}
+                          orderNumber={order.orderNumber}
+                          customerId={order.customer?.id || (order as any).customerId}
+                          interactive={true}
+                          size="xs"
+                          onRatingChange={(newRating) => {
+                            onCustomerRatingChange?.(order.orderNumber, newRating);
+                          }}
+                        />
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
