@@ -112,7 +112,7 @@ async function scanAdAccountsHealth(prisma) {
                 companyId: true,
                 accountId: true,
                 name: true,
-                status: true
+                settings: true
             }
         });
 
@@ -121,8 +121,9 @@ async function scanAdAccountsHealth(prisma) {
         for (const account of adAccounts) {
             // الحسابات المعطلة أو التي بها مشاكل فواتير
             // status: 2 = DISABLED, 3 = UNSETTLED, 7 = PENDING_RISK_REVIEW, 100 = PENDING_CLOSURE
+            const rawStatus = account.settings?.account_status ?? account.settings?.status;
             const badStatuses = [2, 3, 7, 8, 9, 100, 'DISABLED', 'UNSETTLED', 'PENDING_RISK_REVIEW'];
-            if (badStatuses.includes(account.status)) {
+            if (badStatuses.includes(rawStatus)) {
                 const result = await systemIncidentAlertService.dispatchIncident({
                     companyId: account.companyId,
                     incidentType: systemIncidentAlertService.INCIDENT_TYPES.AD_ACCOUNT_ISSUE,

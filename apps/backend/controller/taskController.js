@@ -4356,15 +4356,20 @@ const taskController = {
             ],
           },
           include: {
-            task: {
+            tasks_task_dependencies_taskIdTotasks: {
               select: { id: true, title: true, status: true, priority: true },
             },
-            dependsOn: {
+            tasks_task_dependencies_dependsOnIdTotasks: {
               select: { id: true, title: true, status: true, priority: true },
             },
           },
         });
-      res.json({ success: true, data: dependencies });
+      const formatted = (dependencies || []).map((dep) => ({
+        ...dep,
+        task: dep.task || dep.tasks_task_dependencies_taskIdTotasks,
+        dependsOn: dep.dependsOn || dep.tasks_task_dependencies_dependsOnIdTotasks,
+      }));
+      res.json({ success: true, data: formatted });
     } catch (error) {
       console.error("Error fetching dependencies:", error);
       res.status(500).json({ success: false, error: "فشل في جلب التبعيات" });
@@ -4397,15 +4402,20 @@ const taskController = {
           companyId,
         },
         include: {
-          task: {
+          tasks_task_dependencies_taskIdTotasks: {
             select: { id: true, title: true, status: true, priority: true },
           },
-          dependsOn: {
+          tasks_task_dependencies_dependsOnIdTotasks: {
             select: { id: true, title: true, status: true, priority: true },
           },
         },
       });
-      res.json({ success: true, data: dependency });
+      const formatted = {
+        ...dependency,
+        task: dependency.task || dependency.tasks_task_dependencies_taskIdTotasks,
+        dependsOn: dependency.dependsOn || dependency.tasks_task_dependencies_dependsOnIdTotasks,
+      };
+      res.json({ success: true, data: formatted });
     } catch (error) {
       console.error("Error adding dependency:", error);
       res.status(500).json({ success: false, error: "فشل في إضافة التبعية" });

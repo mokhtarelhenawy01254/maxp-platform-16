@@ -339,7 +339,7 @@ class MonitorService {
     const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
     const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
 
-    const [summaries, activeLogs, appUsages, completedTasks, createdTasks, attendances, deviceSessions] = await Promise.all([
+    const [summaries, activeLogs, appUsages, completedTasks, createdTasks, attendances, deviceSessions, activeTimers] = await Promise.all([
       this.prisma.monitorDailySummary.findMany({
         where: { companyId, date: { gte: startOfDay, lte: endOfDay } }
       }),

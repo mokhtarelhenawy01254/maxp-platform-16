@@ -82,16 +82,15 @@ function startNotificationQueueWorker() {
     console.error(`❌ [NOTIF-QUEUE] Worker error:`, err.message)
   );
 
-  // 🚨 PRODUCTION-FIX (near-real-time): كانت الدفعة كل 60 ثانية → التأخير كان يوصل
-  // لدقيقة قبل وصول رسالة حالة الطلب للعميل. خفضناها لكل ثانية (6 حقول cron)
-  // عشان الإشعار يوصل فوراً تقريباً (near-real-time) دون لمس منطق الإرسال نفسه.
+  // 🚨 PRODUCTION-FIX (near-real-time 5s): معالجة الطابور كل 5 ثوانٍ
+  // يضمن وصول الإشعارات بشكل شبه فوري دون إرهاق قاعدة البيانات وقفل السجلات كل ثانية
   const queue = new Queue(QUEUE_NAME, { connection: redisConfig });
   queue
     .add(
       'process-pending',
       {},
       {
-        repeat: { pattern: '* * * * * *' },
+        repeat: { pattern: '*/5 * * * * *' },
         removeOnComplete: 100,
         removeOnFail: 500,
       }
@@ -108,17 +107,17 @@ function startNotificationQueueWorker() {
  */
 function startFallbackPolling() {
   if (started) return;
-  // 🚨 PRODUCTION-FIX (near-real-time): polling كل ثانية بدل 60 (نفس هدف الـ worker).
+  // Polling كل 5 ثوانٍ في وضع fallback
   fallbackTimer = setInterval(async () => {
     try {
       await runQueueTick();
     } catch (e) {
       console.error('[NOTIF-QUEUE] fallback tick failed:', e.message);
     }
-  }, 1000);
+  }, 5000);
   if (typeof fallbackTimer.unref === 'function') fallbackTimer.unref();
   started = true;
-  console.log('✅ [NOTIF-QUEUE] Fallback polling started (60s)');
+  console.log('✅ [NOTIF-QUEUE] Fallback polling started (5s)');
 }
 
 async function stopNotificationQueueWorker() {

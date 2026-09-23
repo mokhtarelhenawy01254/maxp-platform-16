@@ -3166,22 +3166,23 @@ async function processNotificationQueue() {
   }
 
   try {
-    // 🧹 Reaper: إعادة تعيين أي صفوف عالقة في PROCESSING منذ أكثر من 5 دقائق
-    // (crash/OOM/deploy أثناء المعالجة يترك الصف في PROCESSING للأبد وإلا)
+    // 🧹 Reaper: إعادة تعيين أي صفوف عالقة في PROCESSING منذ أكثر من 5 دقائق (يتم الفحص كل دقيقة تقريباً لتجنب العبء المستمر على قاعدة البيانات)
     const REAPER_STALE_MS = 5 * 60 * 1000;
-    try {
-      const reaped = await prisma.whatsAppNotificationQueue.updateMany({
-        where: {
-          status: 'PROCESSING',
-          processedAt: { lt: new Date(Date.now() - REAPER_STALE_MS) }
-        },
-        data: { status: 'PENDING', processedAt: null }
-      });
-      if (reaped.count > 0) {
-        console.log(`🧹 [WHATSAPP-QUEUE] Reaped ${reaped.count} stale PROCESSING rows -> PENDING`);
+    if (Math.random() < 0.05) {
+      try {
+        const reaped = await prisma.whatsAppNotificationQueue.updateMany({
+          where: {
+            status: 'PROCESSING',
+            processedAt: { lt: new Date(Date.now() - REAPER_STALE_MS) }
+          },
+          data: { status: 'PENDING', processedAt: null }
+        });
+        if (reaped.count > 0) {
+          console.log(`🧹 [WHATSAPP-QUEUE] Reaped ${reaped.count} stale PROCESSING rows -> PENDING`);
+        }
+      } catch (reaperErr) {
+        console.error('❌ [WHATSAPP-QUEUE] Reaper failed:', reaperErr.message);
       }
-    } catch (reaperErr) {
-      console.error('❌ [WHATSAPP-QUEUE] Reaper failed:', reaperErr.message);
     }
 
     // جلب الإشعارات المستحقة
@@ -3197,7 +3198,9 @@ async function processNotificationQueue() {
       take: 200
     });
 
-    console.log(`📬 Processing ${pendingNotifications.length} queued notifications`);
+    if (pendingNotifications.length > 0) {
+      console.log(`📬 Processing ${pendingNotifications.length} queued notifications`);
+    }
 
     for (const notification of pendingNotifications) {
       // 🚨 PRODUCTION-FIX (N1): claim ذري — updateMany بـ status: 'PENDING' في
