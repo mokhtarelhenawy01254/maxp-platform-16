@@ -16,9 +16,13 @@ import {
   ShieldCheck,
   ShoppingCart,
   Sparkles,
+  Truck,
+  Landmark,
+  FileText,
 } from "lucide-react";
 import { tToast } from "../../utils/i18n-toast";
 import { apiClient } from "../../services/apiClient";
+import courierService from "../../services/courierService";
 import {
   applyMarketplaceAppPreset,
   getDefaultMarketplaceAppSettings,
@@ -121,6 +125,7 @@ const APP_TITLES: Record<string, string> = {
   "conversion-suite": "Conversion Suite",
   "ugc-reviews-pro": "UGC Reviews Pro",
   "commerce-advanced": "Commerce Advanced",
+  "internal-courier-fleet": "أسطول المناديب والتوصيل الداخلي",
 };
 
 const isRecord = (value: unknown): value is JsonRecord =>
