@@ -651,6 +651,62 @@ async def _correct_validation_error(
         return None
 
 
+# ── Output risk scrubbing (2026 dual-guardrail gap fix) ──────────────
+# Customer replies must never carry provider secrets, credentials, or
+# stack traces. Phones are intentionally NOT masked — merchant order
+# workflows legitimately surface customer phones.
+
+_SECRET_PATTERNS: list[tuple[str, re.Pattern]] = [
+    ("api_key", re.compile(r"\bsk-[A-Za-z0-9]{16,}\b")),
+    ("google_key", re.compile(r"\bAIza[0-9A-Za-z_\-]{30,}\b")),
+    ("github_token", re.compile(r"\b(?:ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,})\b")),
+    ("slack_token", re.compile(r"\bxox[baprs]-[A-Za-z0-9\-]{10,}\b")),
+    ("bearer_token", re.compile(r"\bBearer\s+[A-Za-z0-9._\-]{20,}\b", re.IGNORECASE)),
+    ("jwt", re.compile(r"\beyJ[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{10,}\b")),
+    ("credential_kv", re.compile(
+        r"(?i)\b(api[_-]?key|secret|token|password|passwd)\b\s*[:=]\s*['\"]?[A-Za-z0-9._\-]{12,}"
+    )),
+    ("db_connection_string", re.compile(
+        r"\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis)://[^\s:@/]+:[^\s:@/]+@", re.IGNORECASE
+    )),
+    ("long_hex_secret", re.compile(r"\b[0-9a-f]{40,}\b", re.IGNORECASE)),
+]
+
+_TRACEBACK_BLOCK = re.compile(
+    r"Traceback \(most recent call last\):(?:.|\n)+", re.IGNORECASE
+)
+
+_INTERNAL_NOISE = re.compile(
+    r"(?i)\b(?:asyncpg|sqlalchemy|httpx|pydantic)\.(?:exceptions\.)?\w*Error\b[^\n]*"
+)
+
+
+def _scrub_output_risks(text: str) -> tuple[str, list[str]]:
+    """Mask provider secrets/credentials and strip stack traces from a
+    customer-facing reply. Returns (scrubbed_text, detected_risk_kinds)."""
+    if not text:
+        return text, []
+
+    detected: list[str] = []
+    scrubbed = text
+    for kind, pattern in _SECRET_PATTERNS:
+        if pattern.search(scrubbed):
+            scrubbed = pattern.sub("••••••", scrubbed)
+            detected.append(kind)
+
+    if _TRACEBACK_BLOCK.search(scrubbed):
+        scrubbed = _TRACEBACK_BLOCK.sub(
+            "حصل عطل داخلي لحظي وتم احتواؤه — جرّب تاني بعد لحظات.", scrubbed
+        )
+        detected.append("traceback")
+
+    if _INTERNAL_NOISE.search(scrubbed):
+        scrubbed = _INTERNAL_NOISE.sub("عطل داخلي لحظي", scrubbed)
+        detected.append("internal_exception")
+
+    return scrubbed, detected
+
+
 async def validate_reply(ctx: PipelineContext) -> PipelineContext:
     reply = ctx.llm_response or ""
     reply = _strip_internal_tags(reply)
@@ -934,6 +990,13 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
         txt = re.sub(r"(?<!\w)\*([^*]+)\*(?!\w)", r"\1", txt)
         txt = re.sub(r"^\s*[-*•]\s+", "", txt, flags=re.MULTILINE)
         txt = re.sub(r"[💰👇🛍️✨🔥🚀🎯🛒📦]", "", txt)
+
+        # 2026 output-risk scrub: secrets, credentials, and stack traces must
+        # never reach the customer (dual-guardrail review gap fix).
+        txt, scrubbed_risks = _scrub_output_risks(txt)
+        if scrubbed_risks:
+            logger.warning("output_risks_scrubbed", risks=scrubbed_risks)
+
         ctx.final_reply = txt.strip()
 
     return ctx

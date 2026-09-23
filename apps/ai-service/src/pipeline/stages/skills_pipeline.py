@@ -169,8 +169,9 @@ def _compact_history_for_budget(
     facts — sizes, addresses, agreements — that blind FIFO deletes)."""
     dropped: list[dict] = []
     while total_tokens > token_budget and len(messages) > 2:
-        dropped.insert(0, messages.pop(1))
-        total_tokens -= len(str(messages and dropped[-1].get("content", ""))) // 4
+        dropped_msg = messages.pop(1)
+        dropped.insert(0, dropped_msg)
+        total_tokens -= len(str(dropped_msg.get("content", ""))) // 4
 
     if not dropped:
         return messages, total_tokens
