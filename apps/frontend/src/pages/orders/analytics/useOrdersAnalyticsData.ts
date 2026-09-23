@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import analyticsService from "../../../services/analyticsService";
 import { useTranslation } from "react-i18next";
@@ -13,13 +14,29 @@ import {
 import {
   getPresetRange,
   calculateCustomDaysCount,
+  isValidPeriodKey,
 } from "./dateUtils";
 
 export const useOrdersAnalyticsData = () => {
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [period, setPeriod] = useState<PeriodKey>("30");
+  const [period, setPeriod] = useState<PeriodKey>(() => {
+    const p = searchParams.get("period");
+    if (isValidPeriodKey(p)) return p;
+    return "30";
+  });
+
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>(() => {
+    const p = searchParams.get("period");
+    if (p === "custom") {
+      const s = searchParams.get("start");
+      const e = searchParams.get("end");
+      if (s && e) return { start: s, end: e };
+    } else if (isValidPeriodKey(p)) {
+      const preset = getPresetRange(p);
+      return { start: preset.start, end: preset.end };
+    }
     const init = getPresetRange("30");
     return { start: init.start, end: init.end };
   });
@@ -34,7 +51,7 @@ export const useOrdersAnalyticsData = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const loadData = useCallback(
-    async (start: string, end: string) => {
+    async (start: string, end: string, forceRefresh = false) => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -46,9 +63,11 @@ export const useOrdersAnalyticsData = () => {
         setLoading(true);
         setError(null);
 
+        const cacheBuster = forceRefresh ? `&_t=${Date.now()}` : "";
+
         const [statsRes, productsRes] = await Promise.allSettled([
           companyAwareApi.get(
-            `/reports/orders-detailed?startDate=${start}&endDate=${end}`,
+            `/reports/orders-detailed?startDate=${start}&endDate=${end}${cacheBuster}`,
             { signal: controller.signal }
           ),
           analyticsService.getProductSalesPerformance(undefined, start, end),
@@ -107,6 +126,18 @@ export const useOrdersAnalyticsData = () => {
   const applyPeriod = (key: PeriodKey) => {
     if (key === "custom") {
       setPeriod("custom");
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set("period", "custom");
+          if (dateRange.start && dateRange.end) {
+            next.set("start", dateRange.start);
+            next.set("end", dateRange.end);
+          }
+          return next;
+        },
+        { replace: true }
+      );
       return;
     }
     const preset = getPresetRange(key);
@@ -115,14 +146,40 @@ export const useOrdersAnalyticsData = () => {
       start: preset.start,
       end: preset.end,
     });
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("period", key);
+        next.delete("start");
+        next.delete("end");
+        return next;
+      },
+      { replace: true }
+    );
   };
 
   const handleCustomDateChange = (field: "start" | "end", val: string) => {
-    setDateRange((prev) => ({
-      ...prev,
-      [field]: val,
-    }));
+    setDateRange((prev) => {
+      const next = { ...prev, [field]: val };
+      if (next.start && next.end && next.start <= next.end) {
+        setSearchParams(
+          (p) => {
+            const params = new URLSearchParams(p);
+            params.set("period", "custom");
+            params.set("start", next.start);
+            params.set("end", next.end);
+            return params;
+          },
+          { replace: true }
+        );
+      }
+      return next;
+    });
   };
+
+  const isDateRangeInvalid = Boolean(
+    dateRange.start && dateRange.end && dateRange.start > dateRange.end
+  );
 
   // ROBUST DATA DERIVATION
   const totalOrders = stats?.totalOrders || 0;
@@ -362,6 +419,7 @@ export const useOrdersAnalyticsData = () => {
     statusDist,
     statusPieces,
     paymentStats,
+    isDateRangeInvalid,
     translate: t,
   };
 };

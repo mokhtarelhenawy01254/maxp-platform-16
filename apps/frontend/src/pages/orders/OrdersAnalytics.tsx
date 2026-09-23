@@ -67,6 +67,7 @@ export const OrdersAnalytics: React.FC = () => {
     statusDist,
     statusPieces,
     paymentStats,
+    isDateRangeInvalid,
     translate,
   } = useOrdersAnalyticsData();
 
@@ -85,7 +86,7 @@ export const OrdersAnalytics: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden bg-background">
       {/* 1. TOP UNIFIED COMMAND BAR (<46px) */}
-      <header className="h-11 sm:h-12 border-b border-zinc-200/80 dark:border-white/[0.08] px-3 sm:px-4 bg-white/95 dark:bg-[#070709]/95 backdrop-blur-md flex items-center justify-between gap-3 shrink-0 z-10">
+      <header className="h-auto min-h-11 sm:h-12 border-b border-zinc-200/80 dark:border-white/[0.08] px-3 sm:px-4 py-1 sm:py-0 bg-white/95 dark:bg-[#070709]/95 backdrop-blur-md flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-3 shrink-0 z-10">
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <h1 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-white truncate">
@@ -96,7 +97,7 @@ export const OrdersAnalytics: React.FC = () => {
           </span>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Period Filter Dropdown & Active Range Badge */}
           <div className="flex items-center gap-1.5">
             <div className="relative">
@@ -140,18 +141,32 @@ export const OrdersAnalytics: React.FC = () => {
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => handleCustomDateChange("start", e.target.value)}
-                  className="px-2 py-0.5 text-xs font-mono border border-zinc-200/80 dark:border-white/10 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:outline-hidden"
+                  className={`px-1.5 sm:px-2 py-0.5 text-[11px] sm:text-xs font-mono border rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:outline-hidden ${
+                    isDateRangeInvalid
+                      ? "border-red-500 text-red-600 dark:text-red-400"
+                      : "border-zinc-200/80 dark:border-white/10"
+                  }`}
                 />
                 <span className="text-[10px] text-zinc-400">إلى</span>
                 <input
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => handleCustomDateChange("end", e.target.value)}
-                  className="px-2 py-0.5 text-xs font-mono border border-zinc-200/80 dark:border-white/10 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:outline-hidden"
+                  className={`px-1.5 sm:px-2 py-0.5 text-[11px] sm:text-xs font-mono border rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:outline-hidden ${
+                    isDateRangeInvalid
+                      ? "border-red-500 text-red-600 dark:text-red-400"
+                      : "border-zinc-200/80 dark:border-white/10"
+                  }`}
                 />
-                <span className="hidden sm:inline-block text-[10px] font-mono text-zinc-400 tabular-nums">
-                  ({daysCount}&nbsp;{daysCount === 1 ? "يوم" : "أيام"})
-                </span>
+                {isDateRangeInvalid ? (
+                  <span className="text-[10px] text-red-600 dark:text-red-400 font-medium whitespace-nowrap bg-red-500/10 px-1 py-0.5 rounded">
+                    البداية تسبق النهاية
+                  </span>
+                ) : (
+                  <span className="hidden sm:inline-block text-[10px] font-mono text-zinc-400 tabular-nums">
+                    ({daysCount}&nbsp;{daysCount === 1 ? "يوم" : "أيام"})
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -170,7 +185,7 @@ export const OrdersAnalytics: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => loadData(dateRange.start, dateRange.end)}
+              onClick={() => loadData(dateRange.start, dateRange.end, true)}
               disabled={loading}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-zinc-900 dark:bg-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all active:scale-[0.97] disabled:opacity-50"
               title={`آخر تحديث: ${lastRefreshedAt.toLocaleTimeString("ar-EG")}`}

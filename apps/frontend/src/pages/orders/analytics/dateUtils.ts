@@ -1,6 +1,53 @@
 import { PeriodKey } from "./types";
 
 /**
+ * Valid Period Keys set for safe type checking and URL query parsing
+ */
+export const VALID_PERIOD_KEYS: readonly PeriodKey[] = [
+  "today",
+  "yesterday",
+  "7",
+  "30",
+  "thisMonth",
+  "lastMonth",
+  "90",
+  "180",
+  "365",
+  "custom",
+];
+
+export const isValidPeriodKey = (key: unknown): key is PeriodKey => {
+  return typeof key === "string" && VALID_PERIOD_KEYS.includes(key as PeriodKey);
+};
+
+/**
+ * Compute the current calendar day anchored strictly to Egypt time (Africa/Cairo).
+ * Eliminates cross-timezone drift for merchants viewing from overseas or traveling.
+ */
+export const getCairoToday = (now: Date = new Date()): Date => {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Africa/Cairo",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    });
+    const parts = formatter.formatToParts(now);
+    let year = now.getFullYear();
+    let month = now.getMonth() + 1;
+    let day = now.getDate();
+    for (const part of parts) {
+      if (part.type === "year") year = Number(part.value);
+      if (part.type === "month") month = Number(part.value);
+      if (part.type === "day") day = Number(part.value);
+    }
+    return new Date(year, month - 1, day);
+  } catch {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+};
+
+/**
  * Format a Date object to YYYY-MM-DD in local time without UTC offset shifting.
  */
 export const formatLocalDate = (d: Date): string => {
@@ -12,13 +59,13 @@ export const formatLocalDate = (d: Date): string => {
 
 /**
  * Get start date, end date, and elapsed day count for any preset period.
- * Completely immune to UTC timezone rollback and off-by-one errors.
+ * Anchored to Cairo timezone, completely immune to UTC timezone rollback and off-by-one errors.
  */
 export const getPresetRange = (
   key: PeriodKey,
   now: Date = new Date()
 ): { start: string; end: string; daysCount: number } => {
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const today = getCairoToday(now);
 
   if (key === "today") {
     const dStr = formatLocalDate(today);
