@@ -14,9 +14,9 @@ import {
   SlidersHorizontal,
   Flame
 } from 'lucide-react';
-import { config } from '../../config';
-import { authService } from '../../services/authService';
+import { toast } from 'sonner';
 import { companyAwareApi } from '../../services/companyAwareApi';
+import { useCurrency } from '../../hooks/useCurrency';
 import CreateWasteModal from './CreateWasteModal';
 
 interface WasteLog {
@@ -42,14 +42,15 @@ interface ProductItem {
 }
 
 const REASONS: Record<string, { label: string; badge: string }> = {
-  CALIBRATION_DIAL_IN: { label: 'معايرة مطحنة (Dial-in)', badge: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
-  SPILL_DROP: { label: 'انسكاب وسقوط (Spill/Drop)', badge: 'bg-rose-500/10 text-rose-500 border-rose-500/20' },
-  EXPIRED_SPOILED: { label: 'تلف وانتهاء صلاحية', badge: 'bg-red-500/10 text-red-500 border-red-500/20' },
-  QUALITY_TEST: { label: 'تذوق واختبار جودة', badge: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
-  OTHER: { label: 'أخرى', badge: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20' }
+  CALIBRATION_DIAL_IN: { label: 'معايرة مطحنة (Dial-in)', badge: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30' },
+  SPILL_DROP: { label: 'انسكاب وسقوط (Spill/Drop)', badge: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30' },
+  EXPIRED_SPOILED: { label: 'تلف وانتهاء صلاحية', badge: 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30' },
+  QUALITY_TEST: { label: 'تذوق واختبار جودة', badge: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30' },
+  OTHER: { label: 'أخرى', badge: 'bg-zinc-500/10 text-zinc-700 dark:text-zinc-400 border-zinc-500/30' }
 };
 
 export default function WasteTrackingPage() {
+  const { formatPrice } = useCurrency();
   const [logs, setLogs] = useState<WasteLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<ProductItem[]>([]);
@@ -60,14 +61,6 @@ export default function WasteTrackingPage() {
   const [showLogModal, setShowLogModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedReasonFilter, setSelectedReasonFilter] = useState('');
-
-  // Form State
-  const [formProductId, setFormProductId] = useState('');
-  const [formWarehouseId, setFormWarehouseId] = useState('');
-  const [formQuantity, setFormQuantity] = useState('50');
-  const [formUnit, setFormUnit] = useState('G');
-  const [formReason, setFormReason] = useState('CALIBRATION_DIAL_IN');
-  const [formNotes, setFormNotes] = useState('');
 
   const fetchLogs = async () => {
     try {
@@ -83,8 +76,9 @@ export default function WasteTrackingPage() {
         setTotalWasteQty(data.data.totalWasteQuantity || 0);
         setTotalCount(data.data.total || 0);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.response?.data?.message || 'فشل تحميل سجلات الهدر');
     } finally {
       setLoading(false);
     }
@@ -99,24 +93,11 @@ export default function WasteTrackingPage() {
       const prodData = prodRes.data;
       const whData = whRes.data;
 
-      if (prodData?.success && prodData.data) {
-        const rawOnly = prodData.data.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          cost: Number(p.cost || 0),
-          unit: p.unit || 'G',
-          sku: p.sku || ''
-        }));
-        setProducts(rawOnly);
-        if (rawOnly.length > 0) {
-          setFormProductId(rawOnly[0].id);
-          setFormUnit(rawOnly[0].unit || 'G');
-        }
+      if (prodData?.data) {
+        setProducts(prodData.data);
       }
-
-      if (whData?.success && whData.data) {
+      if (whData?.data && Array.isArray(whData.data)) {
         setWarehouses(whData.data);
-        if (whData.data.length > 0) setFormWarehouseId(whData.data[0].id);
       }
     } catch (err) {
       console.error(err);
@@ -125,8 +106,11 @@ export default function WasteTrackingPage() {
 
   useEffect(() => {
     fetchLogs();
-    fetchMeta();
   }, [selectedReasonFilter]);
+
+  useEffect(() => {
+    fetchMeta();
+  }, []);
 
   const handleRecordWaste = async (formData: {
     productId: string;
@@ -141,14 +125,15 @@ export default function WasteTrackingPage() {
       const res = await companyAwareApi.post<any>('/cafe/waste', formData);
       const data = res.data;
       if (data?.success) {
+        toast.success(data.message || 'تم تسجيل الهدر وخصم المخزون بنجاح');
         setShowLogModal(false);
         await fetchLogs();
       } else {
-        alert(data?.message || 'فشل تسجيل الهدر');
+        toast.error(data?.message || 'فشل تسجيل الهدر');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('حدث خطأ أثناء حفظ الهدر');
+      toast.error(err.response?.data?.message || 'حدث خطأ أثناء حفظ الهدر');
     } finally {
       setSubmitting(false);
     }
@@ -156,16 +141,17 @@ export default function WasteTrackingPage() {
 
   const handleQuickDialIn = async () => {
     const coffeeProd = products.find(p => p.name.includes('بن') || p.name.includes('قهوة') || p.name.toLowerCase().includes('coffee'));
-    if (!coffeeProd || !formWarehouseId) {
+    const targetWhId = warehouses[0]?.id;
+
+    if (!coffeeProd || !targetWhId) {
       setShowLogModal(true);
       return;
     }
-    if (!window.confirm(`هل تريد تسجيل هدر معايرة مطحنة 50 جم لـ "${coffeeProd.name}" فوراً؟`)) return;
 
     try {
       const res = await companyAwareApi.post<any>('/cafe/waste', {
         productId: coffeeProd.id,
-        warehouseId: formWarehouseId,
+        warehouseId: targetWhId,
         quantity: 50,
         unit: 'G',
         reason: 'CALIBRATION_DIAL_IN',
@@ -173,25 +159,29 @@ export default function WasteTrackingPage() {
       });
       const data = res.data;
       if (data?.success) {
+        toast.success('تم تسجيل معايرة المطحنة (50 جم) وخصم الرصيد بنجاح');
         await fetchLogs();
       } else {
-        alert(data?.message);
+        toast.error(data?.message || 'فشل تسجيل المعايرة');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.response?.data?.message || 'فشل تسجيل المعايرة السريعة');
     }
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 p-3 sm:p-6 space-y-4">
+    <div className="min-h-screen bg-background text-foreground p-3 sm:p-6 space-y-4">
       {/* Top Header Control Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Trash2 className="w-5 h-5 text-rose-500" />
-            سجل الهدر والتالف التشغيلي
-          </h1>
-          <p className="text-xs sm:text-sm text-neutral-400 mt-0.5">
+          <div className="flex items-center gap-2">
+            <Trash2 className="w-5 h-5 text-destructive" />
+            <h1 className="text-xl font-bold tracking-tight text-pretty">
+              سجل الهدر والتالف التشغيلي (Waste & Spoilage Log)
+            </h1>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
             توثيق هدر معايرة المطحنة، انسكاب المشروبات، والتالف مع الخصم التلقائي للمخزون
           </p>
         </div>
@@ -199,14 +189,14 @@ export default function WasteTrackingPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={handleQuickDialIn}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border border-amber-500/40 text-amber-400 hover:bg-amber-500/10 active:scale-95 transition-all"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-amber-500/40 text-amber-700 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 active:scale-95 transition-all"
           >
             <Flame className="w-3.5 h-3.5" />
             معايرة مطحنة (50 جم)
           </button>
           <button
             onClick={() => setShowLogModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white shadow-xs active:scale-95 transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             تسجيل هدر
@@ -214,47 +204,47 @@ export default function WasteTrackingPage() {
         </div>
       </div>
 
-      {/* Bento Telemetry Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-4">
-        <div className="p-3.5 rounded-xl bg-neutral-900/80 border border-white/10">
-          <span className="text-xs text-neutral-400 flex items-center gap-1.5 mb-1">
-            <TrendingDown className="w-3.5 h-3.5 text-rose-500" />
-            إجمالي الخسارة المالية
+      {/* Telemetry Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="p-3.5 rounded-lg border border-border/60 bg-card space-y-1">
+          <span className="text-xs text-muted-foreground flex items-center justify-between">
+            <span>إجمالي الخسارة المالية</span>
+            <TrendingDown className="w-4 h-4 text-destructive" />
           </span>
-          <span className="text-lg sm:text-2xl font-bold tabular-nums text-rose-400">
-            {totalWasteValue.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} <span className="text-xs text-neutral-500 font-normal">ج.م</span>
-          </span>
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-destructive">
+            {formatPrice(totalWasteValue)}
+          </div>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-neutral-900/80 border border-white/10">
-          <span className="text-xs text-neutral-400 flex items-center gap-1.5 mb-1">
-            <Scale className="w-3.5 h-3.5 text-amber-500" />
-            إجمالي الكميات المهدرة
+        <div className="p-3.5 rounded-lg border border-border/60 bg-card space-y-1">
+          <span className="text-xs text-muted-foreground flex items-center justify-between">
+            <span>إجمالي الكميات المهدرة</span>
+            <Scale className="w-4 h-4 text-amber-500" />
           </span>
-          <span className="text-lg sm:text-2xl font-bold tabular-nums text-white">
-            {totalWasteQty.toLocaleString('ar-EG')} <span className="text-xs text-neutral-500 font-normal">وحدة</span>
-          </span>
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-foreground">
+            {totalWasteQty.toLocaleString('ar-EG')} <span className="text-xs font-normal text-muted-foreground">وحدة</span>
+          </div>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-neutral-900/80 border border-white/10 col-span-2 sm:col-span-1">
-          <span className="text-xs text-neutral-400 flex items-center gap-1.5 mb-1">
-            <AlertOctagon className="w-3.5 h-3.5 text-blue-500" />
-            عدد الحركات المسجلة
+        <div className="p-3.5 rounded-lg border border-border/60 bg-card space-y-1">
+          <span className="text-xs text-muted-foreground flex items-center justify-between">
+            <span>عدد الحركات المسجلة</span>
+            <AlertOctagon className="w-4 h-4 text-primary" />
           </span>
-          <span className="text-lg sm:text-2xl font-bold tabular-nums text-white">
-            {totalCount} <span className="text-xs text-neutral-500 font-normal">حالة هدر</span>
-          </span>
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-foreground">
+            {totalCount} <span className="text-xs font-normal text-muted-foreground">حالة هدر</span>
+          </div>
         </div>
       </div>
 
       {/* Table Surface */}
-      <div className="rounded-xl border border-white/10 bg-neutral-900/50 overflow-hidden">
-        <div className="p-3 border-b border-white/10 flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-neutral-300">سجل حركات الهدر التفصيلية</span>
+      <div className="border border-border/60 rounded-lg overflow-hidden bg-card">
+        <div className="p-3 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-muted/20">
+          <span className="text-xs font-semibold text-foreground">سجل حركات الهدر التفصيلية</span>
           <select
             value={selectedReasonFilter}
             onChange={(e) => setSelectedReasonFilter(e.target.value)}
-            className="text-xs px-2.5 py-1.5 rounded-lg bg-neutral-800 border border-white/10 text-neutral-200 outline-none"
+            className="text-xs px-2.5 py-1.5 rounded-md bg-background border border-border text-foreground outline-none focus:ring-1 focus:ring-primary transition-colors"
           >
             <option value="">جميع أسباب الهدر</option>
             {Object.entries(REASONS).map(([key, val]) => (
@@ -264,13 +254,25 @@ export default function WasteTrackingPage() {
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-xs text-neutral-500">جاري تحميل سجلات الهدر...</div>
+          <div className="py-20 text-center text-xs text-muted-foreground">جاري تحميل سجلات الهدر...</div>
         ) : logs.length === 0 ? (
-          <div className="p-12 text-center text-xs text-neutral-500">لا توجد سجلات هدر مسجلة حالياً</div>
+          <div className="py-16 text-center border-t border-border/30 p-6">
+            <Trash2 className="w-10 h-10 text-muted-foreground/40 mx-auto mb-2" />
+            <h3 className="text-sm font-semibold mb-1">لا توجد سجلات هدر مسجلة حالياً</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              سجل حركات الهدر لمعايرة المطحنة أو التالف لخصمها من مخزون البار وحساب التكلفة بدقة.
+            </p>
+            <button
+              onClick={() => setShowLogModal(true)}
+              className="px-3 py-1.5 text-xs rounded bg-primary text-primary-foreground font-medium"
+            >
+              تسجيل أول حركة هدر
+            </button>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
-              <thead className="bg-neutral-900 text-neutral-400 border-b border-white/10">
+              <thead className="bg-muted/50 border-b border-border text-muted-foreground font-medium">
                 <tr>
                   <th className="py-2.5 px-3">التاريخ والوقت</th>
                   <th className="py-2.5 px-3">المادة الخام</th>
@@ -281,26 +283,26 @@ export default function WasteTrackingPage() {
                   <th className="py-2.5 px-3">ملاحظات</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-border/30">
                 {logs.map((log) => {
                   const reasonMeta = REASONS[log.reason] || REASONS.OTHER;
                   return (
-                    <tr key={log.id} className="hover:bg-white/[0.02]">
-                      <td className="py-2.5 px-3 text-neutral-400 tabular-nums">
+                    <tr key={log.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="py-2.5 px-3 text-muted-foreground tabular-nums">
                         {new Date(log.createdAt).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
                       </td>
-                      <td className="py-2.5 px-3 font-medium text-white">{log.product?.name}</td>
+                      <td className="py-2.5 px-3 font-medium text-foreground">{log.product?.name}</td>
                       <td className="py-2.5 px-3">
                         <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] border font-medium ${reasonMeta.badge}`}>
                           {reasonMeta.label}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 font-semibold text-rose-400 tabular-nums">
+                      <td className="py-2.5 px-3 font-semibold text-destructive tabular-nums">
                         -{Number(log.quantity).toLocaleString()} {log.unit}
                       </td>
-                      <td className="py-2.5 px-3 text-neutral-400 tabular-nums">{Number(log.costPerUnit).toFixed(2)} ج.م</td>
-                      <td className="py-2.5 px-3 font-bold text-rose-500 tabular-nums">{Number(log.totalCost).toFixed(2)} ج.م</td>
-                      <td className="py-2.5 px-3 text-neutral-400 truncate max-w-xs">{log.notes || '—'}</td>
+                      <td className="py-2.5 px-3 text-muted-foreground tabular-nums">{formatPrice(Number(log.costPerUnit))}</td>
+                      <td className="py-2.5 px-3 font-bold text-destructive tabular-nums">{formatPrice(Number(log.totalCost))}</td>
+                      <td className="py-2.5 px-3 text-muted-foreground truncate max-w-xs">{log.notes || '—'}</td>
                     </tr>
                   );
                 })}
