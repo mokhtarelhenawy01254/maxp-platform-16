@@ -60,16 +60,26 @@ export const getCachedMinimumOrderSettings = async (): Promise<MinimumOrderSetti
   return _cachedSettingsPromise;
 };
 
+export interface UseMinimumOrderSettingsOptions {
+  enabled?: boolean;
+}
+
 export const useMinimumOrderSettings = (
   subtotal: number,
   currency = "EGP",
+  options?: UseMinimumOrderSettingsOptions,
 ) => {
+  const isEnabled = options?.enabled ?? true;
   const [settings, setSettings] = useState<MinimumOrderSettings | null>(
     _cachedSettingsValue,
   );
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    if (!isEnabled) {
+      return;
+    }
+
     let cancelled = false;
 
     const loadSettings = async () => {
@@ -99,7 +109,7 @@ export const useMinimumOrderSettings = (
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isEnabled]);
 
   return useMemo(() => {
     const amount = Number(settings?.amount || 0);

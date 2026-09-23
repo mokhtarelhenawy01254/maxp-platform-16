@@ -144,7 +144,7 @@ const resolveCatalogPrefetchLimit = (
   settings?: StorefrontSettings | null,
 ): number => {
   if (isKhemetLuxeTheme(resolveThemeIdFromSettings(settings))) {
-    return pageKey === "shop" ? 48 : 12;
+    return pageKey === "shop" ? 16 : 12;
   }
 
   return 12;

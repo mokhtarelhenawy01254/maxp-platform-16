@@ -2926,10 +2926,14 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
               <StorefrontProductImage
                 candidates={imageCandidates}
                 alt={name}
-                loading="lazy"
+                loading={imageLoading || 'lazy'}
+                fetchpriority={imageFetchPriority}
+                responsiveWidths={[240, 320, 420, 520]}
+                responsiveSizes="(max-width: 767px) 68vw, (max-width: 1279px) 28vw, 20vw"
+                imageQuality={72}
                 width="420"
                 height="420"
-                className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
+                className="h-full w-full object-contain object-center transition-transform duration-500 group-hover:scale-[1.02]"
                 fallback={renderImageFallback('rounded-[0.35rem] bg-[#eee5e0]')}
               />
             </div>

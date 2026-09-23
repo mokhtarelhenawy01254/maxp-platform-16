@@ -358,7 +358,7 @@
           "variant": "boutique-shelf",
           "settings": {
             "hideHeader": true,
-            "limit": 48
+            "limit": 16
           }
         }
       ],

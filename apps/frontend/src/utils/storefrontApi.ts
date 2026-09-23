@@ -112,36 +112,6 @@ const rememberCartId = (cartId: string) => {
   setStoredValue("cart_id", cartId);
 };
 
-const buildStorefrontRequestContext = (
-  options: StorefrontFetchOptions = {},
-): { headers: Headers; query: QueryParams } => {
-  const companyId = options.companyId ?? getCompanyId();
-  const companyIdFromQuery = options.query?.["companyId"];
-  const query: QueryParams = {
-    ...(options.query || {}),
-    companyId: companyIdFromQuery ?? companyId ?? undefined,
-  };
-  const headers = new Headers(options.headers || {});
-
-  if (companyId && !headers.has("x-company-id")) {
-    headers.set("x-company-id", companyId);
-  }
-
-  const cartId = getCartId();
-  if (cartId && !headers.has("x-cart-id")) {
-    headers.set("x-cart-id", cartId);
-  }
-
-  if (options.includeAuth && !headers.has("Authorization")) {
-    const token = getStoredAccessToken();
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-  }
-
-  return { headers, query };
-};
-
 const hasStableStorefrontHost = (hostname: string): boolean => {
   if (!hostname) {
     return false;
@@ -165,6 +135,44 @@ const hasStableStorefrontHost = (hostname: string): boolean => {
   }
 
   return true;
+};
+
+const buildStorefrontRequestContext = (
+  options: StorefrontFetchOptions = {},
+): { headers: Headers; query: QueryParams } => {
+  const companyId = options.companyId ?? getCompanyId();
+  const companyIdFromQuery = options.query?.["companyId"];
+  const hostname = hasWindow ? window.location.hostname.trim().toLowerCase() : "";
+  const shouldAppendCompanyIdToQuery =
+    companyIdFromQuery !== undefined
+      ? companyIdFromQuery
+      : !hasStableStorefrontHost(hostname)
+        ? companyId
+        : undefined;
+
+  const query: QueryParams = {
+    ...(options.query || {}),
+    companyId: shouldAppendCompanyIdToQuery ?? undefined,
+  };
+  const headers = new Headers(options.headers || {});
+
+  if (companyId && !headers.has("x-company-id")) {
+    headers.set("x-company-id", companyId);
+  }
+
+  const cartId = getCartId();
+  if (cartId && !headers.has("x-cart-id")) {
+    headers.set("x-cart-id", cartId);
+  }
+
+  if (options.includeAuth && !headers.has("Authorization")) {
+    const token = getStoredAccessToken();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+  }
+
+  return { headers, query };
 };
 
 export const getCompanyId = (): string | null => {

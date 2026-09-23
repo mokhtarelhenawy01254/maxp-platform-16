@@ -132,7 +132,9 @@ const CartDrawer: React.FC = () => {
     setIsOpen(true);
   }, [canIncreaseKhemetCartItem, firstCartItem, setIsOpen, updateQuantity]);
   const currency = settings?.storefront?.settings?.currency || settings?.company?.currency || 'EGP';
-  const minimumOrder = useMinimumOrderSettings(subtotal, currency);
+  const minimumOrder = useMinimumOrderSettings(subtotal, currency, {
+    enabled: isOpen || items.length > 0,
+  });
   const handleCheckout = React.useCallback(() => {
     if (minimumOrder.blocked) {
       toast.error(minimumOrder.message);
