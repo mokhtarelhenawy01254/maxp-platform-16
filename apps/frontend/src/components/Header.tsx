@@ -19,6 +19,7 @@ import {
   BuildingStorefrontIcon,
 } from "@heroicons/react/24/outline";
 import { buildStoreUrl } from "../utils/storeUrl";
+import { hasStoreApp } from "../utils/storeShortcut";
 import HeaderWalletShortcut from "./wallet/HeaderWalletShortcut";
 import AppUpdateIndicator from "./common/AppUpdateIndicator";
 
@@ -208,6 +209,11 @@ const Header: React.FC = () => {
     return buildStoreUrl(slug, "/shop", customDomain || undefined, companyId || undefined);
   }, [user, company]);
 
+  const isStoreActive = React.useMemo(() => {
+    const activeApps = user?.company?.activeApps || company?.activeApps;
+    return hasStoreApp(activeApps as string[]);
+  }, [user, company]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -305,16 +311,18 @@ const Header: React.FC = () => {
             <HeaderWalletShortcut />
 
             {/* Visit Store Button */}
-            <a
-              href={storeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              title={t("header.visitStore", "المتجر")}
-              aria-label={t("header.visitStore", "المتجر")}
-            >
-              <BuildingStorefrontIcon className="h-5 w-5" />
-            </a>
+            {isStoreActive && (
+              <a
+                href={storeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title={t("header.visitStore", "المتجر")}
+                aria-label={t("header.visitStore", "المتجر")}
+              >
+                <BuildingStorefrontIcon className="h-5 w-5" />
+              </a>
+            )}
 
             {/* Global Timer */}
             <GlobalTimer />

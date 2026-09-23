@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { tokenManager } from "../../utils/tokenManager";
 import { socketService } from "../../services/socketService";
+import { canUserAccessOrders } from "../layout/sidebar/useSidebarBadges";
 import {
   BellIcon,
   ShoppingBagIcon,
@@ -36,10 +37,22 @@ const OrderNotificationBell: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const activeApps = useMemo(() => {
+    return (
+      (user as any)?.company?.activeApps ||
+      (user as any)?.companies?.find((c: any) => c.id === (user as any)?.companyId)?.activeApps ||
+      []
+    );
+  }, [user]);
+
+  const canAccessOrders = useMemo(() => {
+    return canUserAccessOrders(user, activeApps);
+  }, [user, activeApps]);
+
   const getToken = () => tokenManager.getAccessToken();
 
   const fetchNewOrdersCount = useCallback(async () => {
-    if (!user || !isAuthenticated) return;
+    if (!user || !isAuthenticated || !canAccessOrders) return;
     const token = getToken();
     if (!token) return;
 
@@ -66,10 +79,10 @@ const OrderNotificationBell: React.FC = () => {
     } catch (error) {
       // silent fail
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, canAccessOrders]);
 
   const fetchNewOrdersList = useCallback(async () => {
-    if (!user || !isAuthenticated) return;
+    if (!user || !isAuthenticated || !canAccessOrders) return;
     const token = getToken();
     if (!token) return;
 
@@ -99,7 +112,7 @@ const OrderNotificationBell: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, canAccessOrders]);
 
   const markOrderAsViewed = useCallback(async (orderId: string) => {
     const token = getToken();
@@ -169,6 +182,8 @@ const OrderNotificationBell: React.FC = () => {
 
   // Initial fetch and periodic refresh
   useEffect(() => {
+    if (!isAuthenticated || !user || !canAccessOrders) return;
+
     fetchNewOrdersCount();
 
     const handleVisibilityChange = () => {
@@ -189,11 +204,11 @@ const OrderNotificationBell: React.FC = () => {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [fetchNewOrdersCount]);
+  }, [fetchNewOrdersCount, isAuthenticated, user, canAccessOrders]);
 
   // Socket listeners for real-time updates
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !user || !canAccessOrders) return;
 
     socketService.getSocket();
 
@@ -214,11 +229,11 @@ const OrderNotificationBell: React.FC = () => {
       socketService.off("order:created", handleNewOrder);
       socketService.off("order:updated", handleOrderUpdated);
     };
-  }, [isAuthenticated, user, isOpen, fetchNewOrdersCount, fetchNewOrdersList]);
+  }, [isAuthenticated, user, isOpen, fetchNewOrdersCount, fetchNewOrdersList, canAccessOrders]);
 
   // Fetch list when dropdown opens, refresh periodically while open
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !canAccessOrders) return;
     fetchNewOrdersList();
     const interval = setInterval(() => {
       if (!document.hidden) {
@@ -226,7 +241,7 @@ const OrderNotificationBell: React.FC = () => {
       }
     }, 15000);
     return () => clearInterval(interval);
-  }, [isOpen, fetchNewOrdersList]);
+  }, [isOpen, fetchNewOrdersList, canAccessOrders]);
 
   const formatTimestamp = (timestamp: string) => {
     const now = new Date();
@@ -250,7 +265,7 @@ const OrderNotificationBell: React.FC = () => {
     }).format(amount);
   };
 
-  if (!user) return null;
+  if (!user || !canAccessOrders) return null;
 
   return (
     <div className="relative" ref={dropdownRef}>

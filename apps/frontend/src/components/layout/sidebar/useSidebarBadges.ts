@@ -5,6 +5,43 @@ import { socketService } from "../../../services/socketService";
 
 const REFRESH_INTERVAL_MS = 30000;
 
+export const ORDER_CORE_APPS = [
+  "order-core",
+  "store",
+  "store-basic",
+  "store-pro",
+  "ecommerce-basic",
+  "ecommerce-pro",
+  "pos-pro",
+  "cafe-restaurant-pro",
+];
+
+export const canUserAccessOrders = (user: any, activeApps: string[]): boolean => {
+  if (!user) return false;
+  if (user.role === "AFFILIATE") return false;
+
+  // If company activeApps is populated and non-empty, require at least one order/store app
+  if (Array.isArray(activeApps) && activeApps.length > 0) {
+    const hasOrderApp = activeApps.some((a: any) => {
+      const slug = typeof a === "string" ? a : a?.slug || a?.app?.slug;
+      return typeof slug === "string" && ORDER_CORE_APPS.includes(slug.trim().toLowerCase());
+    });
+    if (!hasOrderApp) return false;
+  }
+
+  const role = user.role || "";
+  if (["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER"].includes(role)) {
+    return true;
+  }
+
+  const permissions = user.permissions || [];
+  if (permissions.length > 0) {
+    return permissions.includes("orders.view");
+  }
+
+  return true;
+};
+
 export interface SidebarBadges {
   newOrders?: string;
   unreadTickets?: string;
@@ -25,6 +62,10 @@ export function useSidebarBadges(): SidebarBadges {
 
   const fetchNewOrders = useCallback(async () => {
     if (!user || !isAuthenticated) return;
+    if (!canUserAccessOrders(user, activeApps)) {
+      setNewOrders(undefined);
+      return;
+    }
 
     try {
       const response = await companyAwareApi.get<any>("orders-v2/simple/new-count", {
@@ -40,7 +81,7 @@ export function useSidebarBadges(): SidebarBadges {
     } catch (error) {
       // silent fail
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, activeApps]);
 
   const fetchUnreadTickets = useCallback(async () => {
     if (!user || !isAuthenticated) return;
@@ -98,7 +139,7 @@ export function useSidebarBadges(): SidebarBadges {
   }, [fetchNewOrders, fetchUnreadTickets]);
 
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !user || !canUserAccessOrders(user, activeApps)) return;
 
     socketService.getSocket();
 
@@ -112,7 +153,7 @@ export function useSidebarBadges(): SidebarBadges {
       socketService.off("order:created", handleOrderCreated);
       socketService.off("order:updated", handleOrderUpdated);
     };
-  }, [isAuthenticated, user, fetchNewOrders]);
+  }, [isAuthenticated, user, activeApps, fetchNewOrders]);
 
   return useMemo(() => ({ newOrders, unreadTickets }), [newOrders, unreadTickets]);
 }

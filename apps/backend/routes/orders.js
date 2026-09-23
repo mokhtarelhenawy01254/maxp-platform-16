@@ -127,6 +127,12 @@ const isMerchantAllowedOrderRoute = (req) => {
     (route) => route.method === method && route.pattern.test(path)
   );
 };
+
+const isBadgeCountRoute = (path) => {
+  const normalized = String(path || '').replace(/\/+$/, '');
+  return normalized === '/simple/new-count';
+};
+
 router.use((req, res, next) => {
   if (isMerchantUser(req.user)) {
     if (isMerchantAllowedOrderRoute(req)) {
@@ -140,6 +146,12 @@ router.use((req, res, next) => {
     });
   }
 
+  // 🔔 Safe telemetry/badge routes: /simple/new-count should never block with 403.
+  // It returns { success: true, data: { count: 0 } } when the company or user lacks order access.
+  if (isBadgeCountRoute(req.path)) {
+    return next();
+  }
+
   return requireOrderCoreAccess(req, res, next);
 });
 
@@ -149,6 +161,7 @@ router.use((req, res, next) => {
 const { requireDbPermission } = require('../middleware/rbacMiddleware');
 router.use((req, res, next) => {
   if (isMerchantUser(req.user)) return next();
+  if (isBadgeCountRoute(req.path)) return next();
   return requireDbPermission('orders.view')(req, res, next);
 });
 
@@ -4699,8 +4712,8 @@ router.post('/simple/:orderNumber/viewed', verifyToken.authenticateToken, async 
 router.get('/simple/new-count', verifyToken.authenticateToken, async (req, res) => {
   try {
     const companyId = req.user?.companyId || req.headers['x-company-id'] || req.companyId;
-    if (!companyId) {
-      return res.json({ success: true, data: { count: 0 } });
+    if (!companyId || req.user?.role === 'AFFILIATE') {
+      return res.json({ success: true, data: { count: 0, orders: 0, guestOrders: 0 } });
     }
 
     const excludedStatuses = ['DRAFT', 'TRASH', 'DUPLICATE_ORDER'];

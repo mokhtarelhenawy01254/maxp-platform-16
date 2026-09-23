@@ -9,6 +9,7 @@ import {
   ArrowDownToLine,
   Eye,
   KeyRound,
+  Link2,
   Loader2,
   Mail,
   MailPlus,
@@ -105,6 +106,7 @@ import { buildApiUrl } from "../utils/urlHelper";
 import { DefaultPageSelector } from "../components/settings/DefaultPageSelector";
 import { saveDefaultPagePreference } from "../utils/postAuthRouting";
 import { APP_REGISTRY } from "../config/appRegistry";
+import EmployeeInviteModal from "../components/hr/EmployeeInviteModal";
 
 type RoleRecord = Record<string, { name: string }>;
 
@@ -535,6 +537,7 @@ const UsersManagement: React.FC = () => {
   const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
   const [detailsUser, setDetailsUser] = useState<UserRecord | null>(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [employeeInviteModalOpen, setEmployeeInviteModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [userForm, setUserForm] = useState<UserFormState>(createInitialUserForm);
   const [inviteForm, setInviteForm] = useState<InviteFormState>(createInitialInviteForm);
