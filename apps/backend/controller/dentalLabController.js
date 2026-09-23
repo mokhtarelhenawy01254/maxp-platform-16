@@ -3414,7 +3414,26 @@ const batchCreateMonthlyInvoices = async (req, res) => {
         const totalPaid = round2(docCases.reduce((sum, c) => sum + (Number(c.paid) || 0), 0));
         const remaining = round2(Math.max(0, totalAmount - totalPaid));
         const status = deriveInvoiceStatus(totalAmount, totalPaid);
-        const invoiceNotes = notes ? `${notes} (تجميع حالات شهر ${monthYear} - ${docCases.length} حالة)` : `فاتورة مجمعة لشهر ${monthYear} (${docCases.length} حالة)`;
+        const invoiceItems = docCases.map((c) => ({
+          caseId: c.id,
+          caseNumber: c.caseNumber || '—',
+          patientName: c.patientName || '—',
+          workTypeName: c.workTypeName || '—',
+          unitsCount: c.unitsCount || 1,
+          unitPrice: c.unitPrice || (c.unitsCount ? round2(Number(c.total) / c.unitsCount) : Number(c.total)),
+          total: Number(c.total) || 0,
+          discount: Number(c.discount) || 0,
+          paid: Number(c.paid) || 0,
+          remaining: Number(c.remaining) || 0,
+        }));
+
+        const consolidatedPayload = {
+          isConsolidated: true,
+          title: invoiceNotes,
+          casesCount: docCases.length,
+          totalUnits: invoiceItems.reduce((acc, it) => acc + (it.unitsCount || 1), 0),
+          items: invoiceItems,
+        };
 
         const invoiceNumber = await generateInvoiceNumber(prisma, companyId);
         const invoice = await prisma.dentalInvoice.create({
@@ -3429,7 +3448,7 @@ const batchCreateMonthlyInvoices = async (req, res) => {
             remaining,
             status,
             dueDate: parsedDueDate,
-            notes: invoiceNotes,
+            notes: JSON.stringify(consolidatedPayload),
           },
         });
 
@@ -4687,15 +4706,35 @@ const getDoctorStatement = async (req, res) => {
       prisma.dentalCreditNote.aggregate({ where: creditWhere, _sum: { amount: true } }),
     ]);
 
-    const enrichedInvoices = (invoices || []).map((inv) => ({
-      ...inv,
-      caseNumber: inv.case?.caseNumber || null,
-      patientName: inv.case?.patientName || inv.patientName || null,
-      workTypeName: inv.case?.workTypeName || null,
-      unitsCount: inv.case?.unitsCount ?? 1,
-      doctorName: inv.doctor?.name || inv.doctorName || doctor?.name || null,
-      clinicName: inv.doctor?.clinicName || doctor?.clinicName || null,
-    }));
+    const enrichedInvoices = (invoices || []).map((inv) => {
+      let unitsCount = inv.case?.unitsCount ?? 1;
+      let patientName = inv.case?.patientName || inv.patientName || null;
+      let workTypeName = inv.case?.workTypeName || null;
+      if (inv.notes && typeof inv.notes === 'string' && inv.notes.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(inv.notes);
+          if (parsed && (parsed.isConsolidated || Array.isArray(parsed.items))) {
+            const itemsCount = parsed.items ? parsed.items.length : (parsed.summary?.casesCount || 0);
+            unitsCount = parsed.totalUnits || parsed.summary?.totalUnits || (parsed.items || []).reduce((sum, it) => sum + (Number(it.unitsCount) || 1), 0);
+            if (!patientName || patientName === '—') {
+              patientName = `فوترة مجمعة (${itemsCount} حالة)`;
+            }
+            if (!workTypeName) {
+              workTypeName = 'متعدد (فوترة مجمعة)';
+            }
+          }
+        } catch {}
+      }
+      return {
+        ...inv,
+        caseNumber: inv.case?.caseNumber || null,
+        patientName,
+        workTypeName,
+        unitsCount,
+        doctorName: inv.doctor?.name || inv.doctorName || doctor?.name || null,
+        clinicName: inv.doctor?.clinicName || doctor?.clinicName || null,
+      };
+    });
 
     if (!doctor && enrichedInvoices.length) {
       doctor = {
@@ -4831,15 +4870,35 @@ const getDoctorStatementPdf = async (req, res) => {
       prisma.company.findFirst({ where: { id: companyId } }),
     ]);
 
-    const enrichedInvoices = (invoices || []).map((inv) => ({
-      ...inv,
-      caseNumber: inv.case?.caseNumber || null,
-      patientName: inv.case?.patientName || inv.patientName || null,
-      workTypeName: inv.case?.workTypeName || null,
-      unitsCount: inv.case?.unitsCount ?? 1,
-      doctorName: inv.doctor?.name || inv.doctorName || doctor?.name || null,
-      clinicName: inv.doctor?.clinicName || doctor?.clinicName || null,
-    }));
+    const enrichedInvoices = (invoices || []).map((inv) => {
+      let unitsCount = inv.case?.unitsCount ?? 1;
+      let patientName = inv.case?.patientName || inv.patientName || null;
+      let workTypeName = inv.case?.workTypeName || null;
+      if (inv.notes && typeof inv.notes === 'string' && inv.notes.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(inv.notes);
+          if (parsed && (parsed.isConsolidated || Array.isArray(parsed.items))) {
+            const itemsCount = parsed.items ? parsed.items.length : (parsed.summary?.casesCount || 0);
+            unitsCount = parsed.totalUnits || parsed.summary?.totalUnits || (parsed.items || []).reduce((sum, it) => sum + (Number(it.unitsCount) || 1), 0);
+            if (!patientName || patientName === '—') {
+              patientName = `فوترة مجمعة (${itemsCount} حالة)`;
+            }
+            if (!workTypeName) {
+              workTypeName = 'متعدد (فوترة مجمعة)';
+            }
+          }
+        } catch {}
+      }
+      return {
+        ...inv,
+        caseNumber: inv.case?.caseNumber || null,
+        patientName,
+        workTypeName,
+        unitsCount,
+        doctorName: inv.doctor?.name || inv.doctorName || doctor?.name || null,
+        clinicName: inv.doctor?.clinicName || doctor?.clinicName || null,
+      };
+    });
 
     if (!doctor && enrichedInvoices.length) {
       doctor = {
@@ -4901,9 +4960,10 @@ const getDoctorStatementPdf = async (req, res) => {
       to,
     });
 
-    const docSafeName = (doctor?.name || 'doctor').replace(/[^\u0621-\u064A\w.-]/g, '_');
+    const asciiFilename = `statement-${doctorId || 'doctor'}.pdf`;
+    const encodedFilename = encodeURIComponent(`statement-${doctor?.name || 'doctor'}.pdf`);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="statement-${docSafeName}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="${asciiFilename}"; filename*=UTF-8''${encodedFilename}`);
     res.send(buffer);
   } catch (error) {
     console.error('Error generating dental doctor statement PDF:', error);
@@ -5493,9 +5553,30 @@ const getInvoicePdf = async (req, res) => {
     const dentalCase = invoice.caseId
       ? await prisma.dentalLabCase.findFirst({
           where: { id: invoice.caseId, companyId },
-          select: { id: true, caseNumber: true, patientName: true, workTypeName: true },
+          select: {
+            id: true,
+            caseNumber: true,
+            patientName: true,
+            workTypeName: true,
+            unitsCount: true,
+            unitPrice: true,
+            teeth: true,
+            shade: true,
+            total: true,
+          },
         })
       : null;
+
+    let items = [];
+    if (invoice.notes && typeof invoice.notes === 'string' && invoice.notes.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(invoice.notes);
+        if (Array.isArray(parsed.items)) {
+          items = parsed.items;
+        }
+      } catch {}
+    }
+
     const [settingsRows, company] = await Promise.all([
       prisma.dentalSetting.findMany({ where: { companyId } }),
       prisma.company.findFirst({ where: { id: companyId } }),
@@ -5506,10 +5587,13 @@ const getInvoicePdf = async (req, res) => {
       company,
       invoice,
       dentalCase,
+      items,
       workOrderHeader: settings.workOrderHeader || {},
     });
+    const safeInvNum = String(invoiceNumber || 'invoice').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+    const encodedInvNum = encodeURIComponent(`invoice-${invoiceNumber || 'invoice'}.pdf`);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="invoice-${invoiceNumber}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="invoice-${safeInvNum}.pdf"; filename*=UTF-8''${encodedInvNum}`);
     res.send(buffer);
   } catch (error) {
     console.error('Error generating dental invoice PDF:', error);

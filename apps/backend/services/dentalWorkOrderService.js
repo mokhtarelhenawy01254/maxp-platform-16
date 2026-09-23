@@ -186,78 +186,208 @@ module.exports = {
 /**
  * فاتورة PDF للعميل (الطبيب) من بيانات الفاتورة + الحالة المرتبطة + ترويسة المعمل.
  */
-function generateInvoicePdf({ company, invoice, dentalCase, workOrderHeader }) {
+function generateInvoicePdf({ company, invoice, dentalCase, items, workOrderHeader }) {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: 'A4', margins: { top: 30, bottom: 20, left: 40, right: 40 } });
+      const doc = new PDFDocument({ size: 'A4', margins: { top: 25, bottom: 25, left: 30, right: 30 }, bufferPages: true });
       const chunks = [];
       doc.on('data', (c) => chunks.push(c));
       doc.on('end', () => resolve({ buffer: Buffer.concat(chunks), invoiceNumber: invoice.invoiceNumber }));
       doc.on('error', reject);
 
       const pageWidth = 595.28;
+      const pageHeight = 841.89;
+      const margin = 30;
+      const contentWidth = pageWidth - margin * 2;
       doc.font(FONT);
 
-      // Header
-      doc.fontSize(16).fillColor('#1f2937').text(AR(workOrderHeader.labName || company?.name || ''), { align: 'center' });
-      if (workOrderHeader.address) {
-        doc.fontSize(9).fillColor('#6b7280').text(AR(workOrderHeader.address), { align: 'center' });
+      // Parse consolidated items if present
+      let caseItems = Array.isArray(items) && items.length > 0 ? items : [];
+      let isConsolidated = false;
+      let consolidatedTitle = '';
+
+      if (!caseItems.length && invoice.notes && typeof invoice.notes === 'string' && invoice.notes.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(invoice.notes);
+          if (Array.isArray(parsed.items) && parsed.items.length > 0) {
+            caseItems = parsed.items;
+            isConsolidated = Boolean(parsed.isConsolidated);
+            consolidatedTitle = parsed.title || '';
+          }
+        } catch {}
       }
-      if (workOrderHeader.phone) {
-        doc.fontSize(9).fillColor('#6b7280').text(AR('هاتف: ' + workOrderHeader.phone), { align: 'center' });
+
+      if (!caseItems.length && dentalCase) {
+        caseItems = [{
+          caseNumber: dentalCase.caseNumber || '—',
+          patientName: dentalCase.patientName || invoice.patientName || '—',
+          workTypeName: dentalCase.workTypeName || '—',
+          unitsCount: dentalCase.unitsCount || 1,
+          unitPrice: dentalCase.unitPrice || (dentalCase.unitsCount ? Math.round(Number(invoice.total) / dentalCase.unitsCount) : Number(invoice.total)),
+          total: Number(invoice.total) || 0,
+        }];
       }
-      doc.moveDown(0.5);
-      doc.moveTo(40, doc.y).lineTo(pageWidth - 40, doc.y).strokeColor('#d1d5db').lineWidth(1).stroke();
-      doc.moveDown(0.5);
 
-      // Invoice title
-      doc.fontSize(13).fillColor('#111827').text(AR('فاتورة'), { align: 'center' });
-      doc.moveDown(0.3);
-      doc.fontSize(9).fillColor('#374151').text(AR('رقم الفاتورة: ' + invoice.invoiceNumber), { align: 'center' });
-      doc.fontSize(9).fillColor('#374151').text(AR('التاريخ: ' + fmtDate(invoice.createdAt || new Date())), { align: 'center' });
-      doc.moveDown(0.5);
+      const totalUnits = caseItems.reduce((acc, it) => acc + (Number(it.unitsCount) || 1), 0);
+      const invoiceTitle = isConsolidated || caseItems.length > 1 ? 'مطالبة / فاتورة شهرية مجمعة' : 'فاتورة حساب حالة';
 
-      // Parties
-      doc.fontSize(10).fillColor('#1f2937');
-      doc.text(AR('العميل (الطبيب): ' + (invoice.doctorName || '—')), { align: 'right' });
-      doc.text(AR('المريض: ' + (dentalCase?.patientName || invoice.patientName || '—')), { align: 'right' });
-      if (dentalCase) doc.text(AR('الحالة: ' + dentalCase.caseNumber + ' — ' + (dentalCase.workTypeName || '')), { align: 'right' });
-      doc.moveDown(0.5);
+      // Header block
+      doc.rect(margin, 20, contentWidth, 54).fill('#f8fafc');
+      doc.rect(margin, 20, contentWidth, 54).strokeColor('#cbd5e1').lineWidth(0.5).stroke();
 
-      // Amounts table
-      doc.fontSize(9).fillColor('#6b7280').text(AR('التفاصيل'), { underline: true, align: 'right' });
-      doc.moveDown(0.2);
-      const rows = [
-        ['الإجمالي', invoice.total],
-        ['الخصم', invoice.discount],
-        ['المدفوع', invoice.paid],
-        ['المتبقي', invoice.remaining],
-      ];
-      for (const [label, value] of rows) {
-        doc.fontSize(10).fillColor('#1f2937');
-        doc.text(AR(label), pageWidth - 240, doc.y, { width: 200, align: 'right' });
-        doc.text(AR(String(value ?? 0) + ' ج.م'), 40, doc.y - doc.currentLineHeight(), { width: 150, align: 'left' });
+      doc.fontSize(14).fillColor('#1e293b').text(AR(workOrderHeader.labName || company?.name || 'معمل الأسنان'), margin + 15, 27, { align: 'right', width: contentWidth - 30 });
+      const contactInfo = [
+        workOrderHeader.phone && `هاتف: ${workOrderHeader.phone}`,
+        workOrderHeader.address && `العنوان: ${workOrderHeader.address}`,
+      ].filter(Boolean).join(' | ');
+      if (contactInfo) {
+        doc.fontSize(8).fillColor('#64748b').text(AR(contactInfo), margin + 15, 48, { align: 'right', width: contentWidth - 30 });
+      }
+
+      // Invoice Title Badge
+      const titleY = 82;
+      doc.rect(margin, titleY, contentWidth, 24).fill(isConsolidated || caseItems.length > 1 ? '#1e3a8a' : '#0f172a');
+      doc.fontSize(10.5).fillColor('#ffffff').text(
+        AR(`${invoiceTitle} — رقم: ${invoice.invoiceNumber}`),
+        margin,
+        titleY + 6,
+        { width: contentWidth, align: 'center' }
+      );
+
+      // Parties & Date info
+      const infoY = titleY + 32;
+      doc.fontSize(8.5).fillColor('#0f172a');
+      const doctorText = `الطبيب / العميل: ${invoice.doctorName || (invoice.doctor && invoice.doctor.name) || 'غير محدد'}`;
+      doc.text(AR(doctorText), margin + contentWidth / 2, infoY, { width: contentWidth / 2, align: 'right' });
+      if (invoice.doctor?.clinicName) {
+        doc.fontSize(8).fillColor('#475569').text(AR(`العيادة / المركز: ${invoice.doctor.clinicName}`), margin + contentWidth / 2, doc.y + 2, { width: contentWidth / 2, align: 'right' });
+      }
+
+      doc.fontSize(8).fillColor('#475569');
+      doc.text(AR(`تاريخ الإصدار: ${fmtDate(invoice.createdAt || new Date())}`), margin, infoY, { width: contentWidth / 2 - 10, align: 'left' });
+      if (invoice.dueDate) {
+        doc.text(AR(`تاريخ الاستحقاق: ${fmtDate(invoice.dueDate)}`), margin, doc.y + 2, { width: contentWidth / 2 - 10, align: 'left' });
+      }
+      doc.text(AR(`إجمالي الحالات: ${caseItems.length} كارتة (${totalUnits} وحدة/كراون)`), margin, doc.y + 2, { width: contentWidth / 2 - 10, align: 'left' });
+
+      let currentY = infoY + 40;
+
+      // Items Table
+      const colWidths = {
+        idx: 22,
+        caseNum: 75,
+        patient: 120,
+        workType: 135,
+        units: 40,
+        unitPrice: 60,
+        total: 73.28,
+      };
+
+      const drawTableHeader = (y) => {
+        doc.rect(margin, y, contentWidth, 20).fill('#1e293b');
+        doc.fontSize(8).fillColor('#ffffff');
+        let x = margin + contentWidth;
+
+        const cols = [
+          { text: 'م', w: colWidths.idx },
+          { text: 'رقم الكارتة', w: colWidths.caseNum },
+          { text: 'اسم المريض', w: colWidths.patient },
+          { text: 'نوع التركيبة / الشغل', w: colWidths.workType },
+          { text: 'العدد', w: colWidths.units },
+          { text: 'سعر الوحدة', w: colWidths.unitPrice },
+          { text: 'الإجمالي', w: colWidths.total },
+        ];
+
+        cols.forEach((col) => {
+          x -= col.w;
+          doc.text(AR(col.text), x + 2, y + 5, { width: col.w - 4, align: 'center' });
+        });
+
+        return y + 20;
+      };
+
+      currentY = drawTableHeader(currentY);
+
+      if (caseItems.length === 0) {
+        doc.rect(margin, currentY, contentWidth, 24).fill('#f8fafc');
+        doc.rect(margin, currentY, contentWidth, 24).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+        doc.fontSize(8).fillColor('#94a3b8').text(AR('لا توجد بنود مفصلة مسجلة بالفاتورة'), margin, currentY + 7, { width: contentWidth, align: 'center' });
+        currentY += 28;
+      } else {
+        caseItems.forEach((it, index) => {
+          if (currentY > pageHeight - 130) {
+            doc.addPage();
+            currentY = drawTableHeader(30);
+          }
+
+          const isEven = index % 2 === 0;
+          doc.rect(margin, currentY, contentWidth, 18).fill(isEven ? '#ffffff' : '#f8fafc');
+          doc.rect(margin, currentY, contentWidth, 18).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+
+          doc.fontSize(7.5).fillColor('#0f172a');
+          let x = margin + contentWidth;
+
+          const rowCols = [
+            { text: String(index + 1), w: colWidths.idx, align: 'center', color: '#64748b' },
+            { text: it.caseNumber || '—', w: colWidths.caseNum, align: 'center', color: '#2563eb' },
+            { text: it.patientName || '—', w: colWidths.patient, align: 'right' },
+            { text: it.workTypeName || '—', w: colWidths.workType, align: 'right', color: '#475569' },
+            { text: String(it.unitsCount || 1), w: colWidths.units, align: 'center' },
+            { text: `${Math.round(it.unitPrice || 0)}`, w: colWidths.unitPrice, align: 'center' },
+            { text: `${Math.round(it.total || 0)} ج.م`, w: colWidths.total, align: 'center', color: '#0f172a' },
+          ];
+
+          rowCols.forEach((col) => {
+            x -= col.w;
+            doc.fillColor(col.color || '#0f172a').text(AR(col.text), x + 2, currentY + 4, { width: col.w - 4, align: col.align });
+          });
+
+          currentY += 18;
+        });
+      }
+
+      // Financial Summary Block
+      if (currentY > pageHeight - 120) {
+        doc.addPage();
+        currentY = 30;
+      }
+
+      currentY += 8;
+      const sumBoxW = 220;
+      const sumBoxX = margin;
+      doc.rect(sumBoxX, currentY, sumBoxW, 70).fill('#f8fafc');
+      doc.rect(sumBoxX, currentY, sumBoxW, 70).strokeColor('#cbd5e1').lineWidth(0.5).stroke();
+
+      const printSummaryLine = (lbl, val, valColor = '#0f172a', isBold = false) => {
+        doc.fontSize(isBold ? 9 : 8).fillColor('#475569').text(AR(lbl), sumBoxX + sumBoxW - 100, doc.y, { width: 90, align: 'right' });
+        doc.fontSize(isBold ? 9 : 8).fillColor(valColor).text(AR(`${val} ج.م`), sumBoxX + 10, doc.y - doc.currentLineHeight(), { width: 90, align: 'left' });
         doc.moveDown(0.2);
-      }
-      doc.moveDown(0.5);
-      doc.moveTo(40, doc.y).lineTo(pageWidth - 40, doc.y).strokeColor('#d1d5db').lineWidth(1).stroke();
-      doc.moveDown(0.5);
+      };
 
-      // Payments
-      if (invoice.payments && invoice.payments.length > 0) {
-        doc.fontSize(10).fillColor('#1f2937').text(AR('الدفعات:'), { align: 'right' });
-        doc.moveDown(0.2);
-        for (const p of invoice.payments) {
-          doc.fontSize(9).fillColor('#374151').text(AR(`${fmtDate(p.createdAt)} — ${p.amount} (${p.method || 'OTHER'})`), { align: 'right' });
-        }
-        doc.moveDown(0.5);
+      doc.y = currentY + 6;
+      printSummaryLine('إجمالي المطالبة:', `${Math.round(invoice.total || 0)}`);
+      if (Number(invoice.discount) > 0) {
+        printSummaryLine('الخصم الممنوح:', `-${Math.round(invoice.discount)}`, '#b91c1c');
+      }
+      printSummaryLine('المسدد:', `${Math.round(invoice.paid || 0)}`, '#047857');
+      printSummaryLine('الصافي المتبقي المستحق:', `${Math.round(invoice.remaining || 0)}`, invoice.remaining > 0 ? '#b91c1c' : '#047857', true);
+
+      // Signatures & Stamp
+      const signY = currentY + 80;
+      if (signY <= pageHeight - 65) {
+        doc.fontSize(8).fillColor('#1e3a8a').text(AR('ختم واعتماد المعمل'), margin + 25, signY, { width: 140, align: 'center' });
+        doc.rect(margin + 25, signY + 12, 140, 35).strokeColor('#94a3b8').dash(3, { space: 3 }).stroke().undash();
+
+        doc.fontSize(8).fillColor('#1e3a8a').text(AR('توقيع الطبيب / الاستلام'), pageWidth - margin - 165, signY, { width: 140, align: 'center' });
+        doc.rect(pageWidth - margin - 165, signY + 12, 140, 35).strokeColor('#94a3b8').dash(3, { space: 3 }).stroke().undash();
       }
 
       // Footer
-      doc.fontSize(8).fillColor('#9ca3af').text(
-        AR(`أُعدت بتاريخ ${fmtDate(new Date())}`),
-        0, doc.page.height - 35,
-        { align: 'center', width: pageWidth, lineBreak: false }
+      doc.fontSize(7.5).fillColor('#94a3b8').text(
+        AR(`أُصدرت بواسطة منصة MaxP — تاريخ الطباعة: ${fmtDate(new Date())}`),
+        margin,
+        pageHeight - 20,
+        { align: 'center', width: contentWidth }
       );
 
       doc.end();

@@ -87,12 +87,33 @@ function normalizeWhatsAppPhone(phone: string | undefined): string {
 function shareInvoiceWhatsApp(inv: DentalInvoice) {
   const phone = normalizeWhatsAppPhone(inv.doctor?.phone);
   const invNum = inv.invoiceNumber || inv.id.slice(0, 8);
-  const patient = inv.patientName || inv.case?.patientName || "—";
-  const caseNum = inv.case?.caseNumber ? ` (حالة: ${inv.case.caseNumber})` : "";
-  const workType = inv.case?.workTypeName ? `\nنوع الشغل: ${inv.case.workTypeName}` : "";
-  const teeth = inv.case?.teeth ? `\nالأسنان: ${inv.case.teeth}` : "";
 
-  const text = `مرحباً دكتور ${inv.doctorName || ""}\nتحية طيبة من إدارة معمل الأسنان 🦷\nمرفق تفاصيل الفاتورة رقم: *${invNum}*\nالمريض: *${patient}*${caseNum}${workType}${teeth}\n------------------\nالإجمالي: *${fmtMoney(inv.total)} ج.م*\nالمسدد: *${fmtMoney(inv.paid)} ج.م*\nالمتبقي المستحق: *${fmtMoney(inv.remaining)} ج.م*\n------------------\nشكراً لتعاملكم معنا.`;
+  let isConsolidated = false;
+  let casesCount = 0;
+  let totalUnits = 0;
+  let cleanNote = "";
+  if (inv.notes && inv.notes.startsWith("{") && inv.notes.includes('"items"')) {
+    try {
+      const p = JSON.parse(inv.notes);
+      if (p.isConsolidated || Array.isArray(p.items)) {
+        isConsolidated = true;
+        casesCount = p.items?.length || p.casesCount || p.summary?.casesCount || 0;
+        totalUnits = p.totalUnits || p.summary?.totalUnits || (p.items || []).reduce((acc: number, it: any) => acc + (Number(it.unitsCount) || 1), 0);
+        cleanNote = p.title || p.note || "";
+      }
+    } catch {}
+  }
+
+  let text = "";
+  if (isConsolidated) {
+    text = `مرحباً دكتور ${inv.doctorName || ""}\nتحية طيبة من إدارة معمل الأسنان 🦷\nمرفق الفاتورة الشهرية المجمعة رقم: *${invNum}*\nعدد الحالات المشمولة: *${casesCount} حالة* (${totalUnits} كراون/وحدة)${cleanNote ? `\nملاحظة: ${cleanNote}` : ""}\n------------------\nالإجمالي: *${fmtMoney(inv.total)} ج.م*\nالمسدد: *${fmtMoney(inv.paid)} ج.م*\nالمتبقي المستحق: *${fmtMoney(inv.remaining)} ج.م*\n------------------\nشكراً لتعاملكم معنا.`;
+  } else {
+    const patient = inv.patientName || inv.case?.patientName || "—";
+    const caseNum = inv.case?.caseNumber ? ` (حالة: ${inv.case.caseNumber})` : "";
+    const workType = inv.case?.workTypeName ? `\nنوع الشغل: ${inv.case.workTypeName}` : "";
+    const teeth = inv.case?.teeth ? `\nالأسنان: ${inv.case.teeth}` : "";
+    text = `مرحباً دكتور ${inv.doctorName || ""}\nتحية طيبة من إدارة معمل الأسنان 🦷\nمرفق تفاصيل الفاتورة رقم: *${invNum}*\nالمريض: *${patient}*${caseNum}${workType}${teeth}\n------------------\nالإجمالي: *${fmtMoney(inv.total)} ج.م*\nالمسدد: *${fmtMoney(inv.paid)} ج.م*\nالمتبقي المستحق: *${fmtMoney(inv.remaining)} ج.م*\n------------------\nشكراً لتعاملكم معنا.`;
+  }
 
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
 }
@@ -490,8 +511,8 @@ function BatchMonthlyInvoiceModal({
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">نمط إصدار الفواتير</label>
               <select className={`${MODAL_INPUT_CLS} text-sm`} value={mode} onChange={(e) => setMode(e.target.value as "PER_CASE" | "CONSOLIDATED")}>
-                <option value="PER_CASE">فاتورة مستقلة لكل حالة (موصى به - تفصيل أسماء المرضى)</option>
-                <option value="CONSOLIDATED">فاتورة شهرية مجمعة واحدة لكل طبيب</option>
+                <option value="PER_CASE">فاتورة مستقلة لكل حالة (إصدار فاتورة برقم منفصل لكل كارتة)</option>
+                <option value="CONSOLIDATED">فاتورة شهرية مجمعة لكل طبيب (تضم كافة الحالات مفصلة بالمرضى والكروتات والأسعار)</option>
               </select>
             </div>
             <div>
@@ -550,7 +571,7 @@ function BatchMonthlyInvoiceModal({
 
         <div className="flex items-center justify-between pt-4 border-t dark:border-gray-800 mt-4">
           <div className="text-xs text-gray-500">
-            سيتم إنشاء الفواتير بنمط <span className="font-semibold text-gray-700 dark:text-gray-300">{mode === "PER_CASE" ? "فاتورة لكل حالة" : "فاتورة مجمعة"}</span>
+            سيتم إنشاء الفواتير بنمط <span className="font-semibold text-gray-700 dark:text-gray-300">{mode === "PER_CASE" ? "فاتورة منفصلة لكل حالة" : "فاتورة شهرية مجمعة شاملة الحالات"}</span>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onClose} disabled={submitting} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50">
@@ -562,7 +583,7 @@ function BatchMonthlyInvoiceModal({
               className="px-5 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-semibold disabled:opacity-50 flex items-center gap-2 shadow-sm"
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              {submitting ? "جاري الإصدار..." : `إصدار (${selectedStats.cases}) فاتورة`}
+              {submitting ? "جاري الإصدار..." : mode === "PER_CASE" ? `إصدار (${selectedStats.cases}) فاتورة` : `إصدار فواتير مجمعة لـ (${selectedStats.doctorsCount}) طبيب`}
             </button>
           </div>
         </div>
@@ -1707,7 +1728,6 @@ function MonthlySettlementModal({
   );
 }
 
-// ==================== INVOICE DETAIL DRAWER / MODAL ====================
 function InvoiceDetailModal({
   invoice,
   onClose,
@@ -1721,9 +1741,30 @@ function InvoiceDetailModal({
   onPdf: () => void;
   onPaymentLink: () => void;
 }) {
+  const consolidatedData = useMemo(() => {
+    if (!invoice.notes) return null;
+    try {
+      if (invoice.notes.startsWith("{") && invoice.notes.includes('"items"')) {
+        const parsed = JSON.parse(invoice.notes);
+        if (parsed && (parsed.isConsolidated || Array.isArray(parsed.items))) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return null;
+  }, [invoice.notes]);
+
+  const items: any[] = consolidatedData?.items || [];
+  const casesCount = items.length || consolidatedData?.casesCount || 0;
+  const totalUnits =
+    consolidatedData?.totalUnits ||
+    consolidatedData?.summary?.totalUnits ||
+    items.reduce((acc, it) => acc + (Number(it.unitsCount) || 1), 0);
+  const displayNote = consolidatedData ? (consolidatedData.title || consolidatedData.note || "") : invoice.notes;
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto" onClick={onClose}>
-      <div className={`${MODAL_CONTENT_CLS} max-w-xl my-6`} onClick={(e) => e.stopPropagation()}>
+      <div className={`${MODAL_CONTENT_CLS} max-w-3xl my-6`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-3 border-b dark:border-gray-800 mb-4">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 rounded-lg">
@@ -1752,21 +1793,78 @@ function InvoiceDetailModal({
               {invoice.doctor?.phone && <p className="text-gray-500 mt-0.5">{invoice.doctor.phone}</p>}
             </div>
             <div>
-              <span className="text-gray-400 block mb-0.5">بيانات المريض والحالة</span>
-              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{invoice.patientName || invoice.case?.patientName || "—"}</p>
-              {invoice.case?.caseNumber && (
-                <p className="text-blue-600 dark:text-blue-400 font-semibold mt-0.5">حالة رقم: {invoice.case.caseNumber}</p>
+              <span className="text-gray-400 block mb-0.5">{consolidatedData ? "نوع المطالبة" : "بيانات المريض والحالة"}</span>
+              {consolidatedData ? (
+                <div>
+                  <span className="inline-flex items-center gap-1.5 font-bold text-sm text-indigo-700 dark:text-indigo-400">
+                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                    فاتورة شهرية مجمعة ({casesCount} حالة)
+                  </span>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    إجمالي الكروتات: <strong className="text-gray-800 dark:text-gray-200">{totalUnits} وحدة / كراون</strong>
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{invoice.patientName || invoice.case?.patientName || "—"}</p>
+                  {invoice.case?.caseNumber && (
+                    <p className="text-blue-600 dark:text-blue-400 font-semibold mt-0.5">حالة رقم: {invoice.case.caseNumber}</p>
+                  )}
+                </>
               )}
               {invoice.dueDate && (
-                <p className="text-amber-600 mt-0.5 flex items-center gap-1">
+                <p className="text-amber-600 mt-1 flex items-center gap-1">
                   <Clock className="w-3 h-3" /> استحقاق: {fmtDate(invoice.dueDate)}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Case Breakdown if linked */}
-          {invoice.case && (
+          {/* Consolidated cases breakdown if items exist */}
+          {consolidatedData && items.length > 0 && (
+            <div className="rounded-xl border dark:border-gray-700/80 overflow-hidden bg-white dark:bg-gray-800/40">
+              <div className="bg-indigo-50/70 dark:bg-indigo-950/40 p-2.5 px-3 border-b dark:border-gray-700 flex items-center justify-between">
+                <span className="font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5 text-xs">
+                  <FileSpreadsheet className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  تفاصيل كروتات الفاتورة المجمعة ({casesCount} حالة — {totalUnits} كراون)
+                </span>
+                <span className="text-[11px] text-indigo-700 dark:text-indigo-300 font-medium">
+                  متوسط الحالة: {fmtMoney(invoice.total / (casesCount || 1))} ج.م
+                </span>
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                <table className="w-full text-right text-xs">
+                  <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-300 sticky top-0 font-semibold border-b dark:border-gray-700">
+                    <tr>
+                      <th className="py-2 px-2.5 text-center w-8">م</th>
+                      <th className="py-2 px-2.5 whitespace-nowrap">رقم الكارتة</th>
+                      <th className="py-2 px-2.5 whitespace-nowrap">اسم المريض</th>
+                      <th className="py-2 px-2.5 whitespace-nowrap">نوع التركيبة / الشغل</th>
+                      <th className="py-2 px-2.5 text-center whitespace-nowrap">العدد</th>
+                      <th className="py-2 px-2.5 whitespace-nowrap">سعر الوحدة</th>
+                      <th className="py-2 px-2.5 text-left whitespace-nowrap">الإجمالي</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y dark:divide-gray-800">
+                    {items.map((item: any, idx: number) => (
+                      <tr key={item.caseId || idx} className="hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-colors">
+                        <td className="py-2 px-2.5 text-center text-gray-400 font-mono text-[11px]">{idx + 1}</td>
+                        <td className="py-2 px-2.5 font-bold text-blue-600 dark:text-blue-400 font-mono whitespace-nowrap">{item.caseNumber || "—"}</td>
+                        <td className="py-2 px-2.5 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">{item.patientName || "—"}</td>
+                        <td className="py-2 px-2.5 text-gray-700 dark:text-gray-300">{item.workTypeName || "—"}</td>
+                        <td className="py-2 px-2.5 text-center font-bold text-gray-800 dark:text-gray-200">{item.unitsCount || 1}</td>
+                        <td className="py-2 px-2.5 text-gray-600 dark:text-gray-300 font-mono whitespace-nowrap">{fmtMoney(item.unitPrice || 0)}</td>
+                        <td className="py-2 px-2.5 text-left font-bold text-gray-900 dark:text-gray-100 font-mono whitespace-nowrap">{fmtMoney(item.total || 0)} ج.م</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Single Case Breakdown if linked */}
+          {!consolidatedData && invoice.case && (
             <div className="p-3 bg-blue-50/40 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/40">
               <span className="font-bold text-gray-800 dark:text-gray-200 block mb-2">تفاصيل العمل الفني بالحالة:</span>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -1815,9 +1913,9 @@ function InvoiceDetailModal({
           </div>
 
           {/* Notes */}
-          {invoice.notes && (
+          {displayNote && (
             <div className="p-2.5 bg-amber-50/60 dark:bg-amber-900/20 rounded-lg text-amber-900 dark:text-amber-300">
-              <span className="font-semibold">ملاحظات:</span> {invoice.notes}
+              <span className="font-semibold">ملاحظات:</span> {displayNote}
             </div>
           )}
 
@@ -2373,12 +2471,42 @@ export default function DentalInvoicesTab() {
                       {inv.doctorName || "—"}
                     </td>
                     <td className="py-3 px-3.5">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-gray-800 dark:text-gray-200">{inv.patientName || inv.case?.patientName || "—"}</span>
-                        {inv.case?.caseNumber && (
-                          <span className="text-[11px] text-gray-400">حالة: {inv.case.caseNumber}</span>
-                        )}
-                      </div>
+                      {(() => {
+                        let isConsolidated = false;
+                        let casesCount = 0;
+                        let totalUnits = 0;
+                        if (inv.notes && inv.notes.startsWith("{") && inv.notes.includes('"items"')) {
+                          try {
+                            const p = JSON.parse(inv.notes);
+                            if (p.isConsolidated || Array.isArray(p.items)) {
+                              isConsolidated = true;
+                              casesCount = p.items?.length || p.casesCount || p.summary?.casesCount || 0;
+                              totalUnits = p.totalUnits || p.summary?.totalUnits || (p.items || []).reduce((acc: number, it: any) => acc + (Number(it.unitsCount) || 1), 0);
+                            }
+                          } catch {}
+                        }
+                        if (isConsolidated) {
+                          return (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="inline-flex items-center gap-1 font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded text-xs w-fit">
+                                <Sparkles className="w-3 h-3 text-indigo-500" />
+                                فاتورة مجمعة ({casesCount} حالة)
+                              </span>
+                              {totalUnits > 0 && (
+                                <span className="text-[11px] text-gray-500">{totalUnits} كروتة / كراون</span>
+                              )}
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-800 dark:text-gray-200">{inv.patientName || inv.case?.patientName || "—"}</span>
+                            {inv.case?.caseNumber && (
+                              <span className="text-[11px] text-gray-400">حالة: {inv.case.caseNumber}</span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="py-3 px-3 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">{fmtMoney(inv.total)}</td>
                     <td className="py-3 px-3 text-green-600 dark:text-green-400 font-semibold whitespace-nowrap">{fmtMoney(inv.paid)}</td>
