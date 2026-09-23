@@ -65,9 +65,11 @@ describe("checkAppAccess middleware", () => {
       "ecommerce-basic",
       "store-basic",
       "store",
+      "pos-pro",
+      "cafe-restaurant-pro",
     ]);
     expect(mockPrisma.marketplaceApp.findMany).toHaveBeenNthCalledWith(1, {
-      where: { slug: { in: ["order-core", "ecommerce-basic", "store-basic", "store"] } },
+      where: { slug: { in: ["order-core", "ecommerce-basic", "store-basic", "store", "pos-pro", "cafe-restaurant-pro"] } },
     });
     expect(mockPrisma.companyApp.findUnique).toHaveBeenCalledWith({
       where: {

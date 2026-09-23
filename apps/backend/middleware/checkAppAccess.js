@@ -157,14 +157,17 @@ const checkAppAccess = (appSlug) => {
       // Find all marketplace apps matching any candidate slug
       const candidateSlugs = getCandidateAppSlugs(appSlug);
 
-      // ⚡ Fast path: Check if company.installedApps directly satisfies any candidate slug
-      const matchedInstalledApp = (company?.installedApps || []).find((ca) =>
-        candidateSlugs.includes(ca.app?.slug)
-      );
+      // ⚡ Fast path: Check if company.installedApps directly satisfies any candidate slug (preferring primary slug first)
+      const primarySlug = String(appSlug || '').trim();
+      const installedList = company?.installedApps || [];
+      const matchedInstalledApp =
+        installedList.find((ca) => ca.app?.slug === primarySlug) ||
+        installedList.find((ca) => candidateSlugs.includes(ca.app?.slug));
 
       if (matchedInstalledApp) {
+        const isTrial = String(matchedInstalledApp.status || '').toUpperCase() === 'TRIAL';
         // If it's a TRIAL, check expiry
-        if (matchedInstalledApp.status === 'TRIAL' && matchedInstalledApp.trialEndsAt && new Date() > new Date(matchedInstalledApp.trialEndsAt)) {
+        if (isTrial && matchedInstalledApp.trialEndsAt && new Date() > new Date(matchedInstalledApp.trialEndsAt)) {
           if (isCompanyInActiveTrial) {
             req.companyApp = matchedInstalledApp;
             req.marketplaceApp = matchedInstalledApp.app;
@@ -193,7 +196,6 @@ const checkAppAccess = (appSlug) => {
       }
 
       // Sort: exact match (primary slug) first, then legacy/alias matches
-      const primarySlug = String(appSlug || '').trim();
       candidateApps.sort((a, b) => {
         if (a.slug === primarySlug) return -1;
         if (b.slug === primarySlug) return 1;

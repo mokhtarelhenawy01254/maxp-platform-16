@@ -3063,7 +3063,7 @@ const taskController = {
               lastName: true,
               email: true,
               avatar: true,
-              employeeRel: {
+              employees: {
                 select: {
                   id: true,
                   position: { select: { title: true } },
@@ -3100,8 +3100,8 @@ const taskController = {
             userId: entry.userId,
             userName: fullName,
             userAvatar: entry.user?.avatar || null,
-            userJobTitle: entry.user?.employeeRel?.position?.title || "موظف",
-            userDepartment: entry.user?.employeeRel?.department?.name || "فريق العمل",
+            userJobTitle: entry.user?.employees?.position?.title || entry.user?.employeeRel?.position?.title || "موظف",
+            userDepartment: entry.user?.employees?.department?.name || entry.user?.employeeRel?.department?.name || "فريق العمل",
             startTime: entry.startTime,
             elapsedSeconds,
           });
