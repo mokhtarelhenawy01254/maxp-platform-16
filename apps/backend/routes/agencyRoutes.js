@@ -21,8 +21,9 @@ router.post('/clients', agencyAuth, agencyController.createClient);
 router.put('/clients/:clientId', agencyAuth, agencyController.updateClient);
 router.delete('/clients/:clientId', agencyAuth, agencyController.deleteClient);
 
-// Monthly performance & manual entry (for on-platform and off-platform clients)
+// Performance & manual entry (Daily & Monthly for on-platform and off-platform clients)
 router.post('/clients/:clientId/performance', agencyAuth, agencyController.logClientPerformance);
+router.delete('/clients/:clientId/daily-logs/:date', agencyAuth, agencyController.deleteDailyLog);
 
 // Extra billable services / add-on line items (logo design, video, photoshoot, expenses)
 router.post('/clients/:clientId/extra-services', agencyAuth, agencyController.addExtraService);

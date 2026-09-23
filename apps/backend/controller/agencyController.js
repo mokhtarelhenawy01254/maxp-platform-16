@@ -300,6 +300,7 @@ const createClient = async (req, res) => {
             notes: (notes || '').trim(),
             extraServices: [],
             monthlyLogs: [],
+            dailyLogs: [],
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
@@ -384,13 +385,15 @@ const deleteClient = async (req, res) => {
     }
 };
 
-// 3. Performance & Monthly Logs
+// 3. Performance Logs (Daily & Monthly)
 const logClientPerformance = async (req, res) => {
     try {
         const companyId = req.user.companyId;
         const { clientId } = req.params;
         const {
             month = new Date().toISOString().slice(0, 7),
+            date,
+            type = 'monthly', // 'daily' | 'monthly'
             adSpend = 0,
             salesRevenue = 0,
             ordersCount = 0,
@@ -414,12 +417,104 @@ const logClientPerformance = async (req, res) => {
         if (!Array.isArray(client.monthlyLogs)) {
             client.monthlyLogs = [];
         }
+        if (!Array.isArray(client.dailyLogs)) {
+            client.dailyLogs = [];
+        }
 
-        const logIdx = client.monthlyLogs.findIndex((l) => l.month === month);
+        const isDaily = type === 'daily' || Boolean(date);
         const currentMonthStr = new Date().toISOString().slice(0, 7);
 
+        if (isDaily) {
+            const targetDate = (date || new Date().toISOString().slice(0, 10)).trim();
+            const targetMonth = targetDate.slice(0, 7);
+
+            const dailyIdx = client.dailyLogs.findIndex((d) => d.date === targetDate);
+            const dailyData = {
+                id: dailyIdx !== -1 ? (client.dailyLogs[dailyIdx].id || `dlog_${Date.now()}`) : `dlog_${Date.now()}_${crypto.randomBytes(2).toString('hex')}`,
+                date: targetDate,
+                month: targetMonth,
+                adSpend: Number(adSpend) || 0,
+                salesRevenue: Number(salesRevenue) || 0,
+                ordersCount: Number(ordersCount) || 0,
+                unitsSold: Number(unitsSold) || 0,
+                notes: (notes || '').trim(),
+                updatedAt: new Date().toISOString(),
+            };
+
+            if (dailyIdx !== -1) {
+                client.dailyLogs[dailyIdx] = {
+                    ...client.dailyLogs[dailyIdx],
+                    ...dailyData,
+                };
+            } else {
+                client.dailyLogs.push({
+                    ...dailyData,
+                    createdAt: new Date().toISOString(),
+                });
+            }
+
+            // Keep dailyLogs sorted by date descending
+            client.dailyLogs.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+            // Auto-rollup: Recalculate monthly totals for targetMonth from all daily logs
+            const monthDailyLogs = client.dailyLogs.filter((d) => d.date && d.date.startsWith(targetMonth));
+            const sumSpend = monthDailyLogs.reduce((acc, d) => acc + (Number(d.adSpend) || 0), 0);
+            const sumSales = monthDailyLogs.reduce((acc, d) => acc + (Number(d.salesRevenue) || 0), 0);
+            const sumOrders = monthDailyLogs.reduce((acc, d) => acc + (Number(d.ordersCount) || 0), 0);
+            const sumUnits = monthDailyLogs.reduce((acc, d) => acc + (Number(d.unitsSold) || 0), 0);
+
+            const mIdx = client.monthlyLogs.findIndex((l) => l.month === targetMonth);
+            if (mIdx !== -1) {
+                client.monthlyLogs[mIdx] = {
+                    ...client.monthlyLogs[mIdx],
+                    adSpend: sumSpend,
+                    salesRevenue: sumSales,
+                    ordersCount: sumOrders,
+                    unitsSold: sumUnits,
+                    updatedAt: new Date().toISOString(),
+                };
+            } else {
+                client.monthlyLogs.push({
+                    month: targetMonth,
+                    adSpend: sumSpend,
+                    salesRevenue: sumSales,
+                    ordersCount: sumOrders,
+                    unitsSold: sumUnits,
+                    isPaid: false,
+                    notes: '',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                });
+            }
+
+            // If logging for current month, sync to main client spend
+            if (targetMonth === currentMonthStr) {
+                client.currentSpend = sumSpend;
+                client.monthlySales = sumSales;
+                client.monthlyOrders = sumOrders;
+                client.monthlyUnits = sumUnits;
+            }
+
+            client.updatedAt = new Date().toISOString();
+            await saveAgencyData(prisma, companyId, agencyData);
+
+            return res.json({
+                success: true,
+                message: 'تم تسجيل أداء اليوم وتحديث إجمالي الشهر بنجاح',
+                data: {
+                    dailyLog: client.dailyLogs.find((d) => d.date === targetDate),
+                    monthlyLog: client.monthlyLogs.find((l) => l.month === targetMonth),
+                    dailyLogs: client.dailyLogs.filter((d) => d.month === targetMonth),
+                },
+            });
+        }
+
+        // Monthly mode
+        const targetMonth = month.trim();
+        const logIdx = client.monthlyLogs.findIndex((l) => l.month === targetMonth);
+
         const newLogData = {
-            month,
+            month: targetMonth,
             adSpend: Number(adSpend) || 0,
             salesRevenue: Number(salesRevenue) || 0,
             ordersCount: Number(ordersCount) || 0,
@@ -443,7 +538,7 @@ const logClientPerformance = async (req, res) => {
         }
 
         // If logging current month, sync to main client spend
-        if (month === currentMonthStr) {
+        if (targetMonth === currentMonthStr) {
             client.currentSpend = Number(adSpend) || 0;
             client.monthlySales = Number(salesRevenue) || 0;
             client.monthlyOrders = Number(ordersCount) || 0;
@@ -456,11 +551,81 @@ const logClientPerformance = async (req, res) => {
         res.json({
             success: true,
             message: 'تم تسجيل أداء العميل لهذا الشهر بنجاح',
-            data: client.monthlyLogs.find((l) => l.month === month),
+            data: client.monthlyLogs.find((l) => l.month === targetMonth),
         });
     } catch (error) {
         console.error('❌ [AGENCY] logClientPerformance error:', error);
         res.status(500).json({ success: false, message: 'فشل تسجيل الأداء' });
+    }
+};
+
+const deleteDailyLog = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        const { clientId, date } = req.params;
+
+        const prisma = getSharedPrismaClient();
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: { settings: true },
+        });
+
+        const agencyData = parseAgencyData(company?.settings);
+        const client = agencyData.clients.find((c) => c.id === clientId);
+        if (!client) {
+            return res.status(404).json({ success: false, message: 'العميل غير موجود' });
+        }
+
+        if (!Array.isArray(client.dailyLogs)) {
+            client.dailyLogs = [];
+        }
+
+        client.dailyLogs = client.dailyLogs.filter((d) => d.date !== date);
+        const targetMonth = date.slice(0, 7);
+
+        // Re-calculate monthly totals for targetMonth
+        const monthDailyLogs = client.dailyLogs.filter((d) => d.date && d.date.startsWith(targetMonth));
+        if (!Array.isArray(client.monthlyLogs)) client.monthlyLogs = [];
+        const logIdx = client.monthlyLogs.findIndex((l) => l.month === targetMonth);
+
+        const sumSpend = monthDailyLogs.reduce((acc, d) => acc + (Number(d.adSpend) || 0), 0);
+        const sumSales = monthDailyLogs.reduce((acc, d) => acc + (Number(d.salesRevenue) || 0), 0);
+        const sumOrders = monthDailyLogs.reduce((acc, d) => acc + (Number(d.ordersCount) || 0), 0);
+        const sumUnits = monthDailyLogs.reduce((acc, d) => acc + (Number(d.unitsSold) || 0), 0);
+
+        if (logIdx !== -1) {
+            client.monthlyLogs[logIdx] = {
+                ...client.monthlyLogs[logIdx],
+                adSpend: sumSpend,
+                salesRevenue: sumSales,
+                ordersCount: sumOrders,
+                unitsSold: sumUnits,
+                updatedAt: new Date().toISOString(),
+            };
+        }
+
+        const currentMonthStr = new Date().toISOString().slice(0, 7);
+        if (targetMonth === currentMonthStr) {
+            client.currentSpend = sumSpend;
+            client.monthlySales = sumSales;
+            client.monthlyOrders = sumOrders;
+            client.monthlyUnits = sumUnits;
+        }
+
+        client.updatedAt = new Date().toISOString();
+        await saveAgencyData(prisma, companyId, agencyData);
+
+        res.json({
+            success: true,
+            message: 'تم حذف سجل أداء اليوم وتحديث إجمالي الشهر بنجاح',
+            data: {
+                dailyLogs: client.dailyLogs.filter((d) => d.month === targetMonth),
+                monthlyLog: client.monthlyLogs.find((l) => l.month === targetMonth),
+            },
+        });
+    } catch (error) {
+        console.error('❌ [AGENCY] deleteDailyLog error:', error);
+        res.status(500).json({ success: false, message: 'فشل حذف سجل أداء اليوم' });
     }
 };
 
@@ -958,6 +1123,7 @@ module.exports = {
     updateClient,
     deleteClient,
     logClientPerformance,
+    deleteDailyLog,
     addExtraService,
     deleteExtraService,
     getInvoices,

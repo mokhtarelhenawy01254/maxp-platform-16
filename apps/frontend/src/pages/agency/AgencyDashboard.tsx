@@ -42,6 +42,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
+import { AgencyPerformanceModal, DailyLog } from "./AgencyPerformanceModal";
 
 export type PricingModel =
   | "RETAINER"
@@ -97,6 +98,7 @@ interface AgencyClient {
   notes?: string;
   extraServices?: ExtraServiceItem[];
   monthlyLogs?: MonthlyLog[];
+  dailyLogs?: DailyLog[];
   createdAt: string;
 }
 
@@ -261,15 +263,6 @@ export default function AgencyDashboard() {
   // Performance Log Modal State
   const [perfModalOpen, setPerfModalOpen] = useState(false);
   const [selectedClientForPerf, setSelectedClientForPerf] = useState<AgencyClient | null>(null);
-  const [perfForm, setPerfForm] = useState({
-    month: currentMonthString,
-    adSpend: 0,
-    salesRevenue: 0,
-    ordersCount: 0,
-    unitsSold: 0,
-    isPaid: false,
-    notes: ""
-  });
 
   // Extra Service Modal State
   const [extraModalOpen, setExtraModalOpen] = useState(false);
@@ -663,68 +656,8 @@ export default function AgencyDashboard() {
   // Performance Log Handlers
   const handleOpenPerfModal = (client: AgencyClient) => {
     setSelectedClientForPerf(client);
-    const existingLog = client.monthlyLogs?.find((l) => l.month === selectedMonth);
-    setPerfForm({
-      month: selectedMonth,
-      adSpend: existingLog ? existingLog.adSpend : client.currentSpend || 0,
-      salesRevenue: existingLog ? existingLog.salesRevenue : client.monthlySales || 0,
-      ordersCount: existingLog ? existingLog.ordersCount : client.monthlyOrders || 0,
-      unitsSold: existingLog ? existingLog.unitsSold : client.monthlyUnits || 0,
-      isPaid: existingLog ? Boolean(existingLog.isPaid) : false,
-      notes: existingLog?.notes || ""
-    });
     setPerfModalOpen(true);
   };
-
-  const handleSavePerformance = async () => {
-    if (!selectedClientForPerf) return;
-    try {
-      const res = await apiClient.post(`/agency/clients/${selectedClientForPerf.id}/performance`, perfForm);
-      if (res.data?.success) {
-        toast.success("تم تسجيل أداء العميل لهذا الشهر");
-        setPerfModalOpen(false);
-        fetchData();
-        fetchInvoices(selectedMonth);
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "فشل تسجيل الأداء");
-    }
-  };
-
-  // Calculate live preview of fee inside modal
-  const previewCalculatedFee = useMemo(() => {
-    if (!selectedClientForPerf) return 0;
-    const model = selectedClientForPerf.pricingModel || "RETAINER";
-    const spend = Number(perfForm.adSpend) || 0;
-    const sales = Number(perfForm.salesRevenue) || 0;
-    const orders = Number(perfForm.ordersCount) || 0;
-    const units = Number(perfForm.unitsSold) || 0;
-    const rate = Number(selectedClientForPerf.pricingRate) || 0;
-    const base = Number(selectedClientForPerf.baseRetainer) || 0;
-    const perOrder = Number(selectedClientForPerf.feePerOrder) || 0;
-    const perItem = Number(selectedClientForPerf.feePerItem) || 0;
-
-    switch (model) {
-      case "PERCENT_SPEND":
-        return Math.round(spend * (rate / 100));
-      case "PERCENT_SALES":
-        return Math.round(sales * (rate / 100));
-      case "FIXED_ORDER":
-        return Math.round(orders * perOrder);
-      case "FIXED_ITEM":
-        return Math.round(units * perItem);
-      case "HYBRID": {
-        let comm = 0;
-        if (selectedClientForPerf.hybridType === "PERCENT_SPEND") comm = Math.round(spend * (rate / 100));
-        else if (selectedClientForPerf.hybridType === "PERCENT_SALES") comm = Math.round(sales * (rate / 100));
-        else if (selectedClientForPerf.hybridType === "FIXED_ORDER") comm = Math.round(orders * perOrder);
-        return base + comm;
-      }
-      case "RETAINER":
-      default:
-        return base;
-    }
-  }, [selectedClientForPerf, perfForm]);
 
   // Extra Service Handlers
   const handleOpenExtraModal = (client: AgencyClient) => {
@@ -1330,6 +1263,11 @@ export default function AgencyDashboard() {
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
+                            {Array.isArray(client.dailyLogs) && client.dailyLogs.filter((d: any) => d.date?.startsWith(selectedMonth)).length > 0 && (
+                              <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 font-bold">
+                                {client.dailyLogs.filter((d: any) => d.date?.startsWith(selectedMonth)).length} يوم مسجل
+                              </Badge>
+                            )}
                             {client.isOffPlatform && (
                               <Badge variant="outline" className="text-[10px] bg-muted/40 font-bold">
                                 تتبع يدوي
@@ -1450,7 +1388,7 @@ export default function AgencyDashboard() {
                             onClick={() => handleOpenPerfModal(client)}
                           >
                             <FileSpreadsheet className="size-3.5 ml-1 text-primary" />
-                            تسجيل أداء الشهر
+                            تسجيل الأداء (يومي / شهري)
                           </Button>
                           <Button
                             size="sm"
@@ -2327,123 +2265,18 @@ export default function AgencyDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* MODAL 2: LOG MONTHLY PERFORMANCE */}
-      <Dialog open={perfModalOpen} onOpenChange={setPerfModalOpen}>
-        <DialogContent className="sm:max-w-md max-h-[90dvh] flex flex-col p-0 overflow-hidden" dir="rtl">
-          <DialogHeader className="p-4 sm:p-5 border-b border-border/60 bg-muted/20 shrink-0">
-            <DialogTitle className="font-black text-base sm:text-lg flex items-center gap-2 text-foreground">
-              <FileSpreadsheet className="size-5 text-primary" />
-              تسجيل أداء الشهر - {selectedClientForPerf?.name}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="overflow-y-auto p-4 sm:p-5 flex-1 space-y-3.5 text-xs">
-            <div>
-              <Label className="text-xs font-bold">الشهر المستهدف</Label>
-              <Input
-                type="month"
-                className="mt-1 h-10 sm:h-9 text-base sm:text-xs font-bold rounded-xl"
-                value={perfForm.month}
-                onChange={(e) => setPerfForm({ ...perfForm, month: e.target.value })}
-              />
-            </div>
-            {selectedClientForPerf?.adAccountId && (
-              <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-300">
-                  <Megaphone className="size-4 shrink-0" />
-                  <span className="font-bold">حساب إعلانات ميتا:</span>
-                  <span className="font-mono text-[11px]">{selectedClientForPerf.adAccountId}</span>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs font-bold bg-background text-blue-600 hover:bg-blue-500/10 border-blue-200 px-2 w-fit"
-                  onClick={() => window.open(`/advertising/facebook-ads?adAccountId=${encodeURIComponent(selectedClientForPerf.adAccountId!)}`, "_blank")}
-                >
-                  <ExternalLink className="size-3 ml-1" />
-                  عرض تقرير الحملات والإنفاق
-                </Button>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs font-bold">الإنفاق الإعلاني الفعلي ({currency})</Label>
-                <Input
-                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
-                  type="number"
-                  value={perfForm.adSpend || ""}
-                  onChange={(e) => setPerfForm({ ...perfForm, adSpend: Number(e.target.value) })}
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-bold">إجمالي المبيعات المحققة ({currency})</Label>
-                <Input
-                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
-                  type="number"
-                  value={perfForm.salesRevenue || ""}
-                  onChange={(e) => setPerfForm({ ...perfForm, salesRevenue: Number(e.target.value) })}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs font-bold">عدد الأوردرات / الطلبات</Label>
-                <Input
-                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
-                  type="number"
-                  value={perfForm.ordersCount || ""}
-                  onChange={(e) => setPerfForm({ ...perfForm, ordersCount: Number(e.target.value) })}
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-bold">عدد القطع المباعة (Units)</Label>
-                <Input
-                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
-                  type="number"
-                  value={perfForm.unitsSold || ""}
-                  onChange={(e) => setPerfForm({ ...perfForm, unitsSold: Number(e.target.value) })}
-                />
-              </div>
-            </div>
-
-            {/* Instant Calculated Fee Preview */}
-            <div className="p-3.5 bg-emerald-500/10 rounded-xl border border-emerald-300 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-emerald-800 dark:text-emerald-300">أتعاب الوكالة المحتسبة آلياً:</span>
-                <span className="font-black text-base text-emerald-700 dark:text-emerald-400">
-                  {previewCalculatedFee.toLocaleString()} {currency}
-                </span>
-              </div>
-              <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
-                بناءً على نموذج ({PRICING_MODEL_LABELS[selectedClientForPerf?.pricingModel || "RETAINER"]?.label})
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2.5 pt-1">
-              <input
-                type="checkbox"
-                id="isPaidCheck"
-                className="size-4 rounded accent-primary cursor-pointer"
-                checked={perfForm.isPaid}
-                onChange={(e) => setPerfForm({ ...perfForm, isPaid: e.target.checked })}
-              />
-              <label htmlFor="isPaidCheck" className="text-xs font-bold cursor-pointer">
-                تم تحصيل وسداد الفاتورة لهذا الشهر
-              </label>
-            </div>
-          </div>
-          <DialogFooter className="p-3.5 sm:p-4 border-t border-border/60 bg-background/95 backdrop-blur-sm shrink-0 flex flex-col-reverse sm:flex-row gap-2 sm:justify-start">
-            <Button onClick={handleSavePerformance} className="font-bold h-11 sm:h-9 text-xs w-full sm:w-auto">
-              حفظ الأداء وحساب الفاتورة
-            </Button>
-            <Button variant="outline" onClick={() => setPerfModalOpen(false)} className="h-11 sm:h-9 text-xs w-full sm:w-auto">
-              إلغاء
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* MODAL 2: LOG PERFORMANCE (DAILY & MONTHLY) */}
+      <AgencyPerformanceModal
+        open={perfModalOpen}
+        onOpenChange={setPerfModalOpen}
+        client={selectedClientForPerf}
+        selectedMonth={selectedMonth}
+        currency={currency}
+        onSuccess={() => {
+          fetchData();
+          fetchInvoices(selectedMonth);
+        }}
+      />
 
       {/* MODAL 3: ADD EXTRA SERVICE / EXPENSE */}
       <Dialog open={extraModalOpen} onOpenChange={setExtraModalOpen}>
