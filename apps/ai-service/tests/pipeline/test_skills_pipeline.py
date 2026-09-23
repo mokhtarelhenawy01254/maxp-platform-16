@@ -68,72 +68,82 @@ async def test_build_user_content_without_attachments(ctx: PipelineContext) -> N
     assert result == "test message"
 
 
-# ─── _format_tool_results catch-all ──────────────────────────────
+# ─── evidence digest + LLM fallback synthesis (2026 law) ─────────
 
 
-def test_format_handles_unregistered_tool():
-    """Any successful tool not specifically handled should still produce output."""
-    from src.pipeline.stages.skills_pipeline import _format_tool_results
-    executed = [
-        {"tool": "sales_revenue", "status": "success", "result": {"total": 15000, "count": 42}},
-        {"tool": "competitor_search", "status": "success", "result": {"found": True, "count": 5}},
-    ]
-    result = _format_tool_results(executed)
-    assert "sales_revenue" in result
-    assert "15000" in result or "42" in result
-    assert "competitor_search" in result
+def test_evidence_digest_lists_tools_and_awaiting():
+    from src.pipeline.stages.skills_pipeline import _build_evidence_digest
 
-
-def test_format_catch_all_empty_result():
-    """Catch-all should produce '[unknown_tool]: {}' even when result is empty dict."""
-    from src.pipeline.stages.skills_pipeline import _format_tool_results
-    result = _format_tool_results([
-        {"tool": "unknown_tool", "status": "success", "result": {}},
+    digest = _build_evidence_digest([
+        {"tool": "order_recent_list", "status": "success", "result": {"count": 50}},
+        {"tool": "conversion_tool_toggle", "status": "awaiting_approval", "result": {"status": "awaiting_approval"}},
+        {"tool": "product_search", "status": "error", "error": "timeout"},
     ])
-    assert "[unknown_tool]: {}" in result
+    assert "order_recent_list" in digest and "50" in digest
+    assert "بانتظار موافقة" in digest
+    assert "timeout" in digest
 
 
-def test_format_not_found_tool():
-    """Tools with found=False should get JSON representation."""
-    from src.pipeline.stages.skills_pipeline import _format_tool_results
-    result = _format_tool_results([
-        {"tool": "sales_revenue", "status": "success", "result": {"found": False}},
-    ])
-    assert "sales_revenue" in result
-    assert "false" in result
+def test_evidence_digest_empty_executed():
+    from src.pipeline.stages.skills_pipeline import _build_evidence_digest
+
+    assert "لم تُنفَّذ" in _build_evidence_digest([])
 
 
-def test_format_handled_not_found_tool_skips_catchall():
-    """All tools are formatted in standard format in the simplified version."""
-    from src.pipeline.stages.skills_pipeline import _format_tool_results
-    result = _format_tool_results([
-        {"tool": "order_lookup", "status": "success", "result": {"found": False}},
-    ])
-    assert "order_lookup" in result
+@pytest.mark.asyncio
+async def test_synthesize_fallback_returns_llm_voice(ctx: PipelineContext) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from src.pipeline.stages.skills_pipeline import _synthesize_fallback_reply
+
+    ctx.message = "كام أوردر دخل؟"
+    ctx.agent = None
+    with patch("src.pipeline.stages.skills_pipeline._raw_llm_call") as mock_raw:
+        mock_raw.return_value = MagicMock(text="عندك 50 أوردر آخر يومين يا فندم.")
+        reply = await _synthesize_fallback_reply(ctx, [
+            {"tool": "order_recent_list", "status": "success", "result": {"count": 50}},
+        ])
+    assert reply == "عندك 50 أوردر آخر يومين يا فندم."
+    # evidence reached the model
+    sent = mock_raw.call_args.args[1][-1]["content"]
+    assert "order_recent_list" in sent and "50" in sent
 
 
-def test_format_no_tools_returns_empty():
-    """Empty executed list should return ''."""
-    from src.pipeline.stages.skills_pipeline import _format_tool_results
-    assert _format_tool_results([]) == ""
+@pytest.mark.asyncio
+async def test_synthesize_fallback_neutral_line_when_llm_dead(ctx: PipelineContext) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from src.pipeline.stages.skills_pipeline import _FALLBACK_NEUTRAL_LINE, _synthesize_fallback_reply
+
+    ctx.message = "وريني المنتجات"
+    ctx.agent = None
+    with patch("src.pipeline.stages.skills_pipeline._raw_llm_call", side_effect=RuntimeError("provider down")):
+        reply = await _synthesize_fallback_reply(ctx, [])
+    assert reply == _FALLBACK_NEUTRAL_LINE
+    assert "😊" not in reply
 
 
-def test_format_error_tools_skipped():
-    """Error status tools should produce ERROR output in the simplified version."""
-    from src.pipeline.stages.skills_pipeline import _format_tool_results
-    result = _format_tool_results([
-        {"tool": "product_search", "status": "error", "result": {}, "error": "API down"},
-    ])
-    assert "ERROR" in result
-    assert "API down" in result
+def test_no_hardcoded_fallback_templates_remain():
+    """Radar-skill law: customer replies must be LLM-generated, never templates."""
+    import pathlib
+
+    source = (
+        pathlib.Path(__file__).resolve().parents[2]
+        / "src" / "pipeline" / "stages" / "skills_pipeline.py"
+    ).read_text(encoding="utf-8")
+    assert "_format_fallback_reply" not in source
+    assert "_format_tool_results" not in source
+    assert "راجعتلك الطلب رقم" not in source
+    assert "😉" not in source and "😊" not in source
 
 
 # ─── Integration: follow-up returns empty text ───────────────────
 
 
 @pytest.mark.asyncio
-async def test_followup_empty_falls_back_to_tool_results(ctx: PipelineContext) -> None:
-    """When follow-up LLM returns empty text, final_reply should come from _format_tool_results."""
+async def test_followup_empty_falls_back_to_llm_synthesis(ctx: PipelineContext) -> None:
+    """When follow-up LLM returns empty text, final_reply comes from the
+    evidence-grounded synthesis call (never hardcoded templates)."""
     from src.pipeline.stages.skills_pipeline import process_with_skills
     ctx.agent = MagicMock()
     ctx.agent.allowed_skills = None
@@ -163,14 +173,16 @@ async def test_followup_empty_falls_back_to_tool_results(ctx: PipelineContext) -
         followup_response = MagicMock()
         followup_response.text = ""
         followup_response.tool_calls = None
-        mock_raw.return_value = followup_response
+        synthesized = MagicMock()
+        synthesized.text = "لقيت المنتج اللي بتدور عليه: Test Product متاح."
+        # 1st: followup empty → 2nd: stripped retry empty → 3rd: synthesis
+        mock_raw.side_effect = [followup_response, followup_response, synthesized]
 
         ctx.llm_client = AsyncMock()
 
         result = await process_with_skills(ctx)
 
-    assert result.final_reply
-    assert "Test Product" in result.final_reply
+    assert result.final_reply == "لقيت المنتج اللي بتدور عليه: Test Product متاح."
 
 
 @pytest.mark.asyncio

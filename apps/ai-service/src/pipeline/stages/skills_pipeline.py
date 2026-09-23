@@ -220,6 +220,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             system_prompt = await hook.before_llm(ctx, system_prompt, skills)
 
     # 4. Single LLM call with skills as tools
+    executed: list[dict] = []
     try:
         provider_response = await _llm_call(ctx, system_prompt, skills)
     except Exception as e:
@@ -434,7 +435,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                         logger.info("all_followup_tool_calls_were_failed_duplicates_breaking")
                         break
 
-                    extra_results = await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in valid_tool_calls])
+                    extra_results = await _execute_tool_calls(ctx, registry, valid_tool_calls)
                     executed.extend(extra_results)
                     for item in extra_results:
                         if item["status"] == "success":
@@ -479,11 +480,11 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                 text_messages = _strip_tool_messages(followup_messages, executed)
                 final_response = await _raw_llm_call(ctx, text_messages, tools=[], tool_choice="none")
 
-            ctx.final_reply = final_response.text or _format_fallback_reply(ctx, executed)
+            ctx.final_reply = final_response.text or await _synthesize_fallback_reply(ctx, executed)
             ctx.llm_response = final_response.text or ""
         except Exception as e:
             logger.error("skills_pipeline_followup_failed", error=str(e), exc_info=True)
-            ctx.final_reply = _format_fallback_reply(ctx, executed)
+            ctx.final_reply = await _synthesize_fallback_reply(ctx, executed)
     elif provider_response.text:
         ctx.final_reply = provider_response.text
         ctx.llm_response = provider_response.text
@@ -719,84 +720,69 @@ def _build_skill_tool_dicts(skills: list, ctx: PipelineContext) -> list[dict]:
     return tool_dicts
 
 
-def _format_fallback_reply(ctx: PipelineContext, executed: list[dict]) -> str:
-    """Format safe, human-like Arabic fallback response for customer-facing channels."""
-    channel = str(getattr(ctx, "channel", "") or "").lower()
-    customer_channels = {"chat", "facebook", "facebook_messenger", "messenger", "whatsapp", "telegram"}
-
-    # 1. Synthesize order tracking if an order lookup tool executed
-    for item in executed:
-        t_name = str(item.get("tool", "")).lower()
-        if "order" in t_name:
-            res = item.get("result", {})
-            order = res.get("order") if isinstance(res.get("order"), dict) else res
-            if isinstance(order, dict) and order.get("found"):
-                raw_status = str(order.get("status", "")).upper()
-                status_ar = {
-                    "PENDING": "قيد المراجعة والتجهيز",
-                    "CONFIRMED": "تم تأكيد طلبك وجاري تجهيزه للشحن",
-                    "SHIPPED": "تم شحن طلبك وهو حالياً في الطريق لحضرتك مع مندوب الشحن",
-                    "DELIVERED": "تم تسليم الطلب بنجاح",
-                    "CANCELLED": "ملغي",
-                    "RETURNED": "مرتجع",
-                }.get(raw_status, raw_status or "مسجل")
-                num = order.get("orderNumber") or order.get("number") or ""
-                return f"أهلاً بحضرتك يا فندم، راجعتلك الطلب رقم {num} وحالته حالياً: {status_ar}. لو حابب تستفسر عن أي تفاصيل تانية أنا معاك وتحت أمرك 😊"
-            elif isinstance(order, dict) and order.get("found") is False:
-                num = order.get("orderNumber") or ""
-                return f"أهلاً بحضرتك يا فندم، بحثت برقم الطلب {num} ومش ظاهر عندي في السيستم، ممكن تتأكد من رقم الطلب أو تبعتلي رقم الموبايل اللي سجلت بيه الأوردر وهراجعلك فوراً 🙏"
-
-    if channel in customer_channels or not channel or channel in ("unknown", "sandbox"):
-        tool_names = {item.get("tool", "") for item in executed}
-        if any("product" in t or "search" in t or "catalog" in t for t in tool_names):
-            return "معاك يا فندم، راجعتلك الموديلات المتاحة أهو وبشوفلك أنسب حاجة تناسب طلبك 😊 تحب تسأل عن مقاس معين أو ألوان تانية؟"
-        return "معاك يا فندم وتحت أمرك في أي استفسار، تحب أساعدك في إيه بالظبط؟ 😊"
-    return _format_tool_results(executed)
+# Documented last resort when even the synthesis call fails: one neutral
+# line — no persona, no emoji, no business phrasing (radar skill law:
+# replies must be LLM-generated from structured context, never templates).
+_FALLBACK_NEUTRAL_LINE = (
+    "حصلت لحظة انقطاع في المعالجة وطلبك وصلني — جرّب تاني بعد لحظات وهرد عليك فورًا."
+)
 
 
-def _format_tool_results(executed: list[dict]) -> str:
-    from src.skills.registry import get_skill_registry
-
-    registry = get_skill_registry()
-    lines = []
-    for item in executed:
-        name = item.get("tool", "")
+def _build_evidence_digest(executed: list[dict]) -> str:
+    """Compact, LLM-ready digest of what actually executed."""
+    lines: list[str] = []
+    for item in executed[:8]:
+        tool = item.get("tool", "unknown")
         status = item.get("status", "unknown")
-        result = item.get("result", {})
-        if status == "success":
-            formatted = None
-            tool = registry.resolve(name)
-            if tool and hasattr(tool, "format_result"):
-                try:
-                    formatted = tool.format_result(result)
-                except Exception:
-                    formatted = None
-            if formatted:
-                lines.append(f"{formatted}")
-            elif name in {"facebook_ad_create_full_draft", "facebook_ad.create_full_draft"}:
-                lines.append("تم حفظ وتجهيز مسودة الحملة الإعلانية بنجاح في لوحة التحكم للمراجعة والاعتماد ✅")
-            elif name in {"facebook_ad_publish_draft", "facebook_ad.publish_draft"}:
-                lines.append("تم نشر الحملة الإعلانية بنجاح على فيسبوك بحالة متوقفة مؤقتاً لحفظ الميزانية ✅")
-            elif name in {"facebook_ad_analyze_product", "facebook_ad.analyze_product"}:
-                lines.append("تم فحص وتحليل بيانات المنتج واقتصادياته التسويقية بنجاح 📊")
-            elif name in {"facebook_ad_account_info", "facebook_ad.account_info"}:
-                lines.append("تم فحص حالة الحساب الإعلاني وأصول ميتا بنجاح 🔎")
-            elif name in {"facebook_ad_inspect_targeting", "facebook_ad.inspect_targeting"}:
-                lines.append("تم فحص وتأكيد الاستهداف الجغرافي والديموغرافي من سيرفرات Meta بنجاح 🎯")
-            elif name in {"facebook_ad_get_decision", "facebook_ad.get_decision"}:
-                lines.append("تم فحص مؤشرات الأداء والقرارات الاستثمارية للحملات بنجاح 📈")
-            else:
-                lines.append("تم تحديث ومراجعة البيانات بنجاح ✅")
+        if status == "awaiting_approval":
+            lines.append(f"- {tool}: (بانتظار موافقة التاجر — لم تُنفَّذ)")
+            continue
+        payload_src = (
+            _compact_for_llm(item.get("result", {}), tool_name=tool)
+            if status == "success"
+            else {"error": item.get("error", "")}
+        )
+        try:
+            payload = json.dumps(payload_src, ensure_ascii=False, cls=DecimalEncoder, default=str)[:1200]
+        except Exception:
+            payload = str(payload_src)[:1200]
+        lines.append(f"- {tool} [{status}]: {payload}")
+    return "\n".join(lines) or "(لم تُنفَّذ أي أداة)"
 
-        elif status == "error":
-            err_text = str(item.get("error", ""))
-            if "2490487" in err_text or "bid" in err_text.lower() or "عرض الأسعار" in err_text:
-                lines.append("تعذر النشر التلقائي بسبب قيود استراتيجية المزايدة في حساب فيسبوك. تم حفظ المسودة بأمان في لوحة الإعلانات للمراجعة.")
-            elif "pixel" in err_text.lower() or "بكسل" in err_text:
-                lines.append("تعذر النشر لأن بكسل المتجر غير مرتبط بالحساب الإعلاني المختار حالياً.")
-            else:
-                lines.append("تعذر استكمال جزء من الإجراء وتم حفظ البيانات للمراجعة.")
-    return "\n".join(lines)
+
+async def _synthesize_fallback_reply(ctx: PipelineContext, executed: list[dict]) -> str:
+    """Degraded-mode reply synthesis (2026 law: replies are LLM-generated from
+    structured context — never hardcoded templates).
+
+    Fired only when the model returned an empty reply after all retries. One
+    evidence-grounded call in the agent's own voice replaces the old hardcoded
+    Arabic templates so the agent never breaks character."""
+    agent = getattr(ctx, "agent", None)
+    agent_name = (getattr(agent, "name", "") or "").strip()
+    identity = f"اسمك: {agent_name}. " if agent_name else ""
+
+    system_prompt = (
+        "أنت مساعد متجر بتكتب رد للعميل بعد ما الأدوات اتنفذت فعليًا. "
+        f"{identity}"
+        "اكتب ردًا قصيرًا بأسلوبك الطبيعي بناءً على أدلة الأدوات فقط: "
+        "لخص النتيجة بلغة أعمال واضحة، ولو فيه أداة فشلت أو مستنية موافقة اذكرها بصدق. "
+        "ممنوع تخترع أي معلومة مش في الأدلة، وممنوع الإيموجي."
+    )
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {
+            "role": "user",
+            "content": f"طلب العميل: {ctx.message}\n\nأدلة الأدوات المنفَّذة:\n{_build_evidence_digest(executed)}",
+        },
+    ]
+    try:
+        response = await _raw_llm_call(ctx, messages, tools=[], tool_choice="none")
+        text = (getattr(response, "text", "") or "").strip()
+        if text:
+            return text
+    except Exception as exc:
+        logger.warning("fallback_synthesis_failed", error=str(exc))
+    return _FALLBACK_NEUTRAL_LINE
 
 
 async def _build_followup_messages(
