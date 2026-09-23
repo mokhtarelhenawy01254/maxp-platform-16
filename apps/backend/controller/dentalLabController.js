@@ -4653,7 +4653,30 @@ const getDoctorStatement = async (req, res) => {
       prisma.dentalLabCase.findMany({ where: caseWhere, orderBy: { createdAt: 'desc' } }),
       prisma.dentalInvoice.findMany({
         where: invoiceWhere,
-        include: { payments: { orderBy: { createdAt: 'desc' } } },
+        include: {
+          payments: { orderBy: { createdAt: 'desc' } },
+          case: {
+            select: {
+              id: true,
+              caseNumber: true,
+              patientName: true,
+              patientPhone: true,
+              workTypeName: true,
+              unitsCount: true,
+              teeth: true,
+              shade: true,
+              status: true,
+            },
+          },
+          doctor: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              clinicName: true,
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.dentalInvoice.aggregate({
@@ -4664,8 +4687,22 @@ const getDoctorStatement = async (req, res) => {
       prisma.dentalCreditNote.aggregate({ where: creditWhere, _sum: { amount: true } }),
     ]);
 
-    if (!doctor && invoices && invoices.length) {
-      doctor = { id: null, name: invoices[0].doctorName || null };
+    const enrichedInvoices = (invoices || []).map((inv) => ({
+      ...inv,
+      caseNumber: inv.case?.caseNumber || null,
+      patientName: inv.case?.patientName || inv.patientName || null,
+      workTypeName: inv.case?.workTypeName || null,
+      unitsCount: inv.case?.unitsCount ?? 1,
+      doctorName: inv.doctor?.name || inv.doctorName || doctor?.name || null,
+      clinicName: inv.doctor?.clinicName || doctor?.clinicName || null,
+    }));
+
+    if (!doctor && enrichedInvoices.length) {
+      doctor = {
+        id: enrichedInvoices[0].doctorId || null,
+        name: enrichedInvoices[0].doctorName || null,
+        clinicName: enrichedInvoices[0].clinicName || null,
+      };
     }
 
     let openingBalance = 0;
@@ -4695,10 +4732,12 @@ const getDoctorStatement = async (req, res) => {
       data: {
         doctor,
         cases,
-        invoices,
+        invoices: enrichedInvoices,
         totals: {
           cases: cases.length,
           invoicesCount: (invoiceAgg && invoiceAgg._count && invoiceAgg._count._all) || 0,
+          totalCards: (invoiceAgg && invoiceAgg._count && invoiceAgg._count._all) || 0,
+          totalUnits: enrichedInvoices.reduce((sum, inv) => sum + (inv.unitsCount || 1), 0),
           openingBalance,
           invoiced: round2((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.total) || 0),
           paid: round2((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.paid) || 0),
@@ -4756,7 +4795,30 @@ const getDoctorStatementPdf = async (req, res) => {
       prisma.dentalLabCase.findMany({ where: caseWhere, orderBy: { createdAt: 'desc' } }),
       prisma.dentalInvoice.findMany({
         where: invoiceWhere,
-        include: { payments: { orderBy: { createdAt: 'desc' } } },
+        include: {
+          payments: { orderBy: { createdAt: 'desc' } },
+          case: {
+            select: {
+              id: true,
+              caseNumber: true,
+              patientName: true,
+              patientPhone: true,
+              workTypeName: true,
+              unitsCount: true,
+              teeth: true,
+              shade: true,
+              status: true,
+            },
+          },
+          doctor: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              clinicName: true,
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.dentalInvoice.aggregate({
@@ -4769,8 +4831,23 @@ const getDoctorStatementPdf = async (req, res) => {
       prisma.company.findFirst({ where: { id: companyId } }),
     ]);
 
-    if (!doctor && invoices && invoices.length) {
-      doctor = { id: null, name: invoices[0].doctorName || null, phone: null, clinicName: null };
+    const enrichedInvoices = (invoices || []).map((inv) => ({
+      ...inv,
+      caseNumber: inv.case?.caseNumber || null,
+      patientName: inv.case?.patientName || inv.patientName || null,
+      workTypeName: inv.case?.workTypeName || null,
+      unitsCount: inv.case?.unitsCount ?? 1,
+      doctorName: inv.doctor?.name || inv.doctorName || doctor?.name || null,
+      clinicName: inv.doctor?.clinicName || doctor?.clinicName || null,
+    }));
+
+    if (!doctor && enrichedInvoices.length) {
+      doctor = {
+        id: enrichedInvoices[0].doctorId || null,
+        name: enrichedInvoices[0].doctorName || null,
+        phone: null,
+        clinicName: enrichedInvoices[0].clinicName || null,
+      };
     }
 
     let openingBalance = 0;
@@ -4798,10 +4875,12 @@ const getDoctorStatementPdf = async (req, res) => {
     const statement = {
       doctor,
       cases,
-      invoices,
+      invoices: enrichedInvoices,
       totals: {
         cases: cases.length,
         invoicesCount: (invoiceAgg && invoiceAgg._count && invoiceAgg._count._all) || 0,
+        totalCards: (invoiceAgg && invoiceAgg._count && invoiceAgg._count._all) || 0,
+        totalUnits: enrichedInvoices.reduce((sum, inv) => sum + (inv.unitsCount || 1), 0),
         openingBalance,
         invoiced: round2((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.total) || 0),
         paid: round2((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.paid) || 0),

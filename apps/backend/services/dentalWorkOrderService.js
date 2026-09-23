@@ -620,12 +620,19 @@ async function generateDoctorStatementPdf({ company, doctor, statement, workOrde
           doc.fontSize(7.5).fillColor('#0f172a');
           let x = margin + contentWidth;
 
+          const pName = inv.patientName || inv.case?.patientName || '—';
+          const cNum = inv.caseNumber || inv.case?.caseNumber;
+          const patientLabel = cNum ? `${pName} (${cNum})` : pName;
+          const wType = inv.workTypeName || inv.case?.workTypeName || '—';
+          const uCount = inv.unitsCount ?? inv.case?.unitsCount;
+          const workTypeLabel = uCount && uCount > 1 ? `${wType} (${uCount} و)` : wType;
+
           const rowCols = [
             { text: String(index + 1), w: colWidths.idx, align: 'center', color: '#64748b' },
             { text: fmtDate(inv.createdAt), w: colWidths.date, align: 'center' },
             { text: inv.invoiceNumber || inv.id?.slice(0, 8) || '—', w: colWidths.invNumber, align: 'center', color: '#2563eb' },
-            { text: inv.patientName || '—', w: colWidths.patient, align: 'right' },
-            { text: inv.workTypeName || inv.caseNumber || '—', w: colWidths.workType, align: 'right', color: '#475569' },
+            { text: patientLabel, w: colWidths.patient, align: 'right' },
+            { text: workTypeLabel, w: colWidths.workType, align: 'right', color: '#475569' },
             { text: `${Math.round(inv.total || 0)}`, w: colWidths.total, align: 'center', color: '#0f172a' },
             { text: `${Math.round(inv.paid || 0)}`, w: colWidths.paid, align: 'center', color: '#047857' },
             { text: `${Math.round(inv.remaining || 0)}`, w: colWidths.remaining, align: 'center', color: (inv.remaining > 0 ? '#b91c1c' : '#64748b') },

@@ -271,6 +271,9 @@ export interface DentalInvoice {
   doctorId?: string;
   doctorName?: string;
   patientName?: string;
+  clinicName?: string;
+  workTypeName?: string;
+  unitsCount?: number;
   total: number;
   discount?: number;
   paid: number;
@@ -367,10 +370,21 @@ export interface DoctorStatementCase {
 }
 
 export interface DoctorStatement {
-  doctor?: { id?: string; name?: string };
+  doctor?: { id?: string; name?: string; phone?: string; clinicName?: string };
   cases?: DoctorStatementCase[];
   invoices?: DentalInvoice[];
-  totals?: { cases?: number; invoicesCount?: number; invoiced?: number; paid?: number; remaining?: number; openingBalance?: number; closingBalance?: number };
+  totals?: {
+    cases?: number;
+    invoicesCount?: number;
+    totalCards?: number;
+    totalUnits?: number;
+    invoiced?: number;
+    paid?: number;
+    remaining?: number;
+    credits?: number;
+    openingBalance?: number;
+    closingBalance?: number;
+  };
 }
 
 export interface TechnicianProductivity {

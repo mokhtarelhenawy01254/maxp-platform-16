@@ -757,37 +757,69 @@ function DoctorStatementModal({
       return;
     }
     const columns = [
+      { key: "doctorName", label: "اسم الطبيب" },
+      { key: "clinicName", label: "العيادة" },
+      { key: "caseNumber", label: "رقم الكارتة / أمر الشغل" },
+      { key: "patientName", label: "اسم المريض" },
+      { key: "workTypeName", label: "نوع الشغل / التركيبة" },
+      { key: "unitsCount", label: "عدد الكروتات / الوحدات" },
       { key: "invoiceNumber", label: "رقم الفاتورة" },
-      { key: "createdAt", label: "التاريخ" },
-      { key: "patientName", label: "المريض / الحالة" },
+      { key: "createdAt", label: "تاريخ الفاتورة" },
       { key: "total", label: "القيمة الإجمالية (ج.م)" },
       { key: "paid", label: "المدفوع (ج.م)" },
       { key: "remaining", label: "المتبقي (ج.م)" },
-      { key: "statusLabel", label: "الحالة" },
+      { key: "statusLabel", label: "حالة الفاتورة" },
     ];
-    const data = statement.invoices.map((inv) => ({
+    const data: any[] = statement.invoices.map((inv) => ({
+      doctorName: inv.doctorName || inv.doctor?.name || doctor.name || "—",
+      clinicName: inv.clinicName || inv.doctor?.clinicName || doctor.clinicName || "—",
+      caseNumber: inv.caseNumber || inv.case?.caseNumber || "—",
+      patientName: inv.patientName || inv.case?.patientName || "—",
+      workTypeName: inv.workTypeName || inv.case?.workTypeName || "—",
+      unitsCount: inv.unitsCount ?? inv.case?.unitsCount ?? 1,
       invoiceNumber: inv.invoiceNumber || inv.id?.slice(0, 8),
       createdAt: fmtDate(inv.createdAt),
-      patientName: inv.patientName || "—",
       total: inv.total ?? 0,
       paid: inv.paid ?? 0,
       remaining: inv.remaining ?? 0,
       statusLabel:
         inv.status === "PAID"
-          ? "مدفوعة"
+          ? "مدفوعة بالكامل"
           : inv.status === "PARTIAL"
           ? "سداد جزئي"
           : inv.status === "VOID"
           ? "ملغاة"
           : "غير مسددة",
     }));
+
+    // صف إجمالي شامل في نهاية ملف الإكسيل
+    const totalUnits = data.reduce((acc, r) => acc + (typeof r.unitsCount === "number" ? r.unitsCount : 1), 0);
+    const totalInvoiced = data.reduce((acc, r) => acc + (typeof r.total === "number" ? r.total : 0), 0);
+    const totalPaid = data.reduce((acc, r) => acc + (typeof r.paid === "number" ? r.paid : 0), 0);
+    const totalRemaining = data.reduce((acc, r) => acc + (typeof r.remaining === "number" ? r.remaining : 0), 0);
+
+    data.push({
+      doctorName: `الإجمالي (${data.length} كارتة)`,
+      clinicName: "",
+      caseNumber: "",
+      patientName: "",
+      workTypeName: "",
+      unitsCount: totalUnits,
+      invoiceNumber: "",
+      createdAt: "",
+      total: totalInvoiced,
+      paid: totalPaid,
+      remaining: totalRemaining,
+      statusLabel: "",
+    });
+
     exportToExcel(
       data,
       columns,
       `كشف_حساب_${(doctor.name || "doctor").replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.xlsx`,
       "كشف الحساب"
     );
-    toast.success("تم تصدير كشف الحساب إلى Excel بنجاح");
+    toast.success("تم تصدير كشف الحساب إلى Excel بنجاح مع كافة تفاصيل الحالات والمرضى");
   };
 
   return (
@@ -892,9 +924,9 @@ function DoctorStatementModal({
         {/* Totals Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4 print:grid-cols-4 print:border print:border-slate-300 print:p-2">
           <div className="p-3 bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 rounded-xl print:border-none print:p-1">
-            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium print:text-black">عدد الفواتير / الحالات</span>
+            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium print:text-black">عدد الكروتات والوحدات</span>
             <p className="text-base sm:text-lg font-bold text-blue-700 dark:text-blue-300 mt-0.5 print:text-black">
-              {statement?.totals?.invoicesCount ?? 0} فاتورة ({statement?.totals?.cases ?? 0} حالة)
+              {statement?.totals?.totalCards ?? statement?.totals?.invoicesCount ?? statement?.invoices?.length ?? 0} كارتة ({statement?.totals?.totalUnits ?? statement?.invoices?.reduce((sum, inv) => sum + (inv.unitsCount || inv.case?.unitsCount || 1), 0) ?? 0} وحدة)
             </p>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/60 border dark:border-gray-700 rounded-xl print:border-none print:p-1">
@@ -946,8 +978,11 @@ function DoctorStatementModal({
               <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-semibold print:bg-slate-100 print:text-black">
                 <tr>
                   <th className="py-2.5 px-3">رقم الفاتورة</th>
+                  <th className="py-2.5 px-3">رقم الكارتة</th>
+                  <th className="py-2.5 px-3">اسم المريض</th>
+                  <th className="py-2.5 px-3">نوع الشغل</th>
+                  <th className="py-2.5 px-3">الوحدات</th>
                   <th className="py-2.5 px-3">التاريخ</th>
-                  <th className="py-2.5 px-3">المريض / الحالة</th>
                   <th className="py-2.5 px-3">الإجمالي</th>
                   <th className="py-2.5 px-3">المسدد</th>
                   <th className="py-2.5 px-3">المتبقي</th>
@@ -956,13 +991,16 @@ function DoctorStatementModal({
               </thead>
               <tbody className="divide-y dark:divide-gray-700 print:divide-slate-200">
                 {(!statement?.invoices || statement.invoices.length === 0) ? (
-                  <tr><td colSpan={7} className="py-8 text-center text-gray-400">لا توجد فواتير مسجلة في هذه الفترة</td></tr>
+                  <tr><td colSpan={10} className="py-8 text-center text-gray-400">لا توجد فواتير مسجلة في هذه الفترة</td></tr>
                 ) : (
                   statement.invoices.map((inv) => (
                     <tr key={inv.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40">
                       <td className="py-2.5 px-3 font-semibold text-blue-600 print:text-black">{inv.invoiceNumber || inv.id.slice(0, 8)}</td>
+                      <td className="py-2.5 px-3 font-mono text-gray-700 dark:text-gray-300">{inv.caseNumber || inv.case?.caseNumber || "—"}</td>
+                      <td className="py-2.5 px-3 font-medium text-gray-900 dark:text-gray-100">{inv.patientName || inv.case?.patientName || "—"}</td>
+                      <td className="py-2.5 px-3 text-gray-600 dark:text-gray-400">{inv.workTypeName || inv.case?.workTypeName || "—"}</td>
+                      <td className="py-2.5 px-3 font-semibold text-gray-700 dark:text-gray-300">{inv.unitsCount ?? inv.case?.unitsCount ?? 1}</td>
                       <td className="py-2.5 px-3 text-gray-500 print:text-black">{fmtDate(inv.createdAt)}</td>
-                      <td className="py-2.5 px-3">{inv.patientName || "—"}</td>
                       <td className="py-2.5 px-3 font-medium">{fmtMoney(inv.total)}</td>
                       <td className="py-2.5 px-3 text-green-600 print:text-black">{fmtMoney(inv.paid)}</td>
                       <td className="py-2.5 px-3 text-red-600 font-bold print:text-black">{fmtMoney(inv.remaining)}</td>
@@ -1955,21 +1993,27 @@ export default function DentalInvoicesTab() {
       return;
     }
     const columns = [
+      { key: "doctorName", label: "اسم الطبيب / العيادة" },
+      { key: "caseNumber", label: "رقم الكارتة / الحالة" },
+      { key: "patientName", label: "اسم المريض" },
+      { key: "workTypeName", label: "نوع التركيبة" },
+      { key: "unitsCount", label: "عدد الكروتات / الوحدات" },
       { key: "invoiceNumber", label: "رقم الفاتورة" },
       { key: "createdAt", label: "تاريخ الإصدار" },
-      { key: "doctorName", label: "العيادة / الطبيب" },
-      { key: "patientName", label: "المريض / الحالة" },
       { key: "total", label: "الإجمالي (ج.م)" },
       { key: "discount", label: "الخصم (ج.م)" },
       { key: "paid", label: "المدفوع (ج.م)" },
       { key: "remaining", label: "المتبقي (ج.م)" },
       { key: "statusLabel", label: "حالة الفاتورة" },
     ];
-    const data = rows.map((inv) => ({
+    const data: any[] = rows.map((inv) => ({
+      doctorName: inv.doctorName || inv.doctor?.name || "—",
+      caseNumber: inv.case?.caseNumber || inv.caseNumber || "—",
+      patientName: inv.patientName || inv.case?.patientName || "—",
+      workTypeName: inv.workTypeName || inv.case?.workTypeName || "—",
+      unitsCount: inv.unitsCount ?? inv.case?.unitsCount ?? 1,
       invoiceNumber: inv.invoiceNumber || inv.id?.slice(0, 8),
       createdAt: fmtDate(inv.createdAt),
-      doctorName: inv.doctorName || "—",
-      patientName: inv.patientName || "—",
       total: inv.total ?? 0,
       discount: inv.discount ?? 0,
       paid: inv.paid ?? 0,
@@ -1983,6 +2027,29 @@ export default function DentalInvoicesTab() {
           ? "ملغاة"
           : "غير مسددة",
     }));
+
+    // إضافة صف إجمالي في نهاية الجدول
+    const totalUnits = data.reduce((acc, r) => acc + (typeof r.unitsCount === "number" ? r.unitsCount : 1), 0);
+    const totalInvoiced = data.reduce((acc, r) => acc + (typeof r.total === "number" ? r.total : 0), 0);
+    const totalDiscount = data.reduce((acc, r) => acc + (typeof r.discount === "number" ? r.discount : 0), 0);
+    const totalPaid = data.reduce((acc, r) => acc + (typeof r.paid === "number" ? r.paid : 0), 0);
+    const totalRemaining = data.reduce((acc, r) => acc + (typeof r.remaining === "number" ? r.remaining : 0), 0);
+
+    data.push({
+      doctorName: `الإجمالي (${data.length} فاتورة)`,
+      caseNumber: "",
+      patientName: "",
+      workTypeName: "",
+      unitsCount: totalUnits,
+      invoiceNumber: "",
+      createdAt: "",
+      total: totalInvoiced,
+      discount: totalDiscount,
+      paid: totalPaid,
+      remaining: totalRemaining,
+      statusLabel: "",
+    });
+
     exportToExcel(data, columns, `فواتير_معمل_الأسنان_${new Date().toISOString().split("T")[0]}.xlsx`, "الفواتير");
     toast.success("تم تصدير ملف إكسيل الفواتير بنجاح");
   };
