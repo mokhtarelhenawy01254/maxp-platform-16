@@ -11,6 +11,8 @@ on:
       - '**/*.md'
       - 'memory/**'
       - 'docs/**'
+      - 'ACADEMY_SEED_REQUEST.json'
+      - '.github/workflows/academy-seed.yml'
   workflow_dispatch:
     inputs:
       force_rebuild_all:
