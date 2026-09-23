@@ -11,7 +11,7 @@ import {
 // Modular Analytics Components
 import { useOrdersAnalyticsData } from "./analytics/useOrdersAnalyticsData";
 import { OrdersMetricsStrip } from "./analytics/OrdersMetricsStrip";
-import { OrdersActionCenter } from "./analytics/OrdersActionCenter";
+import { OrdersDailyAveragesStrip } from "./analytics/OrdersDailyAveragesStrip";
 import { OrdersVelocityChart } from "./analytics/OrdersVelocityChart";
 import { OrdersLogisticsPerformance } from "./analytics/OrdersLogisticsPerformance";
 import { OrdersGovernorateTable } from "./analytics/OrdersGovernorateTable";
@@ -36,28 +36,33 @@ export const OrdersAnalytics: React.FC = () => {
     totalOrders,
     totalRevenue,
     deliveredOrders,
-    cancelledOrders,
-    returnedOrders,
+    deliveredPct,
     inTransitOrders,
-    deliveryRate,
-    cancellationRate,
-    returnRate,
+    inTransitPct,
+    warehouseOrders,
+    warehousePct,
+    unprocessedOrders,
+    unprocessedPct,
+    cancelledOrders,
+    cancelledPct,
+    returnedOrders,
+    returnedPct,
+    daysCount,
+    avgOrdersPerDay,
+    avgDeliveredPerDay,
+    avgCancelledPerDay,
+    avgReturnedPerDay,
     netRevenue,
     pendingRevenue,
     lostRevenue,
     netRealizationPct,
     codOrdersCount,
     prepaidOrdersCount,
-    codDeliveredRevenue,
     codCollectionRate,
     prepaidDeliveryRate,
     shippingList,
     branchList,
     governorateList,
-    delayedShipmentsCount,
-    delayedShipmentsRevenue,
-    uncollectedCod,
-    pendingFulfillment,
     statusDist,
     statusPieces,
     paymentStats,
@@ -176,49 +181,53 @@ export const OrdersAnalytics: React.FC = () => {
         </div>
       )}
 
-      {/* 2. SINGLE CONTINUOUS SURFACE (CHASSIS): Zero Floating Islands, Zero Box-in-Box */}
+      {/* 2. SINGLE CONTINUOUS SURFACE: Clean Reporting Hierarchy */}
       <main className="flex-1 overflow-y-auto min-h-0 bg-background divide-y divide-zinc-200/80 dark:divide-white/[0.08]">
         
-        {/* Strip 1: North Star Metrics Strip (Asymmetrical Bento) */}
+        {/* Strip 1: Total Orders & The 6 Operational Funnel Stages */}
         <OrdersMetricsStrip
           loading={loading}
           totalOrders={totalOrders}
           totalRevenue={totalRevenue}
-          netRevenue={netRevenue}
-          netRealizationPct={netRealizationPct}
-          pendingRevenue={pendingRevenue}
-          lostRevenue={lostRevenue}
-          deliveredOrders={deliveredOrders}
-          inTransitOrders={inTransitOrders}
-          deliveryRate={deliveryRate}
-          cancelledOrders={cancelledOrders}
-          cancellationRate={cancellationRate}
-          returnedOrders={returnedOrders}
-          returnRate={returnRate}
-          codOrdersCount={codOrdersCount}
-          codDeliveredRevenue={codDeliveredRevenue}
-          codCollectionRate={codCollectionRate}
-          prepaidOrdersCount={prepaidOrdersCount}
-          prepaidDeliveryRate={prepaidDeliveryRate}
-          avgOrdersPerDay={stats?.avgOrdersPerDay || 0}
           totalPieces={stats?.totalPieces || 0}
+          deliveredOrders={deliveredOrders}
+          deliveredPct={deliveredPct}
+          inTransitOrders={inTransitOrders}
+          inTransitPct={inTransitPct}
+          warehouseOrders={warehouseOrders}
+          warehousePct={warehousePct}
+          unprocessedOrders={unprocessedOrders}
+          unprocessedPct={unprocessedPct}
+          cancelledOrders={cancelledOrders}
+          cancelledPct={cancelledPct}
+          returnedOrders={returnedOrders}
+          returnedPct={returnedPct}
           formatPrice={formatPrice}
           onFilterStatus={handleFilterStatus}
         />
 
-        {/* Strip 2: Immediate Action Center Command Bar */}
-        <OrdersActionCenter
-          delayedCount={delayedShipmentsCount}
-          delayedRevenue={delayedShipmentsRevenue}
-          uncollectedCod={uncollectedCod}
-          pendingFulfillmentCount={pendingFulfillment}
-          returnedCount={returnedOrders}
-          returnedCost={returnedOrders * 45}
-          prepaidAdvantage={prepaidDeliveryRate - deliveryRate}
+        {/* Strip 2: Daily Run-Rate Averages & Financial Realization */}
+        <OrdersDailyAveragesStrip
+          loading={loading}
+          daysCount={daysCount}
+          avgOrdersPerDay={avgOrdersPerDay}
+          avgDeliveredPerDay={avgDeliveredPerDay}
+          avgCancelledPerDay={avgCancelledPerDay}
+          avgReturnedPerDay={avgReturnedPerDay}
+          netRevenue={netRevenue}
+          pendingRevenue={pendingRevenue}
+          lostRevenue={lostRevenue}
+          netRealizationPct={netRealizationPct}
+          totalRevenue={totalRevenue}
+          totalOrders={totalOrders}
+          codOrdersCount={codOrdersCount}
+          prepaidOrdersCount={prepaidOrdersCount}
+          codCollectionRate={codCollectionRate}
+          prepaidDeliveryRate={prepaidDeliveryRate}
           formatPrice={formatPrice}
         />
 
-        {/* Strip 3: Daily Trend & Velocity Run-rate */}
+        {/* Strip 3: Daily Flow Velocity */}
         {stats?.dailyTrend && (
           <OrdersVelocityChart
             data={stats.dailyTrend}
@@ -228,7 +237,7 @@ export const OrdersAnalytics: React.FC = () => {
           />
         )}
 
-        {/* Strip 4: Logistics SLA (Carriers vs Branches) + Lifecycle + Payments */}
+        {/* Strip 4: Logistics Performance & Status Breakdown */}
         <OrdersLogisticsPerformance
           loading={loading}
           shippingList={shippingList}
@@ -238,14 +247,14 @@ export const OrdersAnalytics: React.FC = () => {
           totalOrders={totalOrders}
           paymentStats={paymentStats}
           codOrdersCount={codOrdersCount}
-          codDeliveredRevenue={codDeliveredRevenue}
+          codDeliveredRevenue={netRevenue}
           codCollectionRate={codCollectionRate}
           formatPrice={formatPrice}
           onFilterStatus={handleFilterStatus}
           translate={translate}
         />
 
-        {/* Strip 5: Interactive Governorate & Shipping Bleed Table */}
+        {/* Strip 5: Interactive Governorate Performance Table */}
         <OrdersGovernorateTable
           loading={loading}
           governorates={governorateList}

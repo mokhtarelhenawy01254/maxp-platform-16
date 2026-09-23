@@ -130,12 +130,14 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 tabular-nums text-[11px]">
                       <span className="font-bold text-zinc-900 dark:text-white">
-                        {count.toLocaleString()}
+                        {count.toLocaleString()} طلب
                       </span>
-                      <span className="text-[10px] text-zinc-400">
-                        ({pieces.toLocaleString()} ق)
-                      </span>
-                      <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded">
+                      {pieces > 0 && (
+                        <span className="text-[10px] text-zinc-400">
+                          · {pieces.toLocaleString()} قطعة
+                        </span>
+                      )}
+                      <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
                         {pct}%
                       </span>
                     </div>

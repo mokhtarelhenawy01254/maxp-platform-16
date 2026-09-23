@@ -904,7 +904,8 @@ const getDetailedOrderReport = async (req, res) => {
 
             // Accurate Shipping Courier vs Branch Aggregation
             const isTurbo = Boolean(order.turboShipmentId || order.turboTrackingNumber || order.turboBranchName);
-            const carrierName = order.shipments?.[0]?.shippingCompany?.name || (isTurbo ? 'شركة Turbo' : 'شحن داخلي / مناديب');
+            const rawCarrier = order.shipments?.[0]?.shippingCompany?.name || (isTurbo ? 'شركة Turbo' : 'شحن داخلي / مناديب');
+            const carrierName = rawCarrier.toLowerCase().includes('turbo') ? 'شركة Turbo للشحن والتوزيع' : rawCarrier.trim();
             const branchName = (order.turboBranchName || 'الفرع الرئيسي').trim();
 
             // ONLY dispatched shipments are evaluated for courier delivery performance

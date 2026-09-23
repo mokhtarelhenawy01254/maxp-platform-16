@@ -150,49 +150,107 @@ export const useOrdersAnalyticsData = () => {
   const statusPieces = useMemo(() => stats?.statusPiecesDistribution || {}, [stats?.statusPiecesDistribution]);
   const paymentStats = useMemo(() => stats?.paymentStats || {}, [stats?.paymentStats]);
 
+  // Days in period
+  const daysCount = useMemo(() => {
+    if (period === "today" || period === "yesterday") return 1;
+    if (period === "custom") {
+      const s = new Date(dateRange.start);
+      const e = new Date(dateRange.end);
+      return Math.max(1, Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    }
+    return Number(period) || 30;
+  }, [period, dateRange]);
+
+  // 1. Delivered
   const deliveredOrders = useMemo(() => {
     if (typeof stats?.metrics?.deliveredOrders === "number" && stats.metrics.deliveredOrders > 0) return stats.metrics.deliveredOrders;
     return (statusDist["DELIVERED"] || 0) + (statusDist["PARTIALLY_DELIVERED"] || 0) + (statusDist["COMPLETED"] || 0) + (statusDist["delivered"] || 0);
   }, [stats?.metrics?.deliveredOrders, statusDist]);
 
+  // 2. Cancelled
   const cancelledOrders = useMemo(() => {
     if (typeof stats?.metrics?.cancelledOrders === "number" && stats.metrics.cancelledOrders > 0) return stats.metrics.cancelledOrders;
     return (statusDist["CANCELLED"] || 0) + (statusDist["REJECTED"] || 0) + (statusDist["FAILED"] || 0) + (statusDist["DUPLICATE_ORDER"] || 0) + (statusDist["cancelled"] || 0);
   }, [stats?.metrics?.cancelledOrders, statusDist]);
 
+  // 3. Returned
   const returnedOrders = useMemo(() => {
     if (typeof stats?.metrics?.returnedOrders === "number" && stats.metrics.returnedOrders > 0) return stats.metrics.returnedOrders;
     return (statusDist["RETURNED"] || 0) + (statusDist["PARTIALLY_RETURNED"] || 0) + (statusDist["RETURNED_TO_COMPANY"] || 0) + (statusDist["REFUNDED"] || 0) + (statusDist["PARTIALLY_REFUNDED"] || 0) + (statusDist["returned"] || 0);
   }, [stats?.metrics?.returnedOrders, statusDist]);
 
-  const inTransitOrders = useMemo(() => {
-    const raw = (statusDist["SHIPPED"] || 0) + (statusDist["OUT_FOR_DELIVERY"] || 0);
-    return raw > 0 ? raw : Math.max(0, totalOrders - deliveredOrders - cancelledOrders - returnedOrders);
-  }, [statusDist, totalOrders, deliveredOrders, cancelledOrders, returnedOrders]);
+  // 4. In Transit
+  const inTransitOrders = useMemo(() => ((statusDist["SHIPPED"] || 0) + (statusDist["OUT_FOR_DELIVERY"] || 0) + (statusDist["in_transit"] || 0)), [statusDist]);
 
-  const deliveryRate = stats?.metrics?.deliveryRate ?? (totalOrders > 0 ? Number(((deliveredOrders / totalOrders) * 100).toFixed(1)) : 0);
-  const cancellationRate = stats?.metrics?.cancellationRate ?? (totalOrders > 0 ? Number(((cancelledOrders / totalOrders) * 100).toFixed(1)) : 0);
-  const returnRate = stats?.metrics?.returnRate ?? (totalOrders > 0 ? Number(((returnedOrders / totalOrders) * 100).toFixed(1)) : 0);
+  // 5. Warehouse Pending
+  const warehouseOrders = useMemo(() => {
+    const raw = (statusDist["READY_FOR_SHIPPING"] || 0) + (statusDist["PROCESSING_WAREHOUSE"] || 0) + (statusDist["PACKED"] || 0) + (statusDist["PREPARING"] || 0);
+    return raw > 0 ? raw : (typeof stats?.actionCenter?.pendingFulfillmentCount === "number" ? stats.actionCenter.pendingFulfillmentCount : 0);
+  }, [statusDist, stats?.actionCenter?.pendingFulfillmentCount]);
+
+  // 6. Unprocessed
+  const unprocessedOrders = useMemo(() => Math.max(0, totalOrders - deliveredOrders - inTransitOrders - warehouseOrders - cancelledOrders - returnedOrders), [totalOrders, deliveredOrders, inTransitOrders, warehouseOrders, cancelledOrders, returnedOrders]);
+
+  // Percentages (Guaranteed exact distribution)
+  const safeTotal = totalOrders > 0 ? totalOrders : 1;
+  const deliveredPct = totalOrders > 0 ? Number(((deliveredOrders / safeTotal) * 100).toFixed(1)) : 0;
+  const inTransitPct = totalOrders > 0 ? Number(((inTransitOrders / safeTotal) * 100).toFixed(1)) : 0;
+  const warehousePct = totalOrders > 0 ? Number(((warehouseOrders / safeTotal) * 100).toFixed(1)) : 0;
+  const unprocessedPct = totalOrders > 0 ? Number(((unprocessedOrders / safeTotal) * 100).toFixed(1)) : 0;
+  const cancelledPct = totalOrders > 0 ? Number(((cancelledOrders / safeTotal) * 100).toFixed(1)) : 0;
+  const returnedPct = totalOrders > 0 ? Number(((returnedOrders / safeTotal) * 100).toFixed(1)) : 0;
+
+  // Daily Averages (متوسط الطلبات اليومية المسلمة والملغاة والمرتجعة)
+  const avgOrdersPerDay = daysCount > 0 ? Number((totalOrders / daysCount).toFixed(1)) : totalOrders;
+  const avgDeliveredPerDay = daysCount > 0 ? Number((deliveredOrders / daysCount).toFixed(2)) : deliveredOrders;
+  const avgCancelledPerDay = daysCount > 0 ? Number((cancelledOrders / daysCount).toFixed(2)) : cancelledOrders;
+  const avgReturnedPerDay = daysCount > 0 ? Number((returnedOrders / daysCount).toFixed(2)) : returnedOrders;
+
+  // Financials
+  const deliveryRate = deliveredPct;
+  const cancellationRate = cancelledPct;
+  const returnRate = returnedPct;
 
   const netRevenue = (typeof stats?.metrics?.netRealizedRevenue === "number" && stats.metrics.netRealizedRevenue > 0)
     ? stats.metrics.netRealizedRevenue
-    : (totalOrders > 0 && totalRevenue > 0 ? Math.round(totalRevenue * (deliveredOrders / totalOrders)) : 0);
+    : (totalOrders > 0 && totalRevenue > 0 ? Math.round(totalRevenue * (deliveredOrders / safeTotal)) : 0);
 
-  const pendingRevenue = (totalOrders > 0 && totalRevenue > 0) ? Math.round(totalRevenue * (inTransitOrders / totalOrders)) : 0;
-  const lostRevenue = (totalOrders > 0 && totalRevenue > 0) ? Math.round(totalRevenue * ((returnedOrders + cancelledOrders) / totalOrders)) : 0;
+  const pendingRevenue = (totalOrders > 0 && totalRevenue > 0) ? Math.round(totalRevenue * (inTransitOrders / safeTotal)) : 0;
+  const lostRevenue = (totalOrders > 0 && totalRevenue > 0) ? Math.round(totalRevenue * ((returnedOrders + cancelledOrders) / safeTotal)) : 0;
   const netRealizationPct = totalRevenue > 0 ? Number(((netRevenue / totalRevenue) * 100).toFixed(1)) : 0;
 
   // Payment Breakdown
   const codOrdersCount = (paymentStats["CASH"] || 0) + (paymentStats["COD"] || 0) + (paymentStats["cash"] || 0) + (paymentStats["cod"] || 0);
   const prepaidOrdersCount = Object.entries(paymentStats).reduce((acc, [m, c]) => (!["CASH", "COD"].includes(m.toUpperCase()) ? acc + c : acc), 0);
   const codDeliveredRevenue = (typeof stats?.metrics?.codDeliveredRevenue === "number" && stats.metrics.codDeliveredRevenue > 0) ? stats.metrics.codDeliveredRevenue : netRevenue;
-  const codCollectionRate = stats?.metrics?.codCollectionRate ?? (totalOrders > 0 ? Number(((deliveredOrders / totalOrders) * 100).toFixed(1)) : 0);
+  const codCollectionRate = stats?.metrics?.codCollectionRate ?? (totalOrders > 0 ? Number(((deliveredOrders / safeTotal) * 100).toFixed(1)) : 0);
   const prepaidDeliveryRate = (typeof stats?.metrics?.prepaidDeliveryRate === "number" && stats.metrics.prepaidDeliveryRate > 0) ? stats.metrics.prepaidDeliveryRate : (prepaidOrdersCount > 0 ? 95 : 0);
 
-  // Logistics & Carriers
+  // Logistics & Carriers (Merged to eliminate duplicates)
   const shippingList: ShippingPerformance[] = useMemo(() => {
-    if (stats?.shippingPerformance && stats.shippingPerformance.length > 0) {
-      return stats.shippingPerformance;
+    const rawList = stats?.shippingPerformance || [];
+    if (rawList.length > 0) {
+      const merged: Record<string, ShippingPerformance> = {};
+      rawList.forEach((c) => {
+        const key = c.name.toLowerCase().includes("turbo") ? "شركة Turbo للشحن والتوزيع" : c.name;
+        if (!merged[key]) {
+          merged[key] = { ...c, name: key };
+        } else {
+          merged[key].totalOrders += c.totalOrders;
+          merged[key].deliveredOrders += c.deliveredOrders;
+          merged[key].cancelledOrders += c.cancelledOrders;
+          merged[key].returnedOrders += c.returnedOrders;
+          merged[key].inTransitOrders += c.inTransitOrders;
+          merged[key].totalRevenue += c.totalRevenue;
+          merged[key].codCollected += c.codCollected;
+          merged[key].lostShipping += c.lostShipping;
+          if (merged[key].totalOrders > 0) {
+            merged[key].deliveryRate = Number(((merged[key].deliveredOrders / merged[key].totalOrders) * 100).toFixed(1));
+            merged[key].returnRate = Number(((merged[key].returnedOrders / merged[key].totalOrders) * 100).toFixed(1));
+          }
+        }
+      });
+      return Object.values(merged);
     }
     if (deliveredOrders > 0 || returnedOrders > 0 || totalOrders > 0) {
       const dispatched = deliveredOrders + returnedOrders + inTransitOrders;
@@ -218,15 +276,13 @@ export const useOrdersAnalyticsData = () => {
   }, [stats?.shippingPerformance, deliveredOrders, returnedOrders, inTransitOrders, totalOrders, deliveryRate, returnRate, totalRevenue, codDeliveredRevenue, pendingRevenue, cancelledOrders]);
 
   const branchList: BranchPerformance[] = useMemo(() => {
-    if (stats?.branchPerformance && stats.branchPerformance.length > 0) {
-      return stats.branchPerformance;
-    }
+    if (stats?.branchPerformance && stats.branchPerformance.length > 0) return stats.branchPerformance;
     return [
       {
         name: "المستودع الرئيسي (فرع الضبعة)",
         totalOrders,
         dispatchedOrders: deliveredOrders + returnedOrders + inTransitOrders,
-        pendingDispatch: Math.max(0, totalOrders - (deliveredOrders + returnedOrders + inTransitOrders + cancelledOrders)),
+        pendingDispatch: warehouseOrders,
         deliveredOrders,
         returnedOrders,
         cancelledOrders,
@@ -235,7 +291,7 @@ export const useOrdersAnalyticsData = () => {
         revenue: totalRevenue,
       },
     ];
-  }, [stats?.branchPerformance, totalOrders, deliveredOrders, returnedOrders, inTransitOrders, cancelledOrders, deliveryRate, returnRate, totalRevenue]);
+  }, [stats?.branchPerformance, totalOrders, deliveredOrders, returnedOrders, inTransitOrders, warehouseOrders, cancelledOrders, deliveryRate, returnRate, totalRevenue]);
 
   // Governorates
   const governorateList: GovernorateDetail[] = useMemo(() => {
@@ -278,12 +334,6 @@ export const useOrdersAnalyticsData = () => {
       .sort((a, b) => b.ordersCount - a.ordersCount);
   }, [stats?.governorateDetails, stats?.governorateStats, totalOrders, totalRevenue, deliveryRate, returnRate, cancellationRate, stats?.avgOrderValue]);
 
-  // Action Center Items
-  const delayedShipmentsCount = stats?.actionCenter?.delayedShipmentsCount ?? inTransitOrders;
-  const delayedShipmentsRevenue = stats?.actionCenter?.delayedShipmentsRevenue ?? pendingRevenue;
-  const uncollectedCod = stats?.actionCenter?.uncollectedCodAmount ?? pendingRevenue;
-  const pendingFulfillment = stats?.actionCenter?.pendingFulfillmentCount ?? Math.max(0, totalOrders - deliveredOrders - returnedOrders - inTransitOrders - cancelledOrders);
-
   return {
     period,
     dateRange,
@@ -300,9 +350,22 @@ export const useOrdersAnalyticsData = () => {
     totalOrders,
     totalRevenue,
     deliveredOrders,
-    cancelledOrders,
-    returnedOrders,
+    deliveredPct,
     inTransitOrders,
+    inTransitPct,
+    warehouseOrders,
+    warehousePct,
+    unprocessedOrders,
+    unprocessedPct,
+    cancelledOrders,
+    cancelledPct,
+    returnedOrders,
+    returnedPct,
+    daysCount,
+    avgOrdersPerDay,
+    avgDeliveredPerDay,
+    avgCancelledPerDay,
+    avgReturnedPerDay,
     deliveryRate,
     cancellationRate,
     returnRate,
@@ -318,10 +381,6 @@ export const useOrdersAnalyticsData = () => {
     shippingList,
     branchList,
     governorateList,
-    delayedShipmentsCount,
-    delayedShipmentsRevenue,
-    uncollectedCod,
-    pendingFulfillment,
     statusDist,
     statusPieces,
     paymentStats,
