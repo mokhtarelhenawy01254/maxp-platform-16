@@ -9293,7 +9293,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         />
       )}
       {canOpenSizeGuide ? sizeGuideDialog : null}
-      {shippingDialog}
+      {shippingPolicyDialog}
       {questionDialog}
     </section>
   );

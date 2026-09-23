@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../services/apiClient';
+import { toast } from 'sonner';
 import MetaTemplatesModal from './components/MetaTemplatesModal';
 import TemplateStatsPanel from './components/TemplateStatsPanel';
 import WhatsAppBubblePreview from './components/WhatsAppBubblePreview';

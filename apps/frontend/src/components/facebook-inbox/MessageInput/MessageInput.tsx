@@ -444,7 +444,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   type="button"
                   onClick={() => {
                     setShowMobileTools(false);
-                    setQuickReplyFilter("");
                     setShowQuickReplies(true);
                     if (!isCompactMobile) {
                       messageInputRef.current?.focus();
@@ -542,7 +541,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 setShowQuickReplies((prev) => {
                   const nextState = !prev;
                   if (nextState) {
-                    setQuickReplyFilter("");
                     if (!isCompactMobile) {
                       setTimeout(() => messageInputRef.current?.focus(), 50);
                     }

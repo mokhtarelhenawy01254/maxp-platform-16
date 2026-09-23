@@ -1141,9 +1141,10 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         body: JSON.stringify({ status: newStatus }),
       });
     }
+    const count = selectedTasks.length;
     fetchTasks();
     setSelectedTasks([]);
-    toast.success(i18n.t("tasks.success_update_selectedTaskslength_task_4e85", { length: length }));
+    toast.success(i18n.t("tasks.success_update_selectedTaskslength_task_4e85", { length: count }));
   };
 
   const handleBulkDelete = async () => {
@@ -1157,9 +1158,10 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
     }
+    const count = selectedTasks.length;
     fetchTasks();
     setSelectedTasks([]);
-    toast.success(i18n.t("tasks.success_delete_selectedTaskslength_task_9484", { length: length }));
+    toast.success(i18n.t("tasks.success_delete_selectedTaskslength_task_9484", { length: count }));
   };
 
   // Export to CSV

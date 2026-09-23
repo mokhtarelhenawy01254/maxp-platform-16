@@ -26,7 +26,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 
 const CustomerList: React.FC = () => {
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [__cb] = useState("v2");
   const { formatDate } = useDateFormat();
   const { user } = useAuth();

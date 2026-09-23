@@ -12,6 +12,7 @@ import { getDirection } from "../../i18n";
 import { CheckoutFormSettings } from "../../services/checkoutFormSettingsService";
 import { SelectSetting, ToggleSetting } from "../settings/SettingControls";
 import {
+  DEFAULT_PDP_QUICK_ORDER_SETTINGS,
   PDP_QUICK_ORDER_PLACEMENT_OPTIONS,
   PdpQuickOrderFieldKey,
   PdpQuickOrderSettings,

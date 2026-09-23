@@ -682,7 +682,9 @@ class SocketService {
       } catch (error) {
         console.error("❌ [SOCKET-SERVICE] Error parsing user data:", error);
         // Fallback to basic user_join
-        this.socket.emit("user_join", { userId });
+        if (storedUserId) {
+          this.socket.emit("user_join", { userId: storedUserId });
+        }
       }
     } else {
       // تجاهل التحذير - هذا طبيعي أثناء تحميل بيانات المستخدم أو بعد تسجيل الخروج

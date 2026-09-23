@@ -6,6 +6,7 @@ import { Loader2, RefreshCw, UserCheck, ScanLine, FileText, PackageCheck, AlertT
 import {
   api, fetchJson,
   derivePrimaryStage,
+  RadiologyStage,
 } from "./shared";
 
 interface QueueAppointment {

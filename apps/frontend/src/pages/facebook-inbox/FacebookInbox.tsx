@@ -2117,7 +2117,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
   }, [messages]);
 
   const messagesById = useMemo(() => {
-    const map = new Map<string, Message>();
+    const map = new Map<string, InboxMessage>();
     messages.forEach((msg) => map.set(msg.id, msg));
     return map;
   }, [messages]);

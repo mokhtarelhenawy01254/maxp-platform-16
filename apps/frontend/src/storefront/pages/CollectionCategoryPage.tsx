@@ -10,8 +10,11 @@ import StorefrontNotFound from "../components/StorefrontNotFound";
 import { resolveCatalogCategoryBySlug } from "../utils/catalogCategories";
 import { createStorefrontThemeTextReplacer } from "../utils/runtimeBrandText";
 import { extractShopStudioConfig, hasShopStudioConfig, resolveShopPageLayoutHint } from "../../utils/shopPageStudioConfig";
-import { resolveStorefrontPageLayout, StorefrontSectionFrame } from "../layout/StorefrontSectionFrame";
 import { buildStorefrontPath } from "../utils/paths";
+
+const LegacyCollectionProductGrid = React.lazy(
+  () => import("../sections/ProductGrid"),
+);
 const prettifyCollectionSlug = (slug: string, isRtl: boolean): string => {
   const normalized = slug.trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
 

@@ -2,8 +2,9 @@ import {
   applyCatalogFilters,
   type CatalogPriceRangeValue,
   type CatalogSortValue,
-} from "./catalogFilters";
 import { getBaseDomain } from "../../utils/storeUrl";
+
+export type NullablePathInput = string | null | undefined;
 
 const STOREFRONT_PRODUCT_PATH_PATTERN =
   /^\/(?:store\/)?(?:product|products|shop\/products)\/([^/?#]+)(?:\/([^/?#]+))?\/?$/;

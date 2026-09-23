@@ -13,6 +13,7 @@
     "cap:open:android": "npx cap open android",
     "cap:build:android": "npm run build && npx cap sync android && cd android && gradlew.bat assembleDebug",
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives",
+    "lint:components": "node scripts/check-undeclared-components.cjs",
     "test": "jest --config jest.config.cjs --runInBand",
     "test:unit": "jest --config jest.config.cjs --runInBand --testPathPattern=src/hooks/__tests__",
     "test:tasks-workspace-e2e": "node scripts/tasks-workspace-create.e2e.mjs",

@@ -6,6 +6,7 @@ import { AuthSurface, AuthNotice } from "../../components/auth/AuthSurface";
 import { resolvePostAuthDestination } from "../../utils/postAuthRouting";
 import { isCapacitorNative } from "../../config/environment";
 import { AppInstallActions } from "../../components/common/AppInstallActions";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");

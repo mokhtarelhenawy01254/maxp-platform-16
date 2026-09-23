@@ -878,6 +878,7 @@ app.use("/api/v1/platform-partners", platformPartnerRoutes);
 // Admin / Dashboard Features
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/company-dashboard", companyDashboardRoutes);
+app.use("/api/v1/company", companyDashboardRoutes); // Convenient alias for /company/links, /company/settings, etc.
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/v1/analytics/order-movement", require("./routes/orderMovementRoutes"));
 app.use("/api/v1/storefront-settings", storefrontSettingsRoutes);

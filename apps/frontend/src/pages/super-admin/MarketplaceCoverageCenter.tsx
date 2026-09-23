@@ -18,6 +18,7 @@ import {
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { Separator } from "../../components/ui/separator";
 import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
 import { areaLabels, marketplaceFeatureMap, statusLabels } from "../../config/marketplaceFeatureMap";
