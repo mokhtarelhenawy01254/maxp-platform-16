@@ -35,27 +35,27 @@ def test_cuid_detection():
 
 @pytest.mark.asyncio
 async def test_non_customer_channel_skips_injection(monkeypatch):
-    called = {"phone": False}
+    called = {"ids": False}
 
-    async def fake_phone(ctx):
-        called["phone"] = True
-        return "01000000000"
+    async def fake_ids(ctx):
+        called["ids"] = True
+        return {"conv": None, "cust": None, "phone": None}
 
     monkeypatch.setattr(
-        "src.pipeline.stages.skills_pipeline._resolve_customer_phone", fake_phone
+        "src.pipeline.stages.skills_pipeline._resolve_order_identifiers", fake_ids
     )
     block = await _build_active_order_block(_ctx(channel="dashboard_internal"))
     assert block == ""
-    assert called["phone"] is False
+    assert called["ids"] is False
 
 
 @pytest.mark.asyncio
-async def test_no_phone_returns_empty(monkeypatch):
-    async def fake_phone(ctx):
-        return None
+async def test_no_identifiers_returns_empty(monkeypatch):
+    async def fake_ids(ctx):
+        return {"conv": None, "cust": None, "phone": None}
 
     monkeypatch.setattr(
-        "src.pipeline.stages.skills_pipeline._resolve_customer_phone", fake_phone
+        "src.pipeline.stages.skills_pipeline._resolve_order_identifiers", fake_ids
     )
     block = await _build_active_order_block(_ctx())
     assert block == ""
@@ -95,7 +95,7 @@ async def test_block_contains_order_facts(monkeypatch):
             self.queries.append((str(query), params))
             sql = str(query)
             if "FROM public.conversations" in sql:
-                return FakeResult("01153718071")
+                return FakeResult({"cust": "cust123", "phone": None})
             if "FROM public.orders o" in sql:
                 return FakeResult({
                     "orderNumber": "ORD-845169-887",
@@ -117,11 +117,11 @@ async def test_block_contains_order_facts(monkeypatch):
 
     sessions = [FakeSession()]
 
-    async def fake_phone(ctx):
-        return "01153718071"
+    async def fake_ids(ctx):
+        return {"conv": "cmu3hmzsynugtjuqeyxgs64t7", "cust": "cust123", "phone": None}
 
     monkeypatch.setattr(
-        "src.pipeline.stages.skills_pipeline._resolve_customer_phone", fake_phone
+        "src.pipeline.stages.skills_pipeline._resolve_order_identifiers", fake_ids
     )
 
     import src.db.session as db_session
@@ -140,17 +140,21 @@ async def test_block_contains_order_facts(monkeypatch):
     assert "أزرق جينز" in block
     assert "الجيزة" in block
     assert "لا تعيد سؤال العميل عنها" in block
+    # order query carries all three identifiers
+    order_params = sessions[0].queries[0][1]
+    assert order_params["conv"] == "cmu3hmzsynugtjuqeyxgs64t7"
+    assert order_params["cust"] == "cust123"
 
 
 @pytest.mark.asyncio
 async def test_db_failure_returns_empty_not_crash(monkeypatch):
     import src.db.session as db_session
 
-    async def fake_phone(ctx):
-        return "01000000000"
+    async def fake_ids(ctx):
+        return {"conv": None, "cust": "cust123", "phone": "01000000000"}
 
     monkeypatch.setattr(
-        "src.pipeline.stages.skills_pipeline._resolve_customer_phone", fake_phone
+        "src.pipeline.stages.skills_pipeline._resolve_order_identifiers", fake_ids
     )
 
     class BrokenFactory:

@@ -206,45 +206,41 @@ def _looks_like_cuid(value: str | None) -> bool:
     return bool(value and _CUID_RE.match(str(value)))
 
 
-async def _resolve_customer_phone(ctx: PipelineContext) -> str | None:
-    """Resolve the customer's phone from the conversation/customer ids when
-    they reference real platform rows (messenger/whatsapp conversations)."""
+async def _resolve_order_identifiers(ctx: PipelineContext) -> dict:
+    """Resolve every identifier that can locate the customer's order:
+    the conversation id itself (AI-created orders store it), the platform
+    customer id, and the customer phone (when present)."""
+    out = {"conv": None, "cust": None, "phone": None}
     try:
+        if _looks_like_cuid(ctx.conversation_id):
+            out["conv"] = str(ctx.conversation_id)
+        if _looks_like_cuid(ctx.customer_id):
+            out["cust"] = str(ctx.customer_id)
+
         import src.db.session as _db_mod
         from sqlalchemy import text as _text
 
-        if _db_mod.async_session is None:
-            return None
-        async with _db_mod.async_session() as sess:
-            if _looks_like_cuid(ctx.conversation_id):
+        if _db_mod.async_session is not None and _looks_like_cuid(ctx.conversation_id):
+            async with _db_mod.async_session() as sess:
                 row = (
                     await sess.execute(
                         _text(
-                            'SELECT c.phone FROM public.conversations conv '
-                            'JOIN public.customers c ON c.id = conv."customerId" '
-                            "WHERE conv.id = :cid AND c.phone IS NOT NULL AND c.phone <> '' "
-                            "LIMIT 1"
+                            'SELECT conv."customerId" AS cust, c.phone AS phone '
+                            "FROM public.conversations conv "
+                            "LEFT JOIN public.customers c ON c.id = conv.\"customerId\" "
+                            "WHERE conv.id = :cid LIMIT 1"
                         ),
                         {"cid": ctx.conversation_id},
                     )
-                ).scalar()
+                ).mappings().first()
                 if row:
-                    return str(row).strip()
-            if _looks_like_cuid(ctx.customer_id):
-                row = (
-                    await sess.execute(
-                        _text(
-                            "SELECT phone FROM public.customers "
-                            "WHERE id = :cust AND phone IS NOT NULL AND phone <> '' LIMIT 1"
-                        ),
-                        {"cust": ctx.customer_id},
-                    )
-                ).scalar()
-                if row:
-                    return str(row).strip()
+                    if row["cust"]:
+                        out["cust"] = str(row["cust"])
+                    if row["phone"]:
+                        out["phone"] = str(row["phone"]).strip()
     except Exception as exc:
-        logger.debug("active_order_phone_resolve_failed", error=str(exc))
-    return None
+        logger.debug("order_identifier_resolve_failed", error=str(exc))
+    return out
 
 
 async def _build_active_order_block(ctx: PipelineContext) -> str:
@@ -260,8 +256,8 @@ async def _build_active_order_block(ctx: PipelineContext) -> str:
         if channel not in _CUSTOMER_CHANNELS:
             return ""
 
-        phone = await _resolve_customer_phone(ctx)
-        if not phone:
+        ids = await _resolve_order_identifiers(ctx)
+        if not any(ids.values()):
             return ""
 
         import src.db.session as _db_mod
@@ -280,13 +276,18 @@ async def _build_active_order_block(ctx: PipelineContext) -> str:
                         "coalesce(o.governorate, '') AS governorate, coalesce(o.city, '') AS city, "
                         "to_char(o.\"createdAt\", 'YYYY-MM-DD') AS created_at "
                         "FROM public.orders o "
-                        'WHERE o."companyId" = :cid AND o."customerPhone" = :phone '
+                        'WHERE o."companyId" = :cid AND ('
+                        "(:conv IS NOT NULL AND o.\"conversationId\" = :conv) OR "
+                        "(:cust IS NOT NULL AND o.\"customerId\" = :cust) OR "
+                        "(:phone IS NOT NULL AND o.\"customerPhone\" = :phone)"
+                        ") "
                         "AND o.\"createdAt\" > now() - interval '30 days' "
                         "AND o.status NOT IN ('DELIVERED','CANCELLED','DUPLICATE_ORDER','REFUNDED',"
                         "'RETURNED','PARTIALLY_RETURNED','EXCHANGED','PARTIALLY_REFUNDED') "
-                        "ORDER BY o.\"createdAt\" DESC LIMIT 1"
+                        "ORDER BY CASE WHEN :conv IS NOT NULL AND o.\"conversationId\" = :conv THEN 0 ELSE 1 END, "
+                        "o.\"createdAt\" DESC LIMIT 1"
                     ),
-                    {"cid": ctx.company_id, "phone": phone},
+                    {"cid": ctx.company_id, "conv": ids["conv"], "cust": ids["cust"], "phone": ids["phone"]},
                 )
             ).mappings().first()
             if not order:
