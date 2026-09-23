@@ -341,7 +341,7 @@ export const MonitorDashboard: React.FC = () => {
               placeholder="بحث بالاسم أو القسم…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 w-40 rounded-lg border border-border/40 bg-zinc-900/60 pr-8 pl-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none sm:w-52"
+              className="h-8 w-40 rounded-lg border border-border/60 bg-muted/50 dark:bg-zinc-900/60 pr-8 pl-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none sm:w-52"
             />
           </div>
 
@@ -350,7 +350,7 @@ export const MonitorDashboard: React.FC = () => {
             <button
               onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
               className={`rounded-md px-2 py-1 text-xs font-medium transition ${
-                isToday ? 'bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30' : 'text-muted-foreground hover:bg-zinc-800 hover:text-foreground'
+                isToday ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 ring-1 ring-sky-500/30' : 'text-muted-foreground hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground'
               }`}
             >
               اليوم
@@ -358,7 +358,7 @@ export const MonitorDashboard: React.FC = () => {
             <button
               onClick={() => setSelectedDate(yesterdayStr)}
               className={`rounded-md px-2 py-1 text-xs font-medium transition ${
-                selectedDate === yesterdayStr ? 'bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30' : 'text-muted-foreground hover:bg-zinc-800 hover:text-foreground'
+                selectedDate === yesterdayStr ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 ring-1 ring-sky-500/30' : 'text-muted-foreground hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground'
               }`}
             >
               أمس
@@ -366,10 +366,10 @@ export const MonitorDashboard: React.FC = () => {
           </div>
 
           {/* Stepper with Native Picker */}
-          <div className="flex items-center rounded-lg border border-border/40 bg-zinc-900/60 p-0.5 text-xs">
+          <div className="flex items-center rounded-lg border border-border/60 bg-muted/50 dark:bg-zinc-900/60 p-0.5 text-xs">
             <button
               onClick={() => handleDateStep(-1)}
-              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-zinc-800 hover:text-foreground active:scale-95"
+              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground active:scale-95"
               title="اليوم السابق"
             >
               <ChevronRight className="h-3.5 w-3.5" />
@@ -388,7 +388,7 @@ export const MonitorDashboard: React.FC = () => {
             <button
               onClick={() => handleDateStep(1)}
               disabled={isToday}
-              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-zinc-800 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent active:scale-95"
+              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent active:scale-95"
               title="اليوم التالي"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -398,7 +398,7 @@ export const MonitorDashboard: React.FC = () => {
           <button
             onClick={fetchData}
             disabled={loading}
-            className="flex h-8 items-center gap-1.5 rounded-lg border border-border/40 bg-zinc-900/60 px-3 text-xs font-medium text-muted-foreground transition hover:bg-zinc-800 hover:text-foreground active:scale-95"
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-border/60 bg-muted/50 dark:bg-zinc-900/60 px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted dark:hover:bg-zinc-800 hover:text-foreground active:scale-95"
             title="تحديث البيانات لحظياً"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -413,7 +413,7 @@ export const MonitorDashboard: React.FC = () => {
         <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>الموظفون الموثقون اليوم</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10 text-sky-400 ring-1 ring-sky-500/20">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 ring-1 ring-sky-500/20">
               <Users className="h-3.5 w-3.5" />
             </span>
           </div>
@@ -429,14 +429,14 @@ export const MonitorDashboard: React.FC = () => {
         <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>نشط ومتصل حالياً</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20">
               <Activity className="h-3.5 w-3.5" />
             </span>
           </div>
-          <div className="mt-2 text-xl font-bold text-emerald-400 tabular-nums">
+          <div className="mt-2 text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
             {stats.activeNow}
           </div>
-          <div className="mt-1 text-[11px] text-emerald-400">
+          <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">
             تفاعل مباشر خلال آخر 15 دقيقة
           </div>
         </div>
@@ -445,14 +445,14 @@ export const MonitorDashboard: React.FC = () => {
         <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>متوسط الإنتاجية اليومية</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 ring-1 ring-purple-500/20">
               <TrendingUp className="h-3.5 w-3.5" />
             </span>
           </div>
           <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
             {stats.avgProductivity}%
           </div>
-          <div className="mt-1 text-[11px] text-purple-400">
+          <div className="mt-1 text-[11px] text-purple-600 dark:text-purple-400">
             مؤشر كفاءة الأعضاء المتفاعلين فعلياً
           </div>
         </div>
@@ -461,14 +461,14 @@ export const MonitorDashboard: React.FC = () => {
         <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>إجمالي ساعات العمل</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/20">
               <Clock className="h-3.5 w-3.5" />
             </span>
           </div>
           <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
             {stats.totalHoursTracked} ساعة
           </div>
-          <div className="mt-1 text-[11px] text-amber-400">
+          <div className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
             مجموع الساعات الموثقة للفريق
           </div>
         </div>
@@ -497,7 +497,7 @@ export const MonitorDashboard: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="بحث بالاسم أو القسم..."
-                className="h-7 w-36 sm:w-52 rounded-lg border border-border/40 bg-zinc-900/60 pr-8 pl-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-sky-500/50 focus:outline-none"
+                className="h-7 w-36 sm:w-52 rounded-lg border border-border/60 bg-muted/50 dark:bg-zinc-900/60 pr-8 pl-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-sky-500/50 focus:outline-none"
               />
             </div>
           </div>
@@ -508,8 +508,8 @@ export const MonitorDashboard: React.FC = () => {
               onClick={() => setStatusFilter('all')}
               className={`rounded-lg px-2.5 py-1 font-medium transition ${
                 statusFilter === 'all'
-                  ? 'bg-zinc-800 text-foreground ring-1 ring-border/40'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-slate-200 dark:bg-zinc-800 text-foreground ring-1 ring-border/50 font-semibold'
+                  : 'text-muted-foreground hover:bg-muted dark:hover:bg-zinc-800/60 hover:text-foreground'
               }`}
             >
               الكل ({teamMembers.length})
@@ -518,8 +518,8 @@ export const MonitorDashboard: React.FC = () => {
               onClick={() => setStatusFilter('active')}
               className={`rounded-lg px-2.5 py-1 font-medium transition ${
                 statusFilter === 'active'
-                  ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 ring-1 ring-emerald-500/20 font-semibold'
+                  : 'text-muted-foreground hover:bg-muted dark:hover:bg-zinc-800/60 hover:text-foreground'
               }`}
             >
               نشط الآن ({stats.activeNow})
@@ -528,8 +528,8 @@ export const MonitorDashboard: React.FC = () => {
               onClick={() => setStatusFilter('idle')}
               className={`rounded-lg px-2.5 py-1 font-medium transition ${
                 statusFilter === 'idle'
-                  ? 'bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 ring-1 ring-amber-500/20 font-semibold'
+                  : 'text-muted-foreground hover:bg-muted dark:hover:bg-zinc-800/60 hover:text-foreground'
               }`}
             >
               استراحة / خمول
@@ -538,8 +538,8 @@ export const MonitorDashboard: React.FC = () => {
               onClick={() => setStatusFilter('offline')}
               className={`rounded-lg px-2.5 py-1 font-medium transition ${
                 statusFilter === 'offline'
-                  ? 'bg-zinc-800 text-zinc-300 ring-1 ring-border/40'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-slate-200 dark:bg-zinc-800 text-foreground dark:text-zinc-300 ring-1 ring-border/40 font-semibold'
+                  : 'text-muted-foreground hover:bg-muted dark:hover:bg-zinc-800/60 hover:text-foreground'
               }`}
             >
               غير متصل

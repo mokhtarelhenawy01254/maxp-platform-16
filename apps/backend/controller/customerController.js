@@ -1417,7 +1417,11 @@ const getCustomerDetails = async (req, res) => {
           totalSpent: parseFloat(ordersAggregate._sum?.total || 0),
           averageOrderValue: ordersAggregate._count > 0
             ? parseFloat(ordersAggregate._sum?.total || 0) / ordersAggregate._count
-            : 0
+            : 0,
+          deliveryRate: customer.deliveryRate || 0,
+          totalDelivered: customer.totalDelivered || 0,
+          totalOrdersCount: customer.totalOrdersCount || 0,
+          customerRating: customer.customerRating || 'UNKNOWN'
         },
         recentOrders,
         recentConversations,
@@ -2385,6 +2389,66 @@ const deleteTag = async (req, res) => {
   }
 };
 
+/**
+ * إعادة حساب وتقييم مستوى العميل بشكل فوري
+ */
+const recalculateCustomerRatingHandler = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const customer = await getSharedPrismaClient().customer.findFirst({
+      where: { id: customerId, companyId },
+      select: { id: true }
+    });
+
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'العميل غير موجود' });
+    }
+
+    const { calculateCustomerScore } = require('../services/customerRatingService');
+    const result = await calculateCustomerScore(customerId, companyId);
+
+    res.json({
+      success: true,
+      message: 'تم إعادة تقييم العميل بنجاح',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error recalculating customer rating:', error);
+    res.status(500).json({ success: false, message: error.message || 'فشل في إعادة تقييم العميل' });
+  }
+};
+
+/**
+ * إعادة حساب وتصنيف جميع عملاء الشركة دفعة واحدة
+ */
+const recalculateAllCustomerRatingsHandler = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const { batchRecalculateCompanyCustomers } = require('../services/customerRatingService');
+    const result = await batchRecalculateCompanyCustomers(companyId);
+
+    res.json({
+      success: true,
+      message: `تم تحديث تصنيف ${result.processed} عميل بنجاح (${result.successCount} نجاح / ${result.errorCount} خطأ)`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error batch recalculating customer ratings:', error);
+    res.status(500).json({ success: false, message: error.message || 'فشل في إعادة تقييم العملاء' });
+  }
+};
+
 module.exports = {
   getAllCustomer,
   createCustomer,
@@ -2410,4 +2474,6 @@ module.exports = {
   getDistinctTags,
   renameTag,
   deleteTag,
+  recalculateCustomerRatingHandler,
+  recalculateAllCustomerRatingsHandler,
 };
