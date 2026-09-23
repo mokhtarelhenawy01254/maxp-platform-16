@@ -739,3 +739,5 @@ export const getVisibleApps = (
     return true;
   });
 };
+
+export const appRegistry = APP_REGISTRY;

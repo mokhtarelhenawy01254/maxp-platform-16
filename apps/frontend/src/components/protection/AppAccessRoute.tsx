@@ -2,7 +2,7 @@ import React, { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 import AccessDenied from "./AccessDenied";
-import { appRegistry } from "../../config/appRegistry";
+import { APP_REGISTRY } from "../../config/appRegistry";
 
 interface AppAccessRouteProps {
   children: ReactNode;
@@ -67,7 +67,7 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
   if (!hasAccess) {
     const formattedAppNames = requiredAppSlugs
       .map((slug) => {
-        const reg = appRegistry.find((a) => a.id.toLowerCase() === slug.trim().toLowerCase());
+        const reg = APP_REGISTRY.find((a) => a.id.toLowerCase() === slug.trim().toLowerCase());
         if (reg) {
           const translated = t(reg.nameKey);
           if (translated && translated !== reg.nameKey) return translated;
