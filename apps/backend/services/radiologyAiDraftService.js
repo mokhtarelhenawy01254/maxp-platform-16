@@ -1,10 +1,10 @@
 const PROVIDER_PREFERENCE = [
+  'GOOGLE',
   'OPENROUTER',
   'OPENAI',
   'GROQ',
   'ANTHROPIC',
   'DEEPSEEK',
-  'GOOGLE',
   'MISTRAL',
   'NVIDIA',
   'HUGGINGFACE',
@@ -27,10 +27,10 @@ const BASE_URL_DEFAULTS = {
 const MODEL_DEFAULTS = {
   OPENROUTER: 'openai/gpt-4o-mini',
   OPENAI: 'gpt-4o-mini',
-  GROQ: 'llama-3.3-70b-versatile',
+  GROQ: 'qwen/qwen3.8-27b',
   DEEPSEEK: 'deepseek-chat',
   ANTHROPIC: 'claude-3-5-haiku-latest',
-  GOOGLE: 'gemini-2.0-flash',
+  GOOGLE: 'gemini-2.5-flash',
   MISTRAL: 'mistral-small-latest',
   NVIDIA: 'nvidia/llama-3.1-nemotron-70b-instruct',
   HUGGINGFACE: 'meta-llama/Meta-Llama-3.1-8B-Instruct',
@@ -124,7 +124,7 @@ const parseDraftResponse = (text) => {
   return cleaned;
 };
 
-const callChatCompletion = async ({ baseUrl, apiKey, model, system, user, timeoutMs = 25000 }) => {
+const callChatCompletion = async ({ baseUrl, apiKey, model, system, user, maxTokens = 2048, timeoutMs = 30000 }) => {
   const url = String(baseUrl || '');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -135,7 +135,11 @@ const callChatCompletion = async ({ baseUrl, apiKey, model, system, user, timeou
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: `${system}\n\n${user}` }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 900 },
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: Math.max(maxTokens, 4096),
+            thinkingConfig: { thinkingBudget: 0 },
+          },
         }),
         signal: controller.signal,
       });
@@ -153,7 +157,7 @@ const callChatCompletion = async ({ baseUrl, apiKey, model, system, user, timeou
           'anthropic-version': '2023-06-01',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ model, max_tokens: 900, system, messages: [{ role: 'user', content: user }] }),
+        body: JSON.stringify({ model, max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }] }),
         signal: controller.signal,
       });
       if (!response.ok) throw new Error(`AI HTTP ${response.status}`);
@@ -168,7 +172,7 @@ const callChatCompletion = async ({ baseUrl, apiKey, model, system, user, timeou
       body: JSON.stringify({
         model,
         temperature: 0.3,
-        max_tokens: 900,
+        max_tokens: maxTokens,
         messages: [
           { role: 'system', content: system },
           { role: 'user', content: user },

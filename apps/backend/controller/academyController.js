@@ -339,12 +339,13 @@ exports.askCoach = async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     const { id } = req.params; // lessonId
-    const { message } = req.body;
+    const { message, quizContext } = req.body;
 
     const result = await academyService.askCoachOnLesson({
       lessonId: id,
       companyId,
       userMessage: message,
+      quizContext,
     });
 
     res.json({ success: true, ...result });
@@ -419,3 +420,89 @@ exports.renderCertificate = async (req, res) => {
     res.status(500).send('Error generating certificate');
   }
 };
+
+// -------------------------------------------------------------
+// Exercise Submissions & Review Endpoints (M2)
+// -------------------------------------------------------------
+
+exports.submitExercise = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    const { id } = req.params; // lessonId
+    const { enrollmentId, submissionText, submissionUrl } = req.body;
+    const studentUserId = req.user?.id || null;
+    const customerId = req.query.customerId || req.headers['x-customer-id'] || null;
+
+    const result = await academyService.submitLessonExercise({
+      lessonId: id,
+      enrollmentId,
+      companyId,
+      studentUserId,
+      customerId,
+      submissionText,
+      submissionUrl,
+    });
+
+    res.status(201).json({ success: true, ...result });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+exports.getLessonSubmissions = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    const { id } = req.params; // lessonId
+    const { status } = req.query;
+
+    const submissions = await academyService.getLessonSubmissions({
+      lessonId: id,
+      companyId,
+      status,
+    });
+
+    res.json({ success: true, submissions });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+exports.getCourseSubmissions = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    const { id } = req.params; // courseId
+    const { status } = req.query;
+
+    const submissions = await academyService.getCourseSubmissions({
+      courseId: id,
+      companyId,
+      status,
+    });
+
+    res.json({ success: true, submissions });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+exports.reviewSubmission = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    const { id } = req.params; // submissionId
+    const { status, instructorNote } = req.body;
+    const reviewedBy = req.user?.name || req.user?.email || 'مدرب ماكس بي';
+
+    const submission = await academyService.reviewSubmission({
+      submissionId: id,
+      companyId,
+      reviewedBy,
+      status,
+      instructorNote,
+    });
+
+    res.json({ success: true, submission });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+

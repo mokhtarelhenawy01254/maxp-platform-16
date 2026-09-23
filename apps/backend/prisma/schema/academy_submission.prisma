@@ -1,0 +1,27 @@
+// MaxP Academy - Student Exercise Submissions Model
+// Created as an isolated schema file without modifying any existing schema files
+
+model AcademySubmission {
+  id             String    @id @default(cuid())
+  companyId      String?
+  lessonId       String
+  enrollmentId   String?
+  studentUserId  String?
+  customerId     String?
+  submissionText String?
+  submissionUrl  String?
+  status         String    @default("PENDING") // PENDING | ACCEPTED | REJECTED | NEEDS_MORE
+  aiVerdictJson  Json?
+  aiFeedback     String?
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  instructorNote String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([lessonId])
+  @@index([status])
+  @@index([enrollmentId])
+  @@index([companyId])
+  @@map("academy_submissions")
+}

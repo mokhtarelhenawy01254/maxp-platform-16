@@ -1,5 +1,5 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
-const { resolveAiKey, BASE_URL_DEFAULTS, MODEL_DEFAULTS } = require('./radiologyAiDraftService');
+const { resolveAiKey, BASE_URL_DEFAULTS, MODEL_DEFAULTS, callChatCompletion } = require('./radiologyAiDraftService');
 
 class AcademyService {
   constructor() {
@@ -931,7 +931,7 @@ class AcademyService {
   // AI Coach Grounded Q&A
   // -------------------------------------------------------------
 
-  async askCoachOnLesson({ lessonId, companyId, userMessage }) {
+  async askCoachOnLesson({ lessonId, companyId, userMessage, quizContext }) {
     if (!userMessage || !userMessage.trim()) {
       throw new Error('Message is required');
     }
@@ -950,10 +950,19 @@ class AcademyService {
 
     if (!lesson) throw new Error('Lesson not found');
 
-    const courseTitle = lesson.module.course.title;
+    const courseTitle = lesson.module?.course?.title || '';
     const lessonTitle = lesson.title;
     const scriptText = lesson.scriptText || 'لم يتوفر سكريبت نصي مفصل لهذا الدرس بعد.';
     const exerciseText = lesson.exerciseText || 'لا يوجد تمرين محدد لهذا الدرس.';
+
+    let quizContextBlock = '';
+    if (quizContext) {
+      quizContextBlock = `\nسياق كويز الطالب لهذا الدرس:
+- نتيجة الطالب: ${quizContext.scorePercent !== undefined ? quizContext.scorePercent + '%' : 'غير محدد'}
+- الأسئلة الخاطئة: ${Array.isArray(quizContext.wrongQuestions) && quizContext.wrongQuestions.length > 0 ? JSON.stringify(quizContext.wrongQuestions, null, 2) : 'لا يوجد أو لم يُختبر بعد'}
+- توضيحات الأسئلة: ${quizContext.explanation || 'لا يوجد'}
+- توقيت القسم في الدرس: ${quizContext.sectionTimestamp || 'غير محدد'}\n`;
+    }
 
     const systemPrompt = `أنت "كوتش أكاديمية ماكس بي الذكي" (MaxP Course Coach).
 أنت مرشد تعليمي ودود ومحترف، متخصص في شرح دورة: "${courseTitle}"، وتحديداً درس: "${lessonTitle}".
@@ -961,10 +970,11 @@ class AcademyService {
 القانون الصارم:
 1. إجابتك يجب أن تكون مستندة ومبنية حصراً على سكريبت ومعلومات هذا الدرس أدناه.
 2. ممنوع تأليف أي استراتيجيات أو مصطلحات تخالف ما ورد في سكريبت الدرس.
-3. إذا سأل الطالب سؤالاً خارج سياق الدرس، وضح له بأدب:
-"هذا السؤال خارج نطاق هذا الدرس الحالي (${lessonTitle}). تركيزنا هنا هو [اذكر موضوع الدرس]، وأنا جاهز لأي استفسار يخص محتوى الدرس أو تطبيقه العملي!"
-4. في نهاية إجابتك، شجع الطالب دائماً على تطبيق التمرين أو إتمام الدرس.
-
+3. إذا سأل الطالب سؤالاً خارج سياق الدرس (مثال: أسئلة الطبخ، البرمجة خارج الدرس، أو مواضيع عامة)، اعتذر له بأدب ووضح له:
+"هذا السؤال خارج نطاق هذا الدرس الحالي (${lessonTitle}). تركيزنا هنا هو محتوى الدرس وتطبيقه العملي، وأنا جاهز لأي استفسار يخص سكريبت الدرس والتمرين المطلوب!"
+4. ممنوع أي رقم غير الأرقام المكتوبة في السكريبت. وأي رقم يتقال لازم يتقال معاه مصدره (Spiegel / Baymard / أو إنه حساب على الشاشة).
+5. في نهاية إجابتك، شجع الطالب دائماً على تطبيق التمرين أو إتمام الدرس.
+${quizContextBlock}
 محتوى وسكريبت الدرس الحالي:
 """
 ${scriptText}
@@ -975,7 +985,7 @@ ${scriptText}
 ${exerciseText}
 """`;
 
-    // Call AI using existing key resolver or direct fallback
+    // Call AI using database-backed key resolution exclusively
     let aiConfig = null;
     try {
       aiConfig = await resolveAiKey(db, companyId || lesson.companyId);
@@ -983,56 +993,369 @@ ${exerciseText}
       // ignore
     }
 
-    const effectiveKey = aiConfig?.apiKey || process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
-    const effectiveBase = aiConfig?.baseUrl || (process.env.OPENROUTER_API_KEY ? 'https://openrouter.ai/api/v1' : 'https://api.openai.com/v1');
-    const effectiveModel = aiConfig?.model || (process.env.OPENROUTER_API_KEY ? 'openai/gpt-4o-mini' : 'gpt-4o-mini');
-
-    if (!effectiveKey) {
-      // Return helpful fallback if no AI key configured in environment
+    if (!aiConfig?.apiKey) {
       return {
         reply: `مرحباً بك في درس "${lessonTitle}".\n\nنصيحة الكوتش: ركّز على تطبيق خطوات الدرس بدقة وحل التمرين المطلوب: (${exerciseText}).\n\n(ملاحظة: يمكنك إعداد مفتاح الذكاء الاصطناعي في لوحة التحكم لتفعيل المحادثات المتقدمة).`,
       };
     }
 
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 30000);
-
-      const resp = await fetch(`${effectiveBase}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${effectiveKey}`,
-        },
-        body: JSON.stringify({
-          model: effectiveModel,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage },
-          ],
-          temperature: 0.3,
-          max_tokens: 800,
-        }),
-        signal: controller.signal,
+      const completion = await callChatCompletion({
+        baseUrl: aiConfig.baseUrl,
+        apiKey: aiConfig.apiKey,
+        model: aiConfig.model,
+        system: systemPrompt,
+        user: userMessage,
+        timeoutMs: 30000,
       });
 
-      clearTimeout(timer);
-
-      if (!resp.ok) {
-        const errText = await resp.text();
-        console.error('AI Coach API error:', errText);
-        throw new Error('فشل استدعاء خدمة الكوتش الذكي');
-      }
-
-      const json = await resp.json();
-      const reply = json.choices?.[0]?.message?.content?.trim() || 'عذراً، لم أستطع صياغة رد حالياً. حاول مرة أخرى.';
-      return { reply };
+      return { reply: completion || 'عذراً، لم أستطع صياغة رد حالياً. حاول مرة أخرى.' };
     } catch (err) {
       console.error('AI Coach Error:', err);
       return {
         reply: `إجابة مبنية على الدرس "${lessonTitle}":\n\nيرجى مراجعة محتوى الدرس والتمرين العملي المطلوب والالتزام بالخطوات المذكورة في الفيديو والسكريبت.`,
       };
     }
+  }
+
+  // -------------------------------------------------------------
+  // AI Grader & Exercise Submissions (M2 & M3)
+  // -------------------------------------------------------------
+
+  async gradeSubmission({ lessonId, submission, companyId }) {
+    const db = this.getDb();
+    const lesson = await db.academyLesson.findFirst({
+      where: { id: lessonId },
+      include: {
+        module: {
+          include: {
+            course: true,
+          },
+        },
+      },
+    });
+
+    if (!lesson) throw new Error('الدرس غير موجود');
+
+    const courseTitle = lesson.module?.course?.title || '';
+    const lessonTitle = lesson.title;
+    const exerciseText = lesson.exerciseText || '';
+    const scriptText = lesson.scriptText || '';
+    const studentText = submission?.submissionText || '';
+    const studentUrl = submission?.submissionUrl || '';
+
+    let aiConfig = null;
+    try {
+      aiConfig = await resolveAiKey(db, companyId || lesson.companyId);
+    } catch (e) {
+      // ignore
+    }
+
+    if (!aiConfig?.apiKey) {
+      return {
+        verdict: 'PENDING',
+        missing: [],
+        coachLine: 'تم استلام تمرينك بنجاح. لا يتوفر مفتاح ذكاء اصطناعي حالياً، والتسليم قيد المراجعة اليدوية بواسطة المدرب.',
+        nextStep: 'انتظر مراجعة المدرب البشري لاعتماد الدرس والانتقال للتالي.',
+      };
+    }
+
+    const systemPrompt = `أنت "المصحح الذكي لأكاديمية ماكس بي" (MaxP Academy Grader).
+مهمتك تقييم تسليم الطالب للتمرين العملي لدرس: "${lessonTitle}" من دورة: "${courseTitle}".
+
+القانون الصارم جداً:
+1. احكم على تسليم الطالب حصرياً بمعايير القبول/الرفض المكتوبة في نص التمرين أدناه، وممنوع تخترع معيار من عندك إطلاقاً.
+2. إذا حقق الطالب كافة بنود ومطاليب مسطرة التمرين المكتوبة: الحكم يكون "ACCEPTED".
+3. إذا كان التسليم ناقصاً بنوداً جوهرية من المسطرة المذكورة في نص التمرين: الحكم يكون "REJECTED".
+4. إذا كان التسليم يحتاج تفاصيل توضيحية إضافية: الحكم يكون "NEEDS_MORE".
+5. يجب أن تذكر في مصفوفة "missing" البنود الناقصة نصاً ومطابقة لمسطرة التمرين فقط دون اختراع.
+6. الرد يجب أن يكون JSON صالحاً فقط (Valid JSON) بالصيغة التالية بدون أي كلام إضافي أو كتل برمجية:
+{
+  "verdict": "ACCEPTED" | "REJECTED" | "NEEDS_MORE",
+  "missing": ["البند الناقص 1 من المسطرة", "البند الناقص 2 من المسطرة"],
+  "coachLine": "ملاحظة توجيهية موجزة ومحفزة باللهجة المصرية المهنية تعكس سبب الحكم",
+  "nextStep": "الخطوة العملية التالية المحددة للطالب"
+}
+
+نص وتفاصيل التمرين العملي ومسطرة التقييم:
+"""
+${exerciseText}
+"""
+
+سكريبت الدرس للمرجعية:
+"""
+${scriptText}
+"""`;
+
+    const userMessage = `تسليم الطالب:
+نص الإجابة / التطبيق:
+"""
+${studentText || 'لم يكتب نصاً'}
+"""
+
+رابط المرفق / الصورة:
+${studentUrl || 'لا يوجد رابط'}`;
+
+    try {
+      const completion = await callChatCompletion({
+        baseUrl: aiConfig.baseUrl,
+        apiKey: aiConfig.apiKey,
+        model: aiConfig.model,
+        system: systemPrompt,
+        user: userMessage,
+        timeoutMs: 30000,
+      });
+
+      let parsed = null;
+      try {
+        let cleaned = completion.trim();
+        cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          parsed = JSON.parse(cleaned);
+        }
+      } catch (pe) {
+        console.error('Failed to parse AI grading JSON:', pe.message, completion);
+      }
+
+      if (parsed && ['ACCEPTED', 'REJECTED', 'NEEDS_MORE'].includes(parsed.verdict)) {
+        return {
+          verdict: parsed.verdict,
+          missing: Array.isArray(parsed.missing) ? parsed.missing : [],
+          coachLine: parsed.coachLine || 'تم تقييم التمرين بواسطة المصحح الذكي.',
+          nextStep: parsed.nextStep || 'واصل التقدم في مسار الكورس.',
+        };
+      }
+
+      return {
+        verdict: 'PENDING',
+        missing: [],
+        coachLine: 'تم استلام التمرين وبانتظار المراجعة البشرية.',
+        nextStep: 'انتظر مراجعة المدرب البشري.',
+      };
+    } catch (err) {
+      console.error('AI Grader invocation error:', err.message);
+      return {
+        verdict: 'PENDING',
+        missing: [],
+        coachLine: 'تعذر الاتصال بالمصحح الذكي حالياً، والتمرين قيد المراجعة اليدوية بواسطة المدرب.',
+        nextStep: 'انتظر مراجعة المدرب البشري.',
+      };
+    }
+  }
+
+  async submitLessonExercise({
+    lessonId,
+    enrollmentId,
+    companyId,
+    studentUserId,
+    customerId,
+    submissionText,
+    submissionUrl,
+  }) {
+    if (!submissionText?.trim() && !submissionUrl?.trim()) {
+      throw new Error('يجب إدخال نص التمرين أو رابط صورة للتسليم');
+    }
+
+    const db = this.getDb();
+    const lesson = await db.academyLesson.findFirst({
+      where: { id: lessonId },
+      include: {
+        module: {
+          include: {
+            course: true,
+          },
+        },
+      },
+    });
+
+    if (!lesson) throw new Error('الدرس غير موجود');
+
+    // Run AI Grader
+    const gradeResult = await this.gradeSubmission({
+      lessonId,
+      submission: { submissionText, submissionUrl },
+      companyId: companyId || lesson.companyId,
+    });
+
+    const submission = await db.academySubmission.create({
+      data: {
+        companyId: companyId || lesson.companyId,
+        lessonId,
+        enrollmentId: enrollmentId || null,
+        studentUserId: studentUserId || null,
+        customerId: customerId || null,
+        submissionText: submissionText ? submissionText.trim() : null,
+        submissionUrl: submissionUrl ? submissionUrl.trim() : null,
+        status: gradeResult.verdict,
+        aiVerdictJson: gradeResult,
+        aiFeedback: gradeResult.coachLine || null,
+      },
+    });
+
+    // If verdict is ACCEPTED and student is enrolled, mark progress as DONE
+    let progress = null;
+    if (gradeResult.verdict === 'ACCEPTED' && enrollmentId) {
+      progress = await db.academyProgress.upsert({
+        where: {
+          enrollmentId_lessonId: {
+            enrollmentId,
+            lessonId,
+          },
+        },
+        create: {
+          enrollmentId,
+          lessonId,
+          status: 'DONE',
+          completedAt: new Date(),
+        },
+        update: {
+          status: 'DONE',
+          completedAt: new Date(),
+        },
+      });
+
+      await this.checkAndIssueCertificate(enrollmentId);
+    }
+
+    return {
+      submission,
+      aiVerdict: gradeResult,
+      progress,
+    };
+  }
+
+  async getLessonSubmissions({ lessonId, companyId, status }) {
+    const db = this.getDb();
+    const submissions = await db.academySubmission.findMany({
+      where: {
+        lessonId,
+        ...(companyId ? { companyId } : {}),
+        ...(status ? { status } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Enrich with enrollment info if available
+    const enrollmentIds = [...new Set(submissions.map((s) => s.enrollmentId).filter(Boolean))];
+    const enrollments = enrollmentIds.length > 0
+      ? await db.academyEnrollment.findMany({
+          where: { id: { in: enrollmentIds } },
+          select: { id: true, studentName: true, studentPhone: true, studentEmail: true },
+        })
+      : [];
+    const enrMap = new Map(enrollments.map((e) => [e.id, e]));
+
+    return submissions.map((sub) => {
+      const enr = sub.enrollmentId ? enrMap.get(sub.enrollmentId) : null;
+      return {
+        ...sub,
+        studentName: enr?.studentName || 'طالب',
+        studentPhone: enr?.studentPhone || null,
+        studentEmail: enr?.studentEmail || null,
+      };
+    });
+  }
+
+  async getCourseSubmissions({ courseId, companyId, status }) {
+    const db = this.getDb();
+    const lessons = await db.academyLesson.findMany({
+      where: {
+        module: {
+          courseId,
+        },
+      },
+      select: { id: true, title: true, sortOrder: true },
+    });
+    const lessonIds = lessons.map((l) => l.id);
+    if (lessonIds.length === 0) return [];
+
+    const submissions = await db.academySubmission.findMany({
+      where: {
+        lessonId: { in: lessonIds },
+        ...(companyId ? { companyId } : {}),
+        ...(status ? { status } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    const lessonMap = new Map(lessons.map((l) => [l.id, l]));
+    const enrollmentIds = [...new Set(submissions.map((s) => s.enrollmentId).filter(Boolean))];
+    const enrollments = enrollmentIds.length > 0
+      ? await db.academyEnrollment.findMany({
+          where: { id: { in: enrollmentIds } },
+          select: { id: true, studentName: true, studentPhone: true, studentEmail: true },
+        })
+      : [];
+    const enrMap = new Map(enrollments.map((e) => [e.id, e]));
+
+    return submissions.map((sub) => {
+      const enr = sub.enrollmentId ? enrMap.get(sub.enrollmentId) : null;
+      const lsn = lessonMap.get(sub.lessonId);
+      return {
+        ...sub,
+        lessonTitle: lsn?.title || 'درس',
+        lessonSortOrder: lsn?.sortOrder || 0,
+        studentName: enr?.studentName || 'طالب',
+        studentPhone: enr?.studentPhone || null,
+        studentEmail: enr?.studentEmail || null,
+      };
+    });
+  }
+
+  async reviewSubmission({ submissionId, companyId, reviewedBy, status, instructorNote }) {
+    if (!['ACCEPTED', 'REJECTED', 'NEEDS_MORE', 'PENDING'].includes(status)) {
+      throw new Error('حالة المراجعة غير صالحة');
+    }
+
+    const db = this.getDb();
+    const existing = await db.academySubmission.findFirst({
+      where: {
+        id: submissionId,
+        ...(companyId ? { companyId } : {}),
+      },
+    });
+
+    if (!existing) throw new Error('التسليم غير موجود');
+
+    const updated = await db.academySubmission.update({
+      where: { id: submissionId },
+      data: {
+        status,
+        reviewedBy: reviewedBy || 'مدرب ماكس بي',
+        reviewedAt: new Date(),
+        instructorNote: instructorNote !== undefined ? instructorNote : existing.instructorNote,
+      },
+    });
+
+    // If accepted and enrollmentId present => mark progress DONE
+    if (status === 'ACCEPTED' && updated.enrollmentId) {
+      await db.academyProgress.upsert({
+        where: {
+          enrollmentId_lessonId: {
+            enrollmentId: updated.enrollmentId,
+            lessonId: updated.lessonId,
+          },
+        },
+        create: {
+          enrollmentId: updated.enrollmentId,
+          lessonId: updated.lessonId,
+          status: 'DONE',
+          completedAt: new Date(),
+        },
+        update: {
+          status: 'DONE',
+          completedAt: new Date(),
+        },
+      });
+
+      await this.checkAndIssueCertificate(updated.enrollmentId);
+    }
+
+    return updated;
   }
 
   // -------------------------------------------------------------

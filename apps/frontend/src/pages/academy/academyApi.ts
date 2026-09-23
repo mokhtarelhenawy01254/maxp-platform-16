@@ -99,6 +99,34 @@ export interface StudentProgressRow {
   certificateNumber?: string | null;
 }
 
+export interface ExerciseSubmission {
+  id: string;
+  lessonId: string;
+  lessonTitle?: string;
+  lessonSortOrder?: number;
+  enrollmentId?: string | null;
+  studentUserId?: string | null;
+  customerId?: string | null;
+  studentName?: string;
+  studentPhone?: string | null;
+  studentEmail?: string | null;
+  submissionText?: string | null;
+  submissionUrl?: string | null;
+  status: "PENDING" | "ACCEPTED" | "REJECTED" | "NEEDS_MORE";
+  aiVerdictJson?: {
+    verdict: string;
+    missing?: string[];
+    coachLine?: string;
+    nextStep?: string;
+  } | null;
+  aiFeedback?: string | null;
+  instructorNote?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // -------------------------------------------------------------
 // API Calls
 // -------------------------------------------------------------
@@ -106,23 +134,23 @@ export interface StudentProgressRow {
 export const academyApi = {
   // Courses
   async getCourses(): Promise<Course[]> {
-    const res = await apiClient.get("/api/v1/academy/courses");
-    return res.data.courses || [];
+    const res = await apiClient.get<any>("/api/v1/academy/courses");
+    return (res.data as any)?.courses || [];
   },
 
   async getCourseDetails(id: string): Promise<Course> {
-    const res = await apiClient.get(`/api/v1/academy/courses/${id}`);
-    return res.data.course;
+    const res = await apiClient.get<any>(`/api/v1/academy/courses/${id}`);
+    return (res.data as any)?.course;
   },
 
   async createCourse(data: Partial<Course>): Promise<Course> {
-    const res = await apiClient.post("/api/v1/academy/courses", data);
-    return res.data.course;
+    const res = await apiClient.post<any>("/api/v1/academy/courses", data);
+    return (res.data as any)?.course;
   },
 
   async updateCourse(id: string, data: Partial<Course>): Promise<Course> {
-    const res = await apiClient.put(`/api/v1/academy/courses/${id}`, data);
-    return res.data.course;
+    const res = await apiClient.put<any>(`/api/v1/academy/courses/${id}`, data);
+    return (res.data as any)?.course;
   },
 
   async deleteCourse(id: string): Promise<void> {
@@ -131,13 +159,13 @@ export const academyApi = {
 
   // Modules
   async addModule(courseId: string, data: { title: string; description?: string; sortOrder?: number }): Promise<Module> {
-    const res = await apiClient.post(`/api/v1/academy/courses/${courseId}/modules`, data);
-    return res.data.module;
+    const res = await apiClient.post<any>(`/api/v1/academy/courses/${courseId}/modules`, data);
+    return (res.data as any)?.module;
   },
 
   async updateModule(id: string, data: { title?: string; description?: string; sortOrder?: number }): Promise<Module> {
-    const res = await apiClient.put(`/api/v1/academy/modules/${id}`, data);
-    return res.data.module;
+    const res = await apiClient.put<any>(`/api/v1/academy/modules/${id}`, data);
+    return (res.data as any)?.module;
   },
 
   async deleteModule(id: string): Promise<void> {
@@ -146,13 +174,13 @@ export const academyApi = {
 
   // Lessons
   async addLesson(moduleId: string, data: Partial<Lesson>): Promise<Lesson> {
-    const res = await apiClient.post(`/api/v1/academy/modules/${moduleId}/lessons`, data);
-    return res.data.lesson;
+    const res = await apiClient.post<any>(`/api/v1/academy/modules/${moduleId}/lessons`, data);
+    return (res.data as any)?.lesson;
   },
 
   async updateLesson(id: string, data: Partial<Lesson>): Promise<Lesson> {
-    const res = await apiClient.put(`/api/v1/academy/lessons/${id}`, data);
-    return res.data.lesson;
+    const res = await apiClient.put<any>(`/api/v1/academy/lessons/${id}`, data);
+    return (res.data as any)?.lesson;
   },
 
   async deleteLesson(id: string): Promise<void> {
@@ -160,19 +188,19 @@ export const academyApi = {
   },
 
   async saveLessonQuiz(lessonId: string, data: { title?: string; passScorePercent?: number; questions: Question[] }): Promise<Quiz> {
-    const res = await apiClient.post(`/api/v1/academy/lessons/${lessonId}/quiz`, data);
-    return res.data.quiz;
+    const res = await apiClient.post<any>(`/api/v1/academy/lessons/${lessonId}/quiz`, data);
+    return (res.data as any)?.quiz;
   },
 
   // Student Portal
   async getCatalog(params?: { customerId?: string; phone?: string; tags?: string }): Promise<Course[]> {
-    const res = await apiClient.get("/api/v1/academy/catalog", { params });
-    return res.data.courses || [];
+    const res = await apiClient.get<any>("/api/v1/academy/catalog", { params });
+    return (res.data as any)?.courses || [];
   },
 
   async getMyCourses(): Promise<MyEnrollment[]> {
-    const res = await apiClient.get("/api/v1/academy/my-courses");
-    return res.data.enrollments || [];
+    const res = await apiClient.get<any>("/api/v1/academy/my-courses");
+    return (res.data as any)?.enrollments || [];
   },
 
   async getCourseOutline(courseId: string, params?: { customerId?: string; phone?: string }): Promise<{
@@ -182,8 +210,8 @@ export const academyApi = {
     certificate: any;
     modules: Module[];
   }> {
-    const res = await apiClient.get(`/api/v1/academy/courses/${courseId}/outline`, { params });
-    return res.data;
+    const res = await apiClient.get<any>(`/api/v1/academy/courses/${courseId}/outline`, { params });
+    return res.data as any;
   },
 
   async getLessonContent(lessonId: string, params?: { customerId?: string; phone?: string }): Promise<{
@@ -199,18 +227,18 @@ export const academyApi = {
       id: string;
     };
   }> {
-    const res = await apiClient.get(`/api/v1/academy/lessons/${lessonId}/content`, { params });
-    return res.data;
+    const res = await apiClient.get<any>(`/api/v1/academy/lessons/${lessonId}/content`, { params });
+    return res.data as any;
   },
 
   async enrollStudent(courseId: string, studentData: { studentName?: string; studentPhone?: string; studentEmail?: string }): Promise<any> {
-    const res = await apiClient.post(`/api/v1/academy/courses/${courseId}/enroll`, studentData);
-    return res.data.enrollment;
+    const res = await apiClient.post<any>(`/api/v1/academy/courses/${courseId}/enroll`, studentData);
+    return (res.data as any)?.enrollment;
   },
 
   async completeLesson(lessonId: string, enrollmentId: string): Promise<any> {
-    const res = await apiClient.post(`/api/v1/academy/lessons/${lessonId}/complete`, { enrollmentId });
-    return res.data.progress;
+    const res = await apiClient.post<any>(`/api/v1/academy/lessons/${lessonId}/complete`, { enrollmentId });
+    return (res.data as any)?.progress;
   },
 
   async submitQuiz(lessonId: string, enrollmentId: string, answers: number[]): Promise<{
@@ -222,18 +250,58 @@ export const academyApi = {
     feedback: Array<{ questionId: string; isCorrect: boolean; explanation?: string; correctIndex?: number }>;
     progress: any;
   }> {
-    const res = await apiClient.post(`/api/v1/academy/lessons/${lessonId}/submit-quiz`, { enrollmentId, answers });
-    return res.data;
+    const res = await apiClient.post<any>(`/api/v1/academy/lessons/${lessonId}/submit-quiz`, { enrollmentId, answers });
+    return res.data as any;
   },
 
   async askCoach(lessonId: string, message: string): Promise<{ reply: string }> {
-    const res = await apiClient.post(`/api/v1/academy/lessons/${lessonId}/coach-chat`, { message });
-    return res.data;
+    const res = await apiClient.post<any>(`/api/v1/academy/lessons/${lessonId}/coach-chat`, { message });
+    return res.data as any;
+  },
+
+  // Exercise Submissions & AI Grader
+  async submitExercise(
+    lessonId: string,
+    data: { enrollmentId?: string | null; submissionText?: string; submissionUrl?: string }
+  ): Promise<{
+    submission: ExerciseSubmission;
+    gradeResult: {
+      verdict: "ACCEPTED" | "REJECTED" | "NEEDS_MORE" | "PENDING";
+      missing?: string[];
+      coachLine?: string;
+      nextStep?: string;
+    };
+    progress?: any;
+  }> {
+    const res = await apiClient.post<any>(`/api/v1/academy/lessons/${lessonId}/submit-exercise`, data);
+    return res.data as any;
+  },
+
+  async getLessonSubmissions(lessonId: string, status?: string): Promise<ExerciseSubmission[]> {
+    const res = await apiClient.get<any>(`/api/v1/academy/lessons/${lessonId}/submissions`, {
+      params: status ? { status } : undefined,
+    });
+    return (res.data as any)?.submissions || [];
+  },
+
+  async getCourseSubmissions(courseId: string, status?: string): Promise<ExerciseSubmission[]> {
+    const res = await apiClient.get<any>(`/api/v1/academy/courses/${courseId}/submissions`, {
+      params: status ? { status } : undefined,
+    });
+    return (res.data as any)?.submissions || [];
+  },
+
+  async reviewSubmission(
+    submissionId: string,
+    data: { status: "ACCEPTED" | "REJECTED" | "NEEDS_MORE" | "PENDING"; instructorNote?: string }
+  ): Promise<ExerciseSubmission> {
+    const res = await apiClient.post<any>(`/api/v1/academy/submissions/${submissionId}/review`, data);
+    return (res.data as any)?.submission;
   },
 
   // Analytics
   async getStudentsProgress(courseId: string): Promise<StudentProgressRow[]> {
-    const res = await apiClient.get(`/api/v1/academy/courses/${courseId}/students`);
-    return res.data.students || [];
+    const res = await apiClient.get<any>(`/api/v1/academy/courses/${courseId}/students`);
+    return (res.data as any)?.students || [];
   },
 };

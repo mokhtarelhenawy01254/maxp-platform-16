@@ -37,7 +37,13 @@ router.post('/courses/:courseId/enroll', optionalAuth, controller.enrollStudent)
 // Student Actions
 router.post('/lessons/:id/complete', optionalAuth, controller.completeLesson);
 router.post('/lessons/:id/submit-quiz', optionalAuth, controller.submitQuiz);
+router.post('/lessons/:id/submit-exercise', optionalAuth, controller.submitExercise);
 router.post('/lessons/:id/coach-chat', optionalAuth, controller.askCoach);
+
+// Instructor Submissions Review
+router.get('/courses/:id/submissions', authenticateToken, controller.getCourseSubmissions);
+router.get('/lessons/:id/submissions', authenticateToken, controller.getLessonSubmissions);
+router.post('/submissions/:id/review', authenticateToken, controller.reviewSubmission);
 
 // Certificates
 router.get('/certificates/:enrollmentId/view', controller.renderCertificate);
