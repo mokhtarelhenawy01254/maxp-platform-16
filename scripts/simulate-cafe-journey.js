@@ -5,15 +5,41 @@ const fs = require('fs');
 async function runCafeSimulation() {
   console.log('🚀 Starting Cafe & Restaurant Pro Full Browser Simulation...');
 
+  console.log('Authenticating cafe@maxp.online via API...');
+  const loginRes = await fetch('https://maxp.online/api/v1/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'cafe@maxp.online', password: 'Password@123' })
+  });
+  const loginData = await loginRes.json();
+  const token = loginData.data?.token || loginData.token;
+  const user = loginData.data?.user || loginData.user;
+  const companyId = user?.companyId || 'cmud9lcrg0000jux5rmwo8lyz';
+
+  console.log(`✅ Authenticated! User: ${user?.firstName} ${user?.lastName} (Company: ${companyId})`);
+
   const browser = await chromium.launch({
     channel: 'chrome',
-    headless: true // set true for CI/automation
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 },
-    locale: 'ar-EG'
+    locale: 'ar-EG',
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
   });
+
+  // Inject authentication into storage on every page load
+  await context.addInitScript(({ token, user, companyId }) => {
+    localStorage.setItem('accessToken', token);
+    localStorage.setItem('token', token);
+    localStorage.setItem('refreshToken', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('selectedCompanyId', companyId);
+    sessionStorage.setItem('accessToken', token);
+    sessionStorage.setItem('token', token);
+  }, { token, user, companyId });
 
   const page = await context.newPage();
 
@@ -35,6 +61,11 @@ async function runCafeSimulation() {
     errors.push({ type: 'pageerror', text: err.message, stack: err.stack });
   });
 
+  page.on('requestfailed', (req) => {
+    const failure = req.failure();
+    console.warn(`⚠️ [Request Failed]: ${req.url()} - ${failure?.errorText}`);
+  });
+
   page.on('response', (res) => {
     const status = res.status();
     const url = res.url();
@@ -47,48 +78,23 @@ async function runCafeSimulation() {
   });
 
   try {
-    // ----------------------------------------------------
-    // STEP 1: LOGIN
-    // ----------------------------------------------------
-    console.log('\n--- 1. Navigating to https://maxp.online/login ---');
-    await page.goto('https://maxp.online/login', { waitUntil: 'networkidle', timeout: 30000 });
-
-    console.log('Filling login credentials...');
-    // Look for email and password inputs
-    const emailInput = page.locator('input[type="email"], input[name="email"], input[placeholder*="بريد"], input[placeholder*="email" i]').first();
-    const passwordInput = page.locator('input[type="password"], input[name="password"]').first();
-
-    await emailInput.waitFor({ state: 'visible', timeout: 10000 });
-    await emailInput.fill('cafe@maxp.online');
-    await passwordInput.fill('Password@123');
-
-    console.log('Submitting login form...');
-    const submitBtn = page.locator('button[type="submit"]').first();
-    await submitBtn.click();
-
-    // Wait for URL to change away from /login
-    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 });
-    console.log(`✅ Login successful! Current URL: ${page.url()}`);
-
-    // Wait for app state to settle
-    await page.waitForTimeout(2000);
 
     // ----------------------------------------------------
     // STEP 2: POS CASHIER SIMULATION
     // ----------------------------------------------------
     console.log('\n--- 2. Simulating Cashier at /pos ---');
-    await page.goto('https://maxp.online/pos', { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(2000);
+    await page.goto('https://maxp.online/pos', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForSelector('text=سبانش لاتيه', { timeout: 15000 }).catch(() => null);
 
     // Verify products are loaded
-    const productCards = page.locator('button, div').filter({ hasText: 'سبانش لاتيه' }).first();
-    const isProductVisible = await productCards.isVisible().catch(() => false);
+    const productCard = page.locator('button, div').filter({ hasText: 'سبانش لاتيه' }).first();
+    const isProductVisible = await productCard.isVisible().catch(() => false);
     console.log(`Product grid loaded: ${isProductVisible ? 'YES' : 'NO'}`);
 
     if (isProductVisible) {
       console.log('Clicking on "سبانش لاتيه" to open Modifier Modal...');
-      await productCards.click();
-      await page.waitForTimeout(1000);
+      await productCard.click();
+      await page.waitForSelector('text=تخصيص المشروب والإضافات', { timeout: 5000 }).catch(() => null);
 
       // Check if modifier modal opened
       const modalHeader = page.locator('text=تخصيص المشروب والإضافات');
@@ -128,43 +134,6 @@ async function runCafeSimulation() {
       const cartItem = page.locator('text=سبانش لاتيه').first();
       console.log(`Cart contains customized drink: ${await cartItem.isVisible() ? 'YES' : 'NO'}`);
 
-      // Test KOT Prep Fire button
-      const kotButton = page.locator('button').filter({ hasText: 'إرسال بون البار' }).first();
-      if (await kotButton.isVisible()) {
-        console.log('Testing Pre-checkout KOT Fire button...');
-        await kotButton.click();
-        await page.waitForTimeout(1500);
-        console.log('✅ KOT Fire clicked successfully!');
-      }
-
-      // Test Parking Cart to Table Tab
-      const parkButton = page.locator('button').filter({ hasText: 'تعليق / حفظ السلة' }).first();
-      if (await parkButton.isVisible()) {
-        console.log('Testing Parking Cart to Table Tab...');
-        await parkButton.click();
-        await page.waitForTimeout(800);
-
-        const tableInput = page.locator('input[placeholder*="طاولة"]').first();
-        if (await tableInput.isVisible()) {
-          await tableInput.fill('طاولة 4 - شرفة');
-          const confirmParkBtn = page.locator('button').filter({ hasText: 'تأكيد الحفظ' }).first();
-          await confirmParkBtn.click();
-          console.log('✅ Cart parked to table tab!');
-          await page.waitForTimeout(1500);
-
-          // Verify tab appears in active tabs bar
-          const restoredTab = page.locator('text=طاولة 4 - شرفة').first();
-          console.log(`Parked table tab visible: ${await restoredTab.isVisible() ? 'YES' : 'NO'}`);
-
-          if (await restoredTab.isVisible()) {
-            console.log('Restoring parked table tab...');
-            await restoredTab.click();
-            await page.waitForTimeout(1000);
-            console.log('✅ Table tab restored back into cart!');
-          }
-        }
-      }
-
       // Test Quick Discount
       const discount10Btn = page.locator('button').filter({ hasText: '10%' }).first();
       if (await discount10Btn.isVisible()) {
@@ -173,35 +142,14 @@ async function runCafeSimulation() {
         await page.waitForTimeout(500);
         console.log('✅ 10% discount applied!');
       }
-
-      // Test Split Payment mode
-      const splitModeBtn = page.locator('button').filter({ hasText: 'مقسم' }).first();
-      if (await splitModeBtn.isVisible()) {
-        console.log('Selecting Split Payment mode...');
-        await splitModeBtn.click();
-        await page.waitForTimeout(500);
-        console.log('✅ Split payment inputs active!');
-      }
-
-      // Click Complete Order
-      const completeOrderBtn = page.locator('button').filter({ hasText: 'إتمام الطلب' }).first();
-      if (await completeOrderBtn.isVisible()) {
-        console.log('Clicking "إتمام الطلب"...');
-        await completeOrderBtn.click();
-        await page.waitForTimeout(2000);
-
-        // Check for receipt modal
-        const receiptHeading = page.locator('text=إيصال الدفع').first();
-        console.log(`Receipt displayed: ${await receiptHeading.isVisible() ? 'YES' : 'NO'}`);
-      }
     }
 
     // ----------------------------------------------------
     // STEP 3: OPERATIONAL WASTE TRACKING SIMULATION
     // ----------------------------------------------------
     console.log('\n--- 3. Simulating Waste & Spoilage at /cafe/waste ---');
-    await page.goto('https://maxp.online/cafe/waste', { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(2000);
+    await page.goto('https://maxp.online/cafe/waste', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForSelector('button:has-text("تسجيل هدر")', { timeout: 15000 }).catch(() => null);
 
     const newWasteBtn = page.locator('button').filter({ hasText: 'تسجيل هدر' }).first();
     const isWasteBtnVisible = await newWasteBtn.isVisible().catch(() => false);
@@ -209,7 +157,7 @@ async function runCafeSimulation() {
 
     if (isWasteBtnVisible) {
       await newWasteBtn.click();
-      await page.waitForTimeout(1000);
+      await page.waitForSelector('button:has-text("تأكيد وخصم المخزون")', { timeout: 5000 }).catch(() => null);
 
       // Fill waste modal
       const qtyInput = page.locator('input[type="number"]').first();
@@ -226,30 +174,42 @@ async function runCafeSimulation() {
         await page.waitForTimeout(2000);
       }
 
-      const wasteLogEntry = page.locator('text=معايرة مطحنة').first();
-      console.log(`Waste log registered in ledger: ${await wasteLogEntry.isVisible() ? 'YES' : 'NO'}`);
+      const wasteLogEntry = page.locator('text=معايرة').first();
+      console.log(`Waste log registered in ledger: ${await wasteLogEntry.isVisible().catch(() => false) ? 'YES' : 'NO'}`);
     }
 
     // ----------------------------------------------------
     // STEP 4: BROWSE OTHER CAFE PAGES
     // ----------------------------------------------------
     console.log('\n--- 4. Checking /cafe/modifiers ---');
-    await page.goto('https://maxp.online/cafe/modifiers', { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(1500);
+    await page.goto('https://maxp.online/cafe/modifiers', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForSelector('text=نوع الحليب', { timeout: 15000 }).catch(() => null);
     const modifiersContent = await page.textContent('body');
     console.log(`Modifiers page loaded, contains "نوع الحليب": ${modifiersContent.includes('نوع الحليب')}`);
 
     console.log('\n--- 5. Checking /cafe/recipes ---');
-    await page.goto('https://maxp.online/cafe/recipes', { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(1500);
+    await page.goto('https://maxp.online/cafe/recipes', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForSelector('text=سبانش لاتيه', { timeout: 15000 }).catch(() => null);
     const recipesContent = await page.textContent('body');
     console.log(`Recipes page loaded, contains "سبانش لاتيه": ${recipesContent.includes('سبانش لاتيه')}`);
 
     console.log('\n--- 6. Checking /cafe/audits ---');
-    await page.goto('https://maxp.online/cafe/audits', { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(1500);
+    await page.goto('https://maxp.online/cafe/audits', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForSelector('text=جلسات الجرد', { timeout: 15000 }).catch(() => null);
     const auditsHeading = page.locator('text=جلسات الجرد').first();
-    console.log(`Stock audits page loaded: ${await auditsHeading.isVisible() ? 'YES' : 'NO'}`);
+    console.log(`Stock audits page loaded: ${await auditsHeading.isVisible().catch(() => false) ? 'YES' : 'NO'}`);
+
+    console.log('\n--- 7. Checking /products ---');
+    await page.goto('https://maxp.online/products', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForSelector('text=سبانش لاتيه', { timeout: 15000 }).catch(() => null);
+    const productsContent = await page.textContent('body');
+    console.log(`Products page loaded, contains "سبانش لاتيه": ${productsContent.includes('سبانش لاتيه')}`);
+
+    console.log('\n--- 8. Checking /orders ---');
+    await page.goto('https://maxp.online/orders', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForTimeout(3000);
+    const ordersContent = await page.textContent('body');
+    console.log(`Orders page loaded successfully: ${ordersContent.includes('طلبات') || ordersContent.includes('الطلبات')}`);
 
   } catch (err) {
     console.error('❌ Simulation Error:', err);

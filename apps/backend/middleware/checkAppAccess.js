@@ -113,7 +113,7 @@ const checkAppAccess = (appSlug) => {
       const company = await executeWithRetry(async () => {
         return await getSharedPrismaClient().company.findUnique({
           where: { id: companyId },
-          select: { trialModeEnabled: true, trialEndsAt: true, turboEnabled: true, turboApiKey: true, bostaApiKey: true, bostaEnabled: true }
+          select: { activeApps: true, trialModeEnabled: true, trialEndsAt: true, turboEnabled: true, turboApiKey: true, bostaApiKey: true, bostaEnabled: true }
         });
       });
 
@@ -130,6 +130,11 @@ const checkAppAccess = (appSlug) => {
 
       // Find all marketplace apps matching any candidate slug
       const candidateSlugs = getCandidateAppSlugs(appSlug);
+
+      // Check if company.activeApps directly includes any candidate slug
+      if (Array.isArray(company?.activeApps) && company.activeApps.some((slug) => candidateSlugs.includes(slug))) {
+        return next();
+      }
       const candidateApps = await executeWithRetry(async () => {
         const prisma = getSharedPrismaClient();
         return await prisma.marketplaceApp.findMany({

@@ -74,8 +74,8 @@ export default function WasteTrackingPage() {
       setLoading(true);
       const params = new URLSearchParams();
       if (selectedReasonFilter) params.append('reason', selectedReasonFilter);
-
-      const res = await companyAwareApi.get<any>(`/cafe/waste?${params.toString()}`);
+      const queryString = params.toString() ? `?${params.toString()}` : '';
+      const res = await companyAwareApi.get<any>(`/cafe/waste${queryString}`);
       const data = res.data;
       if (data?.success && data.data) {
         setLogs(data.data.logs || []);
