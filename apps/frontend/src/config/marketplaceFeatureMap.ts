@@ -157,6 +157,22 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     action: "تم ربط ظهور هذه الصفحات ببوابة شركات الشحن مع fallback على ecommerce-basic وباقات المتجر.",
   },
   {
+    id: "internal-courier-fleet",
+    area: "shipping",
+    label: "أسطول المناديب والتوصيل الداخلي",
+    description: "إدارة أسطول مناديب التوصيل الداخلي، رحلات التوزيع ومنافستات التسليم، الجرد والتحصيل الميداني، والتسوية المالية وتوريد الخزينة.",
+    status: "covered",
+    appSlug: "internal-courier-fleet",
+    appLabel: "أسطول المناديب والتوصيل الداخلي",
+    currentGate: "internal-courier-fleet",
+    routes: [
+      { path: "/shipping/couriers", label: "أسطول المناديب الداخلي" },
+      { path: "/shipping/delivery-runs", label: "رحلات التوزيع والمانيفست" },
+      { path: "/shipping/courier-settlements", label: "تسويات المناديب وتوريد الخزينة" },
+    ],
+    action: "تم ربط صفحات المناديب ورحلات التوزيع والتسويات بتطبيق أسطول المناديب والتوصيل الداخلي.",
+  },
+  {
     id: "order-invoicing",
     area: "accounting",
     label: "فواتير الطلبات",

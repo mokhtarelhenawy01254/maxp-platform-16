@@ -2005,6 +2005,63 @@
     "updatedAt": "2026-09-10T20:50:02.655Z"
   },
   {
+    "id": "cat-app-internal-courier-fleet",
+    "slug": "internal-courier-fleet",
+    "name": "أسطول المناديب والتوصيل الداخلي",
+    "nameEn": "In-House Courier Fleet & Remittance",
+    "description": "إدارة أسطول مناديب الشحن والتوصيل الداخليين، تنظيم رحلات التوزيع وإصدار مانيفست التسليم، متابعة وتحديث الحالات ميدانياً برابط هاتف مخصص، وتسوية التحصيلات المالية والتوريد المباشر لخزينة الشركة.",
+    "descriptionEn": "Manage in-house delivery fleet, organize dispatch runs and manifests, update delivery statuses on mobile via courier run-sheet, and reconcile cash-on-delivery directly into company treasury.",
+    "category": "SHIPPING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 129,
+    "yearlyPrice": 1290,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "الشركات والمتاجر التي تمتلك أو تعتمد على مناديب شحن وتوصيل داخليين أو أسطول سيارات خاص بها.",
+      "surface": "داخل قسم الشحن والتوصيل، شاشة تجهيز الطلبات، ورحلات التوزيع، وتسويات المناديب.",
+      "outcome": "تحكم كامل في المناديب وتكاليف التوصيل، جرد دقيق للعهد والبضائع، وتسوية مالية فورية للخزينة بدون عجز."
+    },
+    "features": {
+      "courierProfiles": {
+        "enabled": true,
+        "name": "إدارة أسطول المناديب",
+        "description": "تسجيل المناديب والبيانات وبيانات المركبات ونسب العمولة وتتبع الحالة التشغيلية.",
+        "access": "PAID"
+      },
+      "dispatchRuns": {
+        "enabled": true,
+        "name": "رحلات التوزيع والمانيفست",
+        "description": "تجميع وإسناد الشحنات للمناديب، إصدار مانيفست التسليم، وتحديث فوري لحالات الطلبات.",
+        "access": "PAID"
+      },
+      "mobileRunSheet": {
+        "enabled": true,
+        "name": "واجهة المندوب الذكية للموبايل",
+        "description": "رابط مباشر وسريع للمندوب لتصفح شحناته والاتصال بالعملاء وتحديث التسليمات أو المرتجعات.",
+        "access": "PAID"
+      },
+      "cashSettlement": {
+        "enabled": true,
+        "name": "تسويات العهد وتوريد الخزينة",
+        "description": "حساب إجمالي التحصيل النقدي والعمولات وتوريد صافي النقدية مباشرة لحساب الخزينة بدون أخطاء.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": true,
+    "icon": "truck",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-23T00:00:00.000Z",
+    "updatedAt": "2026-09-23T00:00:00.000Z"
+  },
+  {
     "id": "cat-app-order-invoicing",
     "slug": "order-invoicing",
     "name": "الفواتير",

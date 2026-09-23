@@ -139,8 +139,33 @@ const PreparationQueue: React.FC = () => {
   const { settings: invoiceSettings } = useInvoiceSettings();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialOverrides = useMemo(() => getInitialPreparationState(searchParams), []);
-  const { state: uiState, actions: uiActions } = usePreparationQueueUiState(initialOverrides);
   const isMerchantUser = user?.role === "MERCHANT";
+
+  const isInternalCourierAppActive = useMemo(() => {
+    if (user?.role === 'SUPER_ADMIN') return true;
+    const currentCompany = user?.companies?.find((c) => c.isCurrent) || user?.company;
+    const activeApps = Array.isArray(currentCompany?.activeApps)
+      ? currentCompany.activeApps
+      : Array.isArray(user?.company?.activeApps)
+        ? user.company.activeApps
+        : Array.isArray(user?.activeApps)
+          ? user.activeApps
+          : [];
+
+    const allowedSlugs = ['internal-courier-fleet', 'order-shipping-turbo'];
+    return allowedSlugs.some((slug) => {
+      const target = slug.toLowerCase();
+      return activeApps.some((a) => {
+        if (typeof a === 'string') return a.trim().toLowerCase() === target;
+        if (a && typeof a === 'object') {
+          const obj = a as { slug?: string; app?: { slug?: string } };
+          if (obj.slug?.trim().toLowerCase() === target) return true;
+          if (obj.app?.slug?.trim().toLowerCase() === target) return true;
+        }
+        return false;
+      });
+    });
+  }, [user]);
 
   // Synchronize incoming searchParams when URL changes externally (e.g. from app/sidebar links)
   const isSyncingFromUrlRef = useRef(false);
@@ -2056,7 +2081,7 @@ const PreparationQueue: React.FC = () => {
             onClearSelection={() => uiActions.clearBulkControls()}
             onSendToTurbo={() => void handleOpenDispatchModal()}
             onSendToShipping={() => void handleOpenDispatchModal()}
-            onSendToInternalCourier={() => setShowInternalCourierModal(true)}
+            onSendToInternalCourier={isInternalCourierAppActive ? () => setShowInternalCourierModal(true) : undefined}
             onPrintInvoices={() => void handlePrintInvoices()}
           />
         </div>

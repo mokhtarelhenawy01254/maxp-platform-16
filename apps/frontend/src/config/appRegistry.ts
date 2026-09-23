@@ -708,6 +708,20 @@ export const APP_REGISTRY: AppDefinition[] = [
     displayDescription: 'إدارة نفقات ومصروفات الشركة، تتبع الخزائن النقدية والحسابات البنكية، وضخ رأس المال',
     route: '/treasury-expenses',
   },
+  {
+    id: 'internal-courier-fleet',
+    nameKey: 'sidebar.internalCouriersFleet',
+    descriptionKey: 'appDashboard.app.internalCourierFleet.description',
+    icon: TruckIcon,
+    color: 'emerald',
+    bgGradient: 'from-emerald-600 to-teal-700',
+    sectionIds: ['shipping'],
+    category: 'operations',
+    requiredApps: ['internal-courier-fleet', 'order-shipping-turbo'],
+    displayName: 'أسطول المناديب والتوصيل الداخلي',
+    displayDescription: 'إدارة أسطول مناديب التوصيل الداخلي، رحلات التوزيع، مانيفست التسليم، ومتابعة التحصيل والتسوية مع الخزينة',
+    route: '/shipping/couriers',
+  },
 ];
 
 export const getAppById = (id: string): AppDefinition | undefined => {

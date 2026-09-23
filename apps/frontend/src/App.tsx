@@ -24,6 +24,7 @@ import { DefaultPageRedirect } from "./components/routing/DefaultPageRedirect";
 import { STORE_APP_SLUGS } from "./utils/storeShortcut";
 
 const SHIPPING_APP_ACCESS_SLUGS = [
+  'internal-courier-fleet',
   'order-shipping-turbo',
   'order-shipping-hub',
   'order-shipping-bosta',
