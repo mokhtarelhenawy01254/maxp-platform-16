@@ -96,8 +96,14 @@ router.get('/tags/distinct', verifyToken.authenticateToken, requireDbPermission(
 router.put('/tags/rename', verifyToken.authenticateToken, requireDbPermission('customers.edit'), customerController.renameTag);
 router.delete('/tags/:tagName', verifyToken.authenticateToken, requireDbPermission('customers.edit'), customerController.deleteTag);
 
+// ⭐ إعادة حساب وتصنيف جميع عملاء الشركة
+router.post('/recalculate-all-ratings', verifyToken.authenticateToken, requireDbPermission('customers.edit'), customerController.recalculateAllCustomerRatingsHandler);
+
 // تفاصيل العميل
 router.get('/:customerId', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerDetails);
+
+// ⭐ إعادة حساب وتصنيف عميل محدد
+router.post('/:customerId/recalculate-rating', verifyToken.authenticateToken, requireDbPermission('customers.edit'), customerController.recalculateCustomerRatingHandler);
 
 // جلب طلبات العميل
 router.get('/:customerId/orders', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerOrders);

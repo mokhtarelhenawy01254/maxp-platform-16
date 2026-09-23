@@ -60,8 +60,8 @@ export const CUSTOMER_RATING_OPTIONS: CustomerRatingOption[] = [
   },
   {
     value: "POOR",
-    label: "عميل سيئ / مخاطرة",
-    shortLabel: "سيئ",
+    label: "عميل ضعيف / مخاطرة",
+    shortLabel: "ضعيف",
     badgeClass:
       "bg-rose-50 text-rose-700 border-rose-200/80 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60 hover:bg-rose-100/70 dark:hover:bg-rose-950/60",
     activeClass:
@@ -71,8 +71,8 @@ export const CUSTOMER_RATING_OPTIONS: CustomerRatingOption[] = [
   },
   {
     value: "UNKNOWN",
-    label: "غير مصنف / بدون تقييم",
-    shortLabel: "بدون تقييم",
+    label: "عميل جديد / غير مصنف",
+    shortLabel: "جديد",
     badgeClass:
       "bg-slate-50 text-slate-600 border-slate-200/80 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700/60 hover:bg-slate-100/70 dark:hover:bg-slate-800/70",
     activeClass:
@@ -99,6 +99,9 @@ export interface CustomerRatingBadgeProps {
   interactive?: boolean;
   size?: "xs" | "sm" | "md";
   showLabel?: boolean;
+  deliveryRate?: number | null;
+  totalDelivered?: number | null;
+  totalAttempts?: number | null;
   onRatingChange?: (newRating: CustomerRatingLevel) => void;
   className?: string;
 }
@@ -110,6 +113,9 @@ export const CustomerRatingBadge: React.FC<CustomerRatingBadgeProps> = ({
   interactive = true,
   size = "xs",
   showLabel = true,
+  deliveryRate,
+  totalDelivered,
+  totalAttempts,
   onRatingChange,
   className = "",
 }) => {
