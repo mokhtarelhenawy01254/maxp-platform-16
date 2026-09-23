@@ -161,6 +161,38 @@ def _max_tool_calls(ctx: PipelineContext) -> int:
     return 10
 
 
+def _compact_history_for_budget(
+    messages: list[dict], token_budget: int, total_tokens: int
+) -> tuple[list[dict], int]:
+    """Hierarchical budget compaction: dropped history becomes a short
+    <conversation_summary> block instead of vanishing (preserves entity
+    facts — sizes, addresses, agreements — that blind FIFO deletes)."""
+    dropped: list[dict] = []
+    while total_tokens > token_budget and len(messages) > 2:
+        dropped.insert(0, messages.pop(1))
+        total_tokens -= len(str(messages and dropped[-1].get("content", ""))) // 4
+
+    if not dropped:
+        return messages, total_tokens
+
+    summary_lines = []
+    for m in dropped[-20:]:
+        role_ar = "العميل" if m.get("role") == "user" else "المساعد"
+        content = " ".join(str(m.get("content", "")).split())[:140]
+        if content:
+            summary_lines.append(f"{role_ar}: {content}")
+    summary_text = "\n".join(summary_lines)[-1600:]
+    summary = (
+        "<conversation_summary>ملخص مضغوط للجزء الأقدم من المحادثة "
+        "(التفاصيل الكاملة قُصّت لضبط الحجم):\n"
+        f"{summary_text}\n</conversation_summary>"
+    )
+    # Insert right after the system prompt so it survives further trimming.
+    messages.insert(1, {"role": "system", "content": summary})
+    total_tokens += len(summary) // 4
+    return messages, total_tokens
+
+
 async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
     """Replace resolve_intent + route_to_tools + execute_tools with one call.
 
@@ -556,15 +588,14 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
             user_content.insert(0, {"type": "text", "text": time_ctx})
     messages.append({"role": "user", "content": user_content})
 
-    # Token budget: drop oldest history messages if over budget
-    # ponytail: simple char/4 estimation, msg-by-msg trimming
+    # Token budget: compact oldest history into a summary instead of blind
+    # FIFO drops (2026 review fix — dropped messages used to erase entity
+    # facts like sizes/addresses mid-conversation).
     total_tokens = sum(len(str(m.get("content", ""))) // 4 for m in messages)
     if total_tokens > ctx.token_budget:
         logger.warning("token_budget_exceeded", total=total_tokens, budget=ctx.token_budget)
-        while total_tokens > ctx.token_budget and len(messages) > 2:
-            dropped = messages.pop(1)
-            total_tokens -= len(str(dropped.get("content", ""))) // 4
-        logger.info("token_budget_trimmed", remaining=len(messages), final_tokens=total_tokens)
+        messages, total_tokens = _compact_history_for_budget(messages, ctx.token_budget, total_tokens)
+        logger.info("token_budget_compacted", remaining=len(messages), final_tokens=total_tokens)
 
     # Get or create LLM client from context
     client = _unwrap_llm_client(ctx.llm_client) if ctx.llm_client else None
