@@ -4,8 +4,8 @@
   "role": "COURSE_COACH",
   "version": "1.0.0",
   "modelPolicy": {
-    "default": "gemini-2.5-flash",
-    "fallback": "deepseek-v4-flash"
+    "default": "deepseek-v4-flash",
+    "fallback": "gemini-2.5-flash"
   },
   "instructions": {
     "agents": "AGENTS.md",

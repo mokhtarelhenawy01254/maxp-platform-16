@@ -1312,8 +1312,6 @@ function getModelLabel(provider, modelName) {
     'gemini-1.5-flash': 'Gemini 1.5 Flash',
     'deepseek-v4-flash': 'DeepSeek V4 Flash',
     'deepseek-v4-pro': 'DeepSeek V4 Pro',
-    'deepseek-chat': 'DeepSeek Chat (deprecated)',
-    'deepseek-coder': 'DeepSeek Coder',
     'llama-3.3-70b': 'Llama 3.3 70B',
     'llama-3.1-70b': 'Llama 3.1 70B',
     'mistral-large': 'Mistral Large',

@@ -71,7 +71,7 @@ function mapModelsFromBackend(raw: {
     "claude-3-5-sonnet": 200000, "claude-3-opus": 200000,
     "gemini-2.5-flash": 1000000, "gemini-2.5-pro": 1000000,
     "gemini-1.5-pro": 1000000, "gemini-1.5-flash": 1000000,
-    "deepseek-chat": 64000, "deepseek-coder": 64000,
+    "deepseek-v4-flash": 1000000, "deepseek-v4-pro": 1000000,
     "llama-3.3-70b": 128000, "llama-3.1-70b": 128000,
     "mistral-large": 128000, "mistral-7b": 32000,
   };

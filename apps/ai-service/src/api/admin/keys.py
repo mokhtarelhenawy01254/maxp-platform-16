@@ -579,9 +579,9 @@ def _build_public_filters(
 _DEFAULT_TEST_MODELS: dict[str, str] = {
     "GOOGLE": "gemini-2.5-flash",
     "OLLAMA": "llama3.2",
-    "GROQ": "llama-3.3-70b-versatile",
+    "GROQ": "openai/gpt-oss-120b",
     "OPENAI": "gpt-4o-mini",
-    "DEEPSEEK": "deepseek-chat",
+    "DEEPSEEK": "deepseek-v4-flash",
     "ANTHROPIC": "claude-sonnet-4-20250514",
     "CEREBRAS": "qwen-3-235b-a22b-instruct-2507",
     "MISTRAL": "mistral-large-latest",

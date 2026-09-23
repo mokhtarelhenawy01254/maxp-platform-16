@@ -467,7 +467,7 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         elif not isinstance(raw_fallbacks, list):
             raw_fallbacks = []
         if not raw_fallbacks:
-            raw_fallbacks = ["groq/llama-3.3-70b-versatile", "gemini-2.5-flash"]
+            raw_fallbacks = ["groq/openai/gpt-oss-120b", "gemini-2.5-flash"]
 
         recovered = False
         for fb in raw_fallbacks:

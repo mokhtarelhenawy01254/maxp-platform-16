@@ -433,7 +433,7 @@ class ModelManager:
             "ANTHROPIC": "claude-sonnet-4-20250514",
             "HUGGINGFACE": "mistralai/Mistral-7B-Instruct-v0.3",
             "OLLAMA": "llama3.2",
-            "GROQ": "llama-3.3-70b-versatile",
+            "GROQ": "openai/gpt-oss-120b",
             "OPENROUTER": "openrouter/auto",
             "NVIDIA": "openai/gpt-oss-120b",
             "CEREBRAS": "qwen-3-235b-a22b-instruct-2507",

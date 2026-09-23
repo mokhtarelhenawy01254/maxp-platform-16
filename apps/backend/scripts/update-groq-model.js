@@ -14,14 +14,13 @@ async function updateGroqModel() {
         console.log(`Found ${keys.length} Groq keys.`);
 
         const SUPPORTED_MODELS = [
-            'llama-3.3-70b-versatile',
-            'llama-3.1-8b-instant',
-            'mixtral-8x7b-32768',
-            'gemma2-9b-it'
+            'openai/gpt-oss-120b',
+            'openai/gpt-oss-20b',
+            'qwen/qwen3.8-27b'
         ];
 
-        // Legacy models to remove
-        const DEPRECATED_MODELS = ['llama3-8b-8192'];
+        // Legacy models to remove (retired by Groq 2026-08-16 / 2026-09-14)
+        const DEPRECATED_MODELS = ['llama3-8b-8192', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'qwen/qwen3.6-27b'];
 
         for (const key of keys) {
             console.log(`\n🔑 Processing Key ID: ${key.id}`);

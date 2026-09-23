@@ -6,7 +6,7 @@
   "icon": "🛒",
   "modelPolicy": {
     "default": "deepseek-v4-flash",
-    "fallback": "groq/llama-3.3-70b-versatile"
+    "fallback": "groq/openai/gpt-oss-120b"
   },
   "instructions": {
     "agents": "AGENTS.md",

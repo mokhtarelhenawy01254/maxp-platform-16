@@ -52,8 +52,9 @@ def get_model_cost(model: str) -> dict[str, float]:
         "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
         "deepseek-flash": {"input": 0.00000015, "cache_input": 0.000000003, "output": 0.0000006},
         "deepseek-v4-flash": {"input": 0.00000015, "cache_input": 0.000000003, "output": 0.0000006},
-        "deepseek-chat": {"input": 0.00000014, "cache_input": 0.000000014, "output": 0.00000028},
-        "deepseek-reasoner": {"input": 0.00000055, "cache_input": 0.00000014, "output": 0.00000219},
+        "deepseek-v4-pro": {"input": 0.000000435, "cache_input": 0.000000003625, "output": 0.00000087},
+        "openai/gpt-oss-120b": {"input": 0.00000015, "cache_input": 0.000000075, "output": 0.0000006},
+        "openai/gpt-oss-20b": {"input": 0.000000075, "cache_input": 0.0000000375, "output": 0.0000003},
     }
     return MODEL_COSTS.get(model, FALLBACK_COST)
 

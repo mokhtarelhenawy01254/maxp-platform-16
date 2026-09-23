@@ -17,7 +17,7 @@ DEFAULT_VISION_MODEL = "gemini-2.5-flash"
 
 DEFAULT_PROVIDER_MODELS = {
     "GOOGLE": DEFAULT_VISION_MODEL,
-    "GROQ": "llama-3.3-70b-versatile",
+    "GROQ": "openai/gpt-oss-120b",
     "OPENROUTER": "openrouter/auto",
     "DEEPSEEK": "deepseek-flash",
     "NVIDIA": "meta/llama-3.1-70b-instruct",
@@ -43,9 +43,9 @@ def supports_vision(model: str | None, provider: str | None = None) -> bool:
         return True
     if provider_name == "OPENROUTER" and any(marker in name for marker in ("llava", "qwen-vl", "pixtral")):
         return True
-    if provider_name == "DEEPSEEK" and any(marker in name for marker in ("deepseek-flash", "deepseek-v4", "deepseek-v4.1", "deepseek-vl", "deepseek-chat")):
+    if provider_name == "DEEPSEEK" and any(marker in name for marker in ("deepseek-flash", "deepseek-v4", "deepseek-v4.1", "deepseek-vl")):
         return True
-    if any(marker in name for marker in ("deepseek-flash", "deepseek-v4", "deepseek-v4.1", "deepseek-chat")):
+    if any(marker in name for marker in ("deepseek-flash", "deepseek-v4", "deepseek-v4.1")):
         return True
     return False
 
