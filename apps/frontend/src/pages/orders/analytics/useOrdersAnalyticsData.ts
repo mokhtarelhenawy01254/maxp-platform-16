@@ -10,19 +10,18 @@ import {
   BranchPerformance,
   GovernorateDetail,
 } from "./types";
+import {
+  getPresetRange,
+  calculateCustomDaysCount,
+} from "./dateUtils";
 
 export const useOrdersAnalyticsData = () => {
   const { t } = useTranslation();
 
   const [period, setPeriod] = useState<PeriodKey>("30");
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>(() => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 30);
-    return {
-      start: start.toISOString().split("T")[0],
-      end: end.toISOString().split("T")[0],
-    };
+    const init = getPresetRange("30");
+    return { start: init.start, end: init.end };
   });
 
   const [loading, setLoading] = useState(true);
@@ -95,52 +94,34 @@ export const useOrdersAnalyticsData = () => {
   );
 
   useEffect(() => {
-    loadData(dateRange.start, dateRange.end);
+    if (dateRange.start && dateRange.end && dateRange.start <= dateRange.end) {
+      loadData(dateRange.start, dateRange.end);
+    }
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [dateRange, loadData]);
+  }, [dateRange.start, dateRange.end, loadData]);
 
   const applyPeriod = (key: PeriodKey) => {
     if (key === "custom") {
       setPeriod("custom");
       return;
     }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let start = new Date(today);
-    let end = new Date();
-
-    if (key === "yesterday") {
-      start.setDate(start.getDate() - 1);
-      end = new Date(start);
-    } else if (key === "thisMonth") {
-      start = new Date(today.getFullYear(), today.getMonth(), 1);
-    } else if (key === "lastMonth") {
-      start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      end = new Date(today.getFullYear(), today.getMonth(), 0);
-    } else {
-      const days = key === "today" ? 0 : Number(key) || 30;
-      start.setDate(start.getDate() - days);
-    }
-
+    const preset = getPresetRange(key);
     setPeriod(key);
     setDateRange({
-      start: start.toISOString().split("T")[0],
-      end: end.toISOString().split("T")[0],
+      start: preset.start,
+      end: preset.end,
     });
   };
 
   const handleCustomDateChange = (field: "start" | "end", val: string) => {
-    setDateRange((prev) => {
-      const next = { ...prev, [field]: val };
-      if (next.start && next.end && next.start <= next.end) {
-        loadData(next.start, next.end);
-      }
-      return next;
-    });
+    setDateRange((prev) => ({
+      ...prev,
+      [field]: val,
+    }));
   };
 
   // ROBUST DATA DERIVATION
@@ -152,13 +133,10 @@ export const useOrdersAnalyticsData = () => {
 
   // Days in period
   const daysCount = useMemo(() => {
-    if (period === "today" || period === "yesterday") return 1;
     if (period === "custom") {
-      const s = new Date(dateRange.start);
-      const e = new Date(dateRange.end);
-      return Math.max(1, Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      return calculateCustomDaysCount(dateRange.start, dateRange.end);
     }
-    return Number(period) || 30;
+    return getPresetRange(period).daysCount;
   }, [period, dateRange]);
 
   // 1. Delivered

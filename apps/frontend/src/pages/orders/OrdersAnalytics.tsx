@@ -6,6 +6,7 @@ import {
   ExclamationTriangleIcon,
   ArrowTopRightOnSquareIcon,
   CalendarIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 
 // Modular Analytics Components
@@ -96,14 +97,15 @@ export const OrdersAnalytics: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Period Filter Dropdown */}
+          {/* Period Filter Dropdown & Active Range Badge */}
           <div className="flex items-center gap-1.5">
             <div className="relative">
+              <CalendarIcon className="h-3.5 w-3.5 text-zinc-400 absolute start-2 top-1/2 -translate-y-1/2 pointer-events-none" />
               <select
                 value={period}
                 onChange={(e) => applyPeriod(e.target.value as PeriodKey)}
                 aria-label="الفترة الزمنية"
-                className="appearance-none ps-6 pe-7 py-1 text-xs font-semibold rounded-md border border-zinc-200/80 dark:border-white/10 bg-zinc-50 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 focus:outline-hidden hover:bg-zinc-100 cursor-pointer"
+                className="appearance-none ps-6 pe-6 py-1 text-xs font-semibold rounded-md border border-zinc-200/80 dark:border-white/10 bg-zinc-50 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 focus:outline-hidden hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
               >
                 <option value="today">اليوم</option>
                 <option value="yesterday">أمس</option>
@@ -116,24 +118,40 @@ export const OrdersAnalytics: React.FC = () => {
                 <option value="365">آخر سنة</option>
                 <option value="custom">فترة مخصصة</option>
               </select>
-              <CalendarIcon className="h-3.5 w-3.5 text-zinc-400 absolute start-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDownIcon className="h-3 w-3 text-zinc-400 absolute end-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
-            {period === "custom" && (
-              <div className="hidden sm:flex items-center gap-1">
+            {/* Active Date Range Telemetry Pill */}
+            {period !== "custom" ? (
+              <div
+                className="hidden xl:inline-flex items-center gap-1.5 px-2 py-1 rounded border border-zinc-200/70 dark:border-white/5 bg-zinc-100/60 dark:bg-white/[0.02] text-[11px] font-mono text-zinc-600 dark:text-zinc-400 tabular-nums"
+                title={`الفترة المحددة: من ${dateRange.start} إلى ${dateRange.end} (${daysCount} يوم)`}
+              >
+                <span>{dateRange.start}</span>
+                <span className="text-zinc-300 dark:text-zinc-600">↔</span>
+                <span>{dateRange.end}</span>
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-sans">
+                  ({daysCount}&nbsp;{daysCount === 1 ? "يوم" : "أيام"})
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
                 <input
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => handleCustomDateChange("start", e.target.value)}
-                  className="px-2 py-0.5 text-xs font-mono border border-zinc-200 dark:border-white/10 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white"
+                  className="px-2 py-0.5 text-xs font-mono border border-zinc-200/80 dark:border-white/10 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:outline-hidden"
                 />
                 <span className="text-[10px] text-zinc-400">إلى</span>
                 <input
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => handleCustomDateChange("end", e.target.value)}
-                  className="px-2 py-0.5 text-xs font-mono border border-zinc-200 dark:border-white/10 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white"
+                  className="px-2 py-0.5 text-xs font-mono border border-zinc-200/80 dark:border-white/10 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:outline-hidden"
                 />
+                <span className="hidden sm:inline-block text-[10px] font-mono text-zinc-400 tabular-nums">
+                  ({daysCount}&nbsp;{daysCount === 1 ? "يوم" : "أيام"})
+                </span>
               </div>
             )}
           </div>
