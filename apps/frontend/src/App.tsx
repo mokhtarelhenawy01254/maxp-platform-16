@@ -412,6 +412,18 @@ const ShippingCompanyDetail = React.lazy(
 const ShippingSettlement = React.lazy(
   () => import("./pages/shipping/SettlementPage"),
 );
+const CourierManagementPage = React.lazy(
+  () => import("./pages/shipping/couriers/CourierManagementPage"),
+);
+const DeliveryRunsPage = React.lazy(
+  () => import("./pages/shipping/couriers/DeliveryRunsPage"),
+);
+const CourierSettlementPage = React.lazy(
+  () => import("./pages/shipping/couriers/CourierSettlementPage"),
+);
+const CourierMobileRunPage = React.lazy(
+  () => import("./pages/shipping/couriers/CourierMobileRunPage"),
+);
 const BulkStatusUpdate = React.lazy(
   () => import("./pages/orders/BulkStatusUpdatePage"),
 );
@@ -6667,7 +6679,9 @@ const AppContent = () => {
                   path="/shipping/couriers"
                   element={
                     <Layout>
-                      <CourierManagementPage />
+                      <AppAccessRoute requiredAppSlugs={SHIPPING_APP_ACCESS_SLUGS}>
+                        <CourierManagementPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6675,7 +6689,9 @@ const AppContent = () => {
                   path="/shipping/delivery-runs"
                   element={
                     <Layout>
-                      <DeliveryRunsPage />
+                      <AppAccessRoute requiredAppSlugs={SHIPPING_APP_ACCESS_SLUGS}>
+                        <DeliveryRunsPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6683,7 +6699,9 @@ const AppContent = () => {
                   path="/shipping/courier-settlements"
                   element={
                     <Layout>
-                      <CourierSettlementPage />
+                      <AppAccessRoute requiredAppSlugs={SHIPPING_APP_ACCESS_SLUGS}>
+                        <CourierSettlementPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
