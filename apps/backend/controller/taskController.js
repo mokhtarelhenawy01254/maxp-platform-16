@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const taskNotificationService = require("../services/taskNotificationService");
 const { queueTaskWebhook } = require("../services/taskWebhookService");
+const recurringTaskService = require("../services/recurringTaskService");
 const taskNotificationHelpers = taskNotificationService.helpers;
 
 let legacyTaskColumnsCache = null;
@@ -780,6 +781,8 @@ const taskController = {
         metricTargetValue,
         metricCurrentValue,
         watchers = [],
+        isRecurring = false,
+        recurringRule = null,
       } = req.body;
 
       const companyId = await resolveCompanyContext(req);
@@ -857,6 +860,12 @@ const taskController = {
       const serializedTags =
         tags && Array.isArray(tags) ? JSON.stringify(tags) : null;
       const taskPriority = normalizePriority(priority);
+      const isRecurringBool = Boolean(isRecurring);
+      const serializedRecurringRule = recurringRule
+        ? typeof recurringRule === "object"
+          ? JSON.stringify(recurringRule)
+          : String(recurringRule)
+        : null;
 
       let newTask;
 
@@ -881,6 +890,8 @@ const taskController = {
           progress: 0,
           tags: serializedTags,
           dependencies: null,
+          isRecurring: isRecurringBool,
+          recurringRule: serializedRecurringRule,
           completedDate: null,
           updatedAt: new Date(),
           createdAt: new Date(),
@@ -940,6 +951,8 @@ const taskController = {
             metricCurrentValue: parsedMetricCurrentValue ?? 0,
             tags: serializedTags,
             dependencies: null,
+            isRecurring: isRecurringBool,
+            recurringRule: serializedRecurringRule,
             updatedAt: new Date(),
           },
           include: buildTaskSummaryInclude(),
@@ -1196,6 +1209,18 @@ const taskController = {
             : {}),
           ...(metricCurrentValue !== undefined
             ? { metricCurrentValue: nextMetricCurrentValue }
+            : {}),
+          ...(req.body.isRecurring !== undefined
+            ? { isRecurring: Boolean(req.body.isRecurring) }
+            : {}),
+          ...(req.body.recurringRule !== undefined
+            ? {
+                recurringRule: req.body.recurringRule
+                  ? typeof req.body.recurringRule === "object"
+                    ? JSON.stringify(req.body.recurringRule)
+                    : String(req.body.recurringRule)
+                  : null,
+              }
             : {}),
           progress: nextProgress,
         },
@@ -1508,6 +1533,13 @@ const taskController = {
           task,
           previousTask: existingTask,
         });
+
+        if (normalizedStatus === "COMPLETED" && task?.isRecurring) {
+          recurringTaskService.handleTaskCompletion(task, req.user?.userId).catch((err) => {
+            console.error("[taskController] Failed to spawn recurring task in legacy branch:", err);
+          });
+        }
+
         return;
       }
 
@@ -1692,6 +1724,12 @@ const taskController = {
         task,
         previousTask: existingTask,
       });
+
+      if (normalizedStatus === "COMPLETED" && task?.isRecurring) {
+        recurringTaskService.handleTaskCompletion(task, req.user?.userId).catch((err) => {
+          console.error("[taskController] Failed to spawn recurring task:", err);
+        });
+      }
     } catch (error) {
       console.error("Error updating task status:", error);
       res.status(500).json({

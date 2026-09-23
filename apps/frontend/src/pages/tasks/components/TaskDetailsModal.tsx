@@ -81,6 +81,11 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
               متأخرة
             </span>
           ) : null}
+          {task.isRecurring ? (
+            <span className="rounded-full bg-indigo-500/10 px-3 py-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+              مهمة متكررة
+            </span>
+          ) : null}
         </div>
       }
       headerAside={

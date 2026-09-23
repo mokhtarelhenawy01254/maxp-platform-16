@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   ArrowLongDownIcon,
   ArrowLongUpIcon,
+  ArrowPathIcon,
   CalendarIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -428,12 +429,20 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     </Badge>
                   </div>
 
-                  <Link
-                    to={`/tasks/${task.id}`}
-                    className="block text-sm font-semibold text-foreground transition-colors hover:text-primary"
-                  >
-                    {task.title}
-                  </Link>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Link
+                      to={`/tasks/${task.id}`}
+                      className="block text-sm font-semibold text-foreground transition-colors hover:text-primary"
+                    >
+                      {task.title}
+                    </Link>
+                    {task.isRecurring ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-500/20" title="مهمة متكررة دورياً">
+                        <ArrowPathIcon className="size-3" />
+                        متكررة
+                      </span>
+                    ) : null}
+                  </div>
 
                   <p className="line-clamp-1 text-xs leading-5 text-muted-foreground">
                     {task.description || "لا يوجد وصف إضافي لهذه المهمة."}
@@ -658,12 +667,20 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                       <div className="space-y-1.5">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 space-y-1">
-                            <Link
-                              to={`/tasks/${task.id}`}
-                              className="block text-sm font-semibold text-foreground transition-colors hover:text-primary"
-                            >
-                              {task.title}
-                            </Link>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Link
+                                to={`/tasks/${task.id}`}
+                                className="block text-sm font-semibold text-foreground transition-colors hover:text-primary"
+                              >
+                                {task.title}
+                              </Link>
+                              {task.isRecurring ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-500/20" title="مهمة متكررة دورياً">
+                                  <ArrowPathIcon className="size-3" />
+                                  متكررة
+                                </span>
+                              ) : null}
+                            </div>
                             <p className="line-clamp-1 max-w-[34rem] text-xs leading-5 text-muted-foreground">
                               {task.description?.substring(0, 120) ||
                                 "لا يوجد وصف إضافي."}

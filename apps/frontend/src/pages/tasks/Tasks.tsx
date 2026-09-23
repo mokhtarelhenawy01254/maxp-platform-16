@@ -686,13 +686,19 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
 
       const url = buildApiUrl("tasks");
 
+      const payload = {
+        ...newTask,
+        isRecurring: Boolean(recurringConfig?.enabled),
+        recurringRule: recurringConfig?.enabled ? JSON.stringify(recurringConfig) : null,
+      };
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(newTask),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -715,6 +721,16 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
             localStorage.getItem("userName") || "",
           ),
         );
+        setRecurringConfig({
+          enabled: false,
+          frequency: "weekly",
+          interval: 1,
+          daysOfWeek: [],
+          dayOfMonth: 1,
+          endType: "never",
+          endDate: "",
+          endCount: 10,
+        });
         tToast.success("tasks.success_create_7c46");
       } else {
         toast.error(data.error || i18n.t("tasks.msg_6bd6"));
@@ -821,6 +837,8 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
           metricUnit: editingTask.metricUnit || null,
           metricTargetValue: editingTask.metricTargetValue,
           metricCurrentValue: editingTask.metricCurrentValue,
+          isRecurring: editingTask.isRecurring,
+          recurringRule: editingTask.recurringRule,
         }),
       });
 

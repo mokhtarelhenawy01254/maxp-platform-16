@@ -39,6 +39,9 @@ export interface Task {
   nextTaskId?: string | null;
   previousTaskId?: string | null;
 
+  isRecurring?: boolean;
+  recurringRule?: string | null;
+
   // List view specific props (optional)
   commentsCount?: number;
   attachmentsCount?: number;

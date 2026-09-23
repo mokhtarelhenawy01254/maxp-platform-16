@@ -1324,6 +1324,18 @@ try {
   );
 }
 
+// Start Recurring Tasks Cron Service
+try {
+  const { startRecurringTaskScheduler } = require("./cron/recurringTaskCron");
+  startRecurringTaskScheduler();
+  console.log("✅ [RECURRING-TASK-CRON] Recurring task scheduler service started");
+} catch (error) {
+  console.error(
+    "❌ [RECURRING-TASK-CRON] Failed to start recurring task service:",
+    error,
+  );
+}
+
 // Start Dental Lab overdue cases scan Cron Service
 try {
   const { startDentalLabOverdueScheduler } = require("./cron/dentalLabOverdueCron");

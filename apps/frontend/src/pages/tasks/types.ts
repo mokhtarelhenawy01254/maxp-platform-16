@@ -63,6 +63,8 @@ export interface Task {
   metricCurrentValue: number;
   tags: string[];
   dependencies: string[];
+  isRecurring?: boolean;
+  recurringRule?: string | null;
   createdAt: string;
   updatedAt: string;
 }
