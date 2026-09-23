@@ -1,6 +1,111 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const { resolveAiKey, BASE_URL_DEFAULTS, MODEL_DEFAULTS, callChatCompletion } = require('./radiologyAiDraftService');
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Academy AI agents bridge — agent-first, inline-prompt fallback
+//   COACH  → apps/backend/agents/course-coach-agent/   (role COURSE_COACH)
+//   GRADER → apps/backend/agents/academy-grader-agent/ (role ACADEMY_GRADER)
+// The agent path is preferred (guardrails + tools + its own model policy, e.g. deepseek-flash).
+// If the ai-service, the template, or the spawn is unavailable we silently fall back to the
+// inline prompt path below, so the coach/grader can never break because of the bridge.
+// Kill switch without a deploy: ACADEMY_AGENT_BRIDGE=0
+// ─────────────────────────────────────────────────────────────────────────────
+const ACADEMY_AGENT_TEMPLATES = {
+  COACH: { slug: 'course-coach-agent', role: 'COURSE_COACH', name: 'كوتش الأكاديمية' },
+  GRADER: { slug: 'academy-grader-agent', role: 'ACADEMY_GRADER', name: 'مصحح تمارين الأكاديمية' },
+};
+const AGENT_BRIDGE_DOWN_TTL_MS = 5 * 60 * 1000;
+const academyAgentCache = new Map();     // `${companyId}:${slug}` -> agentId
+const academyAgentDownUntil = new Map(); // `${companyId}:${slug}` -> retry-after timestamp
+
+function agentBridgeEnabled() {
+  const v = String(process.env.ACADEMY_AGENT_BRIDGE ?? '1').toLowerCase();
+  return !['0', 'false', 'off', 'no'].includes(v);
+}
+
+// The ai-service client has no per-call timeout (defaults to AI_RESPONSE_TIMEOUT, 10 min),
+// so every bridge call is raced against a short deadline and degrades to the inline path.
+function withAgentTimeout(promise, ms) {
+  return Promise.race([
+    Promise.resolve(promise).catch(() => null),
+    new Promise((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
+async function resolveAcademyAgentId(companyId, kind) {
+  const tpl = ACADEMY_AGENT_TEMPLATES[kind];
+  if (!companyId || !tpl || !agentBridgeEnabled()) return null;
+  const cacheKey = `${companyId}:${tpl.slug}`;
+  if (academyAgentCache.has(cacheKey)) return academyAgentCache.get(cacheKey);
+  if ((academyAgentDownUntil.get(cacheKey) || 0) > Date.now()) return null;
+  try {
+    const client = require('./aiServiceAdminClient');
+    const agents = await withAgentTimeout(client.listAgents(companyId), 10000);
+    let found = Array.isArray(agents)
+      ? agents.find((a) => (a.template_slug || a.templateSlug || a.slug) === tpl.slug || a.role === tpl.role)
+      : null;
+    if (!found) {
+      found = await withAgentTimeout(
+        client.spawnAgent({ companyId, template_slug: tpl.slug, role: tpl.role, name: tpl.name }),
+        15000
+      );
+    }
+    const id = found?.id || found?.agent_id || found?.agent?.id || null;
+    if (id) {
+      academyAgentCache.set(cacheKey, id);
+      return id;
+    }
+    academyAgentDownUntil.set(cacheKey, Date.now() + AGENT_BRIDGE_DOWN_TTL_MS);
+    return null;
+  } catch (e) {
+    console.warn('[academy] agent bridge resolve failed:', tpl.slug, e.message);
+    academyAgentDownUntil.set(cacheKey, Date.now() + AGENT_BRIDGE_DOWN_TTL_MS);
+    return null;
+  }
+}
+
+async function askAcademyAgent({ companyId, kind, message, threadId, timeoutMs }) {
+  try {
+    const agentId = await resolveAcademyAgentId(companyId, kind);
+    if (!agentId) return null;
+    const client = require('./aiServiceAdminClient');
+    const res = await withAgentTimeout(
+      client.chatWithAgent({ companyId, agentId, message, threadId }),
+      timeoutMs || 45000
+    );
+    if (res && res.status === 'ok' && typeof res.reply === 'string' && res.reply.trim()) {
+      return res.reply.trim();
+    }
+    return null;
+  } catch (e) {
+    console.warn('[academy] agent chat failed:', kind, e.message);
+    return null;
+  }
+}
+
+// Shared by the agent path and the inline path — one parser, one contract.
+function parseGraderVerdict(raw) {
+  if (!raw || typeof raw !== 'string') return null;
+  let parsed = null;
+  try {
+    let cleaned = raw.trim();
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(cleaned);
+  } catch (pe) {
+    console.error('Failed to parse AI grading JSON:', pe.message);
+    return null;
+  }
+  if (!parsed || !['ACCEPTED', 'REJECTED', 'NEEDS_MORE'].includes(parsed.verdict)) return null;
+  return {
+    verdict: parsed.verdict,
+    missing: Array.isArray(parsed.missing) ? parsed.missing : [],
+    coachLine: parsed.coachLine || 'تم تقييم التمرين بواسطة المصحح الذكي.',
+    nextStep: parsed.nextStep || 'واصل التقدم في مسار الكورس.',
+  };
+}
+
+
 class AcademyService {
   constructor() {
     this.prisma = null;
@@ -985,6 +1090,17 @@ ${scriptText}
 ${exerciseText}
 """`;
 
+    // Preferred path: the dedicated course-coach agent (guardrails + tools + its own model policy).
+    // Falls back to the inline prompt below when the agent / ai-service is unavailable.
+    const agentReply = await askAcademyAgent({
+      companyId: companyId || lesson.companyId,
+      kind: 'COACH',
+      threadId: `academy-lesson-${lessonId}`,
+      timeoutMs: 45000,
+      message: `[سياق الدرس]\nالكورس: ${courseTitle}\nالدرس: ${lessonTitle}\n\nسكريبت الدرس:\n"""\n${scriptText}\n"""\n\nالتمرين العملي:\n"""\n${exerciseText}\n"""\n${quizContextBlock}\n\n[سؤال الطالب]\n${userMessage}`,
+    });
+    if (agentReply) return { reply: agentReply, source: 'agent' };
+
     // Call AI using database-backed key resolution exclusively
     let aiConfig = null;
     try {
@@ -1043,6 +1159,20 @@ ${exerciseText}
     const scriptText = lesson.scriptText || '';
     const studentText = submission?.submissionText || '';
     const studentUrl = submission?.submissionUrl || '';
+
+    // Preferred path: the dedicated academy-grader agent (rubric-bound guardrails, JSON verdict).
+    // Falls back to the inline prompt below when the agent / ai-service is unavailable.
+    if (exerciseText && exerciseText.trim()) {
+      const graderReply = await askAcademyAgent({
+        companyId: companyId || lesson.companyId,
+        kind: 'GRADER',
+        threadId: `academy-grade-${lessonId}`,
+        timeoutMs: 45000,
+        message: `[الدرس] ${lessonTitle} — ${courseTitle}\n\n[مسطرة التمرين (معايير القبول/الرفض)]\n"""\n${exerciseText}\n"""\n\n[تسليم الطالب]\nنص الإجابة / التطبيق:\n"""\n${studentText || 'لم يكتب نصاً'}\n"""\nرابط المرفق / الصورة: ${studentUrl || 'لا يوجد'}\n\nأعد JSON فقط بالحقول: verdict, missing, coachLine, nextStep.`,
+      });
+      const agentVerdict = parseGraderVerdict(graderReply);
+      if (agentVerdict) return { ...agentVerdict, source: 'agent' };
+    }
 
     let aiConfig = null;
     try {
@@ -1106,28 +1236,8 @@ ${studentUrl || 'لا يوجد رابط'}`;
         timeoutMs: 30000,
       });
 
-      let parsed = null;
-      try {
-        let cleaned = completion.trim();
-        cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          parsed = JSON.parse(jsonMatch[0]);
-        } else {
-          parsed = JSON.parse(cleaned);
-        }
-      } catch (pe) {
-        console.error('Failed to parse AI grading JSON:', pe.message, completion);
-      }
-
-      if (parsed && ['ACCEPTED', 'REJECTED', 'NEEDS_MORE'].includes(parsed.verdict)) {
-        return {
-          verdict: parsed.verdict,
-          missing: Array.isArray(parsed.missing) ? parsed.missing : [],
-          coachLine: parsed.coachLine || 'تم تقييم التمرين بواسطة المصحح الذكي.',
-          nextStep: parsed.nextStep || 'واصل التقدم في مسار الكورس.',
-        };
-      }
+      const parsedVerdict = parseGraderVerdict(completion);
+      if (parsedVerdict) return { ...parsedVerdict, source: 'inline' };
 
       return {
         verdict: 'PENDING',

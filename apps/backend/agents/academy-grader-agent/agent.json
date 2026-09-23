@@ -1,0 +1,51 @@
+{
+  "slug": "academy-grader-agent",
+  "name": "مصحح تمارين الأكاديمية الذكي",
+  "role": "ACADEMY_GRADER",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "deepseek-flash",
+    "fallback": "gemini-2.5-flash"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "standard",
+    "tone": "fair_constructive_examiner",
+    "formality": "semi-formal"
+  },
+  "guardrails": {
+    "rubricBoundOnly": true,
+    "noInventedCriteria": true,
+    "jsonVerdictOnly": true,
+    "noVerdictWithoutExerciseText": true,
+    "noHumanReviewBypass": true
+  },
+  "allowedTools": [
+    "get_current_lesson_exercise",
+    "get_lesson_rubric"
+  ],
+  "allowedSkills": [
+    "exercise-grading"
+  ],
+  "channels": ["dashboard", "academy_viewer"],
+  "budget": {
+    "dailyUsd": 1,
+    "maxToolCallsPerRun": 2
+  },
+  "outputSchema": {
+    "type": "object",
+    "required": ["verdict", "missing", "coachLine", "nextStep"],
+    "properties": {
+      "verdict": { "type": "string", "enum": ["ACCEPTED", "REJECTED", "NEEDS_MORE"] },
+      "missing": { "type": "array", "items": { "type": "string" } },
+      "coachLine": { "type": "string" },
+      "nextStep": { "type": "string" }
+    }
+  }
+}
