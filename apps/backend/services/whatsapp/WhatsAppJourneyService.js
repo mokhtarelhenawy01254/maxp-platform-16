@@ -369,6 +369,27 @@ class WhatsAppJourneyService {
 
                 if (!nextStep) {
                     updateData.status = 'COMPLETED';
+
+                    // 🚨 إشعار فوري: خطوات الأتمتة انتهت بنجاح للعميل
+                    try {
+                        const systemIncidentAlertService = require('../systemIncidentAlertService');
+                        const custName = `${journey.customer?.firstName || ''} ${journey.customer?.lastName || ''}`.trim() || 'عميل';
+                        const orderNum = journey.order?.orderNumber ? ` (طلب #${journey.order.orderNumber})` : '';
+                        systemIncidentAlertService.dispatchIncident({
+                            companyId: journey.companyId,
+                            incidentType: systemIncidentAlertService.INCIDENT_TYPES.AUTOMATION_ENDED,
+                            title: '✅ اكتمال خطوات الأتمتة',
+                            message: `اكتملت جميع خطوات أتمتة المتابعة بنجاح للعميل ${custName}${orderNum}.`,
+                            severity: systemIncidentAlertService.SEVERITIES.INFO,
+                            entityId: journey.id,
+                            url: '/whatsapp-automation',
+                            metadata: {
+                                journeyId: journey.id,
+                                customerId: journey.customerId,
+                                totalSteps: journey.flow?.steps?.length || (stepIndex + 1)
+                            }
+                        }).catch(() => {});
+                    } catch (_) {}
                 } else {
                     const nextSendAt = new Date();
                     if (nextStep.delayUnit === 'HOURS' && nextStep.delayHours != null) {
@@ -395,28 +416,25 @@ class WhatsAppJourneyService {
                     data: { nextSendAt: retryAt }
                 });
 
-                // 🔔 Notify Company Admins about the failure
+                // 🚨 إشعار فوري لمديري الشركة عبر محرك الحوادث الفوري (Socket + Push + DB + Telegram)
                 try {
-                    const admins = await this.prisma.userCompany.findMany({
-                        where: {
-                            companyId: journey.companyId,
-                            role: { in: ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'] },
-                            isActive: true
-                        },
-                        select: { userId: true }
+                    const systemIncidentAlertService = require('../systemIncidentAlertService');
+                    const custName = `${journey.customer?.firstName || ''} ${journey.customer?.lastName || ''}`.trim() || 'عميل';
+                    const orderNum = journey.order?.orderNumber ? ` - طلب #${journey.order.orderNumber}` : '';
+                    await systemIncidentAlertService.dispatchIncident({
+                        companyId: journey.companyId,
+                        incidentType: systemIncidentAlertService.INCIDENT_TYPES.AUTOMATION_STEP_FAILED,
+                        title: '⚠️ تعثر إرسال خطوة أتمتة',
+                        message: `تعثر إرسال الخطوة رقم ${stepIndex + 1} للعميل ${custName}${orderNum}. السبب: ${result.reason || 'خطأ أثناء الإرسال'}. سيتم إعادة المحاولة تلقائياً.`,
+                        severity: systemIncidentAlertService.SEVERITIES.WARNING,
+                        entityId: journey.id,
+                        url: '/whatsapp-automation',
+                        metadata: {
+                            journeyId: journey.id,
+                            stepNumber: stepIndex + 1,
+                            reason: result.reason
+                        }
                     });
-
-                    if (admins.length > 0) {
-                        const notificationsData = admins.map(admin => ({
-                            companyId: journey.companyId,
-                            userId: admin.userId,
-                            title: 'فشل إرسال رسالة رحلة متابعة',
-                            message: `فشل أو تأخر إرسال الخطوة رقم ${stepIndex + 1} للعميل ${journey.customer.firstName || ''} - طلب ${journey.order?.orderNumber || 'مجهول'}. سيتم المحاولة مرة أخرى.`,
-                            type: 'SYSTEM',
-                            data: { journeyId: journey.id, reason: result.reason }
-                        }));
-                        await this.prisma.notification.createMany({ data: notificationsData });
-                    }
                 } catch(notifyErr) {
                     console.error('❌ [JOURNEY] Failed to notify admins about step failure:', notifyErr.message);
                 }

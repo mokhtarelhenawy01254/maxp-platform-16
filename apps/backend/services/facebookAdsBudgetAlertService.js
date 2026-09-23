@@ -583,6 +583,34 @@ async function deliverAlert(rule, observation, { force = false } = {}) {
   const recipientPhones = parseRecipientPhones(rule.recipientPhones);
   const message = buildAlertMessage(rule, observation);
 
+  // 🚨 بث إشعار فوري عبر محرك حوادث السيستم (Socket + InApp + Web Push + Telegram)
+  try {
+    const systemIncidentAlertService = require("./systemIncidentAlertService");
+    const isCampaignFinished = rule.metric === ALERT_METRICS.CAMPAIGN_FINISHED;
+    await systemIncidentAlertService.dispatchIncident({
+      companyId: rule.companyId,
+      incidentType: isCampaignFinished
+        ? systemIncidentAlertService.INCIDENT_TYPES.AD_CAMPAIGN_STOPPED
+        : systemIncidentAlertService.INCIDENT_TYPES.AD_ACCOUNT_ISSUE,
+      title: isCampaignFinished
+        ? `⚠️ توقف الحملة الإعلانية (${observation.targetName})`
+        : `⚠️ تنبيه رصيد/ميزانية الإعلانات (${observation.targetName})`,
+      message,
+      severity: isCampaignFinished
+        ? systemIncidentAlertService.SEVERITIES.CRITICAL
+        : systemIncidentAlertService.SEVERITIES.WARNING,
+      entityId: rule.campaignId || rule.adAccountId || rule.id,
+      url: "/facebook-ads",
+      metadata: {
+        metric: rule.metric,
+        observedValue: observation.observedValue,
+        currency: observation.currency,
+      },
+    });
+  } catch (incErr) {
+    console.warn("⚠️ [ADS-BUDGET-ALERT] Failed to dispatch incident:", incErr.message);
+  }
+
   if (recipientPhones.length === 0) {
     const failedResult = { success: false, reason: "no_recipients" };
     await recordAlertLog({

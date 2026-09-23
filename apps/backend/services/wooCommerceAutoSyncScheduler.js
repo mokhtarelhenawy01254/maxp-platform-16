@@ -240,10 +240,46 @@ class WooCommerceAutoSyncScheduler {
       }
 
       console.log(`✅ [WOOCOMMERCE-SCHEDULER] Company ${companyId}: Imported ${results.imported}, Updated ${results.updated}`);
+
+      // 🚨 إشعار فوري في حال فشل المزامنة بالكامل وعدم نزول الأوردرات
+      if (syncStatus === 'error') {
+        try {
+          const systemIncidentAlertService = require('./systemIncidentAlertService');
+          await systemIncidentAlertService.dispatchIncident({
+            companyId,
+            incidentType: systemIncidentAlertService.INCIDENT_TYPES.ORDER_SYNC_STOPPAGE,
+            title: '⚠️ تعطل مزامنة أوردرات WooCommerce',
+            message: `فشلت مزامنة متجر WooCommerce وتوقفت الأوردرات عن النزول. السبب: ${results.errors[0] || 'خطأ في الاتصال بالمتجر'}.`,
+            severity: systemIncidentAlertService.SEVERITIES.WARNING,
+            entityId: settings.id,
+            url: '/orders',
+            metadata: {
+              storeUrl: settings.storeUrl,
+              errorsCount: results.errors.length,
+              lastError: results.errors[0]
+            }
+          });
+        } catch (incidentErr) {
+          console.warn('⚠️ [WOOCOMMERCE-SCHEDULER] Failed to dispatch incident:', incidentErr.message);
+        }
+      }
+
       return { success: true, results };
 
     } catch (error) {
       console.error(`❌ [WOOCOMMERCE-SCHEDULER] Error syncing company ${companyId}:`, error.message);
+      try {
+        const systemIncidentAlertService = require('./systemIncidentAlertService');
+        await systemIncidentAlertService.dispatchIncident({
+          companyId,
+          incidentType: systemIncidentAlertService.INCIDENT_TYPES.ORDER_SYNC_STOPPAGE,
+          title: '⚠️ تعطل مزامنة أوردرات المتجر',
+          message: `حدث خطأ طارئ أثناء استيراد الطلبات من المتجر: ${error.message}`,
+          severity: systemIncidentAlertService.SEVERITIES.WARNING,
+          entityId: settingsId || companyId,
+          url: '/orders'
+        });
+      } catch (_) {}
       return { success: false, error: error.message };
     }
   }

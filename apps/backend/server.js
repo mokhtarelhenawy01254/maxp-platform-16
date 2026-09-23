@@ -1115,6 +1115,8 @@ app.use("/api/v1/reports", reportsRoutes);
 app.use("/api/v1/reminders", require("./routes/reminderRoutes"));
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/notifications", notificationSettingsRoutes);
+app.use("/api/v1/system-incidents", require("./routes/systemIncidentRoutes"));
+app.use("/api/system-incidents", require("./routes/systemIncidentRoutes"));
 app.use("/api/v1/shipping-companies", shippingCompaniesRoutes);
 app.use("/api/v1/shipments", shipmentsRoutes);
 app.use("/api/v1/shipping-settlement", shippingSettlementRoutes);
@@ -1505,6 +1507,15 @@ try {
   startOccasionCampaignScheduler();
 } catch (error) {
   console.error("❌ [OCCASION-CRON] Failed to start occasion campaign cron:", error);
+}
+
+// Start System Incident & Health Monitoring Cron (Order Stoppage, Ads Status, Automation)
+try {
+  const { startSystemIncidentCron } = require("./cron/systemIncidentCron");
+  startSystemIncidentCron();
+  console.log("✅ [SYSTEM-INCIDENT-CRON] System Incident and Health monitoring started");
+} catch (error) {
+  console.error("❌ [SYSTEM-INCIDENT-CRON] Failed to start system incident cron:", error);
 }
 
 // 🚨 PRODUCTION-FIX (notifications-fix-plan §1.1): فعّل طابور إشعارات واتساب

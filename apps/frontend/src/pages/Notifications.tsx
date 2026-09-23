@@ -266,6 +266,30 @@ const Notifications: React.FC = () => {
 
   const getTypeBadge = (type: string) => {
     const normalized = type.toLowerCase();
+    if (normalized.includes("stoppage") || normalized.includes("order_sync")) {
+      return {
+        label: "توقف أوردرات",
+        className: "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-700 font-bold",
+      };
+    }
+    if (normalized.includes("ad_campaign") || normalized.includes("ads_stopped")) {
+      return {
+        label: "توقف إعلانات",
+        className: "bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-950/70 dark:text-rose-200 dark:border-rose-700 font-bold",
+      };
+    }
+    if (normalized.includes("automation")) {
+      return {
+        label: "أتمتة",
+        className: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800",
+      };
+    }
+    if (normalized.includes("incident") || normalized.includes("disconnect")) {
+      return {
+        label: "عطل سيستم",
+        className: "bg-red-100 text-red-900 border-red-300 dark:bg-red-950/70 dark:text-red-200 dark:border-red-700 font-bold",
+      };
+    }
     if (normalized.includes("order")) {
       return {
         label: "طلب",
@@ -318,8 +342,15 @@ const Notifications: React.FC = () => {
 
         const normalizedType = item.type.toLowerCase();
         let matchesType = true;
-        if (typeFilter === "order") {
-          matchesType = normalizedType.includes("order");
+        if (typeFilter === "incidents") {
+          matchesType =
+            normalizedType.includes("incident") ||
+            normalizedType.includes("stoppage") ||
+            normalizedType.includes("stale") ||
+            normalizedType.includes("disconnect") ||
+            normalizedType.includes("automation");
+        } else if (typeFilter === "order") {
+          matchesType = normalizedType.includes("order") && !normalizedType.includes("stoppage");
         } else if (typeFilter === "warning") {
           matchesType = normalizedType.includes("warning");
         } else if (typeFilter === "error") {
@@ -332,7 +363,9 @@ const Notifications: React.FC = () => {
             (!normalizedType.includes("order") &&
               !normalizedType.includes("error") &&
               !normalizedType.includes("warning") &&
-              !normalizedType.includes("success"));
+              !normalizedType.includes("success") &&
+              !normalizedType.includes("incident") &&
+              !normalizedType.includes("stoppage"));
         }
 
         return matchesRead && matchesType;
@@ -455,6 +488,7 @@ const Notifications: React.FC = () => {
           </span>
           {[
             { key: "all", label: "الجميع" },
+            { key: "incidents", label: "🚨 أعطال السيستم" },
             { key: "order", label: "طلبات البيع" },
             { key: "info", label: "معلومات" },
             { key: "warning", label: "تنبيهات" },

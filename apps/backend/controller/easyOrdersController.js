@@ -1045,6 +1045,23 @@ const fetchAndImportOrders = async (req, res) => {
           completedAt: new Date()
         }
       });
+
+      // 🚨 إشعار فوري بفشل مزامنة وتنزيل أوردرات EasyOrders
+      try {
+        const systemIncidentAlertService = require('../services/systemIncidentAlertService');
+        await systemIncidentAlertService.dispatchIncident({
+          companyId,
+          incidentType: systemIncidentAlertService.INCIDENT_TYPES.ORDER_SYNC_STOPPAGE,
+          title: '⚠️ تعطل مزامنة أوردرات Easy Orders',
+          message: `فشلت مزامنة طلبات Easy Orders: ${syncError.message}`,
+          severity: systemIncidentAlertService.SEVERITIES.WARNING,
+          entityId: log.id,
+          url: '/orders'
+        });
+      } catch (incErr) {
+        console.warn('⚠️ [EASY-ORDER] Failed to dispatch incident:', incErr.message);
+      }
+
       throw syncError;
     }
 

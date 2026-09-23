@@ -319,13 +319,33 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
       setNotifications((prev) => [newNotification, ...prev]);
 
-      socketService.playNotificationSound();
+      const isCritical =
+        (notification as any).requireAlarm === true ||
+        (notification as any).severity === "CRITICAL" ||
+        String(notification.type || "").toLowerCase().includes("incident") ||
+        String(notification.type || "").toLowerCase().includes("stoppage");
+
+      if (isCritical) {
+        try {
+          socketService.playOrderAlarm({
+            volume: 1.0,
+            pattern: "alarm",
+            durationMs: 5000,
+            loop: false,
+            boost: true,
+          });
+        } catch (_) {
+          socketService.playNotificationSound();
+        }
+      } else {
+        socketService.playNotificationSound();
+      }
 
       window.dispatchEvent(
         new CustomEvent("show-toast", {
           detail: {
             message: newNotification.message,
-            type: notification.type === "error" ? "error" : "info",
+            type: isCritical || notification.type === "error" ? "error" : "info",
           },
         }),
       );
@@ -566,6 +586,19 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   };
 
   const getIcon = (type: string) => {
+    const t = String(type || "").toLowerCase();
+    if (t.includes("stoppage") || t.includes("order_sync")) {
+      return <ExclamationTriangleIcon className="w-5 h-5 text-amber-500 animate-pulse" />;
+    }
+    if (t.includes("ad_campaign") || t.includes("ads_stopped")) {
+      return <XCircleIcon className="w-5 h-5 text-rose-500 animate-pulse" />;
+    }
+    if (t.includes("automation")) {
+      return <CheckIcon className="w-5 h-5 text-indigo-500" />;
+    }
+    if (t.includes("incident") || t.includes("disconnect")) {
+      return <XCircleIcon className="w-5 h-5 text-red-600 animate-pulse" />;
+    }
     switch (type) {
       case "error":
         return <XCircleIcon className="w-5 h-5 text-red-500" />;

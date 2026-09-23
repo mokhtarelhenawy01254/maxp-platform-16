@@ -2113,6 +2113,22 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
                         });
                     }
                 }
+
+                // 🚨 إنذار فوري: انقطاع رقم الواتساب وتوقف الأتمتة
+                try {
+                    const systemIncidentAlertService = require('../systemIncidentAlertService');
+                    systemIncidentAlertService.dispatchIncident({
+                        companyId,
+                        incidentType: systemIncidentAlertService.INCIDENT_TYPES.WHATSAPP_DISCONNECTED,
+                        title: '🚨 انقطاع اتصال واتساب',
+                        message: `انقطع اتصال رقم واتساب ${storedPhoneNumber ? '(' + storedPhoneNumber + ') ' : ''}وتوقفت رسائل الأتمتة والمحادثات. يرجى مسح الـ QR وإعادة الربط فوراً.`,
+                        severity: systemIncidentAlertService.SEVERITIES.CRITICAL,
+                        entityId: sessionId,
+                        url: '/whatsapp',
+                        metadata: { sessionId, statusCode, isManualLogout }
+                    }).catch(() => {});
+                } catch (_) {}
+
                 activeSessions.delete(sessionId);
                 sessionHealthChecks.delete(sessionId);
                 untrackCompanySession(companyId, sessionId);
