@@ -106,7 +106,7 @@ import { buildApiUrl } from "../utils/urlHelper";
 import { DefaultPageSelector } from "../components/settings/DefaultPageSelector";
 import { saveDefaultPagePreference } from "../utils/postAuthRouting";
 import { APP_REGISTRY } from "../config/appRegistry";
-import EmployeeInviteModal from "../components/hr/EmployeeInviteModal";
+import { EmployeeInviteModal } from "../components/hr/EmployeeInviteModal";
 
 type RoleRecord = Record<string, { name: string }>;
 

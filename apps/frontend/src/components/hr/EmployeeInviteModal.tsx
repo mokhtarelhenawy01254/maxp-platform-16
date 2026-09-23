@@ -586,3 +586,5 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
     </Dialog>
   );
 };
+
+export default EmployeeInviteModal;
