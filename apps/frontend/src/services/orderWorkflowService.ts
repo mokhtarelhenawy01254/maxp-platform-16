@@ -74,6 +74,7 @@ const orderWorkflowService = {
 
         return api.get(`/order-workflow/audit-logs?${params.toString()}`).then(res => res.data);
     },
+    getAuditActors: () => api.get('/order-workflow/audit-actors').then(res => res.data),
     getAuditLogs: (orderId: string) => api.get(`/order-workflow/audit-logs/${orderId}`).then(res => res.data),
 
     getAllowedTransitions: (currentStatusCode: string) =>

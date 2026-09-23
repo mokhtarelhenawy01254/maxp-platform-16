@@ -747,25 +747,32 @@ class OrderWorkflowService {
     }
 
     /**
-     * Get Global Audit Logs (Recent activity, optionally filtered by user/employee, changeType, orderNumber, date range)
+     * Get Global Audit Logs (Recent activity from OrderStatusHistory, optionally filtered by user/employee, changeType, orderNumber, date range)
      */
     async getGlobalAuditLogs(companyId, limit = 20, offset = 0, filters = {}) {
-        const userId = typeof filters === 'string' ? filters : filters.userId;
-        const changeType = typeof filters === 'object' ? filters.changeType : null;
-        const orderNumber = typeof filters === 'object' ? filters.orderNumber : null;
-        const startDate = typeof filters === 'object' ? filters.startDate : null;
-        const endDate = typeof filters === 'object' ? filters.endDate : null;
+        const userId = typeof filters === 'string' ? filters : filters?.userId;
+        const changeType = typeof filters === 'object' ? filters?.changeType : null;
+        const orderNumber = typeof filters === 'object' ? filters?.orderNumber : null;
+        const startDate = typeof filters === 'object' ? filters?.startDate : null;
+        const endDate = typeof filters === 'object' ? filters?.endDate : null;
 
-        const where = { companyId };
+        const where = {
+            order: {
+                companyId
+            }
+        };
+
         if (userId && userId !== 'ALL' && userId !== '') {
-            where.changedBy = userId;
+            where.OR = [
+                { changedBy: userId },
+                { userName: { equals: userId, mode: 'insensitive' } }
+            ];
         }
-        if (changeType && changeType !== 'ALL' && changeType !== '') {
-            where.changeType = changeType;
-        }
+
         if (orderNumber && orderNumber.trim() !== '') {
-            where.order = { orderNumber: { contains: orderNumber.trim(), mode: 'insensitive' } };
+            where.order.orderNumber = { contains: orderNumber.trim(), mode: 'insensitive' };
         }
+
         if (startDate || endDate) {
             where.createdAt = {};
             if (startDate) where.createdAt.gte = new Date(startDate);
@@ -776,24 +783,202 @@ class OrderWorkflowService {
             }
         }
 
-        const [total, logs] = await Promise.all([
-            this.prisma.orderWorkflowAuditLog.count({ where }),
-            this.prisma.orderWorkflowAuditLog.findMany({
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        const [total, rawLogs, companyStatuses, todayCount] = await Promise.all([
+            this.prisma.orderStatusHistory.count({ where }),
+            this.prisma.orderStatusHistory.findMany({
                 where,
                 include: {
-                    fromStatus: true,
-                    toStatus: true,
-                    order: { select: { id: true, orderNumber: true, total: true, customerName: true, customerPhone: true } },
-                    user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } },
-                    approver: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } }
+                    order: {
+                        select: {
+                            id: true,
+                            orderNumber: true,
+                            total: true,
+                            customerName: true,
+                            customerPhone: true
+                        }
+                    }
                 },
                 orderBy: { createdAt: 'desc' },
                 take: limit,
                 skip: offset
-            })
+            }),
+            this.getStatuses(companyId).catch(() => []),
+            this.prisma.orderStatusHistory.count({
+                where: {
+                    order: { companyId },
+                    createdAt: { gte: startOfToday }
+                }
+            }).catch(() => 0)
         ]);
 
-        return { logs, total };
+        const statusMap = new Map();
+        if (Array.isArray(companyStatuses)) {
+            companyStatuses.forEach(s => {
+                if (s?.code) statusMap.set(s.code.toUpperCase(), s);
+            });
+        }
+
+        const statusArabicNames = {
+            NEW: 'طلب جديد',
+            PENDING: 'قيد الانتظار',
+            CONFIRMED: 'مؤكد',
+            PROCESSING: 'قيد التجهيز',
+            PREPARING: 'قيد التجهيز',
+            QUALITY_CHECK: 'فحص الجودة',
+            PACKAGED: 'تم التعبئة',
+            READY_TO_SHIP: 'جاهز للشحن',
+            READY: 'جاهز للشحن',
+            SHIPPED: 'تم الشحن',
+            OUT_FOR_DELIVERY: 'خرج للتسليم',
+            DELIVERED: 'تم التسليم',
+            CANCELLED: 'ملغي',
+            CANCELED: 'ملغي',
+            RETURNED: 'مرتجع',
+            PARTIALLY_RETURNED: 'مرتجع جزئي',
+            PARTIALLY_DELIVERED: 'تسليم جزئي',
+            EXCHANGED: 'استبدال',
+            ON_HOLD: 'معلق',
+            SCHEDULED: 'طلب مجدول',
+            DRAFT: 'مسودة',
+            FAILED: 'فشل الدفع',
+            COMPLETED: 'مكتمل'
+        };
+
+        const statusColors = {
+            CONFIRMED: '#2563EB',
+            PROCESSING: '#4F46E5',
+            PREPARING: '#0284C7',
+            QUALITY_CHECK: '#0891B2',
+            PACKAGED: '#0D9488',
+            READY_TO_SHIP: '#16A34A',
+            READY: '#16A34A',
+            SHIPPED: '#9333EA',
+            DELIVERED: '#15803D',
+            CANCELLED: '#DC2626',
+            CANCELED: '#DC2626',
+            RETURNED: '#E11D48',
+            ON_HOLD: '#EA580C',
+            SCHEDULED: '#D97706',
+            PENDING: '#CA8A04'
+        };
+
+        const userIds = [...new Set(rawLogs.map(l => l.changedBy).filter(id => id && id.startsWith('cm')))];
+        const users = userIds.length > 0
+            ? await this.prisma.user.findMany({
+                where: { id: { in: userIds } },
+                select: { id: true, firstName: true, lastName: true, email: true, avatar: true }
+            })
+            : [];
+        const userMap = new Map(users.map(u => [u.id, u]));
+
+        const logs = rawLogs.map(l => {
+            const matchedUser = userMap.get(l.changedBy);
+            const fromStatusCode = (l.oldStatus || '').toUpperCase();
+            const toStatusCode = (l.status || '').toUpperCase();
+
+            const fromStatusDef = statusMap.get(fromStatusCode);
+            const toStatusDef = statusMap.get(toStatusCode);
+
+            let detectedType = 'normal';
+            const reasonLower = (l.reason || '').toLowerCase();
+            if (l.changedBy === 'SYSTEM_WHATSAPP' || reasonLower.includes('واتساب') || reasonLower.includes('whatsapp')) {
+                detectedType = 'bot_whatsapp';
+            } else if (reasonLower.includes('bulk')) {
+                detectedType = 'bulk_update';
+            } else if (reasonLower.includes('تجاوز') || reasonLower.includes('override')) {
+                detectedType = 'override';
+            } else if (reasonLower.includes('اعتماد') || reasonLower.includes('approval')) {
+                detectedType = 'approved';
+            } else if (toStatusCode === 'CANCELLED' || toStatusCode === 'CANCELED' || reasonLower.includes('إلغاء')) {
+                detectedType = 'cancelled';
+            }
+
+            const fromName = fromStatusDef?.name || statusArabicNames[fromStatusCode] || l.oldStatus || 'البداية';
+            const toName = toStatusDef?.name || statusArabicNames[toStatusCode] || l.status;
+            const fromColor = fromStatusDef?.color || statusColors[fromStatusCode] || '#6B7280';
+            const toColor = toStatusDef?.color || statusColors[toStatusCode] || '#3B82F6';
+
+            let displayName = l.userName || 'النظام';
+            if (matchedUser) {
+                const fullName = `${matchedUser.firstName || ''} ${matchedUser.lastName || ''}`.trim();
+                if (fullName) displayName = fullName;
+            }
+
+            return {
+                id: l.id,
+                orderId: l.orderId,
+                createdAt: l.createdAt,
+                changeType: detectedType,
+                reason: l.reason,
+                fromStatus: {
+                    code: l.oldStatus || '',
+                    name: fromName,
+                    color: fromColor
+                },
+                toStatus: {
+                    code: l.status,
+                    name: toName,
+                    color: toColor
+                },
+                order: l.order,
+                user: {
+                    id: l.changedBy || 'system',
+                    firstName: displayName,
+                    lastName: '',
+                    email: matchedUser?.email || null,
+                    avatar: matchedUser?.avatar || null
+                },
+                approver: null
+            };
+        });
+
+        const finalLogs = (changeType && changeType !== 'ALL')
+            ? logs.filter(l => l.changeType === changeType)
+            : logs;
+
+        return {
+            logs: finalLogs,
+            total,
+            stats: {
+                total,
+                todayCount
+            }
+        };
+    }
+
+    /**
+     * Get distinct actors/employees who have changed order statuses
+     */
+    async getAuditActors(companyId) {
+        const distinctActors = await this.prisma.orderStatusHistory.findMany({
+            where: { order: { companyId } },
+            distinct: ['changedBy'],
+            select: { changedBy: true, userName: true },
+            take: 100
+        });
+
+        const userIds = distinctActors.map(a => a.changedBy).filter(id => id && id.startsWith('cm'));
+        const users = userIds.length > 0
+            ? await this.prisma.user.findMany({
+                where: { id: { in: userIds } },
+                select: { id: true, firstName: true, lastName: true, email: true, avatar: true }
+            })
+            : [];
+        const userMap = new Map(users.map(u => [u.id, u]));
+
+        return distinctActors.map(a => {
+            const user = userMap.get(a.changedBy);
+            const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : null;
+            return {
+                id: a.changedBy || a.userName,
+                name: fullName || a.userName || 'النظام',
+                email: user?.email || null,
+                avatar: user?.avatar || null
+            };
+        });
     }
 
     /**

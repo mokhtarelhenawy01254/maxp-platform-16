@@ -4,38 +4,68 @@ import {
     Clock,
     User,
     ArrowRight,
-    ShieldAlert,
-    CheckCircle2,
     Search,
-    Filter,
     RotateCw,
     X,
     Calendar,
     Users,
     Activity,
-    Layers,
     Table as TableIcon,
     List,
+    Bot,
+    ExternalLink,
+    Copy,
+    Check,
+    Shield,
+    Sparkles,
+    CheckCircle2
 } from 'lucide-react';
 import orderWorkflowService, { AuditLogFilters } from '../../services/orderWorkflowService';
 import { useAuth } from '../../hooks/useAuthSimple';
 import api from '../../services/api';
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 30;
 
-interface EmployeeOption {
+interface ActorOption {
     id: string;
-    firstName: string;
-    lastName: string;
-    email?: string;
+    name: string;
+    email?: string | null;
+    avatar?: string | null;
 }
+
+const CHANGE_TYPE_CONFIG: Record<string, { label: string; badgeClass: string }> = {
+    normal: {
+        label: 'تغيير حالة',
+        badgeClass: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700',
+    },
+    bot_whatsapp: {
+        label: 'تأكيد واتساب',
+        badgeClass: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+    },
+    bulk_update: {
+        label: 'تحديث جماعي',
+        badgeClass: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+    },
+    override: {
+        label: 'تجاوز بصلاحية',
+        badgeClass: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+    },
+    approved: {
+        label: 'اعتماد رسمي',
+        badgeClass: 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+    },
+    cancelled: {
+        label: 'إلغاء طلب',
+        badgeClass: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+    },
+};
 
 export const OrderActivityLogPage: React.FC = () => {
     const { t } = useTranslation();
     const { user } = useAuth();
 
     // Filters
-    const [selectedUserId, setSelectedUserId] = useState<string>('');
+    const [selectedActorId, setSelectedActorId] = useState<string>('');
     const [orderNumber, setOrderNumber] = useState<string>('');
     const [changeType, setChangeType] = useState<string>('ALL');
     const [datePreset, setDatePreset] = useState<'ALL' | 'TODAY' | '7DAYS' | '30DAYS'>('ALL');
@@ -44,40 +74,37 @@ export const OrderActivityLogPage: React.FC = () => {
     // Data State
     const [logs, setLogs] = useState<any[]>([]);
     const [totalCount, setTotalCount] = useState<number>(0);
+    const [serverStats, setServerStats] = useState<{ total: number; todayCount: number }>({ total: 0, todayCount: 0 });
     const [loading, setLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(true);
 
-    // Employees List
-    const [employees, setEmployees] = useState<EmployeeOption[]>([]);
-    const [loadingEmployees, setLoadingEmployees] = useState(false);
+    // Actors / Employees List
+    const [actors, setActors] = useState<ActorOption[]>([]);
+    const [loadingActors, setLoadingActors] = useState(false);
+    const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
 
-    // Fetch Employees on Mount
+    // Fetch Actors on Mount
     useEffect(() => {
-        const fetchEmployees = async () => {
-            const companyId = user?.companyId || (user as any)?.company?.id;
-            if (!companyId) return;
-
+        const fetchActors = async () => {
             try {
-                setLoadingEmployees(true);
-                const res = await api.get(`/companies/${companyId}/users?limit=100`);
-                if (res.data?.success && res.data?.data?.users) {
-                    setEmployees(res.data.data.users);
-                } else if (Array.isArray(res.data?.data)) {
-                    setEmployees(res.data.data);
+                setLoadingActors(true);
+                const res = await orderWorkflowService.getAuditActors();
+                if (res?.success && Array.isArray(res?.data)) {
+                    setActors(res.data);
                 }
             } catch (err) {
-                console.error('[OrderActivityLogPage] Error fetching employees:', err);
+                console.error('[OrderActivityLogPage] Error fetching actors:', err);
             } finally {
-                setLoadingEmployees(false);
+                setLoadingActors(false);
             }
         };
 
-        fetchEmployees();
-    }, [user?.companyId]);
+        fetchActors();
+    }, []);
 
-    // Calculate Date Range based on Preset
+    // Date Range calculation based on Preset
     const getDateRange = useCallback(() => {
         const now = new Date();
         if (datePreset === 'TODAY') {
@@ -95,7 +122,7 @@ export const OrderActivityLogPage: React.FC = () => {
         return {};
     }, [datePreset]);
 
-    // Fetch Audit Logs
+    // Fetch Logs
     const fetchLogs = useCallback(async (isLoadMore = false) => {
         const currentOffset = isLoadMore ? offset : 0;
         if (isLoadMore) {
@@ -107,7 +134,7 @@ export const OrderActivityLogPage: React.FC = () => {
         try {
             const dateRange = getDateRange();
             const filters: AuditLogFilters = {
-                userId: selectedUserId || undefined,
+                userId: selectedActorId || undefined,
                 changeType: changeType !== 'ALL' ? changeType : undefined,
                 orderNumber: orderNumber.trim() || undefined,
                 startDate: dateRange.startDate,
@@ -131,19 +158,23 @@ export const OrderActivityLogPage: React.FC = () => {
             } else {
                 setHasMore(fetchedLogs.length >= PAGE_SIZE);
             }
+
+            if (res.stats) {
+                setServerStats(res.stats);
+            }
         } catch (err) {
             console.error('[OrderActivityLogPage] Error fetching audit logs:', err);
         } finally {
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [selectedUserId, changeType, orderNumber, getDateRange, offset]);
+    }, [selectedActorId, changeType, orderNumber, getDateRange, offset]);
 
-    // Refetch on filter changes
+    // Refetch on primary filter change
     useEffect(() => {
         fetchLogs(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedUserId, changeType, datePreset]);
+    }, [selectedActorId, changeType, datePreset]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -151,400 +182,554 @@ export const OrderActivityLogPage: React.FC = () => {
     };
 
     const handleResetFilters = () => {
-        setSelectedUserId('');
+        setSelectedActorId('');
         setOrderNumber('');
         setChangeType('ALL');
         setDatePreset('ALL');
     };
 
-    // Telemetry Stats
-    const stats = useMemo(() => {
-        const uniqueUsers = new Set(logs.map((l) => l.changedBy || l.user?.id).filter(Boolean));
-        const overrides = logs.filter((l) => l.changeType === 'override').length;
-        const approvals = logs.filter((l) => l.changeType === 'approval').length;
-        return {
-            totalShown: logs.length,
-            uniqueUsersCount: uniqueUsers.size,
-            overridesCount: overrides,
-            approvalsCount: approvals,
-        };
-    }, [logs]);
+    const isFilterActive = selectedActorId !== '' || orderNumber.trim() !== '' || changeType !== 'ALL' || datePreset !== 'ALL';
 
-    const getBadgeStyle = (type: string) => {
-        switch (type) {
-            case 'override':
-                return 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-800';
-            case 'approval':
-                return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800';
-            default:
-                return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
+    const handleCopy = (text: string, id: string) => {
+        navigator.clipboard.writeText(text);
+        setCopiedOrderId(id);
+        setTimeout(() => setCopiedOrderId(null), 2000);
+    };
+
+    const formatTimestamp = (dateString: string) => {
+        try {
+            const d = new Date(dateString);
+            const now = new Date();
+            const diffMs = now.getTime() - d.getTime();
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+
+            let relative = '';
+            if (diffMins < 1) relative = 'الآن';
+            else if (diffMins < 60) relative = `منذ ${diffMins} د`;
+            else if (diffHours < 24) relative = `منذ ${diffHours} س`;
+            else relative = `منذ ${diffDays} يوم`;
+
+            const timeStr = d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const dateStr = d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
+
+            return { relative, timeStr, dateStr };
+        } catch {
+            return { relative: '', timeStr: dateString, dateStr: '' };
         }
     };
 
-    const selectedEmployee = employees.find((e) => e.id === selectedUserId);
-
     return (
-        <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300" dir="rtl">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
-                <div>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-                        <span>الطلبات</span>
-                        <span>/</span>
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">سجل نشاط الطلبات</span>
+        <div className="flex flex-col h-full min-h-0 bg-background text-foreground select-none" dir="rtl">
+            {/* Top Unified Cockpit Bar */}
+            <header className="border-b border-border/40 bg-card/50 backdrop-blur-md px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 flex items-center justify-center font-medium shadow-xs">
+                        <Clock className="w-4 h-4 stroke-[1.5]" />
                     </div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        سجل نشاط الطلبات
-                    </h1>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                        متابعة حية وشاملة لكافة عمليات تغيير الحالات والاعتمادات بحسب كل موظف والطلب المعني
-                    </p>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+                                سجل نشاط الطلبات
+                            </h1>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-mono font-medium tabular-nums bg-muted text-muted-foreground border border-border/40">
+                                {totalCount.toLocaleString('ar-EG')} حركة
+                            </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            متابعة شاملة لجميع الحركات وتغييرات الحالات الصادرة عن الموظفين والأنظمة الآلية
+                        </p>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {/* View Switcher */}
-                    <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                    {/* View Switcher Segmented Control */}
+                    <div className="inline-flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/50">
                         <button
                             type="button"
                             onClick={() => setViewMode('timeline')}
-                            className={`p-1.5 rounded-lg text-xs font-medium transition ${viewMode === 'timeline' ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
-                            title="عرض الخط الزمني"
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                                viewMode === 'timeline'
+                                    ? 'bg-card text-foreground shadow-2xs'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                            title="العرض الزمني"
                         >
-                            <List className="w-4 h-4" />
+                            <List className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">مسار زمني</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setViewMode('table')}
-                            className={`p-1.5 rounded-lg text-xs font-medium transition ${viewMode === 'table' ? 'bg-white dark:bg-slate-900 text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                                viewMode === 'table'
+                                    ? 'bg-card text-foreground shadow-2xs'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            }`}
                             title="عرض الجدول"
                         >
-                            <TableIcon className="w-4 h-4" />
+                            <TableIcon className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">جدول</span>
                         </button>
                     </div>
 
+                    {/* Refresh Button */}
                     <button
                         type="button"
                         onClick={() => fetchLogs(false)}
                         disabled={loading}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium transition shadow-xs disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-card hover:bg-muted border border-border/60 text-foreground transition active:scale-[0.98] disabled:opacity-50"
+                        title="تحديث البيانات"
                     >
-                        <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
-                        <span>تحديث</span>
+                        <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                        <span className="hidden sm:inline">تحديث</span>
                     </button>
                 </div>
-            </div>
+            </header>
 
-            {/* Quick Telemetry Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-                    <div className="flex items-center justify-between text-slate-500 mb-2">
-                        <span className="text-xs font-medium">إجمالي الحركات</span>
-                        <Activity className="w-4 h-4 text-indigo-500" />
-                    </div>
-                    <div className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">
-                        {totalCount || logs.length}
-                    </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-                    <div className="flex items-center justify-between text-slate-500 mb-2">
-                        <span className="text-xs font-medium">الموظفون النشطون</span>
-                        <Users className="w-4 h-4 text-emerald-500" />
-                    </div>
-                    <div className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">
-                        {stats.uniqueUsersCount}
-                    </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-                    <div className="flex items-center justify-between text-slate-500 mb-2">
-                        <span className="text-xs font-medium">الاعتمادات</span>
-                        <CheckCircle2 className="w-4 h-4 text-blue-500" />
-                    </div>
-                    <div className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">
-                        {stats.approvalsCount}
-                    </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-                    <div className="flex items-center justify-between text-slate-500 mb-2">
-                        <span className="text-xs font-medium">التجاوزات الخاصة</span>
-                        <ShieldAlert className="w-4 h-4 text-amber-500" />
-                    </div>
-                    <div className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">
-                        {stats.overridesCount}
-                    </div>
-                </div>
-            </div>
-
-            {/* Filter Cockpit Bar */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
-                <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {/* Employee Picker */}
+            {/* Seamless Bento Telemetry Strip (Hairline Dividers, Single Chassis) */}
+            <section className="grid grid-cols-2 md:grid-cols-4 border-b border-border/40 bg-muted/15 divide-x divide-x-reverse divide-border/40 shrink-0">
+                <div className="px-4 py-2.5 flex items-center justify-between">
                     <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                            الموظف المنفذ
-                        </label>
-                        <select
-                            value={selectedUserId}
-                            onChange={(e) => setSelectedUserId(e.target.value)}
-                            disabled={loadingEmployees}
-                            className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-xs font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 transition"
-                        >
-                            <option value="">جميع الموظفين (سجل كامل)</option>
-                            {employees.map((emp) => (
-                                <option key={emp.id} value={emp.id}>
-                                    {emp.firstName} {emp.lastName} {emp.email ? `(${emp.email})` : ''}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Order Number Search */}
-                    <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                            رقم الطلب
-                        </label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                value={orderNumber}
-                                onChange={(e) => setOrderNumber(e.target.value)}
-                                placeholder="مثال: 1042 أو 3812..."
-                                className="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 transition"
-                            />
-                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <div className="text-[11px] text-muted-foreground font-medium">إجمالي الحركات</div>
+                        <div className="text-base sm:text-lg font-bold font-mono tabular-nums tracking-tight mt-0.5">
+                            {totalCount.toLocaleString('ar-EG')}
                         </div>
                     </div>
-
-                    {/* Change Type Filter */}
-                    <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                            نوع الحركة
-                        </label>
-                        <select
-                            value={changeType}
-                            onChange={(e) => setChangeType(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-xs font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 transition"
-                        >
-                            <option value="ALL">جميع الأنواع</option>
-                            <option value="normal">حركة عادية</option>
-                            <option value="approval">حركة باعتماد مشرف</option>
-                            <option value="override">تجاوز مسار (Override)</option>
-                        </select>
+                    <div className="w-7 h-7 rounded-md bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center text-muted-foreground">
+                        <Activity className="w-3.5 h-3.5 stroke-[1.5]" />
                     </div>
+                </div>
 
-                    {/* Date Preset Filter */}
+                <div className="px-4 py-2.5 flex items-center justify-between">
                     <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                            الفترة الزمنية
-                        </label>
-                        <select
-                            value={datePreset}
-                            onChange={(e) => setDatePreset(e.target.value as any)}
-                            className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-xs font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 transition"
-                        >
-                            <option value="ALL">كل الأوقات</option>
-                            <option value="TODAY">اليوم فقط</option>
-                            <option value="7DAYS">آخر 7 أيام</option>
-                            <option value="30DAYS">آخر 30 يوماً</option>
-                        </select>
-                    </div>
-                </form>
-
-                {/* Filter Status & Reset */}
-                {(selectedUserId || orderNumber || changeType !== 'ALL' || datePreset !== 'ALL') && (
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-slate-500">الفلاتر النشطة:</span>
-                            {selectedEmployee && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-medium">
-                                    <User className="w-3 h-3" />
-                                    {selectedEmployee.firstName} {selectedEmployee.lastName}
-                                </span>
-                            )}
-                            {orderNumber && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono">
-                                    #{orderNumber}
-                                </span>
-                            )}
+                        <div className="text-[11px] text-muted-foreground font-medium">حركات اليوم</div>
+                        <div className="text-base sm:text-lg font-bold font-mono tabular-nums tracking-tight mt-0.5 text-blue-600 dark:text-blue-400">
+                            {(serverStats.todayCount || 0).toLocaleString('ar-EG')}
                         </div>
+                    </div>
+                    <div className="w-7 h-7 rounded-md bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                        <Clock className="w-3.5 h-3.5 stroke-[1.5]" />
+                    </div>
+                </div>
+
+                <div className="px-4 py-2.5 flex items-center justify-between">
+                    <div>
+                        <div className="text-[11px] text-muted-foreground font-medium">الموظفون الفاعلون</div>
+                        <div className="text-base sm:text-lg font-bold font-mono tabular-nums tracking-tight mt-0.5">
+                            {actors.length > 0 ? actors.length.toLocaleString('ar-EG') : '—'}
+                        </div>
+                    </div>
+                    <div className="w-7 h-7 rounded-md bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                        <Users className="w-3.5 h-3.5 stroke-[1.5]" />
+                    </div>
+                </div>
+
+                <div className="px-4 py-2.5 flex items-center justify-between">
+                    <div>
+                        <div className="text-[11px] text-muted-foreground font-medium">المعروض حالياً</div>
+                        <div className="text-base sm:text-lg font-bold font-mono tabular-nums tracking-tight mt-0.5 text-zinc-600 dark:text-zinc-300">
+                            {logs.length.toLocaleString('ar-EG')}
+                        </div>
+                    </div>
+                    <div className="w-7 h-7 rounded-md bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center text-zinc-500">
+                        <Shield className="w-3.5 h-3.5 stroke-[1.5]" />
+                    </div>
+                </div>
+            </section>
+
+            {/* Ergonomic Compact Filter Bar */}
+            <div className="border-b border-border/40 bg-card/30 px-4 sm:px-6 py-2.5 flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+                {/* Search Order Number */}
+                <form onSubmit={handleSearchSubmit} className="relative min-w-[160px] sm:min-w-[220px]">
+                    <Search className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                    <input
+                        type="text"
+                        value={orderNumber}
+                        onChange={(e) => setOrderNumber(e.target.value)}
+                        placeholder="ابحث برقم الطلب (مثال: ORD-450)..."
+                        className="w-full pl-7 pr-8 py-1.5 text-xs rounded-lg bg-background border border-border/60 placeholder:text-muted-foreground/70 focus:outline-hidden focus:ring-1 focus:ring-ring font-mono"
+                    />
+                    {orderNumber && (
                         <button
                             type="button"
-                            onClick={handleResetFilters}
-                            className="inline-flex items-center gap-1 text-slate-500 hover:text-red-600 transition"
+                            onClick={() => { setOrderNumber(''); fetchLogs(false); }}
+                            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         >
-                            <X className="w-3.5 h-3.5" />
-                            <span>مسح الفلاتر</span>
+                            <X className="w-3 h-3" />
                         </button>
-                    </div>
+                    )}
+                </form>
+
+                {/* Actor / Employee Selector */}
+                <div className="min-w-[150px] sm:min-w-[180px]">
+                    <select
+                        value={selectedActorId}
+                        onChange={(e) => setSelectedActorId(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-background border border-border/60 text-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
+                    >
+                        <option value="">جميع الموظفين والأنظمة ({actors.length})</option>
+                        {actors.map((actor) => (
+                            <option key={actor.id} value={actor.id}>
+                                {actor.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Change Type Filter */}
+                <div className="min-w-[130px]">
+                    <select
+                        value={changeType}
+                        onChange={(e) => setChangeType(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-background border border-border/60 text-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
+                    >
+                        <option value="ALL">جميع أنواع الحركات</option>
+                        <option value="normal">تغيير حالة عادي</option>
+                        <option value="bot_whatsapp">تأكيد بوت واتساب</option>
+                        <option value="bulk_update">تحديث جماعي</option>
+                        <option value="override">تجاوز بصلاحية</option>
+                        <option value="approved">اعتماد رسمي</option>
+                        <option value="cancelled">إلغاء طلب</option>
+                    </select>
+                </div>
+
+                {/* Date Preset Segmented Control */}
+                <div className="inline-flex items-center p-0.5 rounded-lg bg-muted/50 border border-border/40 text-[11px] font-medium">
+                    <button
+                        type="button"
+                        onClick={() => setDatePreset('ALL')}
+                        className={`px-2 py-1 rounded-md transition ${datePreset === 'ALL' ? 'bg-card text-foreground shadow-2xs' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        كل الأوقات
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setDatePreset('TODAY')}
+                        className={`px-2 py-1 rounded-md transition ${datePreset === 'TODAY' ? 'bg-card text-foreground shadow-2xs' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        اليوم
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setDatePreset('7DAYS')}
+                        className={`px-2 py-1 rounded-md transition ${datePreset === '7DAYS' ? 'bg-card text-foreground shadow-2xs' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        7 أيام
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setDatePreset('30DAYS')}
+                        className={`px-2 py-1 rounded-md transition ${datePreset === '30DAYS' ? 'bg-card text-foreground shadow-2xs' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        30 يوماً
+                    </button>
+                </div>
+
+                {/* Reset Filters */}
+                {isFilterActive && (
+                    <button
+                        type="button"
+                        onClick={handleResetFilters}
+                        className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-muted transition"
+                    >
+                        <X className="w-3 h-3" />
+                        <span>إعادة ضبط</span>
+                    </button>
                 )}
             </div>
 
-            {/* Content Display: Timeline or Table */}
-            {logs.length === 0 && !loading ? (
-                <div className="p-16 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                    <Clock className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                    <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">
-                        {selectedUserId ? 'لا يوجد نشاط مسجل لهذا الموظف' : 'لا توجد حركات مطابقة للبحث'}
-                    </h3>
-                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                        حاول تغيير الفلاتر المحددة أو اختر موظفاً آخر للاطلاع على سجل الحركات.
-                    </p>
-                </div>
-            ) : viewMode === 'timeline' ? (
-                /* Timeline View */
-                <div className="relative space-y-4">
-                    <div className="absolute top-0 bottom-0 right-[21px] w-0.5 bg-slate-200 dark:bg-slate-800 hidden sm:block" />
-
-                    {logs.map((log) => (
-                        <div key={log.id} className="relative flex flex-col sm:flex-row gap-3 sm:gap-4 animate-in fade-in duration-200">
-                            {/* Marker */}
-                            <div className="hidden sm:flex relative z-10 w-[42px] h-[42px] rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 items-center justify-center shadow-xs shrink-0">
-                                <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                            </div>
-
-                            {/* Card */}
-                            <div className="flex-1 p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition">
-                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        {log.order?.orderNumber && (
-                                            <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 tabular-nums">
-                                                #{log.order.orderNumber}
-                                            </span>
-                                        )}
-                                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                            {log.fromStatus?.name || 'البداية'}
-                                        </span>
-                                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 rtl:rotate-180" />
-                                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                                            {log.toStatus?.name}
-                                        </span>
-                                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${getBadgeStyle(log.changeType)}`}>
-                                            {log.changeType === 'override' ? 'تجاوز' : log.changeType === 'approval' ? 'معتمد' : 'عادي'}
-                                        </span>
-                                    </div>
-                                    <span className="text-xs text-slate-400 font-mono tabular-nums">
-                                        {new Date(log.createdAt).toLocaleString('ar-EG', {
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                        })}
-                                    </span>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs">
-                                    <div className="flex items-center gap-2">
-                                        <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                        <span className="text-slate-500">تم بواسطة:</span>
-                                        <span className="font-semibold text-slate-800 dark:text-slate-200">
-                                            {log.user ? `${log.user.firstName || ''} ${log.user.lastName || ''}`.trim() : (log.changedBy || 'النظام')}
-                                        </span>
-                                    </div>
-
-                                    {log.order?.customerName && (
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-slate-500">العميل:</span>
-                                            <span className="text-slate-700 dark:text-slate-300 font-medium">
-                                                {log.order.customerName}
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {log.approver && (
-                                        <div className="flex items-center gap-2">
-                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                                            <span className="text-slate-500">المعتمد:</span>
-                                            <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                                                {log.approver.firstName} {log.approver.lastName}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {log.reason && (
-                                    <div className="mt-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 italic">
-                                        "{log.reason}"
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                /* Table View */
-                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-xs text-right">
-                            <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">
-                                <tr>
-                                    <th className="py-3 px-4 font-semibold">رقم الطلب</th>
-                                    <th className="py-3 px-4 font-semibold">الحالة السابقة</th>
-                                    <th className="py-3 px-4 font-semibold">الحالة الجديدة</th>
-                                    <th className="py-3 px-4 font-semibold">الموظف المنفذ</th>
-                                    <th className="py-3 px-4 font-semibold">العميل</th>
-                                    <th className="py-3 px-4 font-semibold">نوع الحركة</th>
-                                    <th className="py-3 px-4 font-semibold">التاريخ والوقت</th>
-                                    <th className="py-3 px-4 font-semibold">الملاحظات</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {logs.map((log) => (
-                                    <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
-                                        <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">
-                                            #{log.order?.orderNumber || '—'}
-                                        </td>
-                                        <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                                            {log.fromStatus?.name || 'البداية'}
-                                        </td>
-                                        <td className="py-3 px-4 font-bold text-indigo-600 dark:text-indigo-400">
-                                            {log.toStatus?.name}
-                                        </td>
-                                        <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-200">
-                                            {log.user ? `${log.user.firstName || ''} ${log.user.lastName || ''}`.trim() : (log.changedBy || 'النظام')}
-                                        </td>
-                                        <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                                            {log.order?.customerName || '—'}
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${getBadgeStyle(log.changeType)}`}>
-                                                {log.changeType === 'override' ? 'تجاوز' : log.changeType === 'approval' ? 'معتمد' : 'عادي'}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-4 font-mono tabular-nums text-slate-500">
-                                            {new Date(log.createdAt).toLocaleString('ar-EG', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}
-                                        </td>
-                                        <td className="py-3 px-4 text-slate-500 max-w-xs truncate italic">
-                                            {log.reason || '—'}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+            {/* Main Content Area (Single Surface, Edge-to-Edge) */}
+            <main className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
+                {loading && logs.length === 0 ? (
+                    <div className="py-20 flex flex-col items-center justify-center text-muted-foreground gap-3">
+                        <RotateCw className="w-6 h-6 animate-spin text-zinc-500" />
+                        <span className="text-xs font-mono">جاري تحميل سجل الحركات الحية...</span>
                     </div>
-                </div>
-            )}
+                ) : logs.length === 0 ? (
+                    <div className="py-24 flex flex-col items-center justify-center text-center text-muted-foreground border border-dashed border-border/60 rounded-xl my-4">
+                        <Clock className="w-10 h-10 stroke-[1.25] text-muted-foreground/40 mb-3" />
+                        <h3 className="text-sm font-semibold text-foreground">لا توجد حركات مطابقة للبحث</h3>
+                        <p className="text-xs text-muted-foreground max-w-sm mt-1">
+                            جرب تغيير شروط الفلترة أو تفريغ البحث برقم الطلب لعرض كافة الحركات المسجلة.
+                        </p>
+                        {isFilterActive && (
+                            <button
+                                type="button"
+                                onClick={handleResetFilters}
+                                className="mt-4 px-3 py-1.5 text-xs font-medium rounded-lg bg-card border border-border/60 hover:bg-muted text-foreground transition"
+                            >
+                                إظهار كافة الحركات
+                            </button>
+                        )}
+                    </div>
+                ) : viewMode === 'timeline' ? (
+                    /* Timeline View (Linear / GitHub Audit Style) */
+                    <div className="relative pr-4 sm:pr-6 space-y-3">
+                        {/* Continuous Vertical Rail */}
+                        <div className="absolute right-[7px] sm:right-[11px] top-3 bottom-3 w-px bg-border/50 pointer-events-none" />
 
-            {/* Load More Button */}
-            {hasMore && (
-                <div className="text-center pt-2">
-                    <button
-                        type="button"
-                        onClick={() => fetchLogs(true)}
-                        disabled={loadingMore}
-                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold transition disabled:opacity-50 shadow-xs active:scale-[0.98]"
-                    >
-                        {loadingMore ? 'جارٍ التحميل...' : 'تحميل المزيد من الحركات'}
-                    </button>
-                </div>
-            )}
+                        {logs.map((log) => {
+                            const { relative, timeStr, dateStr } = formatTimestamp(log.createdAt);
+                            const typeConfig = CHANGE_TYPE_CONFIG[log.changeType] || CHANGE_TYPE_CONFIG.normal;
+                            const isBot = log.user?.firstName?.includes('Bot') || log.user?.id?.includes('WHATSAPP');
+
+                            return (
+                                <div key={log.id} className="relative group">
+                                    {/* Timeline Node Bullet */}
+                                    <div
+                                        className="absolute -right-4 sm:-right-6 top-3.5 w-3.5 h-3.5 rounded-full border-2 border-background bg-card flex items-center justify-center transition-transform group-hover:scale-110"
+                                        style={{ borderColor: log.toStatus?.color || '#3B82F6' }}
+                                    >
+                                        <div
+                                            className="w-1.5 h-1.5 rounded-full"
+                                            style={{ backgroundColor: log.toStatus?.color || '#3B82F6' }}
+                                        />
+                                    </div>
+
+                                    {/* Entry Card (Single-Surface Hairline Box) */}
+                                    <div className="bg-card hover:bg-card/90 border border-border/50 hover:border-border/80 rounded-xl p-3.5 sm:p-4 transition-all duration-150 shadow-2xs">
+                                        {/* Row 1: Header (Actor + Time + Order Info) */}
+                                        <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-border/30">
+                                            <div className="flex items-center gap-2">
+                                                {/* Actor Avatar */}
+                                                <div className="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 flex items-center justify-center text-[10px] font-semibold tracking-tight border border-border/40 shrink-0">
+                                                    {isBot ? (
+                                                        <Bot className="w-3.5 h-3.5" />
+                                                    ) : (
+                                                        log.user?.firstName?.charAt(0) || 'U'
+                                                    )}
+                                                </div>
+
+                                                <span className="text-xs sm:text-sm font-semibold text-foreground">
+                                                    {log.user?.firstName || 'النظام'}
+                                                </span>
+
+                                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${typeConfig.badgeClass}`}>
+                                                    {typeConfig.label}
+                                                </span>
+                                            </div>
+
+                                            {/* Timestamps */}
+                                            <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground tabular-nums">
+                                                <span className="text-foreground/80 font-medium">{relative}</span>
+                                                <span className="text-border">|</span>
+                                                <span>{dateStr}</span>
+                                                <span>{timeStr}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Row 2: Status Transition & Order Info */}
+                                        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2.5">
+                                            {/* Transition Badge */}
+                                            <div className="flex items-center gap-2 text-xs">
+                                                {log.fromStatus?.name && (
+                                                    <>
+                                                        <span
+                                                            className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium border"
+                                                            style={{
+                                                                borderColor: `${log.fromStatus.color}40`,
+                                                                backgroundColor: `${log.fromStatus.color}15`,
+                                                                color: log.fromStatus.color,
+                                                            }}
+                                                        >
+                                                            {log.fromStatus.name}
+                                                        </span>
+                                                        <ArrowRight className="w-3 h-3 text-muted-foreground rotate-180" />
+                                                    </>
+                                                )}
+                                                <span
+                                                    className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold border"
+                                                    style={{
+                                                        borderColor: `${log.toStatus?.color}50`,
+                                                        backgroundColor: `${log.toStatus?.color}20`,
+                                                        color: log.toStatus?.color,
+                                                    }}
+                                                >
+                                                    {log.toStatus?.name || log.toStatus?.code}
+                                                </span>
+                                            </div>
+
+                                            {/* Order Badge & Customer */}
+                                            {log.order && (
+                                                <div className="flex items-center gap-2">
+                                                    <a
+                                                        href={`/orders?search=${encodeURIComponent(log.order.orderNumber)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/60 hover:bg-muted text-xs font-mono font-medium text-foreground border border-border/50 transition group/link"
+                                                    >
+                                                        <span>{log.order.orderNumber}</span>
+                                                        <ExternalLink className="w-3 h-3 text-muted-foreground group-hover/link:text-foreground" />
+                                                    </a>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleCopy(log.order.orderNumber, log.id)}
+                                                        className="p-1 text-muted-foreground hover:text-foreground rounded transition"
+                                                        title="نسخ رقم الطلب"
+                                                    >
+                                                        {copiedOrderId === log.id ? (
+                                                            <Check className="w-3 h-3 text-emerald-500" />
+                                                        ) : (
+                                                            <Copy className="w-3 h-3" />
+                                                        )}
+                                                    </button>
+
+                                                    {log.order.customerName && (
+                                                        <span className="hidden sm:inline text-xs text-muted-foreground">
+                                                            {log.order.customerName}
+                                                        </span>
+                                                    )}
+
+                                                    {log.order.total && (
+                                                        <span className="text-xs font-mono font-medium tabular-nums text-foreground/80">
+                                                            {Number(log.order.total).toLocaleString('ar-EG')} ج.م
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Row 3: Notes / Payload Diff */}
+                                        {log.reason && (
+                                            <div className="mt-2.5 pt-2 border-t border-border/30">
+                                                <div className="p-2 rounded-lg bg-muted/30 border border-border/30 text-xs font-mono text-foreground/85 whitespace-pre-line leading-relaxed">
+                                                    {log.reason}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    /* High-Density Data Grid Table */
+                    <div className="border border-border/50 rounded-xl overflow-hidden bg-card shadow-2xs">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-right text-xs">
+                                <thead className="bg-muted/50 border-b border-border/40 text-muted-foreground font-medium">
+                                    <tr>
+                                        <th className="py-2.5 px-3">الوقت</th>
+                                        <th className="py-2.5 px-3">رقم الطلب</th>
+                                        <th className="py-2.5 px-3">العميل</th>
+                                        <th className="py-2.5 px-3">الموظف / النظام</th>
+                                        <th className="py-2.5 px-3">الانتقال</th>
+                                        <th className="py-2.5 px-3">نوع الحركة</th>
+                                        <th className="py-2.5 px-3">الملاحظات والتفاصيل</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border/30">
+                                    {logs.map((log) => {
+                                        const { relative, timeStr } = formatTimestamp(log.createdAt);
+                                        const typeConfig = CHANGE_TYPE_CONFIG[log.changeType] || CHANGE_TYPE_CONFIG.normal;
+
+                                        return (
+                                            <tr key={log.id} className="hover:bg-muted/30 transition-colors">
+                                                <td className="py-2.5 px-3 font-mono tabular-nums whitespace-nowrap">
+                                                    <span className="font-medium text-foreground">{relative}</span>
+                                                    <span className="block text-[10px] text-muted-foreground">{timeStr}</span>
+                                                </td>
+
+                                                <td className="py-2.5 px-3 whitespace-nowrap font-mono font-medium">
+                                                    {log.order ? (
+                                                        <a
+                                                            href={`/orders?search=${encodeURIComponent(log.order.orderNumber)}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="hover:underline text-blue-600 dark:text-blue-400"
+                                                        >
+                                                            {log.order.orderNumber}
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">—</span>
+                                                    )}
+                                                </td>
+
+                                                <td className="py-2.5 px-3 whitespace-nowrap">
+                                                    {log.order?.customerName || '—'}
+                                                </td>
+
+                                                <td className="py-2.5 px-3 whitespace-nowrap font-medium text-foreground">
+                                                    {log.user?.firstName || 'النظام'}
+                                                </td>
+
+                                                <td className="py-2.5 px-3 whitespace-nowrap">
+                                                    <div className="flex items-center gap-1.5">
+                                                        {log.fromStatus?.name && (
+                                                            <>
+                                                                <span
+                                                                    className="px-1.5 py-0.5 rounded text-[10px] font-medium border"
+                                                                    style={{
+                                                                        borderColor: `${log.fromStatus.color}40`,
+                                                                        backgroundColor: `${log.fromStatus.color}15`,
+                                                                        color: log.fromStatus.color,
+                                                                    }}
+                                                                >
+                                                                    {log.fromStatus.name}
+                                                                </span>
+                                                                <ArrowRight className="w-2.5 h-2.5 text-muted-foreground rotate-180" />
+                                                            </>
+                                                        )}
+                                                        <span
+                                                            className="px-2 py-0.5 rounded text-[11px] font-semibold border"
+                                                            style={{
+                                                                borderColor: `${log.toStatus?.color}50`,
+                                                                backgroundColor: `${log.toStatus?.color}20`,
+                                                                color: log.toStatus?.color,
+                                                            }}
+                                                        >
+                                                            {log.toStatus?.name || log.toStatus?.code}
+                                                        </span>
+                                                    </div>
+                                                </td>
+
+                                                <td className="py-2.5 px-3 whitespace-nowrap">
+                                                    <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium border ${typeConfig.badgeClass}`}>
+                                                        {typeConfig.label}
+                                                    </span>
+                                                </td>
+
+                                                <td className="py-2.5 px-3 max-w-xs truncate font-mono text-[11px] text-muted-foreground">
+                                                    {log.reason || '—'}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* Load More Button */}
+                {hasMore && logs.length > 0 && (
+                    <div className="pt-4 pb-8 flex items-center justify-center">
+                        <button
+                            type="button"
+                            onClick={() => fetchLogs(true)}
+                            disabled={loadingMore}
+                            className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-medium bg-card hover:bg-muted border border-border/60 text-foreground shadow-2xs transition active:scale-[0.98] disabled:opacity-50"
+                        >
+                            {loadingMore ? (
+                                <>
+                                    <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                                    <span>جاري التحميل...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>تحميل المزيد من الحركات</span>
+                                    <span className="text-muted-foreground font-mono tabular-nums text-[11px]">
+                                        ({logs.length} من {totalCount.toLocaleString('ar-EG')})
+                                    </span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                )}
+            </main>
         </div>
     );
 };

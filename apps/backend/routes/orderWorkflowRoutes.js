@@ -298,6 +298,18 @@ router.post('/approvals/:id/review', async (req, res) => {
 /**
  * 📝 Audit Logs
  */
+router.get('/audit-actors', async (req, res) => {
+    try {
+        const companyId = getCompanyId(req);
+        if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+
+        const actors = await orderWorkflowService.getAuditActors(companyId);
+        res.json({ success: true, data: actors });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 router.get('/audit-logs', async (req, res) => {
     try {
         const companyId = getCompanyId(req);
@@ -315,7 +327,7 @@ router.get('/audit-logs', async (req, res) => {
             endDate
         });
 
-        res.json({ success: true, data: result.logs, total: result.total });
+        res.json({ success: true, data: result.logs, total: result.total, stats: result.stats });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
