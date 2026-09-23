@@ -346,13 +346,20 @@ async def _build_active_order_block(ctx: PipelineContext) -> str:
 
                 addr_obj = _json.loads(raw_address)
                 if isinstance(addr_obj, dict):
-                    raw_address = "، ".join(
-                        str(v) for k, v in addr_obj.items()
-                        if isinstance(v, str) and v.strip() and k not in {"city", "governorate"}
-                    )
+                    addr_vals: list[str] = []
+                    for k, v in addr_obj.items():
+                        v_str = str(v).strip()
+                        if isinstance(v, str) and v_str and k not in {"city", "governorate"} and v_str not in addr_vals:
+                            addr_vals.append(v_str)
+                    raw_address = "، ".join(addr_vals)
             except Exception:
                 pass
-        address_ar = "، ".join(p for p in [order["governorate"], order["city"], raw_address] if p)
+        address_parts: list[str] = []
+        for p in [order["governorate"], order["city"], raw_address]:
+            p_str = str(p).strip()
+            if p_str and p_str not in address_parts:
+                address_parts.append(p_str)
+        address_ar = "، ".join(address_parts)
 
         lines = [
             "<active_order>",
