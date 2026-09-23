@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   TruckIcon,
   ChartBarIcon,
@@ -9,6 +9,27 @@ import {
 import { Skeleton } from "../../../components/ui/skeleton";
 import { ShippingPerformance, BranchPerformance } from "./types";
 import { getStatusDisplay } from "../../../utils/statusRegistry";
+
+const LIFECYCLE_STAGE_ORDER: Record<string, number> = {
+  PENDING: 10,
+  CONFIRMED: 20,
+  SCHEDULED: 25,
+  ON_HOLD: 30,
+  ON_HOLD_PREP: 35,
+  PROCESSING: 40,
+  READY: 45,
+  STOCK_SHORTAGE: 50,
+  SHORTAGE_FAILED: 55,
+  SHIPPED: 60,
+  DELIVERED: 70,
+  PARTIALLY_DELIVERED: 72,
+  RETURNED: 80,
+  PARTIALLY_RETURNED: 82,
+  CANCELLED: 90,
+  DUPLICATE_ORDER: 95,
+  REFUNDED: 96,
+  TRASH: 99,
+};
 
 interface OrdersLogisticsPerformanceProps {
   loading: boolean;
@@ -75,8 +96,20 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
     if (s.includes("CANCEL") || s.includes("REJECT") || s.includes("FAIL")) return "bg-rose-500";
     if (s.includes("RETURN") || s.includes("REFUND")) return "bg-amber-500";
     if (s.includes("SHIP") || s.includes("TRANSIT") || s.includes("OUT_FOR_DELIVERY")) return "bg-sky-500";
-    return "bg-indigo-500";
+    if (s.includes("PENDING") || s.includes("HOLD") || s.includes("WAIT")) return "bg-amber-500";
+    if (s.includes("PROCESS") || s.includes("PREP")) return "bg-indigo-500";
+    if (s.includes("CONFIRM")) return "bg-blue-500";
+    return "bg-zinc-500";
   };
+
+  const sortedStatusEntries = useMemo(() => {
+    return Object.entries(statusDist).sort(([statusA, countA], [statusB, countB]) => {
+      const orderA = LIFECYCLE_STAGE_ORDER[statusA.toUpperCase()] ?? 500;
+      const orderB = LIFECYCLE_STAGE_ORDER[statusB.toUpperCase()] ?? 500;
+      if (orderA !== orderB) return orderA - orderB;
+      return countB - countA;
+    });
+  }, [statusDist]);
 
   return (
     <div className="border-b border-zinc-200/80 dark:border-white/[0.08] grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-zinc-200/80 dark:divide-white/[0.08] bg-white dark:bg-[#070709]">
@@ -97,17 +130,17 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
           </span>
         </div>
 
-        <div className="flex-1 overflow-y-auto max-h-[320px] divide-y divide-zinc-100 dark:divide-white/[0.04] no-scrollbar">
+        <div className="flex-1 overflow-y-auto max-h-[350px] divide-y divide-zinc-100 dark:divide-white/[0.04] pr-1.5 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 hover:scrollbar-thumb-zinc-400">
           {loading ? (
             <div className="space-y-2 py-2">
               {[1, 2, 3, 4, 5].map((n) => (
                 <Skeleton key={n} className="h-8 w-full rounded" />
               ))}
             </div>
-          ) : Object.keys(statusDist).length === 0 ? (
+          ) : sortedStatusEntries.length === 0 ? (
             <p className="text-center text-xs text-zinc-400 py-10">لا توجد طلبات مسجلة</p>
           ) : (
-            Object.entries(statusDist).map(([status, count]) => {
+            sortedStatusEntries.map(([status, count]) => {
               const safeTotal = totalOrders > 0 ? totalOrders : 1;
               const pct = Math.min(100, Math.round((count / safeTotal) * 100));
               const pieces = statusPieces?.[status] ?? 0;
@@ -194,7 +227,7 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto max-h-[320px] divide-y divide-zinc-100 dark:divide-white/[0.04] no-scrollbar">
+        <div className="flex-1 overflow-y-auto max-h-[350px] divide-y divide-zinc-100 dark:divide-white/[0.04] pr-1.5 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 hover:scrollbar-thumb-zinc-400">
           {loading ? (
             <div className="space-y-2 py-2">
               {[1, 2].map((n) => (
@@ -305,7 +338,7 @@ export const OrdersLogisticsPerformance: React.FC<OrdersLogisticsPerformanceProp
           </span>
         </div>
 
-        <div className="flex-1 overflow-y-auto max-h-[320px] divide-y divide-zinc-100 dark:divide-white/[0.04] no-scrollbar">
+        <div className="flex-1 overflow-y-auto max-h-[350px] divide-y divide-zinc-100 dark:divide-white/[0.04] pr-1.5 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 hover:scrollbar-thumb-zinc-400">
           {/* COD Summary Strip (Seamless, No heavy boxed border) */}
           <div className="py-2 px-1 space-y-1">
             <div className="flex items-center justify-between font-bold text-zinc-900 dark:text-white text-xs">

@@ -3017,6 +3017,15 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       } else if (guestStatusBranches.length > 1) {
         guestWhereClause.OR = guestStatusBranches;
       }
+
+      // 🛡️ PRODUCTION-GUARD (stale-guest-pending): استبعاد طلبات الزوار المعلقة القديمة جداً (> 14 يوم)
+      // التي لم يتم تأكيدها أو تحويلها حتى لا تلوث قائمة "قيد الانتظار الجديد" بدون تحديد نطاق تاريخ صريح
+      if (guestStatusValues.length === 1 && guestStatusValues[0] === 'PENDING' && !startDate && !endDate) {
+        const staleGuestThreshold = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+        appendAnd(guestWhereClause, {
+          createdAt: { gte: staleGuestThreshold }
+        });
+      }
     } else {
       whereClause.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
       guestWhereClause.status = getVisibleGuestOrderStatusesFilter(duplicateSettings);
