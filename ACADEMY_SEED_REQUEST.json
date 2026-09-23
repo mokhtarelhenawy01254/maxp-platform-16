@@ -1,0 +1,7 @@
+{
+  "mode": "dry-run",
+  "note": "محاكاة قراءة فقط على داتابيز الإنتاج — بتطبع الأعداد المتوقعة بدون أي كتابة. غيّرها لـ apply بعد مراجعة الناتج.",
+  "requested_by": "hermes-agent",
+  "course": "كورس MaxP — من أول إعلان لأول نظام",
+  "expected": "1 course / 4 modules / 25 lessons / 25 quizzes / 75 questions"
+}

@@ -13,7 +13,11 @@ const fs = require('fs');
 const path = require('path');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
-const DEFAULT_IMPORT_PATH = 'C:\\Users\\mokhtar\\lessons_print\\ACADEMY_IMPORT.json';
+// Portable by default: the content package ships with the repo (deploy includes apps/backend/prisma/seeds).
+// Override with ACADEMY_IMPORT_PATH or `--file <path>` when running locally.
+const DEFAULT_IMPORT_PATH =
+  process.env.ACADEMY_IMPORT_PATH ||
+  path.join(__dirname, '..', 'prisma', 'seeds', 'ACADEMY_IMPORT.json');
 
 function parseArgs() {
   const args = process.argv.slice(2);

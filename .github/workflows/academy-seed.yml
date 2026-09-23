@@ -1,0 +1,121 @@
+name: Academy Content Seed
+
+# One-click / commit-triggered content upload for the MaxP Academy course.
+# Runs on the SERVER (which already holds the production .env), so no DATABASE_URL
+# ever has to be copied into GitHub or into a chat.
+#
+#   dry-run : read-only report (safe default)
+#   apply   : writes the course + modules + lessons + quizzes
+#   verify  : re-reads the DB and prints the counts
+#   delete  : removes the seeded course (needs --confirm, see the script)
+#
+# Trigger A: Actions tab → "Academy Content Seed" → Run workflow → pick mode
+# Trigger B: push a change to ACADEMY_SEED_REQUEST.json  ({"mode":"dry-run"})
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'dry-run | apply | verify | delete'
+        required: true
+        default: 'dry-run'
+        type: choice
+        options:
+          - dry-run
+          - apply
+          - verify
+          - delete
+  push:
+    paths:
+      - 'ACADEMY_SEED_REQUEST.json'
+
+env:
+  SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
+  BACKEND_DIR: /var/www/backend2
+  IMPORT_FILE: prisma/seeds/ACADEMY_IMPORT.json
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MAXP3_CHECKOUT_TOKEN || github.token }}
+
+      - name: Resolve mode
+        id: mode
+        run: |
+          if [ -f ACADEMY_SEED_REQUEST.json ]; then
+            MODE=$(node -e "process.stdout.write(String(require('./ACADEMY_SEED_REQUEST.json').mode||'dry-run'))")
+          else
+            MODE="${{ github.event.inputs.mode }}"
+          fi
+          case "$MODE" in
+            dry-run|apply|verify|delete) ;;
+            *) echo "❌ mode غير صالح: $MODE"; exit 1 ;;
+          esac
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "🎯 mode = $MODE"
+
+      - name: Wait for the content package to land on the server
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/maxp_deploy_key"
+          chmod 600 "$HOME/.ssh/maxp_deploy_key"
+          ssh-keyscan -4 -p "$SERVER_SSH_PORT" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+          for i in $(seq 1 20); do
+            if ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_SSH_PORT" \
+                 -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+                 "$SERVER_USER@$SERVER_HOST" \
+                 "test -f $BACKEND_DIR/$IMPORT_FILE -a -f $BACKEND_DIR/scripts/academySeed.js && echo READY"; then
+              echo "✅ الملفات موجودة على السيرفر (محاولة $i)"; exit 0
+            fi
+            echo "⏳ مستني الـdeploy يوصل الملفات… ($i/20)"; sleep 30
+          done
+          echo "❌ الملفات مش وصلت السيرفر — تأكد إن الـdeploy نجح"; exit 1
+
+      - name: Run seed on the server (production DB)
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          MODE: ${{ steps.mode.outputs.mode }}
+        run: |
+          mkdir -p docs/seed-reports
+          REPORT="docs/seed-reports/academy-seed-${MODE}-$(date -u +%Y%m%d-%H%M%S).txt"
+          echo "REPORT=$REPORT" >> "$GITHUB_ENV"
+          set +e
+          ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_SSH_PORT" \
+            -o StrictHostKeyChecking=accept-new -o ConnectTimeout=25 \
+            "$SERVER_USER@$SERVER_HOST" \
+            "cd $BACKEND_DIR && node scripts/academySeed.js --${MODE} --file $IMPORT_FILE" \
+            > "$REPORT" 2>&1
+          RC=$?
+          set -e
+          {
+            echo ""
+            echo "──────────────────────────────"
+            echo "mode: $MODE"
+            echo "server: $SERVER_HOST"
+            echo "run_id: $GITHUB_RUN_ID"
+            echo "exit_code: $RC"
+          } >> "$REPORT"
+          echo "────── آخر 40 سطر من الناتج ──────"
+          tail -40 "$REPORT" || true
+          exit $RC
+
+      - name: Publish the report back into the repo
+        if: always()
+        run: |
+          git config user.name "academy-seed-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A docs/seed-reports || true
+          git commit -m "chore(academy): seed report (${{ steps.mode.outputs.mode }}) [skip ci]" || echo "لا يوجد جديد"
+          git push || echo "⚠️ الدفع فشل (التوكن للقراءة فقط) — التقرير في سجل التشغيل"
