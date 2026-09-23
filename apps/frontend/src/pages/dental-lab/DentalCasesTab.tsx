@@ -3,7 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  AlertTriangle, ArrowRightCircle, Calendar, Check, CheckCircle2, CheckSquare, Clock, Columns3, CreditCard, ExternalLink, Eye, Filter, FilterX, Flame, Layers, List, Loader2, PackageCheck, Pencil, Printer, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
+  AlertTriangle, ArrowRightCircle, ArrowRightLeft, Calendar, Check, CheckCircle2, CheckSquare, Clock, Columns3, CreditCard, ExternalLink, Eye, FileSpreadsheet, Filter, FilterX, Flame, Layers, List, Loader2, PackageCheck, Pencil, Printer, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
 } from "lucide-react";
 import {
   CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG, PAYMENT_STATUS_MAP,
@@ -12,11 +12,12 @@ import {
   createCase, updateCase, advanceCase, assignCase, removeCaseAssignment, uploadCaseAttachment, uploadCaseAttachments,
   createInvoice, addInvoicePayment, kioskScanCase,
   trashCase, restoreCase, permanentDeleteCase,
-  bulkAdvanceCases, bulkAssignTechnician, bulkUpdatePriority, bulkTrashCases, bulkRestoreCases,
+  bulkAdvanceCases, bulkAssignTechnician, bulkUpdatePriority, bulkTrashCases, bulkRestoreCases, bulkTransferCasesDoctor,
   fetchPanLabelPdf, fetchWorkOrderPdf,
   fmtMoney, fmtDate, nextStatusOf,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
+import { exportToExcel } from "@/utils/exportHelpers";
 import QuickOrderModal from "./QuickOrderModal";
 import OdontogramChart from "./OdontogramChart";
 
@@ -967,6 +968,8 @@ export default function DentalCasesTab() {
   const [bulkStatusTarget, setBulkStatusTarget] = useState("");
   const [bulkTechTarget, setBulkTechTarget] = useState("");
   const [bulkPriorityTarget, setBulkPriorityTarget] = useState<DentalCasePriority | "">("");
+  const [bulkDoctorTarget, setBulkDoctorTarget] = useState("");
+
 
   const toggleSelect = (id: string) => {
     setSelectedCaseIds(prev => {
@@ -1074,6 +1077,70 @@ export default function DentalCasesTab() {
       setBulkBusy(false);
     }
   };
+
+  const handleBulkTransferDoctor = async () => {
+    if (selectedCaseIds.size === 0 || !bulkDoctorTarget) return;
+    const targetDoc = doctors.find(d => d.id === bulkDoctorTarget);
+    const docName = targetDoc ? (targetDoc.clinicName ? `${targetDoc.clinicName} (${targetDoc.name})` : targetDoc.name) : "";
+    if (!window.confirm(`هل أنت متأكد من نقل ${selectedCaseIds.size} حالة إلى: "${docName}" ومزامنة فواتيرها؟`)) return;
+    const ids = Array.from(selectedCaseIds);
+    setBulkBusy(true);
+    try {
+      const res = await bulkTransferCasesDoctor(ids, bulkDoctorTarget, targetDoc?.name, true);
+      toast.success(res.message || `تم نقل ${res.count} حالة بنجاح`);
+      setSelectedCaseIds(new Set());
+      setBulkDoctorTarget("");
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل نقل الحالات إلى الطبيب");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const handleExportCasesExcel = () => {
+    if (!cases || cases.length === 0) {
+      toast.error("لا توجد حالات لتصديرها");
+      return;
+    }
+    const columns = [
+      { key: "caseNumber", label: "رقم الحالة" },
+      { key: "receivedDate", label: "تاريخ الاستلام" },
+      { key: "dueDate", label: "تاريخ التسليم" },
+      { key: "doctorName", label: "العيادة / الطبيب" },
+      { key: "patientName", label: "المريض" },
+      { key: "workTypeName", label: "نوع الشغل" },
+      { key: "shade", label: "اللون (Shade)" },
+      { key: "teeth", label: "الأسنان" },
+      { key: "unitsCount", label: "عدد الوحدات" },
+      { key: "statusLabel", label: "مرحلة العمل" },
+      { key: "priorityLabel", label: "الأولوية" },
+      { key: "total", label: "الإجمالي (ج.م)" },
+      { key: "paid", label: "المدفوع (ج.م)" },
+      { key: "remaining", label: "المتبقي (ج.م)" },
+      { key: "paymentStatusLabel", label: "حالة السداد" },
+    ];
+    const data = cases.map(c => ({
+      caseNumber: c.caseNumber || "—",
+      receivedDate: fmtDate(c.receivedDate),
+      dueDate: fmtDate(c.dueDate),
+      doctorName: c.doctorName || "—",
+      patientName: c.patientName || "—",
+      workTypeName: c.workTypeName || "—",
+      shade: c.shade || "—",
+      teeth: c.teeth || "—",
+      unitsCount: c.unitsCount || 1,
+      statusLabel: CASE_STATUSES.find(s => s.id === c.status)?.label || c.status,
+      priorityLabel: c.priority === "URGENT" ? "مستعجل" : c.priority === "STAT" ? "طارئ" : "عادي",
+      total: c.total ?? 0,
+      paid: c.paid ?? 0,
+      remaining: c.remaining ?? 0,
+      paymentStatusLabel: c.paymentStatus === "PAID" ? "مسدد بالكامل" : c.paymentStatus === "PARTIAL" ? "مسدد جزئياً" : "غير مسدد",
+    }));
+    exportToExcel(data, columns, `حالات_معمل_الأسنان_${new Date().toISOString().split("T")[0]}.xlsx`, "الحالات");
+    toast.success("تم تصدير ملف الإكسيل بنجاح");
+  };
+
 
   const loadRefs = useCallback(async () => {
     try {
@@ -1350,6 +1417,14 @@ export default function DentalCasesTab() {
           </button>
           <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
+          </button>
+          <button
+            onClick={handleExportCasesExcel}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-emerald-300 dark:border-emerald-700 bg-emerald-50/70 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-sm font-semibold shadow-sm"
+            title="تصدير الحالات المعروضة إلى ملف Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>تصدير Excel</span>
           </button>
           <button
             onClick={() => setQuickOrderOpen(true)}
@@ -2122,6 +2197,33 @@ export default function DentalCasesTab() {
                   className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1 shadow-sm transition"
                 >
                   تحديث
+                </button>
+              </div>
+
+              {/* Bulk Transfer to Doctor / Clinic */}
+              <div className="flex items-center gap-1.5">
+                <select
+                  className="bg-gray-800 border border-gray-700 text-xs rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 max-w-[170px]"
+                  value={bulkDoctorTarget}
+                  onChange={e => setBulkDoctorTarget(e.target.value)}
+                  disabled={bulkBusy}
+                >
+                  <option value="">نقل لطبيب / عيادة...</option>
+                  {doctors.filter(d => d.isActive).map(d => (
+                    <option key={d.id} value={d.id}>
+                      {d.clinicName ? `${d.clinicName} • ${d.name}` : d.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleBulkTransferDoctor}
+                  disabled={bulkBusy || !bulkDoctorTarget}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1 shadow-sm transition"
+                  title="نقل الحالات المحددة لعيادة أو دكتور آخر مع تحديث فواتيرها"
+                >
+                  {bulkBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRightLeft className="w-3.5 h-3.5" />}
+                  نقل للعيادة
                 </button>
               </div>
 

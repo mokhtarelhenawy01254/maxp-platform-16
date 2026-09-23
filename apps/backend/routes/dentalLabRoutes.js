@@ -122,6 +122,7 @@ router.post('/cases/bulk/assign', verifyToken.authenticateToken, dentalRoleGuard
 router.post('/cases/bulk/priority', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.bulkUpdatePriority);
 router.post('/cases/bulk/trash', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.bulkTrashCases);
 router.post('/cases/bulk/restore', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.bulkRestoreCases);
+router.post('/cases/bulk/transfer-doctor', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.bulkTransferCasesDoctor);
 
 router.get('/cases/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.getCaseDetail);
 router.put('/cases/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.updateCase);
@@ -159,6 +160,7 @@ router.post('/invoices', verifyToken.authenticateToken, dentalRoleGuard(['OWNER'
 router.get('/invoices/uninvoiced-summary', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getUninvoicedSummary);
 router.post('/invoices/batch-create', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.batchCreateMonthlyInvoices);
 router.post('/invoices/:id/payments', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.recordInvoicePayment);
+router.post('/invoices/:id/void', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.voidInvoice);
 router.get('/invoices/:id/pdf', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getInvoicePdf);
 router.get('/invoices/:id/payment-link', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getInvoicePaymentLink);
 router.post('/notifications/scan-billing-cycle', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.scanBillingCycle);
@@ -186,6 +188,7 @@ router.put('/team/:userId/role', verifyToken.authenticateToken, dentalRoleGuard(
 
 // Reports
 router.get('/reports/doctor-statement', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getDoctorStatement);
+router.get('/reports/doctor-statement/pdf', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT', 'RECEPTION']), controller.getDoctorStatementPdf);
 router.get('/reports/technician-productivity', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'ACCOUNTANT']), controller.getTechnicianProductivity);
 router.get('/reports/work-type-revenue', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getWorkTypeRevenue);
 router.get('/reports/overdue', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getOverdueReport);

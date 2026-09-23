@@ -2,12 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
+  Ban,
   Banknote,
   CalendarClock,
   Check,
   CheckSquare,
   Clock,
   CreditCard,
+  Download,
   Eye,
   FileCheck,
   FileSpreadsheet,
@@ -41,6 +43,7 @@ import {
   fetchDoctors,
   createInvoice,
   addInvoicePayment,
+  voidInvoice,
   fetchInvoicePdf,
   fetchInvoicePaymentLink,
   fetchUninvoicedSummary,
@@ -50,6 +53,7 @@ import {
   reopenMonthlySettlement,
   recordDoctorBulkPayment,
   fetchDoctorStatement,
+  fetchDoctorStatementPdf,
   UninvoicedSummaryResult,
   fmtMoney,
   fmtDate,
@@ -57,6 +61,8 @@ import {
   MODAL_CONTENT_CLS,
   MODAL_INPUT_CLS,
 } from "./shared";
+import { exportToExcel } from "@/utils/exportHelpers";
+
 
 const FALLBACK_BADGE = { label: "", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" };
 
@@ -714,17 +720,101 @@ function DoctorStatementModal({
     loadStatement();
   }, [loadStatement]);
 
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
   const handlePrint = () => {
     window.print();
   };
 
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const blob = await fetchDoctorStatementPdf({
+        doctorId: doctor.id,
+        from: from ? new Date(from).toISOString() : undefined,
+        to: to ? new Date(to).toISOString() : undefined,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeName = (doctor.name || "doctor").replace(/\s+/g, "_");
+      a.download = `كشف_حساب_${safeName}_${new Date().toISOString().split("T")[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("تم تنزيل ملف كشف الحساب الرسمي بنجاح");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل تنزيل ملف PDF");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleExportStatementExcel = () => {
+    if (!statement?.invoices || statement.invoices.length === 0) {
+      toast.error("لا توجد فواتير لتصديرها في هذه الفترة");
+      return;
+    }
+    const columns = [
+      { key: "invoiceNumber", label: "رقم الفاتورة" },
+      { key: "createdAt", label: "التاريخ" },
+      { key: "patientName", label: "المريض / الحالة" },
+      { key: "total", label: "القيمة الإجمالية (ج.م)" },
+      { key: "paid", label: "المدفوع (ج.م)" },
+      { key: "remaining", label: "المتبقي (ج.م)" },
+      { key: "statusLabel", label: "الحالة" },
+    ];
+    const data = statement.invoices.map((inv) => ({
+      invoiceNumber: inv.invoiceNumber || inv.id?.slice(0, 8),
+      createdAt: fmtDate(inv.createdAt),
+      patientName: inv.patientName || "—",
+      total: inv.total ?? 0,
+      paid: inv.paid ?? 0,
+      remaining: inv.remaining ?? 0,
+      statusLabel:
+        inv.status === "PAID"
+          ? "مدفوعة"
+          : inv.status === "PARTIAL"
+          ? "سداد جزئي"
+          : inv.status === "VOID"
+          ? "ملغاة"
+          : "غير مسددة",
+    }));
+    exportToExcel(
+      data,
+      columns,
+      `كشف_حساب_${(doctor.name || "doctor").replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.xlsx`,
+      "كشف الحساب"
+    );
+    toast.success("تم تصدير كشف الحساب إلى Excel بنجاح");
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto" onClick={onClose}>
-      <div className={`${MODAL_CONTENT_CLS} max-w-4xl my-6 print:shadow-none print:p-0`} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between pb-3 border-b dark:border-gray-800 mb-4 gap-3 print:border-b-2">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto print:p-0 print:static print:bg-white print:z-auto print:block" onClick={onClose}>
+      <div className={`${MODAL_CONTENT_CLS} max-w-4xl my-6 print:max-w-none print:w-full print:m-0 print:shadow-none print:p-6 print:border-none print:bg-white print:text-black`} onClick={(e) => e.stopPropagation()}>
+        {/* Printable Official Header (Visible ONLY on print) */}
+        <div className="hidden print:block pb-4 mb-4 border-b-2 border-slate-900">
+          <div className="flex justify-between items-start">
+            <div className="text-right">
+              <h1 className="text-xl font-bold text-slate-900">كشف حساب العميل — معمل الأسنان</h1>
+              <p className="text-sm font-semibold text-slate-800 mt-1">
+                العميل / الطبيب: {doctor.name} {doctor.clinicName ? `(${doctor.clinicName})` : ""}
+              </p>
+              {doctor.phone && <p className="text-xs text-slate-600">هاتف: {doctor.phone}</p>}
+            </div>
+            <div className="text-left text-xs text-slate-600 space-y-1">
+              <p className="font-semibold text-slate-800">تاريخ الاستخراج: {new Date().toLocaleDateString("ar-EG")}</p>
+              {from && <p>الفترة من: {fmtDate(from)}</p>}
+              {to && <p>إلى: {fmtDate(to)}</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* Screen Header */}
+        <div className="flex flex-wrap items-center justify-between pb-3 border-b dark:border-gray-800 mb-4 gap-3 print:hidden">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-blue-50 dark:bg-blue-900/40 text-blue-600 rounded-xl print:hidden">
+            <div className="p-2 bg-blue-50 dark:bg-blue-900/40 text-blue-600 rounded-xl">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
@@ -736,7 +826,7 @@ function DoctorStatementModal({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 print:hidden">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => shareStatementWhatsApp(doctor.name, doctor.phone, statement?.totals || {})}
               className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-green-100"
@@ -746,8 +836,26 @@ function DoctorStatementModal({
               <span>واتساب</span>
             </button>
             <button
+              onClick={handleExportStatementExcel}
+              className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-emerald-100"
+              title="تصدير كشف الحساب كملف Excel (.xlsx)"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+              <span>Excel</span>
+            </button>
+            <button
+              onClick={handleDownloadPdf}
+              disabled={downloadingPdf}
+              className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-blue-100 disabled:opacity-50"
+              title="تنزيل كشف الحساب كملف PDF رسمي عالي الدقة"
+            >
+              {downloadingPdf ? <Loader2 className="w-4 h-4 animate-spin text-blue-600" /> : <Download className="w-4 h-4 text-blue-600" />}
+              <span>PDF رسمي</span>
+            </button>
+            <button
               onClick={handlePrint}
               className="px-3 py-1.5 border dark:border-gray-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-gray-50 dark:hover:bg-gray-800"
+              title="طباعة ورقية نظيفة"
             >
               <Printer className="w-4 h-4 text-gray-600" />
               <span>طباعة</span>
@@ -782,28 +890,28 @@ function DoctorStatementModal({
         </div>
 
         {/* Totals Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4">
-          <div className="p-3 bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 rounded-xl">
-            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">عدد الفواتير / الحالات</span>
-            <p className="text-base sm:text-lg font-bold text-blue-700 dark:text-blue-300 mt-0.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4 print:grid-cols-4 print:border print:border-slate-300 print:p-2">
+          <div className="p-3 bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 rounded-xl print:border-none print:p-1">
+            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium print:text-black">عدد الفواتير / الحالات</span>
+            <p className="text-base sm:text-lg font-bold text-blue-700 dark:text-blue-300 mt-0.5 print:text-black">
               {statement?.totals?.invoicesCount ?? 0} فاتورة ({statement?.totals?.cases ?? 0} حالة)
             </p>
           </div>
-          <div className="p-3 bg-gray-50 dark:bg-gray-800/60 border dark:border-gray-700 rounded-xl">
-            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">إجمالي المفوتر</span>
-            <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 mt-0.5">
+          <div className="p-3 bg-gray-50 dark:bg-gray-800/60 border dark:border-gray-700 rounded-xl print:border-none print:p-1">
+            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium print:text-black">إجمالي المفوتر</span>
+            <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 mt-0.5 print:text-black">
               {fmtMoney(statement?.totals?.invoiced)} ج.م
             </p>
           </div>
-          <div className="p-3 bg-green-50/60 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50 rounded-xl">
-            <span className="text-[11px] text-green-700 dark:text-green-400 font-medium">إجمالي المسدد</span>
-            <p className="text-base sm:text-lg font-bold text-green-700 dark:text-green-400 mt-0.5">
+          <div className="p-3 bg-green-50/60 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50 rounded-xl print:border-none print:p-1">
+            <span className="text-[11px] text-green-700 dark:text-green-400 font-medium print:text-black">إجمالي المسدد</span>
+            <p className="text-base sm:text-lg font-bold text-green-700 dark:text-green-400 mt-0.5 print:text-black">
               {fmtMoney(statement?.totals?.paid)} ج.م
             </p>
           </div>
-          <div className="p-3 bg-red-50/60 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 rounded-xl">
-            <span className="text-[11px] text-red-700 dark:text-red-400 font-medium">الرصيد المتبقي المستحق</span>
-            <p className="text-base sm:text-lg font-bold text-red-600 mt-0.5">
+          <div className="p-3 bg-red-50/60 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 rounded-xl print:border-none print:p-1">
+            <span className="text-[11px] text-red-700 dark:text-red-400 font-medium print:text-black">الرصيد المتبقي المستحق</span>
+            <p className="text-base sm:text-lg font-bold text-red-600 mt-0.5 print:text-black">
               {fmtMoney(statement?.totals?.remaining)} ج.م
             </p>
           </div>
@@ -833,9 +941,9 @@ function DoctorStatementModal({
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
         ) : tab === "invoices" ? (
-          <div className="overflow-x-auto max-h-72 border dark:border-gray-700 rounded-xl">
+          <div className="overflow-x-auto max-h-72 print:max-h-none print:overflow-visible border dark:border-gray-700 rounded-xl print:border-slate-300 print:rounded-none">
             <table className="w-full text-xs text-right">
-              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-semibold">
+              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-semibold print:bg-slate-100 print:text-black">
                 <tr>
                   <th className="py-2.5 px-3">رقم الفاتورة</th>
                   <th className="py-2.5 px-3">التاريخ</th>
@@ -846,18 +954,18 @@ function DoctorStatementModal({
                   <th className="py-2.5 px-3">الحالة</th>
                 </tr>
               </thead>
-              <tbody className="divide-y dark:divide-gray-700">
+              <tbody className="divide-y dark:divide-gray-700 print:divide-slate-200">
                 {(!statement?.invoices || statement.invoices.length === 0) ? (
                   <tr><td colSpan={7} className="py-8 text-center text-gray-400">لا توجد فواتير مسجلة في هذه الفترة</td></tr>
                 ) : (
                   statement.invoices.map((inv) => (
                     <tr key={inv.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40">
-                      <td className="py-2.5 px-3 font-semibold text-blue-600">{inv.invoiceNumber || inv.id.slice(0, 8)}</td>
-                      <td className="py-2.5 px-3 text-gray-500">{fmtDate(inv.createdAt)}</td>
+                      <td className="py-2.5 px-3 font-semibold text-blue-600 print:text-black">{inv.invoiceNumber || inv.id.slice(0, 8)}</td>
+                      <td className="py-2.5 px-3 text-gray-500 print:text-black">{fmtDate(inv.createdAt)}</td>
                       <td className="py-2.5 px-3">{inv.patientName || "—"}</td>
                       <td className="py-2.5 px-3 font-medium">{fmtMoney(inv.total)}</td>
-                      <td className="py-2.5 px-3 text-green-600">{fmtMoney(inv.paid)}</td>
-                      <td className="py-2.5 px-3 text-red-600 font-bold">{fmtMoney(inv.remaining)}</td>
+                      <td className="py-2.5 px-3 text-green-600 print:text-black">{fmtMoney(inv.paid)}</td>
+                      <td className="py-2.5 px-3 text-red-600 font-bold print:text-black">{fmtMoney(inv.remaining)}</td>
                       <td className="py-2.5 px-3">{invoiceBadge(inv.status)}</td>
                     </tr>
                   ))
@@ -866,9 +974,9 @@ function DoctorStatementModal({
             </table>
           </div>
         ) : (
-          <div className="overflow-x-auto max-h-72 border dark:border-gray-700 rounded-xl">
+          <div className="overflow-x-auto max-h-72 print:max-h-none print:overflow-visible border dark:border-gray-700 rounded-xl print:border-slate-300 print:rounded-none">
             <table className="w-full text-xs text-right">
-              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-semibold">
+              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-semibold print:bg-slate-100 print:text-black">
                 <tr>
                   <th className="py-2.5 px-3">رقم الحالة</th>
                   <th className="py-2.5 px-3">المريض</th>
@@ -879,19 +987,19 @@ function DoctorStatementModal({
                   <th className="py-2.5 px-3">المتبقي</th>
                 </tr>
               </thead>
-              <tbody className="divide-y dark:divide-gray-700">
+              <tbody className="divide-y dark:divide-gray-700 print:divide-slate-200">
                 {(!statement?.cases || statement.cases.length === 0) ? (
                   <tr><td colSpan={7} className="py-8 text-center text-gray-400">لا توجد حالات مسجلة في هذه الفترة</td></tr>
                 ) : (
                   statement.cases.map((c, idx) => (
                     <tr key={c.caseNumber || idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/40">
-                      <td className="py-2.5 px-3 font-semibold text-blue-600">{c.caseNumber || "—"}</td>
+                      <td className="py-2.5 px-3 font-semibold text-blue-600 print:text-black">{c.caseNumber || "—"}</td>
                       <td className="py-2.5 px-3 font-medium">{c.patientName || "—"}</td>
-                      <td className="py-2.5 px-3 text-gray-600 dark:text-gray-300">{c.workTypeName || "—"}</td>
-                      <td className="py-2.5 px-3"><span className="px-2 py-0.5 rounded-full text-[11px] bg-gray-100 dark:bg-gray-800">{c.status || "—"}</span></td>
+                      <td className="py-2.5 px-3 text-gray-600 dark:text-gray-300 print:text-black">{c.workTypeName || "—"}</td>
+                      <td className="py-2.5 px-3"><span className="px-2 py-0.5 rounded-full text-[11px] bg-gray-100 dark:bg-gray-800 print:border">{c.status || "—"}</span></td>
                       <td className="py-2.5 px-3 font-medium">{fmtMoney(c.total)}</td>
-                      <td className="py-2.5 px-3 text-green-600">{fmtMoney(c.paid)}</td>
-                      <td className="py-2.5 px-3 text-red-600 font-bold">{fmtMoney(c.remaining)}</td>
+                      <td className="py-2.5 px-3 text-green-600 print:text-black">{fmtMoney(c.paid)}</td>
+                      <td className="py-2.5 px-3 text-red-600 font-bold print:text-black">{fmtMoney(c.remaining)}</td>
                     </tr>
                   ))
                 )}
@@ -899,6 +1007,23 @@ function DoctorStatementModal({
             </table>
           </div>
         )}
+
+        {/* Printable Official Signatures & Stamp (Visible ONLY on print) */}
+        <div className="hidden print:block pt-8 mt-6 border-t border-slate-300">
+          <div className="grid grid-cols-2 gap-8 text-center text-xs font-semibold text-slate-800">
+            <div>
+              <p className="mb-10">ختم واعتماد إدارة المعمل</p>
+              <div className="border-b border-dashed border-slate-400 w-48 mx-auto" />
+            </div>
+            <div>
+              <p className="mb-10">توقيع وموافقة الطبيب / المستلم</p>
+              <div className="border-b border-dashed border-slate-400 w-48 mx-auto" />
+            </div>
+          </div>
+          <p className="text-[10px] text-center text-slate-500 mt-8">
+            يعتبر هذا الكشف مطابقاً للحسابات ما لم يرد اعتراض كتابي خلال 7 أيام من تاريخه • منصة MaxP Dental Lab
+          </p>
+        </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-4 border-t dark:border-gray-800 mt-4 print:hidden">
@@ -1824,7 +1949,60 @@ export default function DentalInvoicesTab() {
     };
   }, [activeDoctor, rows, uninvoicedSummary]);
 
+  const handleExportInvoicesExcel = () => {
+    if (!rows || rows.length === 0) {
+      toast.error("لا توجد فواتير لتصديرها");
+      return;
+    }
+    const columns = [
+      { key: "invoiceNumber", label: "رقم الفاتورة" },
+      { key: "createdAt", label: "تاريخ الإصدار" },
+      { key: "doctorName", label: "العيادة / الطبيب" },
+      { key: "patientName", label: "المريض / الحالة" },
+      { key: "total", label: "الإجمالي (ج.م)" },
+      { key: "discount", label: "الخصم (ج.م)" },
+      { key: "paid", label: "المدفوع (ج.م)" },
+      { key: "remaining", label: "المتبقي (ج.م)" },
+      { key: "statusLabel", label: "حالة الفاتورة" },
+    ];
+    const data = rows.map((inv) => ({
+      invoiceNumber: inv.invoiceNumber || inv.id?.slice(0, 8),
+      createdAt: fmtDate(inv.createdAt),
+      doctorName: inv.doctorName || "—",
+      patientName: inv.patientName || "—",
+      total: inv.total ?? 0,
+      discount: inv.discount ?? 0,
+      paid: inv.paid ?? 0,
+      remaining: inv.remaining ?? 0,
+      statusLabel:
+        inv.status === "PAID"
+          ? "مدفوعة بالكامل"
+          : inv.status === "PARTIAL"
+          ? "مدفوعة جزئياً"
+          : inv.status === "VOID"
+          ? "ملغاة"
+          : "غير مسددة",
+    }));
+    exportToExcel(data, columns, `فواتير_معمل_الأسنان_${new Date().toISOString().split("T")[0]}.xlsx`, "الفواتير");
+    toast.success("تم تصدير ملف إكسيل الفواتير بنجاح");
+  };
+
+  const handleVoidInvoice = async (inv: DentalInvoice) => {
+    const promptReason = window.prompt(
+      `تحذير: هل أنت متأكد من إلغاء الفاتورة #${inv.invoiceNumber || inv.id.slice(0, 8)}؟\nسيتم استبعاد قيمتها بالكامل من كشوف الحسابات والمطالبات.\n\nسبب الإلغاء (اختياري):`
+    );
+    if (promptReason === null) return;
+    try {
+      await voidInvoice(inv.id, promptReason || undefined);
+      toast.success("تم إلغاء الفاتورة بنجاح واستبعادها من كشوف الحسابات");
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل إلغاء الفاتورة");
+    }
+  };
+
   return (
+
     <div className="space-y-4">
       {/* Top Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1864,6 +2042,15 @@ export default function DentalInvoicesTab() {
           >
             <RefreshCw className="w-4 h-4 text-gray-500" />
             <span>{t("dentalLab.common.refresh")}</span>
+          </button>
+
+          <button
+            onClick={handleExportInvoicesExcel}
+            className="flex items-center gap-1.5 px-3 py-2 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg text-xs sm:text-sm font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors shadow-sm"
+            title="تصدير الفواتير المعروضة إلى Excel"
+          >
+            <Download className="w-4 h-4" />
+            <span>تصدير Excel</span>
           </button>
 
           <button
@@ -2194,6 +2381,15 @@ export default function DentalInvoicesTab() {
                           >
                             <Banknote className="w-3.5 h-3.5" />
                             <span>سداد</span>
+                          </button>
+                        )}
+                        {inv.status !== "VOID" && inv.status !== "PAID" && (
+                          <button
+                            onClick={() => handleVoidInvoice(inv)}
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
+                            title="إلغاء الفاتورة (Void)"
+                          >
+                            <Ban className="w-4 h-4" />
                           </button>
                         )}
                       </div>

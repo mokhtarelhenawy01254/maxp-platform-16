@@ -175,7 +175,13 @@ async function generateWorkOrderPdf({ company, caseRow, workOrderHeader }) {
   });
 }
 
-module.exports = { generateWorkOrderPdf, generateInvoicePdf, generatePanLabelPdf, generateWarrantyCertificatePdf };
+module.exports = {
+  generateWorkOrderPdf,
+  generateInvoicePdf,
+  generatePanLabelPdf,
+  generateWarrantyCertificatePdf,
+  generateDoctorStatementPdf,
+};
 
 /**
  * فاتورة PDF للعميل (الطبيب) من بيانات الفاتورة + الحالة المرتبطة + ترويسة المعمل.
@@ -445,5 +451,239 @@ async function generateWarrantyCertificatePdf({ company, caseRow, workOrderHeade
     );
 
     doc.end();
+  });
+}
+
+/**
+ * كشف حساب طبيب A4 رسمي من بيانات المعمل، الطبيب، الفواتير، والأرصدة.
+ */
+async function generateDoctorStatementPdf({ company, doctor, statement, workOrderHeader, from, to }) {
+  const header = workOrderHeader || {};
+  const labName = header.labName || company?.name || 'معمل الأسنان';
+  const docName = doctor?.name || 'طبيب الأسنان';
+  const clinicName = doctor?.clinicName || '';
+  const phone = doctor?.phone || '';
+  const totals = statement?.totals || {};
+  const invoices = Array.isArray(statement?.invoices) ? statement.invoices : [];
+
+  const dateFromStr = from ? fmtDate(from) : 'البداية';
+  const dateToStr = to ? fmtDate(to) : fmtDate(new Date());
+
+  const qrText = `MAXP-STATEMENT::${doctor?.id || 'DOC'}::${company?.id || 'LAB'}::${totals.closingBalance || totals.remaining || 0}EGP`;
+  let qrBuffer = null;
+  try {
+    qrBuffer = await QRCode.toBuffer(qrText, { type: 'png', width: 90, margin: 1 });
+  } catch (err) {
+    console.error('Error generating statement QR:', err);
+  }
+
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: 25, bottom: 35, left: 30, right: 30 },
+        bufferPages: true,
+      });
+
+      const chunks = [];
+      doc.on('data', (c) => chunks.push(c));
+      doc.on('end', () => resolve({ buffer: Buffer.concat(chunks) }));
+      doc.on('error', reject);
+
+      const pageWidth = 595.28;
+      const pageHeight = 841.89;
+      const margin = 30;
+      const contentWidth = pageWidth - margin * 2;
+
+      doc.font(FONT);
+
+      const drawHeader = () => {
+        // Lab Info
+        doc.fontSize(15).fillColor('#0f172a').text(AR(labName), margin, 25, { width: contentWidth - 75, align: 'right' });
+        const sub = [header.phone && `هاتف: ${header.phone}`, header.address].filter(Boolean).join(' | ');
+        if (sub) {
+          doc.fontSize(8).fillColor('#64748b').text(AR(sub), margin, doc.y + 2, { width: contentWidth - 75, align: 'right' });
+        }
+
+        // QR Code on top left
+        if (qrBuffer) {
+          doc.image(qrBuffer, margin, 22, { width: 55, height: 55 });
+        }
+
+        // Horizontal divider line
+        const headerBottomY = 82;
+        doc.moveTo(margin, headerBottomY).lineTo(pageWidth - margin, headerBottomY).strokeColor('#e2e8f0').lineWidth(1).stroke();
+
+        // Statement Title Bar
+        doc.rect(margin, headerBottomY + 6, contentWidth, 24).fill('#f1f5f9');
+        doc.fontSize(11).fillColor('#1e293b').text(
+          AR('كشف حساب أستاذ مساعد للعميل (Statement of Account)'),
+          margin,
+          headerBottomY + 12,
+          { width: contentWidth, align: 'center' }
+        );
+
+        // Doctor & Period Info Box
+        const infoY = headerBottomY + 36;
+        doc.fontSize(9).fillColor('#0f172a');
+        doc.text(AR(`العميل / الطبيب: ${docName}`), margin + (contentWidth / 2), infoY, { width: (contentWidth / 2), align: 'right' });
+        if (clinicName) {
+          doc.fontSize(8).fillColor('#475569').text(AR(`العيادة / المركز: ${clinicName}`), margin + (contentWidth / 2), doc.y + 2, { width: (contentWidth / 2), align: 'right' });
+        }
+        if (phone) {
+          doc.fontSize(8).fillColor('#475569').text(AR(`رقم الهاتف: ${phone}`), margin + (contentWidth / 2), doc.y + 2, { width: (contentWidth / 2), align: 'right' });
+        }
+
+        doc.fontSize(8.5).fillColor('#0f172a').text(AR(`الفترة المحاسبية: من ${dateFromStr} إلى ${dateToStr}`), margin, infoY, { width: (contentWidth / 2) - 10, align: 'left' });
+        doc.fontSize(8).fillColor('#475569').text(AR(`تاريخ الاستخراج: ${fmtDate(new Date())}`), margin, infoY + 14, { width: (contentWidth / 2) - 10, align: 'left' });
+
+        return infoY + 38;
+      };
+
+      let currentY = drawHeader();
+
+      // Summary Cards (Opening balance, Invoiced, Paid, Remaining, Closing balance)
+      const cardW = (contentWidth - 16) / 5;
+      const cards = [
+        { label: 'الرصيد الافتتاحي', val: `${Math.round(totals.openingBalance || 0)} ج.م`, bg: '#f8fafc', color: '#334155' },
+        { label: 'إجمالي المفوتر', val: `${Math.round(totals.invoiced || 0)} ج.م`, bg: '#eff6ff', color: '#1d4ed8' },
+        { label: 'إجمالي المسدد', val: `${Math.round(totals.paid || 0)} ج.م`, bg: '#ecfdf5', color: '#047857' },
+        { label: 'الخصومات / إشعار دائن', val: `${Math.round(totals.creditTotal || 0)} ج.م`, bg: '#fefce8', color: '#a16207' },
+        { label: 'الرصيد الختامي المستحق', val: `${Math.round(totals.closingBalance || totals.remaining || 0)} ج.م`, bg: '#fef2f2', color: '#b91c1c' },
+      ];
+
+      doc.font(FONT);
+      cards.forEach((c, idx) => {
+        const cx = margin + idx * (cardW + 4);
+        doc.roundedRect(cx, currentY, cardW, 40, 4).fill(c.bg);
+        doc.roundedRect(cx, currentY, cardW, 40, 4).strokeColor('#cbd5e1').lineWidth(0.5).stroke();
+        doc.fontSize(7.5).fillColor('#64748b').text(AR(c.label), cx + 2, currentY + 6, { width: cardW - 4, align: 'center' });
+        doc.fontSize(9.5).fillColor(c.color).text(AR(c.val), cx + 2, currentY + 22, { width: cardW - 4, align: 'center' });
+      });
+
+      currentY += 48;
+
+      // Table Header
+      const colWidths = {
+        idx: 22,
+        date: 58,
+        invNumber: 68,
+        patient: 110,
+        workType: 105,
+        total: 58,
+        paid: 58,
+        remaining: 56,
+      };
+
+      const drawTableHeader = (y) => {
+        doc.rect(margin, y, contentWidth, 20).fill('#1e293b');
+        doc.fontSize(8).fillColor('#ffffff');
+        let x = margin + contentWidth;
+
+        const cols = [
+          { text: 'م', w: colWidths.idx },
+          { text: 'التاريخ', w: colWidths.date },
+          { text: 'رقم الفاتورة', w: colWidths.invNumber },
+          { text: 'المريض / الحالة', w: colWidths.patient },
+          { text: 'نوع التركيبة', w: colWidths.workType },
+          { text: 'المفوتر (مدين)', w: colWidths.total },
+          { text: 'المسدد (دائن)', w: colWidths.paid },
+          { text: 'المتبقي', w: colWidths.remaining },
+        ];
+
+        cols.forEach((col) => {
+          x -= col.w;
+          doc.text(AR(col.text), x + 2, y + 5, { width: col.w - 4, align: 'center' });
+        });
+
+        return y + 20;
+      };
+
+      currentY = drawTableHeader(currentY);
+
+      if (invoices.length === 0) {
+        doc.rect(margin, currentY, contentWidth, 30).fill('#f8fafc');
+        doc.rect(margin, currentY, contentWidth, 30).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+        doc.fontSize(9).fillColor('#94a3b8').text(AR('لا توجد فواتير أو حركات مسجلة خلال الفترة المحددة'), margin, currentY + 10, { width: contentWidth, align: 'center' });
+        currentY += 35;
+      } else {
+        invoices.forEach((inv, index) => {
+          if (currentY > pageHeight - 85) {
+            doc.addPage();
+            currentY = drawTableHeader(30);
+          }
+
+          const isEven = index % 2 === 0;
+          doc.rect(margin, currentY, contentWidth, 18).fill(isEven ? '#ffffff' : '#f8fafc');
+          doc.rect(margin, currentY, contentWidth, 18).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+
+          doc.fontSize(7.5).fillColor('#0f172a');
+          let x = margin + contentWidth;
+
+          const rowCols = [
+            { text: String(index + 1), w: colWidths.idx, align: 'center', color: '#64748b' },
+            { text: fmtDate(inv.createdAt), w: colWidths.date, align: 'center' },
+            { text: inv.invoiceNumber || inv.id?.slice(0, 8) || '—', w: colWidths.invNumber, align: 'center', color: '#2563eb' },
+            { text: inv.patientName || '—', w: colWidths.patient, align: 'right' },
+            { text: inv.workTypeName || inv.caseNumber || '—', w: colWidths.workType, align: 'right', color: '#475569' },
+            { text: `${Math.round(inv.total || 0)}`, w: colWidths.total, align: 'center', color: '#0f172a' },
+            { text: `${Math.round(inv.paid || 0)}`, w: colWidths.paid, align: 'center', color: '#047857' },
+            { text: `${Math.round(inv.remaining || 0)}`, w: colWidths.remaining, align: 'center', color: (inv.remaining > 0 ? '#b91c1c' : '#64748b') },
+          ];
+
+          rowCols.forEach((col) => {
+            x -= col.w;
+            doc.fillColor(col.color || '#0f172a').text(AR(col.text), x + 2, currentY + 4, { width: col.w - 4, align: col.align });
+          });
+
+          currentY += 18;
+        });
+      }
+
+      // Total Row at end of table
+      if (currentY > pageHeight - 85) {
+        doc.addPage();
+        currentY = 30;
+      }
+
+      doc.rect(margin, currentY, contentWidth, 20).fill('#f1f5f9');
+      doc.rect(margin, currentY, contentWidth, 20).strokeColor('#cbd5e1').lineWidth(1).stroke();
+      doc.fontSize(8.5).fillColor('#0f172a');
+      doc.text(AR(`الإجمالي (${invoices.length} فاتورة)`), margin + colWidths.remaining + colWidths.paid + colWidths.total, currentY + 5, { width: contentWidth - (colWidths.remaining + colWidths.paid + colWidths.total) - 10, align: 'right' });
+      doc.text(AR(`${Math.round(totals.invoiced || 0)}`), margin + colWidths.remaining + colWidths.paid, currentY + 5, { width: colWidths.total, align: 'center' });
+      doc.fillColor('#047857').text(AR(`${Math.round(totals.paid || 0)}`), margin + colWidths.remaining, currentY + 5, { width: colWidths.paid, align: 'center' });
+      doc.fillColor('#b91c1c').text(AR(`${Math.round(totals.remaining || 0)}`), margin, currentY + 5, { width: colWidths.remaining, align: 'center' });
+
+      currentY += 30;
+
+      // Signatures & Stamp section
+      if (currentY > pageHeight - 90) {
+        doc.addPage();
+        currentY = 30;
+      }
+
+      const sigBoxW = (contentWidth - 20) / 2;
+      doc.fontSize(8).fillColor('#334155').text(AR('ختم واعتماد إدارة المعمل'), margin + sigBoxW + 20, currentY, { width: sigBoxW, align: 'center' });
+      doc.roundedRect(margin + sigBoxW + 20, currentY + 12, sigBoxW, 40, 4).strokeColor('#cbd5e1').dash(3, { space: 3 }).stroke().undash();
+
+      doc.fontSize(8).fillColor('#334155').text(AR('توقيع وموافقة الطبيب / المستلم'), margin, currentY, { width: sigBoxW, align: 'center' });
+      doc.roundedRect(margin, currentY + 12, sigBoxW, 40, 4).strokeColor('#cbd5e1').dash(3, { space: 3 }).stroke().undash();
+
+      // Page numbers across all buffered pages
+      const range = doc.bufferedPageRange();
+      for (let i = range.start; i < range.start + range.count; i++) {
+        doc.switchToPage(i);
+        doc.fontSize(7).fillColor('#94a3b8').text(
+          AR(`صفحة ${i + 1} من ${range.count} • منصة MaxP Dental Lab • ${fmtDate(new Date())}`),
+          margin,
+          pageHeight - 25,
+          { width: contentWidth, align: 'center', lineBreak: false }
+        );
+      }
+
+      doc.end();
+    } catch (e) {
+      reject(e);
+    }
   });
 }

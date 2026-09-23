@@ -187,6 +187,8 @@ const listDoctors = async (req, res) => {
       where.isActive = true;
     } else if (isActive !== undefined && isActive !== '') {
       where.isActive = normalizeBool(isActive);
+    } else {
+      where.isActive = true;
     }
 
     if (search) {
@@ -515,7 +517,13 @@ const listWorkTypes = async (req, res) => {
     const { search, isActive } = req.query;
     const where = { companyId };
     if (search) where.name = { contains: search, mode: 'insensitive' };
-    if (isActive !== undefined && isActive !== '') where.isActive = normalizeBool(isActive);
+    if (req.query.all === 'true') {
+      // return all
+    } else if (isActive !== undefined && isActive !== '') {
+      where.isActive = normalizeBool(isActive);
+    } else {
+      where.isActive = true;
+    }
 
     const { pageNum, limitNum, skip } = parsePagination(req.query);
     const prisma = getSharedPrismaClient();
@@ -657,7 +665,13 @@ const listTechnicians = async (req, res) => {
         { phone: { contains: search, mode: 'insensitive' } },
       ];
     }
-    if (isActive !== undefined && isActive !== '') where.isActive = normalizeBool(isActive);
+    if (req.query.all === 'true') {
+      // return all
+    } else if (isActive !== undefined && isActive !== '') {
+      where.isActive = normalizeBool(isActive);
+    } else {
+      where.isActive = true;
+    }
 
     const { pageNum, limitNum, skip } = parsePagination(req.query);
     const prisma = getSharedPrismaClient();
@@ -2200,6 +2214,87 @@ const bulkRestoreCases = async (req, res) => {
   }
 };
 
+const bulkTransferCasesDoctor = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { caseIds, targetDoctorId, targetDoctorName, syncInvoices = true } = req.body || {};
+    if (!Array.isArray(caseIds) || caseIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'يجب اختيار حالة واحدة على الأقل للنقل' });
+    }
+    if (!targetDoctorId) {
+      return res.status(400).json({ success: false, error: 'يجب تحديد الطبيب / العيادة المنقول إليها' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const doctor = await prisma.dentalLabDoctor.findFirst({
+      where: { id: targetDoctorId, companyId },
+    });
+    if (!doctor) {
+      return res.status(404).json({ success: false, error: 'الطبيب أو العيادة المحددة غير موجودة' });
+    }
+
+    const effectiveDocName = (targetDoctorName && String(targetDoctorName).trim()) || doctor.name;
+
+    // Run in transaction: update cases, sync invoices, and create status history
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Update cases
+      const updatedCases = await tx.dentalLabCase.updateMany({
+        where: { id: { in: caseIds }, companyId },
+        data: {
+          doctorId: targetDoctorId,
+          doctorName: effectiveDocName,
+        },
+      });
+
+      // 2. Sync related invoices if requested
+      let updatedInvoicesCount = 0;
+      if (syncInvoices) {
+        const invResult = await tx.dentalInvoice.updateMany({
+          where: {
+            caseId: { in: caseIds },
+            companyId,
+            status: { not: 'VOID' },
+          },
+          data: {
+            doctorId: targetDoctorId,
+            doctorName: effectiveDocName,
+          },
+        });
+        updatedInvoicesCount = invResult.count;
+      }
+
+      // 3. Create status history logs
+      for (const cid of caseIds) {
+        await tx.dentalCaseStatusHistory.create({
+          data: {
+            companyId,
+            caseId: cid,
+            dimension: 'ORDER',
+            toStatus: 'TRANSFERRED',
+            changedBy: req.user?.id || null,
+            userName: adminDisplayName(req),
+            reason: `تم نقل الحالة إلى العيادة / الطبيب: ${effectiveDocName}`,
+          },
+        });
+      }
+
+      return { casesCount: updatedCases.count, invoicesCount: updatedInvoicesCount };
+    });
+
+    res.json({
+      success: true,
+      count: result.casesCount,
+      invoicesUpdated: result.invoicesCount,
+      message: `تم نقل ${result.casesCount} حالة بنجاح إلى "${effectiveDocName}"${result.invoicesCount > 0 ? ` وتحديث ${result.invoicesCount} فاتورة تابعة لها` : ''}`,
+    });
+  } catch (error) {
+    console.error('Error bulk transferring dental cases doctor:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في نقل الحالات إلى الطبيب الجديد' });
+  }
+};
+
+
 const advanceCaseStatus = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
@@ -3071,6 +3166,45 @@ const prisma = getSharedPrismaClient();
     res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل الدفعة' });
   }
 };
+
+const voidInvoice = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const { reason } = req.body || {};
+    const prisma = getSharedPrismaClient();
+
+    const existing = await prisma.dentalInvoice.findFirst({
+      where: { id, companyId },
+      include: { payments: true },
+    });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'الفاتورة غير موجودة' });
+    }
+    if (existing.status === 'VOID') {
+      return res.status(400).json({ success: false, error: 'الفاتورة ملغاة بالفعل' });
+    }
+
+    const updated = await prisma.dentalInvoice.update({
+      where: { id },
+      data: {
+        status: 'VOID',
+        notes: [existing.notes, `تم إلغاء الفاتورة بواسطة ${adminDisplayName(req)}: ${reason || 'إلغاء يدوي'}`].filter(Boolean).join(' | '),
+      },
+    });
+
+    res.json({
+      success: true,
+      data: updated,
+      message: `تم إلغاء الفاتورة #${existing.invoiceNumber || id.slice(0, 8)} بنجاح وتم استبعادها من الحسابات`,
+    });
+  } catch (error) {
+    console.error('Error voiding dental invoice:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إلغاء الفاتورة' });
+  }
+};
+
 
 const getUninvoicedSummary = async (req, res) => {
   try {
@@ -4546,6 +4680,125 @@ const getDoctorStatement = async (req, res) => {
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب كشف الحساب' });
   }
 };
+
+const getDoctorStatementPdf = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { doctorId, from, to } = req.query;
+    const prisma = getSharedPrismaClient();
+
+    const caseWhere = { companyId };
+    const invoiceWhere = { companyId, status: { not: 'VOID' } };
+    if (doctorId) {
+      caseWhere.doctorId = doctorId;
+      invoiceWhere.doctorId = doctorId;
+    }
+    const fromDate = parseDate(from);
+    let toDate = parseDate(to); if (toDate) toDate = getEndOfDayInTimezone(toDate);
+    if (fromDate) {
+      caseWhere.receivedDate = { ...(caseWhere.receivedDate || {}), gte: fromDate };
+      invoiceWhere.createdAt = { ...(invoiceWhere.createdAt || {}), gte: fromDate };
+    }
+    if (toDate) {
+      caseWhere.receivedDate = { ...(caseWhere.receivedDate || {}), lte: toDate };
+      invoiceWhere.createdAt = { ...(invoiceWhere.createdAt || {}), lte: toDate };
+    }
+
+    let doctor = null;
+    if (doctorId) {
+      const docRow = await prisma.dentalLabDoctor.findFirst({
+        where: { id: doctorId, companyId },
+        select: { id: true, name: true, phone: true, clinicName: true },
+      });
+      if (docRow) doctor = { id: docRow.id, name: docRow.name, phone: docRow.phone, clinicName: docRow.clinicName };
+    }
+
+    const creditWhere = { companyId };
+    if (doctorId) creditWhere.doctorId = doctorId;
+    if (fromDate) creditWhere.createdAt = { ...(creditWhere.createdAt || {}), gte: fromDate };
+    if (toDate) creditWhere.createdAt = { ...(creditWhere.createdAt || {}), lte: toDate };
+
+    const [cases, invoices, invoiceAgg, creditAgg, settingsRows, company] = await Promise.all([
+      prisma.dentalLabCase.findMany({ where: caseWhere, orderBy: { createdAt: 'desc' } }),
+      prisma.dentalInvoice.findMany({
+        where: invoiceWhere,
+        include: { payments: { orderBy: { createdAt: 'desc' } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.dentalInvoice.aggregate({
+        where: invoiceWhere,
+        _sum: { total: true, paid: true, remaining: true },
+        _count: { _all: true },
+      }),
+      prisma.dentalCreditNote.aggregate({ where: creditWhere, _sum: { amount: true } }),
+      prisma.dentalSetting.findMany({ where: { companyId } }),
+      prisma.company.findFirst({ where: { id: companyId } }),
+    ]);
+
+    if (!doctor && invoices && invoices.length) {
+      doctor = { id: null, name: invoices[0].doctorName || null, phone: null, clinicName: null };
+    }
+
+    let openingBalance = 0;
+    if (doctorId && fromDate && prisma.dentalMonthlySettlement && typeof prisma.dentalMonthlySettlement.findFirst === 'function') {
+      try {
+        const parts = fromDate.toISOString().split('T')[0].split('-');
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        const prevKey = getPreviousPeriodKey(y, m);
+        const prevSettlement = await prisma.dentalMonthlySettlement.findFirst({
+          where: { companyId, doctorId, periodKey: prevKey },
+        });
+        if (prevSettlement) {
+          openingBalance = round2(Number(prevSettlement.closingBalance) || 0);
+        }
+      } catch (err) {
+        console.warn('Could not read opening balance in statement PDF:', err.message);
+      }
+    }
+
+    const creditTotal = round2((creditAgg && creditAgg._sum && creditAgg._sum.amount) || 0);
+    const netRemaining = round2(Math.max(0, ((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.remaining) || 0) - creditTotal));
+    const closingBalance = round2(openingBalance + netRemaining);
+
+    const statement = {
+      doctor,
+      cases,
+      invoices,
+      totals: {
+        cases: cases.length,
+        invoicesCount: (invoiceAgg && invoiceAgg._count && invoiceAgg._count._all) || 0,
+        openingBalance,
+        invoiced: round2((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.total) || 0),
+        paid: round2((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.paid) || 0),
+        remaining: netRemaining,
+        closingBalance,
+        creditTotal,
+      },
+    };
+
+    const settings = mergeSettings(settingsRows);
+    const { generateDoctorStatementPdf } = require('../services/dentalWorkOrderService');
+    const { buffer } = await generateDoctorStatementPdf({
+      company,
+      doctor: doctor || { name: 'طبيب الأسنان' },
+      statement,
+      workOrderHeader: settings.workOrderHeader || {},
+      from,
+      to,
+    });
+
+    const docSafeName = (doctor?.name || 'doctor').replace(/[^\u0621-\u064A\w.-]/g, '_');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="statement-${docSafeName}.pdf"`);
+    res.send(buffer);
+  } catch (error) {
+    console.error('Error generating dental doctor statement PDF:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء كشف حساب PDF' });
+  }
+};
+
 
 const getTechnicianProductivity = async (req, res) => {
   try {
@@ -6252,6 +6505,9 @@ module.exports = {
   bulkUpdatePriority,
   bulkTrashCases,
   bulkRestoreCases,
+  bulkTransferCasesDoctor,
+  voidInvoice,
+  getDoctorStatementPdf,
   listMaterials,
   createMaterial,
   updateMaterial,

@@ -955,6 +955,22 @@ export const bulkTrashCases = async (caseIds: string[], reason?: string): Promis
 export const bulkRestoreCases = async (caseIds: string[]): Promise<{ count: number; message: string }> =>
   unwrapEnvelope<{ count: number; message: string }>(await apiClient.post("/dental-lab/cases/bulk/restore", { caseIds }));
 
+export const bulkTransferCasesDoctor = async (
+  caseIds: string[],
+  targetDoctorId: string,
+  targetDoctorName?: string,
+  syncInvoices: boolean = true
+): Promise<{ count: number; invoicesUpdated: number; message: string }> =>
+  unwrapEnvelope<{ count: number; invoicesUpdated: number; message: string }>(
+    await apiClient.post("/dental-lab/cases/bulk/transfer-doctor", {
+      caseIds,
+      targetDoctorId,
+      targetDoctorName,
+      syncInvoices,
+    })
+  );
+
+
 // Infer attachment kind from filename. Used as default when the user
 // doesn't pick one explicitly. Matches the ATTACHMENT_KINDS enum in the
 // backend (apps/backend/controller/dentalLabController.js).
@@ -1068,6 +1084,10 @@ export const createInvoice = async (body: Partial<DentalInvoice>): Promise<Denta
 export const addInvoicePayment = async (invoiceId: string, body: { amount: number; method?: string; note?: string }): Promise<DentalPayment> =>
   unwrapEnvelope<DentalPayment>(await apiClient.post(`/dental-lab/invoices/${invoiceId}/payments`, body));
 
+export const voidInvoice = async (invoiceId: string, reason?: string): Promise<DentalInvoice> =>
+  unwrapEnvelope<DentalInvoice>(await apiClient.post(`/dental-lab/invoices/${invoiceId}/void`, { reason }));
+
+
 export const fetchDashboard = async (): Promise<DashboardData> => unwrapEnvelope<DashboardData>(await apiClient.get("/dental-lab/dashboard"));
 
 export const fetchMyInfo = async (): Promise<MyInfo> => unwrapEnvelope<MyInfo>(await apiClient.get("/dental-lab/me"));
@@ -1155,6 +1175,16 @@ export const setTeamRole = async (userId: string, role: DentalTeamRole): Promise
 
 export const fetchDoctorStatement = async (params?: { doctorId?: string; from?: string; to?: string }): Promise<DoctorStatement> =>
   unwrapEnvelope<DoctorStatement>(await apiClient.get("/dental-lab/reports/doctor-statement", { params }));
+
+export const fetchDoctorStatementPdf = async (params?: { doctorId?: string; from?: string; to?: string }): Promise<Blob> => {
+  const res = await apiClient.get("/dental-lab/reports/doctor-statement/pdf", {
+    params,
+    responseType: "blob",
+    timeout: 300000,
+  });
+  return res.data as Blob;
+};
+
 
 export const fetchTechnicianProductivity = async (params?: { from?: string; to?: string }): Promise<TechnicianProductivity[]> =>
   unwrapEnvelope<TechnicianProductivity[]>(await apiClient.get("/dental-lab/reports/technician-productivity", { params }));
