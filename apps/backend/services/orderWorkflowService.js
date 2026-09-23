@@ -747,27 +747,53 @@ class OrderWorkflowService {
     }
 
     /**
-     * Get Global Audit Logs (Recent activity, optionally filtered by user/employee)
+     * Get Global Audit Logs (Recent activity, optionally filtered by user/employee, changeType, orderNumber, date range)
      */
-    async getGlobalAuditLogs(companyId, limit = 20, offset = 0, userId = null) {
+    async getGlobalAuditLogs(companyId, limit = 20, offset = 0, filters = {}) {
+        const userId = typeof filters === 'string' ? filters : filters.userId;
+        const changeType = typeof filters === 'object' ? filters.changeType : null;
+        const orderNumber = typeof filters === 'object' ? filters.orderNumber : null;
+        const startDate = typeof filters === 'object' ? filters.startDate : null;
+        const endDate = typeof filters === 'object' ? filters.endDate : null;
+
         const where = { companyId };
         if (userId && userId !== 'ALL' && userId !== '') {
             where.changedBy = userId;
         }
+        if (changeType && changeType !== 'ALL' && changeType !== '') {
+            where.changeType = changeType;
+        }
+        if (orderNumber && orderNumber.trim() !== '') {
+            where.order = { orderNumber: { contains: orderNumber.trim(), mode: 'insensitive' } };
+        }
+        if (startDate || endDate) {
+            where.createdAt = {};
+            if (startDate) where.createdAt.gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                where.createdAt.lte = end;
+            }
+        }
 
-        return await this.prisma.orderWorkflowAuditLog.findMany({
-            where,
-            include: {
-                fromStatus: true,
-                toStatus: true,
-                order: { select: { orderNumber: true } },
-                user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } },
-                approver: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } }
-            },
-            orderBy: { createdAt: 'desc' },
-            take: limit,
-            skip: offset
-        });
+        const [total, logs] = await Promise.all([
+            this.prisma.orderWorkflowAuditLog.count({ where }),
+            this.prisma.orderWorkflowAuditLog.findMany({
+                where,
+                include: {
+                    fromStatus: true,
+                    toStatus: true,
+                    order: { select: { id: true, orderNumber: true, total: true, customerName: true, customerPhone: true } },
+                    user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } },
+                    approver: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } }
+                },
+                orderBy: { createdAt: 'desc' },
+                take: limit,
+                skip: offset
+            })
+        ]);
+
+        return { logs, total };
     }
 
     /**

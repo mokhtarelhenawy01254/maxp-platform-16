@@ -658,6 +658,7 @@ export const getSidebarConfig = (
                 { to: '/returns', icon: CheckCircle2, label: t('sidebar.returnReviews'), requiredPermissions: ['orders.returns.view'], hidden: !isAnyAppActive(['returns-settings', 'store-pro']) },
                 { to: '/orders/bulk', icon: ListOrdered, label: t('sidebar.bulkOrders'), requiredPermissions: ['bulkOrders.view', 'orders.bulk.create'], hidden: !isAppActive('bulk-orders') },
                 { to: '/orders/bulk-status', icon: ArrowLeftRight, label: t('sidebar.bulkStatusUpdate'), requiredPermissions: ['orders.status.change'], hidden: !isAppActive('bulk-orders') },
+                { to: '/orders/activity-log', icon: Clock, label: isEn ? 'Orders Activity Log' : 'سجل نشاط الطلبات', requiredPermissions: ['orders.view'] },
                 { to: '/orders/quick-status', icon: RefreshCcw, label: t('sidebar.quickStatusChange'), requiredPermissions: ['orders.quickstatus.view'], hidden: !isAppActive('quick-status') },
                 { to: '/orders/analytics', icon: BarChart3, label: t('sidebar.orderAnalytics'), requiredPermissions: ['orders.stats.view'], hidden: !isAnyAppActive(['analytics-advanced', 'analytics-basic', 'orders-analytics']) },
                 { to: '/orders/status-summary', icon: FileBarChart, label: t('sidebar.orderStatusSummary'), requiredPermissions: ['orders.status-summary.view'], hidden: !isAppActive('status-summary') },

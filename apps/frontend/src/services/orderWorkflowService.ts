@@ -33,6 +33,14 @@ export interface OrderWorkflowTransition {
     restrictBackward: boolean;
 }
 
+export interface AuditLogFilters {
+    userId?: string;
+    changeType?: string;
+    orderNumber?: string;
+    startDate?: string;
+    endDate?: string;
+}
+
 const orderWorkflowService = {
     getConfig: () => api.get('/order-workflow/config').then(res => res.data),
     updateConfig: (data: Partial<OrderWorkflowConfig>) => api.put('/order-workflow/config', data).then(res => res.data),
@@ -49,9 +57,22 @@ const orderWorkflowService = {
     reviewApproval: (id: string, action: 'approve' | 'reject', reason?: string) =>
         api.post(`/order-workflow/approvals/${id}/review`, { action, reason }).then(res => res.data),
 
-    getGlobalAuditLogs: (limit: number = 20, offset: number = 0, userId?: string) => {
-        const userQuery = userId && userId !== 'ALL' ? `&userId=${encodeURIComponent(userId)}` : '';
-        return api.get(`/order-workflow/audit-logs?limit=${limit}&offset=${offset}${userQuery}`).then(res => res.data);
+    getGlobalAuditLogs: (limit: number = 20, offset: number = 0, filters?: AuditLogFilters | string) => {
+        const params = new URLSearchParams();
+        params.append('limit', String(limit));
+        params.append('offset', String(offset));
+
+        if (typeof filters === 'string') {
+            if (filters && filters !== 'ALL') params.append('userId', filters);
+        } else if (filters && typeof filters === 'object') {
+            if (filters.userId && filters.userId !== 'ALL') params.append('userId', filters.userId);
+            if (filters.changeType && filters.changeType !== 'ALL') params.append('changeType', filters.changeType);
+            if (filters.orderNumber && filters.orderNumber.trim()) params.append('orderNumber', filters.orderNumber.trim());
+            if (filters.startDate) params.append('startDate', filters.startDate);
+            if (filters.endDate) params.append('endDate', filters.endDate);
+        }
+
+        return api.get(`/order-workflow/audit-logs?${params.toString()}`).then(res => res.data);
     },
     getAuditLogs: (orderId: string) => api.get(`/order-workflow/audit-logs/${orderId}`).then(res => res.data),
 

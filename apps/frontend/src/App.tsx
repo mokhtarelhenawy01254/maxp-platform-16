@@ -636,6 +636,9 @@ const AttributionSettings = React.lazy(
 const Profile = React.lazy(() => import("./pages/profile/Profile"));
 
 const Orders = React.lazy(() => import("./pages/orders/Orders"));
+const OrderActivityLogPage = React.lazy(
+  () => import("./pages/orders/OrderActivityLogPage"),
+);
 const IncompleteOrders = React.lazy(
   () => import("./pages/orders/IncompleteOrders"),
 );
@@ -4786,6 +4789,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <Orders />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/activity-log"
+                  element={
+                    <Layout>
+                      <OrderActivityLogPage />
                     </Layout>
                   }
                 />
