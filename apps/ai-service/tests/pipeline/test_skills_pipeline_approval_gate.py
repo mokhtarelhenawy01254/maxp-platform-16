@@ -185,7 +185,9 @@ async def test_direct_write_tools_execute_sequentially_and_in_order():
 
     assert [r["tool"] for r in results] == ["order_update_details", "product_search", "order_confirm"]
     assert max_concurrent_writes == 1, "two writes overlapped — race condition"
-    assert call_log == ["order_update_details", "product_search", "order_confirm"]
+    assert sorted(call_log) == ["order_confirm", "order_update_details", "product_search"]
+    # writes keep their relative order even though the read runs in parallel
+    assert call_log.index("order_update_details") < call_log.index("order_confirm")
 
 
 def test_compaction_tames_oversized_results_and_preserves_awaiting():
