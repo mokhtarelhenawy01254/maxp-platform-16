@@ -11,6 +11,7 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const hrController = require('../controller/hrController');
+const employeeInvitationController = require('../controller/employeeInvitationController');
 const recruitmentController = require('../controller/recruitmentController');
 const applicationFormController = require('../controller/applicationFormController');
 const workReportController = require('../controller/workReportController');
@@ -36,6 +37,10 @@ router.get('/debug/user/:id', (req, res, next) => {
 // Must be defined BEFORE verifyToken.authenticateToken
 router.get('/recruitment/forms/public/:id', applicationFormController.getPublicForm);
 router.post('/recruitment/forms/public/:id/submit', applicationFormController.submitResponse);
+
+// 🔗 Public Employee Self-Onboarding Routes - روابط انضمام الموظفين الذاتي (بدون مصادقة)
+router.get('/employee-invitations/verify/:token', employeeInvitationController.verifyEmployeeInvitation);
+router.post('/employee-invitations/accept/:token', employeeInvitationController.acceptEmployeeInvitation);
 
 // 📎 Public File Upload for Recruitment Form Answers (No Auth Required)
 const applicationsDir = path.join(__dirname, '../uploads/hr/applications');
@@ -238,6 +243,11 @@ router.put('/employees/:id', verifyToken.authenticateToken, verifyToken.requireR
 router.delete('/employees/:id', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.deleteEmployee);
 router.post('/employees/:id/terminate', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.terminateEmployee);
 router.post('/employees/:id/link-user', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.linkEmployeeToUser);
+
+// 🔗 دعوات وانضمام الموظفين الذاتي - Employee Invitations Management (Admin)
+router.post('/employee-invitations', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), employeeInvitationController.createEmployeeInvitation);
+router.get('/employee-invitations', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), employeeInvitationController.listEmployeeInvitations);
+router.delete('/employee-invitations/:id', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), employeeInvitationController.revokeEmployeeInvitation);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ⏰ الحضور والانصراف - Attendance

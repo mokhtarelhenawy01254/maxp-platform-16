@@ -418,6 +418,8 @@ const PUBLIC_ROUTES = [
   // Public invitation routes
   'GET /api/v1/invitations/verify/*',
   'POST /api/v1/invitations/accept/*',
+  'GET /api/v1/hr/employee-invitations/verify/*',
+  'POST /api/v1/hr/employee-invitations/accept/*',
 
   // ❌ REMOVED: Pattern System routes - Pattern System removed
 

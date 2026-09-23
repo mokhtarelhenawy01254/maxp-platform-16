@@ -267,6 +267,7 @@ model Company {
   textGalleries                   TextGallery[]
   userCompanies                   UserCompany[]
   userInvitations                 UserInvitation[]
+  employeeInvitations             EmployeeInvitation[]
   users                           User[]
   warehouses                      Warehouse[]
   whatsapp_notification_logs      WhatsAppNotificationLog[]
@@ -477,6 +478,7 @@ model User {
   textGalleries                                     TextGallery[]
   userCompanies                                     UserCompany[]
   userInvitations                                   UserInvitation[]
+  employeeInvitations                               EmployeeInvitation[]     @relation("EmployeeInviter")
   company                                           Company?                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
   departmentRelation                                Department?              @relation(fields: [departmentId], references: [id])
   positionRelation                                  Position?                @relation(fields: [positionId], references: [id])

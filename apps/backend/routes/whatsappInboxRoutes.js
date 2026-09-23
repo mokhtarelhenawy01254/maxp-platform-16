@@ -59,6 +59,13 @@ router.post(
 );
 
 router.post(
+  '/conversations/:conversationId/send-sms',
+  conversationAccessGuard,
+  requireDbPermission('inbox.send'),
+  inboxController.sendSmsFallback
+);
+
+router.post(
   '/conversations/:conversationId/send-existing-image',
   conversationAccessGuard,
   requireDbPermission('inbox.send'),

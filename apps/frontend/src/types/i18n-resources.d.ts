@@ -6156,6 +6156,8 @@ declare module 'react-i18next' {
             paused_toggle: string;
           };
           deleteTitle: string;
+          actions: string;
+          deleteOrArchive: string;
           noSelection: string;
           chatWithManager: string;
           saved: string;
@@ -6199,6 +6201,7 @@ declare module 'react-i18next' {
         };
         delete: {
           title: string;
+          menuDesc: string;
           confirm: string;
           confirmPrefix: string;
           confirmSuffix: string;
@@ -6213,6 +6216,8 @@ declare module 'react-i18next' {
           saveFailed: string;
           createSuccess: string;
           createFailed: string;
+          archiveSuccess: string;
+          archiveFailed: string;
           deleteSuccess: string;
           deleteFailed: string;
         };
@@ -6330,7 +6335,10 @@ declare module 'react-i18next' {
         };
         archive: {
           title: string;
+          menuDesc: string;
           confirm: string;
+          confirmPrefix: string;
+          confirmSuffix: string;
           note: string;
           cancel: string;
           archiving: string;

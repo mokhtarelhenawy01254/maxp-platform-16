@@ -7,6 +7,7 @@ import {
   X,
   RefreshCw,
   Trash2,
+  Archive,
   Loader2,
   FlaskConical,
   GraduationCap,
@@ -17,6 +18,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface AgentProfileHeaderProps {
   agentId: string;
@@ -37,6 +45,7 @@ interface AgentProfileHeaderProps {
   onSave: () => void;
   onDiscard: () => void;
   onDelete: () => void;
+  onArchive?: () => void;
   onRefresh: () => void;
   refreshLoading: boolean;
   onOpenDrawer?: () => void;
@@ -64,6 +73,7 @@ export default function AgentProfileHeader({
   onSave,
   onDiscard,
   onDelete,
+  onArchive,
   onRefresh,
   refreshLoading,
   onOpenDrawer,
@@ -247,16 +257,46 @@ export default function AgentProfileHeader({
           </div>
 
           {agentRole !== "CEO" && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              onClick={onDelete}
-              aria-label={t("agentProfiles.header.deleteTitle", "حذف الوكيل")}
-              title={t("agentProfiles.header.deleteTitle", "حذف الوكيل")}
-            >
-              <Trash2 className="size-3.5" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  aria-label={t("agentProfiles.header.actions", "خيارات الوكيل")}
+                  title={t("agentProfiles.header.deleteOrArchive", "حذف / أرشفة")}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 text-right" dir="rtl">
+                <DropdownMenuItem
+                  onClick={onArchive}
+                  className="flex items-start gap-2.5 cursor-pointer py-2 px-2.5 text-xs font-medium rounded-lg text-amber-700 dark:text-amber-400 focus:text-amber-800 focus:bg-amber-50 dark:focus:bg-amber-950/30"
+                >
+                  <Archive className="size-4 shrink-0 text-amber-600 mt-0.5" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold">{t("agentProfiles.archive.title", "أرشفة الوكيل")}</span>
+                    <span className="text-[10px] text-muted-foreground font-normal leading-tight">
+                      {t("agentProfiles.archive.menuDesc", "نقل للمؤرشفين مع حفظ البيانات وإمكانية الاستعادة")}
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuItem
+                  onClick={onDelete}
+                  className="flex items-start gap-2.5 cursor-pointer py-2 px-2.5 text-xs font-medium rounded-lg text-destructive focus:text-destructive focus:bg-destructive/10"
+                >
+                  <Trash2 className="size-4 shrink-0 text-destructive mt-0.5" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold">{t("agentProfiles.delete.title", "حذف الوكيل نهائياً")}</span>
+                    <span className="text-[10px] text-muted-foreground font-normal leading-tight">
+                      {t("agentProfiles.delete.menuDesc", "مسح كامل ودائم من النظام لا يمكن التراجع عنه")}
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
@@ -345,18 +385,48 @@ export default function AgentProfileHeader({
             <span className="hidden sm:inline">{t("agentProfiles.header.routing", "القنوات")}</span>
           </Button>
 
-          {/* Delete button on mobile */}
+          {/* Delete / Archive dropdown on mobile */}
           {agentRole !== "CEO" && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 lg:hidden shrink-0"
-              onClick={onDelete}
-              aria-label={t("agentProfiles.header.deleteTitle", "حذف الوكيل")}
-              title={t("agentProfiles.header.deleteTitle", "حذف الوكيل")}
-            >
-              <Trash2 className="size-3.5" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 lg:hidden shrink-0"
+                  aria-label={t("agentProfiles.header.actions", "خيارات الوكيل")}
+                  title={t("agentProfiles.header.deleteOrArchive", "حذف / أرشفة")}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 text-right" dir="rtl">
+                <DropdownMenuItem
+                  onClick={onArchive}
+                  className="flex items-start gap-2.5 cursor-pointer py-2 px-2.5 text-xs font-medium rounded-lg text-amber-700 dark:text-amber-400 focus:text-amber-800 focus:bg-amber-50 dark:focus:bg-amber-950/30"
+                >
+                  <Archive className="size-4 shrink-0 text-amber-600 mt-0.5" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold">{t("agentProfiles.archive.title", "أرشفة الوكيل")}</span>
+                    <span className="text-[10px] text-muted-foreground font-normal leading-tight">
+                      {t("agentProfiles.archive.menuDesc", "نقل للمؤرشفين مع حفظ البيانات وإمكانية الاستعادة")}
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuItem
+                  onClick={onDelete}
+                  className="flex items-start gap-2.5 cursor-pointer py-2 px-2.5 text-xs font-medium rounded-lg text-destructive focus:text-destructive focus:bg-destructive/10"
+                >
+                  <Trash2 className="size-4 shrink-0 text-destructive mt-0.5" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold">{t("agentProfiles.delete.title", "حذف الوكيل نهائياً")}</span>
+                    <span className="text-[10px] text-muted-foreground font-normal leading-tight">
+                      {t("agentProfiles.delete.menuDesc", "مسح كامل ودائم من النظام لا يمكن التراجع عنه")}
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
 

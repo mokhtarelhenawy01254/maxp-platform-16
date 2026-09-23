@@ -494,6 +494,15 @@ router.get('/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-
 // تحديث الإعدادات
 router.put('/settings', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.updateSettings);
 
+// جلب إعدادات سياسة نافذة 24 ساعة والـ SMS
+router.get('/settings/window-policy', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getWindowPolicy);
+
+// تحديث إعدادات سياسة نافذة 24 ساعة والـ SMS
+router.put('/settings/window-policy', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.updateWindowPolicy);
+
+// اختبار إرسال رسالة SMS تجريبية
+router.post('/settings/test-sms', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.settings'), whatsappController.testSendSMS);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📊 الإحصائيات
 // ═══════════════════════════════════════════════════════════════════════════════

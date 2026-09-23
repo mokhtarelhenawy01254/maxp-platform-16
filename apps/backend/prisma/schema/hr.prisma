@@ -20,6 +20,7 @@ model Department {
   goals            Goal[]
   positions        Position[]
   users            User[]
+  employeeInvitations EmployeeInvitation[]
   managedEmployees Employee[]   @relation("DepartmentManager")
 
   @@unique([companyId, code])
@@ -135,6 +136,7 @@ model Position {
   promotionsFrom   Promotion[] @relation("PromotionFromPosition")
   promotionsTo     Promotion[] @relation("PromotionToPosition")
   users            User[]
+  employeeInvitations EmployeeInvitation[]
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -1251,5 +1253,35 @@ model CompanyPolicy {
 
   @@index([companyId])
   @@map("hr_company_policies")
+}
+
+model EmployeeInvitation {
+  id               String                @id @default(cuid())
+  companyId        String
+  token            String                @unique
+  role             String                @default("AGENT")
+  departmentId     String?
+  positionId       String?
+  contractType     ContractType          @default(FULL_TIME)
+  email            String?
+  phone            String?
+  invitedBy        String
+  status           UserInvitationsStatus @default(PENDING)
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  acceptedByUserId String?
+  metadata         String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  company          Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department       Department?           @relation(fields: [departmentId], references: [id])
+  position         Position?             @relation(fields: [positionId], references: [id])
+  inviter          User                  @relation("EmployeeInviter", fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([token])
+  @@index([invitedBy])
+  @@map("employee_invitations")
 }
 

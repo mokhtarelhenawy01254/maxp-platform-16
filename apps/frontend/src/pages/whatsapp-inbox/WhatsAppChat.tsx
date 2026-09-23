@@ -3,7 +3,8 @@ import { getStatusDisplay } from "../../utils/statusRegistry";
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
-import { FileIcon, ImageIcon, Music, Paperclip, ShoppingBag, Video } from 'lucide-react';
+import { FileIcon, ImageIcon, Music, Paperclip, ShoppingBag, Video, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 import { apiClient } from '../../services/apiClient';
 import { socketService } from '../../services/socketService';
 import LinkifiedText from '../../components/common/LinkifiedText';
@@ -241,6 +242,23 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       });
       setDraft('');
       await loadConversation();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sendSms = async () => {
+    if (!draft.trim() || !conversationId) return;
+    setSaving(true);
+    try {
+      await apiClient.post(`${apiBase}/conversations/${conversationId}/send-sms${superAdminMode && companyId ? `?companyId=${companyId}` : ''}`, {
+        content: draft,
+      });
+      setDraft('');
+      await loadConversation();
+      toast.success('تم إرسال رسالة SMS للعميل بنجاح');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || error.message || 'فشل إرسال رسالة SMS');
     } finally {
       setSaving(false);
     }
@@ -650,6 +668,14 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
         </div>
 
         <div className="wa-input-bar border-t border-border/50 bg-card px-4 py-3 md:px-5">
+          {conversation.window && !conversation.window.isOpen && (
+            <div className="mb-2.5 flex items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-500">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+                <span>نافذة الـ 24 ساعة مغلقة — لا يمكن إرسال نصوص حرة عبر واتساب. يمكنك إرسال الرسالة كـ SMS أو استخدام قالب معتمد.</span>
+              </div>
+            </div>
+          )}
           <div className="rounded-lg border border-border/50 bg-muted p-3">
             <textarea
               value={draft}
@@ -685,6 +711,17 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                   />
                 </svg>
               </button>
+              {conversation.window && !conversation.window.isOpen && (
+                <button
+                  type="button"
+                  onClick={sendSms}
+                  disabled={saving || !draft.trim()}
+                  className="rounded-lg border border-amber-500/30 bg-amber-500/15 px-3 py-2 text-xs font-semibold text-amber-500 transition hover:bg-amber-500/25 disabled:cursor-not-allowed disabled:opacity-60 flex items-center gap-1.5"
+                  title="إرسال المحتوى كرسالة SMS للعميل"
+                >
+                  إرسال كـ SMS
+                </button>
+              )}
               <button
                 type="button"
                 onClick={sendMessage}

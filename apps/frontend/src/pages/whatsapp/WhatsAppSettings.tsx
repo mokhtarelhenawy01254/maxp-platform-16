@@ -104,10 +104,13 @@ import {
   WhatsAppSurfaceCard,
 } from "./components/WhatsAppPageShell";
 import LabelContactsDialog from "../../components/whatsapp/LabelContactsDialog";
+import { WindowPolicySettingsTab } from "./components/WindowPolicySettingsTab";
+import { Clock } from "lucide-react";
 
 type TabId =
   | "sessions"
   | "general"
+  | "window-policy"
   | "quick-replies"
   | "business"
   | "privacy"
@@ -527,6 +530,12 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         label: t("whatsappSettings.generalSettings"),
         icon: Settings,
         description: t("whatsappSettings.generalSettings"),
+      },
+      {
+        id: "window-policy",
+        label: "نافذة 24 ساعة و SMS",
+        icon: Clock,
+        description: "سياسة المراسلة وبدائل القوالب والرسائل القصيرة",
       },
       {
         id: "quick-replies",
@@ -2345,6 +2354,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         return renderSessionsTab();
       case "general":
         return renderGeneralTab();
+      case "window-policy":
+        return <WindowPolicySettingsTab />;
       case "quick-replies":
         return renderQuickRepliesTab();
       case "business":

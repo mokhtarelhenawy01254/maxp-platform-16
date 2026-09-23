@@ -15,6 +15,7 @@ import {
   Shield,
   KeyRound,
   ExternalLink,
+  Link2,
 } from "lucide-react";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -66,6 +67,7 @@ import { EmployeeTableSkeleton } from "../../components/hr/SkeletonLoader";
 import { EmptyState } from "../../components/hr/EmptyState";
 import { EnhancedPagination } from "../../components/hr/EnhancedPagination";
 import { useDebounce } from "../../hooks/useDebounce";
+import { EmployeeInviteModal } from "../../components/hr/EmployeeInviteModal";
 
 interface Employee {
   id: string;
@@ -172,6 +174,7 @@ const Employees: React.FC = () => {
 
   // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [errors, setErrors] = useState<ValidationError[]>([]);
@@ -517,12 +520,20 @@ const Employees: React.FC = () => {
             {t("employees.pageSubtitle")}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            onClick={() => setShowInviteDialog(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm transition-all active:scale-95"
+          >
+            <Link2 className="h-4 w-4 ml-1.5" />
+            دعوة موظف برابط
+          </Button>
           <Button
             onClick={() => setShowAddDialog(true)}
-            className="bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800"
+            variant="outline"
+            className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
-            <Plus className="h-4 w-4 ml-2" />
+            <Plus className="h-4 w-4 ml-1.5" />
             {t("employees.addEmployee")}
           </Button>
           <Button
@@ -1454,6 +1465,14 @@ const Employees: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Employee Self-Onboarding Invite Modal */}
+      <EmployeeInviteModal
+        open={showInviteDialog}
+        onOpenChange={setShowInviteDialog}
+        departments={departments}
+        onInvitationCreated={fetchEmployees}
+      />
     </div>
   );
 };

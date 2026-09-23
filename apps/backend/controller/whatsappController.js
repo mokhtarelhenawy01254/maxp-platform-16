@@ -14,6 +14,8 @@ const {
     WhatsAppMediaHandler
 } = require('../services/whatsapp');
 const { computeWindowStatus } = require('../services/whatsapp/WhatsAppWindowService');
+const WhatsAppWindowPolicyService = require('../services/whatsapp/WhatsAppWindowPolicyService');
+const smsGateway = require('../services/sms/smsGatewayService');
 const { encryptField, decryptField } = require('../utils/fieldEncryption');
 
 const encryptTokenIfNeeded = (token) => {
@@ -2267,6 +2269,85 @@ async function updateSettings(req, res) {
     } catch (error) {
         console.error('❌ Error updating settings:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء تحديث الإعدادات' });
+    }
+}
+
+/**
+ * جلب إعدادات سياسة نافذة 24 ساعة والـ SMS
+ * GET /api/whatsapp/settings/window-policy
+ */
+async function getWindowPolicy(req, res) {
+    try {
+        const { companyId } = req.user;
+        const policy = await WhatsAppWindowPolicyService.getWindowPolicySettings(companyId);
+        res.json({ success: true, policy });
+    } catch (error) {
+        console.error('❌ Error getting window policy settings:', error);
+        res.status(500).json({ success: false, error: 'حدث خطأ أثناء جلب إعدادات النافذة والـ SMS' });
+    }
+}
+
+/**
+ * تحديث إعدادات سياسة نافذة 24 ساعة والـ SMS
+ * PUT /api/whatsapp/settings/window-policy
+ */
+async function updateWindowPolicy(req, res) {
+    try {
+        const { companyId } = req.user;
+        const policy = await WhatsAppWindowPolicyService.updateWindowPolicySettings(companyId, req.body);
+        res.json({ success: true, policy });
+    } catch (error) {
+        console.error('❌ Error updating window policy settings:', error);
+        res.status(500).json({ success: false, error: 'حدث خطأ أثناء تحديث إعدادات النافذة والـ SMS' });
+    }
+}
+
+/**
+ * إرسال رسالة SMS تجريبية للتحقق من بيانات الربط
+ * POST /api/whatsapp/settings/test-sms
+ */
+async function testSendSMS(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { phone, text, config } = req.body;
+
+        if (!phone) {
+            return res.status(400).json({ success: false, error: 'رقم الهاتف مطلوب' });
+        }
+
+        let effectiveConfig = config;
+        if (!effectiveConfig) {
+            const policy = await WhatsAppWindowPolicyService.getWindowPolicySettings(companyId);
+            effectiveConfig = {
+                ...policy.smsConfig,
+                provider: policy.smsProvider
+            };
+        }
+
+        const messageText = text || 'رسالة تجريبية من منصة MaxP للتحقق من ربط بوابة SMS بنجاح.';
+        const result = await smsGateway.sendSMS({
+            to: phone,
+            text: messageText,
+            senderId: effectiveConfig?.senderId,
+            config: effectiveConfig
+        });
+
+        if (!result.success) {
+            return res.status(400).json({
+                success: false,
+                error: result.error || 'فشل إرسال رسالة SMS التجريبية',
+                provider: result.provider
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'تم إرسال رسالة SMS التجريبية بنجاح',
+            result
+        });
+    } catch (error) {
+        console.error('❌ Error testing SMS send:', error);
+        res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء إرسال رسالة SMS التجريبية' });
     }
 }
 
@@ -4929,6 +5010,9 @@ module.exports = {
     // Settings
     getSettings,
     updateSettings,
+    getWindowPolicy,
+    updateWindowPolicy,
+    testSendSMS,
 
     // Stats
     getStats,

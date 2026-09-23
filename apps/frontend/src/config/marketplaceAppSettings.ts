@@ -371,8 +371,35 @@ export const DEFAULT_AGENCY_PRO_SETTINGS = {
   },
 } as const;
 
+export const DEFAULT_INTERNAL_COURIER_FLEET_SETTINGS = {
+  general: {
+    enabled: true,
+    runCodePrefix: "RUN",
+    autoPrintManifestOnDispatch: false,
+    includeCustomerPhoneInManifest: true,
+  },
+  remittance: {
+    defaultTreasuryAccountId: "",
+    shortagePolicy: "DEDUCT_FROM_COURIER",
+    allowPartialRemittance: true,
+    requireTreasuryNoteOnVariance: true,
+  },
+  fieldWorkflow: {
+    requireCourierPin: false,
+    autoUpdateOrderStatusOnDelivery: true,
+    allowPartialDelivery: true,
+    requirePhotoProofOnReturn: false,
+  },
+  commission: {
+    defaultType: "PER_ORDER",
+    defaultValue: 30,
+  },
+} as const;
+
 export const getDefaultMarketplaceAppSettings = (slug: string): JsonRecord => {
   switch (slug) {
+    case "internal-courier-fleet":
+      return deepMerge({}, DEFAULT_INTERNAL_COURIER_FLEET_SETTINGS as unknown as JsonRecord);
     case "marketing-agency-pro":
       return deepMerge({}, DEFAULT_AGENCY_PRO_SETTINGS as unknown as JsonRecord);
     case "conversion-suite":
@@ -397,6 +424,7 @@ export const normalizeMarketplaceAppSettings = (
   switch (slug) {
     case "conversion-suite":
       return buildConversionSuiteSettings(rawSettings);
+    case "internal-courier-fleet":
     case "marketing-agency-pro":
     case "ugc-reviews-pro":
     case "commerce-advanced":

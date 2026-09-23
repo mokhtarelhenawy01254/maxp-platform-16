@@ -286,6 +286,83 @@ class WhatsAppInboxService {
     };
   }
 
+  async sendSmsFallback(conversationId, companyId, userId, userRole, content) {
+    const prisma = getSharedPrismaClient();
+    const normalizedRole = normalizeRole(userRole);
+
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        customer: {
+          select: { id: true, phone: true, firstName: true, lastName: true }
+        }
+      }
+    });
+
+    if (!conversation || conversation.companyId !== companyId) {
+      throw new Error('Conversation not found');
+    }
+
+    if (!SUPERVISOR_ROLES.includes(normalizedRole) && conversation.assignedUserId !== userId) {
+      throw new Error('Conversation is locked to another moderator');
+    }
+
+    if (!conversation.customer?.phone) {
+      throw new Error('Customer does not have a valid phone number');
+    }
+
+    const WhatsAppWindowPolicyService = require('./whatsapp/WhatsAppWindowPolicyService');
+    const policy = await WhatsAppWindowPolicyService.getWindowPolicySettings(companyId);
+
+    const smsGateway = require('./sms/smsGatewayService');
+    const smsResult = await smsGateway.sendSMS({
+      to: conversation.customer.phone,
+      text: content,
+      senderId: policy.smsConfig?.senderId,
+      config: { ...policy.smsConfig, provider: policy.smsProvider }
+    });
+
+    if (!smsResult.success) {
+      throw new Error(smsResult.error || 'Failed to send SMS fallback');
+    }
+
+    await prisma.message.create({
+      data: {
+        conversationId,
+        senderId: userId,
+        type: 'SMS',
+        content,
+        metadata: JSON.stringify({
+          provider: smsResult.provider,
+          messageId: smsResult.messageId,
+          channel: 'SMS_FALLBACK'
+        })
+      }
+    });
+
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: {
+        lastMessageAt: new Date(),
+        lastMessagePreview: `[SMS] ${content.substring(0, 100)}`,
+        lastMessageIsFromCustomer: false
+      }
+    });
+
+    await this._logActivity(companyId, userId, 'SEND_SMS_FALLBACK', conversationId, {
+      contentPreview: content.substring(0, 60),
+      messageId: smsResult.messageId
+    });
+
+    socketService.emitToCompany(companyId, 'conversation:updated', { conversationId });
+
+    return {
+      success: true,
+      messageId: smsResult.messageId,
+      provider: smsResult.provider
+    };
+  }
+
   async sendExistingImage(conversationId, companyId, userId, userRole, imageUrl, filename, caption = '') {
     const prisma = getSharedPrismaClient();
     const normalizedRole = normalizeRole(userRole);

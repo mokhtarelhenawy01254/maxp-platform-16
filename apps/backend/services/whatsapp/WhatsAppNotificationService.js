@@ -1934,6 +1934,53 @@ async function sendNotification(options) {
         }));
       }
 
+      // 🚨 PRODUCTION-FEATURE (Window Policy & SMS Fallback):
+      // لو فشل الإرسال بسبب نافذة 24 ساعة (131047) أو تعذر القالب المعتمد،
+      // نفحص سياسة الشركة: إن كانت مفعلة لـ SMS Fallback، نرسل الرسالة فوراً كـ SMS
+      const isWindowOrTemplateFailure = (typeof isMetaWindowError === 'function' && isMetaWindowError(sendError)) ||
+        sendError.code === 131047 ||
+        sendError.code === '131047' ||
+        /24\s*hour|outside.*window|template.*window/i.test(sendError.message || '');
+
+      if (isWindowOrTemplateFailure) {
+        try {
+          const WhatsAppWindowPolicyService = require('./WhatsAppWindowPolicyService');
+          const policy = await WhatsAppWindowPolicyService.getWindowPolicySettings(companyId);
+          if (policy?.smsFallbackEnabled) {
+            console.log(`📱 [FALLBACK-SMS] 24h window closed/rejected. Dispatching SMS to ${recipientPhone} for ${eventType}`);
+            const smsGateway = require('../sms/smsGatewayService');
+            const smsResult = await smsGateway.sendSMS({
+              to: recipientPhone,
+              text: content,
+              senderId: policy.smsConfig?.senderId,
+              config: { ...policy.smsConfig, provider: policy.smsProvider }
+            });
+
+            if (smsResult.success) {
+              console.log(`✅ [FALLBACK-SMS] SMS delivered successfully (ID: ${smsResult.messageId})`);
+              if (notificationLog) {
+                await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.update({
+                  where: { id: notificationLog.id },
+                  data: {
+                    status: 'SENT',
+                    messageType: 'SMS',
+                    sentAt: new Date(),
+                    failureReason: null,
+                    errorCode: null,
+                    whatsappMessageId: smsResult.messageId
+                  }
+                }));
+              }
+              return { success: true, via: 'SMS', messageId: smsResult.messageId };
+            } else {
+              console.warn(`⚠️ [FALLBACK-SMS] SMS send failed: ${smsResult.error}`);
+            }
+          }
+        } catch (smsErr) {
+          console.error(`❌ [FALLBACK-SMS] Error in SMS fallback dispatch:`, smsErr.message);
+        }
+      }
+
       // 🚨 PRODUCTION-FIX (notifications-fix-plan §4.1):
       // إعادة محاولة واحدة عبر الطابور للأخطاء العابرة (retryable=true من Meta Cloud).
       // يعتمد على §1.1 (الطابور مفعّل) + §4.1 (حل الجلسة مؤجّل للمعالجة).

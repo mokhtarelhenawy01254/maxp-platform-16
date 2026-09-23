@@ -92,6 +92,34 @@ exports.sendMessage = async (req, res) => {
 };
 
 /**
+ * @route POST /api/v1/whatsapp-inbox/conversations/:conversationId/send-sms
+ * @desc Send an SMS fallback to customer in a conversation
+ */
+exports.sendSmsFallback = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { content } = req.body;
+
+    if (!content) {
+      return res.status(400).json({ error: 'Message content is required' });
+    }
+
+    const result = await whatsappInboxService.sendSmsFallback(
+      conversationId,
+      req.user.companyId,
+      req.user.id,
+      req.user.role,
+      content
+    );
+    res.status(201).json({ success: true, ...result });
+  } catch (error) {
+    console.error('[InboxController] sendSmsFallback error:', error.message);
+    const statusCode = error.message?.includes('locked') ? 403 : 500;
+    res.status(statusCode).json({ error: error.message || 'Failed to send SMS fallback' });
+  }
+};
+
+/**
  * @route POST /api/v1/whatsapp-inbox/conversations/:conversationId/send-existing-image
  * @desc Send an existing product image as a WhatsApp message
  */

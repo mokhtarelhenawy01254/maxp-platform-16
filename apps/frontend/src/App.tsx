@@ -53,6 +53,9 @@ const ResetPassword = React.lazy(() => import("./pages/auth/ResetPassword"));
 const AcceptInvitation = React.lazy(
   () => import("./pages/auth/AcceptInvitation"),
 );
+const JoinEmployee = React.lazy(
+  () => import("./pages/auth/JoinEmployee"),
+);
 // Legal & Compliance Pages (Public)
 const PrivacyPolicy = React.lazy(() => import("./pages/legal/PrivacyPolicy"));
 const TermsOfService = React.lazy(() => import("./pages/legal/TermsOfService"));
@@ -2090,6 +2093,14 @@ const AppContent = () => {
               element={
                 <AuthLayout>
                   <AcceptInvitation />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/auth/join-employee"
+              element={
+                <AuthLayout>
+                  <JoinEmployee />
                 </AuthLayout>
               }
             />

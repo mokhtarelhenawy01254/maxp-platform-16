@@ -1098,6 +1098,8 @@ app.use("/api/v1/admin/whatsapp-ai-ignore-list", require("./routes/adminWhatsapp
 // Backward-compatible alias for legacy admin tools that still call /api/v1/admin/*
 app.use("/api/v1/admin", systemManagementRoutes);
 app.use("/api/v1/system", systemManagementRoutes);
+app.use("/api/v1/invitations", invitationRoutes);
+app.use("/api/invitations", invitationRoutes);
 
 // HR & Operations
 const hrRoutes = require("./routes/hrRoutes");

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Loader2, AlertCircle, Bot, Search, Plus, Trash2,
-  Shield, RefreshCw, Menu, MessageSquare, Lock,
+  Shield, RefreshCw, Menu, MessageSquare, Lock, Archive,
   Wrench, Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -120,7 +120,7 @@ export default function AgentProfilesPage() {
   const [profileError, setProfileError] = useState<string | null>(null);
 
   const [statusSaving, setStatusSaving] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [actionConfirm, setActionConfirm] = useState<"archive" | "delete" | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const [editing, setEditing] = useState(false);
@@ -354,13 +354,13 @@ export default function AgentProfilesPage() {
     setDraftConfig({ ...((profile.agent as { config?: Record<string, string> }).config || {}) });
   };
 
-  /* ── Delete Agent ── */
-  const handleDeleteAgent = async () => {
-    if (!deleteConfirm || !selectedId) return;
+  /* ── Archive Agent ── */
+  const handleArchiveAgent = async () => {
+    if (!actionConfirm || !selectedId) return;
     setDeleting(true);
-    const data = await tryApiFetch<{ success: boolean }>(`/agent/agents/${selectedId}?permanent=true`, { method: "DELETE" });
+    const data = await tryApiFetch<{ success: boolean }>(`/agent/agents/${selectedId}?archive=true`, { method: "DELETE" });
     if (data) {
-      setDeleteConfirm(null);
+      setActionConfirm(null);
       const remaining = agents.filter((a) => a.id !== selectedId);
       setAgents(remaining);
       if (remaining.length > 0) {
@@ -371,7 +371,32 @@ export default function AgentProfilesPage() {
         setProfile(null);
         setSearchParams({}, { replace: true });
       }
-      toast.success(t("agentProfiles.toast.deleteSuccess", "تم حذف الوكيل بنجاح"));
+      toast.success(t("agentProfiles.toast.archiveSuccess", "تمت أرشفة الوكيل بنجاح"));
+      loadAgents();
+    } else {
+      toast.error(t("agentProfiles.toast.archiveFailed", "فشل أرشفة الوكيل"));
+    }
+    setDeleting(false);
+  };
+
+  /* ── Permanent Delete Agent ── */
+  const handleDeleteAgent = async () => {
+    if (!actionConfirm || !selectedId) return;
+    setDeleting(true);
+    const data = await tryApiFetch<{ success: boolean }>(`/agent/agents/${selectedId}?permanent=true`, { method: "DELETE" });
+    if (data) {
+      setActionConfirm(null);
+      const remaining = agents.filter((a) => a.id !== selectedId);
+      setAgents(remaining);
+      if (remaining.length > 0) {
+        setSelectedId(remaining[0].id);
+        setSearchParams({ agent: remaining[0].id }, { replace: true });
+      } else {
+        setSelectedId(null);
+        setProfile(null);
+        setSearchParams({}, { replace: true });
+      }
+      toast.success(t("agentProfiles.toast.deleteSuccess", "تم حذف الوكيل نهائياً"));
       loadAgents();
     } else {
       toast.error(t("agentProfiles.toast.deleteFailed", "فشل حذف الوكيل"));
@@ -603,7 +628,8 @@ export default function AgentProfilesPage() {
               onToggleStatus={toggleStatus}
               onSave={saveProfile}
               onDiscard={discardChanges}
-              onDelete={() => setDeleteConfirm(selectedId)}
+              onArchive={() => setActionConfirm("archive")}
+              onDelete={() => setActionConfirm("delete")}
               onRefresh={loadAgents}
               refreshLoading={agentsLoading}
               onOpenDrawer={() => setMobileDrawerOpen(true)}
@@ -683,7 +709,7 @@ export default function AgentProfilesPage() {
                     </Button>
                     <Button
                       variant="destructive"
-                      onClick={() => setDeleteConfirm(selectedId)}
+                      onClick={() => setActionConfirm("delete")}
                       className="gap-1.5 h-8 text-xs"
                     >
                       <Trash2 className="size-3" />
@@ -789,32 +815,68 @@ export default function AgentProfilesPage() {
         }}
       />
 
+      {/* ── Archive Dialog ── */}
+      <Dialog open={actionConfirm === "archive"} onOpenChange={(o) => { if (!o && !deleting) setActionConfirm(null); }}>
+        <DialogContent className="sm:max-w-sm text-right" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600 text-base">
+              <Archive className="size-4" />
+              {t("agentProfiles.archive.title", "أرشفة الوكيل")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2 text-xs text-muted-foreground space-y-1.5 leading-relaxed">
+            <p>
+              {t("agentProfiles.archive.confirmPrefix", "هل أنت متأكد من أرشفة الوكيل")}{" "}
+              <strong className="font-semibold text-foreground">{selectedAgent?.name || draftName}</strong>
+              {t("agentProfiles.archive.confirmSuffix", "؟")}
+            </p>
+            <p className="text-[11px] text-muted-foreground/80">
+              {t("agentProfiles.archive.note", "سيتم نقل الوكيل إلى قائمة المؤرشفين، وتبقى بياناته محفوظة حيث يمكنك استعادته في أي وقت.")}
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setActionConfirm(null)} disabled={deleting}>
+              {t("common.cancel", "إلغاء")}
+            </Button>
+            <Button
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              size="sm"
+              onClick={handleArchiveAgent}
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="ml-1 size-3 animate-spin" /> : <Archive className="ml-1 size-3.5" />}
+              {deleting ? t("agentProfiles.archive.archiving", "جارٍ الأرشفة...") : t("agentProfiles.archive.confirmButton", "أرشفة الوكيل")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Delete Agent Dialog ── */}
-      <Dialog open={!!deleteConfirm} onOpenChange={(o) => { if (!o && !deleting) setDeleteConfirm(null); }}>
+      <Dialog open={actionConfirm === "delete"} onOpenChange={(o) => { if (!o && !deleting) setActionConfirm(null); }}>
         <DialogContent className="sm:max-w-sm text-right" dir="rtl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive text-base">
               <Trash2 className="size-4" />
-              {t("agentProfiles.delete.title", "حذف الوكيل")}
+              {t("agentProfiles.delete.title", "حذف الوكيل نهائياً")}
             </DialogTitle>
           </DialogHeader>
           <div className="py-2 text-xs text-muted-foreground space-y-1.5 leading-relaxed">
             <p>
               {t("agentProfiles.delete.confirmPrefix", "هل أنت متأكد من حذف الوكيل")}{" "}
               <strong className="font-semibold text-foreground">{selectedAgent?.name || draftName}</strong>
-              {t("agentProfiles.delete.confirmSuffix", "؟")}
+              {t("agentProfiles.delete.confirmSuffix", " نهائياً؟")}
             </p>
             <p className="text-[11px] text-destructive/80 font-medium">
-              {t("agentProfiles.delete.note", "سيتم حذف هذا الوكيل نهائياً مع كافة إعداداته وبياناته ولا يمكن التراجع عن هذا الإجراء.")}
+              {t("agentProfiles.delete.note", "سيتم مسح هذا الوكيل وكافة إعداداته وبياناته بشكل نهائي ولا يمكن التراجع عن هذا الإجراء.")}
             </p>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" size="sm" onClick={() => setDeleteConfirm(null)} disabled={deleting}>
+            <Button variant="outline" size="sm" onClick={() => setActionConfirm(null)} disabled={deleting}>
               {t("common.cancel", "إلغاء")}
             </Button>
             <Button variant="destructive" size="sm" onClick={handleDeleteAgent} disabled={deleting}>
               {deleting ? <Loader2 className="ml-1 size-3 animate-spin" /> : <Trash2 className="ml-1 size-3.5" />}
-              {deleting ? t("agentProfiles.delete.deleting", "جارٍ الحذف...") : t("agentProfiles.delete.confirmButton", "حذف الوكيل")}
+              {deleting ? t("agentProfiles.delete.deleting", "جارٍ الحذف...") : t("agentProfiles.delete.confirmButton", "حذف نهائي")}
             </Button>
           </DialogFooter>
         </DialogContent>
