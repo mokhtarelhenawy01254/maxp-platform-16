@@ -11669,6 +11669,16 @@ declare module 'react-i18next' {
         errorEmployeeExists: string;
         errorInvalidData: string;
         country: string;
+        lookupChecking: string;
+        accountVerifiedPlatform: string;
+        accountCompanyMember: string;
+        accountAlreadyEmployee: string;
+        accountAlreadyEmployeeDesc: string;
+        existingUserPasswordHint: string;
+        viewEmployeeProfile: string;
+        linkAndAddEmployee: string;
+        upgradeToEmployee: string;
+        errorEmployeeAlreadyActive: string;
       };
       employeeStatsReport: {
         pageTitle: string;

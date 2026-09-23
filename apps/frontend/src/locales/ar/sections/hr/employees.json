@@ -111,5 +111,15 @@
   "errorDelete": "خطأ في حذف الموظف",
   "errorEmployeeExists": "هذا الموظف موجود بالفعل",
   "errorInvalidData": "بيانات غير صالحة",
-  "country": "مصر"
+  "country": "مصر",
+  "lookupChecking": "جاري التحقق من الحساب...",
+  "accountVerifiedPlatform": "حساب موثق على منصة MaxP",
+  "accountCompanyMember": "عضو مسجل في فريق شركتك",
+  "accountAlreadyEmployee": "مسجل بالفعل كموظف نشط في شركتك",
+  "accountAlreadyEmployeeDesc": "الموظف مسجل بالفعل برقم وظيفي: {{employeeNumber}}",
+  "existingUserPasswordHint": "يمتلك هذا المستخدم حساباً وكلمة مرور نشطة بالفعل على المنصة؛ سيتمكن من تسجيل الدخول مباشرة بنفس بياناته الحالية.",
+  "viewEmployeeProfile": "عرض ملف الموظف",
+  "linkAndAddEmployee": "ربط وإضافة الموظف",
+  "upgradeToEmployee": "ترقية وإدراج في الموظفين",
+  "errorEmployeeAlreadyActive": "هذا الموظف مسجل بالفعل في شركتك ولا يمكن إضافته مرة أخرى"
 }

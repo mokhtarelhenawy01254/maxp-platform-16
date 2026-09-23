@@ -13,6 +13,8 @@ import {
   Loader2,
   Clock,
   Shield,
+  KeyRound,
+  ExternalLink,
 } from "lucide-react";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -100,6 +102,23 @@ interface Employee {
 interface Department {
   id: string;
   name: string;
+}
+
+interface LookupResponse {
+  exists: boolean;
+  status: "NOT_FOUND" | "ALREADY_ACTIVE_EMPLOYEE" | "COMPANY_USER_NOT_EMPLOYEE" | "EXISTING_PLATFORM_USER";
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    avatar?: string;
+    role?: string;
+    employeeNumber?: string;
+    department?: string;
+    position?: string;
+  };
 }
 
 const statusColors: Record<string, string> = {
@@ -190,6 +209,60 @@ const Employees: React.FC = () => {
     maxDailyLateMinutes: 10,
     lateDeductionRate: "",
   });
+
+  // Lookup state for checking existing MaxP account
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupResult, setLookupResult] = useState<LookupResponse | null>(null);
+  const debouncedLookupEmail = useDebounce(formData.email, 400);
+
+  // Real-time lookup effect when entering email
+  useEffect(() => {
+    if (!showAddDialog) {
+      setLookupResult(null);
+      setLookupLoading(false);
+      return;
+    }
+
+    const email = debouncedLookupEmail?.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setLookupResult(null);
+      setLookupLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    const performLookup = async () => {
+      try {
+        setLookupLoading(true);
+        const res = await api.get("/hr/employees/lookup-user", {
+          params: { query: email },
+        });
+        if (isMounted && res.data?.success) {
+          setLookupResult(res.data);
+          if (res.data.exists && res.data.user) {
+            setFormData((prev) => ({
+              ...prev,
+              firstName: prev.firstName || res.data.user.firstName || "",
+              lastName: prev.lastName || res.data.user.lastName || "",
+              phone: prev.phone || res.data.user.phone || "",
+              role: res.data.user.role || prev.role || "AGENT",
+              password: "",
+            }));
+          }
+        }
+      } catch (err) {
+        console.error("Lookup user error:", err);
+      } finally {
+        if (isMounted) setLookupLoading(false);
+      }
+    };
+
+    performLookup();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedLookupEmail, showAddDialog]);
 
   useEffect(() => {
     setSearch(debouncedSearch);
@@ -284,6 +357,11 @@ const Employees: React.FC = () => {
   };
 
   const handleAddEmployee = async () => {
+    if (lookupResult?.status === "ALREADY_ACTIVE_EMPLOYEE") {
+      toast.error(t("employees.errorEmployeeAlreadyActive"));
+      return;
+    }
+
     // Frontend Validation
     const result = validateEmployeeData(formData);
     if (!result.isValid) {
@@ -420,6 +498,8 @@ const Employees: React.FC = () => {
       lateDeductionRate: "",
     });
     setErrors([]);
+    setLookupResult(null);
+    setLookupLoading(false);
   };
 
   return (
@@ -908,6 +988,128 @@ const Employees: React.FC = () => {
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4 py-4">
+            {/* Email Field First - Primary Lookup Key */}
+            <div className="space-y-2 col-span-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="employee-email">{t("employees.email")}</Label>
+                {lookupLoading && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                    {t("employees.lookupChecking")}
+                  </span>
+                )}
+              </div>
+              <Input
+                id="employee-email"
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                placeholder="example@company.com"
+                className={hasError(errors, "email") ? "border-red-500" : ""}
+              />
+              {hasError(errors, "email") && (
+                <p className="text-sm text-red-500">
+                  {getErrorMessage(errors, "email")}
+                </p>
+              )}
+            </div>
+
+            {/* Smart Detection Card */}
+            {lookupResult?.exists && lookupResult.user && (
+              <div className="col-span-2 p-3.5 rounded-xl border transition-all duration-200 bg-muted/20 border-border/70">
+                {lookupResult.status === "ALREADY_ACTIVE_EMPLOYEE" && (
+                  <div className="space-y-2.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10 border border-amber-200 dark:border-amber-800">
+                          <AvatarImage src={lookupResult.user.avatar} />
+                          <AvatarFallback className="bg-amber-100 text-amber-800 text-xs font-semibold">
+                            {lookupResult.user.firstName?.[0] || "EMP"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium text-sm text-foreground flex items-center gap-2">
+                            <span>{lookupResult.user.firstName} {lookupResult.user.lastName}</span>
+                            <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800 text-[11px] py-0 px-1.5">
+                              {t("employees.accountAlreadyEmployee")}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {t("employees.accountAlreadyEmployeeDesc", {
+                              employeeNumber: lookupResult.user.employeeNumber,
+                            })}
+                            {lookupResult.user.department ? ` • ${lookupResult.user.department}` : ""}
+                            {lookupResult.user.position ? ` • ${lookupResult.user.position}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="text-xs h-8 shrink-0 gap-1.5"
+                        onClick={() => {
+                          setShowAddDialog(false);
+                          if (lookupResult.user?.id) {
+                            navigate(`/hr/employees/${lookupResult.user.id}`);
+                          }
+                        }}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        {t("employees.viewEmployeeProfile")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {lookupResult.status === "COMPANY_USER_NOT_EMPLOYEE" && (
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 border border-blue-200 dark:border-blue-800">
+                      <AvatarImage src={lookupResult.user.avatar} />
+                      <AvatarFallback className="bg-blue-100 text-blue-800 text-xs font-semibold">
+                        {lookupResult.user.firstName?.[0] || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-foreground flex items-center gap-2">
+                        <span className="truncate">{lookupResult.user.firstName} {lookupResult.user.lastName}</span>
+                        <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800 text-[11px] py-0 px-1.5 shrink-0">
+                          {t("employees.accountCompanyMember")}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {lookupResult.user.email} {lookupResult.user.phone ? `• ${lookupResult.user.phone}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {lookupResult.status === "EXISTING_PLATFORM_USER" && (
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 border border-emerald-200 dark:border-emerald-800">
+                      <AvatarImage src={lookupResult.user.avatar} />
+                      <AvatarFallback className="bg-emerald-100 text-emerald-800 text-xs font-semibold">
+                        {lookupResult.user.firstName?.[0] || "M"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-foreground flex items-center gap-2">
+                        <span className="truncate">{lookupResult.user.firstName} {lookupResult.user.lastName}</span>
+                        <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 text-[11px] py-0 px-1.5 shrink-0">
+                          {t("employees.accountVerifiedPlatform")}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {lookupResult.user.email} {lookupResult.user.phone ? `• ${lookupResult.user.phone}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>{t("employees.firstName")}</Label>
               <Input
@@ -943,23 +1145,6 @@ const Employees: React.FC = () => {
               )}
             </div>
             <div className="space-y-2">
-              <Label>{t("employees.email")}</Label>
-              <Input
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                placeholder="example@company.com"
-                className={hasError(errors, "email") ? "border-red-500" : ""}
-              />
-              {hasError(errors, "email") && (
-                <p className="text-sm text-red-500">
-                  {getErrorMessage(errors, "email")}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
               <Label>{t("employees.phone")}</Label>
               <Input
                 value={formData.phone}
@@ -975,23 +1160,33 @@ const Employees: React.FC = () => {
                 </p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label>{t("employees.password")}</Label>
-              <Input
-                type="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                placeholder={t("employees.passwordPlaceholder")}
-                className={hasError(errors, "password") ? "border-red-500" : ""}
-              />
-              {hasError(errors, "password") && (
-                <p className="text-sm text-red-500">
-                  {getErrorMessage(errors, "password")}
-                </p>
-              )}
-            </div>
+
+            {/* Password Field: Hidden if user exists, Shown if new user */}
+            {!lookupResult?.exists ? (
+              <div className="space-y-2">
+                <Label>{t("employees.password")}</Label>
+                <Input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  placeholder={t("employees.passwordPlaceholder")}
+                  className={hasError(errors, "password") ? "border-red-500" : ""}
+                />
+                {hasError(errors, "password") && (
+                  <p className="text-sm text-red-500">
+                    {getErrorMessage(errors, "password")}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="col-span-2 p-3 rounded-xl bg-muted/40 border border-border/60 flex items-center gap-2.5 text-xs text-muted-foreground">
+                <KeyRound className="h-4 w-4 text-primary shrink-0" />
+                <span>{t("employees.existingUserPasswordHint")}</span>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>{t("employees.role")}</Label>
               <Select
@@ -1239,12 +1434,19 @@ const Employees: React.FC = () => {
             >
               {t("employees.cancel")}
             </Button>
-            <Button onClick={handleAddEmployee} disabled={submitting}>
+            <Button
+              onClick={handleAddEmployee}
+              disabled={submitting || lookupResult?.status === "ALREADY_ACTIVE_EMPLOYEE"}
+            >
               {submitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {t("employees.saving")}
                 </>
+              ) : lookupResult?.status === "COMPANY_USER_NOT_EMPLOYEE" ? (
+                t("employees.upgradeToEmployee")
+              ) : lookupResult?.status === "EXISTING_PLATFORM_USER" ? (
+                t("employees.linkAndAddEmployee")
               ) : (
                 t("employees.addEmployeeButton")
               )}

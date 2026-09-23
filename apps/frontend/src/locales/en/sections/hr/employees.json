@@ -111,5 +111,15 @@
   "errorDelete": "Error deleting employee",
   "errorEmployeeExists": "This employee already exists",
   "errorInvalidData": "Invalid data",
-  "country": "Egypt"
+  "country": "Egypt",
+  "lookupChecking": "Checking account...",
+  "accountVerifiedPlatform": "Verified MaxP Account",
+  "accountCompanyMember": "Registered Team Member in Your Company",
+  "accountAlreadyEmployee": "Already an Active Employee in Your Company",
+  "accountAlreadyEmployeeDesc": "Employee is already registered with Employee ID: {{employeeNumber}}",
+  "existingUserPasswordHint": "This user already has an active account and password on the platform; they can log in directly with their existing credentials.",
+  "viewEmployeeProfile": "View Employee Profile",
+  "linkAndAddEmployee": "Link & Add Employee",
+  "upgradeToEmployee": "Upgrade & Add to Employees",
+  "errorEmployeeAlreadyActive": "This employee is already active in your company and cannot be added again"
 }
