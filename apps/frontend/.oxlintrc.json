@@ -1,0 +1,73 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [],
+  "categories": {
+    "correctness": "off",
+    "perf": "off",
+    "style": "off",
+    "suspicious": "off",
+    "pedantic": "off",
+    "restriction": "off"
+  },
+  "env": {
+    "browser": true,
+    "es2024": true,
+    "node": true,
+    "jest": true
+  },
+  "globals": {
+    "React": "readonly",
+    "JSX": "readonly",
+    "NodeJS": "readonly",
+    "HTMLDivElement": "readonly",
+    "HTMLInputElement": "readonly",
+    "HTMLButtonElement": "readonly",
+    "HTMLTextAreaElement": "readonly",
+    "HTMLSelectElement": "readonly",
+    "HTMLSpanElement": "readonly",
+    "HTMLCanvasElement": "readonly",
+    "HTMLAnchorElement": "readonly",
+    "HTMLHeadingElement": "readonly",
+    "HTMLParagraphElement": "readonly",
+    "HTMLTableElement": "readonly",
+    "HTMLTableCellElement": "readonly",
+    "HTMLTableRowElement": "readonly",
+    "HTMLElement": "readonly",
+    "Element": "readonly",
+    "Document": "readonly",
+    "Window": "readonly",
+    "File": "readonly",
+    "FileList": "readonly",
+    "Blob": "readonly",
+    "FormData": "readonly",
+    "URL": "readonly",
+    "URLSearchParams": "readonly",
+    "Event": "readonly",
+    "CustomEvent": "readonly",
+    "MouseEvent": "readonly",
+    "KeyboardEvent": "readonly",
+    "TouchEvent": "readonly",
+    "UIEvent": "readonly",
+    "MutationObserver": "readonly",
+    "ResizeObserver": "readonly",
+    "IntersectionObserver": "readonly",
+    "WebSocket": "readonly",
+    "Worker": "readonly",
+    "Notification": "readonly",
+    "DOMParser": "readonly",
+    "XMLSerializer": "readonly",
+    "TextEncoder": "readonly",
+    "TextDecoder": "readonly",
+    "DOMException": "readonly",
+    "ClipboardItem": "readonly"
+  },
+  "ignorePatterns": [
+    "**/__tests__/**",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/setupTests.*"
+  ],
+  "rules": {
+    "no-undef": "error"
+  }
+}

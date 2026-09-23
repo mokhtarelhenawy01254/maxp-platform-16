@@ -41,6 +41,7 @@ import { buildStoreUrl } from "../../utils/storeUrl";
 import { hasStoreApp } from "../../utils/storeShortcut";
 import HeaderWalletShortcut from "../wallet/HeaderWalletShortcut";
 import AppUpdateIndicator from "../common/AppUpdateIndicator";
+import RouteErrorBoundary from "../common/RouteErrorBoundary";
 import { envConfig } from "../../config/environment";
 
 const SuperAdminLayout = React.lazy(() => import("./SuperAdminLayout"));
@@ -1031,7 +1032,9 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                    </React.Suspense>
                  ) : (
                    <React.Suspense fallback={<ContentSkeleton />}>
-                     <React.Fragment key={companyScopeKey}>{children}</React.Fragment>
+                     <RouteErrorBoundary routeKey={location.pathname}>
+                       <React.Fragment key={companyScopeKey}>{children}</React.Fragment>
+                     </RouteErrorBoundary>
                    </React.Suspense>
                  )}
                </main>
@@ -1149,7 +1152,9 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                    </React.Suspense>
                  ) : (
                    <React.Suspense fallback={<ContentSkeleton />}>
-                     <React.Fragment key={companyScopeKey}>{children}</React.Fragment>
+                     <RouteErrorBoundary routeKey={location.pathname}>
+                       <React.Fragment key={companyScopeKey}>{children}</React.Fragment>
+                     </RouteErrorBoundary>
                    </React.Suspense>
                  )}
                </main>

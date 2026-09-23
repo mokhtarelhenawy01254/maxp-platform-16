@@ -287,11 +287,13 @@ jobs:
         run: node scripts/check-heroicons.cjs
         continue-on-error: false
 
-      # 🛡️ يمنع أي مكون أو أيقونة JSX غير مستوردة في الـ frontend (يمنع كوارث ReferenceError: X is not defined)
-      - name: Check Frontend Undeclared Components & Icons
+      # 🛡️ المعيار الذهبي 2026: فحص Rust فائق السرعة عبر oxlint + فاحص AST لمنع أي نقص استيراد أو متغير غير معرّف
+      - name: 2026 High-Speed Rust & AST Safety Gate (Oxlint & Undeclared Components)
         if: steps.diff-check.outputs.fe-needed == 'true'
         working-directory: ./apps/frontend
-        run: node scripts/check-undeclared-components.cjs
+        run: |
+          npx oxlint --config .oxlintrc.json src
+          node scripts/check-undeclared-components.cjs
         continue-on-error: false
 
       - name: Build Frontend

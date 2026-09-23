@@ -2,6 +2,7 @@ import {
   applyCatalogFilters,
   type CatalogPriceRangeValue,
   type CatalogSortValue,
+} from "./catalogFilters";
 import { getBaseDomain } from "../../utils/storeUrl";
 
 export type NullablePathInput = string | null | undefined;

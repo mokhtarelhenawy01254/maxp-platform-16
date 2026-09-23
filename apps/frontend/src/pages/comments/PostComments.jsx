@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import CommentService from "../../services/commentService";
 
 const dtf = new Intl.DateTimeFormat("ar-EG", { dateStyle: "short", timeStyle: "short" });
