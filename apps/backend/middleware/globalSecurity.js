@@ -357,6 +357,7 @@ const PUBLIC_ROUTES = [
   'GET /api/health*',
   'GET /api/v1/health*',
   'GET /api/v1/version',
+  'GET /api/v1/app/version*',
   'GET /api/v1/companies/current',
   'POST /api/v1/errors/log',
   'POST /api/v1/auth/refresh',

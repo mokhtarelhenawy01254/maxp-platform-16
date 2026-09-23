@@ -312,6 +312,7 @@ const facebookOAuthRoutes = require("./routes/facebookOAuthRoutes");
 const footerSettingsRoutes = require("./routes/footerSettingsRoutes");
 const geolocationRoutes = require("./routes/geolocation");
 const healthRoute = require("./routes/healthRoute");
+const appVersionRoutes = require("./routes/appVersionRoutes");
 const tenantSkillsRoutes = require("./routes/tenantSkillsRoutes");
 console.log(
   "🚀 [SERVER-BOOT] Applying Latest CORS Headers v2 (with x-company-slug)",
@@ -689,6 +690,15 @@ app.use("/api/v1/whatsapp-meta", whatsappMetaWebhookRoutes);
 app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
 app.use("/api/v1/bosta-webhook", bostaWebhookRoutes);
 app.use("/api/v1/health", healthRoute);
+app.use("/api/v1/app/version", appVersionRoutes);
+app.use("/api/v1/version", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    version: "1.0.0",
+    service: "maxp-backend",
+    timestamp: new Date().toISOString()
+  });
+});
 app.use("/api/geolocation", geolocationRoutes);
 app.use("/api/v1/geolocation", geolocationRoutes);
 
