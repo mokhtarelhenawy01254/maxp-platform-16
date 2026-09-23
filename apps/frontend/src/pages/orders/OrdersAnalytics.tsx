@@ -69,6 +69,9 @@ export const OrdersAnalytics: React.FC = () => {
     totalPieces,
     avgPiecesPerOrder,
     avgPiecesPerDay,
+    avgDeliveredPiecesPerDay,
+    avgCancelledPiecesPerDay,
+    avgReturnedPiecesPerDay,
     deliveredPieces,
     inTransitPieces,
     warehousePieces,
@@ -119,13 +122,19 @@ export const OrdersAnalytics: React.FC = () => {
               >
                 <option value="today">اليوم</option>
                 <option value="yesterday">أمس</option>
+                <option value="thisWeek">هذا الأسبوع</option>
+                <option value="lastWeek">الأسبوع الماضي</option>
                 <option value="7">آخر 7 أيام</option>
+                <option value="14">آخر 14 يوم (أسبوعين)</option>
                 <option value="30">آخر 30 يوم</option>
                 <option value="thisMonth">هذا الشهر</option>
                 <option value="lastMonth">الشهر الماضي</option>
+                <option value="60">آخر شهرين (60 يوم)</option>
                 <option value="90">آخر 3 أشهر</option>
                 <option value="180">آخر 6 أشهر</option>
+                <option value="thisYear">هذه السنة (من يناير)</option>
                 <option value="365">آخر سنة</option>
+                <option value="all">كل الأوقات</option>
                 <option value="custom">فترة مخصصة</option>
               </select>
               <ChevronDownIcon className="h-3 w-3 text-zinc-400 absolute end-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -264,6 +273,9 @@ export const OrdersAnalytics: React.FC = () => {
           avgReturnedPerDay={avgReturnedPerDay}
           avgPiecesPerOrder={avgPiecesPerOrder}
           avgPiecesPerDay={avgPiecesPerDay}
+          avgDeliveredPiecesPerDay={avgDeliveredPiecesPerDay}
+          avgCancelledPiecesPerDay={avgCancelledPiecesPerDay}
+          avgReturnedPiecesPerDay={avgReturnedPiecesPerDay}
           netRevenue={netRevenue}
           pendingRevenue={pendingRevenue}
           lostRevenue={lostRevenue}

@@ -6,13 +6,19 @@ import { PeriodKey } from "./types";
 export const VALID_PERIOD_KEYS: readonly PeriodKey[] = [
   "today",
   "yesterday",
+  "thisWeek",
+  "lastWeek",
   "7",
+  "14",
   "30",
   "thisMonth",
   "lastMonth",
+  "60",
   "90",
   "180",
+  "thisYear",
   "365",
+  "all",
   "custom",
 ];
 
@@ -58,6 +64,18 @@ export const formatLocalDate = (d: Date): string => {
 };
 
 /**
+ * Parse an inclusive day count between start and end strings (YYYY-MM-DD).
+ */
+export const calculateCustomDaysCount = (startStr: string, endStr: string): number => {
+  if (!startStr || !endStr) return 1;
+  const s = new Date(startStr + "T00:00:00");
+  const e = new Date(endStr + "T00:00:00");
+  if (isNaN(s.getTime()) || isNaN(e.getTime())) return 1;
+  const diffDays = Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  return Math.max(1, diffDays);
+};
+
+/**
  * Get start date, end date, and elapsed day count for any preset period.
  * Anchored to Cairo timezone, completely immune to UTC timezone rollback and off-by-one errors.
  */
@@ -77,6 +95,33 @@ export const getPresetRange = (
     y.setDate(y.getDate() - 1);
     const dStr = formatLocalDate(y);
     return { start: dStr, end: dStr, daysCount: 1 };
+  }
+
+  if (key === "thisWeek") {
+    // Week starts on Saturday in Egypt & Arab countries
+    const daysSinceSaturday = (today.getDay() + 1) % 7;
+    const start = new Date(today);
+    start.setDate(today.getDate() - daysSinceSaturday);
+    const daysCount = daysSinceSaturday + 1;
+    return {
+      start: formatLocalDate(start),
+      end: formatLocalDate(today),
+      daysCount: Math.max(1, daysCount),
+    };
+  }
+
+  if (key === "lastWeek") {
+    // Previous Saturday to Friday
+    const daysSinceSaturday = (today.getDay() + 1) % 7;
+    const end = new Date(today);
+    end.setDate(today.getDate() - daysSinceSaturday - 1);
+    const start = new Date(end);
+    start.setDate(end.getDate() - 6);
+    return {
+      start: formatLocalDate(start),
+      end: formatLocalDate(end),
+      daysCount: 7,
+    };
   }
 
   if (key === "thisMonth") {
@@ -101,6 +146,26 @@ export const getPresetRange = (
     };
   }
 
+  if (key === "thisYear") {
+    const start = new Date(today.getFullYear(), 0, 1);
+    const daysCount = calculateCustomDaysCount(formatLocalDate(start), formatLocalDate(today));
+    return {
+      start: formatLocalDate(start),
+      end: formatLocalDate(today),
+      daysCount: Math.max(1, daysCount),
+    };
+  }
+
+  if (key === "all") {
+    const start = new Date(2023, 0, 1);
+    const daysCount = calculateCustomDaysCount(formatLocalDate(start), formatLocalDate(today));
+    return {
+      start: formatLocalDate(start),
+      end: formatLocalDate(today),
+      daysCount: Math.max(1, daysCount),
+    };
+  }
+
   const n = Number(key) || 30;
   const start = new Date(today);
   start.setDate(start.getDate() - (n - 1)); // e.g. 7 days ending today: today - 6
@@ -109,16 +174,4 @@ export const getPresetRange = (
     end: formatLocalDate(today),
     daysCount: n,
   };
-};
-
-/**
- * Parse an inclusive day count between start and end strings (YYYY-MM-DD).
- */
-export const calculateCustomDaysCount = (startStr: string, endStr: string): number => {
-  if (!startStr || !endStr) return 1;
-  const s = new Date(startStr + "T00:00:00");
-  const e = new Date(endStr + "T00:00:00");
-  if (isNaN(s.getTime()) || isNaN(e.getTime())) return 1;
-  const diffDays = Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  return Math.max(1, diffDays);
 };

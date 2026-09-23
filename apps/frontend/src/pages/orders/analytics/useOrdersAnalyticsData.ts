@@ -24,7 +24,7 @@ export const useOrdersAnalyticsData = () => {
   const [period, setPeriod] = useState<PeriodKey>(() => {
     const p = searchParams.get("period");
     if (isValidPeriodKey(p)) return p;
-    return "30";
+    return "today";
   });
 
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>(() => {
@@ -37,7 +37,7 @@ export const useOrdersAnalyticsData = () => {
       const preset = getPresetRange(p);
       return { start: preset.start, end: preset.end };
     }
-    const init = getPresetRange("30");
+    const init = getPresetRange("today");
     return { start: init.start, end: init.end };
   });
 
@@ -280,11 +280,15 @@ export const useOrdersAnalyticsData = () => {
   const cancelledPct = totalOrders > 0 ? Number(((cancelledOrders / safeTotal) * 100).toFixed(1)) : 0;
   const returnedPct = totalOrders > 0 ? Number(((returnedOrders / safeTotal) * 100).toFixed(1)) : 0;
 
-  // Daily Averages (متوسط الطلبات اليومية المسلمة والملغاة والمرتجعة)
+  // Daily Averages (متوسط الطلبات والقطع اليومية المسلمة والملغاة والمرتجعة)
   const avgOrdersPerDay = daysCount > 0 ? Number((totalOrders / daysCount).toFixed(1)) : totalOrders;
   const avgDeliveredPerDay = daysCount > 0 ? Number((deliveredOrders / daysCount).toFixed(2)) : deliveredOrders;
   const avgCancelledPerDay = daysCount > 0 ? Number((cancelledOrders / daysCount).toFixed(2)) : cancelledOrders;
   const avgReturnedPerDay = daysCount > 0 ? Number((returnedOrders / daysCount).toFixed(2)) : returnedOrders;
+
+  const avgDeliveredPiecesPerDay = daysCount > 0 && deliveredPieces > 0 ? Number((deliveredPieces / daysCount).toFixed(1)) : 0;
+  const avgCancelledPiecesPerDay = daysCount > 0 && cancelledPieces > 0 ? Number((cancelledPieces / daysCount).toFixed(1)) : 0;
+  const avgReturnedPiecesPerDay = daysCount > 0 && returnedPieces > 0 ? Number((returnedPieces / daysCount).toFixed(1)) : 0;
 
   // Financials
   const deliveryRate = deliveredPct;
@@ -466,6 +470,9 @@ export const useOrdersAnalyticsData = () => {
     totalPieces,
     avgPiecesPerOrder,
     avgPiecesPerDay,
+    avgDeliveredPiecesPerDay,
+    avgCancelledPiecesPerDay,
+    avgReturnedPiecesPerDay,
     deliveredPieces,
     inTransitPieces,
     warehousePieces,

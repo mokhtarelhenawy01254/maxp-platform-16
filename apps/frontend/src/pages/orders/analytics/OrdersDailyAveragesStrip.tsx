@@ -18,6 +18,9 @@ interface OrdersDailyAveragesStripProps {
   avgReturnedPerDay: number;
   avgPiecesPerOrder?: number;
   avgPiecesPerDay?: number;
+  avgDeliveredPiecesPerDay?: number;
+  avgCancelledPiecesPerDay?: number;
+  avgReturnedPiecesPerDay?: number;
   netRevenue: number;
   pendingRevenue: number;
   lostRevenue: number;
@@ -40,6 +43,9 @@ export const OrdersDailyAveragesStrip: React.FC<OrdersDailyAveragesStripProps> =
   avgReturnedPerDay,
   avgPiecesPerOrder = 0,
   avgPiecesPerDay = 0,
+  avgDeliveredPiecesPerDay = 0,
+  avgCancelledPiecesPerDay = 0,
+  avgReturnedPiecesPerDay = 0,
   netRevenue,
   pendingRevenue,
   lostRevenue,
@@ -90,7 +96,9 @@ export const OrdersDailyAveragesStrip: React.FC<OrdersDailyAveragesStripProps> =
                 <span className="text-base sm:text-lg font-black tabular-nums text-zinc-900 dark:text-white">
                   {avgOrdersPerDay}
                 </span>
-                <span className="block text-[9px] text-zinc-400 mt-0.5">طلب / يوم</span>
+                <span className="block text-[9px] text-zinc-400 mt-0.5">
+                  طلب / يوم {avgPiecesPerDay > 0 && `(${avgPiecesPerDay} ق)`}
+                </span>
               </div>
 
               {/* Delivered Daily */}
@@ -102,7 +110,9 @@ export const OrdersDailyAveragesStrip: React.FC<OrdersDailyAveragesStripProps> =
                 <span className="text-base sm:text-lg font-black tabular-nums text-emerald-600 dark:text-emerald-400">
                   {avgDeliveredPerDay}
                 </span>
-                <span className="block text-[9px] text-zinc-400 mt-0.5">طلب / يوم</span>
+                <span className="block text-[9px] text-emerald-600/80 dark:text-emerald-400/80 font-medium mt-0.5">
+                  طلب {avgDeliveredPiecesPerDay > 0 && `· ${avgDeliveredPiecesPerDay} ق`}
+                </span>
               </div>
 
               {/* Cancelled Daily */}
@@ -114,7 +124,9 @@ export const OrdersDailyAveragesStrip: React.FC<OrdersDailyAveragesStripProps> =
                 <span className="text-base sm:text-lg font-black tabular-nums text-rose-600 dark:text-rose-400">
                   {avgCancelledPerDay}
                 </span>
-                <span className="block text-[9px] text-zinc-400 mt-0.5">طلب / يوم</span>
+                <span className="block text-[9px] text-rose-600/80 dark:text-rose-400/80 font-medium mt-0.5">
+                  طلب {avgCancelledPiecesPerDay > 0 && `· ${avgCancelledPiecesPerDay} ق`}
+                </span>
               </div>
 
               {/* Returned Daily */}
@@ -126,7 +138,9 @@ export const OrdersDailyAveragesStrip: React.FC<OrdersDailyAveragesStripProps> =
                 <span className="text-base sm:text-lg font-black tabular-nums text-red-600 dark:text-red-400">
                   {avgReturnedPerDay}
                 </span>
-                <span className="block text-[9px] text-zinc-400 mt-0.5">طلب / يوم</span>
+                <span className="block text-[9px] text-red-600/80 dark:text-red-400/80 font-medium mt-0.5">
+                  طلب {avgReturnedPiecesPerDay > 0 && `· ${avgReturnedPiecesPerDay} ق`}
+                </span>
               </div>
             </div>
           )}
