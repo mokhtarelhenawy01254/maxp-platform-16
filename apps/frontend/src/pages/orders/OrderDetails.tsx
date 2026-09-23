@@ -991,7 +991,7 @@ const OrderDetails: React.FC = () => {
   });
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <div className="w-full px-3 sm:px-6 lg:px-8 py-3.5 sm:py-6">
       {/* Header */}
       <OrderHeader
         order={order}
@@ -1025,66 +1025,19 @@ const OrderDetails: React.FC = () => {
         statusOptions={canUpdateOrderStatus ? filteredStatusOptions : []}
         onStatusSelect={canUpdateOrderStatus ? handleQuickStatusSelect : undefined}
         whatsappChatUrl={whatsappChatUrl}
+        canUpdatePaymentStatus={canUpdatePaymentStatus}
+        onUpdatePayment={() => setShowPaymentModal(true)}
+        canPostponeOrder={canUpdateOrderStatus}
+        onPostponeOrder={() => setShowPostponeModal(true)}
+        canPartialDelivery={Boolean(canUpdateOrderStatus && order.items && order.items.length > 0)}
+        onPartialDelivery={() => setShowPartialDeliveryModal(true)}
+        showLateCancellationButton={showLateCancellationButton}
+        onCancelRequest={() => {
+          if (confirm(t("orderDetails.cancelConfirmMessage"))) {
+            void updateStatus("PENDING_CANCELLATION", t("orderDetails.cancellationNote"), false);
+          }
+        }}
       />
-
-      {/* Quick Actions Bar (Below Header) */}
-      <div className="mt-4 flex flex-wrap gap-3 sm:gap-4">
-        {!isEditing && (
-          <>
-            <button
-              type="button"
-              onClick={() => setShowTicketModal(true)}
-              className="inline-flex items-center px-3.5 py-2 border border-amber-300 shadow-xs text-sm leading-4 font-medium rounded-lg text-amber-800 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700 dark:hover:bg-amber-900/30 transition active:scale-97"
-              title="فتح أو متابعة تذاكر الدعم لهذا الطلب"
-            >
-              <TicketIcon className="ml-2 -mr-0.5 h-4 w-4 text-amber-600 dark:text-amber-400" />
-              تذاكر الدعم
-            </button>
-
-            {canUpdatePaymentStatus && (
-              <button
-                onClick={() => setShowPaymentModal(true)}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"
-              >
-                <CreditCardIcon className="ml-2 -mr-0.5 h-4 w-4" />
-                {t("orderDetails.updatePayment")}
-              </button>
-            )}
-            {canUpdateOrderStatus && (
-              <button
-                onClick={() => setShowPostponeModal(true)}
-                className="inline-flex items-center px-3 py-2 border border-orange-300 shadow-sm text-sm leading-4 font-medium rounded-md text-orange-700 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-700 dark:hover:bg-orange-900/30"
-              >
-                <CalendarDaysIcon className="ml-2 -mr-0.5 h-4 w-4" />
-                {t("orderDetails.postponeOrder")}
-              </button>
-            )}
-            {canUpdateOrderStatus && order.items && order.items.length > 0 && (
-              <button
-                onClick={() => setShowPartialDeliveryModal(true)}
-                className="inline-flex items-center px-3 py-2 border border-indigo-300 shadow-sm text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-700 dark:hover:bg-indigo-900/30"
-              >
-                <TruckIcon className="ml-2 -mr-0.5 h-4 w-4" />
-                {t("orderDetails.partialDelivery")}
-              </button>
-            )}
-            {showLateCancellationButton && (
-              <button
-                onClick={() => {
-                  if (confirm(t("orderDetails.cancelConfirmMessage"))) {
-                    void updateStatus("PENDING_CANCELLATION", t("orderDetails.cancellationNote"), false);
-                  }
-                }}
-                disabled={updating}
-                className="inline-flex items-center px-3 py-2 border border-rose-300 shadow-sm text-sm leading-4 font-medium rounded-md text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-700 dark:hover:bg-rose-900/30"
-              >
-                <XCircleIcon className="ml-2 -mr-0.5 h-4 w-4" />
-                {t("orderDetails.cancelOrderRequest")}
-              </button>
-            )}
-          </>
-        )}
-      </div>
 
       {/* Return Alert Banner & Details Card */}
       {returnDetails && returnDetails.isReturned && (

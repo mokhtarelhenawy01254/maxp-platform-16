@@ -13,6 +13,8 @@ import {
   ArrowPathRoundedSquareIcon,
   CreditCardIcon,
   ArrowsRightLeftIcon,
+  CalendarDaysIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { WhatsAppIcon } from "../../../components/icons/brands";
 import { useDateFormat } from "../../../hooks/useDateFormat";
@@ -50,6 +52,14 @@ interface OrderHeaderProps {
   statusOptions?: StatusOption[];
   onStatusSelect?: (statusCode: string) => void;
   whatsappChatUrl?: string | null;
+  canUpdatePaymentStatus?: boolean;
+  onUpdatePayment?: () => void;
+  canPostponeOrder?: boolean;
+  onPostponeOrder?: () => void;
+  canPartialDelivery?: boolean;
+  onPartialDelivery?: () => void;
+  showLateCancellationButton?: boolean;
+  onCancelRequest?: () => void;
 }
 
 const OrderHeader: React.FC<OrderHeaderProps> = ({
@@ -70,6 +80,14 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
   statusOptions = [],
   onStatusSelect,
   whatsappChatUrl,
+  canUpdatePaymentStatus = false,
+  onUpdatePayment,
+  canPostponeOrder = false,
+  onPostponeOrder,
+  canPartialDelivery = false,
+  onPartialDelivery,
+  showLateCancellationButton = false,
+  onCancelRequest,
 }) => {
   const { t } = useTranslation();
   const { formatDate, formatDateTime } = useDateFormat();
@@ -134,17 +152,18 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
   };
 
   return (
-    <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div className="flex items-center">
+    <div className="mb-4 sm:mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+      <div className="flex items-start sm:items-center min-w-0">
         <button
           onClick={onBack}
-          className="ml-4 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+          className="me-2.5 sm:me-4 p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition shrink-0"
+          aria-label={t("common.back", { defaultValue: "رجوع" })}
         >
-          <ArrowLeftIcon className="h-6 w-6" />
+          <ArrowLeftIcon className="h-5 w-5 sm:h-6 sm:w-6 rtl:rotate-180" />
         </button>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <ShoppingBagIcon className="h-7 w-7 sm:h-8 sm:w-8 text-indigo-600 dark:text-indigo-400" />
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 flex flex-wrap items-center gap-1.5 sm:gap-2 leading-tight">
+            <ShoppingBagIcon className="h-5 w-5 sm:h-7 sm:w-7 text-indigo-600 dark:text-indigo-400 shrink-0" />
             <span>{t("orderDetails.titlePrefix", { defaultValue: "تفاصيل الطلب" })}</span>
             <span dir="ltr" className="font-mono tabular-nums text-slate-800 dark:text-slate-200">
               #{String(order.orderNumber || "").startsWith("cart_")
@@ -152,14 +171,14 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                 : order.orderNumber}
             </span>
           </h1>
-          <div className="mt-2 flex items-center gap-3">
-            <p className="text-gray-600 dark:text-gray-400">
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+            <p className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
               {t("orderDetails.createdAt", {
                 date: formatDateTime(order.createdAt),
               })}
             </p>
             {currentStatusConfig && (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <div className="relative" ref={statusMenuRef}>
                   <button
                     type="button"
@@ -172,7 +191,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     }
                     aria-haspopup={canQuickSelectStatus ? "menu" : undefined}
                     aria-expanded={canQuickSelectStatus ? isStatusMenuOpen : undefined}
-                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium transition hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-default"
+                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-medium transition hover:shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-default"
                     style={statusStyles}
                   >
                     <span>
@@ -188,7 +207,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     </span>
                     {canQuickSelectStatus && (
                       <ChevronDownIcon
-                        className={`h-4 w-4 transition-transform ${
+                        className={`h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform ${
                           isStatusMenuOpen ? "rotate-180" : ""
                         }`}
                       />
@@ -239,13 +258,13 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                   if (!returnDetails?.isReturned) return null;
                   return (
                     <div
-                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-800 shadow-xs"
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-800 shadow-2xs"
                       title={returnDetails.reason ? `سبب المرتجع: ${returnDetails.reason}` : "طلب مرتجع"}
                     >
                       <ArrowPathRoundedSquareIcon className="h-3.5 w-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
                       <span>{returnDetails.returnTypeLabel}</span>
                       {returnDetails.reason && (
-                        <span className="max-w-[200px] sm:max-w-[320px] truncate font-semibold border-r border-rose-300 dark:border-rose-700 pr-1.5 mr-0.5 text-rose-950 dark:text-rose-100">
+                        <span className="max-w-[160px] sm:max-w-[320px] truncate font-semibold border-r border-rose-300 dark:border-rose-700 pr-1.5 mr-0.5 text-rose-950 dark:text-rose-100">
                           {returnDetails.reason}
                         </span>
                       )}
@@ -258,7 +277,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                   if (order.turboShipmentStatus) {
                     const turboInfo = getTurboStatusDisplay(order.turboShipmentStatus);
                     return (
-                      <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${turboInfo.colorClass}`}>
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs font-medium ${turboInfo.colorClass}`}>
                         <TruckIcon className="h-3.5 w-3.5 shrink-0" />
                         <span>{turboInfo.label}</span>
                       </span>
@@ -275,7 +294,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     const isReturned = sStatus === "RETURNED" || sStatus === "CANCELLED";
                     return (
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border ${
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs font-medium border ${
                           isDelivered
                             ? "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
                             : isReturned
@@ -291,7 +310,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
 
                   if (carrier === "BOSTA" || firstShipment?.carrierType === "BOSTA") {
                     return (
-                      <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium bg-orange-50 text-orange-800 border border-orange-300 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800">
+                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs font-medium bg-orange-50 text-orange-800 border border-orange-300 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800">
                         <TruckIcon className="h-3.5 w-3.5 shrink-0" />
                         <span>بوستا: {sStatus === "DELIVERED" ? "تم التسليم" : `بوليصة #${trackingNumber || ""}`}</span>
                       </span>
@@ -300,7 +319,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
 
                   if (firstShipment && trackingNumber) {
                     return (
-                      <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
+                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
                         <TruckIcon className="h-3.5 w-3.5 shrink-0" />
                         <span>الشحنة: #{trackingNumber}</span>
                       </span>
@@ -320,7 +339,7 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
 
                   return (
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 sm:px-2.5 sm:py-1 text-xs font-semibold ${
                         isPaid
                           ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800"
                           : isFailed
@@ -340,85 +359,146 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
         </div>
       </div>
 
-      <div className="flex gap-3">
+      {/* Unified Action Toolbar */}
+      <div className="w-full lg:w-auto mt-1 lg:mt-0">
         {!isEditing ? (
-          <>
+          <div className="no-scrollbar flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-1 -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap">
             {canEditOrder && (
               <button
+                type="button"
                 onClick={onEdit}
-                className="inline-flex items-center px-4 py-2 border border-blue-600 dark:border-blue-500 text-sm font-medium rounded-lg text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 border border-blue-500/40 text-xs sm:text-sm font-semibold rounded-lg text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-950/30 hover:bg-blue-100/80 dark:hover:bg-blue-900/40 whitespace-nowrap shrink-0 transition active:scale-97 shadow-2xs"
               >
-                <PencilIcon className="h-4 w-4 ml-2" />
-                {t("orderDetails.editOrder")}
+                <PencilIcon className="h-4 w-4 shrink-0" />
+                <span>{t("orderDetails.editOrder")}</span>
               </button>
             )}
+
             <button
+              type="button"
               onClick={onPrint}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 border border-gray-300 dark:border-gray-600 text-xs sm:text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap shrink-0 transition active:scale-97 shadow-2xs"
             >
-              <PrinterIcon className="h-4 w-4 ml-2" />
-              {t("orderDetails.printInvoice")}
+              <PrinterIcon className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" />
+              <span>
+                <span className="hidden sm:inline">طباعة </span>
+                <span>{t("orderDetails.invoice", { defaultValue: "الفاتورة" })}</span>
+              </span>
             </button>
+
             {canPrintPreparationSlip && (
               <button
+                type="button"
                 onClick={onPrintPreparationSlip}
-                className="inline-flex items-center px-4 py-2 border border-green-300 dark:border-green-600 text-sm font-medium rounded-lg text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 transition active:scale-97"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 border border-emerald-300 dark:border-emerald-700 text-xs sm:text-sm font-medium rounded-lg text-emerald-700 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/30 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40 whitespace-nowrap shrink-0 transition active:scale-97 shadow-2xs"
               >
-                <PrinterIcon className="h-4 w-4 ml-2" />
-                طباعة ورقة التجهيز
+                <PrinterIcon className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>
+                  <span className="hidden sm:inline">طباعة </span>
+                  <span>{t("orderDetails.preparationSlip", { defaultValue: "ورقة التجهيز" })}</span>
+                </span>
               </button>
             )}
+
+            {canUpdatePaymentStatus && onUpdatePayment && (
+              <button
+                type="button"
+                onClick={onUpdatePayment}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 border border-gray-300 dark:border-gray-600 text-xs sm:text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap shrink-0 transition active:scale-97 shadow-2xs"
+              >
+                <CreditCardIcon className="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" />
+                <span>{t("orderDetails.updatePayment")}</span>
+              </button>
+            )}
+
+            {canPostponeOrder && onPostponeOrder && (
+              <button
+                type="button"
+                onClick={onPostponeOrder}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 border border-orange-300 dark:border-orange-700/70 text-xs sm:text-sm font-medium rounded-lg text-orange-700 dark:text-orange-300 bg-orange-50/70 dark:bg-orange-950/30 hover:bg-orange-100/80 dark:hover:bg-orange-900/40 whitespace-nowrap shrink-0 transition active:scale-97 shadow-2xs"
+              >
+                <CalendarDaysIcon className="h-4 w-4 shrink-0 text-orange-600 dark:text-orange-400" />
+                <span>{t("orderDetails.postponeOrder")}</span>
+              </button>
+            )}
+
+            {canPartialDelivery && onPartialDelivery && (
+              <button
+                type="button"
+                onClick={onPartialDelivery}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 border border-indigo-300 dark:border-indigo-700/70 text-xs sm:text-sm font-medium rounded-lg text-indigo-700 dark:text-indigo-300 bg-indigo-50/70 dark:bg-indigo-950/30 hover:bg-indigo-100/80 dark:hover:bg-indigo-900/40 whitespace-nowrap shrink-0 transition active:scale-97 shadow-2xs"
+              >
+                <TruckIcon className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
+                <span>{t("orderDetails.partialDelivery")}</span>
+              </button>
+            )}
+
             {onOpenTicket && (
               <button
                 type="button"
                 onClick={onOpenTicket}
-                className="inline-flex items-center px-4 py-2 border border-amber-300 dark:border-amber-600 text-sm font-medium rounded-lg text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition active:scale-97 shadow-xs"
-                title="فتح تذكرة دعم للطلب"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 border border-amber-300 dark:border-amber-700/70 text-xs sm:text-sm font-medium rounded-lg text-amber-800 dark:text-amber-200 bg-amber-50/70 dark:bg-amber-950/30 hover:bg-amber-100/80 dark:hover:bg-amber-900/40 whitespace-nowrap shrink-0 transition active:scale-97 shadow-2xs"
+                title="فتح أو متابعة تذاكر الدعم لهذا الطلب"
               >
-                <TicketIcon className="h-4 w-4 ml-2 text-amber-600 dark:text-amber-400" />
-                فتح تذكرة
+                <TicketIcon className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <span>{t("orderDetails.supportTickets", { defaultValue: "تذاكر الدعم" })}</span>
               </button>
             )}
+
             {whatsappChatUrl && (
               <Link
                 to={whatsappChatUrl}
-                className="inline-flex items-center px-4 py-2 border border-emerald-300 dark:border-emerald-700 text-sm font-medium rounded-lg text-emerald-800 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition active:scale-97 shadow-xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 border border-emerald-300 dark:border-emerald-700/70 text-xs sm:text-sm font-medium rounded-lg text-emerald-800 dark:text-emerald-200 bg-emerald-50/70 dark:bg-emerald-950/30 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40 whitespace-nowrap shrink-0 transition active:scale-97 shadow-2xs"
                 title="فتح محادثة العميل على واتساب المنصة"
               >
-                <WhatsAppIcon className="h-4 w-4 ml-2 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                واتساب المنصة
+                <WhatsAppIcon className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>{t("orderDetails.whatsapp", { defaultValue: "واتساب المنصة" })}</span>
               </Link>
             )}
+
             {["DELIVERED", "PARTIALLY_DELIVERED", "SHIPPED"].includes(String(order.status || "").toUpperCase()) && (
               <Link
                 to={`/orders/manual?exchangeOrderNumber=${encodeURIComponent(order.orderNumber)}&phone=${encodeURIComponent(order.customerPhone || "")}`}
-                className="inline-flex items-center px-4 py-2 border border-blue-300 dark:border-blue-700 text-sm font-medium rounded-lg text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition active:scale-97 shadow-xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 border border-blue-300 dark:border-blue-700/70 text-xs sm:text-sm font-medium rounded-lg text-blue-800 dark:text-blue-200 bg-blue-50/70 dark:bg-blue-950/30 hover:bg-blue-100/80 dark:hover:bg-blue-900/40 whitespace-nowrap shrink-0 transition active:scale-97 shadow-2xs"
                 title="إنشاء طلب استبدال مبني على هذا الطلب"
               >
-                <ArrowsRightLeftIcon className="h-4 w-4 ml-2 text-blue-600 dark:text-blue-400 shrink-0" />
-                طلب استبدال
+                <ArrowsRightLeftIcon className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                <span>{t("orderDetails.exchangeOrder", { defaultValue: "طلب استبدال" })}</span>
               </Link>
             )}
-          </>
+
+            {showLateCancellationButton && onCancelRequest && (
+              <button
+                type="button"
+                onClick={onCancelRequest}
+                disabled={updating}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 border border-rose-300 dark:border-rose-700/70 text-xs sm:text-sm font-medium rounded-lg text-rose-700 dark:text-rose-300 bg-rose-50/70 dark:bg-rose-950/30 hover:bg-rose-100/80 dark:hover:bg-rose-900/40 whitespace-nowrap shrink-0 transition active:scale-97 shadow-2xs disabled:opacity-50"
+              >
+                <XCircleIcon className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+                <span>{t("orderDetails.cancelOrderRequest")}</span>
+              </button>
+            )}
+          </div>
         ) : (
-          <>
+          <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={onSave}
               disabled={updating}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600"
+              className="inline-flex items-center gap-1.5 px-4 py-2 border border-transparent text-xs sm:text-sm font-semibold rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 whitespace-nowrap shrink-0 transition active:scale-97 shadow-sm disabled:opacity-50"
             >
-              {updating
-                ? t("orderDetails.saving")
-                : t("orderDetails.saveChanges")}
+              <CheckIcon className="h-4 w-4 shrink-0" />
+              <span>{updating ? t("orderDetails.saving") : t("orderDetails.saveChanges")}</span>
             </button>
             <button
+              type="button"
               onClick={onCancel}
               disabled={updating}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-300 dark:border-gray-600 text-xs sm:text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap shrink-0 transition active:scale-97 disabled:opacity-50"
             >
-              {t("orderDetails.cancel")}
+              <span>{t("orderDetails.cancel")}</span>
             </button>
-          </>
+          </div>
         )}
       </div>
     </div>
