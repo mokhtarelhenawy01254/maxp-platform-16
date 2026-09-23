@@ -12,7 +12,8 @@ import {
   PaintBrushIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
-import { STUDIO_PAGES, type StudioDeviceMode } from "./StudioTypes";
+import { type StudioDeviceMode } from "./StudioTypes";
+import { StudioPageSelector } from "./StudioPageSelector";
 
 interface StudioTopBarProps {
   storeName?: string;
@@ -53,8 +54,6 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
   onSave,
   onOpenPreview,
 }) => {
-  const activePageDef = STUDIO_PAGES.find((p) => p.id === activePageKey) || STUDIO_PAGES[0];
-
   return (
     <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-border/80 bg-background/95 px-3 backdrop-blur-md transition-all sm:px-6">
       {/* Left: Breadcrumbs & Store Info */}
@@ -82,19 +81,10 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
       {/* Center: Page Switcher & Responsive Device Selector */}
       <div className="flex items-center gap-2">
         {/* Page Switcher Dropdown */}
-        <div className="relative">
-          <select
-            value={activePageKey}
-            onChange={(e) => onPageChange(e.target.value)}
-            className="h-9 cursor-pointer appearance-none rounded-xl border border-border bg-card pe-8 ps-3 text-xs font-bold text-foreground shadow-sm focus:border-primary focus:outline-none"
-          >
-            {STUDIO_PAGES.map((page) => (
-              <option key={page.id} value={page.id}>
-                {page.icon} {page.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <StudioPageSelector
+          activePageKey={activePageKey}
+          onPageChange={onPageChange}
+        />
 
         {/* Device Switcher (Desktop / Tablet / Mobile) */}
         <div className="flex items-center rounded-xl border border-border bg-muted/40 p-0.5">

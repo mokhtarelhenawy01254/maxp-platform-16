@@ -168,6 +168,14 @@ const calculateCustomerScore = async (customerId, companyId, prismaClient = null
                 totalOrdersCount: totalAttempts,
                 customerRating: rating,
                 successScore: deliveryRate
+            },
+            select: {
+                id: true,
+                deliveryRate: true,
+                totalDelivered: true,
+                totalOrdersCount: true,
+                customerRating: true,
+                successScore: true
             }
         });
 

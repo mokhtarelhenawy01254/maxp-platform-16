@@ -3372,7 +3372,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         include: {
           customer: {
-            select: { id: true, firstName: true, lastName: true, phone: true, email: true, customerRating: true, successScore: true, deliveryRate: true }
+            select: { id: true, firstName: true, lastName: true, phone: true, email: true, customerRating: true, successScore: true, deliveryRate: true, totalDelivered: true, totalOrdersCount: true }
           },
           orderItems: {
             include: {
@@ -3672,7 +3672,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
             companyId,
             phone: { in: guestPhones }
           },
-          select: { id: true, phone: true, customerRating: true, successScore: true, deliveryRate: true }
+          select: { id: true, phone: true, customerRating: true, successScore: true, deliveryRate: true, totalDelivered: true, totalOrdersCount: true }
         });
         foundCustomers.forEach(c => {
           if (c.phone) guestCustomerByPhone.set(c.phone, c);
@@ -3766,6 +3766,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         customerRating: order.customer?.customerRating || 'UNKNOWN',
         customerSuccessScore: order.customer?.successScore ?? null,
         customerDeliveryRate: order.customer?.deliveryRate ?? null,
+        deliveryRate: order.customer?.deliveryRate ?? null,
+        totalDelivered: order.customer?.totalDelivered ?? 0,
+        totalOrdersCount: order.customer?.totalOrdersCount ?? 0,
         customer: order.customer ? {
           id: order.customer.id,
           firstName: order.customer.firstName,
@@ -3773,6 +3776,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           phone: order.customer.phone,
           email: order.customer.email,
           customerRating: order.customer.customerRating || 'UNKNOWN',
+          deliveryRate: order.customer.deliveryRate ?? null,
+          totalDelivered: order.customer.totalDelivered ?? 0,
+          totalOrdersCount: order.customer.totalOrdersCount ?? 0,
         } : null,
         customerName: finalCustomerName,
         customerPhone: order.customer?.phone || order.customerPhone || '',
@@ -3920,6 +3926,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         customerRating: matchedCust?.customerRating || 'UNKNOWN',
         customerSuccessScore: matchedCust?.successScore ?? null,
         customerDeliveryRate: matchedCust?.deliveryRate ?? null,
+        deliveryRate: matchedCust?.deliveryRate ?? null,
+        totalDelivered: matchedCust?.totalDelivered ?? 0,
+        totalOrdersCount: matchedCust?.totalOrdersCount ?? 0,
         customer: matchedCust ? {
           id: matchedCust.id,
           firstName: order.guestName || '',
@@ -3927,6 +3936,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           phone: order.guestPhone,
           email: order.guestEmail,
           customerRating: matchedCust.customerRating || 'UNKNOWN',
+          deliveryRate: matchedCust.deliveryRate ?? null,
+          totalDelivered: matchedCust.totalDelivered ?? 0,
+          totalOrdersCount: matchedCust.totalOrdersCount ?? 0,
         } : null,
         customerName: order.guestName || '',
         customerPhone: order.guestPhone || '',
@@ -6000,7 +6012,9 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             email: true,
             customerRating: true,
             successScore: true,
-            deliveryRate: true
+            deliveryRate: true,
+            totalDelivered: true,
+            totalOrdersCount: true
           }
         },
         orderItems: {
@@ -6357,6 +6371,9 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         customerRating: guestCustomer?.customerRating || 'UNKNOWN',
         customerSuccessScore: guestCustomer?.successScore ?? null,
         customerDeliveryRate: guestCustomer?.deliveryRate ?? null,
+        deliveryRate: guestCustomer?.deliveryRate ?? null,
+        totalDelivered: guestCustomer?.totalDelivered ?? 0,
+        totalOrdersCount: guestCustomer?.totalOrdersCount ?? 0,
         customer: guestCustomer ? {
           id: guestCustomer.id,
           firstName: guestOrder.guestName || '',
@@ -6364,6 +6381,9 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
           phone: guestOrder.guestPhone,
           email: guestOrder.guestEmail,
           customerRating: guestCustomer.customerRating || 'UNKNOWN',
+          deliveryRate: guestCustomer.deliveryRate ?? null,
+          totalDelivered: guestCustomer.totalDelivered ?? 0,
+          totalOrdersCount: guestCustomer.totalOrdersCount ?? 0,
         } : null,
         customerName: guestOrder.guestName || '',
         customerPhone: guestOrder.guestPhone || '',
@@ -6574,6 +6594,9 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         customerRating: order.customer?.customerRating || 'UNKNOWN',
         customerSuccessScore: order.customer?.successScore ?? null,
         customerDeliveryRate: order.customer?.deliveryRate ?? null,
+        deliveryRate: order.customer?.deliveryRate ?? null,
+        totalDelivered: order.customer?.totalDelivered ?? 0,
+        totalOrdersCount: order.customer?.totalOrdersCount ?? 0,
         customer: order.customer ? {
           id: order.customer.id,
           firstName: order.customer.firstName,
@@ -6581,6 +6604,9 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
           phone: order.customer.phone,
           email: order.customer.email,
           customerRating: order.customer.customerRating || 'UNKNOWN',
+          deliveryRate: order.customer.deliveryRate ?? null,
+          totalDelivered: order.customer.totalDelivered ?? 0,
+          totalOrdersCount: order.customer.totalOrdersCount ?? 0,
         } : null,
         customerName: finalCustomerName,
         customerPhone: order.customerPhone || order.customer?.phone || '',

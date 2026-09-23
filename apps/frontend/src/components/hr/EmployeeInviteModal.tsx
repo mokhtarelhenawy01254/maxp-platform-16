@@ -64,7 +64,7 @@ interface InvitationItem {
 interface EmployeeInviteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  departments: Department[];
+  departments?: Department[];
   onInvitationCreated?: () => void;
 }
 
@@ -76,7 +76,10 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<"create" | "active">("create");
   const [positions, setPositions] = useState<Position[]>([]);
+  const [localDepartments, setLocalDepartments] = useState<Department[]>([]);
   const [loadingPositions, setLoadingPositions] = useState(false);
+
+  const effectiveDepartments = (departments && departments.length > 0) ? departments : localDepartments;
 
   // Form states
   const [departmentId, setDepartmentId] = useState<string>("none");
@@ -84,8 +87,8 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
   const [role, setRole] = useState<string>("AGENT");
   const [contractType, setContractType] = useState<string>("FULL_TIME");
   const [expiryDays, setExpiryDays] = useState<string>("7");
-  const [email, setEmail] = useState<string>("");
-  const [phone, setPhone] = useState<string>("");
+  const [email, setEmail] = useState<string>("" );
+  const [phone, setPhone] = useState<string>("" );
 
   const [generating, setGenerating] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
@@ -98,6 +101,9 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
 
   useEffect(() => {
     if (open) {
+      if (!departments || departments.length === 0) {
+        fetchDepartments();
+      }
       fetchPositions();
       fetchActiveInvitations();
     } else {
@@ -105,6 +111,17 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
       setCopied(false);
     }
   }, [open]);
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await api.get("/hr/departments");
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        setLocalDepartments(res.data.data);
+      }
+    } catch {
+      // Ignored
+    }
+  };
 
   const fetchPositions = async () => {
     try {
@@ -186,7 +203,7 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
   const shareViaWhatsApp = (linkToShare?: string) => {
     const targetLink = linkToShare || generatedLink;
     if (!targetLink) return;
-    const selectedDeptName = departments.find((d) => d.id === departmentId)?.name;
+    const selectedDeptName = effectiveDepartments.find((d) => d.id === departmentId)?.name;
     const selectedPosTitle = positions.find((p) => p.id === positionId)?.title;
 
     let greeting = "السلام عليكم ورحمة الله،\nيسعدنا دعوتك للانضمام إلى فريق عملنا";
@@ -331,7 +348,7 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">بدون قسم محدد</SelectItem>
-                    {departments.map((dept) => (
+                    {effectiveDepartments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.id}>
                         {dept.name}
                       </SelectItem>
