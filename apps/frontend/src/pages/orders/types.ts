@@ -241,6 +241,7 @@ export interface OrderDetailsType {
   // Session Details & Customer First Order Metrics
   sessionDetails?: OrderSessionDetailsData | null;
   firstOrderInfo?: CustomerFirstOrderInfo | null;
+  customerHistory?: CustomerOrderHistoryData | null;
 }
 
 export interface Government {
@@ -290,4 +291,58 @@ export interface CustomerFirstOrderInfo {
   firstOrderAt?: string | null;
   totalOrdersCount: number;
 }
+
+export interface CustomerOrderHistoryItem {
+  id: string;
+  orderNumber: string;
+  createdAt: string | null;
+  status: string;
+  category?: 'DELIVERED' | 'CANCELLED' | 'RETURNED' | 'IN_PROGRESS' | 'PENDING';
+  paymentStatus?: string | null;
+  paymentMethod?: string | null;
+  total: number;
+  subtotal?: number;
+  shipping?: number;
+  currency: string;
+  itemsCount: number;
+  items: Array<{
+    id?: string;
+    name: string;
+    color?: string | null;
+    size?: string | null;
+    quantity: number;
+    price: number;
+    total?: number;
+    image?: string | null;
+  }>;
+  isCurrentOrder: boolean;
+}
+
+export interface CustomerOrderHistoryStats {
+  totalOrders: number;
+  deliveredCount: number;
+  cancelledCount: number;
+  returnedCount: number;
+  inProgressCount: number;
+  pendingCount: number;
+  deliverySuccessRate: number | null;
+  totalDeliveredSpent: number;
+  totalAllOrdersValue: number;
+  averageOrderValue: number;
+  firstOrderDate: string | null;
+  lastOrderDate: string | null;
+  isRepeatCustomer: boolean;
+}
+
+export interface CustomerOrderHistoryData {
+  stats: CustomerOrderHistoryStats;
+  orders: CustomerOrderHistoryItem[];
+  customerSummary?: {
+    matchedBy?: string[];
+    customerName?: string | null;
+    phone?: string | null;
+    email?: string | null;
+  };
+}
+
 

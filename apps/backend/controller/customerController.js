@@ -1928,7 +1928,7 @@ const updateCustomer = async (req, res) => {
     }
 
     const { customerId } = req.params;
-    const { firstName, lastName, email, phone, phone2, password, address, city, country, status, notes, birthday } = req.body;
+    const { firstName, lastName, email, phone, phone2, password, address, city, country, status, notes, birthday, customerRating } = req.body;
 
     // التحقق من وجود العميل وانتمائه للشركة
     const customer = await getSharedPrismaClient().customer.findUnique({
@@ -2001,6 +2001,22 @@ const updateCustomer = async (req, res) => {
       phoneFields.phoneNormalized = toCanonicalE164(phone) || null;
     }
 
+    const ratingFields = {};
+    if (customerRating !== undefined) {
+      const validRatings = {
+        EXCELLENT: 'EXCELLENT',
+        GOOD: 'GOOD',
+        AVERAGE: 'AVERAGE',
+        POOR: 'POOR',
+        BAD: 'POOR',
+        UNKNOWN: 'UNKNOWN'
+      };
+      const normalized = validRatings[String(customerRating).trim().toUpperCase()];
+      if (normalized) {
+        ratingFields.customerRating = normalized;
+      }
+    }
+
     const updatedCustomer = await getSharedPrismaClient().customer.update({
       where: { id: customerId },
       data: {
@@ -2008,6 +2024,7 @@ const updateCustomer = async (req, res) => {
         lastName,
         email: email || null,
         ...phoneFields,
+        ...ratingFields,
         password: hashedPassword,
         status: status || 'LEAD',
         notes: notes || null,

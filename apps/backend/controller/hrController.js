@@ -1403,6 +1403,157 @@ async function getDepartmentStats(req, res) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
+ * 🔍 التحقق والاستعلام عن مستخدم بالبريد أو الهاتف قبل إضافته كموظف
+ * GET /api/hr/employees/lookup-user?query=...
+ */
+async function lookupUser(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { query } = req.query;
+
+    if (!query || typeof query !== "string" || query.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "يرجى إدخال البريد الإلكتروني أو رقم الهاتف للبحث",
+      });
+    }
+
+    const trimmedQuery = query.trim();
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedQuery);
+    const emailSearch = trimmedQuery.toLowerCase();
+
+    const prisma = getSharedPrismaClient();
+
+    // البحث في جدول المستخدمين
+    const user = await prisma.user.findFirst({
+      where: isEmail
+        ? { email: { equals: emailSearch, mode: "insensitive" } }
+        : {
+            OR: [
+              { email: { equals: emailSearch, mode: "insensitive" } },
+              { phone: { contains: trimmedQuery } },
+            ],
+          },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        avatar: true,
+        role: true,
+        companyId: true,
+        employeeNumber: true,
+        departmentRelation: {
+          select: { id: true, name: true },
+        },
+        positionRelation: {
+          select: { id: true, title: true },
+        },
+        userCompanies: {
+          where: { companyId },
+          select: {
+            role: true,
+            isActive: true,
+            roleRef: {
+              select: { key: true, name: true },
+            },
+          },
+        },
+        employees: {
+          select: {
+            id: true,
+            companyId: true,
+            employeeNumber: true,
+            status: true,
+            department: { select: { id: true, name: true } },
+            position: { select: { id: true, title: true } },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.json({
+        success: true,
+        exists: false,
+        status: "NOT_FOUND",
+      });
+    }
+
+    // فحص الارتباط بالشركة الحالية
+    const isCurrentCompanyDirect = user.companyId === companyId;
+    const currentCompanyMembership = user.userCompanies?.[0];
+    const isMemberOfCurrentCompany =
+      isCurrentCompanyDirect ||
+      Boolean(currentCompanyMembership && currentCompanyMembership.isActive);
+
+    // فحص هل لديه سجل موظف نشط في الشركة الحالية
+    const hasEmployeeRecordInCurrentCompany =
+      Boolean(user.employees && user.employees.companyId === companyId && user.employees.status === "ACTIVE") ||
+      Boolean(isCurrentCompanyDirect && user.employeeNumber);
+
+    if (hasEmployeeRecordInCurrentCompany) {
+      return res.json({
+        success: true,
+        exists: true,
+        status: "ALREADY_ACTIVE_EMPLOYEE",
+        user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phone: user.phone,
+          avatar: user.avatar,
+          employeeNumber: user.employees?.employeeNumber || user.employeeNumber || "محدد",
+          department: user.employees?.department?.name || user.departmentRelation?.name || null,
+          position: user.employees?.position?.title || user.positionRelation?.title || null,
+        },
+      });
+    }
+
+    if (isMemberOfCurrentCompany) {
+      return res.json({
+        success: true,
+        exists: true,
+        status: "COMPANY_USER_NOT_EMPLOYEE",
+        user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phone: user.phone,
+          avatar: user.avatar,
+          role: currentCompanyMembership?.role || user.role || "AGENT",
+        },
+      });
+    }
+
+    // مستخدم مسجل مسبقاً على منصة MaxP خارج نطاق هذه الشركة
+    return res.json({
+      success: true,
+      exists: true,
+      status: "EXISTING_PLATFORM_USER",
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        avatar: user.avatar,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error looking up user for employee creation:", error);
+    res.status(500).json({
+      success: false,
+      message: "فشل في التحقق من بيانات المستخدم",
+      error: error.message,
+    });
+  }
+}
+
+/**
  * إنشاء موظف جديد
  * POST /api/hr/employees
  */
@@ -6891,6 +7042,7 @@ module.exports = {
   deletePromotion,
 
   // Employees
+  lookupUser,
   createEmployee,
   getEmployees,
   getOnlineTeam,

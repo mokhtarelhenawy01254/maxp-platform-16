@@ -230,6 +230,7 @@ router.delete('/promotions/:id', verifyToken.authenticateToken, verifyToken.requ
 router.get('/employees/stats', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getEmployeeStats);
 router.get('/employees/organization-chart', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getOrganizationChart);
 router.put('/employees/bulk-salaries', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.updateBulkSalaries);
+router.get('/employees/lookup-user', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.lookupUser);
 router.get('/employees', verifyToken.authenticateToken, hrController.getEmployees);
 router.get('/employees/:id', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getEmployeeById);
 router.post('/employees', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.createEmployee);

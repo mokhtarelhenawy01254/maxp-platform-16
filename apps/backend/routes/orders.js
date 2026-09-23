@@ -23,7 +23,7 @@ const { resolveDiscountReason } = require('../utils/orderDiscountUtils');
 const {
   extractAttributionFromCheckoutData
 } = require('../utils/orderAttribution');
-const { getCustomerFirstOrderInfo } = require('../utils/sessionDetailsHelper');
+const { getCustomerFirstOrderInfo, getCustomerOrderHistory } = require('../utils/sessionDetailsHelper');
 const { resolveIpLocation, isLocalOrPrivateIp } = require('../utils/ipGeoLookup');
 const { detectAbandonReason } = require('../utils/incompleteAbandonReason');
 const {
@@ -3372,7 +3372,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         include: {
           customer: {
-            select: { id: true, firstName: true, lastName: true, phone: true, email: true }
+            select: { id: true, firstName: true, lastName: true, phone: true, email: true, customerRating: true, successScore: true, deliveryRate: true }
           },
           orderItems: {
             include: {
@@ -3662,6 +3662,26 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       console.log(`🔍 [ORDERS-DEBUG] Items count in database for order ${firstOrder.orderNumber}:`, itemsCount);
     }
 
+    // 🏷️ جلب تقييم العملاء للطلبات الضيف عبر أرقام الهواتف
+    const guestPhones = [...new Set(guestOrders.map(o => o.guestPhone).filter(Boolean))];
+    const guestCustomerByPhone = new Map();
+    if (guestPhones.length > 0) {
+      try {
+        const foundCustomers = await getSharedPrismaClient().customer.findMany({
+          where: {
+            companyId,
+            phone: { in: guestPhones }
+          },
+          select: { id: true, phone: true, customerRating: true, successScore: true, deliveryRate: true }
+        });
+        foundCustomers.forEach(c => {
+          if (c.phone) guestCustomerByPhone.set(c.phone, c);
+        });
+      } catch (err) {
+        console.warn('⚠️ [ORDERS] Failed to batch fetch guest customers for rating:', err.message);
+      }
+    }
+
     // تحويل البيانات (Mapping)
     const formattedRegularOrders = regularOrders.map(order => {
       const merchantOrderScope = serializeMerchantOrderScope(order.merchantOrders?.[0], order);
@@ -3742,6 +3762,18 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       return applyOrderDetailFeatureAccess({
         id: order.orderNumber,
         orderNumber: order.orderNumber,
+        customerId: order.customerId || order.customer?.id || null,
+        customerRating: order.customer?.customerRating || 'UNKNOWN',
+        customerSuccessScore: order.customer?.successScore ?? null,
+        customerDeliveryRate: order.customer?.deliveryRate ?? null,
+        customer: order.customer ? {
+          id: order.customer.id,
+          firstName: order.customer.firstName,
+          lastName: order.customer.lastName,
+          phone: order.customer.phone,
+          email: order.customer.email,
+          customerRating: order.customer.customerRating || 'UNKNOWN',
+        } : null,
         customerName: finalCustomerName,
         customerPhone: order.customer?.phone || order.customerPhone || '',
         customerEmail: order.customer?.email || order.customerEmail || '',
@@ -3880,9 +3912,22 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         effectiveCodeForGuest(twinKey) || order.status || 'PENDING',
       ).toLowerCase();
 
+      const matchedCust = guestCustomerByPhone.get(order.guestPhone);
       return applyOrderDetailFeatureAccess({
         id: order.orderNumber,
         orderNumber: order.orderNumber,
+        customerId: matchedCust?.id || null,
+        customerRating: matchedCust?.customerRating || 'UNKNOWN',
+        customerSuccessScore: matchedCust?.successScore ?? null,
+        customerDeliveryRate: matchedCust?.deliveryRate ?? null,
+        customer: matchedCust ? {
+          id: matchedCust.id,
+          firstName: order.guestName || '',
+          lastName: '',
+          phone: order.guestPhone,
+          email: order.guestEmail,
+          customerRating: matchedCust.customerRating || 'UNKNOWN',
+        } : null,
         customerName: order.guestName || '',
         customerPhone: order.guestPhone || '',
         customerEmail: order.guestEmail || '',
@@ -5726,6 +5771,110 @@ router.post('/simple/:orderNumber/wallet-proof/verify', verifyToken.authenticate
   }
 });
 
+// سجل وتاريخ طلبات العميل السابقة
+router.get('/simple/:orderNumber/customer-history', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const { limit = 20 } = req.query;
+
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'غير مصرح - يجب تسجيل الدخول' });
+    }
+
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    // البحث عن الطلب لاستخراج بيانات العميل
+    const [order, guestOrder] = await Promise.all([
+      prisma.order.findFirst({
+        where: {
+          AND: [
+            {
+              OR: [
+                { id: orderNumber, companyId },
+                { orderNumber: orderNumber, companyId },
+              ],
+            },
+            ...(merchant
+              ? [{
+                  merchantOrders: {
+                    some: { merchantId: merchant.id },
+                  },
+                }]
+              : []),
+          ],
+        },
+        select: {
+          id: true,
+          orderNumber: true,
+          customerId: true,
+          customerPhone: true,
+          customerEmail: true,
+          customerName: true,
+          metadata: true,
+        },
+      }),
+      !merchant
+        ? prisma.guestOrder.findFirst({
+            where: {
+              OR: [
+                { id: orderNumber, companyId },
+                { orderNumber: orderNumber, companyId },
+              ],
+            },
+            select: {
+              id: true,
+              orderNumber: true,
+              guestPhone: true,
+              guestEmail: true,
+              guestName: true,
+            },
+          })
+        : null,
+    ]);
+
+    const activeOrder = order || guestOrder;
+    if (!activeOrder) {
+      return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+    }
+
+    const orderMeta = safeParseOrderMetadata(order?.metadata);
+    const customerPhone = order?.customerPhone || guestOrder?.guestPhone || req.query.phone;
+    const alternativePhone = orderMeta?.alternativePhone || req.query.alternativePhone;
+    const customerEmail = order?.customerEmail || guestOrder?.guestEmail || req.query.email;
+    const customerId = order?.customerId || req.query.customerId;
+
+    const history = await getCustomerOrderHistory(prisma, companyId, {
+      phone: customerPhone,
+      alternativePhone,
+      email: customerEmail,
+      customerId,
+      currentOrderNumber: activeOrder.orderNumber,
+      limit: parseInt(limit, 10) || 20,
+    });
+
+    return res.json({
+      success: true,
+      data: history,
+    });
+  } catch (error) {
+    console.error('❌ Error fetching customer history:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب سجل طلبات العميل',
+      error: error.message,
+    });
+  }
+});
+
 router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
@@ -5848,7 +5997,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             firstName: true,
             lastName: true,
             phone: true,
-            email: true
+            email: true,
+            customerRating: true,
+            successScore: true,
+            deliveryRate: true
           }
         },
         orderItems: {
@@ -6188,10 +6340,31 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         variantMap = new Map(variants.map(v => [v.id, v]));
       }
 
+      let guestCustomer = null;
+      if (guestOrder.guestPhone) {
+        try {
+          const { findCustomerByPhone } = require('../utils/customerIdentity');
+          guestCustomer = await findCustomerByPhone(getSharedPrismaClient(), guestOrder.guestPhone, companyId);
+        } catch (e) {
+          console.warn('⚠️ [ORDER-DETAIL] Failed to find customer for guest order:', e.message);
+        }
+      }
+
       formattedOrder = {
         id: guestOrder.orderNumber,
         orderNumber: guestOrder.orderNumber,
-        customerId: null,
+        customerId: guestCustomer?.id || null,
+        customerRating: guestCustomer?.customerRating || 'UNKNOWN',
+        customerSuccessScore: guestCustomer?.successScore ?? null,
+        customerDeliveryRate: guestCustomer?.deliveryRate ?? null,
+        customer: guestCustomer ? {
+          id: guestCustomer.id,
+          firstName: guestOrder.guestName || '',
+          lastName: '',
+          phone: guestOrder.guestPhone,
+          email: guestOrder.guestEmail,
+          customerRating: guestCustomer.customerRating || 'UNKNOWN',
+        } : null,
         customerName: guestOrder.guestName || '',
         customerPhone: guestOrder.guestPhone || '',
         customerEmail: guestOrder.guestEmail || '',
@@ -6398,6 +6571,17 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         id: order.orderNumber,
         orderNumber: order.orderNumber,
         customerId: order.customerId || order.customer?.id || null,
+        customerRating: order.customer?.customerRating || 'UNKNOWN',
+        customerSuccessScore: order.customer?.successScore ?? null,
+        customerDeliveryRate: order.customer?.deliveryRate ?? null,
+        customer: order.customer ? {
+          id: order.customer.id,
+          firstName: order.customer.firstName,
+          lastName: order.customer.lastName,
+          phone: order.customer.phone,
+          email: order.customer.email,
+          customerRating: order.customer.customerRating || 'UNKNOWN',
+        } : null,
         customerName: finalCustomerName,
         customerPhone: order.customerPhone || order.customer?.phone || '',
         customerEmail: order.customerEmail || order.customer?.email || '',
@@ -6677,15 +6861,26 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       };
     }
 
-    const firstOrderInfo = await getCustomerFirstOrderInfo(getSharedPrismaClient(), companyId, {
-      phone: formattedOrder.customerPhone,
-      email: formattedOrder.customerEmail,
-      customerId: formattedOrder.customerId,
-      currentOrderNumber: formattedOrder.orderNumber,
-    });
+    const [firstOrderInfo, customerHistory] = await Promise.all([
+      getCustomerFirstOrderInfo(getSharedPrismaClient(), companyId, {
+        phone: formattedOrder.customerPhone,
+        email: formattedOrder.customerEmail,
+        customerId: formattedOrder.customerId,
+        currentOrderNumber: formattedOrder.orderNumber,
+      }),
+      getCustomerOrderHistory(getSharedPrismaClient(), companyId, {
+        phone: formattedOrder.customerPhone,
+        alternativePhone: formattedOrder.alternativePhone,
+        email: formattedOrder.customerEmail,
+        customerId: formattedOrder.customerId,
+        currentOrderNumber: formattedOrder.orderNumber,
+        limit: 25,
+      }),
+    ]);
 
     formattedOrder.sessionDetails = orderSessionDetails;
     formattedOrder.firstOrderInfo = firstOrderInfo;
+    formattedOrder.customerHistory = customerHistory;
 
     const responseOrder = applyOrderDetailFeatureAccess(
       formattedOrder,

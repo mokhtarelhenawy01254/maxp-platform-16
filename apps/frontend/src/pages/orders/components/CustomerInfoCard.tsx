@@ -10,6 +10,7 @@ import {
   NoSymbolIcon,
   CheckCircleIcon,
   DocumentTextIcon,
+  ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
 import { WhatsAppIcon } from "../../../components/icons/brands";
 import { OrderDetailsType, Government, Area } from "../types";
@@ -309,6 +310,39 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
                 </p>
               </div>
             </div>
+          </div>
+        )}
+
+        {order.customerHistory?.stats && (
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById("customer-order-history-card");
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="w-full flex items-center justify-between p-2.5 rounded-lg border border-indigo-100 bg-indigo-50/60 dark:border-indigo-900/40 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-200 transition hover:bg-indigo-100/70 dark:hover:bg-indigo-900/30 text-xs active:scale-97 cursor-pointer"
+              title="الانتقال إلى سجل وتاريخ طلبات العميل السابقة"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <ShoppingBagIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <span className="font-semibold truncate">
+                  {order.customerHistory.stats.totalOrders > 1
+                    ? `سجل المشتريات: ${order.customerHistory.stats.totalOrders} طلبات`
+                    : "سجل المشتريات: عميل جديد (أول طلب)"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {order.customerHistory.stats.deliverySuccessRate !== null && (
+                  <span className="px-1.5 py-0.5 rounded text-[10.5px] font-bold tabular-nums bg-white dark:bg-gray-800 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">
+                    {order.customerHistory.stats.deliverySuccessRate}% استلام
+                  </span>
+                )}
+                <span className="text-[10px] text-indigo-500 font-medium underline">
+                  عرض السجل ↓
+                </span>
+              </div>
+            </button>
           </div>
         )}
 

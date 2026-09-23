@@ -1,6 +1,7 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import CustomerInfoCard from "./CustomerInfoCard";
 import { OrderDetailsType } from "../types";
 import { customerBlocklistService } from "../../../services/customerBlocklistService";
@@ -19,6 +20,7 @@ jest.mock("../../../hooks/useAuthSimple", () => ({
 
 jest.mock("../../../utils/validation", () => ({
   validateEgyptianPhone: jest.fn(() => ({ isValid: true })),
+  toStandardDigits: (str?: string | null) => str || "",
 }));
 
 jest.mock("../../../services/customerBlocklistService", () => ({
@@ -51,19 +53,21 @@ const baseOrder: OrderDetailsType = {
 
 const renderCard = (order: OrderDetailsType = baseOrder) =>
   render(
-    <CustomerInfoCard
-      order={order}
-      isEditing={false}
-      editForm={{}}
-      setEditForm={jest.fn()}
-      governments={[]}
-      areas={[]}
-      loadingGovernments={false}
-      loadingAreas={false}
-      selectedGovernmentId={null}
-      setSelectedGovernmentId={jest.fn()}
-      handleGovernmentChange={jest.fn()}
-    />,
+    <MemoryRouter>
+      <CustomerInfoCard
+        order={order}
+        isEditing={false}
+        editForm={{}}
+        setEditForm={jest.fn()}
+        governments={[]}
+        areas={[]}
+        loadingGovernments={false}
+        loadingAreas={false}
+        selectedGovernmentId={null}
+        setSelectedGovernmentId={jest.fn()}
+        handleGovernmentChange={jest.fn()}
+      />
+    </MemoryRouter>,
   );
 
 describe("CustomerInfoCard customer blocking", () => {

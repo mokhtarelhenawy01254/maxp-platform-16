@@ -1174,7 +1174,7 @@ class OrderService {
             companyId // ✅ SECURITY: Ensure company isolation
           },
           include: {
-            items: {
+            orderItems: {
               include: {
                 product: true
               }

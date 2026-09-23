@@ -69,29 +69,36 @@ class EmployeeService {
       });
 
       if (existingUser) {
-        // ✅ Check if this user is already linked to an employee in *this* company
-        if (existingUser.companyId === companyId || existingUser.employeeNumber) {
-          // User is already in this company or has an employee number here
-          // We should check UserCompany specifically for this company
-          const userCompany = await this.prisma.userCompany.findUnique({
-            where: {
-              userId_companyId: {
-                userId: existingUser.id,
-                companyId: companyId
-              }
-            }
-          });
-
-          if (userCompany && existingUser.employeeNumber && existingUser.companyId === companyId) {
-            throw new ConflictError(`هذا الموظف موجود بالفعل في هذه الشركة`);
+        // ✅ Check if user is already an active employee in THIS company
+        const existingEmpRecord = await this.prisma.employee.findFirst({
+          where: {
+            userId: existingUser.id,
+            companyId: companyId
           }
+        });
+
+        if (existingEmpRecord && existingEmpRecord.status === 'ACTIVE') {
+          throw new ConflictError(`هذا الموظف مسجل بالفعل في هذه الشركة برقم وظيفي: ${existingEmpRecord.employeeNumber}`);
+        }
+
+        const userCompany = await this.prisma.userCompany.findUnique({
+          where: {
+            userId_companyId: {
+              userId: existingUser.id,
+              companyId: companyId
+            }
+          }
+        });
+
+        if (userCompany && existingUser.companyId === companyId && existingUser.employeeNumber) {
+          throw new ConflictError(`هذا الموظف مسجل بالفعل في هذه الشركة برقم وظيفي: ${existingUser.employeeNumber}`);
         }
 
         // Link existing User to this company if not already linked
         linkedUserId = existingUser.id;
         console.log(`✅ [HR] Linking existing User (${existingUser.email}) to company ${companyId}`);
 
-        // Ensure UserCompany record exists
+        // Ensure UserCompany record exists and is active with chosen role
         await this.prisma.userCompany.upsert({
           where: {
             userId_companyId: {
@@ -99,7 +106,10 @@ class EmployeeService {
               companyId: companyId
             }
           },
-          update: { isActive: true },
+          update: {
+            isActive: true,
+            role: data.role || 'AGENT'
+          },
           create: {
             userId: existingUser.id,
             companyId: companyId,
@@ -216,6 +226,12 @@ class EmployeeService {
       data.employeeNumber = `EMP${String(nextNumber).padStart(5, '0')}`;
     }
 
+    // Fetch current user if linked to avoid overwriting existing details
+    const currentUser = linkedUserId ? await this.prisma.user.findUnique({
+      where: { id: linkedUserId },
+      select: { companyId: true, firstName: true, lastName: true, phone: true }
+    }) : null;
+
     // Update or create User with employee data
     // ✅ Only include fields that exist in User model and handle empty strings
     const userData = {
@@ -231,11 +247,12 @@ class EmployeeService {
         return data.contractType;
       })(),
       baseSalary: data.baseSalary && data.baseSalary !== '' ? parseFloat(data.baseSalary) : null,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      phone: data.phone && data.phone !== '' ? data.phone : null,
+      firstName: data.firstName || currentUser?.firstName || 'موظف',
+      lastName: data.lastName || currentUser?.lastName || 'جديد',
+      phone: data.phone && data.phone !== '' ? data.phone : (currentUser?.phone || null),
       avatar: data.avatar || null,
-      companyId: companyId,
+      // If user has an existing primary companyId, preserve it. If null, set this companyId.
+      companyId: (currentUser && currentUser.companyId) ? currentUser.companyId : companyId,
       // Deduction fields
       enableAutoDeduction: data.enableAutoDeduction !== undefined ? data.enableAutoDeduction : true,
       monthlyGraceMinutes: data.monthlyGraceMinutes !== undefined ? parseInt(data.monthlyGraceMinutes) : 60,
@@ -270,6 +287,28 @@ class EmployeeService {
 
     // ✅ Sync with mirror Employee table
     await this.syncWithEmployeeTable(employee.id, companyId);
+
+    // Send in-app notification if user already existed
+    if (linkedUserId) {
+      try {
+        const comp = await this.prisma.company.findUnique({
+          where: { id: companyId },
+          select: { name: true }
+        });
+        await this.prisma.notification.create({
+          data: {
+            userId: linkedUserId,
+            companyId: companyId,
+            title: 'تمت إضافتك إلى فريق العمل',
+            message: `تمت إضافتك كموظف في شركة "${comp?.name || 'الشركة'}" بنجاح. يمكنك الآن التبديل إليها ومتابعة مهامك.`,
+            type: 'INFO',
+            isRead: false
+          }
+        });
+      } catch (notifErr) {
+        console.warn('⚠️ Could not send welcome notification to employee:', notifErr.message);
+      }
+    }
 
     return employee;
   }
@@ -1116,6 +1155,7 @@ class EmployeeService {
       await this.prisma.employee.upsert({
         where: { userId },
         update: {
+          companyId: companyId || user.companyId,
           employeeNumber: user.employeeNumber,
           departmentId: user.departmentId,
           positionId: user.positionId,

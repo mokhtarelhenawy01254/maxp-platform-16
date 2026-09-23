@@ -57,7 +57,7 @@ const calculateCustomerScore = async (customerId, companyId) => {
             if (deliveryRate >= 90) rating = 'EXCELLENT';
             else if (deliveryRate >= 70) rating = 'GOOD';
             else if (deliveryRate >= 50) rating = 'AVERAGE';
-            else rating = 'BAD';
+            else rating = 'POOR';
         }
 
         // 6. Update Customer Modal

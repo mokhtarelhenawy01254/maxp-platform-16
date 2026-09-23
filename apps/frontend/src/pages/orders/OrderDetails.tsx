@@ -25,6 +25,7 @@ import OrderHeader from "./components/OrderHeader";
 import OrderDiscountApprovalBanner from "./components/OrderDiscountApprovalBanner";
 import OrderItemsCard from "./components/OrderItemsCard";
 import CustomerInfoCard from "./components/CustomerInfoCard";
+import CustomerOrderHistoryCard from "./components/CustomerOrderHistoryCard";
 import OrderPaymentCard from "./components/OrderPaymentCard";
 import OrderReturnCard from "./components/OrderReturnCard";
 import TurboShippingPanel from "./components/TurboShippingPanel";
@@ -1128,6 +1129,17 @@ const OrderDetails: React.FC = () => {
             setSelectedGovernmentId={setSelectedGovernmentId}
             handleGovernmentChange={handleGovernmentChange}
           />
+
+          <div id="customer-order-history-card">
+            <CustomerOrderHistoryCard
+              orderNumber={order.orderNumber}
+              initialHistory={order.customerHistory}
+              customerPhone={order.customerPhone}
+              customerEmail={order.customerEmail}
+              customerId={order.customerId}
+              currency={order.currency}
+            />
+          </div>
 
           <OrderPaymentCard
             order={order}
