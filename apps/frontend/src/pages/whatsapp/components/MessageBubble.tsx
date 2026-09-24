@@ -804,21 +804,41 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
 
           <div
             className={cn(
-              "flex w-full px-space-1",
+              "group/bubble relative flex w-full items-center px-space-1",
               message.fromMe ? "justify-end" : "justify-start",
             )}
           >
+            {onReaction && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onContextMenu(e, message);
+                }}
+                aria-label={t("whatsapp.reactions.add", "تفاعل")}
+                title={t("whatsapp.reactions.add", "تفاعل")}
+                className={cn(
+                  "opacity-0 transition-opacity duration-150 group-hover/bubble:opacity-100 focus:opacity-100",
+                  "flex size-7 items-center justify-center rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)] hover:text-[color:var(--color-foreground)] active:scale-95",
+                  message.fromMe ? "order-first me-1" : "order-last ms-1"
+                )}
+              >
+                <SmilePlus className="size-4" />
+              </button>
+            )}
+
             <div
               className={cn(
-                "wa-bubble wa-bubble-enter min-w-[5rem] cursor-context-menu rounded-xl px-space-2 py-space-1 shadow-xs sm:px-space-3 sm:py-space-2",
-              "border border-transparent",
-              message.fromMe
-              ? "rounded-tr-[6px] bg-[var(--whatsapp-message-outgoing)] text-[var(--whatsapp-message-outgoing-text)]"
-              : "rounded-tl-[6px] bg-[var(--whatsapp-message-incoming)] text-[var(--whatsapp-message-incoming-text)]",
-          highlighted && "wa-highlight",
-        )}
-            onContextMenu={(event) => onContextMenu(event, message)}
-          >
+                "wa-bubble wa-bubble-enter relative min-w-[5rem] cursor-context-menu rounded-xl px-space-2 py-space-1 shadow-xs sm:px-space-3 sm:py-space-2",
+                "border border-transparent",
+                message.fromMe
+                  ? "rounded-tr-[6px] bg-[var(--whatsapp-message-outgoing)] text-[var(--whatsapp-message-outgoing-text)]"
+                  : "rounded-tl-[6px] bg-[var(--whatsapp-message-incoming)] text-[var(--whatsapp-message-incoming-text)]",
+                highlighted && "wa-highlight",
+                totalReactionCount > 0 && "mb-2.5",
+              )}
+              onContextMenu={(event) => onContextMenu(event, message)}
+            >
             {isGroup && !message.fromMe && (message.participant || message.participantName) ? (
               <p className="mb-1 text-xs font-semibold text-[color:var(--color-secondary)]">
                 {message.participantName || getParticipantName(message.participant!)}
@@ -902,6 +922,48 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
               </span>
               {message.fromMe ? <MessageStatusIcon status={message.status} /> : null}
             </div>
+
+            {/* Reactions Display */}
+            {totalReactionCount > 0 && (
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onReaction && myReaction) {
+                    onReaction(message.messageId, myReaction);
+                  } else {
+                    onContextMenu(e, message);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.stopPropagation();
+                    if (onReaction && myReaction) onReaction(message.messageId, myReaction);
+                  }
+                }}
+                title={reactorDescriptions.join(" • ")}
+                className={cn(
+                  "absolute -bottom-2.5 z-10 flex cursor-pointer select-none items-center gap-1 rounded-full px-1.5 py-0.5 text-xs shadow-xs border transition-all active:scale-95",
+                  "border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] hover:bg-[var(--whatsapp-surface-hover)] text-[color:var(--color-foreground)]",
+                  myReaction && "border-primary/40 bg-primary/10 ring-1 ring-primary/30",
+                  message.fromMe ? "start-2" : "end-2"
+                )}
+              >
+                <div className="flex items-center -space-x-1 text-xs leading-none rtl:space-x-reverse">
+                  {Object.keys(reactionCounts).slice(0, 3).map((emoji) => (
+                    <span key={emoji} className="inline-block transition-transform active:scale-125">
+                      {emoji}
+                    </span>
+                  ))}
+                </div>
+                {totalReactionCount > 1 && (
+                  <span className="ps-0.5 text-[10px] font-semibold tabular-nums text-[color:var(--color-muted-foreground)] leading-none">
+                    {totalReactionCount}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

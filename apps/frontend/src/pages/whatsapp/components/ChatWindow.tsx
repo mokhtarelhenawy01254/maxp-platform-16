@@ -95,6 +95,7 @@ interface ChatWindowProps {
   pinnedMessage?: Message | null;
   onScrollToPinnedMessage?: (messageId: string) => void;
   onUnpinMessage?: (messageId: string) => void;
+  onSendReaction?: (messageId: string, emoji: string) => void;
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -131,6 +132,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   pinnedMessage,
   onScrollToPinnedMessage,
   onUnpinMessage,
+  onSendReaction,
   onOpenList,
   onOpenCatalog,
   onOpenLocation,
@@ -437,6 +439,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     onContextMenu={onMessageContextMenu}
                     getParticipantName={getParticipantName}
                     onQuotedMessageClick={onQuotedMessageClick}
+                    onReaction={onSendReaction}
                     highlighted={highlightedMessageId === message?.messageId}
                   />
                 </div>

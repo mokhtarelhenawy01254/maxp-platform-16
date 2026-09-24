@@ -540,9 +540,52 @@ const WhatsAppChatContent: React.FC = () => {
     });
   }, [messagesData]);
 
-  // Filter out reactions from the main message list
+  // Filter out reactions from the main message list, and attach reactions to their target messages
   const visibleMessages = useMemo(() => {
-    return messages.filter(m => m.messageType !== 'REACTION');
+    const reactionsByTargetId = new Map<string, Record<string, string>>();
+    for (const m of messages) {
+      if (m.messageType === 'REACTION' && m.quotedMessageId && m.content) {
+        const targetId = m.quotedMessageId;
+        const reactorKey = m.fromMe ? 'me' : (m.participant || m.remoteJid || 'customer');
+        const existing = reactionsByTargetId.get(targetId) || {};
+        existing[reactorKey] = m.content;
+        reactionsByTargetId.set(targetId, existing);
+      }
+    }
+
+    return messages
+      .filter(m => m.messageType !== 'REACTION')
+      .map(m => {
+        let metaReactions: Record<string, string> = {};
+        if (m.metadata) {
+          try {
+            const meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : m.metadata;
+            if (meta?.reactions && typeof meta.reactions === 'object' && !Array.isArray(meta.reactions)) {
+              metaReactions = { ...meta.reactions };
+            }
+          } catch {}
+        }
+        if (m.reactions && typeof m.reactions === 'object' && !Array.isArray(m.reactions)) {
+          metaReactions = { ...metaReactions, ...m.reactions };
+        }
+
+        const extra = reactionsByTargetId.get(m.messageId);
+        const merged = extra ? { ...metaReactions, ...extra } : metaReactions;
+        const hasReactions = Object.keys(merged).length > 0;
+
+        if (hasReactions) {
+          let updatedMeta = m.metadata;
+          if (typeof updatedMeta === 'object' && updatedMeta !== null) {
+            updatedMeta = { ...updatedMeta, reactions: merged };
+          }
+          return {
+            ...m,
+            metadata: updatedMeta,
+            reactions: merged
+          };
+        }
+        return m;
+      });
   }, [messages]);
 
   // Query remote pinned message for active contact
@@ -1447,7 +1490,41 @@ const WhatsAppChatContent: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'pinned', currentContact.jid] });
     };
 
+    const handleMessageReaction = (data: {
+      sessionId: string;
+      remoteJid: string;
+      messageId: string;
+      reactions: Record<string, string>;
+      emoji?: string | null;
+      reactorKey?: string;
+      fromMe?: boolean;
+    }) => {
+      if (!data?.messageId) return;
+      const currentContact = selectedContactRef.current;
+      if (!currentContact) return;
+      const targetSid = currentContact.sessionId || (selectedSessionRef.current === 'all' ? data.sessionId : selectedSessionRef.current);
+      queryClient.setQueryData<MessagesCache>(['whatsapp', 'messages', currentContact.jid, targetSid], old => {
+        if (!old) return old;
+        const newPages = old.pages.map(page => ({
+          ...page,
+          messages: page.messages.map(m => {
+            if (m.messageId === data.messageId) {
+              let meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata || '{}') : (m.metadata || {});
+              return {
+                ...m,
+                reactions: data.reactions,
+                metadata: { ...meta, reactions: data.reactions }
+              };
+            }
+            return m;
+          })
+        }));
+        return { ...old, pages: newPages };
+      });
+    };
+
     socket.on('whatsapp:message:new', handleNewMessage);
+    socket.on('whatsapp:message:reaction', handleMessageReaction);
     socket.on('whatsapp:message:status', handleMessageStatus);
     socket.on('whatsapp:message:sent', handleMessageSent);
     socket.on('whatsapp:notification:new', handleNotification);
@@ -1459,6 +1536,7 @@ const WhatsAppChatContent: React.FC = () => {
 
     return () => {
       socket.off('whatsapp:message:new', handleNewMessage);
+      socket.off('whatsapp:message:reaction', handleMessageReaction);
       socket.off('whatsapp:message:status', handleMessageStatus);
       socket.off('whatsapp:message:sent', handleMessageSent);
       socket.off('whatsapp:notification:new', handleNotification);
@@ -2043,17 +2121,92 @@ const WhatsAppChatContent: React.FC = () => {
   const handleSendReaction = async (messageId: string, emoji: string) => {
     if (!selectedSession || !selectedContact) return;
     const targetSessionId = selectedContact.sessionId || selectedSession;
+
+    // Check if user already reacted with this emoji -> toggle off (send empty string)
+    const existingMsg = visibleMessages.find(m => m.messageId === messageId);
+    let existingReactions: Record<string, string> = {};
+    if (existingMsg?.reactions && typeof existingMsg.reactions === 'object') {
+      existingReactions = { ...existingMsg.reactions };
+    } else if (existingMsg?.metadata) {
+      try {
+        const meta = typeof existingMsg.metadata === 'string' ? JSON.parse(existingMsg.metadata) : existingMsg.metadata;
+        if (meta?.reactions && typeof meta.reactions === 'object') {
+          existingReactions = { ...meta.reactions };
+        }
+      } catch {}
+    }
+    const currentReaction = existingReactions['me'];
+    const emojiToSend = currentReaction === emoji ? '' : emoji;
+
+    // Optimistically update query cache
+    queryClient.setQueriesData<MessagesCache>(
+      { queryKey: ['whatsapp', 'messages', selectedContact.jid] },
+      (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map(page => ({
+            ...page,
+            messages: page.messages.map(m => {
+              if (m.messageId !== messageId) return m;
+              const prev = { ...(m.reactions || {}) };
+              if (emojiToSend) {
+                prev['me'] = emojiToSend;
+              } else {
+                delete prev['me'];
+              }
+              const meta = typeof m.metadata === 'object' && m.metadata !== null ? { ...m.metadata } : {};
+              meta.reactions = prev;
+              return {
+                ...m,
+                reactions: prev,
+                metadata: meta
+              };
+            })
+          }))
+        };
+      }
+    );
+
+    setShowReactionPicker(null);
+
     try {
-      await api.post('/whatsapp/messages/send-reaction', {
+      const res = await api.post('/whatsapp/messages/send-reaction', {
         sessionId: targetSessionId,
         to: selectedContact.jid,
         messageId,
-        emoji
+        emoji: emojiToSend
       });
-      setShowReactionPicker(null);
+      if ((res as any)?.data?.reactions) {
+        queryClient.setQueriesData<MessagesCache>(
+          { queryKey: ['whatsapp', 'messages', selectedContact.jid] },
+          (old) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map(page => ({
+                ...page,
+                messages: page.messages.map(m => {
+                  if (m.messageId !== messageId) return m;
+                  const serverReactions = (res as any).data.reactions;
+                  return {
+                    ...m,
+                    reactions: serverReactions,
+                    metadata: {
+                      ...(typeof m.metadata === 'object' && m.metadata !== null ? m.metadata : {}),
+                      reactions: serverReactions
+                    }
+                  };
+                })
+              }))
+            };
+          }
+        );
+      }
       tToast.success("whatsappChat.success_send_3257");
     } catch (error) {
       tToast.error("whatsappChat.failed_send_869b");
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'messages', selectedContact.jid] });
     }
   };
 
@@ -2640,6 +2793,7 @@ const WhatsAppChatContent: React.FC = () => {
           onUnpinMessage={(messageId) => handleUnpinMessage(messageId)}
           highlightedMessageId={highlightedMessageId}
           onQuotedMessageClick={handleScrollToMessage}
+          onSendReaction={handleSendReaction}
         />
         {selectedContact && showRightPanel && (
           <>
