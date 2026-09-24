@@ -949,14 +949,22 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                 tabIndex={0}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setActiveTriggerRef(pillRef);
-                  setShowReactionSelector((prev) => !prev);
+                  if (onReaction && myReaction) {
+                    onReaction(message.messageId, myReaction);
+                  } else {
+                    setActiveTriggerRef(pillRef);
+                    setShowReactionSelector((prev) => !prev);
+                  }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.stopPropagation();
-                    setActiveTriggerRef(pillRef);
-                    setShowReactionSelector((prev) => !prev);
+                    if (onReaction && myReaction) {
+                      onReaction(message.messageId, myReaction);
+                    } else {
+                      setActiveTriggerRef(pillRef);
+                      setShowReactionSelector((prev) => !prev);
+                    }
                   }
                 }}
                 title={reactorDescriptions.join(" • ")}

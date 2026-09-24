@@ -47,6 +47,7 @@ describe("MessageBubble reactions rendering", () => {
           aiConfidence: null,
           reactions: {
             customer: "❤️",
+            customer2: "❤️",
             me: "👍"
           }
         }}
@@ -126,5 +127,44 @@ describe("MessageBubble reactions rendering", () => {
     );
 
     expect(screen.getByText("😂")).toBeInTheDocument();
+  });
+
+  it("opens reaction selector and triggers reaction callback when emoji is clicked", () => {
+    const handleReaction = vi.fn();
+    render(
+      <MessageBubble
+        message={{
+          id: "msg-4",
+          messageId: "wamid-4",
+          remoteJid: "201000000000@s.whatsapp.net",
+          fromMe: false,
+          messageType: "TEXT",
+          content: "Testing floating reaction picker",
+          mediaUrl: null,
+          mediaType: null,
+          mediaFileName: null,
+          quotedMessageId: null,
+          quotedContent: null,
+          status: "DELIVERED",
+          timestamp: "2026-05-10T12:00:00.000Z",
+          isAIResponse: false,
+          aiConfidence: null,
+        }}
+        isGroup={false}
+        onContextMenu={() => undefined}
+        getParticipantName={() => ""}
+        onReaction={handleReaction}
+      />
+    );
+
+    const smileBtn = screen.getByTitle("إضافة تفاعل");
+    expect(smileBtn).toBeInTheDocument();
+    fireEvent.click(smileBtn);
+
+    const angryEmojiBtn = screen.getByTitle("😡");
+    expect(angryEmojiBtn).toBeInTheDocument();
+    fireEvent.click(angryEmojiBtn);
+
+    expect(handleReaction).toHaveBeenCalledWith("wamid-4", "😡");
   });
 });
