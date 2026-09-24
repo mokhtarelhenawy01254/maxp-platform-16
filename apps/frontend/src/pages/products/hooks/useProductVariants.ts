@@ -124,16 +124,67 @@ export const useProductVariants = (
     setVariants((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const batchUpdateVariants = (
+    indices: number[],
+    updates: Partial<ProductVariant> | ((v: ProductVariant) => Partial<ProductVariant>)
+  ) => {
+    const indexSet = new Set(indices);
+    setVariants((prev) =>
+      prev.map((variant, i) => {
+        if (!indexSet.has(i)) return variant;
+        const patch = typeof updates === "function" ? updates(variant) : updates;
+        return { ...variant, ...patch };
+      })
+    );
+  };
+
   const uploadVariantImage = async (variantIndex: number, file: File) => {
     try {
       const data = await uploadFiles([file]);
       if (data.success && data.data.length > 0) {
         const rawUrl = data.data[0].fullUrl || data.data[0].url;
         const imageUrl = normalizeImagePath(rawUrl) || rawUrl;
-        updateVariant(variantIndex, "image", imageUrl);
+        setVariants((prev) =>
+          prev.map((variant, i) =>
+            i === variantIndex
+              ? {
+                  ...variant,
+                  image: imageUrl,
+                  images:
+                    variant.images && variant.images.length > 0
+                      ? [imageUrl, ...variant.images.filter((img) => img !== imageUrl)]
+                      : [imageUrl],
+                }
+              : variant
+          )
+        );
       }
     } catch (error) {
       console.error("Variant image upload error:", error);
+    }
+  };
+
+  const uploadImageForVariants = async (
+    indices: number[],
+    file: File
+  ): Promise<string | undefined> => {
+    try {
+      const data = await uploadFiles([file]);
+      if (data.success && data.data.length > 0) {
+        const rawUrl = data.data[0].fullUrl || data.data[0].url;
+        const imageUrl = normalizeImagePath(rawUrl) || rawUrl;
+        batchUpdateVariants(indices, (v) => ({
+          image: imageUrl,
+          images:
+            v.images && v.images.length > 0
+              ? [imageUrl, ...v.images.filter((img) => img !== imageUrl)]
+              : [imageUrl],
+        }));
+        return imageUrl;
+      }
+    } catch (error) {
+      console.error("Batch variant image upload error:", error);
+      throw error;
     }
   };
 
@@ -346,6 +397,7 @@ export const useProductVariants = (
     attributeMode, setAttributeMode,
     variantSettings, setVariantSettings,
     addVariant, updateVariant, removeVariant, uploadVariantImage,
+    batchUpdateVariants, uploadImageForVariants,
     addAttribute, addValueField, updateValueField, removeValueField, removeAttribute, generateVariations,
     handleBulkActionChange, applyBulkAction, syncWithProductPricing
   };

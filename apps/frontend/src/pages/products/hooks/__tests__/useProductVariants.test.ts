@@ -167,4 +167,26 @@ describe("useProductVariants - Pricing Settings Inheritance", () => {
     expect(result.current.variants[0].price).toBe(450);
     expect(result.current.variants[1].price).toBe(450);
   });
+
+  it("batchUpdateVariants updates multiple variant fields at once", () => {
+    const { result } = renderHook(() => useProductVariants(true));
+
+    act(() => {
+      result.current.addVariant();
+      result.current.addVariant();
+      result.current.addVariant();
+    });
+
+    act(() => {
+      result.current.batchUpdateVariants([0, 2], {
+        image: "https://example.com/test-batch.jpg",
+        images: ["https://example.com/test-batch.jpg"],
+      });
+    });
+
+    expect(result.current.variants[0].image).toBe("https://example.com/test-batch.jpg");
+    expect(result.current.variants[0].images).toEqual(["https://example.com/test-batch.jpg"]);
+    expect(result.current.variants[1].image).toBeUndefined();
+    expect(result.current.variants[2].image).toBe("https://example.com/test-batch.jpg");
+  });
 });

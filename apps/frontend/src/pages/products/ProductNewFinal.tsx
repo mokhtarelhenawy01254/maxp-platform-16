@@ -455,6 +455,8 @@ export const ProductNewFinal: React.FC = () => {
     updateVariant,
     removeVariant,
     uploadVariantImage,
+    batchUpdateVariants,
+    uploadImageForVariants,
     addAttribute,
     addValueField,
     updateValueField,
@@ -1944,6 +1946,12 @@ export const ProductNewFinal: React.FC = () => {
                   cost: formData.cost,
                 }}
                 syncWithProductPricing={syncWithProductPricing}
+                attributes={attributes}
+                uploadedImages={uploadedImages}
+                onBatchUpdateVariants={batchUpdateVariants}
+                onUploadImageForVariants={uploadImageForVariants}
+                variantSettings={variantSettings}
+                setVariantSettings={setVariantSettings}
                 t={t}
               />
             )}

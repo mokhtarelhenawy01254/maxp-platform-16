@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ProductVariant } from "../../types";
+import React, { useState, useMemo } from "react";
+import { ProductAttribute, ProductVariant } from "../../types";
 import {
   XMarkIcon,
   DocumentTextIcon,
@@ -12,6 +12,11 @@ import {
 } from "@heroicons/react/24/outline";
 import { getImageUrl } from "../../../../utils/imageUrl";
 import { ShippingClassOption } from "../../../../constants/shippingClasses";
+import { VariantColorImagesModal } from "./VariantColorImagesModal";
+import {
+  groupVariantsByColor,
+  VariantColorGroup,
+} from "../../utils/variantColorGrouping";
 
 interface VariantsTabProps {
   variants: ProductVariant[];
@@ -39,6 +44,18 @@ interface VariantsTabProps {
   };
   syncWithProductPricing?: (targetIdx?: number) => void;
   t: any;
+  attributes?: ProductAttribute[];
+  uploadedImages?: string[];
+  onBatchUpdateVariants?: (
+    indices: number[],
+    updates: Partial<ProductVariant> | ((v: ProductVariant) => Partial<ProductVariant>)
+  ) => void;
+  onUploadImageForVariants?: (
+    indices: number[],
+    file: File
+  ) => Promise<string | undefined>;
+  variantSettings?: any;
+  setVariantSettings?: React.Dispatch<React.SetStateAction<any>>;
 }
 
 export const VariantsTab: React.FC<VariantsTabProps> = ({
@@ -60,10 +77,52 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
   defaultPricing,
   syncWithProductPricing,
   t,
+  attributes = [],
+  uploadedImages = [],
+  onBatchUpdateVariants,
+  onUploadImageForVariants,
+  variantSettings,
+  setVariantSettings,
 }) => {
   const [expandedVariantIdx, setExpandedVariantIdx] = useState<number | null>(
     null,
   );
+  const [isColorImagesModalOpen, setIsColorImagesModalOpen] = useState(false);
+  const [copiedGroupToast, setCopiedGroupToast] = useState<{
+    idx: number;
+    message: string;
+  } | null>(null);
+
+  const effectiveBatchUpdate = (
+    indices: number[],
+    updates: Partial<ProductVariant> | ((v: ProductVariant) => Partial<ProductVariant>),
+  ) => {
+    if (onBatchUpdateVariants) {
+      onBatchUpdateVariants(indices, updates);
+    } else {
+      indices.forEach((idx) => {
+        const current = variants[idx];
+        const patch = typeof updates === "function" ? updates(current) : updates;
+        Object.entries(patch).forEach(([k, val]) => {
+          updateVariant(idx, k as keyof ProductVariant, val);
+        });
+      });
+    }
+  };
+
+  const colorGroups = useMemo(() => {
+    return groupVariantsByColor(variants, attributes);
+  }, [variants, attributes]);
+
+  const variantColorGroupMap = useMemo(() => {
+    const map = new Map<number, VariantColorGroup>();
+    colorGroups.forEach((group) => {
+      group.items.forEach((item) => {
+        map.set(item.index, group);
+      });
+    });
+    return map;
+  }, [colorGroups]);
 
   const toggleVariant = (idx: number) => {
     setExpandedVariantIdx(expandedVariantIdx === idx ? null : idx);
@@ -78,6 +137,17 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
               {t("products.variants.title")} ({variants.length})
             </h3>
+            {variants.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsColorImagesModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800/60 rounded-lg transition-colors shadow-sm active:scale-[0.98]"
+                title="تعيين ورفع الصور لكل لون وتطبيقها على كافة مقاساته دفعة واحدة"
+              >
+                <PhotoIcon className="h-3.5 w-3.5" />
+                تعيين الصور حسب اللون ({colorGroups.length} ألوان)
+              </button>
+            )}
             {variants.length > 0 &&
               defaultPricing?.price !== undefined &&
               Number(defaultPricing.price) > 0 && (
@@ -111,10 +181,22 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
               </span>
               <select
                 value={bulkAction}
-                onChange={(e) => handleBulkActionChange(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "set_color_images") {
+                    setIsColorImagesModalOpen(true);
+                    return;
+                  }
+                  handleBulkActionChange(val);
+                }}
                 className="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md text-sm min-w-[200px]"
               >
                 <option value="">-- اختر إجراء --</option>
+                <optgroup label="🖼️ الصور">
+                  <option value="set_color_images">
+                    🎨 تعيين الصور حسب اللون...
+                  </option>
+                </optgroup>
                 <optgroup label="📌 الحالة">
                   <option value="activate">✅ تفعيل الكل</option>
                   <option value="deactivate">⏸️ إيقاف الكل</option>
@@ -497,6 +579,61 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
                                 />
                               </label>
                             </div>
+
+                            {/* Quick batch action for this specific color */}
+                            {(() => {
+                              const group = variantColorGroupMap.get(idx);
+                              if (
+                                !group ||
+                                group.items.length <= 1 ||
+                                !variant.image
+                              ) {
+                                return null;
+                              }
+                              const isCopied = copiedGroupToast?.idx === idx;
+                              return (
+                                <div className="pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const indices = group.items.map(
+                                        (it) => it.index,
+                                      );
+                                      effectiveBatchUpdate(indices, (v) => ({
+                                        image: variant.image,
+                                        images:
+                                          v.images && v.images.length > 0
+                                            ? [
+                                                variant.image!,
+                                                ...v.images.filter(
+                                                  (img) => img !== variant.image,
+                                                ),
+                                              ]
+                                            : [variant.image!],
+                                      }));
+                                      setCopiedGroupToast({
+                                        idx,
+                                        message: `✓ تم تطبيق الصورة على جميع مقاسات "${group.name}" (${group.items.length})`,
+                                      });
+                                      setTimeout(
+                                        () => setCopiedGroupToast(null),
+                                        3500,
+                                      );
+                                    }}
+                                    className="inline-flex items-center gap-1.5 text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800/60 rounded-md px-2.5 py-1.5 transition-colors shadow-sm active:scale-[0.98]"
+                                    title={`نسخ هذه الصورة إلى جميع مقاسات ${group.name}`}
+                                  >
+                                    <PhotoIcon className="h-3.5 w-3.5" />
+                                    <span>
+                                      {isCopied
+                                        ? copiedGroupToast.message
+                                        : `تطبيق هذه الصورة على جميع مقاسات "${group.name}" (${group.items.length} مقاسات)`}
+                                    </span>
+                                  </button>
+                                </div>
+                              );
+                            })()}
+
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               صورة مختلفة لهذا المتغير (اختياري)
                             </p>
@@ -880,6 +1017,19 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* Modal for setting images by color */}
+      <VariantColorImagesModal
+        isOpen={isColorImagesModalOpen}
+        onClose={() => setIsColorImagesModalOpen(false)}
+        variants={variants}
+        attributes={attributes}
+        uploadedImages={uploadedImages}
+        onBatchUpdateVariants={effectiveBatchUpdate}
+        onUploadImageForVariants={onUploadImageForVariants}
+        variantSettings={variantSettings}
+        setVariantSettings={setVariantSettings}
+      />
     </div>
   );
 };
