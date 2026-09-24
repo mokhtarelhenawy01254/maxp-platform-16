@@ -373,6 +373,7 @@ const BoughtTogetherSection: React.FC<BoughtTogetherSectionProps> = ({
     [location.search],
   );
   const addItem = useCartStore((state) => state.addItem);
+  const setIsOpen = useCartStore((state) => state.setIsOpen);
   const currentPdpSelection = usePdpSelectionStore(
     (state) => state.selection,
     (a, b) => {
