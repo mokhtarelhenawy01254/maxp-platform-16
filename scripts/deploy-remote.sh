@@ -155,7 +155,9 @@ sync_frontend_dist() {
   # browser sees an old build referencing missing chunks (404s) forever.
   sudo rm -f /var/www/frontend2/dist/index.html.br /var/www/frontend2/dist/index.html.gz \
     /var/www/frontend2/dist/sw.js.br /var/www/frontend2/dist/sw.js.gz \
-    /var/www/frontend2/dist/sw-v4.js.br /var/www/frontend2/dist/sw-v4.js.gz
+    /var/www/frontend2/dist/sw-v4.js.br /var/www/frontend2/dist/sw-v4.js.gz \
+    /var/www/frontend2/dist/manifest.json /var/www/frontend2/dist/manifest.webmanifest \
+    /var/www/frontend2/dist/manifest.json.br /var/www/frontend2/dist/manifest.json.gz
   if [ -f "/var/www/frontend2/dist/index.html" ] && [ -z "$ROLLBACK_FRONTEND_BACKUP" ]; then
     ROLLBACK_FRONTEND_BACKUP="/tmp/maxp_frontend_index_prev_${GITHUB_RUN_ID:-$$}.html"
     sudo cp "/var/www/frontend2/dist/index.html" "$ROLLBACK_FRONTEND_BACKUP" || true
