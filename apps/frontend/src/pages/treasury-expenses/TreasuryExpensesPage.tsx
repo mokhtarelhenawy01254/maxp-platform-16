@@ -89,10 +89,34 @@ export default function TreasuryExpensesPage() {
         {/* Global Quick Telemetry & Segmented Tab Switcher */}
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
           {/* Liquidity Chip */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 rounded-xl">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs text-emerald-800 dark:text-emerald-300 font-medium">إجمالي السيولة:</span>
-            <span className="text-xs font-bold font-mono text-emerald-700 dark:text-emerald-300 tabular-nums">
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
+              totalLiquidity < 0
+                ? "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/60"
+                : "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/60"
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                totalLiquidity < 0 ? "bg-red-500" : "bg-emerald-500"
+              } animate-pulse`}
+            />
+            <span
+              className={`text-xs font-medium ${
+                totalLiquidity < 0
+                  ? "text-red-800 dark:text-red-300"
+                  : "text-emerald-800 dark:text-emerald-300"
+              }`}
+            >
+              {totalLiquidity < 0 ? "عجز السيولة الإجمالي:" : "إجمالي السيولة:"}
+            </span>
+            <span
+              className={`text-xs font-bold font-mono tabular-nums ${
+                totalLiquidity < 0
+                  ? "text-red-700 dark:text-red-300"
+                  : "text-emerald-700 dark:text-emerald-300"
+              }`}
+            >
               {formatMoney(totalLiquidity)}
             </span>
           </div>
@@ -149,7 +173,9 @@ export default function TreasuryExpensesPage() {
             <TabErrorBoundary tabLabel="الخزنة ورأس المال">
               <TreasuryCapitalTab
                 accounts={accounts}
+                categories={categories}
                 onAccountsUpdated={loadInitialData}
+                onCategoriesUpdated={loadInitialData}
               />
             </TabErrorBoundary>
           )}

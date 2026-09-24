@@ -1775,7 +1775,7 @@ async function sendReaction(req, res) {
         const { companyId } = req.user;
         const { sessionId, to, messageId, emoji } = req.body;
 
-        if (!sessionId || !to || !messageId || !emoji) {
+        if (!sessionId || !to || !messageId || emoji === undefined) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
 
@@ -1786,10 +1786,10 @@ async function sendReaction(req, res) {
             targetSessionId,
             to,
             messageId,
-            emoji
+            emoji || ''
         );
 
-        res.json({ success: true, result });
+        res.json({ success: true, ...result });
     } catch (error) {
         console.error('❌ Error sending reaction:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء إرسال التفاعل' });

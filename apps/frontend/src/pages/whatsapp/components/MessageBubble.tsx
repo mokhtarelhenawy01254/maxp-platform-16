@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { format, isToday, isYesterday } from "date-fns";
@@ -19,6 +19,7 @@ import {
   PhoneOff,
   Pin,
   Radio,
+  SmilePlus,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -41,6 +42,8 @@ interface MessageBubbleProps {
   onQuotedMessageClick?: (quotedMessageId: string) => void;
   onCorrect?: () => void;
   highlighted?: boolean;
+  onReaction?: (messageId: string, emoji: string) => void;
+  currentUserId?: string;
 }
 
 function stripBaileysButtonBox(content: string, footer?: string | null): string {
@@ -111,9 +114,59 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
     onQuotedMessageClick,
     onCorrect,
     highlighted,
+    onReaction,
+    currentUserId,
   }) => {
     const { t } = useTranslation();
     const senderName = message.fromMe && message.senderName ? message.senderName : null;
+
+    // ── Reactions Parsing ──
+    const reactions = useMemo(() => {
+      let r: Record<string, string> = {};
+      if (message.reactions && typeof message.reactions === "object" && !Array.isArray(message.reactions)) {
+        r = { ...message.reactions };
+      } else if (message.metadata) {
+        try {
+          const meta = typeof message.metadata === "string" ? JSON.parse(message.metadata) : message.metadata;
+          if (meta?.reactions && typeof meta.reactions === "object" && !Array.isArray(meta.reactions)) {
+            r = { ...meta.reactions };
+          }
+        } catch {}
+      }
+      return r;
+    }, [message.reactions, message.metadata]);
+
+    const { reactionCounts, totalReactionCount, myReaction, reactorDescriptions } = useMemo(() => {
+      const counts: Record<string, number> = {};
+      let total = 0;
+      let mine: string | null = null;
+      const descriptions: string[] = [];
+
+      Object.entries(reactions).forEach(([reactorKey, emoji]) => {
+        if (typeof emoji === "string" && emoji.trim()) {
+          const em = emoji.trim();
+          counts[em] = (counts[em] || 0) + 1;
+          total++;
+          const isMe = reactorKey === "me" || reactorKey === "fromMe" || (currentUserId && reactorKey === currentUserId);
+          if (isMe) {
+            mine = em;
+            descriptions.push(`${t("whatsapp.reactions.you", "أنت")}: ${em}`);
+          } else {
+            const name = isGroup && reactorKey.includes("@")
+              ? getParticipantName(reactorKey)
+              : t("whatsapp.reactions.contact", "العميل");
+            descriptions.push(`${name}: ${em}`);
+          }
+        }
+      });
+
+      return {
+        reactionCounts: counts,
+        totalReactionCount: total,
+        myReaction: mine,
+        reactorDescriptions: descriptions,
+      };
+    }, [reactions, currentUserId, isGroup, getParticipantName, t]);
 
     // ── AI Correction State ──
     const [isEditing, setIsEditing] = useState(false);

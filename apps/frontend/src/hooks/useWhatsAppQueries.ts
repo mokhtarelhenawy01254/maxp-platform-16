@@ -133,6 +133,7 @@ export interface Message {
   metadata?: any;
   interactiveData?: string;
   isPinned?: boolean;
+  reactions?: Record<string, string>;
 }
 
 export interface QuickReply {

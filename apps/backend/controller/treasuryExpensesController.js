@@ -898,11 +898,7 @@ exports.createExpense = async (req, res) => {
 
       const isPaid = (status || 'PAID') === 'PAID';
 
-      if (isPaid && Number(account.balance) < expenseAmount) {
-        throw new Error(`رصيد الخزينة المحددة (${account.name}) غير كافٍ لإتمام الصرف. الرصيد المتاح: ${Number(account.balance).toLocaleString()} ${account.currency}`);
-      }
-
-      // 2. Generate expense number
+      // 2. Generate expense number (Overdraft permitted: balance may become negative)
       const expenseNumber = await generateExpenseNumber(tx, companyId);
       const newBalance = isPaid ? Number(account.balance) - expenseAmount : Number(account.balance);
       const txDate = paymentDate ? new Date(paymentDate) : new Date();
@@ -1044,9 +1040,7 @@ exports.updateExpense = async (req, res) => {
           throw new Error('الخزينة المحددة غير موجودة أو غير نشطة');
         }
         const availableBalance = Number(targetAcc.balance);
-        if (availableBalance < targetAmount) {
-          throw new Error(`رصيد الخزينة (${targetAcc.name}) غير كافٍ. المتاح: ${availableBalance.toLocaleString()} ${targetAcc.currency}`);
-        }
+        // Overdraft permitted: calculate new target balance directly (may become negative)
         const updatedTargetBalance = availableBalance - targetAmount;
         await tx.treasuryAccount.update({
           where: { id: targetAccountId },
@@ -1234,7 +1228,7 @@ exports.getExpenseStats = async (req, res) => {
 
     // Monthly burn rate = current month opex or average
     const burnRate = opexTotal > 0 ? opexTotal : (currentTotal > 0 ? currentTotal : 1);
-    const runwayMonths = burnRate > 0 ? (liquidTotal / burnRate).toFixed(1) : 0;
+    const runwayMonths = (liquidTotal > 0 && burnRate > 0) ? (liquidTotal / burnRate).toFixed(1) : 0;
 
     return res.json({
       success: true,

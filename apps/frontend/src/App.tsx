@@ -328,6 +328,9 @@ const StatusAnalysisReport = React.lazy(() => import("./pages/reports/StatusAnal
 const ShippingReport = React.lazy(
   () => import("./pages/reports/ShippingReport"),
 );
+const ProductDeliveryReturnsPage = React.lazy(
+  () => import("./pages/reports/productDeliveryReturns/ProductDeliveryReturnsPage"),
+);
 const Settings = React.lazy(() => import("./pages/settings/Settings"));
 const OrderSettings = React.lazy(
   () => import("./pages/settings/OrderSettings"),
@@ -5526,6 +5529,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/analytics/orders/product-delivery-returns"
+                  element={
+                    <Layout>
+                      <ProductDeliveryReturnsPage />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/analytics/orders/regions"
                   element={
                     <Layout>
@@ -5698,6 +5709,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <StatusAnalysisReport />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/reports/product-delivery-returns"
+                  element={
+                    <Layout>
+                      <ProductDeliveryReturnsPage />
                     </Layout>
                   }
                 />

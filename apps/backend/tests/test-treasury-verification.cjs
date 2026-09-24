@@ -215,8 +215,50 @@ async function runTests() {
     console.log(`  ✓ Latest transaction: ${latestTx.type} | Amount: ${latestTx.amount} | Running Balance: ${latestTx.runningBalance}`);
     console.log('  ✅ TEST 7 PASSED: Audit Ledger captures all transactions accurately!\n');
 
+    // -----------------------------------------------------------
+    // TEST 8: Overdraft / Negative Balance Expense Creation
+    // -----------------------------------------------------------
+    console.log('▶ TEST 8: Testing Overdraft / Negative Balance Expense Creation...');
+    const overdraftRes = mockRes();
+    const currentBalanceBeforeOverdraft = reconciledBalance; // e.g. 70
+    const overdraftExpenseAmount = 500; // 500 > 70, resulting in negative balance (-430)
+
+    await controller.createExpense({
+      user: mockUser,
+      body: {
+        title: 'مصروف طارئ مع رصيد سالب',
+        amount: overdraftExpenseAmount,
+        categoryId: categories[0].id,
+        treasuryAccountId: cashAccount.id,
+        status: 'PAID',
+        beneficiary: 'مورد الطوارئ',
+        notes: 'اختبار الصرف بالسالب وتجاوز الرصيد'
+      }
+    }, overdraftRes);
+
+    const overdraftExp = overdraftRes.getResponse().data?.data?.expense;
+    const overdraftBalance = overdraftRes.getResponse().data?.data?.updatedBalance;
+    console.log(`  ✓ Overdraft expense created: "${overdraftExp.title}" (EXP Number: ${overdraftExp.expenseNumber})`);
+    console.log(`  ✓ Account Balance before: ${currentBalanceBeforeOverdraft}, after overdraft: ${overdraftBalance}`);
+
+    const expectedNegativeBalance = currentBalanceBeforeOverdraft - overdraftExpenseAmount;
+    if (overdraftBalance !== expectedNegativeBalance) {
+      throw new Error(`Expected negative balance of ${expectedNegativeBalance}, got ${overdraftBalance}`);
+    }
+    if (overdraftBalance >= 0) {
+      throw new Error(`Expected balance to be negative, but got ${overdraftBalance}`);
+    }
+
+    // Verify in database directly
+    const accInDb = await prisma.treasuryAccount.findUnique({ where: { id: cashAccount.id } });
+    if (Number(accInDb.balance) !== expectedNegativeBalance) {
+      throw new Error(`Database balance mismatch: expected ${expectedNegativeBalance}, found ${accInDb.balance}`);
+    }
+    console.log(`  ✓ Database verified: Account balance is stored as negative: ${accInDb.balance} EGP`);
+    console.log('  ✅ TEST 8 PASSED: Negative balance & overdraft expense creation fully verified!\n');
+
     console.log('════════════════════════════════════════════════════════════════');
-    console.log('🎉 ALL 7 TREASURY & EXPENSES TESTS PASSED WITH 100% SUCCESS!');
+    console.log('🎉 ALL 8 TREASURY & EXPENSES TESTS PASSED WITH 100% SUCCESS!');
     console.log('════════════════════════════════════════════════════════════════\n');
 
   } finally {

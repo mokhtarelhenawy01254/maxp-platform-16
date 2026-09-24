@@ -12,6 +12,7 @@ const {
   getConversationAudience
 } = require('../whatsappRealtimeAudienceService');
 const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
+const WhatsAppReactionService = require('./WhatsAppReactionService');
 const aiSdkClient = require('../aiSdkClient');
 const { getEffectiveAiAutoReplySetting } = require('../aiSettingsResolver');
 
@@ -143,6 +144,23 @@ async function saveIncomingMessage(payload) {
       updatedAt: new Date()
     }
   });
+
+  // Handle incoming REACTION: apply to target message and notify clients
+  if (messageType === 'REACTION' && quotedMessageId) {
+    try {
+      await WhatsAppReactionService.applyReactionToMessage({
+        sessionId,
+        companyId,
+        remoteJid: normalizedJid,
+        targetMessageId: quotedMessageId,
+        reactorKey: pushName || normalizedJid || 'customer',
+        emoji: content,
+        fromMe: false
+      });
+    } catch (rxErr) {
+      console.warn('⚠️ [WhatsAppInbound] Failed to attach reaction to target message:', rxErr.message);
+    }
+  }
 
   let syncedCustomer = null;
   let syncedConversation = null;

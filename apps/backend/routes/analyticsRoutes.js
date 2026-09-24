@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const analyticsController = require('../controller/analyticsController');
 const retentionAnalyticsController = require('../controller/retentionAnalyticsController');
+const productDeliveryReturnsController = require('../controller/productDeliveryReturnsController');
 const { authenticateToken } = require('../utils/verifyToken');
 const { cacheMiddleware } = require('../middleware/performanceOptimization');
 const { checkAppAccess } = require('../middleware/checkAppAccess');
@@ -82,6 +83,9 @@ router.get('/product-fulfillment', authenticateToken, cacheMiddleware(60000), an
 
 // تحليل أداء التسليم والمرتجعات اللوجستي (الشحنات الفعلية / الفروع / المحافظات / أسباب المرتجع)
 router.get('/delivery-returns', authenticateToken, cacheMiddleware(60000), analyticsController.getDeliveryReturnsLogisticsAnalytics);
+
+// تقرير تحليلي مخصص لكل منتج (نسبة التسليم، التحصيل، وتفصيل أسباب المرتجعات للمعالجة التشغيلية)
+router.get('/products-delivery-returns', authenticateToken, cacheMiddleware(30000), productDeliveryReturnsController.getProductDeliveryReturnsReport);
 
 // تحليل أداء الفريق
 router.get('/team-performance', authenticateToken, cacheMiddleware(60000), analyticsController.getTeamPerformanceAnalytics);

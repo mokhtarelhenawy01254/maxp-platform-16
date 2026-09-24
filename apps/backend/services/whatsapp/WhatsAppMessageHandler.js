@@ -14,6 +14,7 @@ const { getSharedPrismaClient } = require('../sharedDatabase');
 const WhatsAppManager = require('./WhatsAppManager');
 const WhatsAppSyncService = require('./WhatsAppSyncService');
 const MetaCloudProvider = require('./providers/MetaCloudProvider');
+const WhatsAppReactionService = require('./WhatsAppReactionService');
 const socketService = require('../socketService');
 const getIO = () => socketService.getIO();
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
@@ -772,25 +773,40 @@ async function sendReaction(sessionId, to, messageId, emoji) {
         const jid = await resolveAndValidateOutgoingJid(sessionId, to);
         const targetPhone = jid.split('@')[0];
 
+        let result;
         if (provider === 'META_CLOUD') {
-            const result = await MetaCloudProvider.sendReaction(sessionId, targetPhone, messageId, emoji);
-            return result;
+            result = await MetaCloudProvider.sendReaction(sessionId, targetPhone, messageId, emoji || '');
+        } else {
+            let session = await getSendableBaileysSession(sessionId, dbSession);
+            session = assertSessionReadyAfterPrep(sessionId, 'reaction');
+            result = await session.sock.sendMessage(jid, {
+                react: {
+                    text: emoji || '',
+                    key: {
+                        remoteJid: jid,
+                        id: messageId
+                    }
+                }
+            });
         }
 
-        let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        session = assertSessionReadyAfterPrep(sessionId, 'reaction');
-        const result = await session.sock.sendMessage(jid, {
-            react: {
-                text: emoji,
-                key: {
-                    remoteJid: jid,
-                    id: messageId
-                }
-            }
+        // حفظ التفاعل وتحديث الرسالة الأصلية وإرسال حدث السوكيت
+        const reactionResult = await WhatsAppReactionService.applyReactionToMessage({
+            sessionId,
+            companyId: dbSession?.companyId,
+            remoteJid: jid,
+            targetMessageId: messageId,
+            reactorKey: 'me',
+            emoji: emoji || '',
+            fromMe: true
         });
 
-        return result;
+        return {
+            result,
+            messageId,
+            emoji: emoji || null,
+            reactions: reactionResult?.reactions || { me: emoji }
+        };
     } catch (error) {
         console.error('❌ Error sending reaction:', error);
         throw error;
@@ -1238,7 +1254,9 @@ async function getMessages(sessionId, remoteJid, options = {}) {
           }
         }
 
-        const enriched = messages.map(m => ({
+        const withReactions = WhatsAppReactionService.attachReactionsToMessages(messages);
+
+        const enriched = withReactions.map(m => ({
             ...m,
             senderName: m.fromMe && m.senderId ? (senderMap[m.senderId] || null) : null,
             participantName: (!m.fromMe && m.participant) ? (participantNameMap[m.participant] || null) : null

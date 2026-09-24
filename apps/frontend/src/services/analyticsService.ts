@@ -1049,6 +1049,41 @@ class AnalyticsService {
     }
   }
 
+  async getProductDeliveryReturnsReport(options?: {
+    period?: string;
+    startDate?: string;
+    endDate?: string;
+    search?: string;
+    productId?: string;
+    shippingCompanyId?: string;
+    governorate?: string;
+    statusFilter?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+  }) {
+    try {
+      const params: Record<string, any> = {
+        ...(options?.period ? { period: options.period } : {}),
+        ...(options?.startDate ? { startDate: options.startDate } : {}),
+        ...(options?.endDate ? { endDate: options.endDate } : {}),
+        ...(options?.search ? { search: options.search } : {}),
+        ...(options?.productId ? { productId: options.productId } : {}),
+        ...(options?.shippingCompanyId ? { shippingCompanyId: options.shippingCompanyId } : {}),
+        ...(options?.governorate ? { governorate: options.governorate } : {}),
+        ...(options?.statusFilter ? { statusFilter: options.statusFilter } : {}),
+        ...(options?.sortBy ? { sortBy: options.sortBy } : {}),
+        ...(options?.sortOrder ? { sortOrder: options.sortOrder } : {}),
+      };
+      const response = await apiClient.get("/analytics/products-delivery-returns", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching product delivery returns report:", error);
+      throw error;
+    }
+  }
+
   async getProductSalesPerformance(
     period?: string,
     startDate?: string,

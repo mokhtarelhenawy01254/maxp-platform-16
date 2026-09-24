@@ -700,6 +700,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/delivery-rate', icon: Truck, label: t('sidebar.deliveryRate') },
                 { to: '/analytics/orders/fulfillment', icon: PackageCheck, label: t('sidebar.productFulfillment') },
                 { to: '/analytics/orders/delivery-returns', icon: Undo2, label: t('sidebar.deliveryReturnsAnalytics') },
+                { to: '/analytics/orders/product-delivery-returns', icon: Package, label: isEn ? 'Product Delivery & Collection' : t('sidebar.productDeliveryReturns', 'تسليم وتحصيل المنتجات (أسباب المرتجع)') },
                 { to: '/analytics/orders/regions', icon: MapPin, label: t('sidebar.regionAnalytics') },
                 { to: '/analytics/orders/returns', icon: Undo2, label: t('sidebar.returnAnalytics') },
                 { to: '/analytics/orders/returns-reasons', icon: ListChecks, label: t('sidebar.returnReasonsAnalytics') },

@@ -34,6 +34,7 @@ interface ExpenseModalProps {
   categories: ExpenseCategory[];
   expense?: CompanyExpense | null;
   onCategoryCreated?: (newCat?: ExpenseCategory) => void;
+  defaultTreasuryAccountId?: string;
 }
 
 export default function ExpenseModal({
@@ -44,6 +45,7 @@ export default function ExpenseModal({
   categories,
   expense,
   onCategoryCreated,
+  defaultTreasuryAccountId,
 }: ExpenseModalProps) {
   const isEdit = Boolean(expense);
 
@@ -93,7 +95,10 @@ export default function ExpenseModal({
       // Create mode
       setTitle("");
       setAmount("");
-      const defaultAcc = accounts.find((a) => a.isDefault) || accounts[0];
+      const defaultAcc =
+        (defaultTreasuryAccountId ? accounts.find((a) => a.id === defaultTreasuryAccountId) : null) ||
+        accounts.find((a) => a.isDefault) ||
+        accounts[0];
       setTreasuryAccountId(defaultAcc?.id || "");
       setCategoryId("");
       setType("OPEX");
@@ -107,7 +112,7 @@ export default function ExpenseModal({
       setReceiptUrl(null);
     }
     setError(null);
-  }, [isOpen, expense, accounts]);
+  }, [isOpen, expense, accounts, defaultTreasuryAccountId]);
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = e.target.value;
@@ -151,11 +156,6 @@ export default function ExpenseModal({
     e.preventDefault();
     if (!title.trim() || parsedAmount <= 0 || !treasuryAccountId) {
       setError("يرجى إدخال اسم النفقة والمبلغ واختيار الخزينة المصروف منها");
-      return;
-    }
-
-    if (isOverdraft && (!isEdit || expense?.treasuryAccountId !== treasuryAccountId || parsedAmount > Number(expense?.amount || 0))) {
-      setError("لا يمكن إتمام الصرف، رصيد الخزينة المحددة غير كافٍ. يرجى اختيار خزينة أخرى أو تغذية الرصيد أولاً.");
       return;
     }
 
@@ -266,12 +266,14 @@ export default function ExpenseModal({
                 {selectedAccount && (
                   <span
                     className={`text-xs px-2 py-0.5 rounded-md font-mono font-medium ${
-                      isOverdraft
+                      currentBalance < 0
                         ? "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400"
+                        : isOverdraft
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
                         : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
                     }`}
                   >
-                    المتاح: {formatMoney(currentBalance, selectedAccount.currency)}
+                    الرصيد: {formatMoney(currentBalance, selectedAccount.currency)} {currentBalance < 0 ? "(مكشوف بالسالب)" : ""}
                   </span>
                 )}
               </div>
@@ -281,18 +283,30 @@ export default function ExpenseModal({
                 onChange={(e) => setTreasuryAccountId(e.target.value)}
                 className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 focus:outline-none"
               >
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name} — رصيد: {Number(acc.balance).toLocaleString()} {acc.currency}
-                  </option>
-                ))}
+                {accounts.map((acc) => {
+                  const bal = Number(acc.balance);
+                  return (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.name} — رصيد: {formatMoney(bal, acc.currency)} {bal < 0 ? "(سالب)" : ""}
+                    </option>
+                  );
+                })}
               </select>
 
               {isOverdraft && (
-                <p className="text-[11px] text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                  تحذير: المبلغ المطلوب ({formatMoney(parsedAmount)}) يتجاوز رصيد الخزينة المتاح!
-                </p>
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5 text-xs text-amber-800 dark:text-amber-300">
+                    <p className="font-semibold">تنبيه: سيتم احتساب رصيد الخزينة بالسالب</p>
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                      المبلغ المطلوب ({formatMoney(parsedAmount)}) يتجاوز رصيد الخزينة الحالي ({formatMoney(currentBalance, selectedAccount?.currency)}).
+                      سيتم تسجيل النفقة بشكل طبيعي وتحويل الرصيد إلى:{" "}
+                      <span className="font-mono font-bold text-red-600 dark:text-red-400 tabular-nums">
+                        {formatMoney(currentBalance - parsedAmount, selectedAccount?.currency)}
+                      </span>
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
 

@@ -27,6 +27,7 @@ const {
 } = require('../whatsappRealtimeAudienceService');
 const telegramAlertService = require('../telegramAlertService');
 const MetaCloudProvider = require('./providers/MetaCloudProvider');
+const WhatsAppReactionService = require('./WhatsAppReactionService');
 const { buildConversationMetadata } = require('../whatsappInboxMetadata');
 const getIO = () => socketService.getIO();
 
@@ -1807,6 +1808,34 @@ async function createSession(sessionId, companyId, options = {}) {
             await handleMessageStatusUpdate(sessionId, companyId, updates);
         });
 
+        // معالجة تفاعلات الرسائل (Reactions)
+        sock.ev.on('messages.reaction', async (reactionUpdates) => {
+            markSocketActivity(sock);
+            if (!Array.isArray(reactionUpdates)) return;
+            for (const r of reactionUpdates) {
+                try {
+                    const targetId = r.reaction?.key?.id || r.key?.id;
+                    const emoji = r.reaction?.text || '';
+                    const fromMe = Boolean(r.key?.fromMe);
+                    const participant = r.key?.participant || r.participant || null;
+                    const jid = r.key?.remoteJid || null;
+                    if (targetId) {
+                        await WhatsAppReactionService.applyReactionToMessage({
+                            sessionId,
+                            companyId,
+                            remoteJid: jid,
+                            targetMessageId: targetId,
+                            reactorKey: fromMe ? 'me' : (participant || jid || 'customer'),
+                            emoji,
+                            fromMe
+                        });
+                    }
+                } catch (err) {
+                    console.warn(`⚠️ [WhatsAppManager] Error in messages.reaction for ${sessionId}:`, err.message);
+                }
+            }
+        });
+
         sock.ev.on('message-receipt.update', async (updates) => {
             markSocketActivity(sock);
             await handleMessageReceiptUpdate(sessionId, companyId, updates);
@@ -3038,6 +3067,23 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 }
             }
 
+            // إذا كانت الرسالة تفاعلاً (REACTION)، نطبّق التفاعل على الرسالة الأصلية
+            if (messageContent.type === 'REACTION' && messageContent.quotedId) {
+                try {
+                    await WhatsAppReactionService.applyReactionToMessage({
+                        sessionId,
+                        companyId,
+                        remoteJid,
+                        targetMessageId: messageContent.quotedId,
+                        reactorKey: fromMe ? 'me' : (messageParticipant || remoteJid || 'customer'),
+                        emoji: messageContent.text,
+                        fromMe
+                    });
+                } catch (rxErr) {
+                    console.warn(`⚠️ [WhatsAppManager] Error applying reaction to target message:`, rxErr.message);
+                }
+            }
+
             // ✅ SYNC TO MAIN CRM (Persistent Storage)
             let syncedCustomer = null;
             let syncedConversation = null;
@@ -3631,7 +3677,8 @@ async function extractMessageContent(msg, sock, sessionId, options = {}) {
     // تفاعل
     else if (message.reactionMessage) {
         type = 'REACTION';
-        text = message.reactionMessage.text;
+        text = message.reactionMessage.text || '';
+        quotedId = message.reactionMessage.key?.id || null;
     }
     // أزرار تفاعلية (رسالة تحتوي على أزرار)
     else if (message.buttonsMessage) {
