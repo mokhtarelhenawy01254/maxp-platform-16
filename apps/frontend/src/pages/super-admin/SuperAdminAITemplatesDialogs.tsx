@@ -28,6 +28,7 @@ export const ROLE_ICONS: Record<string, string> = {
   CEO: "👔", SUPPORT: "🎧", SALES: "🤝", SMART_SELLER: "🛒",
   MARKETING: "📢", ORDER: "📦", INVENTORY: "📊", COMPETITOR: "🔍",
   FACEBOOK_SALES_SUPPORT: "💬", SAS_SALES: "🛍️", SALES_REP: "🛒",
+  SHIPPING: "🚚",
 };
 
 export const ROLE_COLORS: Record<string, string> = {
@@ -36,10 +37,10 @@ export const ROLE_COLORS: Record<string, string> = {
   MARKETING: "bg-pink-100 text-pink-700", ORDER: "bg-cyan-100 text-cyan-700",
   INVENTORY: "bg-slate-100 text-slate-700", COMPETITOR: "bg-red-100 text-red-700",
   FACEBOOK_SALES_SUPPORT: "bg-indigo-100 text-indigo-700", SAS_SALES: "bg-green-100 text-green-700",
-  SALES_REP: "bg-amber-100 text-amber-700",
+  SALES_REP: "bg-amber-100 text-amber-700", SHIPPING: "bg-teal-100 text-teal-700",
 };
 
-export const ROLES = ["CEO", "SUPPORT", "SALES", "SMART_SELLER", "MARKETING", "ORDER", "INVENTORY", "COMPETITOR", "FACEBOOK_SALES_SUPPORT", "SAS_SALES", "SALES_REP"];
+export const ROLES = ["CEO", "SUPPORT", "SALES", "SMART_SELLER", "MARKETING", "ORDER", "INVENTORY", "COMPETITOR", "FACEBOOK_SALES_SUPPORT", "SAS_SALES", "SALES_REP", "SHIPPING"];
 
 export const toneColors: Record<string, string> = {
   empathetic: "text-pink-600 bg-pink-50", persuasive: "text-amber-600 bg-amber-50",
