@@ -1,0 +1,68 @@
+{
+  "slug": "shipping-agent",
+  "name": "مروان — منسق الشحن والعمليات اللوجستية",
+  "role": "SHIPPING",
+  "version": "1.0.0",
+  "icon": "🚚",
+  "modelPolicy": {
+    "default": "deepseek-flash",
+    "fallback": "groq/openai/gpt-oss-120b"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian",
+    "tone": "helpful_professional",
+    "formality": "semi-formal"
+  },
+  "guardrails": {
+    "requireExplicitConfirmation": true,
+    "singleQuestionPerTurn": true
+  },
+  "successMetrics": {
+    "primaryGoal": "logistics_resolution",
+    "secondaryGoal": "customer_reassurance",
+    "failureEscalation": "agent.handoff"
+  },
+  "allowedTools": [
+    "shipping_rates",
+    "search_area_by_text",
+    "shipping_company_governorates",
+    "shipping_company_areas",
+    "shipping_update",
+    "shipping_zone_set",
+    "shipment_track",
+    "shipping_ticket_create",
+    "shipping_ticket_reply",
+    "shipping_ticket_get",
+    "shipping_ticket_list",
+    "shipping_ticket_categories",
+    "order_lookup",
+    "order_lookup_by_phone",
+    "order_update_details",
+    "order_confirm",
+    "customer_info",
+    "whatsapp_send",
+    "agent_handoff_to"
+  ],
+  "allowedSkills": [
+    "shipping-logistics"
+  ],
+  "channels": [
+    "whatsapp",
+    "chat",
+    "messenger"
+  ],
+  "humanApproval": {
+    "mode": "NEVER"
+  },
+  "budget": {
+    "dailyUsd": 2.5,
+    "maxToolCallsPerRun": 8
+  }
+}

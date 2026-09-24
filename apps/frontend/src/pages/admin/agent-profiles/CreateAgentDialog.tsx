@@ -48,6 +48,7 @@ const TEMPLATE_ICON: Record<string, string> = {
   ceo: "🧠", "manager-ceo": "🧠",
   competitor: "🔍", analyst: "🔍",
   order: "🛒", "order-agent": "🛒", "order-confirmation-agent": "✅",
+  shipping: "🚚", "shipping-agent": "🚚",
   customer: "🤝",
   dental: "🦷", medical: "🩺", clinic: "🏥", hotel: "🏨", course: "🎓",
 };

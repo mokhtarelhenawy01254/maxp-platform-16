@@ -341,7 +341,56 @@ export const AGENT_LISTINGS: AgentListing[] = [
     },
   },
 
-  // ── 7. Manager CEO Agent (PRO) ─────────────────────────────
+  // ── 7. Shipping & Logistics Agent (PRO) ───────────────────
+  {
+    id: "agent_shipping_logistics",
+    slug: "shipping-agent",
+    name: "مروان الشناوي",
+    position: "منسق الشحن والعمليات وتذاكر شركات التوصيل (Logistics & Delivery Coordinator)",
+    category: "operations",
+    tier: "pro",
+    priceMonthly: 350,
+    currency: "ج.م",
+    featured: true,
+    avatarUrl: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80",
+    summary: "الاستعلام اللحظي عن أسعار ومواعيد الشحن، التتبع الحي للشحنات والمندوب، وفتح ومتابعة والرد على تذاكر شركات الشحن لمنع رجوع الأوردرات.",
+    tools: [
+      "shipping_rates",
+      "shipment_track",
+      "shipping_ticket_create",
+      "shipping_ticket_reply",
+      "shipping_ticket_list",
+      "search_area_by_text",
+      "order_lookup_by_phone",
+    ],
+    skills: ["carrier-tracking", "shipping-tickets", "address-mapping"],
+    telemetry: {
+      engine: "DeepSeek-V3",
+      fallbackEngine: "Llama 3.3 70B",
+      p95Latency: "0.65s",
+      taskPrecision: "99.7%",
+      governance: "autonomous_loop",
+      contextWindow: "64k Tokens",
+    },
+    dossier: {
+      bio: "منسق لوجستي متخصص في تخفيض نسبة المرتجعات وحل مشاكل التسليم. يتواصل مع العميل وشركة الشحن لحظياً لجدولة مواعيد الاستلام بدقة وتعديل العناوين.",
+      persona: "متعاون، سريع الاستجابة، يركز على الحلول العملية، يتحدث بنبرة ودودة ومطمئنة.",
+      dialect: "العامية المصرية المهذبة والمباشرة لتطبيقات الدردشة والواتساب.",
+      boundaries: [
+        "لا يقطع وعوداً بمواعيد تسليم قبل التحقق من خريطة شركة الشحن الفعلية.",
+        "يحيل الشحنات المفقودة أو النزاعات المالية لمدير المتجر عبر التحويل الآمن.",
+      ],
+      executionStream: [
+        { step: "01: استفسار الشحنة", action: "order_lookup_by_phone(phone='010xxxxxxxx')", type: "tool" },
+        { step: "02: التتبع الحي", action: "shipment_track(tracking_code='TRB-10825')", type: "tool" },
+        { step: "03: رصد مشكلة التسليم", action: "حالة الشحنة: تعذر التسليم لعدم تواجد العميل، العميل يطلب التأجيل لبكرة", type: "thought" },
+        { step: "04: فتح تذكرة شركة الشحن", action: "shipping_ticket_create(content='تأجيل التسليم للغد بعد العصر', code='TRB-10825')", type: "tool" },
+        { step: "05: طمأنة العميل", action: "إرسال تأكيد الموعد الجديد ورقم التذكرة للعميل على الواتساب", type: "output" },
+      ],
+    },
+  },
+
+  // ── 8. Manager CEO Agent (PRO) ─────────────────────────────
   {
     id: "agent_manager_ceo",
     slug: "manager-ceo",

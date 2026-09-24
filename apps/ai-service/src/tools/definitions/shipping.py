@@ -64,6 +64,43 @@ class SearchAreaByTextInput(BaseModel):
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
+class ShippingTicketCategoriesInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class ShippingTicketListInput(BaseModel):
+    status: str = Field(default="all", description="Filter by status: 'all', 'open', 'closed'")
+    page: int = Field(default=1, description="Page number (default 1)")
+    per_page: int = Field(default=10, description="Items per page (1-50, default 10)")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class ShippingTicketGetInput(BaseModel):
+    ticket_id: str | int = Field(description="ID of the shipping ticket to retrieve details and messages for")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class ShippingTicketCreateInput(BaseModel):
+    content: str = Field(description="Issue description or instructions for the shipping company (e.g. 'العميل يطلب تأجيل الاستلام للغد الساعة 4 عصراً ورقم الهاتف البديل 01012345678')")
+    code: str | None = Field(default=None, description="Related shipment tracking number, order number, or AWB")
+    category_id: int | str | None = Field(default=None, description="Category or inquiry type ID (from shipping_ticket_categories)")
+    priority: str = Field(default="medium", description="Ticket priority: 'low', 'medium', or 'high'")
+    related_to: str = Field(default="shipments", description="Related entity: 'shipments', 'branches', 'client_requests', 'others'")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class ShippingTicketReplyInput(BaseModel):
+    ticket_id: str | int = Field(description="Ticket ID to send the reply to")
+    message: str = Field(description="Reply message text sent to the carrier support or delivery captain")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class ShipmentTrackInput(BaseModel):
+    tracking_code: str = Field(description="Shipment tracking number, order number, or AWB to track")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+
 async def shipping_rates(input_data: ShippingRatesInput) -> dict[str, Any]:
     company_id = input_data.company_id or ""
     governorate = input_data.governorate
@@ -231,6 +268,248 @@ def _format_shipping_zone_set(result: dict[str, Any]) -> str:
     return msg
 
 
+async def shipping_ticket_categories(input_data: ShippingTicketCategoriesInput) -> dict[str, Any]:
+    """Fetch available ticket categories/inquiry types from the shipping carrier."""
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "Missing company_id", "categories": []}
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    try:
+        result = await client.get_shipping_ticket_categories(company_id)
+        categories = result.get("types") or result.get("categories") or result.get("data") or []
+        formatted = []
+        for cat in categories:
+            if isinstance(cat, dict):
+                formatted.append({
+                    "id": cat.get("id"),
+                    "name": cat.get("name") or cat.get("title") or "",
+                })
+            else:
+                formatted.append({"id": str(cat), "name": str(cat)})
+        return {
+            "success": True,
+            "count": len(formatted),
+            "categories": formatted,
+        }
+    except Exception as exc:
+        return {"success": False, "error": str(exc), "categories": []}
+
+
+async def shipping_ticket_list(input_data: ShippingTicketListInput) -> dict[str, Any]:
+    """List support tickets opened with the shipping carrier."""
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "Missing company_id", "tickets": []}
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    try:
+        result = await client.get_shipping_tickets(
+            company_id=company_id,
+            page=input_data.page,
+            per_page=input_data.per_page,
+            status=input_data.status,
+        )
+        data = result.get("data", result)
+        tickets = data.get("tickets") or result.get("tickets") or []
+        summary = []
+        for t in tickets:
+            if isinstance(t, dict):
+                summary.append({
+                    "ticketId": str(t.get("id") or t.get("ticket_id") or ""),
+                    "code": str(t.get("code") or t.get("related_value") or ""),
+                    "status": str(t.get("status") or t.get("ticket_status") or "open"),
+                    "priority": str(t.get("priority", "medium")),
+                    "content": str(t.get("content") or t.get("description") or "")[:120],
+                    "createdAt": str(t.get("created_at") or t.get("createdAt") or ""),
+                })
+        return {
+            "success": True,
+            "count": len(summary),
+            "tickets": summary,
+        }
+    except Exception as exc:
+        return {"success": False, "error": str(exc), "tickets": []}
+
+
+async def shipping_ticket_get(input_data: ShippingTicketGetInput) -> dict[str, Any]:
+    """Retrieve details and messages of a specific shipping ticket."""
+    company_id = input_data.company_id or ""
+    ticket_id = input_data.ticket_id
+    if not company_id or not ticket_id:
+        return {"success": False, "error": "Missing company_id or ticket_id"}
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    try:
+        result = await client.get_shipping_ticket(company_id, str(ticket_id))
+        ticket = result.get("ticket") or result.get("data", {}).get("ticket") or result.get("data") or {}
+        messages = []
+        raw_msgs = ticket.get("messages") or ticket.get("replies") or []
+        for m in raw_msgs:
+            if isinstance(m, dict):
+                messages.append({
+                    "sender": "الدعم / شركة الشحن" if m.get("is_client_message") == 0 else "المتجر / العميل",
+                    "content": m.get("content") or m.get("message") or "",
+                    "time": str(m.get("created_at") or m.get("createdAt") or ""),
+                })
+        return {
+            "success": True,
+            "ticketId": str(ticket_id),
+            "code": str(ticket.get("code") or ""),
+            "status": str(ticket.get("status") or ""),
+            "content": str(ticket.get("content") or ""),
+            "messages": messages,
+            "matchedOrder": ticket.get("matchedOrderSummary") or ticket.get("matchedOrder"),
+        }
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
+
+
+async def shipping_ticket_create(input_data: ShippingTicketCreateInput) -> dict[str, Any]:
+    """Create a new support ticket with the shipping company for a shipment/issue."""
+    company_id = input_data.company_id or ""
+    if not company_id or not input_data.content:
+        return _executed_result("SHIPPING_TICKET_CREATE", {"success": False, "error": "Missing company_id or content"})
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    try:
+        result = await client.create_shipping_ticket(
+            company_id=company_id,
+            content=input_data.content,
+            category_id=input_data.category_id,
+            code=input_data.code,
+            priority=input_data.priority,
+            related_to=input_data.related_to,
+        )
+        ticket_id = result.get("ticketId") or result.get("id") or result.get("data", {}).get("id") or result.get("data", {}).get("ticketId")
+        return _executed_result("SHIPPING_TICKET_CREATE", {
+            "success": True,
+            "ticketId": str(ticket_id or ""),
+            "code": input_data.code or "",
+            "priority": input_data.priority,
+            "message": result.get("message") or "تم إنشاء تذكرة الدعم بنجاح لدى شركة الشحن",
+        })
+    except Exception as exc:
+        return _executed_result("SHIPPING_TICKET_CREATE", {"success": False, "error": str(exc)})
+
+
+async def shipping_ticket_reply(input_data: ShippingTicketReplyInput) -> dict[str, Any]:
+    """Send a reply to an open shipping ticket."""
+    company_id = input_data.company_id or ""
+    ticket_id = input_data.ticket_id
+    message = (input_data.message or "").strip()
+    if not company_id or not ticket_id or not message:
+        return _executed_result("SHIPPING_TICKET_REPLY", {"success": False, "error": "Missing company_id, ticket_id, or message"})
+
+    from src.tools.backend_client import get_backend_client
+
+    client = get_backend_client()
+    try:
+        result = await client.reply_shipping_ticket(
+            company_id=company_id,
+            ticket_id=ticket_id,
+            message=message,
+        )
+        return _executed_result("SHIPPING_TICKET_REPLY", {
+            "success": True,
+            "ticketId": str(ticket_id),
+            "message": result.get("message") or "تم إرسال الرد بنجاح لشركة الشحن",
+        })
+    except Exception as exc:
+        return _executed_result("SHIPPING_TICKET_REPLY", {"success": False, "error": str(exc)})
+
+
+async def shipment_track(input_data: ShipmentTrackInput) -> dict[str, Any]:
+    """Track a shipment by order number, tracking code, or AWB in real time."""
+    company_id = input_data.company_id or ""
+    code = (input_data.tracking_code or "").strip()
+    if not company_id or not code:
+        return {"found": False, "error": "Missing company_id or tracking_code"}
+
+    from src.tools.backend_client import get_backend_client
+    from src.tools.repositories.order_repository import OrderRepository
+    import src.db.session as _db_mod
+
+    order_info: dict[str, Any] | None = None
+    if _db_mod.async_session is not None:
+        try:
+            async with _db_mod.async_session() as sess:
+                repo = OrderRepository(sess)
+                order_info = await repo.get_order(company_id, code)
+        except Exception:
+            pass
+
+    client = get_backend_client()
+    carrier_tracking: dict[str, Any] | None = None
+    try:
+        track_res = await client.track_shipment_by_code(company_id, code)
+        if track_res.get("success") or track_res.get("data"):
+            carrier_tracking = track_res.get("data") or track_res
+    except Exception:
+        pass
+
+    if not order_info and not carrier_tracking:
+        return {
+            "found": False,
+            "trackingCode": code,
+            "message": f"لم يتم العثور على شحنة أو طلب بالرقم ({code})",
+        }
+
+    status = (
+        (carrier_tracking and (carrier_tracking.get("status") or carrier_tracking.get("internalStatus")))
+        or (order_info and order_info.get("status"))
+        or "PROCESSING"
+    )
+
+    captain_name = (carrier_tracking and carrier_tracking.get("captainName")) or ""
+    captain_phone = (carrier_tracking and carrier_tracking.get("captainPhone")) or ""
+
+    return {
+        "found": True,
+        "trackingCode": code,
+        "orderNumber": (order_info and order_info.get("orderNumber")) or code,
+        "status": status,
+        "customerName": (order_info and order_info.get("customerName")) or "",
+        "carrier": "شركة الشحن (Turbo)",
+        "captainName": captain_name,
+        "captainPhone": captain_phone,
+        "liveCarrierData": carrier_tracking,
+    }
+
+
+def _format_shipping_ticket_create(result: dict[str, Any]) -> str:
+    res = result.get("result", result)
+    if not res.get("success", True):
+        return f"تعذر إنشاء تذكرة الشحن: {res.get('error', 'خطأ غير متوقع')}"
+    ticket_id = res.get("ticketId") or "غير محدد"
+    code = f" للشحنة/الطلب ({res.get('code')})" if res.get("code") else ""
+    return f"تم فتح تذكرة دعم جديدة لدى شركة الشحن بنجاح (رقم التذكرة: {ticket_id}){code}."
+
+
+def _format_shipping_ticket_reply(result: dict[str, Any]) -> str:
+    res = result.get("result", result)
+    if not res.get("success", True):
+        return f"تعذر إرسال الرد على التذكرة: {res.get('error', 'خطأ غير متوقع')}"
+    return f"تم إرسال الرد على تذكرة الشحن رقم {res.get('ticketId')} بنجاح."
+
+
+def _format_shipment_track(result: dict[str, Any]) -> str:
+    res = result.get("result", result)
+    if not res.get("found"):
+        return res.get("message") or f"لم يتم العثور على بيانات تتبع للشحنة {res.get('trackingCode')}."
+    status = res.get("status", "قيد المعالجة")
+    captain = f" - المندوب: {res.get('captainName')} ({res.get('captainPhone')})" if res.get("captainName") else ""
+    return f"حالة الشحنة ({res.get('trackingCode')}): {status}{captain}."
+
+
 shipping_rates_tool = FunctionTool(
     name="shipping_rates",
     description="Get shipping rates and delivery info for a governorate. Only needs the governorate name to calculate — do not ask for full address, city, or street. Use this immediately when customer asks about delivery cost, shipping fees, or how much delivery costs.",
@@ -274,6 +553,51 @@ search_area_by_text_tool = FunctionTool(
     input_model=SearchAreaByTextInput,
 )
 
+shipping_ticket_categories_tool = FunctionTool(
+    name="shipping_ticket_categories",
+    description="Get the list of supported ticket categories and inquiry types from the shipping company (e.g. delivery delay, address update, re-delivery request, cash on delivery inquiry).",
+    func=shipping_ticket_categories,
+    input_model=ShippingTicketCategoriesInput,
+)
+
+shipping_ticket_list_tool = FunctionTool(
+    name="shipping_ticket_list",
+    description="List active and past support tickets opened with the shipping company. Use to check open tickets, complaints, or inquiries regarding shipments.",
+    func=shipping_ticket_list,
+    input_model=ShippingTicketListInput,
+)
+
+shipping_ticket_get_tool = FunctionTool(
+    name="shipping_ticket_get",
+    description="Get full details, conversation messages, and status history of a specific shipping ticket by its ID.",
+    func=shipping_ticket_get,
+    input_model=ShippingTicketGetInput,
+)
+
+shipping_ticket_create_tool = FunctionTool(
+    name="shipping_ticket_create",
+    description="Open a new support ticket with the shipping company (e.g. requesting re-delivery, reporting delivery delay, updating phone/address instructions for the delivery captain).",
+    func=shipping_ticket_create,
+    input_model=ShippingTicketCreateInput,
+    format_result=_format_shipping_ticket_create,
+)
+
+shipping_ticket_reply_tool = FunctionTool(
+    name="shipping_ticket_reply",
+    description="Reply to an existing shipping ticket with new information or clarification (e.g. providing alternate phone number or confirmed delivery appointment).",
+    func=shipping_ticket_reply,
+    input_model=ShippingTicketReplyInput,
+    format_result=_format_shipping_ticket_reply,
+)
+
+shipment_track_tool = FunctionTool(
+    name="shipment_track",
+    description="Track a shipment in real-time by order number, tracking number, or AWB. Returns shipping carrier, delivery status, courier/captain contact details, and progress.",
+    func=shipment_track,
+    input_model=ShipmentTrackInput,
+    format_result=_format_shipment_track,
+)
+
 __all_tools__ = [
     shipping_rates_tool,
     shipping_zone_set_tool,
@@ -281,4 +605,11 @@ __all_tools__ = [
     shipping_company_governorates_tool,
     shipping_company_areas_tool,
     search_area_by_text_tool,
+    shipment_track_tool,
+    shipping_ticket_categories_tool,
+    shipping_ticket_list_tool,
+    shipping_ticket_get_tool,
+    shipping_ticket_create_tool,
+    shipping_ticket_reply_tool,
 ]
+

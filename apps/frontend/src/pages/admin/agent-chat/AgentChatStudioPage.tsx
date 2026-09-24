@@ -41,6 +41,16 @@ const DEFAULT_AGENTS: AgentItem[] = [
     description: "متابعة أوردرات COD المعلقة، تأكيد الشحن، وتتبع بوالص تيربو وبوسطة.",
   },
   {
+    id: "shipping-agent",
+    slug: "shipping-agent",
+    name: "مروان — منسق الشحن والعمليات",
+    role: "SHIPPING",
+    icon: "🚚",
+    departmentName: "العمليات واللوجستيات",
+    model: "DeepSeek-V3",
+    description: "تتبع مسار الشحنات، حساب أسعار التوصيل، وإدارة والرد على تذاكر شركات الشحن.",
+  },
+  {
     id: "inventory-pricing-agent",
     slug: "inventory-pricing-agent",
     name: "مساعد المخزون والتسعير",

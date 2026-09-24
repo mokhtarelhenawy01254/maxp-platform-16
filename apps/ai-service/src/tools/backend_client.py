@@ -510,6 +510,84 @@ class BackendClient:
             params={"governorate": governorate},
         )
 
+    async def get_shipping_ticket_categories(
+        self, company_id: str
+    ) -> dict[str, Any]:
+        """Fetch ticket categories/inquiry types from the shipping carrier (Turbo)."""
+        return await self._request(
+            "GET", "/api/v1/turbo/tickets/categories",
+            params={"companyId": company_id},
+            headers={"x-company-id": company_id},
+        )
+
+    async def get_shipping_tickets(
+        self, company_id: str, page: int = 1, per_page: int = 15, status: str = "all"
+    ) -> dict[str, Any]:
+        """Fetch support tickets from the shipping carrier (Turbo)."""
+        return await self._request(
+            "GET", "/api/v1/turbo/tickets",
+            params={"companyId": company_id, "page": page, "per_page": per_page, "status": status},
+            headers={"x-company-id": company_id},
+        )
+
+    async def get_shipping_ticket(
+        self, company_id: str, ticket_id: str | int
+    ) -> dict[str, Any]:
+        """Fetch details and messages for a specific shipping ticket."""
+        return await self._request(
+            "GET", f"/api/v1/turbo/tickets/{ticket_id}",
+            params={"companyId": company_id},
+            headers={"x-company-id": company_id},
+        )
+
+    async def create_shipping_ticket(
+        self,
+        company_id: str,
+        content: str,
+        category_id: int | str | None = None,
+        code: str | None = None,
+        priority: str = "medium",
+        related_to: str = "shipments",
+    ) -> dict[str, Any]:
+        """Open a new support ticket with the shipping carrier (Turbo)."""
+        payload: dict[str, Any] = {
+            "content": content,
+            "priority": priority,
+            "relatedTo": related_to,
+            "targetCompanyId": company_id,
+        }
+        if category_id is not None:
+            payload["categoryId"] = category_id
+        if code:
+            payload["code"] = code
+        return await self._request(
+            "POST", "/api/v1/turbo/tickets",
+            json_body=payload,
+            params={"companyId": company_id},
+            headers={"x-company-id": company_id},
+        )
+
+    async def reply_shipping_ticket(
+        self, company_id: str, ticket_id: str | int, message: str
+    ) -> dict[str, Any]:
+        """Send a reply to an existing shipping ticket."""
+        return await self._request(
+            "POST", f"/api/v1/turbo/tickets/{ticket_id}/reply",
+            json_body={"message": message, "companyId": company_id},
+            params={"companyId": company_id},
+            headers={"x-company-id": company_id},
+        )
+
+    async def track_shipment_by_code(
+        self, company_id: str, order_or_tracking_code: str
+    ) -> dict[str, Any]:
+        """Track a shipment in real-time by order number or tracking code."""
+        return await self._request(
+            "GET", f"/api/v1/turbo/orders/{order_or_tracking_code}/track",
+            params={"companyId": company_id},
+            headers={"x-company-id": company_id},
+        )
+
     # ── Audit APIs ──
 
     async def get_audit_trail(

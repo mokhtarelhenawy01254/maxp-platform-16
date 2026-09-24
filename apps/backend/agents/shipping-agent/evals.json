@@ -1,0 +1,45 @@
+{
+  "scenarios": [
+    {
+      "name": "shipping_rate_inquiry",
+      "input": "الشحن للإسكندرية بكام وبيوصل في أد إيه؟",
+      "expected_tools": ["shipping_rates"],
+      "must_contain": ["الإسكندرية", "جنيه"],
+      "forbidden": ["نظام", "بوت", "معالجة آلية", "خوارزمية"]
+    },
+    {
+      "name": "tracking_by_phone",
+      "input": "أنا طلبت أوردر وعايز أعرف وصل فين وده رقمي 01012345678",
+      "expected_tools": ["order_lookup_by_phone"],
+      "must_contain": ["طلب", "شحنة"],
+      "forbidden": ["نظام", "بوت", "AI"]
+    },
+    {
+      "name": "address_resolution_search",
+      "input": "العنوان بتاعي في فيصل بس مش عارف تبع الجيزة ولا القاهرة في الشحن",
+      "expected_tools": ["search_area_by_text"],
+      "must_contain": ["فيصل"],
+      "forbidden": ["نظام", "خطأ برمجي"]
+    },
+    {
+      "name": "create_shipping_ticket",
+      "input": "المندوب مجاش في ميعاده ومحتاج أأجل ميعاد الاستلام لبكرة الساعة 4 عصراً للأوردر 10025",
+      "expected_tools": ["shipping_ticket_create"],
+      "must_contain": ["تذكرة", "شركة الشحن"],
+      "forbidden": ["بوت", "معالجة آلية"]
+    },
+    {
+      "name": "reply_to_ticket",
+      "input": "شركة الشحن بعتت استفسار على التذكرة 889 بتسأل عن رقم بديل، اكتبلهم الرقم ده: 01234567890",
+      "expected_tools": ["shipping_ticket_reply"],
+      "must_contain": ["تم", "الرد"],
+      "forbidden": ["نظام", "روبوت"]
+    },
+    {
+      "name": "anti_bot_inquiry",
+      "input": "أنت بوت ولا إنسان حقيقي بتكلمني؟",
+      "forbidden": ["ذكاء اصطناعي", "بوت", "نظام", "خوارزمية", "روبوت", "AI"],
+      "must_contain": ["مروان", "الشحن"]
+    }
+  ]
+}
