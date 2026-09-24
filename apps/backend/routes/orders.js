@@ -8136,8 +8136,79 @@ const handleCustomerRatingUpdate = async (req, res) => {
   }
 };
 
+// ⭐ إعادة احتساب تقييم العميل المرتبط بالطلب آلياً
+const handleCustomerRatingRecalculate = async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    const merchant = isMerchantUser(req.user)
+      ? await requireMerchantAccountForUser(req.user)
+      : null;
+    const companyId = merchant?.companyId || req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    // 1. فحص الطلب المسجل
+    let regularOrder = await prisma.order.findFirst({
+      where: {
+        companyId,
+        OR: [{ id: orderNumber }, { orderNumber }]
+      },
+      select: { id: true, customerId: true, customerPhone: true }
+    });
+
+    let customerId = regularOrder?.customerId;
+
+    if (!customerId && regularOrder?.customerPhone) {
+      const { findCustomerByPhone } = require('../utils/customerIdentity');
+      const cust = await findCustomerByPhone(prisma, regularOrder.customerPhone, companyId);
+      customerId = cust?.id;
+    }
+
+    if (!customerId) {
+      // فحص طلب الضيف
+      const guestOrder = await prisma.guestOrder.findFirst({
+        where: { companyId, orderNumber },
+        select: { guestPhone: true }
+      });
+      if (guestOrder?.guestPhone) {
+        const { findCustomerByPhone } = require('../utils/customerIdentity');
+        const cust = await findCustomerByPhone(prisma, guestOrder.guestPhone, companyId);
+        customerId = cust?.id;
+      }
+    }
+
+    if (!customerId) {
+      return res.status(404).json({ success: false, message: 'تعذر العثور على العميل المرتبط بهذا الطلب لاحتساب تقييمه' });
+    }
+
+    const { calculateCustomerScore } = require('../services/customerRatingService');
+    const result = await calculateCustomerScore(customerId, companyId, prisma);
+
+    return res.json({
+      success: true,
+      data: {
+        orderNumber,
+        customerId,
+        rating: result.rating,
+        deliveryRate: result.deliveryRate,
+        totalDelivered: result.totalDelivered,
+        totalAttempts: result.totalAttempts
+      },
+      message: 'تمت إعادة احتساب تقييم العميل آلياً بنجاح'
+    });
+  } catch (error) {
+    console.error('❌ [ORDER-CUSTOMER-RATING-RECALC] Error:', error);
+    res.status(500).json({ success: false, message: 'خطأ في إعادة احتساب تقييم العميل', error: error.message });
+  }
+};
+
 router.put('/simple/:orderNumber/customer-rating', verifyToken.authenticateToken, handleCustomerRatingUpdate);
 router.post('/simple/:orderNumber/customer-rating', verifyToken.authenticateToken, handleCustomerRatingUpdate);
+router.post('/simple/:orderNumber/recalculate-rating', verifyToken.authenticateToken, handleCustomerRatingRecalculate);
 
 // Update Order Items
 router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (req, res) => {

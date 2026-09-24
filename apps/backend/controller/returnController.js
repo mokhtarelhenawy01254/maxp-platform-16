@@ -837,7 +837,15 @@ exports.getReturnSettings = async (req, res) => {
                 data: { companyId }
             });
         }
-        res.json(settings);
+
+        const reviewConfig = typeof settings.reviewDisplayConfig === 'string'
+            ? JSON.parse(settings.reviewDisplayConfig || '{}')
+            : (settings.reviewDisplayConfig || {});
+
+        res.json({
+            ...settings,
+            averageThreshold: reviewConfig.averageThreshold ?? 50
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch return settings' });
@@ -855,8 +863,30 @@ exports.updateReturnSettings = async (req, res) => {
         const data = {};
         for (const field of ALLOWED_SETTINGS_FIELDS) {
             if (req.body[field] !== undefined) {
-                data[field] = req.body[field];
+                if (['excellentThreshold', 'goodThreshold', 'minOrdersForRating', 'autoApproveScore'].includes(field)) {
+                    data[field] = parseInt(req.body[field], 10);
+                } else {
+                    data[field] = req.body[field];
+                }
             }
+        }
+
+        if (req.body.averageThreshold !== undefined) {
+            let currentReviewDisplayConfig = data.reviewDisplayConfig;
+            if (!currentReviewDisplayConfig) {
+                const existing = await getPrisma().returnSettings.findUnique({
+                    where: { companyId },
+                    select: { reviewDisplayConfig: true }
+                });
+                currentReviewDisplayConfig = existing?.reviewDisplayConfig || {};
+            }
+            if (typeof currentReviewDisplayConfig === 'string') {
+                try { currentReviewDisplayConfig = JSON.parse(currentReviewDisplayConfig); } catch (e) { currentReviewDisplayConfig = {}; }
+            }
+            data.reviewDisplayConfig = {
+                ...(currentReviewDisplayConfig || {}),
+                averageThreshold: parseInt(req.body.averageThreshold, 10) || 50
+            };
         }
 
         const settings = await getPrisma().returnSettings.upsert({
@@ -864,7 +894,25 @@ exports.updateReturnSettings = async (req, res) => {
             update: data,
             create: { ...data, companyId }
         });
-        res.json(settings);
+
+        // Trigger background recalculation for company customers using the updated thresholds
+        try {
+            const { batchRecalculateCompanyCustomers } = require('../services/customerRatingService');
+            batchRecalculateCompanyCustomers(companyId).catch(err => {
+                console.warn(`[RETURN-SETTINGS] Background customer recalculation failed:`, err.message);
+            });
+        } catch (e) {
+            console.warn(`[RETURN-SETTINGS] Could not trigger customer recalculation:`, e.message);
+        }
+
+        const reviewConfig = typeof settings.reviewDisplayConfig === 'string'
+            ? JSON.parse(settings.reviewDisplayConfig || '{}')
+            : (settings.reviewDisplayConfig || {});
+
+        res.json({
+            ...settings,
+            averageThreshold: reviewConfig.averageThreshold ?? 50
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to update settings' });

@@ -146,16 +146,67 @@ const calculateCustomerScore = async (customerId, companyId, prismaClient = null
             deliveryRate = Math.round((deliveredCount / totalAttempts) * 1000) / 10; // 1 decimal place, e.g. 85.5%
         }
 
-        // 5. Determine Rating Tier
-        // (ممتاز - جيد - ضعيف - جديد/غير مصنف)
+        // 5. Determine Rating Tier dynamically based on Company Order Settings
+        // (إعدادات الطلبات -> تقييم العملاء: ممتاز، جيد، متوسط، ضعيف)
+        let excellentThreshold = 85;
+        let goodThreshold = 70;
+        let averageThreshold = 50;
+        let minOrdersForRating = 3;
+
+        try {
+            if (prisma.returnSettings) {
+                const settings = await prisma.returnSettings.findUnique({
+                    where: { companyId },
+                    select: {
+                        excellentThreshold: true,
+                        goodThreshold: true,
+                        minOrdersForRating: true,
+                        reviewDisplayConfig: true
+                    }
+                });
+                if (settings) {
+                    if (typeof settings.excellentThreshold === 'number') {
+                        excellentThreshold = settings.excellentThreshold;
+                    }
+                    if (typeof settings.goodThreshold === 'number') {
+                        goodThreshold = settings.goodThreshold;
+                    }
+                    if (typeof settings.minOrdersForRating === 'number') {
+                        minOrdersForRating = settings.minOrdersForRating;
+                    }
+                    const reviewCfg = typeof settings.reviewDisplayConfig === 'string'
+                        ? JSON.parse(settings.reviewDisplayConfig || '{}')
+                        : (settings.reviewDisplayConfig || {});
+                    if (reviewCfg && typeof reviewCfg.averageThreshold === 'number') {
+                        averageThreshold = reviewCfg.averageThreshold;
+                    }
+                }
+            }
+        } catch (settingsErr) {
+            // fallback gracefully to standard thresholds
+        }
+
         let rating = 'UNKNOWN';
         if (totalAttempts > 0) {
-            if ((totalAttempts >= 3 && deliveryRate >= 85) || (totalAttempts === 2 && deliveredCount === 2)) {
-                rating = 'EXCELLENT';
-            } else if (deliveredCount >= 1 && deliveryRate >= 50) {
-                rating = 'GOOD';
+            if (totalAttempts >= minOrdersForRating) {
+                if (deliveryRate >= excellentThreshold) {
+                    rating = 'EXCELLENT';
+                } else if (deliveryRate >= goodThreshold) {
+                    rating = 'GOOD';
+                } else if (deliveryRate >= averageThreshold) {
+                    rating = 'AVERAGE';
+                } else {
+                    rating = 'POOR';
+                }
             } else {
-                rating = 'POOR';
+                // If customer has fewer than minOrdersForRating (e.g. 1 or 2 orders):
+                if (deliveredCount === totalAttempts && deliveryRate >= (goodThreshold || 50)) {
+                    rating = (totalAttempts >= 2 && deliveryRate >= excellentThreshold) ? 'EXCELLENT' : 'GOOD';
+                } else if (deliveredCount > 0 && deliveryRate >= (averageThreshold || 50)) {
+                    rating = 'GOOD';
+                } else {
+                    rating = 'POOR';
+                }
             }
         }
 

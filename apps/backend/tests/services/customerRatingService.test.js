@@ -11,7 +11,7 @@ describe('customerRatingService - Automated Classification Engine', () => {
         phoneNormalized: '+201012345678',
     };
 
-    const buildMockPrisma = (customer = baseCustomer, orders = []) => {
+    const buildMockPrisma = (customer = baseCustomer, orders = [], settings = null) => {
         return {
             customer: {
                 findFirst: jest.fn().mockResolvedValue(customer),
@@ -19,6 +19,9 @@ describe('customerRatingService - Automated Classification Engine', () => {
             },
             order: {
                 findMany: jest.fn().mockResolvedValue(orders),
+            },
+            returnSettings: {
+                findUnique: jest.fn().mockResolvedValue(settings),
             },
         };
     };
@@ -196,5 +199,40 @@ describe('customerRatingService - Automated Classification Engine', () => {
         expect(result.rating).toBe('UNKNOWN');
         expect(result.deliveryRate).toBe(0);
         expect(result.totalAttempts).toBe(0);
+    });
+
+    test('10. احترام إعدادات الشركة المخصصة من returnSettings (إعدادات الطلبات -> تقييم العملاء)', async () => {
+        // الشركة رفعت حد الامتياز إلى 95% والحد الأدنى للطلبات إلى 5
+        const customSettings = {
+            excellentThreshold: 95,
+            goodThreshold: 85,
+            averageThreshold: 70,
+            minOrdersForRating: 5,
+        };
+
+        // عميل بـ 5 طلبات (4 مستلم و 1 مرتجع) = 80% استلام
+        // في الإعدادات العادية (good: 70%) كان ليصنف GOOD
+        // لكن مع إعدادات الشركة الحالية (good: 85%, avg: 70%) سيصنف AVERAGE
+        const orders = [
+            ...Array(4).fill(null).map((_, i) => ({
+                id: `ord-del-${i}`,
+                orderNumber: `DEL-${i}`,
+                status: 'DELIVERED',
+                returnRequests: [],
+            })),
+            {
+                id: 'ord-ret-1',
+                orderNumber: 'RET-1',
+                status: 'RETURNED',
+                returnRequests: [],
+            }
+        ];
+
+        const prisma = buildMockPrisma(baseCustomer, orders, customSettings);
+        const result = await calculateCustomerScore(customerId, companyId, prisma);
+
+        expect(result.totalAttempts).toBe(5);
+        expect(result.deliveryRate).toBe(80);
+        expect(result.rating).toBe('AVERAGE');
     });
 });

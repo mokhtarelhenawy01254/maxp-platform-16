@@ -6,6 +6,8 @@ import {
   AlertTriangle,
   Save,
   Loader,
+  Users,
+  TrendingUp,
 } from "lucide-react";
 import { returnService } from "../../services/returnService";
 import { toast } from "sonner";
@@ -18,6 +20,7 @@ const RatingSettingsManager: React.FC = () => {
     excellentThreshold: 90,
     goodThreshold: 70,
     averageThreshold: 50,
+    minOrdersForRating: 3,
     autoApproveExcellent: false,
     autoRejectBad: false,
   });
@@ -33,6 +36,7 @@ const RatingSettingsManager: React.FC = () => {
         excellentThreshold: res.data.excellentThreshold ?? 90,
         goodThreshold: res.data.goodThreshold ?? 70,
         averageThreshold: res.data.averageThreshold ?? 50,
+        minOrdersForRating: res.data.minOrdersForRating ?? 3,
         autoApproveExcellent: res.data.autoApproveExcellent ?? false,
         autoRejectBad: res.data.autoRejectBad ?? false,
       });
@@ -74,18 +78,18 @@ const RatingSettingsManager: React.FC = () => {
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Award className="h-5 w-5 text-gray-400" />
-              حدود التقييم
+              حدود التقييم الآلي للعملاء
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              تحديد نسبة النجاح المطلوبة لكل تصنيف.
+              تحديد نسب نجاح التسليم المطلوبة والحد الأدنى للطلبات لاحتساب مستوى العميل آلياً.
             </p>
           </div>
         </div>
 
-        <div className="p-6 grid gap-6 md:grid-cols-3">
-          <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800/50">
-            <div className="flex items-center gap-2 mb-2 text-purple-800 dark:text-purple-300 font-bold">
-              <Star className="h-4 w-4 fill-purple-700 text-purple-700" />
+        <div className="p-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="bg-emerald-50/70 dark:bg-emerald-950/20 p-4 rounded-lg border border-emerald-100 dark:border-emerald-800/50">
+            <div className="flex items-center gap-2 mb-2 text-emerald-800 dark:text-emerald-300 font-bold text-sm">
+              <Star className="h-4 w-4 fill-emerald-600 text-emerald-600" />
               ممتاز (Excellent)
             </div>
             <div className="flex items-center gap-2">
@@ -94,21 +98,26 @@ const RatingSettingsManager: React.FC = () => {
               </span>
               <input
                 type="number"
+                min="1"
+                max="100"
                 value={settings.excellentThreshold}
                 onChange={(e) =>
-                  handleChange("excellentThreshold", parseInt(e.target.value))
+                  handleChange("excellentThreshold", parseInt(e.target.value) || 0)
                 }
-                className="w-20 p-1 border dark:border-gray-600 rounded text-center font-bold text-purple-900 dark:text-white dark:bg-gray-700"
+                className="w-20 p-1 border dark:border-gray-600 rounded text-center font-bold text-emerald-900 dark:text-white dark:bg-gray-700 tabular-nums"
               />
               <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
                 %
               </span>
             </div>
+            <p className="mt-2 text-[11px] text-emerald-700/80 dark:text-emerald-400">
+              أعلى نسبة استلام للطلبات
+            </p>
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/50">
-            <div className="flex items-center gap-2 mb-2 text-blue-800 dark:text-blue-300 font-bold">
-              <Star className="h-4 w-4 text-blue-700" />
+          <div className="bg-sky-50/70 dark:bg-sky-950/20 p-4 rounded-lg border border-sky-100 dark:border-sky-800/50">
+            <div className="flex items-center gap-2 mb-2 text-sky-800 dark:text-sky-300 font-bold text-sm">
+              <Star className="h-4 w-4 text-sky-600" />
               جيد (Good)
             </div>
             <div className="flex items-center gap-2">
@@ -117,21 +126,26 @@ const RatingSettingsManager: React.FC = () => {
               </span>
               <input
                 type="number"
+                min="1"
+                max="100"
                 value={settings.goodThreshold}
                 onChange={(e) =>
-                  handleChange("goodThreshold", parseInt(e.target.value))
+                  handleChange("goodThreshold", parseInt(e.target.value) || 0)
                 }
-                className="w-20 p-1 border dark:border-gray-600 rounded text-center font-bold text-blue-900 dark:text-white dark:bg-gray-700"
+                className="w-20 p-1 border dark:border-gray-600 rounded text-center font-bold text-sky-900 dark:text-white dark:bg-gray-700 tabular-nums"
               />
               <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
                 %
               </span>
             </div>
+            <p className="mt-2 text-[11px] text-sky-700/80 dark:text-sky-400">
+              نسبة استلام مقبولة ومستقرة
+            </p>
           </div>
 
-          <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-100 dark:border-gray-600">
-            <div className="flex items-center gap-2 mb-2 text-gray-800 dark:text-gray-200 font-bold">
-              <Star className="h-4 w-4 text-gray-700" />
+          <div className="bg-amber-50/70 dark:bg-amber-950/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800/50">
+            <div className="flex items-center gap-2 mb-2 text-amber-800 dark:text-amber-300 font-bold text-sm">
+              <Star className="h-4 w-4 text-amber-600" />
               متوسط (Average)
             </div>
             <div className="flex items-center gap-2">
@@ -140,20 +154,63 @@ const RatingSettingsManager: React.FC = () => {
               </span>
               <input
                 type="number"
+                min="1"
+                max="100"
                 value={settings.averageThreshold}
                 onChange={(e) =>
-                  handleChange("averageThreshold", parseInt(e.target.value))
+                  handleChange("averageThreshold", parseInt(e.target.value) || 0)
                 }
-                className="w-20 p-1 border dark:border-gray-600 rounded text-center font-bold text-gray-900 dark:text-white dark:bg-gray-700"
+                className="w-20 p-1 border dark:border-gray-600 rounded text-center font-bold text-amber-900 dark:text-white dark:bg-gray-700 tabular-nums"
               />
               <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
                 %
               </span>
             </div>
+            <p className="mt-2 text-[11px] text-amber-700/80 dark:text-amber-400">
+              يحتاج متابعة وتأكيد
+            </p>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-2 mb-2 text-slate-800 dark:text-slate-200 font-bold text-sm">
+              <Users className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+              الحد الأدنى للطلبات
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                &ge;
+              </span>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={settings.minOrdersForRating}
+                onChange={(e) =>
+                  handleChange("minOrdersForRating", parseInt(e.target.value) || 1)
+                }
+                className="w-20 p-1 border dark:border-gray-600 rounded text-center font-bold text-slate-900 dark:text-white dark:bg-gray-700 tabular-nums"
+              />
+              <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                طلبات
+              </span>
+            </div>
+            <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+              أقل من هذا العدد يصنف كـ "جديد"
+            </p>
           </div>
         </div>
-        <div className="px-6 pb-6 text-xs text-gray-500 dark:text-gray-400">
-          * أي نسبة أقل من "متوسط" تعتبر "سيء" تلقائياً.
+
+        <div className="px-6 pb-5 pt-3 border-t border-gray-100 dark:border-gray-700/60 bg-gray-50/50 dark:bg-gray-800/30 text-xs text-gray-600 dark:text-gray-400 space-y-1.5 rounded-b-lg">
+          <p className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <span>آلية التقييم التلقائي في النظام:</span>
+          </p>
+          <ul className="list-disc list-inside space-y-1 ps-1 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
+            <li>التقييم <strong>تلقائي 100%</strong> ومبني مباشرةً على نسبة استلام طلبات العميل السابقة: (الطلبات المسلّمة ÷ الطلبات المنتهية [المسلّمة + المرتجعة]) × 100%.</li>
+            <li>العميل الذي تقل نسبة استلامه عن نسبة "متوسط" يُصنف تلقائياً كـ <strong>"عميل ضعيف / مخاطرة"</strong>.</li>
+            <li>العميل الذي لديه طلبات منتهية أقل من الحد الأدنى يُصنف تلقائياً كـ <strong>"عميل جديد / غير مصنف"</strong>.</li>
+            <li>عند حفظ التغييرات، يقوم النظام آلياً بتحديث وإعادة احتساب تصنيف العملاء في الخلفية وفق المعايير الجديدة.</li>
+          </ul>
         </div>
       </div>
 
