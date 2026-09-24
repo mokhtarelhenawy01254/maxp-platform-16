@@ -8,6 +8,7 @@ const { getSystemStatusFromTurbo, getSystemStatusFromTurboWithCustomMapping } = 
 const { GUEST_ORDER_STATUS_MAP } = require('../utils/turbo/constants');
 const { ensureReturnOrder } = require('./partialReturnService');
 const { isValidOrderStatusEnum, resolveOrderStatusForStorage } = require('../utils/orderStatusEnum');
+const orderService = require('./orderService');
 
 /**
  * Fetch per-company turboStatusMapping from company settings.
@@ -156,9 +157,22 @@ async function syncTurboStatusToOrder({
 
   // Target 1: GuestOrder Table
   if (isGuestOrder) {
-    const existingGuestOrder = await safeQuery(() => prisma.guestOrder.findFirst({
+    let existingGuestOrder = await safeQuery(() => prisma.guestOrder.findFirst({
       where: buildLookupWhere()
     }), 3);
+
+    // 🚨 Fallback: If not found under the provided companyId, search globally
+    if (!existingGuestOrder && companyId) {
+      const globalWhere = { OR: buildLookupWhere().OR };
+      const globalGuest = await safeQuery(() => prisma.guestOrder.findFirst({
+        where: globalWhere
+      }), 3);
+      if (globalGuest) {
+        console.log(`🔄 [TURBO-SYNC] GuestOrder found in company ${globalGuest.companyId} (falling back from ${companyId})`);
+        existingGuestOrder = globalGuest;
+        companyId = globalGuest.companyId;
+      }
+    }
 
     if (!existingGuestOrder) {
       console.warn(`⚠️ [TURBO-SYNC] GuestOrder not found for orderNumber/ID: ${orderNumber || orderId}`);
@@ -273,9 +287,22 @@ async function syncTurboStatusToOrder({
   }
 
   // Target 2: Standard Order Table
-  const existingOrder = await safeQuery(() => prisma.order.findFirst({
+  let existingOrder = await safeQuery(() => prisma.order.findFirst({
     where: buildLookupWhere()
   }), 3);
+
+  // 🚨 Fallback: If not found under the provided companyId, search globally
+  if (!existingOrder && companyId) {
+    const globalWhere = { OR: buildLookupWhere().OR };
+    const globalOrder = await safeQuery(() => prisma.order.findFirst({
+      where: globalWhere
+    }), 3);
+    if (globalOrder) {
+      console.log(`🔄 [TURBO-SYNC] Order ${orderNumber || orderId} found in company ${globalOrder.companyId} (falling back from ${companyId})`);
+      existingOrder = globalOrder;
+      companyId = globalOrder.companyId;
+    }
+  }
 
   if (!existingOrder) {
     // If not found in Order, check GuestOrder as fallback

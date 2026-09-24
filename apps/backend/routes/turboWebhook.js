@@ -21,12 +21,61 @@ router.post('/webhook', async (req, res) => {
     console.log('📨 [TURBO-WEBHOOK] Received webhook:', JSON.stringify(webhookData, null, 2));
     console.log('🔑 [TURBO-WEBHOOK] Webhook token:', webhookToken ? `Token: ${webhookToken.substring(0, 4)}...` : 'No token');
 
-    // التحقق من TOKEN إذا كان موجوداً
+    // الرد فوراً لـ Turbo (يجب أن يكون خلال 5 ثوان)
+    res.status(200).json({ success: true, received: true });
+
+    const orderNumber = (webhookData.remote_order_id && webhookData.remote_order_id !== '0' && webhookData.remote_order_id !== 0)
+      ? webhookData.remote_order_id
+      : webhookData.order_number;
+    const turboOrderNumber = webhookData.order_number;
+    const statusCode = webhookData.status;
+
+    if (!orderNumber && !turboOrderNumber) {
+      console.warn('⚠️ [TURBO-WEBHOOK] Missing order_number and remote_order_id in webhook');
+      return;
+    }
+
+    const searchOrderNumber = orderNumber || turboOrderNumber;
+
+    // التحقق من TOKEN وتحديد companyId
     const prisma = getSharedPrismaClient();
     let companyId = null;
-    
-    if (webhookToken) {
-      console.log('🔍 [TURBO-WEBHOOK] Validating webhook token...');
+
+    // 🎯 Resolve companyId directly from the matched Order / GuestOrder first.
+    // This is critical when multiple tenants share a single Turbo account / token
+    // (e.g. Flora and Swan), preventing findFirst from misrouting all webhooks to one tenant.
+    const lookupCandidates = [
+      webhookData.remote_order_id,
+      webhookData.order_number,
+      webhookData.bar_code
+    ].filter(v => v !== null && v !== undefined && v !== '' && v !== '0' && v !== 0 && v !== 'undefined');
+
+    let matchedOrder = null;
+    if (lookupCandidates.length > 0) {
+      const orClauses = lookupCandidates.flatMap(val => [
+        { orderNumber: String(val) },
+        { turboTrackingNumber: String(val) },
+        { turboShipmentId: String(val) },
+        { id: String(val) }
+      ]);
+      matchedOrder = await safeQuery(() => prisma.order.findFirst({
+        where: { OR: orClauses },
+        select: { id: true, companyId: true }
+      }), 3);
+
+      if (!matchedOrder) {
+        matchedOrder = await safeQuery(() => prisma.guestOrder.findFirst({
+          where: { OR: orClauses },
+          select: { id: true, companyId: true }
+        }), 3);
+      }
+    }
+
+    if (matchedOrder?.companyId) {
+      companyId = matchedOrder.companyId;
+      console.log(`✅ [TURBO-WEBHOOK] Company resolved directly from order: ${companyId}`);
+    } else if (webhookToken) {
+      console.log('🔍 [TURBO-WEBHOOK] Validating webhook token fallback...');
       const company = await safeQuery(async () => {
         return await prisma.company.findFirst({
           where: {
@@ -51,22 +100,6 @@ router.post('/webhook', async (req, res) => {
     } else {
       console.log('ℹ️ [TURBO-WEBHOOK] No token provided, will search in all companies');
     }
-
-    // الرد فوراً لـ Turbo (يجب أن يكون خلال 5 ثوان)
-    res.status(200).json({ success: true, received: true });
-
-    const orderNumber = (webhookData.remote_order_id && webhookData.remote_order_id !== '0' && webhookData.remote_order_id !== 0)
-      ? webhookData.remote_order_id
-      : webhookData.order_number;
-    const turboOrderNumber = webhookData.order_number;
-    const statusCode = webhookData.status;
-
-    if (!orderNumber && !turboOrderNumber) {
-      console.warn('⚠️ [TURBO-WEBHOOK] Missing order_number and remote_order_id in webhook');
-      return;
-    }
-
-    const searchOrderNumber = orderNumber || turboOrderNumber;
 
     console.log(`📦 [TURBO-WEBHOOK] Processing webhook for order: ${searchOrderNumber}, Turbo order: ${turboOrderNumber}, Status: ${statusCode}`);
 
