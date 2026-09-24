@@ -379,13 +379,38 @@ const buildStorefrontConfig = ({
     ? sanitizeTemplateDesignTokens(templateSettings.designTokens)
     : {};
   const mergedDesignTokens = deepMerge(templateDesignTokens, companyDesignTokens);
+  let rawEnabledMethods = storefrontSettings?.enabledPaymentMethods;
+  let parsedEnabledMethods = ['cod'];
+  try {
+    parsedEnabledMethods = typeof rawEnabledMethods === 'string'
+      ? JSON.parse(rawEnabledMethods)
+      : (Array.isArray(rawEnabledMethods) ? rawEnabledMethods : ['cod']);
+  } catch {
+    parsedEnabledMethods = ['cod'];
+  }
+  if (!Array.isArray(parsedEnabledMethods)) parsedEnabledMethods = ['cod'];
+
+  let runtimeWalletSettings = storefrontSettings?.walletPaymentSettings || null;
+  if (runtimeWalletSettings && typeof runtimeWalletSettings === 'object') {
+    const isWalletActive = parsedEnabledMethods.includes('wallet') && runtimeWalletSettings.enabled !== false;
+    runtimeWalletSettings = {
+      ...runtimeWalletSettings,
+      enabled: isWalletActive,
+    };
+    if (!isWalletActive && parsedEnabledMethods.includes('wallet')) {
+      parsedEnabledMethods = parsedEnabledMethods.filter((m) => m !== 'wallet');
+    }
+  } else {
+    parsedEnabledMethods = parsedEnabledMethods.filter((m) => m !== 'wallet');
+  }
+
   const runtimeSettings = {
     themeId: resolvedThemeId,
     storeName: storefrontSettings?.storeName || company.name,
     currency: company.currency,
     description: storefrontSettings?.description || '',
     logoUrl: company.logo || null,
-    walletPaymentSettings: storefrontSettings?.walletPaymentSettings || null,
+    walletPaymentSettings: runtimeWalletSettings,
   };
 
   if (canApplyTemplateSettings) {
@@ -411,11 +436,7 @@ const buildStorefrontConfig = ({
           productCardStyle: storefrontSettings.productCardStyle,
           gridAddToCartIcon: storefrontSettings.gridAddToCartIcon,
           gridDiscountBanner: storefrontSettings.gridDiscountBanner,
-          enabledPaymentMethods: storefrontSettings.enabledPaymentMethods
-            ? (typeof storefrontSettings.enabledPaymentMethods === 'string'
-                ? JSON.parse(storefrontSettings.enabledPaymentMethods)
-                : storefrontSettings.enabledPaymentMethods)
-            : ["cod"],
+          enabledPaymentMethods: parsedEnabledMethods,
         }
       : {},
   };

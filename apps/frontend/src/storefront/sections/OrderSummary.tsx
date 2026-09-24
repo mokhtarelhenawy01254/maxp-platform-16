@@ -677,16 +677,30 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
   const effectiveShipping =
     loyaltyFreeShipping && Number(shippingCost) > 0 ? 0 : Number(shippingCost);
   const walletPaymentSettings = (storefrontSettings?.storefront?.settings?.['walletPaymentSettings'] as
-    | { discountEnabled?: boolean; discountPercent?: number; showDiscountBadge?: boolean }
+    | { enabled?: boolean; walletNumber?: string; discountEnabled?: boolean; discountPercent?: number; showDiscountBadge?: boolean }
     | undefined) || null;
+  const dbEnabledMethods =
+    storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods;
+  const isWalletActiveInSettings =
+    walletPaymentSettings?.enabled !== false &&
+    (
+      Array.isArray(dbEnabledMethods)
+        ? dbEnabledMethods.includes('wallet')
+        : walletPaymentSettings?.enabled === true
+    );
+  const isWalletAvailable =
+    Boolean(walletPaymentSettings?.walletNumber) && isWalletActiveInSettings;
   const walletDiscountEnabled = Boolean(walletPaymentSettings?.discountEnabled);
   const walletDiscountPercent = Math.max(
     0,
     Number(walletPaymentSettings?.discountPercent || 0),
   );
-  const walletDiscountActive = walletDiscountEnabled && walletDiscountPercent > 0;
+  const walletDiscountActive =
+    walletDiscountEnabled &&
+    walletDiscountPercent > 0 &&
+    (paymentMethod === "card" || (paymentMethod === "wallet" && isWalletAvailable));
   const walletDiscount =
-    walletDiscountActive && (paymentMethod === "wallet" || paymentMethod === "card")
+    walletDiscountActive
       ? (Number(subtotal) || 0) * (walletDiscountPercent / 100)
       : 0;
   const showLineItems = parseBooleanSetting(

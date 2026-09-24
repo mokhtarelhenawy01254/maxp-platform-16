@@ -1628,17 +1628,34 @@ router.post('/', async (req, res) => {
       try {
         const walletSettingsRow = await prisma.storefrontSettings.findUnique({
           where: { companyId: company.id },
-          select: { walletPaymentSettings: true },
+          select: { walletPaymentSettings: true, enabledPaymentMethods: true },
         });
         const walletSettings = safeJsonParse(
           walletSettingsRow?.walletPaymentSettings,
           {}
         );
+        const rawMethods = walletSettingsRow?.enabledPaymentMethods;
+        const enabledMethods = typeof rawMethods === 'string'
+          ? safeJsonParse(rawMethods, ['cod'])
+          : (Array.isArray(rawMethods) ? rawMethods : ['cod']);
+
+        const isWalletActive =
+          walletSettings?.enabled !== false &&
+          (Array.isArray(enabledMethods) ? enabledMethods.includes('wallet') : true) &&
+          Boolean(walletSettings?.walletNumber?.trim());
+
+        if (paymentMethod === 'wallet' && !isWalletActive) {
+          return res.status(400).json({
+            success: false,
+            message: 'طريقة الدفع بالمحفظة الإلكترونية غير مفعلة في هذا المتجر حالياً',
+          });
+        }
+
         const discountEnabled =
           walletSettings?.discountEnabled === true ||
           walletSettings?.discountEnabled === 'true';
         const percent = Math.max(0, Number(walletSettings?.discountPercent || 0));
-        if (discountEnabled && percent > 0) {
+        if (discountEnabled && percent > 0 && (paymentMethod === 'card' || isWalletActive)) {
           walletDiscountPercent = percent;
           walletDiscount = Number(
             (((Number(cartTotal) || 0) * percent) / 100).toFixed(2)

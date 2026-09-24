@@ -1686,9 +1686,6 @@ const WalletPaymentSettingsSection: React.FC<{
     };
   };
 
-  const [form, setForm] = useState(parseWalletSettings);
-  const [saving, setSaving] = useState(false);
-
   const parseEnabledMethods = (raw: unknown): string[] => {
     try {
       const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
@@ -1698,44 +1695,113 @@ const WalletPaymentSettingsSection: React.FC<{
     }
   };
 
+  const computeIsWalletActive = (
+    walletRaw: unknown,
+    methodsRaw: unknown
+  ): boolean => {
+    const parsedWallet =
+      typeof walletRaw === "string"
+        ? (() => {
+            try {
+              return JSON.parse(walletRaw);
+            } catch {
+              return {};
+            }
+          })()
+        : (walletRaw as Record<string, unknown> | null | undefined);
+
+    const methods = parseEnabledMethods(methodsRaw);
+
+    // If explicitly disabled in walletPaymentSettings, it's inactive
+    if (parsedWallet?.enabled === false) {
+      return false;
+    }
+    // If explicitly enabled in walletPaymentSettings
+    if (parsedWallet?.enabled === true) {
+      return true;
+    }
+    // Otherwise check enabledMethods
+    return methods.includes("wallet");
+  };
+
+  const [form, setForm] = useState(parseWalletSettings);
+  const [saving, setSaving] = useState(false);
+  const [isWalletActive, setIsWalletActive] = useState<boolean>(() =>
+    computeIsWalletActive(settings.walletPaymentSettings, settings.enabledPaymentMethods)
+  );
+
   const [enabledMethods, setEnabledMethods] = useState<string[]>(
     parseEnabledMethods(settings.enabledPaymentMethods)
   );
-  useEffect(() => {
-    if (settings.enabledPaymentMethods) {
-      setEnabledMethods(parseEnabledMethods(settings.enabledPaymentMethods));
-    }
-  }, [settings.enabledPaymentMethods]);
-
-  const toggleWalletPaymentMethod = () => {
-    setEnabledMethods((prev) =>
-      prev.includes("wallet")
-        ? prev.filter((m) => m !== "wallet")
-        : [...prev, "wallet"]
-    );
-  };
 
   useEffect(() => {
     setForm(parseWalletSettings());
+    const active = computeIsWalletActive(settings.walletPaymentSettings, settings.enabledPaymentMethods);
+    setIsWalletActive(active);
+    const methods = parseEnabledMethods(settings.enabledPaymentMethods);
+    setEnabledMethods(
+      active
+        ? Array.from(new Set([...methods, "wallet"]))
+        : methods.filter((m) => m !== "wallet")
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.walletPaymentSettings]);
+  }, [settings.walletPaymentSettings, settings.enabledPaymentMethods]);
 
   const update = (key: keyof typeof form, value: string | boolean | number) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = async () => {
+  const handleToggleWallet = async () => {
+    const nextActive = !isWalletActive;
+    setIsWalletActive(nextActive);
+    setForm((prev) => ({ ...prev, enabled: nextActive }));
+
+    const nextMethods = nextActive
+      ? Array.from(new Set([...enabledMethods, "wallet"]))
+      : enabledMethods.filter((m) => m !== "wallet");
+    setEnabledMethods(nextMethods);
+
     setSaving(true);
     try {
       const result = await storefrontSettingsService.updateSettings({
-        walletPaymentSettings: { ...form, enabled: true },
-        enabledPaymentMethods: JSON.stringify(enabledMethods),
+        walletPaymentSettings: { ...form, enabled: nextActive },
+        enabledPaymentMethods: JSON.stringify(nextMethods),
+      });
+      if (result?.data) {
+        onChange(result.data);
+      }
+      toast.success(
+        nextActive
+          ? "تم تفعيل طريقة الدفع بالمحفظة"
+          : "تم إيقاف طريقة الدفع بالمحفظة"
+      );
+    } catch (error: any) {
+      // Revert on error
+      setIsWalletActive(!nextActive);
+      setForm((prev) => ({ ...prev, enabled: !nextActive }));
+      console.error("[WALLET-SETTINGS] Failed to toggle:", error);
+      toast.error("حدث خطأ أثناء تعديل حالة التفعيل: " + (error?.message || "Unknown error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const nextMethods = isWalletActive
+        ? Array.from(new Set([...enabledMethods, "wallet"]))
+        : enabledMethods.filter((m) => m !== "wallet");
+
+      const result = await storefrontSettingsService.updateSettings({
+        walletPaymentSettings: { ...form, enabled: isWalletActive },
+        enabledPaymentMethods: JSON.stringify(nextMethods),
       });
       if (result?.data) {
         onChange(result.data);
       }
       toast.success("تم حفظ إعدادات الدفع بالمحفظة بنجاح");
-    } catch (error) {
+    } catch (error: any) {
       console.error("[WALLET-SETTINGS] Failed to save:", error);
       toast.error("حدث خطأ أثناء الحفظ: " + (error?.message || "Unknown error"));
     } finally {
@@ -1756,34 +1822,35 @@ const WalletPaymentSettingsSection: React.FC<{
         </div>
         <button
           type="button"
-          onClick={toggleWalletPaymentMethod}
-          aria-pressed={enabledMethods.includes("wallet")}
+          onClick={handleToggleWallet}
+          disabled={saving || loading}
+          aria-pressed={isWalletActive}
           className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all select-none ${
-            enabledMethods.includes("wallet")
+            isWalletActive
               ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 shadow-sm shadow-emerald-600/10"
               : "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:bg-gray-50 dark:hover:border-gray-500 dark:hover:bg-gray-700/40"
           }`}
         >
           <span
             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-              enabledMethods.includes("wallet") ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"
+              isWalletActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"
             }`}
           >
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                enabledMethods.includes("wallet") ? "translate-x-4" : "translate-x-0.5"
+                isWalletActive ? "translate-x-4" : "translate-x-0.5"
               }`}
             />
           </span>
           <span>محفظة إلكترونية</span>
           <span
             className={`text-xs font-bold ${
-              enabledMethods.includes("wallet")
+              isWalletActive
                 ? "text-emerald-600 dark:text-emerald-400"
                 : "text-gray-400"
             }`}
           >
-            {enabledMethods.includes("wallet") ? "مفعّل" : "غير مفعّل"}
+            {isWalletActive ? "مفعّل" : "غير مفعّل"}
           </span>
         </button>
       </div>
@@ -1943,9 +2010,10 @@ const PaymentGatewaySettingsSection: React.FC<{
       return;
     }
 
+    const remainingMethods = enabledMethods.filter((m) => m !== "card");
     const updatedSettings = {
       paymentGatewayConfig: null,
-      enabledPaymentMethods: JSON.stringify(enabledMethods.filter((m) => m === "cod")),
+      enabledPaymentMethods: JSON.stringify(remainingMethods),
     };
 
     try {
@@ -1958,7 +2026,7 @@ const PaymentGatewaySettingsSection: React.FC<{
           secretKey: "",
           mode: "test",
         });
-        setEnabledMethods(["cod"]);
+        setEnabledMethods(remainingMethods);
         setIsEditing(true);
       }
       tToast.success("StoreSettings.msg_126b");

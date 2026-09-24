@@ -644,6 +644,8 @@ const updateSettings = async (req, res) => {
         select: {
           designTokens: true,
           paymentGatewayConfig: true,
+          enabledPaymentMethods: true,
+          walletPaymentSettings: true,
         },
       })
     );
@@ -707,6 +709,53 @@ const updateSettings = async (req, res) => {
 
     if (Object.keys(nextDesignTokens).length > 0) {
       sanitizedInput.designTokens = nextDesignTokens;
+    }
+
+    // Synchronize enabledPaymentMethods and walletPaymentSettings.enabled
+    if (sanitizedInput.walletPaymentSettings && typeof sanitizedInput.walletPaymentSettings === 'object') {
+      const walletEnabled = sanitizedInput.walletPaymentSettings.enabled;
+      if (typeof walletEnabled === 'boolean') {
+        const existingMethodsRaw = sanitizedInput.enabledPaymentMethods !== undefined
+          ? sanitizedInput.enabledPaymentMethods
+          : existingSettings?.enabledPaymentMethods;
+        let methods = [];
+        try {
+          methods = typeof existingMethodsRaw === 'string'
+            ? JSON.parse(existingMethodsRaw)
+            : (Array.isArray(existingMethodsRaw) ? existingMethodsRaw : ['cod']);
+        } catch {
+          methods = ['cod'];
+        }
+        if (!Array.isArray(methods)) methods = ['cod'];
+
+        if (walletEnabled && !methods.includes('wallet')) {
+          methods.push('wallet');
+          sanitizedInput.enabledPaymentMethods = JSON.stringify(methods);
+        } else if (!walletEnabled && methods.includes('wallet')) {
+          sanitizedInput.enabledPaymentMethods = JSON.stringify(methods.filter((m) => m !== 'wallet'));
+        }
+      }
+    } else if (sanitizedInput.enabledPaymentMethods !== undefined) {
+      let methods = [];
+      try {
+        methods = typeof sanitizedInput.enabledPaymentMethods === 'string'
+          ? JSON.parse(sanitizedInput.enabledPaymentMethods)
+          : (Array.isArray(sanitizedInput.enabledPaymentMethods) ? sanitizedInput.enabledPaymentMethods : ['cod']);
+      } catch {
+        methods = ['cod'];
+      }
+      if (Array.isArray(methods)) {
+        const existingWallet = existingSettings?.walletPaymentSettings;
+        if (existingWallet && typeof existingWallet === 'object') {
+          const shouldBeEnabled = methods.includes('wallet');
+          if (existingWallet.enabled !== shouldBeEnabled) {
+            sanitizedInput.walletPaymentSettings = {
+              ...existingWallet,
+              enabled: shouldBeEnabled,
+            };
+          }
+        }
+      }
     }
 
     const settings = await runStorefrontSettingsQuery((prisma) =>

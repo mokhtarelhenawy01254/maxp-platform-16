@@ -233,10 +233,25 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const companyId = storefrontSettings?.company?.id || getCompanyId();
   const walletPaymentSettings =
     (storefrontSettings?.storefront?.settings as any)?.walletPaymentSettings || null;
-  const walletEnabled = Boolean(walletPaymentSettings?.walletNumber?.trim());
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "wallet">(
-    walletEnabled ? "cod" : "cod",
+  const dbEnabledMethods =
+    storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods;
+  const isWalletActiveInSettings =
+    walletPaymentSettings?.enabled !== false &&
+    (
+      Array.isArray(dbEnabledMethods)
+        ? dbEnabledMethods.includes('wallet')
+        : walletPaymentSettings?.enabled === true
+    );
+  const walletEnabled = Boolean(
+    walletPaymentSettings?.walletNumber?.trim() && isWalletActiveInSettings
   );
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "wallet">("cod");
+
+  useEffect(() => {
+    if (!walletEnabled && paymentMethod === "wallet") {
+      setPaymentMethod("cod");
+    }
+  }, [walletEnabled, paymentMethod]);
   const [walletProofImageUrl, setWalletProofImageUrl] = useState("");
   const [walletProofUploading, setWalletProofUploading] = useState(false);
   const [walletTransferRef, setWalletTransferRef] = useState("");
@@ -608,9 +623,12 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     0,
     Number(walletPaymentSettings?.discountPercent || 0),
   );
-  const walletDiscountActive = walletDiscountEnabled && walletDiscountPercent > 0;
+  const walletDiscountActive =
+    walletDiscountEnabled &&
+    walletDiscountPercent > 0 &&
+    (paymentMethod === "card" || (paymentMethod === "wallet" && walletEnabled));
   const walletDiscount =
-    walletDiscountActive && (paymentMethod === "wallet" || paymentMethod === "card")
+    walletDiscountActive
       ? (Number(resolvedSubtotal) || 0) * (walletDiscountPercent / 100)
       : 0;
   const total = Math.max(0, resolvedSubtotal + shippingCost - walletDiscount);

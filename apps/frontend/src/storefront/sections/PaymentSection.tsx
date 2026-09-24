@@ -209,15 +209,27 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
 
   const walletPaymentSettings =
     (storefrontSettings?.storefront?.settings as any)?.walletPaymentSettings || null;
+  const dbEnabledMethods =
+    storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods;
+  const isWalletActiveInSettings =
+    walletPaymentSettings?.enabled !== false &&
+    (
+      Array.isArray(dbEnabledMethods)
+        ? dbEnabledMethods.includes('wallet')
+        : walletPaymentSettings?.enabled === true
+    );
   const walletEnabled =
-    Boolean(walletPaymentSettings?.walletNumber?.trim());
+    Boolean(walletPaymentSettings?.walletNumber?.trim()) && isWalletActiveInSettings;
   const walletDiscountEnabled = Boolean(walletPaymentSettings?.discountEnabled);
   const walletDiscountPercent = Math.max(
     0,
     Number(walletPaymentSettings?.discountPercent || 0),
   );
   const showWalletDiscountBadge = walletPaymentSettings?.showDiscountBadge !== false;
-  const walletDiscountActive = walletDiscountEnabled && walletDiscountPercent > 0;
+  const walletDiscountActive =
+    walletDiscountEnabled &&
+    walletDiscountPercent > 0 &&
+    (paymentMethod === 'card' || (paymentMethod === 'wallet' && walletEnabled));
   const [walletProofImageUrl, setWalletProofImageUrl] = useState('');
   const [walletProofUploading, setWalletProofUploading] = useState(false);
   const [walletTransferRef, setWalletTransferRef] = useState('');
@@ -934,7 +946,6 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
     },
   ];
 
-  const dbEnabledMethods = storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods;
   const themeEnabledMethods = Array.isArray(sectionSettings?.enabledMethods)
     ? (sectionSettings?.enabledMethods as string[])
     : [];
