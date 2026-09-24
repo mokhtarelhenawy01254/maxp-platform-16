@@ -337,6 +337,7 @@ const fetchSessionsWithLegacySchemaSupport = async (companyId) => {
                 metaQualityRating: true,
                 metaMessagingLimit: true,
                 metaApiVersion: true,
+                metaWebhookVerifyToken: true,
                 createdAt: true,
                 updatedAt: true,
                 profileName: true,
@@ -507,6 +508,14 @@ async function createSession(req, res) {
         }
 
         // إنشاء الجلسة في قاعدة البيانات
+        let resolvedVerifyToken = metaWebhookVerifyToken && String(metaWebhookVerifyToken).trim()
+            ? String(metaWebhookVerifyToken).trim()
+            : null;
+        if (isMetaProvider && !resolvedVerifyToken) {
+            const crypto = require('crypto');
+            resolvedVerifyToken = crypto.randomBytes(12).toString('hex');
+        }
+
         const session = await getSharedPrismaClient().whatsAppSession.create({
             data: {
                 companyId,
@@ -524,7 +533,7 @@ async function createSession(req, res) {
                 metaBusinessId,
                 metaAccessToken: resolvedMetaToken ? encryptTokenIfNeeded(resolvedMetaToken) : undefined,
                 metaApiVersion,
-                metaWebhookVerifyToken,
+                metaWebhookVerifyToken: resolvedVerifyToken,
                 metaWebhookSecret,
                 metaDisplayPhoneNumber: resolvedDisplayPhone,
                 updatedAt: new Date()
@@ -5324,12 +5333,17 @@ async function getFacebookConfig(req, res) {
         const appId = config.whatsappAppId || config.appId;
         const configId = config.whatsappConfigId || config.configId;
 
+        const webhookUrl = `${require('../config/environment').backendUrl || 'https://maxp.online'}/api/v1/whatsapp-meta`;
+        const defaultWebhookVerifyToken = config.whatsappWebhookVerifyToken || null;
+
         if (!appId || facebookAppConfig.isPlaceholderFacebookCredential(appId)) {
             return res.status(200).json({
                 appId,
                 redirectUri,
                 configId,
-                configured: false
+                configured: false,
+                webhookUrl,
+                defaultWebhookVerifyToken
             });
         }
 
@@ -5337,7 +5351,9 @@ async function getFacebookConfig(req, res) {
             appId,
             redirectUri,
             configId,
-            configured: true
+            configured: true,
+            webhookUrl,
+            defaultWebhookVerifyToken
         });
     } catch (error) {
         console.error('❌ Error getting Facebook config:', error.message);
@@ -5517,6 +5533,7 @@ async function facebookConnect(req, res) {
                 metaBusinessId: businessId,
                 metaDisplayPhoneNumber: metaDisplayPhone,
                 metaApiVersion: META_GRAPH_VERSION,
+                metaWebhookVerifyToken: require('crypto').randomBytes(12).toString('hex'),
                 aiEnabled: true,
                 autoReply: false,
                 aiMode: 'suggest',
@@ -5775,6 +5792,7 @@ async function facebookEmbeddedConnect(req, res) {
                 metaBusinessId: businessId,
                 metaDisplayPhoneNumber: displayPhoneNumber,
                 metaApiVersion: META_GRAPH_VERSION,
+                metaWebhookVerifyToken: require('crypto').randomBytes(12).toString('hex'),
                 metadata: JSON.stringify({ registrationPin }),
                 aiEnabled: true,
                 autoReply: false,

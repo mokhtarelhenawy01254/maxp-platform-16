@@ -505,6 +505,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const [newMetaWebhookSecret, setNewMetaWebhookSecret] = useState("");
   const [newMetaDisplayPhoneNumber, setNewMetaDisplayPhoneNumber] =
     useState("");
+  const [webhookDetailsSession, setWebhookDetailsSession] = useState<Session | null>(null);
+  const [webhookDetailsOpen, setWebhookDetailsOpen] = useState(false);
 
   const [quickReplyForm, setQuickReplyForm] = useState({
     title: "",
@@ -601,7 +603,17 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       token += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setNewMetaWebhookVerifyToken(token);
+    return token;
   }, []);
+
+  const getMetaWebhookUrl = useCallback(() => `${window.location.origin}/api/v1/whatsapp-meta`, []);
+
+  const handleOpenCreateSessionDialog = useCallback(() => {
+    if (!newMetaWebhookVerifyToken) {
+      generateRandomVerifyToken();
+    }
+    setCreateSessionDialogOpen(true);
+  }, [newMetaWebhookVerifyToken, generateRandomVerifyToken]);
 
   const resetNewSessionForm = useCallback(() => {
     setNewSessionName("");
@@ -614,7 +626,12 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     setNewMetaBusinessId("");
     setNewMetaAccessToken("");
     setNewMetaApiVersion("v25.0");
-    setNewMetaWebhookVerifyToken("");
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let token = "";
+    for (let i = 0; i < 16; i++) {
+      token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewMetaWebhookVerifyToken(token);
     setNewMetaWebhookSecret("");
     setNewMetaDisplayPhoneNumber("");
     setWizardStep(1);
@@ -1410,14 +1427,28 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         {t("whatsappSettings.update")}
       </Button>
       {activeTab === "sessions" ? (
-        <Button
-          className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
-          onClick={() => setCreateSessionDialogOpen(true)}
-          disabled={sessions.length >= (settings?.maxSessions || 9999)}
-        >
-          <Plus className="size-4" />
-          {t("whatsappSettings.addSession")}
-        </Button>
+        <>
+          <Button
+            variant="outline"
+            className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)] text-xs font-medium gap-1.5"
+            onClick={() => {
+              const metaSession = sessions.find((s) => s.provider === "META_CLOUD") || null;
+              setWebhookDetailsSession(metaSession);
+              setWebhookDetailsOpen(true);
+            }}
+          >
+            <Globe className="size-3.5 text-sky-600 dark:text-sky-400" />
+            <span className="hidden sm:inline">بيانات Webhook</span>
+          </Button>
+          <Button
+            className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
+            onClick={handleOpenCreateSessionDialog}
+            disabled={sessions.length >= (settings?.maxSessions || 9999)}
+          >
+            <Plus className="size-4" />
+            {t("whatsappSettings.addSession")}
+          </Button>
+        </>
       ) : null}
       {activeTab === "quick-replies" ? (
         <Button
@@ -1458,6 +1489,18 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
+              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)] text-xs font-medium gap-1.5"
+              onClick={() => {
+                const metaSession = sessions.find((s) => s.provider === "META_CLOUD") || null;
+                setWebhookDetailsSession(metaSession);
+                setWebhookDetailsOpen(true);
+              }}
+            >
+              <Globe className="size-3.5 text-sky-600 dark:text-sky-400" />
+              <span>بيانات Webhook</span>
+            </Button>
+            <Button
+              variant="outline"
               className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
               onClick={() => void handleRefresh()}
             >
@@ -1466,7 +1509,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             </Button>
             <Button
               className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
-              onClick={() => setCreateSessionDialogOpen(true)}
+              onClick={handleOpenCreateSessionDialog}
               disabled={sessions.length >= (settings?.maxSessions || 9999)}
             >
               <Plus className="size-4" />
@@ -1589,10 +1632,18 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     {session.provider === "META_CLOUD" && (
                       <>
                         <div className="h-3.5 w-px bg-[color:var(--shell-control-border)]" />
-                        <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium text-[11px]">
-                          <ShieldCheck className="size-3.5" />
-                          <span>سحابي رسمي</span>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setWebhookDetailsSession(session);
+                            setWebhookDetailsOpen(true);
+                          }}
+                          className="flex items-center gap-1 text-sky-600 hover:text-sky-700 dark:text-sky-400 font-medium text-[11px] underline underline-offset-2 transition-colors cursor-pointer"
+                          title="عرض رابط ورمز التحقق للويب هوك"
+                        >
+                          <Globe className="size-3.5" />
+                          <span>الويب هوك</span>
+                        </button>
                       </>
                     )}
                   </div>
@@ -1678,6 +1729,18 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                           <Edit className="size-4 text-[color:var(--color-primary)]" />
                           <span>{t("whatsappSettings.edit")}</span>
                         </DropdownMenuItem>
+                        {session.provider === "META_CLOUD" && (
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setWebhookDetailsSession(session);
+                              setWebhookDetailsOpen(true);
+                            }}
+                            className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm py-2 rounded-xl text-sky-600 focus:text-sky-700"
+                          >
+                            <Globe className="size-4" />
+                            <span>بيانات Webhook</span>
+                          </DropdownMenuItem>
+                        )}
                         {session.provider === "BAILEYS" && isConnectedStatus(statusValue) && (
                           <DropdownMenuItem
                             onClick={() => void handleConnectSession(session)}
@@ -2625,7 +2688,12 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => setNewSessionProvider("META_CLOUD")}
+                      onClick={() => {
+                        setNewSessionProvider("META_CLOUD");
+                        if (!newMetaWebhookVerifyToken) {
+                          generateRandomVerifyToken();
+                        }
+                      }}
                       className={cn(
                         "flex flex-col items-start gap-3 rounded-2xl border p-5 text-start transition-all cursor-pointer",
                         newSessionProvider === "META_CLOUD"
@@ -2871,6 +2939,105 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                           </div>
                         </div>
                       </div>
+
+                      {/* Webhook Configuration */}
+                      <div className="space-y-3.5 border-t border-[color:var(--shell-control-border)] pt-4">
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-xs font-semibold text-[color:var(--color-foreground)] uppercase flex items-center gap-1.5">
+                            <Globe className="size-3.5 text-sky-600 dark:text-sky-400" />
+                            إعدادات رد الاتصال (Meta Webhook)
+                          </h5>
+                          <Badge variant="outline" className="text-[10px] bg-sky-500/10 border-sky-300 text-sky-800 dark:border-sky-500/40 dark:text-sky-200">
+                            مطلوب للرسائل
+                          </Badge>
+                        </div>
+
+                        {/* Callback URL */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <Label className="flex items-center gap-1 text-xs" htmlFor="meta-webhook-url">
+                              رابط الويب هوك (Callback URL)
+                              <span className="text-red-500">*</span>
+                            </Label>
+                            <span className="text-[10px] text-sky-600 dark:text-sky-400 font-medium">انسخ هذا الرابط والصقه في Meta</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Input
+                              id="meta-webhook-url"
+                              readOnly
+                              value={getMetaWebhookUrl()}
+                              className="h-10 bg-[color:var(--color-card)] font-mono text-xs select-all text-[color:var(--color-foreground)]"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-10 px-3 border-[color:var(--shell-control-border)] cursor-pointer shrink-0 gap-1.5"
+                              onClick={() => {
+                                navigator.clipboard.writeText(getMetaWebhookUrl());
+                                toast.success("تم نسخ رابط الويب هوك بنجاح");
+                              }}
+                            >
+                              <Copy className="size-3.5" />
+                              <span className="text-xs">نسخ</span>
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Verify Token */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <Label className="flex items-center gap-1 text-xs" htmlFor="meta-verify-token-main">
+                              {t("whatsappSettings.dialogs.metaWebhookVerifyToken")}
+                              <span className="text-red-500">*</span>
+                            </Label>
+                            <span className="text-[10px] text-[color:var(--color-muted-foreground)]">ضعه في خانة Verify Token في Meta</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Input
+                              id="meta-verify-token-main"
+                              value={newMetaWebhookVerifyToken}
+                              onChange={(event) => setNewMetaWebhookVerifyToken(event.target.value)}
+                              placeholder="verify-token"
+                              className="h-10 bg-[color:var(--color-card)] font-mono text-xs text-[color:var(--color-foreground)]"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-10 px-3 border-[color:var(--shell-control-border)] cursor-pointer shrink-0 gap-1.5"
+                              onClick={() => {
+                                navigator.clipboard.writeText(newMetaWebhookVerifyToken);
+                                toast.success("تم نسخ رمز التحقق بنجاح");
+                              }}
+                              disabled={!newMetaWebhookVerifyToken}
+                            >
+                              <Copy className="size-3.5" />
+                              <span className="text-xs">نسخ</span>
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={generateRandomVerifyToken}
+                              className="h-10 px-3 border-[color:var(--shell-control-border)] cursor-pointer shrink-0"
+                              title="توليد رمز جديد"
+                            >
+                              <Shuffle className="size-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Quick 3-Step Guide */}
+                        <div className="rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--app-panel-bg)] p-3 text-[11px] text-[color:var(--color-muted-foreground)] space-y-1.5">
+                          <p className="font-semibold text-[color:var(--color-foreground)] flex items-center gap-1.5">
+                            <Info className="size-3.5 text-sky-600" />
+                            خطوات الربط في بوابة Meta for Developers:
+                          </p>
+                          <ol className="list-decimal list-inside space-y-1 leading-relaxed">
+                            <li>افتح تطبيقك في <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer" className="text-sky-600 underline font-medium inline-flex items-center gap-0.5">Meta Developers <ExternalLink className="size-2.5 inline" /></a> &gt; WhatsApp &gt; Configuration.</li>
+                            <li>في قسم <strong>Webhook</strong> اضغط <strong>Edit</strong>، والصق رابط الويب هوك ورمز التحقق واضغط <strong>Verify and save</strong>.</li>
+                            <li>في جدول <strong>Webhook fields</strong> اضغط <strong>Manage</strong> واشترك في حقل <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-primary font-bold">messages</code>.</li>
+                          </ol>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2938,63 +3105,29 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                         </div>
                       </div>
 
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-1.5" htmlFor="meta-verify-token">
-                            {t("whatsappSettings.dialogs.metaWebhookVerifyToken")}
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <HelpCircle className="size-3.5 text-[color:var(--color-muted-foreground)] cursor-help" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  {t("whatsappSettings.dialogs.metaWebhookVerifyTokenHelper")}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </Label>
-                          <div className="flex gap-2">
-                            <Input
-                              id="meta-verify-token"
-                              value={newMetaWebhookVerifyToken}
-                              onChange={(event) => setNewMetaWebhookVerifyToken(event.target.value)}
-                              placeholder="verify-token"
-                              className="h-11 bg-[color:var(--color-card)]"
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={generateRandomVerifyToken}
-                              className="h-11 px-3 border-[color:var(--shell-control-border)] cursor-pointer"
-                            >
-                              <Shuffle className="size-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-1.5" htmlFor="meta-secret">
-                            {t("whatsappSettings.dialogs.metaWebhookSecret")}
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <HelpCircle className="size-3.5 text-[color:var(--color-muted-foreground)] cursor-help" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  {t("whatsappSettings.dialogs.metaWebhookSecretHelper")}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </Label>
-                          <Input
-                            id="meta-secret"
-                            value={newMetaWebhookSecret}
-                            onChange={(event) =>
-                              setNewMetaWebhookSecret(event.target.value)
-                            }
-                            placeholder="Webhook Secret"
-                            className="h-11 bg-[color:var(--color-card)]"
-                          />
-                        </div>
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-1.5" htmlFor="meta-secret">
+                          {t("whatsappSettings.dialogs.metaWebhookSecret")}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <HelpCircle className="size-3.5 text-[color:var(--color-muted-foreground)] cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {t("whatsappSettings.dialogs.metaWebhookSecretHelper")}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </Label>
+                        <Input
+                          id="meta-secret"
+                          value={newMetaWebhookSecret}
+                          onChange={(event) =>
+                            setNewMetaWebhookSecret(event.target.value)
+                          }
+                          placeholder="Webhook Secret (App Secret)"
+                          className="h-11 bg-[color:var(--color-card)]"
+                        />
                       </div>
                     </div>
                   )}
@@ -3088,6 +3221,46 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             </span>
                           </div>
                         )}
+                        <div className="flex justify-between py-1 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_40%,transparent)]">
+                          <span className="text-[color:var(--color-muted-foreground)]">
+                            Webhook URL
+                          </span>
+                          <span className="font-medium font-mono text-xs text-[color:var(--color-foreground)] flex items-center gap-1.5">
+                            {getMetaWebhookUrl()}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(getMetaWebhookUrl());
+                                toast.success("تم نسخ رابط الويب هوك");
+                              }}
+                              className="hover:text-primary cursor-pointer"
+                              title="نسخ"
+                            >
+                              <Copy className="size-3.5" />
+                            </button>
+                          </span>
+                        </div>
+                        <div className="flex justify-between py-1 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_40%,transparent)]">
+                          <span className="text-[color:var(--color-muted-foreground)]">
+                            Verify Token
+                          </span>
+                          <span className="font-medium font-mono text-xs text-[color:var(--color-foreground)] flex items-center gap-1.5">
+                            {newMetaWebhookVerifyToken || "-"}
+                            {newMetaWebhookVerifyToken && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(newMetaWebhookVerifyToken);
+                                  toast.success("تم نسخ رمز التحقق");
+                                }}
+                                className="hover:text-primary cursor-pointer"
+                                title="نسخ"
+                              >
+                                <Copy className="size-3.5" />
+                              </button>
+                            )}
+                          </span>
+                        </div>
                       </>
                     )}
                   </div>
@@ -3328,6 +3501,106 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     </div>
                   </div>
 
+                  {/* Webhook Settings */}
+                  <div className="rounded-2xl border border-sky-500/30 bg-sky-500/5 p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-foreground)]">
+                        <Globe className="size-4 text-sky-600 dark:text-sky-400" />
+                        إعدادات رد الاتصال (Meta Webhook)
+                      </h4>
+                      <Badge variant="outline" className="text-[10px] bg-sky-500/10 border-sky-300 text-sky-800 dark:border-sky-500/40 dark:text-sky-200">
+                        مطلوب للرسائل
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <Label htmlFor="edit-meta-webhook-url">
+                            رابط الويب هوك (Callback URL)
+                          </Label>
+                          <span className="text-[10px] text-sky-600 dark:text-sky-400">انسخ هذا الرابط إلى Meta</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            id="edit-meta-webhook-url"
+                            readOnly
+                            value={getMetaWebhookUrl()}
+                            className="h-11 bg-[color:var(--color-card)] font-mono text-xs select-all text-[color:var(--color-foreground)]"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 px-3 border-[color:var(--shell-control-border)] cursor-pointer shrink-0 gap-1.5"
+                            onClick={() => {
+                              navigator.clipboard.writeText(getMetaWebhookUrl());
+                              toast.success("تم نسخ رابط الويب هوك بنجاح");
+                            }}
+                          >
+                            <Copy className="size-4" />
+                            <span className="text-xs">نسخ</span>
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <Label htmlFor="edit-meta-verify">
+                            {t("whatsappSettings.dialogs.metaWebhookVerifyToken")}
+                          </Label>
+                          <span className="text-[10px] text-[color:var(--color-muted-foreground)]">ضعه في خانة Verify Token في Meta</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            id="edit-meta-verify"
+                            value={editingSession.metaWebhookVerifyToken || ""}
+                            onChange={(event) =>
+                              setEditingSession((previous) =>
+                                previous
+                                  ? { ...previous, metaWebhookVerifyToken: event.target.value }
+                                  : previous,
+                              )
+                            }
+                            className="h-11 bg-[color:var(--color-card)] font-mono text-xs"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 px-3 border-[color:var(--shell-control-border)] cursor-pointer shrink-0 gap-1.5"
+                            onClick={() => {
+                              if (editingSession.metaWebhookVerifyToken) {
+                                navigator.clipboard.writeText(editingSession.metaWebhookVerifyToken);
+                                toast.success("تم نسخ رمز التحقق بنجاح");
+                              }
+                            }}
+                            disabled={!editingSession.metaWebhookVerifyToken}
+                          >
+                            <Copy className="size-4" />
+                            <span className="text-xs">نسخ</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 px-3 border-[color:var(--shell-control-border)] cursor-pointer shrink-0"
+                            onClick={() => {
+                              const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+                              let token = "";
+                              for (let i = 0; i < 16; i++) {
+                                token += chars.charAt(Math.floor(Math.random() * chars.length));
+                              }
+                              setEditingSession((previous) =>
+                                previous ? { ...previous, metaWebhookVerifyToken: token } : previous
+                              );
+                            }}
+                            title="توليد رمز جديد"
+                          >
+                            <Shuffle className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Advanced Settings */}
                   <div className="rounded-2xl border border-[color:var(--shell-control-border)] p-5 space-y-4 bg-[color:var(--color-card)]">
                     <h4 className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-foreground)]">
@@ -3353,23 +3626,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="edit-meta-verify">
-                          {t("whatsappSettings.dialogs.metaWebhookVerifyToken")}
-                        </Label>
-                        <Input
-                          id="edit-meta-verify"
-                          value={editingSession.metaWebhookVerifyToken || ""}
-                          onChange={(event) =>
-                            setEditingSession((previous) =>
-                              previous
-                                ? { ...previous, metaWebhookVerifyToken: event.target.value }
-                                : previous,
-                            )
-                          }
-                          className="h-11 bg-[color:var(--color-card)]"
-                        />
-                      </div>
-                      <div className="space-y-2 sm:col-span-2">
                         <Label htmlFor="edit-meta-secret">
                           {t("whatsappSettings.dialogs.metaWebhookSecret")}
                         </Label>
@@ -3842,6 +4098,140 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               variant="outline"
               className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
               onClick={() => setQrDialogOpen(false)}
+            >
+              {t("whatsappSettings.dialogs.close")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 📡 Webhook Details Dialog */}
+      <Dialog open={webhookDetailsOpen} onOpenChange={setWebhookDetailsOpen}>
+        <DialogContent className="max-w-[calc(100%-1.5rem)] rounded-3xl border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-6 sm:max-w-xl">
+          <DialogHeader className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                <Globe className="size-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-base sm:text-lg font-bold">
+                  بيانات رد الاتصال (Meta Webhook)
+                </DialogTitle>
+                <DialogDescription className="text-xs text-[color:var(--color-muted-foreground)]">
+                  بيانات الربط مع بوابة Meta Developers لاستقبال رسائل الواتساب الواردة وحالات التسليم
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Callback URL */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <Label className="font-medium text-[color:var(--color-foreground)]">
+                  رابط الويب هوك (Callback URL)
+                </Label>
+                <span className="text-[10px] text-sky-600 dark:text-sky-400 font-medium">انسخ هذا الرابط إلى Meta</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  readOnly
+                  value={getMetaWebhookUrl()}
+                  className="h-10 bg-[color:var(--color-card)] font-mono text-xs select-all text-[color:var(--color-foreground)]"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-10 px-3.5 shrink-0 gap-1.5 rounded-xl border-[color:var(--shell-control-border)]"
+                  onClick={() => {
+                    navigator.clipboard.writeText(getMetaWebhookUrl());
+                    toast.success("تم نسخ رابط الويب هوك بنجاح");
+                  }}
+                >
+                  <Copy className="size-3.5" />
+                  <span className="text-xs">نسخ</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Verify Token */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <Label className="font-medium text-[color:var(--color-foreground)]">
+                  رمز التحقق (Verify Token)
+                </Label>
+                <span className="text-[10px] text-[color:var(--color-muted-foreground)]">
+                  {webhookDetailsSession ? `جلسة: ${webhookDetailsSession.name}` : "رمز التحقق للربط"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  readOnly
+                  value={webhookDetailsSession?.metaWebhookVerifyToken || newMetaWebhookVerifyToken || "maxp_verify_token"}
+                  className="h-10 bg-[color:var(--color-card)] font-mono text-xs select-all text-[color:var(--color-foreground)]"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-10 px-3.5 shrink-0 gap-1.5 rounded-xl border-[color:var(--shell-control-border)]"
+                  onClick={() => {
+                    const token = webhookDetailsSession?.metaWebhookVerifyToken || newMetaWebhookVerifyToken || "maxp_verify_token";
+                    navigator.clipboard.writeText(token);
+                    toast.success("تم نسخ رمز التحقق بنجاح");
+                  }}
+                >
+                  <Copy className="size-3.5" />
+                  <span className="text-xs">نسخ</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Subscribed Fields */}
+            <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-3.5 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-[color:var(--color-foreground)]">الحقول المطلوبة (Webhook fields):</span>
+                <Badge variant="outline" className="font-mono text-xs bg-emerald-500/10 border-emerald-300 text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-300">
+                  messages
+                </Badge>
+              </div>
+              <p className="text-[11px] text-[color:var(--color-muted-foreground)] leading-relaxed">
+                في لوحة تحكم Meta، اضغط <strong>Manage</strong> في حقل Webhook fields واشترك في <strong>messages</strong> لتصلك الرسائل وتحديثات القراءة والتسليم مباشرة إلى لوحة التحكم.
+              </p>
+            </div>
+
+            {/* Step Guide */}
+            <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-3.5 text-xs text-[color:var(--color-muted-foreground)] space-y-2">
+              <p className="font-semibold text-[color:var(--color-foreground)] flex items-center gap-1.5">
+                <Info className="size-3.5 text-sky-600" />
+                خطوات التثبيت في بوابة Meta Developers:
+              </p>
+              <ol className="list-decimal list-inside space-y-1 text-[11px] leading-relaxed">
+                <li>سجّل الدخول إلى <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer" className="text-sky-600 underline font-medium inline-flex items-center gap-0.5">Meta for Developers <ExternalLink className="size-2.5 inline" /></a> ثم اختر تطبيقك.</li>
+                <li>انتقل إلى <strong>WhatsApp</strong> &gt; <strong>Configuration</strong> من القائمة الجانبية.</li>
+                <li>في قسم <strong>Webhook</strong> اضغط <strong>Edit</strong>، ثم الصق رابط الويب هوك ورمز التحقق أعلاه واضغط <strong>Verify and save</strong>.</li>
+                <li>في جدول <strong>Webhook fields</strong> اضغط <strong>Manage</strong> وفعّل حقل <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-primary font-bold">messages</code>.</li>
+              </ol>
+            </div>
+
+            {/* Direct Meta Link */}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full rounded-full border-[color:var(--shell-control-border)] h-10 text-xs gap-2 font-medium bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)]"
+              onClick={() => window.open("https://developers.facebook.com/apps", "_blank")}
+            >
+              <ExternalLink className="size-3.5" />
+              الانتقال إلى بوابة Meta for Developers
+            </Button>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              className="rounded-full w-full sm:w-auto"
+              onClick={() => setWebhookDetailsOpen(false)}
             >
               {t("whatsappSettings.dialogs.close")}
             </Button>
