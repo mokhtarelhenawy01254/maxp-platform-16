@@ -88,6 +88,10 @@ import {
   getSaleCountdownParts,
   resolveSaleCountdownTimestamp,
 } from '../utils/saleCountdown';
+import {
+  ElessiSaleCountdownDisplay,
+  ElessiSocialProofTickerDisplay,
+} from './product-info/components/ElessiDynamicConversionWidgets';
 
 interface ProductInfoProps {
   section?: {
@@ -627,8 +631,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const [isSizeGuideDialogOpen, setIsSizeGuideDialogOpen] = useState(false);
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
   const [elessiLowerSection, setElessiLowerSection] = useState<'details' | 'support'>('details');
-  const [elessiSocialProofStep, setElessiSocialProofStep] = useState(0);
-  const [elessiCountdownNow, setElessiCountdownNow] = useState(() => Date.now());
   const [isInlineQuickOrderVisible, setIsInlineQuickOrderVisible] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [personalizationText, setPersonalizationText] = useState('');
@@ -1366,105 +1368,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     parseMaybeNumber(product?.['recentOrderCount']) ??
     parseMaybeNumber(product?.socialProof?.recentOrderCount) ??
     initialSoldCount;
-  const initialElessiSocialProofSeed = product?.id ? hashProductSeed(product.id) % 23 : 0;
-  const initialAnimatedRecentOrderCount =
-    initialSoldCounterEnabled && initialRecentOrderCount > 0
-      ? getOscillatingCounterValue({
-          base: initialRecentOrderCount,
-          step: elessiSocialProofStep,
-          seed: initialElessiSocialProofSeed,
-          floor: 1,
-          maxSwing: 2,
-        })
-      : 0;
-  const initialAnimatedActiveCartPressure =
-    initialPurchaseFomoEnabled && initialActiveCartPressure > 0
-      ? getOscillatingCounterValue({
-          base: initialActiveCartPressure,
-          step: elessiSocialProofStep + 1,
-          seed: initialElessiSocialProofSeed + 5,
-          floor: 2,
-          maxSwing: 3,
-        })
-      : 0;
-  const initialElessiSocialProofItems = [
-    initialAnimatedRecentOrderCount > 0
-      ? {
-          accentClassName: 'text-[#e2753f]',
-          emoji: '🔥',
-          key: 'sold' as const,
-          label: prefersArabicCopy
-            ? `${initialAnimatedRecentOrderCount} اتباعت في آخر ٧ ساعات`
-            : `${initialAnimatedRecentOrderCount} sold in the last 7 hours`,
-        }
-      : null,
-    initialAnimatedActiveCartPressure > 0
-      ? {
-          accentClassName: 'text-[#caa487]',
-          emoji: '✨',
-          key: 'cart' as const,
-          label: prefersArabicCopy
-            ? `أكثر من ${initialAnimatedActiveCartPressure} عميلة ضافتهم لسلاتهم دلوقتي`
-            : `Hurry! Over ${initialAnimatedActiveCartPressure} shoppers have this in their carts`,
-        }
-      : null,
-  ].filter(Boolean) as Array<{
-    accentClassName: string;
-    emoji: string;
-    key: 'sold' | 'cart';
-    label: string;
-  }>;
-  const initialElessiCountdownLabel = prefersArabicCopy
-    ? 'أسرعي! العرض بيخلص خلال:'
-    : 'Hurry up! Sale end in:';
   const initialElessiSaleCountdownTarget = resolveSaleCountdownTimestamp(initialSaleEndDate);
-  const initialElessiSaleCountdown = (() => {
-    if (!initialElessiSaleCountdownTarget) {
-      return null;
-    }
-
-    const locale = 'en-US';
-    const srLocale = resolveDateLocale(currency);
-    const countdownParts = getSaleCountdownParts(
-      initialElessiSaleCountdownTarget,
-      elessiCountdownNow,
-    );
-    if (!countdownParts) {
-      return null;
-    }
-
-    return {
-      label: initialElessiCountdownLabel,
-      units: [
-        {
-          key: 'days' as const,
-          label: prefersArabicCopy ? 'يوم' : 'DAYS',
-          value: formatSaleCountdownValue(countdownParts.days, locale),
-        },
-        {
-          key: 'hours' as const,
-          label: prefersArabicCopy ? 'ساعة' : 'HOURS',
-          value: formatSaleCountdownValue(countdownParts.hours, locale, 2),
-        },
-        {
-          key: 'minutes' as const,
-          label: prefersArabicCopy ? 'دقيقة' : 'MINS',
-          value: formatSaleCountdownValue(countdownParts.minutes, locale, 2),
-        },
-        {
-          key: 'seconds' as const,
-          label: prefersArabicCopy ? 'ثانية' : 'SECS',
-          value: formatSaleCountdownValue(countdownParts.seconds, locale, 2),
-        },
-      ],
-      srDateLabel: new Intl.DateTimeFormat(srLocale, {
-        day: 'numeric',
-        month: 'long',
-        hour: 'numeric',
-        minute: '2-digit',
-      }).format(new Date(initialElessiSaleCountdownTarget)),
-    };
-  })();
 
   useEffect(() => {
     if (!initialPersonalizationEnabled) {
@@ -1570,37 +1474,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     product,
     selectedPrimaryImage,
     selectedVariant,
-    syncPdpSelection,
   ]);
-
-  useEffect(() => {
-    setElessiSocialProofStep(0);
-  }, [product?.id]);
-
-  useEffect(() => {
-    if (!isAnyElessiBuybox || !initialElessiSaleCountdownTarget) {
-      return undefined;
-    }
-
-    setElessiCountdownNow(Date.now());
-    const intervalId = window.setInterval(() => {
-      setElessiCountdownNow(Date.now());
-    }, ELESSI_COUNTDOWN_TICK_MS);
-
-    return () => window.clearInterval(intervalId);
-  }, [initialElessiSaleCountdownTarget, isAnyElessiBuybox]);
-
-  useEffect(() => {
-    if (!isElessiCareBuybox || initialElessiSocialProofItems.length === 0) {
-      return undefined;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setElessiSocialProofStep((currentStep) => currentStep + 1);
-    }, ELESSI_SOCIAL_PROOF_ROTATION_MS);
-
-    return () => window.clearInterval(intervalId);
-  }, [initialElessiSocialProofItems.length, isElessiCareBuybox]);
 
   // Hooks must stay above the loading/error early returns — conditional hooks
   // crash the PDP with minified React error #310.
@@ -3057,9 +2931,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           : '');
   const utilityDeliveryRangeResolved =
     utilityDeliveryRange || formatDateRange(3, 4, resolveDateLocale(currency));
-  const elessiCountdownLabel = initialElessiCountdownLabel;
-  const elessiSaleCountdownTarget = initialElessiSaleCountdownTarget;
-  const elessiSaleCountdown = initialElessiSaleCountdown;
   const utilityRailActionButtonClassName =
     'inline-flex items-center gap-2 rounded-full border border-[#ead9d8] bg-white px-3.5 py-2 text-[12px] font-black text-[#4c2d39] transition-colors hover:border-[#d7b3aa] hover:bg-[#fff7f5]';
   const utilityRailInfoRowClassName =
@@ -6830,11 +6701,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         canOpenMobileVariantSheet,
         Boolean(selectedVariant),
       );
-    const elessiSocialProofItems = initialElessiSocialProofItems;
-    const activeElessiSocialProof =
-      elessiSocialProofItems.length > 0
-        ? elessiSocialProofItems[elessiSocialProofStep % elessiSocialProofItems.length]
-        : null;
     const mobileBulkDiscountSource =
       selectedVariant && getProductVolumeDiscounts(selectedVariant).length > 0
         ? getProductVolumeDiscounts(selectedVariant)
@@ -7109,30 +6975,15 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
             ) : null}
 
             <div className="space-y-2.5 sm:space-y-4">
-              {!isKhemetInlineQuickOrderBuybox && activeElessiSocialProof ? (
-                <StaticMotionDiv
-                  key={`${activeElessiSocialProof.key}-${elessiSocialProofStep}-${activeElessiSocialProof.label}`}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, ease: 'easeOut' }}
-                  data-testid="elessi-social-proof-ticker"
-                  aria-live="polite"
-                  className="flex items-center gap-2 text-sm font-bold text-[#8f5c44]"
-                >
-                  <StaticMotionSpan
-                    aria-hidden="true"
-                    animate={
-                      activeElessiSocialProof.key === 'sold'
-                        ? { rotate: [0, -8, 8, 0], scale: [1, 1.12, 1] }
-                        : { opacity: [0.55, 1, 0.55], y: [0, -1, 0] }
-                    }
-                    transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-                    className={`inline-flex text-base leading-none ${activeElessiSocialProof.accentClassName}`}
-                  >
-                    {activeElessiSocialProof.emoji}
-                  </StaticMotionSpan>
-                  <span>{activeElessiSocialProof.label}</span>
-                </StaticMotionDiv>
+              {!isKhemetInlineQuickOrderBuybox ? (
+                <ElessiSocialProofTickerDisplay
+                  productId={product?.id}
+                  prefersArabicCopy={prefersArabicCopy}
+                  recentOrderCount={initialRecentOrderCount}
+                  activeCartPressure={initialActiveCartPressure}
+                  soldCounterEnabled={initialSoldCounterEnabled}
+                  purchaseFomoEnabled={initialPurchaseFomoEnabled}
+                />
               ) : null}
               {!isKhemetInlineQuickOrderBuybox ? elessiLowStockNotice : null}
               {!isKhemetInlineQuickOrderBuybox &&
@@ -7159,42 +7010,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
                   {readMoreText}
                 </button>
               )}
-              {elessiSaleCountdown && !isKhemetInlineQuickOrderBuybox ? (
-                <div className="border-t border-[#efe0d4] pt-3 sm:pt-4">
-                  <div className="flex items-center justify-end gap-2 text-[16px] font-black text-[#2d211e]">
-                    <StaticMotionSpan
-                      animate={{ rotate: [0, -12, 10, 0], scale: [1, 1.06, 1] }}
-                      transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                      className="inline-flex text-[#c59a7a]"
-                    >
-                      <AlarmClock className="h-[15px] w-[15px]" />
-                    </StaticMotionSpan>
-                    <span>{elessiSaleCountdown.label}</span>
-                  </div>
-                  <div dir="ltr" className="mt-3 grid grid-cols-4 gap-2.5 sm:gap-3">
-                    {elessiSaleCountdown.units.map((unit) => (
-                      <StaticMotionDiv
-                        key={`${unit.key}-${unit.value}`}
-                        initial={{ opacity: 0.7, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="rounded-[1.05rem] border border-[#e7d8cb] bg-[linear-gradient(180deg,#fffdfa_0%,#fcf7f1_100%)] px-2.5 py-3 text-center shadow-[0_1px_0_rgba(45,33,30,0.02)]"
-                      >
-                        <div className="text-[22px] font-black leading-none tracking-[0.02em] text-[#2d211e] tabular-nums">
-                          {unit.value}
-                        </div>
-                        <div className="mt-2 text-[10px] font-semibold tracking-[0.04em] text-[#967a6c]">
-                          {unit.label}
-                        </div>
-                      </StaticMotionDiv>
-                    ))}
-                  </div>
-                  <p className="sr-only">
-                    {prefersArabicCopy
-                      ? `العرض الحالي ينتهي في ${elessiSaleCountdown.srDateLabel}`
-                      : `Current offer ends on ${elessiSaleCountdown.srDateLabel}`}
-                  </p>
-                </div>
+              {initialElessiSaleCountdownTarget && !isKhemetInlineQuickOrderBuybox ? (
+                <ElessiSaleCountdownDisplay
+                  targetTimestamp={initialElessiSaleCountdownTarget}
+                  prefersArabicCopy={prefersArabicCopy}
+                  currency={currency}
+                />
               ) : null}
             </div>
 

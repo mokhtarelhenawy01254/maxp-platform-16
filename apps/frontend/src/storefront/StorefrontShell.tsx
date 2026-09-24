@@ -124,7 +124,21 @@ import CollectionCategoryPage from './pages/CollectionCategoryPage';
 
 
 
-import { StorefrontPreviewBanner, StorefrontProductPreviewBanner, MarketplacePreviewCartBootstrap } from './components/preview/StorefrontPreviewBanner';
+const StorefrontPreviewBanner = React.lazy(() =>
+  import('./components/preview/StorefrontPreviewBanner').then((m) => ({
+    default: m.StorefrontPreviewBanner,
+  })),
+);
+const StorefrontProductPreviewBanner = React.lazy(() =>
+  import('./components/preview/StorefrontPreviewBanner').then((m) => ({
+    default: m.StorefrontProductPreviewBanner,
+  })),
+);
+const MarketplacePreviewCartBootstrap = React.lazy(() =>
+  import('./components/preview/StorefrontPreviewBanner').then((m) => ({
+    default: m.MarketplacePreviewCartBootstrap,
+  })),
+);
 
 
 /* ─────────────────── Layout ─────────────────── */
@@ -1366,7 +1380,11 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       className="storefront-shell flex min-h-screen flex-col relative"
       dir={theme.direction}
     >
-      <MarketplacePreviewCartBootstrap previewThemeId={previewThemeId} />
+      {previewThemeId ? (
+        <React.Suspense fallback={null}>
+          <MarketplacePreviewCartBootstrap previewThemeId={previewThemeId} />
+        </React.Suspense>
+      ) : null}
       {isIntruderNft && (
         <div className="fixed inset-0 pointer-events-none z-0">
           <div className="absolute inset-0 bg-background mix-blend-multiply" />
@@ -1414,13 +1432,17 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       )}
 
       {showPreviewThemeBanner && previewThemeId ? (
-        <StorefrontPreviewBanner previewThemeId={previewThemeId} />
+        <React.Suspense fallback={null}>
+          <StorefrontPreviewBanner previewThemeId={previewThemeId} />
+        </React.Suspense>
       ) : null}
       {!isProductImageLandingPage ? (
         <MemoStorefrontHeader isMinimal={isMinimal} search={search} />
       ) : null}
       {isProductPreview ? (
-        <StorefrontProductPreviewBanner previewProductId={previewProductId} />
+        <React.Suspense fallback={null}>
+          <StorefrontProductPreviewBanner previewProductId={previewProductId} />
+        </React.Suspense>
       ) : null}
       {isGracefulTheme ? <GracefulScrollTop /> : null}
       {!isProductImageLandingPage && !isFastlyTheme && !isElessiPackTheme && !isGracefulTheme ? <StorePromotionBar /> : null}

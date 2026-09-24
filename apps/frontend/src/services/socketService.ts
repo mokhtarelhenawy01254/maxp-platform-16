@@ -118,9 +118,15 @@ class SocketService {
   private audioBufferCache: Map<string, AudioBuffer> = new Map();
 
   constructor() {
-    // تهيئة Audio Context (سيتم تفعيله بعد أول user interaction)
-    this.initAudioContext();
-    this.setupAudioUnlock();
+    // Audio Context is initialized lazily on connect() or alarm playback,
+    // preventing main-thread lag for unauthenticated storefront visitors.
+  }
+
+  public ensureAudioSetup() {
+    if (!this.isAudioInitialized && typeof window !== "undefined") {
+      this.initAudioContext();
+      this.setupAudioUnlock();
+    }
   }
 
   // تهيئة Audio Context
@@ -140,6 +146,7 @@ class SocketService {
 
   // تشغيل صوت التنبيه باستخدام Web Audio API
   playNotificationSound() {
+    this.ensureAudioSetup();
     try {
       if (!this.audioContext) {
         console.warn("⚠️ [SOUND] Audio context not available");
@@ -596,6 +603,7 @@ class SocketService {
   }
 
   connect() {
+    this.ensureAudioSetup();
     if (this.socket?.connected) {
       return this.socket;
     }

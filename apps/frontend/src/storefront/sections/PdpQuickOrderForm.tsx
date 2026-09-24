@@ -469,6 +469,8 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const [isStickySubmitVisible, setIsStickySubmitVisible] = useState(false);
   const trackedCheckoutFingerprintRef = useRef("");
   const checkoutDraftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shippingCacheRef = useRef<Map<string, { price: number; label: string }>>(new Map());
+  const trackedShippingQuoteRef = useRef<string>("");
 
   const fullNameField = pdpQuickOrderSettings.fields.fullName;
   const phoneField = pdpQuickOrderSettings.fields.phone;
@@ -586,10 +588,9 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     : "";
   const contactPhone = resolvedPhone || resolvedAlternatePhone;
   const hasCheckoutDraftSignal = Boolean(
-    resolvedFullName ||
-    contactPhone ||
-    resolvedGovernorate ||
-    resolvedAddress,
+    (resolvedFullName && resolvedFullName.trim().length >= 2) ||
+    (contactPhone && contactPhone.replace(/\D/g, "").length >= 5) ||
+    (resolvedAddress && resolvedAddress.trim().length >= 4),
   );
   const fallbackCustomerName = prefersArabicCopy
     ? "عميل صفحة المنتج"
@@ -697,14 +698,26 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   useEffect(() => {
     let cancelled = false;
 
-    const loadShipping = async () => {
-      if (!effectiveGovernorateField.enabled || !resolvedGovernorate || !companyId) {
-        setShippingCost(0);
-        setShippingMethodLabel("");
-        setIsShippingLoading(false);
-        return;
-      }
+    if (!effectiveGovernorateField.enabled || !resolvedGovernorate || !companyId) {
+      setShippingCost(0);
+      setShippingMethodLabel("");
+      setIsShippingLoading(false);
+      return undefined;
+    }
 
+    const cacheKey = `${companyId}:${resolvedGovernorate}:${shippingQuoteItems
+      .map((i) => `${i.productId}:${i.variantId || ""}:${i.quantity}`)
+      .join(";")}`;
+
+    const cached = shippingCacheRef.current.get(cacheKey);
+    if (cached) {
+      setShippingCost(cached.price);
+      setShippingMethodLabel(cached.label);
+      setIsShippingLoading(false);
+      return undefined;
+    }
+
+    const loadShipping = async () => {
       try {
         setIsShippingLoading(true);
         const response = await storefrontApi.calculateShipping(
@@ -714,18 +727,24 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         );
 
         if (!cancelled) {
-          setShippingCost(Number(response?.data?.price) || 0);
+          const resolvedCost = Number(response?.data?.price) || 0;
           const primaryMethod = Array.isArray(response?.data?.methods)
             ? response.data.methods[0]
             : null;
-          setShippingMethodLabel(
-            String(
-              primaryMethod?.title ||
-                primaryMethod?.label ||
-                primaryMethod?.name ||
-                "",
-            ).trim(),
-          );
+          const resolvedLabel = String(
+            primaryMethod?.title ||
+              primaryMethod?.label ||
+              primaryMethod?.name ||
+              "",
+          ).trim();
+
+          shippingCacheRef.current.set(cacheKey, {
+            price: resolvedCost,
+            label: resolvedLabel,
+          });
+
+          setShippingCost(resolvedCost);
+          setShippingMethodLabel(resolvedLabel);
         }
       } catch {
         if (!cancelled) {
@@ -739,10 +758,13 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       }
     };
 
-    void loadShipping();
+    const timer = setTimeout(() => {
+      void loadShipping();
+    }, 150);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [
     companyId,
@@ -761,16 +783,22 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       return;
     }
 
+    const quoteTrackingKey = `${product.id}:${resolvedGovernorate}:${shippingCost}:${resolvedSubtotal}:${quickOrderFingerprint}`;
+    if (trackedShippingQuoteRef.current === quoteTrackingKey) {
+      return;
+    }
+    trackedShippingQuoteRef.current = quoteTrackingKey;
+
     void trackConversionSuiteUsage(storefrontSettings, {
       feature: "pdp_quick_order_shipping_quote",
       dedupeKey: `pdp-quick-order-shipping:${product.id}:${resolvedGovernorate}:${quickOrderFingerprint}`,
-        metadata: {
-          productId: product.id,
-          governorate: resolvedGovernorate,
-          shippingCost,
-          subtotal: resolvedSubtotal,
-        },
-      });
+      metadata: {
+        productId: product.id,
+        governorate: resolvedGovernorate,
+        shippingCost,
+        subtotal: resolvedSubtotal,
+      },
+    });
   }, [
     effectiveGovernorateField.enabled,
     isShippingLoading,
