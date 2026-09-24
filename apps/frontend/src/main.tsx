@@ -9,10 +9,14 @@ import {
 } from "./utils/chunkLoadRecovery";
 import { clearAllSWCaches } from "./utils/swCacheFlush";
 
-// Proactively unregister any active or legacy Service Workers and wipe CacheStorage
+// Proactively unregister any active or legacy Service Workers, wipe CacheStorage, and purge manifest
 if (typeof window !== "undefined") {
   try {
     void clearAllSWCaches();
+    const existingManifest = document.querySelector('link[rel="manifest"]');
+    if (existingManifest) {
+      existingManifest.remove();
+    }
   } catch {
     // Ignore environments with restricted storage or workers
   }

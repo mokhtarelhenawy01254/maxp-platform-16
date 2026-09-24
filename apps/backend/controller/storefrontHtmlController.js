@@ -125,8 +125,10 @@ exports.handleStorefrontShell = async (req, res, next) => {
     res.set("X-HTML-Cache", "HIT");
     res.set(
       "Cache-Control",
-      "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
+      "no-cache, no-store, must-revalidate",
     );
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
     return res.status(200).send(cached.html);
   }
 
@@ -463,8 +465,10 @@ exports.handleStorefrontShell = async (req, res, next) => {
     res.set("X-HTML-Cache", "MISS");
     res.set(
       "Cache-Control",
-      "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
+      "no-cache, no-store, must-revalidate",
     );
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
     return res.status(200).send(html);
   } catch (error) {
     console.error("❌ [STOREFRONT-HTML] Failed to render storefront shell:", error);
