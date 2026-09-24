@@ -150,6 +150,7 @@ const mapSessionForResponse = (session, includeQrData = false) => {
         _count: count,
         provider,
         liveStatus,
+        agentId: metadata?.agentId || null,
         qrCode: includeQrData && provider !== 'META_CLOUD' ? (activeSession?.qrCode || null) : null,
         pairingCode: includeQrData && provider !== 'META_CLOUD' ? (activeSession?.pairingCode || null) : null
     };
@@ -855,15 +856,19 @@ async function updateSession(req, res) {
         }
 
         let updatedMetadata = undefined;
-        if (req.body.callShieldEnabled !== undefined || req.body.callShieldMessage !== undefined) {
+        if (req.body.agentId !== undefined || req.body.callShieldEnabled !== undefined || req.body.callShieldMessage !== undefined || req.body.metadata !== undefined) {
             let existingMeta = {};
             try {
                 existingMeta = existingSession.metadata
                     ? (typeof existingSession.metadata === 'string' ? JSON.parse(existingSession.metadata) : existingSession.metadata)
                     : {};
             } catch {}
+            if (req.body.agentId !== undefined) existingMeta.agentId = req.body.agentId || null;
             if (req.body.callShieldEnabled !== undefined) existingMeta.callShieldEnabled = !!req.body.callShieldEnabled;
             if (req.body.callShieldMessage !== undefined) existingMeta.callShieldMessage = req.body.callShieldMessage;
+            if (typeof req.body.metadata === 'object' && req.body.metadata !== null) {
+                existingMeta = { ...existingMeta, ...req.body.metadata };
+            }
             updatedMetadata = JSON.stringify(existingMeta);
             const active = WhatsAppManager.getSession(id);
             if (active) active.metadata = existingMeta;

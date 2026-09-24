@@ -96,15 +96,23 @@ function normalizeDreamerResponse(payload = {}, conversations = []) {
  * @param {string} params.message
  * @param {string} [params.threadId]
  * @param {string} [params.channel="chat"] - Chat channel (e.g. FACEBOOK, INSTAGRAM, WHATSAPP)
+ * @param {string|null} [params.agentId=null] - Optional specific agent ID to handle the conversation
  * @param {Object|null} [params.memoryContext=null] - Serialized working memory from Redis
  * @returns {Promise<{status: string, threadId: string, reply: string|null, draftId: string|null}>}
  */
-async function sendChatMessage({ companyId, customerId, message, threadId, channel = "chat", memoryContext = null, attachments = null }) {
+async function sendChatMessage({ companyId, customerId, message, threadId, channel = "chat", agentId = null, memoryContext = null, attachments = null }) {
   const { enrichMemoryContextWithPostProduct } = require('../utils/postProductMappingHelper');
   const enrichedContext = await enrichMemoryContextWithPostProduct(companyId, threadId, memoryContext);
 
   const url = new URL('/chat', getAiServiceUrl());
-  const body = JSON.stringify({ message, thread_id: threadId || null, channel, memory_context: enrichedContext, attachments });
+  const body = JSON.stringify({
+    message,
+    thread_id: threadId || null,
+    channel,
+    agent_id: agentId || null,
+    memory_context: enrichedContext,
+    attachments
+  });
   const token = getAiServiceToken();
 
   const response = await fetch(url.toString(), {

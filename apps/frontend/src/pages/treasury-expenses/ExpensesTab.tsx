@@ -258,7 +258,9 @@ export default function ExpensesTab({
           <div className="text-xl sm:text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100 tabular-nums">
             {stats?.runwayMonths || 0} <span className="text-xs font-normal text-zinc-500">شهر صمود</span>
           </div>
-          <p className="text-[11px] text-zinc-500 mt-1">السيولة المتاحة: {formatMoney(stats?.liquidCash || 0)}</p>
+          <p className={`text-[11px] mt-1 ${stats && stats.liquidCash < 0 ? "text-red-500 font-medium" : "text-zinc-500"}`}>
+            السيولة المتاحة: {formatMoney(stats?.liquidCash || 0)} {stats && stats.liquidCash < 0 ? "(عجز سيولة)" : ""}
+          </p>
         </div>
       </div>
 

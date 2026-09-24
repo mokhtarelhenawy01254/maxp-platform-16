@@ -536,4 +536,110 @@ router.get('/departments', async (req, res) => {
   }
 });
 
+// GET /whatsapp-sessions — list WhatsApp sessions with dedicated agent routing
+router.get('/whatsapp-sessions', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
+    const db = prisma();
+    const sessions = await db.whatsAppSession.findMany({
+      where: { companyId },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        id: true,
+        name: true,
+        phoneNumber: true,
+        status: true,
+        autoReply: true,
+        aiEnabled: true,
+        isDefault: true,
+        metadata: true,
+        provider: true,
+        createdAt: true,
+      },
+    });
+
+    const mapped = sessions.map((s) => {
+      let meta = {};
+      try {
+        meta = typeof s.metadata === 'string' ? JSON.parse(s.metadata) : (s.metadata || {});
+      } catch (_) {}
+      return {
+        id: s.id,
+        name: s.name,
+        phoneNumber: s.phoneNumber,
+        status: s.status,
+        autoReply: s.autoReply !== false,
+        aiEnabled: s.aiEnabled !== false,
+        isDefault: s.isDefault === true,
+        agentId: meta?.agentId || null,
+        provider: s.provider,
+      };
+    });
+
+    return res.json({ success: true, sessions: mapped, count: mapped.length });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PUT /whatsapp-sessions/:id — update a WhatsApp session's assigned agent and autoReply toggle
+router.put('/whatsapp-sessions/:id', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
+    const { id } = req.params;
+    const { agentId, autoReply, aiEnabled } = req.body || {};
+    const db = prisma();
+
+    const existingSession = await db.whatsAppSession.findFirst({
+      where: { id, companyId },
+    });
+    if (!existingSession) {
+      return res.status(404).json({ success: false, error: 'الجلسة غير موجودة' });
+    }
+
+    let meta = {};
+    try {
+      meta = typeof existingSession.metadata === 'string' ? JSON.parse(existingSession.metadata) : (existingSession.metadata || {});
+    } catch (_) {}
+
+    if (agentId !== undefined) {
+      meta.agentId = agentId || null;
+    }
+
+    const updateData = {
+      metadata: JSON.stringify(meta),
+      updatedAt: new Date(),
+    };
+    if (autoReply !== undefined) updateData.autoReply = Boolean(autoReply);
+    if (aiEnabled !== undefined) updateData.aiEnabled = Boolean(aiEnabled);
+
+    const updated = await db.whatsAppSession.update({
+      where: { id },
+      data: updateData,
+    });
+
+    try {
+      const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
+      const active = WhatsAppManager.getSession(id);
+      if (active) active.metadata = meta;
+    } catch (_) {}
+
+    return res.json({
+      success: true,
+      session: {
+        id: updated.id,
+        name: updated.name,
+        phoneNumber: updated.phoneNumber,
+        agentId: meta.agentId || null,
+        autoReply: updated.autoReply,
+        aiEnabled: updated.aiEnabled,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;

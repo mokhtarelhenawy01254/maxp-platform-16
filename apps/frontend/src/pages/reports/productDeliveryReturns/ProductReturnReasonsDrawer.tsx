@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, AlertTriangle, AlertCircle, CheckCircle, Package, ArrowUpRight, TrendingDown, ShieldAlert, Sparkles, Truck, Ruler, PhoneCall } from 'lucide-react';
-import { useCurrency } from '../../../../hooks/useCurrency';
+import { useCurrency } from '../../../hooks/useCurrency';
 import { ProductDeliveryReturnsItem, BottleneckCategory } from './productDeliveryReturns.types';
 
 interface Props {

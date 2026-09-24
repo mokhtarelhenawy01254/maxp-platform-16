@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { format, isToday, isYesterday } from "date-fns";
@@ -19,6 +19,7 @@ import {
   PhoneOff,
   Pin,
   Radio,
+  Smile,
   SmilePlus,
   X,
 } from "lucide-react";
@@ -31,6 +32,7 @@ import LinkifiedText from "../../../components/common/LinkifiedText";
 
 import { Message } from "../../../hooks/useWhatsAppQueries";
 import { buildWhatsAppMediaUrl } from "../utils/mediaUrl";
+import WhatsAppReactionSelector from "./WhatsAppReactionSelector";
 
 interface MessageBubbleProps {
   message: Message;
@@ -167,6 +169,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
         reactorDescriptions: descriptions,
       };
     }, [reactions, currentUserId, isGroup, getParticipantName, t]);
+
+    // ── Reaction Selector State (Replicating Facebook Inbox UX) ──
+    const [showReactionSelector, setShowReactionSelector] = useState(false);
+    const reactionTriggerRef = useRef<HTMLButtonElement | null>(null);
+    const pillRef = useRef<HTMLDivElement | null>(null);
+    const [activeTriggerRef, setActiveTriggerRef] = useState<React.RefObject<HTMLElement | null>>(reactionTriggerRef);
 
     // ── AI Correction State ──
     const [isEditing, setIsEditing] = useState(false);
@@ -809,22 +817,32 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
             )}
           >
             {onReaction && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onContextMenu(e, message);
-                }}
-                aria-label={t("whatsapp.reactions.add", "تفاعل")}
-                title={t("whatsapp.reactions.add", "تفاعل")}
-                className={cn(
-                  "opacity-0 transition-opacity duration-150 group-hover/bubble:opacity-100 focus:opacity-100",
-                  "flex size-7 items-center justify-center rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)] hover:text-[color:var(--color-foreground)] active:scale-95",
-                  message.fromMe ? "order-first me-1" : "order-last ms-1"
-                )}
-              >
-                <SmilePlus className="size-4" />
-              </button>
+              <div className="relative flex-shrink-0">
+                <button
+                  type="button"
+                  ref={reactionTriggerRef}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveTriggerRef(reactionTriggerRef);
+                    setShowReactionSelector((prev) => !prev);
+                  }}
+                  aria-label={t("whatsapp.reactions.add", "إضافة تفاعل")}
+                  title={t("whatsapp.reactions.add", "إضافة تفاعل")}
+                  className={cn(
+                    "flex size-7 items-center justify-center rounded-full transition-all duration-150 active:scale-90 border",
+                    showReactionSelector || myReaction
+                      ? "opacity-100"
+                      : "opacity-0 group-hover/bubble:opacity-100 focus:opacity-100",
+                    myReaction
+                      ? "text-amber-600 bg-amber-100 border-amber-300 dark:bg-amber-950/60 dark:border-amber-800/80 dark:text-amber-400"
+                      : "text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)] hover:text-[color:var(--color-foreground)] border-transparent",
+                    message.fromMe ? "order-first me-1" : "order-last ms-1"
+                  )}
+                >
+                  <Smile size={16} strokeWidth={2.2} />
+                </button>
+              </div>
             )}
 
             <div
@@ -923,48 +941,66 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
               {message.fromMe ? <MessageStatusIcon status={message.status} /> : null}
             </div>
 
-            {/* Reactions Display */}
+            {/* Reactions Display (Facebook Inbox UX) */}
             {totalReactionCount > 0 && (
               <div
+                ref={pillRef}
                 role="button"
                 tabIndex={0}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (onReaction && myReaction) {
-                    onReaction(message.messageId, myReaction);
-                  } else {
-                    onContextMenu(e, message);
-                  }
+                  setActiveTriggerRef(pillRef);
+                  setShowReactionSelector((prev) => !prev);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.stopPropagation();
-                    if (onReaction && myReaction) onReaction(message.messageId, myReaction);
+                    setActiveTriggerRef(pillRef);
+                    setShowReactionSelector((prev) => !prev);
                   }
                 }}
                 title={reactorDescriptions.join(" • ")}
                 className={cn(
-                  "absolute -bottom-2.5 z-10 flex cursor-pointer select-none items-center gap-1 rounded-full px-1.5 py-0.5 text-xs shadow-xs border transition-all active:scale-95",
-                  "border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] hover:bg-[var(--whatsapp-surface-hover)] text-[color:var(--color-foreground)]",
-                  myReaction && "border-primary/40 bg-primary/10 ring-1 ring-primary/30",
+                  "business-reaction-pill absolute -bottom-3 rounded-full shadow-md border flex items-center px-1.5 py-0.5 gap-1 cursor-pointer select-none transition-all active:scale-95 z-10",
+                  myReaction && "ring-1 ring-primary/40 border-primary/40 bg-primary/10",
                   message.fromMe ? "start-2" : "end-2"
                 )}
+                style={{
+                  background: "var(--business-floating-surface, var(--color-card))",
+                  borderColor: "var(--business-card-border, var(--color-border))",
+                }}
               >
-                <div className="flex items-center -space-x-1 text-xs leading-none rtl:space-x-reverse">
-                  {Object.keys(reactionCounts).slice(0, 3).map((emoji) => (
-                    <span key={emoji} className="inline-block transition-transform active:scale-125">
-                      {emoji}
-                    </span>
-                  ))}
-                </div>
-                {totalReactionCount > 1 && (
-                  <span className="ps-0.5 text-[10px] font-semibold tabular-nums text-[color:var(--color-muted-foreground)] leading-none">
-                    {totalReactionCount}
+                {Object.entries(reactionCounts).map(([reaction, count]) => (
+                  <span
+                    key={reaction}
+                    className="text-xs leading-none flex items-center"
+                  >
+                    <span className="text-sm leading-none">{reaction}</span>
+                    {count > 1 && (
+                      <span
+                        className="text-[10px] ml-0.5 font-medium tabular-nums text-[color:var(--color-muted-foreground)]"
+                      >
+                        {count}
+                      </span>
+                    )}
                   </span>
-                )}
+                ))}
               </div>
             )}
           </div>
+
+          {/* Floating Reaction Selector (Facebook Inbox UX) */}
+          {showReactionSelector && (
+            <WhatsAppReactionSelector
+              triggerRef={activeTriggerRef}
+              currentReaction={myReaction || undefined}
+              onSelect={(emoji) => {
+                if (onReaction) onReaction(message.messageId, emoji);
+                setShowReactionSelector(false);
+              }}
+              onClose={() => setShowReactionSelector(false)}
+            />
+          )}
         </div>
 
         {/* Inline Correction Editor */}

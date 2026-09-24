@@ -1,6 +1,6 @@
 import React from 'react';
 import { Truck, CheckCircle2, DollarSign, AlertTriangle, AlertCircle, TrendingDown } from 'lucide-react';
-import { useCurrency } from '../../../../hooks/useCurrency';
+import { useCurrency } from '../../../hooks/useCurrency';
 import { ProductDeliveryReturnsSummary } from './productDeliveryReturns.types';
 
 interface Props {

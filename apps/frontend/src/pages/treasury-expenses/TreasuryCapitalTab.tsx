@@ -16,9 +16,11 @@ import {
   Edit2,
   Download,
   Calendar,
+  Receipt,
 } from "lucide-react";
 import {
   TreasuryAccount,
+  ExpenseCategory,
   CapitalStats,
   TreasuryTransaction,
   fetchCapitalStats,
@@ -32,13 +34,21 @@ import {
   CreateAccountModal,
   EditAccountModal,
 } from "./TreasuryModals";
+import ExpenseModal from "./ExpenseModal";
 
 interface TreasuryCapitalTabProps {
   accounts: TreasuryAccount[];
+  categories?: ExpenseCategory[];
   onAccountsUpdated: () => void;
+  onCategoriesUpdated?: () => void;
 }
 
-export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: TreasuryCapitalTabProps) {
+export default function TreasuryCapitalTab({
+  accounts,
+  categories = [],
+  onAccountsUpdated,
+  onCategoriesUpdated,
+}: TreasuryCapitalTabProps) {
   const [stats, setStats] = useState<CapitalStats | null>(null);
   const [ledger, setLedger] = useState<TreasuryTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +68,8 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<TreasuryAccount | null>(null);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [selectedAccountForExpense, setSelectedAccountForExpense] = useState("");
 
   const handlePresetChange = (preset: "all" | "today" | "this_week" | "this_month" | "custom") => {
     setDatePreset(preset);
@@ -171,15 +183,35 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
       {/* Top Telemetry Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
         {/* Total Liquid Cash */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3.5 shadow-sm">
+        <div
+          className={`bg-white dark:bg-zinc-900 border rounded-2xl p-3.5 shadow-sm ${
+            (stats?.totalLiquidCash || 0) < 0
+              ? "border-red-300 dark:border-red-900/60"
+              : "border-zinc-200 dark:border-zinc-800"
+          }`}
+        >
           <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-1">
             <span className="text-xs font-medium">السيولة النقدية الحالية</span>
-            <Banknote className="w-4 h-4 text-emerald-600" />
+            <Banknote
+              className={`w-4 h-4 ${
+                (stats?.totalLiquidCash || 0) < 0 ? "text-red-500" : "text-emerald-600"
+              }`}
+            />
           </div>
-          <div className="text-xl sm:text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">
+          <div
+            className={`text-xl sm:text-2xl font-bold font-mono tabular-nums ${
+              (stats?.totalLiquidCash || 0) < 0
+                ? "text-red-600 dark:text-red-400"
+                : "text-emerald-600 dark:text-emerald-400"
+            }`}
+          >
             {formatMoney(stats?.totalLiquidCash || 0)}
           </div>
-          <p className="text-[11px] text-zinc-500 mt-1">المجموع الفعلي المتاح في كافة الخزائن والنوك</p>
+          <p className="text-[11px] text-zinc-500 mt-1">
+            {(stats?.totalLiquidCash || 0) < 0
+              ? "يوجد عجز في السيولة النقدية (رصيد سالب)"
+              : "المجموع الفعلي المتاح في كافة الخزائن والبنوك"}
+          </p>
         </div>
 
         {/* Total Injected Capital */}
@@ -253,65 +285,109 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
               <DollarSign className="w-3.5 h-3.5" />
               <span>إيداع رأس مال / تمويل</span>
             </button>
+            <button
+              onClick={() => {
+                setSelectedAccountForExpense(accounts[0]?.id || "");
+                setIsExpenseModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition-all active:scale-[0.97]"
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>تسجيل نفقة / صرف</span>
+            </button>
           </div>
         </div>
 
         {/* Vault Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {accounts.map((acc) => (
-            <div
-              key={acc.id}
-              className="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 rounded-2xl p-4 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
-                    {getAccountIcon(acc.type)}
+          {accounts.map((acc) => {
+            const bal = Number(acc.balance || 0);
+            const isNegative = bal < 0;
+            return (
+              <div
+                key={acc.id}
+                className={`bg-white dark:bg-zinc-900 border rounded-2xl p-4 shadow-sm transition-all ${
+                  isNegative
+                    ? "border-red-300 dark:border-red-900/70 bg-red-50/10 hover:border-red-400 dark:hover:border-red-800"
+                    : "border-zinc-200/90 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
+                      {getAccountIcon(acc.type)}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                        {acc.name}
+                        {acc.isDefault && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-normal">
+                            الرئيسية
+                          </span>
+                        )}
+                      </h4>
+                      <span className="text-[11px] text-zinc-400">
+                        {acc.type === "BANK"
+                          ? `بنك ${acc.bankName || "رسمي"}`
+                          : acc.type === "WALLET"
+                          ? "محفظة إلكترونية"
+                          : acc.type === "CUSTODY"
+                          ? "عهدة نقدية"
+                          : "خزينة كاش"}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                      {acc.name}
-                      {acc.isDefault && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-normal">
-                          الرئيسية
-                        </span>
-                      )}
-                    </h4>
-                    <span className="text-[11px] text-zinc-400">
-                      {acc.type === "BANK"
-                        ? `بنك ${acc.bankName || "رسمي"}`
-                        : acc.type === "WALLET"
-                        ? "محفظة إلكترونية"
-                        : acc.type === "CUSTODY"
-                        ? "عهدة نقدية"
-                        : "خزينة كاش"}
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setSelectedAccountForExpense(acc.id);
+                        setIsExpenseModalOpen(true);
+                      }}
+                      title="تسجيل صرف نفقة من هذه الخزينة"
+                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-lg transition-colors border border-rose-200/60 dark:border-rose-900/40"
+                    >
+                      <Receipt className="w-3 h-3" />
+                      <span>صرف</span>
+                    </button>
+                    <button
+                      onClick={() => setEditingAccount(acc)}
+                      title="تعديل بيانات الحساب"
+                      className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {acc.accountNumber && (
+                  <div className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 mb-3 bg-zinc-50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                    رقم الحساب: {acc.accountNumber}
+                  </div>
+                )}
+
+                <div className="flex items-baseline justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
+                  <span className="text-xs text-zinc-500">الرصيد الفعلي:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-lg font-bold font-mono tabular-nums ${
+                        isNegative
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-zinc-900 dark:text-zinc-100"
+                      }`}
+                    >
+                      {formatMoney(acc.balance, acc.currency)}
                     </span>
+                    {isNegative && (
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400">
+                        سالب / مكشوف
+                      </span>
+                    )}
                   </div>
                 </div>
-
-                <button
-                  onClick={() => setEditingAccount(acc)}
-                  title="تعديل بيانات الحساب"
-                  className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
               </div>
-
-              {acc.accountNumber && (
-                <div className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 mb-3 bg-zinc-50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
-                  رقم الحساب: {acc.accountNumber}
-                </div>
-              )}
-
-              <div className="flex items-baseline justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
-                <span className="text-xs text-zinc-500">الرصيد المتاح:</span>
-                <span className="text-lg font-bold font-mono text-zinc-900 dark:text-zinc-100 tabular-nums">
-                  {formatMoney(acc.balance, acc.currency)}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -530,7 +606,13 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
                         >
                           {isPositive ? `+${formatMoney(tx.amount)}` : formatMoney(tx.amount)}
                         </td>
-                        <td className="py-3 px-4 text-left font-mono font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
+                        <td
+                          className={`py-3 px-4 text-left font-mono font-bold tabular-nums text-xs ${
+                            Number(tx.runningBalance) < 0
+                              ? "text-red-600 dark:text-red-400 font-extrabold"
+                              : "text-zinc-900 dark:text-zinc-100"
+                          }`}
+                        >
                           {formatMoney(tx.runningBalance)}
                         </td>
                       </tr>
@@ -596,6 +678,18 @@ export default function TreasuryCapitalTab({ accounts, onAccountsUpdated }: Trea
         onSuccess={handleActionSuccess}
         account={editingAccount}
       />
+
+      {isExpenseModalOpen && (
+        <ExpenseModal
+          isOpen={isExpenseModalOpen}
+          onClose={() => setIsExpenseModalOpen(false)}
+          onSuccess={handleActionSuccess}
+          accounts={accounts}
+          categories={categories}
+          defaultTreasuryAccountId={selectedAccountForExpense}
+          onCategoryCreated={onCategoriesUpdated}
+        />
+      )}
     </div>
   );
 }
