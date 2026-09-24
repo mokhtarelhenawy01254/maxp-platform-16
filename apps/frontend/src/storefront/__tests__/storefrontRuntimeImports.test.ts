@@ -217,7 +217,7 @@ describe("storefront runtime imports", () => {
     );
     expect(bootstrapSource).toContain("resolveStorefrontCatalogPathKey");
     expect(bootstrapSource).toContain("fetchStorefrontProducts(catalogPrefetchParams)");
-    expect(bootstrapSource).toContain('pageKey === "shop" ? 48 : 12');
+    expect(bootstrapSource).toContain('pageKey === "shop" ? 16 : 12');
     expect(bootstrapSource).toContain("[240, 320, 420, 520]");
     expect(bootstrapSource).toContain("fallbackWidth: 420");
     expect(bootstrapSource).toContain("quality: 72");

@@ -131,6 +131,31 @@ export const buildOptimizedStorefrontImageUrl = (
     });
   }
 
+  if (isLocalOptimizableStorefrontImage(parsed)) {
+    const rawTarget = parsed.isAbsolute
+      ? parsed.url.toString()
+      : `${parsed.url.pathname}${parsed.url.search}${parsed.url.hash}`;
+
+    let cleanTarget = rawTarget;
+    try {
+      const u = new URL(rawTarget, 'https://storefront.local');
+      u.searchParams.delete('w');
+      u.searchParams.delete('q');
+      u.searchParams.delete('format');
+      cleanTarget = parsed.isAbsolute
+        ? u.toString()
+        : `${u.pathname}${u.search}${u.hash}`;
+    } catch {
+      // fallback to rawTarget
+    }
+
+    return buildProxyImageUrl(cleanTarget, {
+      width,
+      quality,
+      format,
+    });
+  }
+
   parsed.url.searchParams.set('format', format);
   parsed.url.searchParams.set('w', String(width));
   parsed.url.searchParams.set('q', String(quality));

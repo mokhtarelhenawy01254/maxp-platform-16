@@ -103,9 +103,33 @@ export const resolveRuntimeStorefrontTheme = async (
       return resolveStorefrontThemeFromPreset(input, baseTheme, { presetId });
     }
   } catch {
-    // Fall back to the full registry below so storefronts keep rendering if an asset is unavailable.
+    // Fall back to the default theme asset below if the requested preset is unavailable.
   }
 
-  const { resolveStorefrontTheme } = await import('./themeResolver');
-  return resolveStorefrontTheme(input);
+  try {
+    const defaultTheme = await loadRuntimeThemePreset(DEFAULT_STOREFRONT_THEME_ID);
+    if (defaultTheme) {
+      return resolveStorefrontThemeFromPreset(input, defaultTheme, {
+        presetId: DEFAULT_STOREFRONT_THEME_ID,
+      });
+    }
+  } catch {
+    // Ignore secondary fallback errors
+  }
+
+  return resolveStorefrontThemeFromPreset(
+    input,
+    {
+      id: presetId || DEFAULT_STOREFRONT_THEME_ID,
+      name: presetId || 'Storefront',
+      pages: {
+        home: { sections: [] },
+        shop: { sections: [] },
+        product: { sections: [] },
+        cart: { sections: [] },
+        checkout: { sections: [] },
+      },
+    } as unknown as StorefrontTheme,
+    { presetId },
+  );
 };

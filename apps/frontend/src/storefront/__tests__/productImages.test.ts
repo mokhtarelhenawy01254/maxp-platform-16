@@ -61,8 +61,8 @@ describe('storefront product image helpers', () => {
         'https://swan3.fiore.icu/wp-content/uploads/2025/03/IMG_4000.jpg',
       ),
     ).toEqual([
-      'https://swan3.fiore.icu/wp-content/uploads/2025/03/IMG_4227.jpg',
-      'https://swan3.fiore.icu/wp-content/uploads/2025/03/IMG_4000.jpg',
+      '/api/proxy-image?url=https%3A%2F%2Fswan3.fiore.icu%2Fwp-content%2Fuploads%2F2025%2F03%2FIMG_4227.jpg',
+      '/api/proxy-image?url=https%3A%2F%2Fswan3.fiore.icu%2Fwp-content%2Fuploads%2F2025%2F03%2FIMG_4000.jpg',
     ]);
   });
 
@@ -102,7 +102,7 @@ describe('storefront product image helpers', () => {
         width: 800,
         quality: 74,
       }),
-    ).toBe('/uploads/products/photo.JPG?format=webp&w=800&q=74');
+    ).toBe('/api/proxy-image?url=%2Fuploads%2Fproducts%2Fphoto.JPG&w=800&q=74&format=webp');
 
     expect(
       buildOptimizedStorefrontImageUrl('https://cdn.example.com/photo.jpg', {
@@ -186,9 +186,9 @@ describe('storefront product image helpers', () => {
         sizes: '(min-width: 1024px) 50vw, 100vw',
       }),
     ).toEqual({
-      src: '/uploads/products/photo.JPG?format=webp&w=640&q=78',
+      src: '/api/proxy-image?url=%2Fuploads%2Fproducts%2Fphoto.JPG&w=640&q=78&format=webp',
       srcSet:
-        '/uploads/products/photo.JPG?format=webp&w=320&q=78 320w, /uploads/products/photo.JPG?format=webp&w=640&q=78 640w',
+        '/api/proxy-image?url=%2Fuploads%2Fproducts%2Fphoto.JPG&w=320&q=78&format=webp 320w, /api/proxy-image?url=%2Fuploads%2Fproducts%2Fphoto.JPG&w=640&q=78&format=webp 640w',
       sizes: '(min-width: 1024px) 50vw, 100vw',
     });
   });
