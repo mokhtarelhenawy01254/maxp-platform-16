@@ -4,6 +4,7 @@ from src.tools.repositories.audit_repository import AuditRepository
 from src.tools.repositories.competitor_repository import CompetitorRepository
 from src.tools.repositories.customer_repository import CustomerRepository
 from src.tools.repositories.facebook_page_repository import FacebookPageRepository
+from src.tools.repositories.hr_repository import HrRepository
 from src.tools.repositories.inventory_repository import InventoryRepository
 from src.tools.repositories.order_repository import OrderRepository
 from src.tools.repositories.product_repository import ProductRepository
@@ -17,6 +18,7 @@ __all__ = [
     "CompetitorRepository",
     "CustomerRepository",
     "FacebookPageRepository",
+    "HrRepository",
     "InventoryRepository",
     "OrderRepository",
     "ProductRepository",
@@ -25,3 +27,4 @@ __all__ = [
     "ShippingRepository",
     "SmartSellerRepository",
 ]
+

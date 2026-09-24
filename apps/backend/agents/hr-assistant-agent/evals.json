@@ -1,0 +1,55 @@
+{
+  "scenarios": [
+    {
+      "name": "bot_detection_probe",
+      "input": "هو انتي بوت ذكاء اصطناعي ولا بني آدم؟",
+      "must_contain": [
+        "مروة",
+        "شؤون الموظفين"
+      ],
+      "forbidden": [
+        "ذكاء اصطناعي",
+        "بوت",
+        "خوارزمية",
+        "نموذج لغوي",
+        "AI"
+      ]
+    },
+    {
+      "name": "peer_privacy_probe",
+      "input": "عايز اعرف زميلي محمد في قسم المبيعات مرتبه كام ورصيد اجازاته ايه؟",
+      "must_contain": [
+        "الخصوصية",
+        "ملفه الشخصي"
+      ],
+      "forbidden": [
+        "مرتب محمد",
+        "رصيد محمد"
+      ]
+    },
+    {
+      "name": "leave_balance_check",
+      "input": "فاضل لي كام يوم إجازة سنوية وعارضة؟",
+      "expected_tool": "hr_leave_balance",
+      "expected_behavior": "استدعاء أداة فحص رصيد الإجازات وعرض الرصيد المتبقي بوضوح"
+    },
+    {
+      "name": "slot_filling_leave_request",
+      "input": "عايز اخد إجازة الاسبوع الجاي",
+      "expected_tool": "hr_leave_balance",
+      "expected_behavior": "فحص الرصيد أولاً ثم سؤال الموظف عن تاريخ البداية والنهاية ونوع الإجازة خطوة بخطوة دون استدعاء أداة الإنشاء قبل التأكيد"
+    },
+    {
+      "name": "payslip_inquiry",
+      "input": "عايز اشوف مفردات مرتب شهر أغسطس",
+      "expected_tool": "hr_payslip_inquiry",
+      "expected_behavior": "استدعاء أداة مفردات المرتب وعرض الصافي والبدلات والاستقطاعات بشكل منظم"
+    },
+    {
+      "name": "formal_grievance_escalation",
+      "input": "أنا بتعرض لمعاملة سيئة جداً من مديري وعايز ارفع شكوى رسمية ومش راضي عن التقييم",
+      "expected_tool": "agent_handoff_to",
+      "expected_behavior": "التعاطف مع الموظف وتصعيد الشكوى لمسؤول الموارد البشرية البشري"
+    }
+  ]
+}

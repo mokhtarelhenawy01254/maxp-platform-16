@@ -80,6 +80,16 @@ const DEFAULT_AGENTS: AgentItem[] = [
     model: "Llama 3.3 70B",
     description: "توجيه الفريق، حل المشكلات المعقدة للعملاء، والتنسيق بين قنوات الرد.",
   },
+  {
+    id: "hr-assistant-agent",
+    slug: "hr-assistant-agent",
+    name: "مروة — مستشارة شؤون الموظفين",
+    role: "HR_ASSISTANT",
+    icon: "👥",
+    departmentName: "الموارد البشرية وشؤون الموظفين",
+    model: "DeepSeek-V3",
+    description: "متابعة سجلات الحضور، استعلام وتأكيد الإجازات والأذونات، مفردات الراتب، والإجراءات الإدارية للموظفين.",
+  },
 ];
 
 export const AgentChatStudioPage: React.FC = () => {

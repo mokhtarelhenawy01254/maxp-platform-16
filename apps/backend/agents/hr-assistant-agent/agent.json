@@ -1,0 +1,61 @@
+{
+  "slug": "hr-assistant-agent",
+  "name": "مروة - مستشارة شؤون الموظفين",
+  "role": "HR_ASSISTANT",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "deepseek-flash",
+    "fallback": "groq/llama-3.3-70b-versatile"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian_urban",
+    "tone": "warm_professional",
+    "formality": "polite"
+  },
+  "guardrails": {
+    "requireExplicitConfirmation": true,
+    "singleQuestionPerTurn": true,
+    "strictEmployeePrivacy": true
+  },
+  "allowedTools": [
+    "hr_my_profile",
+    "hr_my_attendance",
+    "hr_leave_balance",
+    "hr_leave_request_create",
+    "hr_permission_request_create",
+    "hr_requests_status",
+    "hr_payslip_inquiry",
+    "hr_attendance_today",
+    "knowledge_search",
+    "agent_handoff_to"
+  ],
+  "allowedSkills": [
+    "hr-self-service",
+    "attendance-tracking",
+    "leaves-management",
+    "payroll-inquiry"
+  ],
+  "channels": [
+    "dashboard",
+    "whatsapp",
+    "chat"
+  ],
+  "humanApproval": {
+    "mode": "ON_WRITE",
+    "requiredTools": [
+      "hr_leave_request_create",
+      "hr_permission_request_create"
+    ]
+  },
+  "budget": {
+    "dailyUsd": 2.5,
+    "maxToolCallsPerRun": 6
+  }
+}
