@@ -101,6 +101,11 @@ ADVANCED_TOOL_NAMES: set[str] = {
     # Storefront management
     "conversion_tools_read",
     "payment_settings_read",
+    # Target & Inventory monitoring
+    "order_target_settings",
+    "order_target_progress",
+    "inventory_variant_stock_scan",
+    "inventory_burn_rate_forecast",
 }
 
 READ_TOOL_NAMES: set[str] = CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
@@ -153,6 +158,7 @@ DIRECT_WRITE_TOOL_NAMES: set[str] = {
     "order_confirm",
     "order_update_details",
     "shipping_zone_set",
+    "order_target_settings",
 }
 
 
@@ -254,7 +260,21 @@ followup_suggestions_tool = _registry.resolve("followup_suggestions")
 deal_params_tool = _registry.resolve("deal_params")
 purchase_prediction_tool = _registry.resolve("purchase_prediction")
 
+# Target and stock monitor tools
+order_target_settings_tool = _registry.resolve("order_target_settings")
+order_target_progress_tool = _registry.resolve("order_target_progress")
+inventory_variant_stock_scan_tool = _registry.resolve("inventory_variant_stock_scan")
+inventory_burn_rate_forecast_tool = _registry.resolve("inventory_burn_rate_forecast")
+
 # Backward-compatible re-exports of Input models from definitions modules.
+from src.tools.definitions.targets import (  # noqa: E402 F401
+    OrderTargetSettingsInput,
+    OrderTargetProgressInput,
+)
+from src.tools.definitions.stock_monitor import (  # noqa: E402 F401
+    InventoryVariantStockScanInput,
+    InventoryBurnRateForecastInput,
+)
 from src.tools.definitions.product import (  # noqa: E402 F401
     ProductSearchInput,
     ProductCreateInput,

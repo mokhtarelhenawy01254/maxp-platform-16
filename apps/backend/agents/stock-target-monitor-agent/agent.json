@@ -1,0 +1,56 @@
+{
+  "slug": "stock-target-monitor-agent",
+  "name": "فارس — مراقب المخزون ومستهدفات الأوردرات",
+  "role": "STOCK_TARGET_MONITOR",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "deepseek-flash",
+    "fallback": "groq/llama-3.3-70b-versatile"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian_urban",
+    "tone": "analytical",
+    "formality": "formal"
+  },
+  "guardrails": {
+    "requireExplicitConfirmation": true,
+    "requireDraftOrders": false,
+    "singleQuestionPerTurn": false
+  },
+  "allowedTools": [
+    "order.target.settings",
+    "order.target.progress",
+    "inventory.variant.stock.scan",
+    "inventory.burn.rate.forecast",
+    "product.low.stock",
+    "inventory.check",
+    "inventory.adjust",
+    "order.summary",
+    "order.recent.list",
+    "sales.revenue",
+    "company.snapshot",
+    "whatsapp.send",
+    "agent.handoff.to"
+  ],
+  "allowedSkills": [
+    "low-stock-watch",
+    "target-pacing-tracker",
+    "inventory-velocity-forecast"
+  ],
+  "channels": [
+    "dashboard",
+    "whatsapp",
+    "telegram"
+  ],
+  "budget": {
+    "dailyUsd": 2.5,
+    "maxToolCallsPerRun": 8
+  }
+}

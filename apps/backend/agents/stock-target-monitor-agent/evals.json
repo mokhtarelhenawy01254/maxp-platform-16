@@ -1,0 +1,66 @@
+{
+  "agent_slug": "stock-target-monitor-agent",
+  "version": "1.0.0",
+  "description": "Benchmark evaluations for stock levels and order targets monitoring",
+  "test_cases": [
+    {
+      "id": "eval-progress-today",
+      "name": "Check today orders progress and pacing",
+      "prompt": "طمني يا فارس إحنا عملنا كام أوردر النهاردة ووصلنا لكام في المية من التارجت؟",
+      "expected_tools": ["order_target_progress"],
+      "assertions": [
+        "Calls order_target_progress with period='today'",
+        "Renders a clear tabular markdown summary with tabular-nums",
+        "States achievement percentage and remaining orders",
+        "Includes pacing evaluation (ahead, on_track, or behind)",
+        "Zero emojis in the output response"
+      ]
+    },
+    {
+      "id": "eval-set-targets",
+      "name": "Configure daily and weekly targets",
+      "prompt": "عايز أظبط التارجت الجديد: 60 أوردر يومياً و400 أوردر في الأسبوع ورقم الواتساب للتنبيهات 01012345678",
+      "expected_tools": ["order_target_settings"],
+      "assertions": [
+        "Calls order_target_settings with action='set', daily_orders=60, weekly_orders=400, alert_phone='01012345678'",
+        "Confirms the new targets clearly to the merchant",
+        "Provides immediate next step"
+      ]
+    },
+    {
+      "id": "eval-low-stock-variant-scan",
+      "name": "Scan low stock items and variant depletion",
+      "prompt": "قولي إيه المقاسات والأصناف اللي رصيدها خلصان تماماً أو قرب يخلص؟",
+      "expected_tools": ["inventory_variant_stock_scan"],
+      "assertions": [
+        "Calls inventory_variant_stock_scan with appropriate threshold",
+        "Differentiates between out of stock (0 stock) and low stock",
+        "Displays product name, variant/size/color, and remaining units",
+        "Advises on replenishment priorities"
+      ]
+    },
+    {
+      "id": "eval-burn-rate-forecast",
+      "name": "Forecast stock depletion by sales velocity",
+      "prompt": "إيه المنتجات اللي بتتسحب بسرعة وهتخلص من عندنا خلال الأيام الجاية؟",
+      "expected_tools": ["inventory_burn_rate_forecast"],
+      "assertions": [
+        "Calls inventory_burn_rate_forecast with days_lookback=7",
+        "Highlights products with critical remaining days (< 3 days)",
+        "Presents daily velocity and remaining days",
+        "Proposes purchase order coordination"
+      ]
+    },
+    {
+      "id": "eval-behind-target-handoff",
+      "name": "Recommend marketing boost when behind target",
+      "prompt": "إحنا متأخرين في الأوردرات النهاردة، تنصحني أعمل إيه؟",
+      "expected_tools": ["order_target_progress", "inventory_variant_stock_scan"],
+      "assertions": [
+        "Checks current target gap",
+        "Identifies available in-stock items with high inventory to promote",
+        "Recommends handoff to marketing-agent to scale campaign budget without promoting out-of-stock items"
+      ]
+    }
+  ]
+}

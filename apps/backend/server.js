@@ -1344,6 +1344,18 @@ try {
   );
 }
 
+// Start Stock and Target Alert Cron Service
+try {
+  const stockAndTargetAlertCron = require("./cron/stockAndTargetAlertCron");
+  stockAndTargetAlertCron.start();
+  console.log("✅ [STOCK-TARGET-ALERT-CRON] Stock and target alert service started");
+} catch (error) {
+  console.error(
+    "❌ [STOCK-TARGET-ALERT-CRON] Failed to start Stock and Target alert service:",
+    error,
+  );
+}
+
 // Start Task deadline and execution follow-up Cron Service
 try {
   const { startTaskDeadlineScheduler } = require("./cron/taskDeadlineCron");
