@@ -227,11 +227,29 @@ async function deleteCourier(companyId, courierId) {
 }
 
 /**
- * Generate unique run number: e.g. RUN-20260923-001
+ * Generate unique run number: e.g. RUN-20260923-001 or CAI-20260923-001 based on app settings
  */
 async function generateRunNumber(prisma, companyId) {
   const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const prefix = `RUN-${todayStr}-`;
+  let codePrefix = 'RUN';
+
+  try {
+    const fleetApp = await prisma.companyApp.findFirst({
+      where: {
+        companyId,
+        app: { slug: 'internal-courier-fleet' }
+      },
+      select: { settings: true }
+    });
+    const customPrefix = fleetApp?.settings?.general?.runCodePrefix;
+    if (customPrefix && typeof customPrefix === 'string' && customPrefix.trim()) {
+      codePrefix = customPrefix.trim().toUpperCase();
+    }
+  } catch {
+    // fallback to RUN
+  }
+
+  const prefix = `${codePrefix}-${todayStr}-`;
 
   const countToday = await prisma.deliveryRun.count({
     where: {

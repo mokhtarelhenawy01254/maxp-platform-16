@@ -191,6 +191,30 @@ const DEFAULT_MARKETPLACE_APP_SETTINGS = {
       distributorPortal: true,
     },
   },
+  'internal-courier-fleet': {
+    general: {
+      enabled: true,
+      runCodePrefix: 'RUN',
+      autoPrintManifestOnDispatch: false,
+      includeCustomerPhoneInManifest: true,
+    },
+    remittance: {
+      defaultTreasuryAccountId: '',
+      shortagePolicy: 'DEDUCT_FROM_COURIER',
+      allowPartialRemittance: true,
+      requireTreasuryNoteOnVariance: true,
+    },
+    fieldWorkflow: {
+      requireCourierPin: false,
+      autoUpdateOrderStatusOnDelivery: true,
+      allowPartialDelivery: true,
+      requirePhotoProofOnReturn: false,
+    },
+    commission: {
+      defaultType: 'PER_ORDER',
+      defaultValue: 30,
+    },
+  },
 };
 
 const SUPPORTED_MARKETPLACE_APP_SETTING_SLUGS = Object.freeze(

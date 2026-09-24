@@ -3413,7 +3413,7 @@ export default function AppSettings() {
                   {supported && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                       <Sparkles size={14} />
-                      {isUpsellCenter ? "Unified" : "Template Ready"}
+                      {slug === "internal-courier-fleet" ? "Fleet Operations" : isUpsellCenter ? "Unified" : "Template Ready"}
                     </span>
                   )}
                 </div>
@@ -3435,7 +3435,7 @@ export default function AppSettings() {
       </div>
 
       <div className="mx-auto max-w-6xl 2xl:max-w-7xl px-0 py-4 sm:px-6 sm:py-8">
-        {!isUpsellCenter ? (
+        {!isUpsellCenter && slug !== "internal-courier-fleet" ? (
           <div className="mb-4 sm:mb-6 rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:p-5 dark:border-blue-900/40 dark:bg-blue-900/10">
             <div className="mb-2 flex items-center gap-2 text-blue-700 dark:text-blue-300">
               <Settings2 size={18} />

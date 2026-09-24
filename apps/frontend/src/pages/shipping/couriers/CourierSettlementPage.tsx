@@ -26,6 +26,7 @@ const CourierSettlementPage: React.FC = () => {
   const [selectedRun, setSelectedRun] = useState<DeliveryRun | null>(null);
   const [treasuryAccounts, setTreasuryAccounts] = useState<Array<{ id: string; name: string; type: string; balance: number }>>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  const [fleetSettings, setFleetSettings] = useState<any>(null);
   const [actualCash, setActualCash] = useState<number>(0);
   const [notes, setNotes] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -36,10 +37,15 @@ const CourierSettlementPage: React.FC = () => {
   const loadEligibleRuns = useCallback(async () => {
     setLoading(true);
     try {
-      const [runsRes, accountsRes] = await Promise.all([
+      const [runsRes, accountsRes, settings] = await Promise.all([
         courierService.getDeliveryRuns({ status: 'ALL' }),
-        courierService.getTreasuryAccounts()
+        courierService.getTreasuryAccounts(),
+        courierService.getFleetSettings()
       ]);
+
+      if (settings) {
+        setFleetSettings(settings);
+      }
 
       if (runsRes.success) {
         // Show runs that are DISPATCHED or COMPLETED first, or recently settled
@@ -58,7 +64,9 @@ const CourierSettlementPage: React.FC = () => {
       if (accountsRes.success && accountsRes.data) {
         setTreasuryAccounts(accountsRes.data);
         if (accountsRes.data.length > 0) {
-          setSelectedAccountId(accountsRes.data[0].id);
+          const defaultAccId = settings?.remittance?.defaultTreasuryAccountId;
+          const matched = defaultAccId ? accountsRes.data.find((a: any) => a.id === defaultAccId) : null;
+          setSelectedAccountId(matched ? matched.id : accountsRes.data[0].id);
         }
       }
     } catch (err: any) {
@@ -128,6 +136,25 @@ const CourierSettlementPage: React.FC = () => {
         `يوجد ${pendingShipments.length} طرد ما زال قيد التوصيل في الميدان. هل تريد تسوية وتوريد الطرود المسلمة فقط وإغلاق الوردية؟`
       );
       if (!confirmProceed) return;
+    }
+
+    // Enforce fleet settings policies
+    const requireNote = fleetSettings?.remittance?.requireTreasuryNoteOnVariance ?? true;
+    if (cashDiscrepancy !== 0 && requireNote && !notes?.trim()) {
+      toast.error('يجب كتابة ملاحظة توضح سبب الفارق المالي (العجز / الزيادة) وفق إعدادات الأسطول');
+      return;
+    }
+
+    const shortagePolicy = fleetSettings?.remittance?.shortagePolicy || 'DEDUCT_FROM_COURIER';
+    if (cashDiscrepancy < 0 && shortagePolicy === 'HOLD_SETTLEMENT') {
+      toast.error('سياسة الأسطول المحددة تحظر إغلاق الوردية عند وجود عجز مالي حتى توريد المبلغ كاملاً');
+      return;
+    }
+
+    const allowPartial = fleetSettings?.remittance?.allowPartialRemittance ?? true;
+    if (cashDiscrepancy < 0 && !allowPartial) {
+      toast.error('التوريد الجزئي غير مسموح به وفق إعدادات الأسطول. يرجى توريد المبلغ كاملاً');
+      return;
     }
 
     setSubmitting(true);

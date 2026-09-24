@@ -40,6 +40,7 @@ const CourierManagementPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourier, setEditingCourier] = useState<Courier | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fleetSettings, setFleetSettings] = useState<any>(null);
   const [formData, setFormData] = useState<CourierInput>({
     name: '',
     phone: '',
@@ -56,16 +57,18 @@ const CourierManagementPage: React.FC = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [couriersRes, summaryRes] = await Promise.all([
+      const [couriersRes, summaryRes, settings] = await Promise.all([
         courierService.getCouriers({
           search: search || undefined,
           status: statusFilter !== 'ALL' ? statusFilter : undefined
         }),
-        courierService.getSummary()
+        courierService.getSummary(),
+        courierService.getFleetSettings()
       ]);
 
       if (couriersRes.success) setCouriers(couriersRes.data || []);
       if (summaryRes.success) setSummary(summaryRes.data || null);
+      if (settings) setFleetSettings(settings);
     } catch (err: any) {
       toast.error(err?.message || 'تعذر تحميل بيانات المناديب');
     } finally {
@@ -79,6 +82,14 @@ const CourierManagementPage: React.FC = () => {
 
   const handleOpenCreate = () => {
     setEditingCourier(null);
+    const defaultType = fleetSettings?.commission?.defaultType;
+    const mappedType = defaultType === 'PERCENTAGE'
+      ? 'PERCENTAGE'
+      : defaultType === 'FIXED_SALARY'
+      ? 'FIXED_SALARY'
+      : 'FIXED_PER_ORDER';
+    const defaultAmount = Number(fleetSettings?.commission?.defaultValue ?? 30);
+
     setFormData({
       name: '',
       phone: '',
@@ -86,8 +97,8 @@ const CourierManagementPage: React.FC = () => {
       vehicleType: 'MOTORCYCLE',
       plateNumber: '',
       governorates: '',
-      commissionType: 'FIXED_PER_ORDER',
-      commissionAmount: 0,
+      commissionType: mappedType,
+      commissionAmount: defaultAmount,
       isActive: true,
       notes: ''
     });

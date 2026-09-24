@@ -145,7 +145,23 @@ const courierService = {
     api.post(`/couriers/runs/${runId}/settle`, payload).then((r) => r.data),
 
   getTreasuryAccounts: (): Promise<{ success: boolean; data: Array<{ id: string; name: string; type: string; balance: number }> }> =>
-    api.get('/treasury/accounts').then((r) => r.data).catch(() => ({ success: true, data: [] }))
+    api.get('/treasury/accounts').then((r) => r.data).catch(() => ({ success: true, data: [] })),
+
+  getFleetSettings: async (): Promise<{
+    general?: { runCodePrefix?: string; autoPrintManifestOnDispatch?: boolean; includeCustomerPhoneInManifest?: boolean };
+    remittance?: { defaultTreasuryAccountId?: string; shortagePolicy?: string; allowPartialRemittance?: boolean; requireTreasuryNoteOnVariance?: boolean };
+    fieldWorkflow?: { requireCourierPin?: boolean; autoUpdateOrderStatusOnDelivery?: boolean; allowPartialDelivery?: boolean; requirePhotoProofOnReturn?: boolean };
+    commission?: { defaultType?: string; defaultValue?: number };
+  } | null> => {
+    try {
+      const res = await api.get('/my-apps');
+      const apps = Array.isArray(res?.data?.data) ? res.data.data : [];
+      const fleetApp = apps.find((a: any) => a?.app?.slug === 'internal-courier-fleet');
+      return (fleetApp?.settings as any) || null;
+    } catch {
+      return null;
+    }
+  }
 };
 
 export default courierService;
