@@ -51,7 +51,7 @@
     "agent_handoff_to"
   ],
   "allowedSkills": [
-    "shipping-logistics"
+    "order-support"
   ],
   "channels": [
     "whatsapp",
