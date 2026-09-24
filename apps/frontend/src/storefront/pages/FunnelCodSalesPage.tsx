@@ -207,8 +207,8 @@ const FunnelCodSalesPage: React.FC = () => {
   // Ad-campaign measurement: capture UTMs/click-ids at landing entry so the
   // order attribution snapshot survives navigation before checkout.
   useEffect(() => {
-    captureStorefrontAttribution();
-  }, []);
+    captureStorefrontAttribution(funnel?.companyId || company?.id);
+  }, [funnel?.companyId, company?.id]);
 
   // Countdown state
   const [remainingMs, setRemainingMs] = useState<number>(0);
@@ -459,7 +459,10 @@ const FunnelCodSalesPage: React.FC = () => {
           attributes: it.attributes || {},
         })),
       };
-      persistPurchaseTracking(purchaseTracking);
+      persistPurchaseTracking(
+        purchaseTracking,
+        funnel?.companyId || company?.id,
+      );
 
       toast.success("تم إرسال طلبك بنجاح!");
       const thankYouPath = buildStorefrontPath(

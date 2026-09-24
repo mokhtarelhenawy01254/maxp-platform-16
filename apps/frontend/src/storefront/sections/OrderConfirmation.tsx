@@ -442,8 +442,12 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
   const orderQueryParam = searchParams.get('orderId') || searchParams.get('orderNumber') || '';
   const isOfferAccepted = searchParams.get('offerAccepted') === '1' || Boolean((location.state as any)?.offerAccepted);
   const storedPurchaseTracking = useMemo<PurchaseTrackingState | null>(
-    () => getStoredPurchaseTracking(orderQueryParam) as PurchaseTrackingState | null,
-    [orderQueryParam],
+    () =>
+      getStoredPurchaseTracking(
+        orderQueryParam,
+        storefrontSettings?.companyId,
+      ) as PurchaseTrackingState | null,
+    [orderQueryParam, storefrontSettings?.companyId],
   );
   const previewPurchaseTracking = useMemo<PurchaseTrackingState | null>(
     () =>
@@ -1032,9 +1036,9 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
     if (!purchaseTracking || storefrontSettingsLoading || !browserTrackingEnabled) return;
     const trackingKey = purchaseTracking.eventId || purchaseTracking.orderNumber;
     if (!trackingKey || trackedPurchaseRef.current === trackingKey) return;
-    if (hasMarkedPurchaseTracked(purchaseTracking)) {
+    if (hasMarkedPurchaseTracked(purchaseTracking, storefrontSettings?.companyId)) {
       trackedPurchaseRef.current = trackingKey;
-      clearStoredPurchaseTracking(purchaseTracking.orderNumber);
+      clearStoredPurchaseTracking(purchaseTracking.orderNumber, storefrontSettings?.companyId);
       return;
     }
 
@@ -1048,10 +1052,16 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
     );
     if (eventId !== undefined) {
       trackedPurchaseRef.current = trackingKey;
-      markPurchaseTracked(purchaseTracking);
-      clearStoredPurchaseTracking(purchaseTracking.orderNumber);
+      markPurchaseTracked(purchaseTracking, storefrontSettings?.companyId);
+      clearStoredPurchaseTracking(purchaseTracking.orderNumber, storefrontSettings?.companyId);
     }
-  }, [browserTrackingEnabled, purchaseTracking, storefrontSettingsLoading, trackPurchaseEvent]);
+  }, [
+    browserTrackingEnabled,
+    purchaseTracking,
+    storefrontSettings?.companyId,
+    storefrontSettingsLoading,
+    trackPurchaseEvent,
+  ]);
 
   useEffect(() => {
     if (!resolvedOrderReference) return;

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   loadFacebookPixel,
+  resetFacebookPixel,
   trackPageView,
 } from "../utils/facebookPixel";
 import type { StorefrontSettings as PublicStorefrontSettings } from "../services/storefrontSettingsService";
@@ -40,6 +41,21 @@ export const useFacebookPixel = (
     setPageViewEnabled(false);
 
     if (!storefrontSettings) {
+      resetFacebookPixel();
+      return;
+    }
+
+    // 2026 Architectural Guard: Zero tracking in Preview and Staff test sessions
+    const isPreview = Boolean(
+      (storefrontSettings as any)?.isPreview ||
+      (typeof window !== "undefined" &&
+        (new URLSearchParams(window.location.search).get("preview") === "1" ||
+         new URLSearchParams(window.location.search).get("productPreview") === "1" ||
+         new URLSearchParams(window.location.search).get("previewTheme") !== null))
+    );
+
+    if (isPreview) {
+      resetFacebookPixel();
       return;
     }
 
@@ -47,6 +63,7 @@ export const useFacebookPixel = (
       storefrontSettings.gtmEnabled &&
       storefrontSettings.gtmSuppressPixels
     ) {
+      resetFacebookPixel();
       return;
     }
 
@@ -54,21 +71,27 @@ export const useFacebookPixel = (
       !storefrontSettings.facebookPixelEnabled ||
       !storefrontSettings.facebookPixelId
     ) {
+      resetFacebookPixel();
       return;
     }
- 
-    const additionalPixelIds = (storefrontSettings.facebookPixelConfigs || [])
-      .map((p) => p.pixelId)
-      .filter((id) => Boolean(id) && id !== storefrontSettings.facebookPixelId);
+
+    const additionalPixelConfigs = (storefrontSettings.facebookPixelConfigs || [])
+      .filter((p) => Boolean(p.pixelId) && p.pixelId !== storefrontSettings.facebookPixelId);
 
     const cleanupIdleTask = scheduleIdleTask(() => {
-      loadFacebookPixel(storefrontSettings.facebookPixelId!, additionalPixelIds);
+      loadFacebookPixel(
+        storefrontSettings.facebookPixelId!,
+        additionalPixelConfigs,
+        { isPreview: false },
+      );
       setPixelId(storefrontSettings.facebookPixelId!);
       setIsLoaded(true);
       setPageViewEnabled(storefrontSettings.pixelTrackPageView !== false);
     });
 
-    return cleanupIdleTask;
+    return () => {
+      cleanupIdleTask?.();
+    };
   }, [
     storefrontSettings?.facebookPixelEnabled,
     storefrontSettings?.facebookPixelId,

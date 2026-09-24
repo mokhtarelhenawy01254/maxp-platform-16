@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ArrowRightLeft, Heart } from "lucide-react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
@@ -2157,7 +2157,19 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
   const { id } = useParams<{ id: string }>();
   const { theme } = useStorefrontTheme();
   const { settings: storefrontSettings } = useStorefrontSettings();
-  const selection = usePdpSelectionStore((state) => state.selection);
+  const selectionProductId = usePdpSelectionStore((state) => state.selection?.productId);
+  const selectedVariantId = usePdpSelectionStore((state) => state.selection?.variantId);
+  const selectionAttributes = usePdpSelectionStore(
+    (state) => state.selection?.attributes,
+    (a, b) => {
+      if (a === b) return true;
+      if (!a || !b) return false;
+      const aKeys = Object.keys(a);
+      const bKeys = Object.keys(b);
+      if (aKeys.length !== bKeys.length) return false;
+      return aKeys.every((k) => a[k] === b[k]);
+    },
+  );
   const isZenOrganic = theme.id === "zen-organic";
   const isMenShoesEg = theme.id === "men-shoes-eg";
   const isWomenFashionEg = theme.id === "women-fashion-eg";
@@ -2179,18 +2191,18 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
   const [isZoomOpen, setIsZoomOpen] = useState(false);
 
   const selectedVariant = useMemo(() => {
-    if (!product?.productVariants?.length || selection?.productId !== product.id) {
+    if (!product?.productVariants?.length || selectionProductId !== product.id) {
       return null;
     }
 
-    if (selection.variantId) {
+    if (selectedVariantId) {
       return (
-        product.productVariants.find((variantOption) => variantOption.id === selection.variantId) ||
+        product.productVariants.find((variantOption) => variantOption.id === selectedVariantId) ||
         null
       );
     }
 
-    const selectionEntries = Object.entries(selection.attributes || {});
+    const selectionEntries = Object.entries(selectionAttributes || {});
     if (!selectionEntries.length) {
       return null;
     }
@@ -2203,7 +2215,9 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
         );
       }) || null
     );
-  }, [product?.id, product?.productVariants, selection]);
+  }, [product?.id, product?.productVariants, selectionProductId, selectedVariantId, selectionAttributes]);
+
+  const prevImagesRef = useRef<string[]>([]);
   const images = useMemo(() => {
     const selectedVariantImages = selectedVariant
       ? buildStorefrontImageCandidates(
@@ -2214,10 +2228,21 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
         )
       : [];
 
-    return buildStorefrontImageCandidates(
+    const nextImages = buildStorefrontImageCandidates(
       selectedVariantImages,
       product?.images || [],
     );
+
+    const prev = prevImagesRef.current;
+    if (
+      prev.length === nextImages.length &&
+      prev.every((url, idx) => url === nextImages[idx])
+    ) {
+      return prev;
+    }
+
+    prevImagesRef.current = nextImages;
+    return nextImages;
   }, [product?.images, selectedVariant]);
 
   const currency =

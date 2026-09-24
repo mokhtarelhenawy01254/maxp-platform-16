@@ -143,8 +143,8 @@ export const buildCheckoutOrderPayload = (
     data.total,
     resolvedSubtotal + resolvedShippingCost,
   );
-  const attribution = getOrderAttributionPayload();
-  const sessionDetails = getStorefrontSessionDetails();
+  const attribution = getOrderAttributionPayload(companyId);
+  const sessionDetails = getStorefrontSessionDetails(companyId);
 
   return {
     ...(companyId ? { companyId } : {}),
@@ -266,25 +266,29 @@ export const useCheckout = () => {
         const response = await storefrontApi.kashierCheckout(payload);
 
         if (response.success && response.data?.sessionUrl) {
-          persistPurchaseTracking({
-            eventId: pixelEventId,
-            orderNumber: String(response.data.orderNumber || pixelEventId),
-            total: Number(payload.total),
-            phone: data.phone,
-            customerName: data.customerName,
-            paymentMethod: 'card',
-            items: items.map((item) => ({
-              id: item.id || buildCartItemId(item),
-              productId: item.productId,
-              variantId: item.variantId || undefined,
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price,
-              imageUrl: item.imageUrl,
-              attributes: item.attributes || {},
-              quantityOffer: item.quantityOffer || undefined,
-            })),
-          });
+          persistPurchaseTracking(
+            {
+              eventId: pixelEventId,
+              orderNumber: String(response.data.orderNumber || pixelEventId),
+              companyId: companyId || undefined,
+              total: Number(payload.total),
+              phone: data.phone,
+              customerName: data.customerName,
+              paymentMethod: 'card',
+              items: items.map((item) => ({
+                id: item.id || buildCartItemId(item),
+                productId: item.productId,
+                variantId: item.variantId || undefined,
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+                imageUrl: item.imageUrl,
+                attributes: item.attributes || {},
+                quantityOffer: item.quantityOffer || undefined,
+              })),
+            },
+            companyId,
+          );
           clearCart();
           resetCheckout();
           window.location.href = response.data.sessionUrl;
@@ -314,6 +318,7 @@ export const useCheckout = () => {
           orderNumber: String(
             responseData.orderNumber || responseData.id || pixelEventId,
           ),
+          companyId: companyId || undefined,
           total: Number(
             responseData.finalTotal ??
               responseData.total ??
@@ -336,7 +341,7 @@ export const useCheckout = () => {
             quantityOffer: item.quantityOffer || undefined,
           })),
         };
-        persistPurchaseTracking(purchaseTracking);
+        persistPurchaseTracking(purchaseTracking, companyId);
 
         setOrderSuccess({
           ...responseData,

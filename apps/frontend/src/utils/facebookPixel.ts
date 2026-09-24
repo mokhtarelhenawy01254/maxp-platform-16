@@ -176,9 +176,70 @@ const invokeFbq = (...args: unknown[]): boolean => {
   return true;
 };
 
-// تخزين Pixel ID
+// 2026 Ad Tech Architecture: Multi-tenant targeted pixel state
+export interface FacebookPixelSecondaryConfig {
+  pixelId: string;
+  pixelName?: string;
+  isPrimary?: boolean;
+  trackPageView?: boolean;
+  trackViewContent?: boolean;
+  trackAddToCart?: boolean;
+  trackInitiateCheckout?: boolean;
+  trackPurchase?: boolean;
+  trackSearch?: boolean;
+  trackAddToWishlist?: boolean;
+}
+
+export interface LoadFacebookPixelOptions {
+  isPreview?: boolean;
+}
+
+// تخزين Pixel ID والحالة المعزولة
 let pixelId: string | null = null;
+let activeSecondaryConfigs: FacebookPixelSecondaryConfig[] = [];
 let isInitialized = false;
+
+/**
+ * إعادة ضبط حالة بكسل فيسبوك عند تبديل المتجر أو إنهاء الجلسة
+ * يمنع تسريب وتداخل الأحداث بين المتاجر في تطبيقات الصفحة الواحدة (SPA)
+ */
+export const resetFacebookPixel = () => {
+  pixelId = null;
+  activeSecondaryConfigs = [];
+  isInitialized = false;
+};
+
+/**
+ * إرسال حدث مستهدف لبكسل محدد (fbq trackSingle) لمنع البث العام العشوائي لجميع البكسلات في المتصفح
+ */
+export const dispatchTargetedFbqEvent = (
+  method: "track" | "trackCustom",
+  eventName: string,
+  eventData: FacebookPixelEventData = {},
+  options?: Record<string, unknown>,
+  eventKey?: keyof FacebookPixelSecondaryConfig,
+) => {
+  if (!isInitialized || typeof window === "undefined" || !hasFbq() || !pixelId) {
+    return;
+  }
+
+  const singleMethod = method === "trackCustom" ? "trackSingleCustom" : "trackSingle";
+
+  // 1. استهداف البكسل الأساسي النشط حصراً
+  invokeFbq(singleMethod, pixelId, eventName, eventData, options);
+
+  // 2. استهداف البكسلات الثانوية فقط إذا كانت مسموحة في إعدادات التاجر
+  if (Array.isArray(activeSecondaryConfigs) && activeSecondaryConfigs.length > 0) {
+    activeSecondaryConfigs.forEach((cfg) => {
+      const trimmedId = cfg.pixelId?.trim();
+      if (!trimmedId || trimmedId === pixelId) return;
+      if (eventKey && cfg[eventKey] === false) {
+        return; // محظور لهذا البكسل الثانوي طبقاً لإعدادات التاجر
+      }
+      invokeFbq(singleMethod, trimmedId, eventName, eventData, options);
+    });
+  }
+};
 
 // Helper function to wait for Pixel to be ready (same mechanism as PageView)
 const waitForPixel = (callback: () => void, maxAttempts = 10, attempt = 1) => {
@@ -239,26 +300,23 @@ export const needsCAPIOnly = (): boolean => {
 };
 
 /**
- * تحميل Facebook Pixel Script
+ * تحميل Facebook Pixel Script بمعايير 2026:
+ * - حظر التحميل في وضع المعاينة (Zero Noise in Previews)
+ * - إعادة الضبط عند تغيير المتجر
+ * - استيعاب البكسلات الثانوية مع إعداداتها الفردية
  */
 export const loadFacebookPixel = (
   pixelIdParam: string,
-  additionalPixelIds: string[] = [],
+  additionalPixelConfigsOrIds: Array<string | FacebookPixelSecondaryConfig> = [],
+  options?: LoadFacebookPixelOptions,
 ) => {
-  const normalizedPixelId = pixelIdParam.trim();
-
-  if (isInitialized) {
-    // If already initialized, still ensure any new additional pixels are registered
-    if (Array.isArray(additionalPixelIds) && additionalPixelIds.length > 0 && hasFbq()) {
-      additionalPixelIds.forEach((addId) => {
-        const trimmed = typeof addId === "string" ? addId.trim() : "";
-        if (trimmed && /^\d{14,18}$/.test(trimmed)) {
-          invokeFbq("init", trimmed);
-        }
-      });
-    }
+  // حظر تام لأي تتبع في أوضاع المعاينة أو اختبارات الأدمن
+  if (options?.isPreview) {
+    resetFacebookPixel();
     return;
   }
+
+  const normalizedPixelId = pixelIdParam?.trim();
 
   if (!normalizedPixelId) {
     return;
@@ -268,7 +326,60 @@ export const loadFacebookPixel = (
     return;
   }
 
+  // تجريد البكسلات الإضافية وتوحيدها
+  const parsedSecondaryConfigs: FacebookPixelSecondaryConfig[] = [];
+  const secondaryIdsToInit: string[] = [];
+
+  (additionalPixelConfigsOrIds || []).forEach((item) => {
+    if (typeof item === "string") {
+      const id = item.trim();
+      if (id && id !== normalizedPixelId && /^\d{14,18}$/.test(id)) {
+        parsedSecondaryConfigs.push({ pixelId: id });
+        secondaryIdsToInit.push(id);
+      }
+    } else if (item && typeof item === "object") {
+      const id = String(item.pixelId || "").trim();
+      if (id && id !== normalizedPixelId && /^\d{14,18}$/.test(id)) {
+        parsedSecondaryConfigs.push({ ...item, pixelId: id });
+        secondaryIdsToInit.push(id);
+      }
+    }
+  });
+
+  // إذا كان البكسل السابق مختلفاً عن الحالي، نقوم بإعادة الضبط لضمان عزل المتجر
+  if (isInitialized && pixelId && pixelId !== normalizedPixelId) {
+    resetFacebookPixel();
+  }
+
   pixelId = normalizedPixelId;
+  activeSecondaryConfigs = parsedSecondaryConfigs;
+
+  if (isInitialized) {
+    // إذا كان مهيأ بالفعل لنفس البكسل، نضمن فقط تسجيل أي بكسل ثانوي جديد عبر شرائح الخمول
+    if (hasFbq() && secondaryIdsToInit.length > 0) {
+      const queue = [...secondaryIdsToInit];
+      const processNextBatch = () => {
+        if (!queue.length) return;
+        const batch = queue.splice(0, 2);
+        batch.forEach((addId) => {
+          invokeFbq("init", addId);
+        });
+        if (queue.length > 0) {
+          if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+            (window as any).requestIdleCallback(processNextBatch, { timeout: 1000 });
+          } else {
+            window.setTimeout(processNextBatch, 180);
+          }
+        }
+      };
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        (window as any).requestIdleCallback(processNextBatch, { timeout: 1000 });
+      } else {
+        window.setTimeout(processNextBatch, 150);
+      }
+    }
+    return;
+  }
 
   try {
     const windowObj = getWindowObject();
@@ -310,42 +421,67 @@ export const loadFacebookPixel = (
       }
     };
 
-    // Strategy: Delay injection by 7s OR until user interacts (whichever comes first)
-    const interactionEvents = ["pointermove", "scroll", "keydown", "click"];
+    // Strategy: Non-blocking injection via idle or passive movement (never block click/keydown)
+    const interactionEvents = ["pointermove", "scroll"];
     let injected = false;
 
     const handleInteraction = () => {
       if (injected) return;
       injected = true;
-      injectPixel();
       
       // Cleanup listeners
       interactionEvents.forEach(event => {
         window.removeEventListener(event, handleInteraction);
       });
+
+      // Inject during idle time so it never contends with UI interaction frames
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        (window as any).requestIdleCallback(injectPixel, { timeout: 2000 });
+      } else {
+        window.setTimeout(injectPixel, 120);
+      }
     };
 
-    // Setup listeners for early interaction
+    // Setup listeners for early passive interaction
     interactionEvents.forEach(event => {
       window.addEventListener(event, handleInteraction, { once: true, passive: true });
     });
 
-    // Fallback timer (7 seconds)
+    // Fallback timer (5 seconds)
     window.setTimeout(() => {
       if (!injected) {
         handleInteraction();
       }
-    }, 7000);
+    }, 5000);
 
+    // Primary pixel is initialized immediately for instant Meta Pixel Helper green status & attribution
     invokeFbq("init", pixelId);
 
-    if (Array.isArray(additionalPixelIds) && additionalPixelIds.length > 0) {
-      additionalPixelIds.forEach((addId) => {
-        const trimmed = typeof addId === "string" ? addId.trim() : "";
-        if (trimmed && trimmed !== pixelId && /^\d{14,18}$/.test(trimmed)) {
-          invokeFbq("init", trimmed);
+    // 2026 Hybrid Architecture: Stagger secondary backup pixels across idle slices
+    // Eliminates the massive 8-24s thread blockage caused by evaluating 20+ pixel instances simultaneously.
+    if (secondaryIdsToInit.length > 0) {
+      const queue = [...secondaryIdsToInit];
+      const processNextBatch = () => {
+        if (!queue.length) return;
+        const batch = queue.splice(0, 2);
+        batch.forEach((addId) => {
+          invokeFbq("init", addId);
+        });
+
+        if (queue.length > 0) {
+          if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+            (window as any).requestIdleCallback(processNextBatch, { timeout: 1000 });
+          } else {
+            window.setTimeout(processNextBatch, 180);
+          }
         }
-      });
+      };
+
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        (window as any).requestIdleCallback(processNextBatch, { timeout: 1500 });
+      } else {
+        window.setTimeout(processNextBatch, 250);
+      }
     }
 
     const appendNoscript = () => {
@@ -421,13 +557,14 @@ const dispatchPurchaseEvent = (
     resolvedCurrency,
   );
 
-  invokeFbq(
+  dispatchTargetedFbqEvent(
     purchaseDispatch.trackingMethod,
     "Purchase",
     purchaseDispatch.eventData,
     {
       eventID: finalEventId,
     },
+    "trackPurchase",
   );
 
   return purchaseDispatch;
@@ -448,7 +585,13 @@ export const trackPageView = () => {
   }
 
   try {
-    invokeFbq("track", "PageView", {}, { eventID: eventId });
+    dispatchTargetedFbqEvent(
+      "track",
+      "PageView",
+      {},
+      { eventID: eventId },
+      "trackPageView",
+    );
   } catch (error) {
     console.error("Failed to track Facebook PageView", error);
     return;
@@ -516,9 +659,13 @@ export const trackViewContent = (product: {
 
         // Small delay to ensure initialization completes before tracking
         setTimeout(() => {
-          invokeFbq("track", "ViewContent", eventData, {
-            eventID: eventId,
-          });
+          dispatchTargetedFbqEvent(
+            "track",
+            "ViewContent",
+            eventData,
+            { eventID: eventId },
+            "trackViewContent",
+          );
           const trackingUrl = `https://www.facebook.com/tr?id=${pixelId}&ev=ViewContent`;
           console.log(
             "Ã¢Å“â€¦ [Facebook Pixel] ViewContent tracked successfully (after retry)",
@@ -564,9 +711,13 @@ export const trackViewContent = (product: {
     // Ensure init is called before track
 
     setTimeout(() => {
-      invokeFbq("track", "ViewContent", eventData, {
-        eventID: eventId,
-      });
+      dispatchTargetedFbqEvent(
+        "track",
+        "ViewContent",
+        eventData,
+        { eventID: eventId },
+        "trackViewContent",
+      );
       const trackingUrl = `https://www.facebook.com/tr?id=${pixelId}&ev=ViewContent`;
       console.log("Ã¢Å“â€¦ [Facebook Pixel] ViewContent tracked successfully", {
         productId: product.id,
@@ -655,9 +806,13 @@ export const trackAddToCart = (product: {
 
         // Small delay to ensure initialization completes before tracking
         setTimeout(() => {
-          invokeFbq("track", "AddToCart", eventData, {
-            eventID: eventId,
-          });
+          dispatchTargetedFbqEvent(
+            "track",
+            "AddToCart",
+            eventData,
+            { eventID: eventId },
+            "trackAddToCart",
+          );
           const trackingUrl = `https://www.facebook.com/tr?id=${pixelId}&ev=AddToCart`;
           console.log(
             "Ã¢Å“â€¦ [Facebook Pixel] AddToCart tracked successfully (after retry)",
@@ -721,9 +876,13 @@ export const trackAddToCart = (product: {
     // Small delay to ensure initialization completes before tracking
     setTimeout(() => {
       // Track AddToCart event immediately after init (same pattern as PageView in script)
-      invokeFbq("track", "AddToCart", eventData, {
-        eventID: eventId,
-      });
+      dispatchTargetedFbqEvent(
+        "track",
+        "AddToCart",
+        eventData,
+        { eventID: eventId },
+        "trackAddToCart",
+      );
 
       const trackingUrl = `https://www.facebook.com/tr?id=${pixelId}&ev=AddToCart`;
       console.log("Ã¢Å“â€¦ [Facebook Pixel] AddToCart tracked successfully", {
@@ -801,9 +960,13 @@ export const trackInitiateCheckout = (cart: {
         // Ensure init is called before track
 
         setTimeout(() => {
-          invokeFbq("track", "InitiateCheckout", eventData, {
-            eventID: eventId,
-          });
+          dispatchTargetedFbqEvent(
+            "track",
+            "InitiateCheckout",
+            eventData,
+            { eventID: eventId },
+            "trackInitiateCheckout",
+          );
           const trackingUrl = `https://www.facebook.com/tr?id=${pixelId}&ev=InitiateCheckout`;
           console.log(
             "Ã¢Å“â€¦ [Facebook Pixel] InitiateCheckout tracked successfully",
@@ -851,9 +1014,13 @@ export const trackInitiateCheckout = (cart: {
     // Ensure init is called before track
 
     setTimeout(() => {
-      invokeFbq("track", "InitiateCheckout", eventData, {
-        eventID: eventId,
-      });
+      dispatchTargetedFbqEvent(
+        "track",
+        "InitiateCheckout",
+        eventData,
+        { eventID: eventId },
+        "trackInitiateCheckout",
+      );
       const trackingUrl = `https://www.facebook.com/tr?id=${pixelId}&ev=InitiateCheckout`;
       console.log("Ã¢Å“â€¦ [Facebook Pixel] InitiateCheckout tracked successfully", {
         itemCount: cart.items.length,
@@ -1043,9 +1210,13 @@ export const trackSearch = (searchQuery: string) => {
         // Ensure init is called before track
 
         setTimeout(() => {
-          invokeFbq("track", "Search", eventData, {
-            eventID: eventId,
-          });
+          dispatchTargetedFbqEvent(
+            "track",
+            "Search",
+            eventData,
+            { eventID: eventId },
+            "trackSearch",
+          );
           const trackingUrl = `https://www.facebook.com/tr?id=${pixelId}&ev=Search`;
           console.log("Ã¢Å“â€¦ [Facebook Pixel] Search tracked successfully", {
             query: searchQuery,
@@ -1078,7 +1249,13 @@ export const trackSearch = (searchQuery: string) => {
     // Ensure init is called before track
 
     setTimeout(() => {
-      invokeFbq("track", "Search", eventData, { eventID: eventId });
+      dispatchTargetedFbqEvent(
+        "track",
+        "Search",
+        eventData,
+        { eventID: eventId },
+        "trackSearch",
+      );
       const trackingUrl = `https://www.facebook.com/tr?id=${pixelId}&ev=Search`;
       console.log("Ã¢Å“â€¦ [Facebook Pixel] Search tracked successfully", {
         query: searchQuery,
@@ -1131,9 +1308,13 @@ export const trackAddToWishlist = (product: {
         // Ensure init is called before track
 
         setTimeout(() => {
-          invokeFbq("track", "AddToWishlist", eventData, {
-            eventID: eventId,
-          });
+          dispatchTargetedFbqEvent(
+            "track",
+            "AddToWishlist",
+            eventData,
+            { eventID: eventId },
+            "trackAddToWishlist",
+          );
           const trackingUrl = `https://www.facebook.com/tr?id=${pixelId}&ev=AddToWishlist`;
           console.log(
             "Ã¢Å“â€¦ [Facebook Pixel] AddToWishlist tracked successfully",
@@ -1174,9 +1355,13 @@ export const trackAddToWishlist = (product: {
     // Ensure init is called before track
 
     setTimeout(() => {
-      invokeFbq("track", "AddToWishlist", eventData, {
-        eventID: eventId,
-      });
+      dispatchTargetedFbqEvent(
+        "track",
+        "AddToWishlist",
+        eventData,
+        { eventID: eventId },
+        "trackAddToWishlist",
+      );
       const trackingUrl = `https://www.facebook.com/tr?id=${pixelId}&ev=AddToWishlist`;
       console.log("Ã¢Å“â€¦ [Facebook Pixel] AddToWishlist tracked successfully", {
         productId: product.id,
@@ -1217,7 +1402,7 @@ const trackStandardEvent = (
 
       try {
         setTimeout(() => {
-          invokeFbq("track", eventName, eventData, {
+          dispatchTargetedFbqEvent("track", eventName, eventData, {
             eventID: eventId,
           });
         }, 50);
@@ -1239,7 +1424,7 @@ const trackStandardEvent = (
 
   try {
     setTimeout(() => {
-      invokeFbq("track", eventName, eventData, {
+      dispatchTargetedFbqEvent("track", eventName, eventData, {
         eventID: eventId,
       });
     }, 50);
@@ -1272,7 +1457,7 @@ export const trackCustom = (
         // Ensure init is called before trackCustom
 
         setTimeout(() => {
-          invokeFbq("trackCustom", eventName, eventData, {
+          dispatchTargetedFbqEvent("trackCustom", eventName, eventData, {
             eventID: eventId,
           });
           const trackingUrl = `https://www.facebook.com/tr?id=${pixelId}&ev=${eventName}`;
@@ -1306,7 +1491,7 @@ export const trackCustom = (
     // Ensure init is called before trackCustom
 
     setTimeout(() => {
-      invokeFbq("trackCustom", eventName, eventData, {
+      dispatchTargetedFbqEvent("trackCustom", eventName, eventData, {
         eventID: eventId,
       });
       const trackingUrl = `https://www.facebook.com/tr?id=${pixelId}&ev=${eventName}`;

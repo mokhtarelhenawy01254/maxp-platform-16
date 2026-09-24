@@ -298,123 +298,161 @@ const buildSnapshot = (
   return payload;
 };
 
-export const getStoredStorefrontAttribution =
-  (): StorefrontOrderAttributionSnapshot | null => {
-    if (typeof window === 'undefined') {
+export const resolveStorefrontAttributionKey = (companyId?: string | null): string => {
+  const normalized = companyId?.trim();
+  return normalized
+    ? `${STOREFRONT_ATTRIBUTION_STORAGE_KEY}:${normalized}`
+    : STOREFRONT_ATTRIBUTION_STORAGE_KEY;
+};
+
+export const getStoredStorefrontAttribution = (
+  companyId?: string | null,
+): StorefrontOrderAttributionSnapshot | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const primaryKey = resolveStorefrontAttributionKey(companyId);
+
+  try {
+    let raw = window.sessionStorage.getItem(primaryKey);
+    if (!raw && !companyId) {
+      raw = window.sessionStorage.getItem(STOREFRONT_ATTRIBUTION_STORAGE_KEY);
+    }
+    if (!raw) {
       return null;
     }
 
-    try {
-      const raw = window.sessionStorage.getItem(STOREFRONT_ATTRIBUTION_STORAGE_KEY);
-      if (!raw) {
-        return null;
-      }
+    const parsed = JSON.parse(raw) as Partial<StorefrontOrderAttributionSnapshot>;
+    return buildSnapshot(parsed);
+  } catch {
+    window.sessionStorage.removeItem(primaryKey);
+    return null;
+  }
+};
 
-      const parsed = JSON.parse(raw) as Partial<StorefrontOrderAttributionSnapshot>;
-      return buildSnapshot(parsed);
-    } catch {
+export const clearStoredStorefrontAttribution = (companyId?: string | null) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    const key = resolveStorefrontAttributionKey(companyId);
+    window.sessionStorage.removeItem(key);
+    if (!companyId) {
       window.sessionStorage.removeItem(STOREFRONT_ATTRIBUTION_STORAGE_KEY);
-      return null;
     }
+  } catch {
+    // Ignore storage clearance failures in restricted browser environments
+  }
+};
+
+export const captureStorefrontAttribution = (
+  companyId?: string | null,
+): StorefrontOrderAttributionSnapshot | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const existing = getStoredStorefrontAttribution(companyId);
+  const searchParams = new URLSearchParams(window.location.search);
+  const currentMarketingParams = extractMarketingParams(searchParams);
+  const hasFreshMarketingParams = Object.keys(currentMarketingParams).length > 0;
+  const rawParams = {
+    ...(existing?.rawParams || {}),
+    ...currentMarketingParams,
   };
 
-export const captureStorefrontAttribution =
-  (): StorefrontOrderAttributionSnapshot | null => {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-
-    const existing = getStoredStorefrontAttribution();
-    const searchParams = new URLSearchParams(window.location.search);
-    const currentMarketingParams = extractMarketingParams(searchParams);
-    const hasFreshMarketingParams = Object.keys(currentMarketingParams).length > 0;
-    const rawParams = {
-      ...(existing?.rawParams || {}),
-      ...currentMarketingParams,
-    };
-
-    const referrer = normalizeText(existing?.referrer || document.referrer, 1024);
-    const fbclid = normalizeText(currentMarketingParams.fbclid || existing?.fbclid, 255);
-    const gclid = normalizeText(currentMarketingParams.gclid || existing?.gclid, 255);
-    const ttclid = normalizeText(currentMarketingParams.ttclid || existing?.ttclid, 255);
-    const fbc = normalizeText(currentMarketingParams.fbc || existing?.fbc || readCookieValue('_fbc'), 255);
-    const fbp = normalizeText(currentMarketingParams.fbp || existing?.fbp || readCookieValue('_fbp'), 255);
-    const platform =
-      normalizeToken(currentMarketingParams.platform || existing?.platform, 80) ||
-      inferPlatform({
-        source: currentMarketingParams.utm_source || existing?.source,
-        referrer,
-        fbclid,
-        gclid,
-        ttclid,
-        fbc,
-        fbp,
-      });
-    const rawSource =
-      normalizeToken(currentMarketingParams.utm_source || existing?.source, 120) ||
-      inferSource(platform, referrer);
-    const medium =
-      normalizeToken(currentMarketingParams.utm_medium || existing?.medium, 120) ||
-      inferMedium({
-        source: rawSource,
-        platform,
-        referrer,
-        gclid,
-      });
-    const source =
-      isAudienceNetworkSignal({ source: rawSource, medium, referrer }) &&
-      rawSource !== 'direct'
-        ? 'audience_network'
-        : rawSource;
-    const snapshot = buildSnapshot({
-      platform,
-      source,
-      medium,
-      campaignName: currentMarketingParams.utm_campaign || existing?.campaignName,
-      campaignId:
-        currentMarketingParams.utm_id ||
-        currentMarketingParams.campaign_id ||
-        currentMarketingParams.campaignid ||
-        existing?.campaignId,
-      adSetId:
-        currentMarketingParams.adset_id ||
-        currentMarketingParams.ad_set_id ||
-        currentMarketingParams.adsetid ||
-        existing?.adSetId,
-      adId:
-        currentMarketingParams.ad_id ||
-        currentMarketingParams.adid ||
-        existing?.adId,
-      content: currentMarketingParams.utm_content || existing?.content,
-      term: currentMarketingParams.utm_term || existing?.term,
-      landingPath:
-        (hasFreshMarketingParams
-          ? `${window.location.pathname}${window.location.search}`
-          : existing?.landingPath) || `${window.location.pathname}${window.location.search}`,
+  const referrer = normalizeText(existing?.referrer || document.referrer, 1024);
+  const fbclid = normalizeText(currentMarketingParams.fbclid || existing?.fbclid, 255);
+  const gclid = normalizeText(currentMarketingParams.gclid || existing?.gclid, 255);
+  const ttclid = normalizeText(currentMarketingParams.ttclid || existing?.ttclid, 255);
+  const fbc = normalizeText(currentMarketingParams.fbc || existing?.fbc || readCookieValue('_fbc'), 255);
+  const fbp = normalizeText(currentMarketingParams.fbp || existing?.fbp || readCookieValue('_fbp'), 255);
+  const platform =
+    normalizeToken(currentMarketingParams.platform || existing?.platform, 80) ||
+    inferPlatform({
+      source: currentMarketingParams.utm_source || existing?.source,
       referrer,
       fbclid,
       gclid,
       ttclid,
       fbc,
       fbp,
-      capturedAt:
-        (hasFreshMarketingParams ? new Date().toISOString() : existing?.capturedAt) ||
-        new Date().toISOString(),
-      rawParams,
     });
+  const rawSource =
+    normalizeToken(currentMarketingParams.utm_source || existing?.source, 120) ||
+    inferSource(platform, referrer);
+  const medium =
+    normalizeToken(currentMarketingParams.utm_medium || existing?.medium, 120) ||
+    inferMedium({
+      source: rawSource,
+      platform,
+      referrer,
+      gclid,
+    });
+  const source =
+    isAudienceNetworkSignal({ source: rawSource, medium, referrer }) &&
+    rawSource !== 'direct'
+      ? 'audience_network'
+      : rawSource;
+  const snapshot = buildSnapshot({
+    platform,
+    source,
+    medium,
+    campaignName: currentMarketingParams.utm_campaign || existing?.campaignName,
+    campaignId:
+      currentMarketingParams.utm_id ||
+      currentMarketingParams.campaign_id ||
+      currentMarketingParams.campaignid ||
+      existing?.campaignId,
+    adSetId:
+      currentMarketingParams.adset_id ||
+      currentMarketingParams.ad_set_id ||
+      currentMarketingParams.adsetid ||
+      existing?.adSetId,
+    adId:
+      currentMarketingParams.ad_id ||
+      currentMarketingParams.adid ||
+      existing?.adId,
+    content: currentMarketingParams.utm_content || existing?.content,
+    term: currentMarketingParams.utm_term || existing?.term,
+    landingPath:
+      (hasFreshMarketingParams
+        ? `${window.location.pathname}${window.location.search}`
+        : existing?.landingPath) || `${window.location.pathname}${window.location.search}`,
+    referrer,
+    fbclid,
+    gclid,
+    ttclid,
+    fbc,
+    fbp,
+    capturedAt:
+      (hasFreshMarketingParams ? new Date().toISOString() : existing?.capturedAt) ||
+      new Date().toISOString(),
+    rawParams,
+  });
 
-    if (!snapshot) {
-      return null;
-    }
+  if (!snapshot) {
+    return null;
+  }
 
+  const storageKey = resolveStorefrontAttributionKey(companyId);
+  window.sessionStorage.setItem(
+    storageKey,
+    JSON.stringify(snapshot),
+  );
+  if (!companyId) {
     window.sessionStorage.setItem(
       STOREFRONT_ATTRIBUTION_STORAGE_KEY,
       JSON.stringify(snapshot),
     );
+  }
 
-    return snapshot;
-  };
+  return snapshot;
+};
 
-export const getOrderAttributionPayload =
-  (): StorefrontOrderAttributionSnapshot | null =>
-    captureStorefrontAttribution() || getStoredStorefrontAttribution();
+export const getOrderAttributionPayload = (
+  companyId?: string | null,
+): StorefrontOrderAttributionSnapshot | null =>
+  getStoredStorefrontAttribution(companyId) || captureStorefrontAttribution(companyId);

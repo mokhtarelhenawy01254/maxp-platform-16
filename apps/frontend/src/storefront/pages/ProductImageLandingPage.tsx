@@ -1153,8 +1153,8 @@ const ProductImageLandingPage: React.FC = () => {
   // Ad-campaign measurement: capture UTMs/click-ids at landing entry so the
   // order attribution snapshot survives navigation before checkout.
   useEffect(() => {
-    captureStorefrontAttribution();
-  }, []);
+    captureStorefrontAttribution(storefrontSettings?.companyId);
+  }, [storefrontSettings?.companyId]);
 
   // Meta pixel funnel events (ViewContent on load, InitiateCheckout on the
   // first form interaction). Purchase fires via the thank-you page using the
@@ -1849,7 +1849,7 @@ const ProductImageLandingPage: React.FC = () => {
           attributes: it.attributes || {},
         })),
       };
-      persistPurchaseTracking(purchaseTracking);
+      persistPurchaseTracking(purchaseTracking, storefrontSettings?.companyId);
 
       navigate(thankYouPath, {
         state: {

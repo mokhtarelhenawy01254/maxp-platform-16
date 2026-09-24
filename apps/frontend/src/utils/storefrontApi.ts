@@ -182,6 +182,17 @@ export const getCompanyId = (): string | null => {
   const fromQuery = params.get("companyId");
   if (fromQuery) return fromQuery;
 
+  const hostname = window.location.hostname.trim().toLowerCase();
+  const pathname = window.location.pathname || "";
+  const isPathScopedStorefront =
+    pathname === "/store" || pathname.startsWith("/store/");
+
+  // On stable storefront hosts (e.g. tenant subdomains, custom domains),
+  // tenant identity is host-bound. Never bleed stale companyId from localStorage.
+  if (!isPathScopedStorefront && hasStableStorefrontHost(hostname)) {
+    return null;
+  }
+
   return (
     getStoredValue("storefront_companyId") ||
     getStoredValue("currentCompanyId") ||

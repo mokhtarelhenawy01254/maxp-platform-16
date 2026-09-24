@@ -698,7 +698,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
         shippingCost: shipping,
         subtotal,
         total,
-        attribution: getOrderAttributionPayload() || undefined,
+        attribution: getOrderAttributionPayload(storefrontSettings?.companyId) || undefined,
         items: items.map((item) => ({
           productId: item.productId,
           variantId: item.variantId || undefined,

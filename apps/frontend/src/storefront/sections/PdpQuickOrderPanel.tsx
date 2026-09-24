@@ -29,7 +29,12 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
   isOpen = true,
 }) => {
   const { theme } = useStorefrontTheme();
-  const selection = usePdpSelectionStore((state) => state.selection);
+  const isSelectionReadyForProduct = usePdpSelectionStore(
+    (state) =>
+      state.selection?.productId === product.id
+        ? Boolean(state.selection?.isSelectionReady)
+        : false,
+  );
   const quantityOfferSelection = useQuantityOfferSelectionStore(
     (state) => state.selection,
   );
@@ -95,8 +100,6 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
     !isRedlineAutoQuickOrder;
   const isMergedBuyboxSurface = configuredSurfaceMode === "merged-buybox";
   const isPrimaryQuantityOfferDecision = configuredDecisionMode === "primary";
-  const activeSelection =
-    selection && selection.productId === product.id ? selection : null;
   const activeQuantityOffer =
     quantityOfferSelection && quantityOfferSelection.productId === product.id
       ? quantityOfferSelection
@@ -104,7 +107,7 @@ const PdpQuickOrderPanel: React.FC<PdpQuickOrderPanelProps> = ({
   const isSelectionReady =
     isPrimaryQuantityOfferDecision
       ? Boolean(activeQuantityOffer?.isReady)
-      : !product.hasVariants || Boolean(activeSelection?.isSelectionReady);
+      : !product.hasVariants || isSelectionReadyForProduct;
   const shouldShowSelectionHelper =
     !isSelectionReady &&
     !(isMergedBuyboxSurface && isPrimaryQuantityOfferDecision);

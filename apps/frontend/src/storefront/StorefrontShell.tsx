@@ -172,7 +172,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
   );
 
   useEffect(() => {
-    captureStorefrontAttribution();
+    captureStorefrontAttribution(settings?.companyId);
 
     // ⚡ Auto-hydrate coupon, phone, and customer name from destination links
     const urlCoupon = searchParams.get("coupon") || searchParams.get("apply_coupon");
@@ -191,7 +191,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
     if (urlToken) {
       tokenManager.setAccessToken(urlToken);
     }
-  }, [location.pathname, location.search, searchParams]);
+  }, [location.pathname, location.search, searchParams, settings?.companyId]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

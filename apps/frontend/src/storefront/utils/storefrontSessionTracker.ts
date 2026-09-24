@@ -267,10 +267,12 @@ const getCachedIpGeo = (): { ip?: string; governorate?: string; city?: string } 
 /**
  * Builds the complete Session Details snapshot to send with checkout drafts and completed orders.
  */
-export const getStorefrontSessionDetails = (): StorefrontSessionDetails => {
+export const getStorefrontSessionDetails = (
+  companyId?: string | null,
+): StorefrontSessionDetails => {
   const visitor = getOrCreateVisitor();
   const session = getOrCreateSession();
-  const attribution = getOrderAttributionPayload();
+  const attribution = getOrderAttributionPayload(companyId);
   const pagesVisited = getVisitedPages();
   const ipGeo = getCachedIpGeo();
 

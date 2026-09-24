@@ -88,15 +88,20 @@ export const useStorefrontFacebookTracking = () => {
   );
 
   const browserTrackingEnabled = Boolean(
-    trackingSettings.facebookPixelEnabled &&
+    !isPreviewMode &&
+      !isProductPreview &&
+      trackingSettings.facebookPixelEnabled &&
       trackingSettings.facebookPixelId &&
       !(trackingSettings.gtmEnabled && trackingSettings.gtmSuppressPixels),
   );
 
   const canTrackEvent = useCallback(
     (settingKey: TrackingSettingKey) =>
-      browserTrackingEnabled && trackingSettings[settingKey] !== false,
-    [browserTrackingEnabled, trackingSettings],
+      !isPreviewMode &&
+      !isProductPreview &&
+      browserTrackingEnabled &&
+      trackingSettings[settingKey] !== false,
+    [browserTrackingEnabled, isPreviewMode, isProductPreview, trackingSettings],
   );
 
   const trackViewContentEvent = useCallback(

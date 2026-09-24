@@ -373,8 +373,20 @@ const BoughtTogetherSection: React.FC<BoughtTogetherSectionProps> = ({
     [location.search],
   );
   const addItem = useCartStore((state) => state.addItem);
-  const setIsOpen = useCartStore((state) => state.setIsOpen);
-  const currentPdpSelection = usePdpSelectionStore((state) => state.selection);
+  const currentPdpSelection = usePdpSelectionStore(
+    (state) => state.selection,
+    (a, b) => {
+      if (a === b) return true;
+      if (!a || !b) return false;
+      return (
+        a.productId === b.productId &&
+        a.variantId === b.variantId &&
+        a.unitPrice === b.unitPrice &&
+        a.isSelectionReady === b.isSelectionReady &&
+        a.imageUrl === b.imageUrl
+      );
+    },
+  );
   const [recommendations, setRecommendations] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -796,24 +808,25 @@ const BoughtTogetherSection: React.FC<BoughtTogetherSectionProps> = ({
     }
 
     if (hasCurrentPdpSelection) {
+      const liveSelection = currentPdpSelection;
       return {
         productId: product.id,
-        variantId: currentPdpSelection?.variantId ?? null,
+        variantId: liveSelection?.variantId ?? null,
         name: product.name,
-        price: Number(currentPdpSelection?.unitPrice) || Number(product.price) || 0,
+        price: Number(liveSelection?.unitPrice) || Number(product.price) || 0,
         basePrice:
-          Number(currentPdpSelection?.basePrice) ||
-          Number(currentPdpSelection?.unitPrice) ||
+          Number(liveSelection?.basePrice) ||
+          Number(liveSelection?.unitPrice) ||
           Number(product.price) ||
           0,
         comparePrice: typeof product.comparePrice === 'number' ? product.comparePrice : undefined,
         quantity: 1,
-        imageUrl: currentPdpSelection?.imageUrl || getPrimaryProductImage(product),
-        attributes: currentPdpSelection?.attributes || {},
+        imageUrl: liveSelection?.imageUrl || getPrimaryProductImage(product),
+        attributes: liveSelection?.attributes || {},
         volumeDiscounts:
-          Array.isArray(currentPdpSelection?.volumeDiscounts) &&
-          currentPdpSelection.volumeDiscounts.length > 0
-            ? currentPdpSelection.volumeDiscounts
+          Array.isArray(liveSelection?.volumeDiscounts) &&
+          liveSelection.volumeDiscounts.length > 0
+            ? liveSelection.volumeDiscounts
             : getProductVolumeDiscounts(product),
       };
     }

@@ -112,7 +112,32 @@ const StickyAddToCartHost: React.FC = () => {
   const [mounted, setMounted] = useState(false);
   const [isGalleryZoomOpen, setIsGalleryZoomOpen] = useState(false);
   const isCartOpen = useCartStore((state) => state.isOpen);
-  const selection = usePdpSelectionStore((state) => state.selection);
+  const selectionReady = usePdpSelectionStore(
+    (state) =>
+      state.selection?.productId === product?.id
+        ? Boolean(state.selection?.isSelectionReady)
+        : false,
+  );
+  const selectionUnitPrice = usePdpSelectionStore(
+    (state) =>
+      state.selection?.productId === product?.id
+        ? state.selection?.unitPrice
+        : undefined,
+  );
+  const selectionAttributes = usePdpSelectionStore(
+    (state) =>
+      state.selection?.productId === product?.id
+        ? state.selection?.attributes
+        : undefined,
+    (a, b) => {
+      if (a === b) return true;
+      if (!a || !b) return false;
+      const aK = Object.keys(a);
+      const bK = Object.keys(b);
+      if (aK.length !== bK.length) return false;
+      return aK.every((k) => a[k] === b[k]);
+    },
+  );
   const quantity = usePdpSelectionStore((state) => state.quantity);
 
   const conversionEnabled = isStorefrontMarketplaceAppEnabled(
@@ -158,25 +183,22 @@ const StickyAddToCartHost: React.FC = () => {
     Boolean(externalProductAction.url);
   const externalOnlyProduct =
     externalAffiliateEnabled && Boolean(externalProductAction.externalOnly);
-  const activeSelection =
-    selection && product && selection.productId === product.id ? selection : null;
-  const selectionReady = Boolean(activeSelection?.isSelectionReady);
   const canTriggerDirectPurchaseActions =
     externalOnlyProduct || !hasVariants || selectionReady;
   const activeSelectionSummary = useMemo(() => {
-    if (!activeSelection?.attributes) {
+    if (!selectionAttributes) {
       return "";
     }
 
-    return Object.values(activeSelection.attributes)
+    return Object.values(selectionAttributes)
       .map((value) => String(value || "").trim())
       .filter(Boolean)
       .slice(0, 2)
       .join(" • ");
-  }, [activeSelection?.attributes]);
+  }, [selectionAttributes]);
   const stickyUnitPrice =
-    typeof activeSelection?.unitPrice === "number" && Number.isFinite(activeSelection.unitPrice)
-      ? activeSelection.unitPrice
+    typeof selectionUnitPrice === "number" && Number.isFinite(selectionUnitPrice)
+      ? selectionUnitPrice
       : Number(product?.price) || 0;
   const primaryLabel = externalOnlyProduct
     ? externalProductAction.label ||

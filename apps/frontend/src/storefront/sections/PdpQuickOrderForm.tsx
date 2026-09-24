@@ -856,7 +856,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         shippingCost,
         subtotal: resolvedSubtotal,
         total,
-        attribution: getOrderAttributionPayload() || undefined,
+        attribution: getOrderAttributionPayload(companyId) || undefined,
         items: draftItems.map((item) => ({
           productId: item.productId,
           variantId: item.variantId || undefined,
@@ -1299,6 +1299,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       const purchaseTracking = {
         eventId: pixelEventId,
         orderNumber: String(resolvedOrderId),
+        companyId: companyId || undefined,
         total: resolvedOrderTotal,
         phone: contactPhone,
         customerName: resolvedFullName || fallbackCustomerName,
@@ -1317,7 +1318,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
           })),
         ],
       };
-      persistPurchaseTracking(purchaseTracking);
+      persistPurchaseTracking(purchaseTracking, companyId);
 
       if (typeof window !== "undefined") {
         window.location.assign(thankYouPath);
