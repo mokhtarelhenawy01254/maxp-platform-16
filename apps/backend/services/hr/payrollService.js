@@ -1417,7 +1417,7 @@ class PayrollService {
       const dateStr = this.toLocalDateKey(a.date);
       const expectedHours = a.status === 'HALF_DAY' ? (workingHoursPerDay / 2) : workingHoursPerDay;
 
-      let actualHours = parseFloat(a.workHours) || 0;
+      let actualHours = parseFloat(a.workHours || a.workingHours) || 0;
       const checkOutTime = a.checkOut || a.check_out;
       const checkInTime = a.checkIn || a.check_in;
 
@@ -1427,7 +1427,7 @@ class PayrollService {
 
       // إذن الخروج المصرح به في هذا اليوم
       const dayPermissions = approvedPermissions.filter(p => this.toLocalDateKey(p.date) === dateStr);
-      const permittedHours = dayPermissions.reduce((sum, p) => sum + (parseFloat(p.totalHours) || 0), 0);
+      const permittedHours = dayPermissions.reduce((sum, p) => sum + (parseFloat(p.totalHours || p.hours) || 0), 0);
 
       // ساعات التأخير المحسوبة مسبقاً لتفادي الخصم المزدوج
       const lateHoursAlreadyPenalized = (a.lateMinutes || 0) / 60;
@@ -1441,12 +1441,15 @@ class PayrollService {
         totalDeficitPenalty += deficitAmount;
         deficitDetails.push(`${dateStr}: عجز ${unexcusedDeficit.toFixed(2)}س = ${deficitAmount.toFixed(2)} ج.م`);
         addDailyPenalty(a.date, deficitAmount, `عجز ساعات عمل ${unexcusedDeficit.toFixed(1)}س`, 'deficit');
-      } else if ((a.earlyLeaveMinutes || 0) > 15) {
-        const earlyHours = (a.earlyLeaveMinutes || 0) / 60;
-        const earlyAmount = earlyHours * hourlyRate;
-        totalDeficitPenalty += earlyAmount;
-        deficitDetails.push(`${dateStr}: انصراف مبكر ${a.earlyLeaveMinutes}د = ${earlyAmount.toFixed(2)} ج.م`);
-        addDailyPenalty(a.date, earlyAmount, `انصراف مبكر ${a.earlyLeaveMinutes}د`, 'deficit');
+      } else {
+        const unexcusedEarlyMinutes = Math.max(0, (a.earlyLeaveMinutes || 0) - (permittedHours * 60));
+        if (unexcusedEarlyMinutes > 15) {
+          const earlyHours = unexcusedEarlyMinutes / 60;
+          const earlyAmount = earlyHours * hourlyRate;
+          totalDeficitPenalty += earlyAmount;
+          deficitDetails.push(`${dateStr}: انصراف مبكر ${unexcusedEarlyMinutes}د = ${earlyAmount.toFixed(2)} ج.م`);
+          addDailyPenalty(a.date, earlyAmount, `انصراف مبكر ${unexcusedEarlyMinutes}د`, 'deficit');
+        }
       }
     });
 
