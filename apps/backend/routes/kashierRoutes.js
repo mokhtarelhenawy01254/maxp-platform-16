@@ -494,7 +494,8 @@ router.post('/kashier/webhook', async (req, res) => {
     const updateData = {
       paymentStatus,
       paymentMethod: resolvedPaymentMethod,
-      ...(paymentStatus === 'COMPLETED' && order.status === 'PENDING' ? { status: 'CONFIRMED' } : {}),
+      // ⚠️ الطلبات المدفوعة مسبقاً/أونلاين تدخل مرحلة المراجعة (PENDING) ولا يتم تأكيدها آلياً دون مراجعة وتأكيد يدوي
+      ...(order.status === 'PENDING' ? { status: 'PENDING' } : {}),
       metadata: updatedMetadata,
     };
 
@@ -515,7 +516,7 @@ router.post('/kashier/webhook', async (req, res) => {
         const payerInfo = kashierPayment.payerAccount ? ` (رقم الدافع: ${kashierPayment.payerAccount})` : '';
         const txInfo = transactionId ? ` (رقم المعاملة: ${transactionId})` : '';
         const noteText = isSuccess
-          ? `✅ تم الدفع إلكترونياً عبر كاشير بنجاح: ${kashierPayment.amount} ${kashierPayment.currency} عن طريق ${methodArabic}${payerInfo}${txInfo}`
+          ? `✅ تم الدفع إلكترونياً عبر كاشير بنجاح: ${kashierPayment.amount} ${kashierPayment.currency} عن طريق ${methodArabic}${payerInfo}${txInfo} — الطلب قيد المراجعة والمطابقة قبل التأكيد`
           : `❌ فشلت عملية الدفع عبر كاشير${txInfo}`;
 
         await prisma.orderNote.create({

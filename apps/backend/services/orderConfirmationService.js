@@ -645,6 +645,8 @@ class OrderConfirmationService {
           customerEmail: true,
           total: true,
           status: true,
+          paymentStatus: true,
+          paymentMethod: true,
           sourceType: true,
           createdAt: true,
           updatedAt: true,
@@ -657,8 +659,29 @@ class OrderConfirmationService {
           callAttempts: true,
           lastCallAttemptAt: true,
           shipping: true,
+          subtotal: true,
+          discount: true,
+          notes: true,
+          shippingAddress: true,
+          customerAddress: true,
+          metadata: true,
           codDepositAmount: true,
-          customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } }
+          customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
+          orderItems: {
+            select: {
+              id: true,
+              productId: true,
+              productName: true,
+              quantity: true,
+              price: true,
+              total: true,
+              productColor: true,
+              productSize: true,
+              productSku: true,
+              productImage: true,
+              metadata: true
+            }
+          }
         }
       })
       : [];
@@ -677,7 +700,15 @@ class OrderConfirmationService {
           createdAt: true,
           updatedAt: true,
           callAttempts: true,
-          lastCallAt: true
+          lastCallAt: true,
+          items: true,
+          shippingAddress: true,
+          notes: true,
+          paymentMethod: true,
+          metadata: true,
+          shippingCost: true,
+          discountAmount: true,
+          finalTotal: true
         }
       })
       : [];
@@ -728,24 +759,51 @@ class OrderConfirmationService {
         customerEmail: order.customer?.email || order.customerEmail || '',
         total: order.total,
         status: order.status?.toLowerCase() || 'pending',
+        paymentStatus: order.paymentStatus || 'PENDING',
+        paymentMethod: order.paymentMethod || 'CASH',
         sourceType: order.sourceType || 'unknown',
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         governorate: order.governorate || order.city || '',
+        city: order.city || '',
         assignedTo: order.assignedTo,
+        assignedToName: formatUserName(order.assignedTo),
         assignedAt: order.assignedAt,
         confirmedAt: order.confirmedAt,
         assignmentStrategy: order.assignmentStrategy || null,
         callAttempts: order.callAttempts || 0,
         lastCallAttemptAt: order.lastCallAttemptAt || null,
         shipping: order.shipping || 0,
+        subtotal: order.subtotal || 0,
+        discount: order.discount || 0,
         codDepositAmount: order.codDepositAmount || 0,
+        notes: order.notes || '',
+        shippingAddress: order.shippingAddress || order.customerAddress || '',
+        metadata: order.metadata || null,
+        items: (order.orderItems || []).map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          name: item.productName,
+          quantity: Number(item.quantity || 1),
+          price: Number(item.price || 0),
+          total: Number(item.total || (Number(item.price || 0) * Number(item.quantity || 1))),
+          color: item.productColor || '',
+          size: item.productSize || '',
+          sku: item.productSku || null,
+          image: item.productImage || null,
+          metadata: item.metadata || null
+        })),
         isGuestOrder: false
       };
     });
 
     const formattedGuest = paginatedGuest.map((order) => {
       const assignment = guestAssignmentMap.get(order.id);
+      let parsedItems = [];
+      try {
+        parsedItems = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+      } catch (_) {}
       return {
         id: order.id,
         orderNumber: order.orderNumber,
@@ -754,10 +812,13 @@ class OrderConfirmationService {
         customerEmail: order.guestEmail || '',
         total: order.total || 0,
         status: order.status?.toLowerCase() || 'pending',
+        paymentStatus: 'PENDING',
+        paymentMethod: order.paymentMethod || 'CASH',
         sourceType: 'storefront',
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         governorate: '',
+        city: '',
         assignedTo: assignment?.assignedTo || null,
         assignedToName: formatUserName(assignment?.assignedTo || null),
         assignedAt: assignment?.assignedAt || null,
@@ -765,8 +826,26 @@ class OrderConfirmationService {
         assignmentStrategy: assignment?.strategy || null,
         callAttempts: order.callAttempts || 0,
         lastCallAttemptAt: order.lastCallAt || null,
-        shipping: 0,
+        shipping: Number(order.shippingCost || 0),
+        discount: Number(order.discountAmount || 0),
         codDepositAmount: 0,
+        notes: order.notes || '',
+        shippingAddress: order.shippingAddress || '',
+        metadata: order.metadata || null,
+        items: (Array.isArray(parsedItems) ? parsedItems : []).map((item, idx) => ({
+          id: item.id || `guest-item-${idx}`,
+          productId: item.productId || item.id,
+          productName: item.name || item.productName || 'منتج',
+          name: item.name || item.productName || 'منتج',
+          quantity: Number(item.quantity || 1),
+          price: Number(item.price || 0),
+          total: Number(item.total || (Number(item.price || 0) * Number(item.quantity || 1))),
+          color: item.color || item.attributes?.color || '',
+          size: item.size || item.attributes?.size || '',
+          sku: item.sku || null,
+          image: item.image || item.productImage || null,
+          metadata: item.metadata || null
+        })),
         isGuestOrder: true
       };
     });

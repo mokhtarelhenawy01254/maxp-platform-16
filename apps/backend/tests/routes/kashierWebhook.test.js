@@ -63,7 +63,7 @@ describe('Kashier Webhook Route', () => {
     };
 
     mockPrisma.order.findFirst.mockResolvedValue(existingOrder);
-    mockPrisma.order.update.mockResolvedValue({ ...existingOrder, status: 'CONFIRMED', paymentStatus: 'COMPLETED' });
+    mockPrisma.order.update.mockResolvedValue({ ...existingOrder, status: 'PENDING', paymentStatus: 'COMPLETED' });
     mockPrisma.orderNote.create.mockResolvedValue({ id: 'note-1' });
 
     // Kashier dashboard export payload structure
@@ -130,7 +130,7 @@ describe('Kashier Webhook Route', () => {
         data: expect.objectContaining({
           paymentStatus: 'COMPLETED',
           paymentMethod: 'WALLET',
-          status: 'CONFIRMED',
+          status: 'PENDING',
         }),
       })
     );

@@ -1,11 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { MagnifyingGlassIcon, CheckCircleIcon, FunnelIcon, XMarkIcon, XCircleIcon, PhoneIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import {
+  MagnifyingGlassIcon,
+  CheckCircleIcon,
+  FunnelIcon,
+  XMarkIcon,
+  XCircleIcon,
+  PhoneIcon,
+  CalendarDaysIcon,
+  PrinterIcon,
+  PencilSquareIcon,
+  CreditCardIcon,
+  DocumentTextIcon
+} from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCurrency } from '../../hooks/useCurrency';
 import { useDateFormat } from '../../hooks/useDateFormat';
+import { useInvoiceSettings } from '../../hooks/useInvoiceSettings';
+import { printSingleShippingLabel } from '../../utils/printShippingLabel';
 import orderConfirmationService, {
   OrderConfirmationSettings,
   OrderConfirmationUser
@@ -13,14 +27,35 @@ import orderConfirmationService, {
 import api from '../../services/api';
 import PostponeOrderModal from './components/PostponeOrderModal';
 
+interface ConfirmationOrderItem {
+  id: string;
+  productId?: string;
+  productName?: string;
+  name?: string;
+  quantity: number;
+  price: number;
+  total?: number;
+  color?: string;
+  size?: string;
+  sku?: string | null;
+  image?: string | null;
+}
+
 interface ConfirmationOrder {
   id: string;
   orderNumber: string;
   customerName: string;
   customerPhone?: string;
   customerEmail?: string;
+  customerAddress?: string;
+  shippingAddress?: string;
+  city?: string;
   total: number;
+  subtotal?: number;
+  discount?: number;
   status: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
   sourceType: string;
   createdAt: string;
   governorate?: string;
@@ -34,6 +69,9 @@ interface ConfirmationOrder {
   lastCallAttemptAt?: string | null;
   shipping?: number;
   codDepositAmount?: number;
+  notes?: string;
+  metadata?: any;
+  items?: ConfirmationOrderItem[];
 }
 
 interface ConfirmationStats {
@@ -74,6 +112,8 @@ interface OrderRowProps {
   onLogCall: (order: ConfirmationOrder, result?: string) => void;
   onPostpone: (order: ConfirmationOrder) => void;
   onToggleSelect: (orderId: string) => void;
+  onPrintSlip?: (order: ConfirmationOrder) => void;
+  onPrintInvoice?: (order: ConfirmationOrder) => void;
 }
 
 const OrderRow = React.memo(({
@@ -97,7 +137,9 @@ const OrderRow = React.memo(({
   onCancel,
   onLogCall,
   onPostpone,
-  onToggleSelect
+  onToggleSelect,
+  onPrintSlip,
+  onPrintInvoice,
 }: OrderRowProps) => {
   const { t } = useTranslation();
   const isCancelled = String(order.status || '').toUpperCase() === 'CANCELLED';
@@ -113,8 +155,52 @@ const OrderRow = React.memo(({
   const waitingForNextCall = Boolean(nextCallAllowedAt && nextCallAllowedAt.getTime() > Date.now());
   const callBlocked = callsLimitReached || waitingForNextCall;
 
+  const paymentMethodUpper = String(order.paymentMethod || '').toUpperCase();
+  const paymentStatusUpper = String(order.paymentStatus || '').toUpperCase();
+  const isPaid = paymentStatusUpper === 'COMPLETED' || paymentStatusUpper === 'PAID';
+  const isPrepaid = isPaid || ['CREDIT_CARD', 'WALLET', 'INSTAPAY', 'VISA', 'MASTERCARD', 'VODAFONE_CASH'].includes(paymentMethodUpper);
+
+  const getPaymentBadge = () => {
+    if (paymentMethodUpper.includes('WALLET') || paymentMethodUpper.includes('VODAFONE')) {
+      return {
+        label: isPaid ? 'محفظة إلكترونية — مدفوع' : 'محفظة إلكترونية — مراجعة الدفع',
+        className: isPaid
+          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+          : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+      };
+    }
+    if (paymentMethodUpper.includes('INSTAPAY')) {
+      return {
+        label: isPaid ? 'إنستاباي — مدفوع' : 'إنستاباي — مراجعة الدفع',
+        className: isPaid
+          ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800'
+          : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+      };
+    }
+    if (paymentMethodUpper.includes('CARD') || paymentMethodUpper.includes('VISA') || paymentMethodUpper.includes('MASTERCARD')) {
+      return {
+        label: isPaid ? 'بطاقة بنكية — مدفوع أونلاين' : 'بطاقة بنكية — مراجعة الدفع',
+        className: isPaid
+          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+          : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+      };
+    }
+    if (isPaid) {
+      return {
+        label: 'مدفوع مسبقاً',
+        className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+      };
+    }
+    return {
+      label: 'دفع عند الاستلام',
+      className: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
+    };
+  };
+
+  const paymentBadge = getPaymentBadge();
+
   return (
-    <div className="p-4 flex flex-col lg:flex-row lg:items-center gap-4">
+    <div className="p-4 flex flex-col lg:flex-row lg:items-center gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
       <div className="flex-1 flex items-start gap-3">
         {selectionEnabled && (
           <input
@@ -125,34 +211,68 @@ const OrderRow = React.memo(({
           />
         )}
         <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <Link
-            to={`/orders/${encodeURIComponent(order.orderNumber)}`}
-            className="font-bold text-gray-900 dark:text-white hover:text-indigo-600"
-          >
-            {order.orderNumber}
-          </Link>
-          {order.isGuestOrder && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-              {t('orders.guest')}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              to={`/orders/${encodeURIComponent(order.orderNumber)}`}
+              className="font-bold text-gray-900 dark:text-white hover:text-indigo-600 transition-colors"
+            >
+              {order.orderNumber}
+            </Link>
+            {order.isGuestOrder && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                {t('orders.guest')}
+              </span>
+            )}
+            <span className={`text-[11px] px-2 py-0.5 rounded-md border font-semibold inline-flex items-center gap-1 ${paymentBadge.className}`}>
+              <CreditCardIcon className="w-3 h-3" />
+              {paymentBadge.label}
             </span>
+            {isPrepaid && (
+              <span className="text-[11px] px-2 py-0.5 rounded-md border border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200 font-semibold">
+                قيد المراجعة والمطابقة
+              </span>
+            )}
+          </div>
+          <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+            <span className="font-semibold text-gray-800 dark:text-gray-100">{order.customerName}</span>
+            {' • '}
+            <span dir="ltr">{order.customerPhone || t('orders.noPhone')}</span>
+            {order.governorate && <span> • {order.governorate}</span>}
+          </div>
+
+          {/* تفاصيل المنتجات داخل الأوردر */}
+          {order.items && order.items.length > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {order.items.map((item, idx) => (
+                <span
+                  key={item.id || idx}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs border border-slate-200 dark:border-slate-700 font-medium"
+                >
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">{item.quantity}×</span>
+                  <span>{item.productName || item.name}</span>
+                  {(item.color || item.size) && (
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      ({[item.color, item.size].filter(Boolean).join(' - ')})
+                    </span>
+                  )}
+                  {item.sku && (
+                    <span className="text-[10px] text-slate-400 font-mono">[{item.sku}]</span>
+                  )}
+                </span>
+              ))}
+            </div>
           )}
-        </div>
-        <div className="text-sm text-gray-500 mt-1">
-          {order.customerName} • {order.customerPhone || t('orders.noPhone')}
-        </div>
-        <div className="text-xs text-gray-400 mt-1">
-          {formatDate(order.createdAt)} • {order.sourceType}
-        </div>
-        <div className="text-xs text-gray-400 mt-1">
-          {t('orders.distributedTo')} {order.assignedToName || order.assignedTo || t('orders.unassigned')}
-          {order.assignmentStrategy
-            ? ` • ${strategyLabelMap[order.assignmentStrategy] || order.assignmentStrategy}`
-            : ''}
-        </div>
+
+          <div className="text-xs text-gray-400 mt-1.5 flex items-center gap-2 flex-wrap">
+            <span>{formatDate(order.createdAt)} • {order.sourceType}</span>
+            <span>• {t('orders.distributedTo')} {order.assignedToName || order.assignedTo || t('orders.unassigned')}</span>
+            {order.assignmentStrategy && (
+              <span>• {strategyLabelMap[order.assignmentStrategy] || order.assignmentStrategy}</span>
+            )}
+          </div>
         </div>
       </div>
-      <div className="flex flex-col items-start gap-1 text-sm">
+      <div className="flex flex-col items-start gap-1 text-sm min-w-[120px]">
         <span className="font-bold text-gray-800 dark:text-gray-200">
           {t('orders.amountDue', 'المستحق')}: {formatPrice(amountDue)}
         </span>
@@ -167,7 +287,7 @@ const OrderRow = React.memo(({
           </span>
         )}
       </div>
-      <div className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+      <div className="text-xs px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 font-semibold">
         {order.status}
       </div>
       <div className="flex items-center gap-2 flex-wrap">
@@ -176,7 +296,7 @@ const OrderRow = React.memo(({
             <select
               value={assignValue}
               onChange={(e) => onAssignChange(order.id, e.target.value)}
-              className="px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-xs min-w-[160px]"
+              className="px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-xs min-w-[150px]"
               disabled={eligibleUsers.length === 0}
             >
               <option value="">{t('orders.selectEmployeeToAssign')}</option>
@@ -189,12 +309,57 @@ const OrderRow = React.memo(({
             <button
               onClick={() => onAssign(order.id, assignValue)}
               disabled={assigningId === order.id || !assignValue}
-              className="inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs disabled:opacity-60"
+              className="inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs disabled:opacity-60 font-semibold"
             >
               {t('orders.assign')}
             </button>
           </>
         )}
+
+        {/* زر طباعة تفاصيل التجهيز والأصناف */}
+        <button
+          type="button"
+          onClick={() => onPrintSlip?.(order)}
+          disabled={isCancelled}
+          title="طباعة قسيمة التجهيز وتفاصيل المنتجات"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+        >
+          <PrinterIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          <span>طباعة الأصناف</span>
+        </button>
+
+        {/* زر طباعة الفاتورة */}
+        <button
+          type="button"
+          onClick={() => onPrintInvoice?.(order)}
+          disabled={isCancelled}
+          title="طباعة الفاتورة"
+          className="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+        >
+          <DocumentTextIcon className="w-4 h-4 text-gray-500" />
+          <span className="hidden sm:inline">فاتورة</span>
+        </button>
+
+        {/* زر تعديل الطلب */}
+        <Link
+          to={`/orders/${encodeURIComponent(order.orderNumber)}?edit=1`}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+          title="تعديل بنود وكميات وبيانات الطلب"
+        >
+          <PencilSquareIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          <span>تعديل</span>
+        </Link>
+
+        {/* زر خيارات الدفع */}
+        <Link
+          to={`/orders/${encodeURIComponent(order.orderNumber)}`}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          title="خيارات وحالة الدفع والمطابقة"
+        >
+          <CreditCardIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <span>الدفع</span>
+        </Link>
+
         <button
           onClick={() => onLogCall(order, 'unreached')}
           disabled={isCancelled || callBlocked || callingId === order.id}
@@ -217,7 +382,7 @@ const OrderRow = React.memo(({
         <button
           onClick={() => onConfirm(order.id)}
           disabled={isCancelled}
-          className="inline-flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
         >
           <CheckCircleIcon className="w-4 h-4" />
           {t('orders.confirmOrder')}
@@ -245,6 +410,7 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
   const { formatDate } = useDateFormat();
+  const { settings: invoiceSettings } = useInvoiceSettings();
 
   const [settings, setSettings] = useState<OrderConfirmationSettings | null>(null);
   const [orders, setOrders] = useState<ConfirmationOrder[]>([]);
@@ -479,6 +645,102 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
       toast.error(error?.message || t('orders.failedToConfirmOrder'));
     }
   }, [t]);
+
+  const handlePrintSlip = useCallback(async (order: ConfirmationOrder) => {
+    try {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast.error('تم حظر النافذة المنبثقة، يرجى السماح بالنوافذ المنبثقة للطباعة');
+        return;
+      }
+      await printSingleShippingLabel({
+        order: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          customerName: order.customerName,
+          customerPhone: order.customerPhone,
+          customerEmail: order.customerEmail,
+          customerAddress: order.customerAddress || order.shippingAddress || '',
+          city: order.city || '',
+          governorate: order.governorate || '',
+          status: order.status,
+          paymentStatus: (order.paymentStatus as any) || 'PENDING',
+          paymentMethod: order.paymentMethod || 'CASH',
+          total: order.total,
+          shipping: order.shipping || 0,
+          subtotal: order.subtotal || order.total,
+          discount: order.discount || 0,
+          notes: order.notes || '',
+          createdAt: order.createdAt,
+          items: (order.items || []).map((it) => ({
+            id: it.id,
+            productId: it.productId,
+            name: it.productName || it.name,
+            productName: it.productName || it.name,
+            quantity: it.quantity,
+            price: it.price,
+            total: it.total,
+            color: it.color,
+            size: it.size,
+            sku: it.sku || undefined,
+          }))
+        },
+        labelType: 'preparation_slip',
+        settings: invoiceSettings,
+        printWindow
+      });
+    } catch (err: any) {
+      toast.error(err?.message || 'فشلت الطباعة');
+    }
+  }, [invoiceSettings]);
+
+  const handlePrintInvoice = useCallback(async (order: ConfirmationOrder) => {
+    try {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast.error('تم حظر النافذة المنبثقة، يرجى السماح بالنوافذ المنبثقة للطباعة');
+        return;
+      }
+      await printSingleShippingLabel({
+        order: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          customerName: order.customerName,
+          customerPhone: order.customerPhone,
+          customerEmail: order.customerEmail,
+          customerAddress: order.customerAddress || order.shippingAddress || '',
+          city: order.city || '',
+          governorate: order.governorate || '',
+          status: order.status,
+          paymentStatus: (order.paymentStatus as any) || 'PENDING',
+          paymentMethod: order.paymentMethod || 'CASH',
+          total: order.total,
+          shipping: order.shipping || 0,
+          subtotal: order.subtotal || order.total,
+          discount: order.discount || 0,
+          notes: order.notes || '',
+          createdAt: order.createdAt,
+          items: (order.items || []).map((it) => ({
+            id: it.id,
+            productId: it.productId,
+            name: it.productName || it.name,
+            productName: it.productName || it.name,
+            quantity: it.quantity,
+            price: it.price,
+            total: it.total,
+            color: it.color,
+            size: it.size,
+            sku: it.sku || undefined,
+          }))
+        },
+        labelType: 'invoice',
+        settings: invoiceSettings,
+        printWindow
+      });
+    } catch (err: any) {
+      toast.error(err?.message || 'فشلت الطباعة');
+    }
+  }, [invoiceSettings]);
 
   const handleCancel = useCallback(async (order: ConfirmationOrder) => {
     setCancelReason('');
@@ -1160,6 +1422,8 @@ const OrderConfirmationQueue: React.FC<OrderConfirmationQueueProps> = ({ embedde
                       onLogCall={handleLogCall}
                       onPostpone={(o) => setPostponeTarget(o)}
                       onToggleSelect={handleToggleSelect}
+                      onPrintSlip={handlePrintSlip}
+                      onPrintInvoice={handlePrintInvoice}
                     />
                   </div>
                 );
