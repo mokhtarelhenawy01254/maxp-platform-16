@@ -219,6 +219,7 @@ async def run_orchestration(
     session: AsyncSession | None = None,
     is_merchant: bool = False,
     channel: str | None = None,
+    agent_id: str | None = None,
     memory_context: dict[str, Any] | None = None,
     conversation_id: str | None = None,
     attachments: list[dict[str, Any]] | None = None,
@@ -270,13 +271,57 @@ async def run_orchestration(
 
     _channel_normalized = effective_channel.lower()
 
-    # Find the agent assigned to this channel — that agent IS the responder, not CEO.
-    _channel_agent_id, _channel_agent, _assignment_source = await _resolve_channel_agent(
-        company_id=company_id,
-        channel=_channel_normalized,
-        registry=registry,
-        session=session,
-    )
+    _channel_agent_id = None
+    _channel_agent = None
+    _assignment_source = "none"
+
+    # Direct agent routing (e.g. per-WhatsApp-number dedicated agent assignment)
+    if agent_id and session:
+        try:
+            repo = AgentRepository(session)
+            db_agent = await repo.get_agent(agent_id, company_id)
+            if db_agent and db_agent.status != "ARCHIVED":
+                resolved_model = await _resolve_agent_model(db_agent, session)
+                tmpl_instr = None
+                if db_agent.template_slug:
+                    try:
+                        tmpl = await get_template(db_agent.template_slug, session)
+                        if tmpl:
+                            tmpl_instr = {
+                                "soul": tmpl.instructions_soul or "",
+                                "persona": tmpl.instructions_persona or "",
+                                "agents": tmpl.instructions_agents or "",
+                                "tools": tmpl.instructions_tools or "",
+                            }
+                    except Exception:
+                        pass
+                runtime_agent = registry.get(company_id, db_agent.id)
+                if runtime_agent:
+                    await _sync_agent_config_from_db(runtime_agent, db_agent, session)
+                    _channel_agent_id, _channel_agent, _assignment_source = db_agent.id, runtime_agent, "direct_agent_id"
+                else:
+                    runtime_agent, tool_names = _build_runtime_agent_from_db(
+                        db_agent, model=resolved_model, template_instructions=tmpl_instr
+                    )
+                    registry.register(company_id, db_agent.id, runtime_agent, tool_names=tool_names)
+                    _channel_agent_id, _channel_agent, _assignment_source = db_agent.id, runtime_agent, "direct_agent_id"
+                logger.info(
+                    "orchestration_direct_agent_resolved",
+                    agent_id=_channel_agent_id,
+                    company_id=company_id,
+                    channel=_channel_normalized,
+                )
+        except Exception as exc:
+            logger.warning("direct_agent_lookup_failed", agent_id=agent_id, error=str(exc))
+
+    # If no direct agent was assigned or found, fall back to channel routing
+    if not _channel_agent:
+        _channel_agent_id, _channel_agent, _assignment_source = await _resolve_channel_agent(
+            company_id=company_id,
+            channel=_channel_normalized,
+            registry=registry,
+            session=session,
+        )
     if _channel_agent:
         logger.info(
             "orchestration_channel_agent_found",

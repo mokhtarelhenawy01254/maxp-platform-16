@@ -23,6 +23,18 @@ interface AgentSummary {
   allowedTools: string[];
 }
 
+interface WhatsAppSessionRouting {
+  id: string;
+  name: string;
+  phoneNumber: string | null;
+  status: string;
+  agentId: string | null;
+  autoReply: boolean;
+  aiEnabled: boolean;
+  isDefault: boolean;
+  provider?: string;
+}
+
 interface ChannelConfig {
   channel: string;
   label: string;
@@ -72,6 +84,7 @@ export default function ChannelRoutingPage() {
   const isRtl = i18n.language === "ar";
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [channelConfigs, setChannelConfigs] = useState<ChannelConfig[]>([]);
+  const [whatsappSessions, setWhatsappSessions] = useState<WhatsAppSessionRouting[]>([]);
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
   const [channelReply, setChannelReply] = useState<Record<string, boolean>>({});
   const [agentPaused, setAgentPaused] = useState(false);
@@ -81,7 +94,9 @@ export default function ChannelRoutingPage() {
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [dirtyChannels, setDirtyChannels] = useState<Set<string>>(new Set());
+  const [dirtySessionIds, setDirtySessionIds] = useState<Set<string>>(new Set());
   const initialConfigsRef = React.useRef<string | null>(null);
+  const initialSessionsRef = React.useRef<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -129,6 +144,19 @@ export default function ChannelRoutingPage() {
       setChannelConfigs(configs);
       initialConfigsRef.current = JSON.stringify(configs);
       setDirtyChannels(new Set());
+
+      // Load WhatsApp sessions with dedicated agent routing
+      try {
+        const sessionsResp = await apiFetch<{ sessions: WhatsAppSessionRouting[] }>("/agent-manager/whatsapp-sessions");
+        const waSessions = sessionsResp.sessions || [];
+        setWhatsappSessions(waSessions);
+        initialSessionsRef.current = JSON.stringify(waSessions);
+        setDirtySessionIds(new Set());
+      } catch (_) {
+        setWhatsappSessions([]);
+        initialSessionsRef.current = JSON.stringify([]);
+        setDirtySessionIds(new Set());
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : t("aiHub.channelRouting.loadFailed"));
     } finally {
@@ -150,6 +178,22 @@ export default function ChannelRoutingPage() {
       })
     );
     setDirtyChannels((prev) => new Set(prev).add(channel));
+    setDirty(true);
+  };
+
+  const handleSessionAgentChange = (sessionId: string, agentId: string) => {
+    setWhatsappSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, agentId: agentId || null } : s))
+    );
+    setDirtySessionIds((prev) => new Set(prev).add(sessionId));
+    setDirty(true);
+  };
+
+  const handleSessionReplyToggle = (sessionId: string, autoReply: boolean) => {
+    setWhatsappSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, autoReply } : s))
+    );
+    setDirtySessionIds((prev) => new Set(prev).add(sessionId));
     setDirty(true);
   };
 
@@ -178,14 +222,22 @@ export default function ChannelRoutingPage() {
         : agents.some((a) => a.status === "ACTIVE" && (a.allowedTools || []).includes(c.toolName))),
     })));
     setDirtyChannels(new Set(CHANNELS.map((c) => c.key)));
+    setWhatsappSessions((prev) =>
+      prev.map((s) => ({
+        ...s,
+        agentId: agentId || null,
+      }))
+    );
+    setDirtySessionIds(new Set(whatsappSessions.map((s) => s.id)));
     setDirty(true);
   };
 
   const handleReset = () => {
-    if (!initialConfigsRef.current) return;
-    setChannelConfigs(JSON.parse(initialConfigsRef.current));
+    if (initialConfigsRef.current) setChannelConfigs(JSON.parse(initialConfigsRef.current));
+    if (initialSessionsRef.current) setWhatsappSessions(JSON.parse(initialSessionsRef.current));
     setChannelReply({});
     setDirtyChannels(new Set());
+    setDirtySessionIds(new Set());
     setDirty(false);
   };
 
@@ -222,6 +274,20 @@ export default function ChannelRoutingPage() {
           }
         }
       }
+
+      // Save individual WhatsApp sessions routing
+      for (const session of whatsappSessions) {
+        if (dirtySessionIds.has(session.id)) {
+          await apiFetch(`/agent-manager/whatsapp-sessions/${session.id}`, {
+            method: "PUT",
+            body: JSON.stringify({
+              agentId: session.agentId || null,
+              autoReply: session.autoReply !== false,
+            }),
+          });
+        }
+      }
+
       await apiFetch("/agent-manager/auto-reply", {
         method: "PUT",
         body: JSON.stringify({ enabled: autoReplyEnabled }),
@@ -241,6 +307,7 @@ export default function ChannelRoutingPage() {
       toast.success(t("aiHub.channelRouting.saved"));
       setDirty(false);
       setDirtyChannels(new Set());
+      setDirtySessionIds(new Set());
       await load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("aiHub.channelRouting.saveFailed"));
@@ -364,61 +431,168 @@ export default function ChannelRoutingPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {channelConfigs.map((config) => (
-                <TableRow key={config.channel} className={dirtyChannels.has(config.channel) ? "bg-amber-50/60 dark:bg-amber-950/20" : ""}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{config.icon}</span>
-                      <span>{isRtl ? (config.labelAr || config.label) : config.label}</span>
-                      {dirtyChannels.has(config.channel) && (
-                        <span className="size-1.5 rounded-full bg-amber-500" title={t("aiHub.channelRouting.modified")} />
+              {channelConfigs.map((config) => {
+                if (config.channel === "WHATSAPP" && whatsappSessions.length > 0) {
+                  return (
+                    <React.Fragment key="whatsapp-sessions-group">
+                      {whatsappSessions.map((session) => {
+                        const isDirty = dirtySessionIds.has(session.id);
+                        const isConnected = String(session.status).toUpperCase() === "CONNECTED";
+                        const sessionAgent = session.agentId ? agents.find((a) => a.id === session.agentId) : null;
+                        const isToolActive = !config.toolName || (sessionAgent
+                          ? (sessionAgent.allowedTools || []).includes(config.toolName)
+                          : config.toolActive);
+
+                        return (
+                          <TableRow
+                            key={`wa-session-${session.id}`}
+                            className={isDirty ? "bg-amber-50/60 dark:bg-amber-950/20" : ""}
+                          >
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2.5">
+                                <span className="text-lg">💚</span>
+                                <div className="flex flex-col min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-semibold text-sm">
+                                      {isRtl ? "واتساب" : "WhatsApp"}
+                                      {session.name ? ` — ${session.name}` : ""}
+                                    </span>
+                                    {session.isDefault && (
+                                      <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4 border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                                        {isRtl ? "افتراضي" : "Default"}
+                                      </Badge>
+                                    )}
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                                      <span
+                                        className={`size-2 rounded-full ${
+                                          isConnected ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" : "bg-slate-400"
+                                        }`}
+                                      />
+                                      {isConnected ? (isRtl ? "متصل" : "Connected") : (isRtl ? "غير متصل" : "Disconnected")}
+                                    </span>
+                                  </div>
+                                  {session.phoneNumber && (
+                                    <span className="text-xs text-muted-foreground font-mono tracking-wider" dir="ltr">
+                                      {session.phoneNumber}
+                                    </span>
+                                  )}
+                                </div>
+                                {isDirty && (
+                                  <span className="size-1.5 rounded-full bg-amber-500" title={t("aiHub.channelRouting.modified")} />
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={session.agentId || ""}
+                                onValueChange={(val) => handleSessionAgentChange(session.id, val)}
+                              >
+                                <SelectTrigger className="w-[240px]">
+                                  <SelectValue placeholder={isRtl ? "اختر وكيلاً لهذا الرقم..." : "Select agent for this number..."}>
+                                    {session.agentId
+                                      ? (agents.find((a) => a.id === session.agentId)?.name || session.agentId)
+                                      : undefined}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">{t("aiHub.channelRouting.noRouting")}</SelectItem>
+                                  {agents
+                                    .filter((a) => a.status === "ACTIVE")
+                                    .map((agent) => (
+                                      <SelectItem key={agent.id} value={agent.id}>
+                                        {agent.name || agent.id}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={session.autoReply !== false}
+                                  onCheckedChange={(val) => handleSessionReplyToggle(session.id, val)}
+                                />
+                                <span className={`text-xs ${session.autoReply !== false ? "text-green-600" : "text-muted-foreground"}`}>
+                                  {session.autoReply !== false ? t("aiHub.channelRouting.active") : t("aiHub.channelRouting.inactive")}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={isToolActive ? "default" : "secondary"}>
+                                {isToolActive ? t("aiHub.channelRouting.active") : t("aiHub.channelRouting.inactive")}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                }
+
+                const isModified = dirtyChannels.has(config.channel);
+                return (
+                  <TableRow key={config.channel} className={isModified ? "bg-amber-50/60 dark:bg-amber-950/20" : ""}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{config.icon}</span>
+                        <div className="flex flex-col">
+                          <span>{isRtl ? (config.labelAr || config.label) : config.label}</span>
+                          {config.channel === "WHATSAPP" && whatsappSessions.length === 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              {isRtl ? "لا توجد أرقام واتساب مربوطة حالياً" : "No WhatsApp numbers connected yet"}
+                            </span>
+                          )}
+                        </div>
+                        {isModified && (
+                          <span className="size-1.5 rounded-full bg-amber-500" title={t("aiHub.channelRouting.modified")} />
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={config.agentId || ""}
+                        onValueChange={(val) => handleAgentChange(config.channel, val)}
+                      >
+                        <SelectTrigger className="w-[240px]">
+                          <SelectValue placeholder={t("aiHub.channelRouting.selectPlaceholder")}>
+                            {config.agentId ? (agents.find((a) => a.id === config.agentId)?.name || config.agentId) : undefined}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">{t("aiHub.channelRouting.noRouting")}</SelectItem>
+                          {agents
+                            .filter((a) => a.status === "ACTIVE")
+                            .map((agent) => (
+                              <SelectItem key={agent.id} value={agent.id}>
+                                {agent.name || agent.id}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={channelReply[config.channel] !== false}
+                          onCheckedChange={(val) => handleChannelReplyToggle(config.channel, val)}
+                        />
+                        <span className={`text-xs ${channelReply[config.channel] !== false ? "text-green-600" : "text-muted-foreground"}`}>
+                          {channelReply[config.channel] !== false ? t("aiHub.channelRouting.active") : t("aiHub.channelRouting.inactive")}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {config.toolName ? (
+                        <Badge variant={config.toolActive ? "default" : "secondary"}>
+                          {config.toolActive ? t("aiHub.channelRouting.active") : t("aiHub.channelRouting.inactive")}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">{t("aiHub.channelRouting.comingSoon")}</Badge>
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={config.agentId || ""}
-                      onValueChange={(val) => handleAgentChange(config.channel, val)}
-                    >
-                      <SelectTrigger className="w-[240px]">
-                        <SelectValue placeholder={t("aiHub.channelRouting.selectPlaceholder")}>
-                          {config.agentId ? (agents.find((a) => a.id === config.agentId)?.name || config.agentId) : undefined}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">{t("aiHub.channelRouting.noRouting")}</SelectItem>
-                        {agents
-                          .filter((a) => a.status === "ACTIVE")
-                          .map((agent) => (
-                            <SelectItem key={agent.id} value={agent.id}>
-                              {agent.name || agent.id}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={channelReply[config.channel] !== false}
-                        onCheckedChange={(val) => handleChannelReplyToggle(config.channel, val)}
-                      />
-                      <span className={`text-xs ${channelReply[config.channel] !== false ? "text-green-600" : "text-muted-foreground"}`}>
-                        {channelReply[config.channel] !== false ? t("aiHub.channelRouting.active") : t("aiHub.channelRouting.inactive")}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {config.toolName ? (
-                      <Badge variant={config.toolActive ? "default" : "secondary"}>
-                        {config.toolActive ? t("aiHub.channelRouting.active") : t("aiHub.channelRouting.inactive")}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">{t("aiHub.channelRouting.comingSoon")}</Badge>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>

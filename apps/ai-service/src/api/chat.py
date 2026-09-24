@@ -31,6 +31,7 @@ class ChatRequest(BaseModel):
     message: str
     thread_id: str | None = None
     channel: str | None = None
+    agent_id: str | None = None
     memory_context: dict[str, Any] | None = None
     attachments: list[dict[str, Any]] | None = None
 
@@ -179,6 +180,7 @@ async def chat(
             customer_id=customer_id,
             session=session,
             channel=channel,
+            agent_id=body.agent_id,
             memory_context=body.memory_context,
             conversation_id=body.thread_id,
             attachments=body.attachments or [],

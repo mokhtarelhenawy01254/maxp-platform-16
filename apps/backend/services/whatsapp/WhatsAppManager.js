@@ -3369,6 +3369,30 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                                 console.warn('[BAILEYS-DEBOUNCE] AI ignore list check failed (fail-open):', _ignoreErr.message);
                             }
 
+                            // Session-level routing: check if this WhatsApp session has a dedicated agent or disabled auto-reply
+                            let sessionAgentId = null;
+                            if (first.sessionId) {
+                                try {
+                                    const waSession = await prisma.whatsAppSession.findUnique({
+                                        where: { id: first.sessionId },
+                                        select: { autoReply: true, aiEnabled: true, metadata: true },
+                                    });
+                                    if (waSession) {
+                                        if (waSession.aiEnabled === false || waSession.autoReply === false) {
+                                            console.log(`🟡 [BAILEYS-DEBOUNCE] AI or autoReply disabled for session ${first.sessionId}`);
+                                            return;
+                                        }
+                                        const meta = typeof waSession.metadata === 'string' ? JSON.parse(waSession.metadata) : waSession.metadata;
+                                        if (meta?.agentId) {
+                                            sessionAgentId = meta.agentId;
+                                            console.log(`🤖 [BAILEYS-DEBOUNCE] Session ${first.sessionId} routed to dedicated agent: ${sessionAgentId}`);
+                                        }
+                                    }
+                                } catch (err) {
+                                    console.warn('[BAILEYS-DEBOUNCE] Error checking session agent:', err.message);
+                                }
+                            }
+
                             const aiSdkClient = require('../aiSdkClient');
                             const result = await aiSdkClient.sendChatMessage({
                                 companyId: first.companyId,
@@ -3376,6 +3400,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                                 message: combinedMessage,
                                 threadId: first.conversationId,
                                 channel,
+                                agentId: sessionAgentId,
                                 memoryContext: null,
                             });
 

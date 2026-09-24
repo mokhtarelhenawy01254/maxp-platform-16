@@ -518,6 +518,10 @@ async function saveIncomingMessage(payload) {
                 return;
               }
             }
+          } catch (_ignoreErr) {
+            console.warn('[WA-INBOUND] AI ignore list check failed (fail-open):', _ignoreErr.message);
+          }
+
           // Session-level routing: check if this WhatsApp session has a dedicated agent or disabled auto-reply
           let sessionAgentId = null;
           if (first.sessionId) {
