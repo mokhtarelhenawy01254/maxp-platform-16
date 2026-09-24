@@ -66,6 +66,8 @@ interface Payroll {
   attendanceDeduction: number;
   absentDays: number;
   latePenalty: number;
+  actualWorkDays?: number;
+  workingDays?: number;
   status: string;
   paidAt: string | null;
   allowances: string | null; // JSON string
@@ -160,6 +162,8 @@ const Payroll: React.FC = () => {
   const [paying, setPaying] = useState(false);
   const [forceRegenerate, setForceRegenerate] = useState(false);
   const [view, setView] = useState<'list' | 'simulator'>('list');
+  const [autoStatus, setAutoStatus] = useState<any>(null);
+  const [autoCalculating, setAutoCalculating] = useState(false);
 
   // Edit form data
   const [editFormData, setEditFormData] = useState({
@@ -242,12 +246,50 @@ const Payroll: React.FC = () => {
     }
   }, [selectedMonth, selectedYear, statusFilter]);
 
+  const fetchAutoStatus = React.useCallback(async () => {
+    try {
+      const response = await api.get(`/hr/payroll/auto-status?month=${selectedMonth}&year=${selectedYear}`);
+      if (response.data.success) {
+        setAutoStatus(response.data);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch payroll auto status:', err);
+    }
+  }, [selectedMonth, selectedYear]);
+
   useEffect(() => {
     fetchPayrolls();
     if (!isMyPayroll) {
       fetchSummary();
+      fetchAutoStatus();
     }
-  }, [fetchPayrolls, fetchSummary, isMyPayroll]);
+  }, [fetchPayrolls, fetchSummary, fetchAutoStatus, isMyPayroll]);
+
+  const handleAutoCalculatePayroll = async () => {
+    try {
+      setAutoCalculating(true);
+      const response = await api.post('/hr/payroll/auto-calculate', {
+        month: selectedMonth,
+        year: selectedYear,
+        forceRegenerate: true
+      });
+
+      if (response.data.success) {
+        const res = response.data;
+        toast.success(`تمت أتمتة وحساب كشوف الرواتب والخصومات لـ ${res.processed} موظف بنجاح`, {
+          description: `خصومات الغياب: ${formatCurrency(res.totalAbsenceDeductions)} | خصومات التأخير: ${formatCurrency(res.totalLateDeductions)} | عجز الساعات: ${formatCurrency(res.totalDeficitDeductions)}`
+        });
+        fetchPayrolls();
+        fetchSummary();
+        fetchAutoStatus();
+      }
+    } catch (error: any) {
+      console.error('Error auto-calculating payroll:', error);
+      toast.error(error.response?.data?.error || 'حدث خطأ أثناء أتمتة حساب الرواتب والخصومات');
+    } finally {
+      setAutoCalculating(false);
+    }
+  };
 
   const handleGeneratePayroll = async () => {
     try {
@@ -999,7 +1041,7 @@ const Payroll: React.FC = () => {
             {months[selectedMonth - 1]} {selectedYear}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <Button variant="outline" onClick={handleExportBankFile}>
             <Download className="h-4 w-4 ml-2" />
             ملف الصرف
@@ -1023,14 +1065,65 @@ const Payroll: React.FC = () => {
                   </>
                 )}
               </Button>
-              <Button onClick={() => setShowGenerateDialog(true)}>
+              <Button onClick={() => setShowGenerateDialog(true)} variant="outline">
                 <Calculator className="h-4 w-4 ml-2" />
                 إعداد الرواتب
+              </Button>
+              <Button
+                onClick={handleAutoCalculatePayroll}
+                disabled={autoCalculating}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1.5"
+              >
+                {autoCalculating ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 ml-1.5 animate-spin" />
+                    جاري الحساب والخصم الآلي...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 ml-1.5" />
+                    أتمتة وحساب الرواتب والخصومات
+                  </>
+                )}
               </Button>
             </>
           )}
         </div>
       </div>
+
+      {/* Automation Telemetry & Status Bar */}
+      {!isMyPayroll && autoStatus && (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-slate-900 text-slate-100 rounded-xl border border-slate-800 text-xs shadow-sm">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 text-emerald-400 font-medium">
+              <CheckCircle className="h-4 w-4 text-emerald-400" />
+              <span>نظام الأتمتة:</span>
+              <span className="font-bold text-white">{autoStatus.autoDeductionEnabled ? 'مفعّل تلقائياً' : 'معطل'}</span>
+            </div>
+            <div className="h-3.5 w-px bg-slate-700 hidden sm:block" />
+            <div className="flex items-center gap-1.5 text-slate-300">
+              <Calendar className="h-3.5 w-3.5 text-indigo-400" />
+              <span>يوم الصرف الشهري:</span>
+              <span className="font-semibold text-white">يوم {autoStatus.payrollDay}</span>
+            </div>
+            <div className="h-3.5 w-px bg-slate-700 hidden sm:block" />
+            <div className="flex items-center gap-1.5 text-slate-300">
+              <Clock className="h-3.5 w-3.5 text-amber-400" />
+              <span>معامل الغياب:</span>
+              <span className="font-semibold text-white">{autoStatus.absencePenaltyRate}x</span>
+              <span className="text-slate-400">({autoStatus.workingHoursPerDay}س/يوم)</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-emerald-950/60 border-emerald-500/30 text-emerald-300 text-[11px] tabular-nums">
+              {autoStatus.stats?.attendanceCount || 0} سجل حضور مسجل
+            </Badge>
+            <Badge variant="outline" className="bg-slate-800 border-slate-700 text-slate-300 text-[11px] tabular-nums">
+              {autoStatus.stats?.draftCount || 0} مسودة جاهزة
+            </Badge>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       {view === 'simulator' ? (
@@ -1254,12 +1347,41 @@ const Payroll: React.FC = () => {
                             +{formatCurrency(payroll.totalAllowances)}
                           </TableCell>
                           <TableCell className="text-red-600">
-                            -{formatCurrency(
-                              Number(payroll.totalDeductions) +
-                              (Number(payroll.fullMonthBaseSalary || 0) > Number(payroll.baseSalary)
-                                ? Number(payroll.fullMonthBaseSalary) - Number(payroll.baseSalary)
-                                : 0)
-                            )}
+                            <span className="font-semibold block tabular-nums">
+                              -{formatCurrency(
+                                Number(payroll.totalDeductions) +
+                                (Number(payroll.fullMonthBaseSalary || 0) > Number(payroll.baseSalary)
+                                  ? Number(payroll.fullMonthBaseSalary) - Number(payroll.baseSalary)
+                                  : 0)
+                              )}
+                            </span>
+                            {(() => {
+                              try {
+                                const d = typeof payroll.deductions === 'string'
+                                  ? JSON.parse(payroll.deductions || '{}')
+                                  : (payroll.deductions || {});
+                                const items: string[] = [];
+                                if (d['غياب'] || payroll.absentDays > 0) {
+                                  items.push(`غياب: ${payroll.absentDays ? `${payroll.absentDays}ي` : ''}${d['غياب'] ? ` (${formatCurrency(Number(d['غياب']))})` : ''}`);
+                                }
+                                if (d['تأخيرات'] || (payroll.latePenalty && payroll.latePenalty > 0)) {
+                                  items.push(`تأخير: ${formatCurrency(Number(d['تأخيرات'] || payroll.latePenalty))}`);
+                                }
+                                if (d['عجز ساعات العمل']) {
+                                  items.push(`عجز: ${formatCurrency(Number(d['عجز ساعات العمل']))}`);
+                                }
+                                if (items.length > 0) {
+                                  return (
+                                    <div className="text-[10px] text-red-500 font-medium tabular-nums mt-0.5 truncate max-w-[190px]" title={items.join(' • ')}>
+                                      {items.join(' • ')}
+                                    </div>
+                                  );
+                                }
+                              } catch {
+                                // ignore parse error
+                              }
+                              return null;
+                            })()}
                           </TableCell>
                           <TableCell className={`font-bold ${payroll.netSalary < 0 ? 'text-red-600' : 'text-gray-900 dark:text-white'} ltr:text-left rtl:text-right`}>
                             <span dir="ltr">{formatCurrency(payroll.netSalary)}</span>
@@ -1519,6 +1641,119 @@ const Payroll: React.FC = () => {
                     </Badge>
                   </div>
 
+                  {/* Attendance & Working Hours Telemetry Card */}
+                  {(() => {
+                    const deductionsObj = typeof selectedPayroll.deductions === 'string'
+                      ? JSON.parse(selectedPayroll.deductions || '{}')
+                      : (selectedPayroll.deductions || {});
+                    
+                    const absenceAmount = deductionsObj['غياب'] ?? 0;
+                    const lateAmount = deductionsObj['تأخيرات'] ?? (selectedPayroll.latePenalty || 0);
+                    const deficitAmount = deductionsObj['عجز ساعات العمل'] ?? 0;
+                    const totalAttDeduct = Number(absenceAmount) + Number(lateAmount) + Number(deficitAmount) || (selectedPayroll.attendanceDeduction || 0);
+
+                    const absenceLogs = deductionsObj.absenceDetails ? String(deductionsObj.absenceDetails).split(' | ') : [];
+                    const lateLogs = deductionsObj.lateDetails ? String(deductionsObj.lateDetails).split(' | ') : [];
+                    const deficitLogs = deductionsObj.deficitDetails ? String(deductionsObj.deficitDetails).split(' | ') : [];
+
+                    return (
+                      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                              سجل الحضور وساعات العمل والخصومات الآلية
+                            </span>
+                          </div>
+                          {totalAttDeduct > 0 ? (
+                            <Badge variant="outline" className="bg-rose-50 dark:bg-rose-950/40 border-rose-200 text-rose-700 dark:text-rose-400 text-xs font-semibold tabular-nums">
+                              إجمالي خصم الحضور: -{formatCurrency(totalAttDeduct)}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
+                              لا توجد استقطاعات حضور
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* 4 Telemetry Metrics */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                          <div className="p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 shadow-xs">
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">أيام العمل الفعلية</span>
+                            <div className="flex items-baseline gap-1 mt-1">
+                              <span className="text-base font-bold text-slate-800 dark:text-slate-100 tabular-nums">
+                                {selectedPayroll.actualWorkDays ?? (selectedPayroll.workingDays ? selectedPayroll.workingDays - (selectedPayroll.absentDays || 0) : '-')}
+                              </span>
+                              {selectedPayroll.workingDays && (
+                                <span className="text-[10px] text-slate-400">/ {selectedPayroll.workingDays} يوم</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 shadow-xs">
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">أيام الغياب</span>
+                            <div className="flex items-baseline gap-1.5 mt-1">
+                              <span className={`text-base font-bold tabular-nums ${selectedPayroll.absentDays > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-100'}`}>
+                                {selectedPayroll.absentDays || 0}
+                              </span>
+                              {Number(absenceAmount) > 0 && (
+                                <span className="text-[10px] text-rose-500 tabular-nums font-medium">(-{formatCurrency(Number(absenceAmount))})</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 shadow-xs">
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">غرامات التأخير</span>
+                            <div className="mt-1">
+                              <span className={`text-base font-bold tabular-nums ${Number(lateAmount) > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-slate-100'}`}>
+                                {Number(lateAmount) > 0 ? `-${formatCurrency(Number(lateAmount))}` : '0.00'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 shadow-xs">
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">عجز الساعات / مبكر</span>
+                            <div className="mt-1">
+                              <span className={`text-base font-bold tabular-nums ${Number(deficitAmount) > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-100'}`}>
+                                {Number(deficitAmount) > 0 ? `-${formatCurrency(Number(deficitAmount))}` : '0.00'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Detailed Calculation Logs if available */}
+                        {(absenceLogs.length > 0 || lateLogs.length > 0 || deficitLogs.length > 0 || deductionsObj.capNotes) && (
+                          <div className="mt-2 pt-2 border-t border-slate-200/80 dark:border-slate-800 space-y-1.5 text-[11px]">
+                            {absenceLogs.length > 0 && (
+                              <div className="flex items-start gap-1.5 text-rose-700 dark:text-rose-400">
+                                <span className="font-semibold whitespace-nowrap">سجل الغياب:</span>
+                                <span className="text-slate-600 dark:text-slate-300 leading-relaxed tabular-nums">{absenceLogs.join(' • ')}</span>
+                              </div>
+                            )}
+                            {lateLogs.length > 0 && (
+                              <div className="flex items-start gap-1.5 text-amber-700 dark:text-amber-400">
+                                <span className="font-semibold whitespace-nowrap">سجل التأخيرات:</span>
+                                <span className="text-slate-600 dark:text-slate-300 leading-relaxed tabular-nums">{lateLogs.join(' • ')}</span>
+                              </div>
+                            )}
+                            {deficitLogs.length > 0 && (
+                              <div className="flex items-start gap-1.5 text-indigo-700 dark:text-indigo-400">
+                                <span className="font-semibold whitespace-nowrap">عجز الساعات:</span>
+                                <span className="text-slate-600 dark:text-slate-300 leading-relaxed tabular-nums">{deficitLogs.join(' • ')}</span>
+                              </div>
+                            )}
+                            {deductionsObj.capNotes && (
+                              <div className="flex items-start gap-1.5 text-slate-500 dark:text-slate-400 italic">
+                                <span className="font-semibold whitespace-nowrap">سقف الخصم القانوني:</span>
+                                <span>{deductionsObj.capNotes}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {/* Salary Breakdown */}
                   <div className="grid grid-cols-2 gap-8">
                     {/* Allowances/Earnings */}
@@ -1569,7 +1804,7 @@ const Payroll: React.FC = () => {
                           <div className="flex justify-between items-start bg-red-50/50 dark:bg-red-900/10 px-2 py-1 rounded border-red-100 border">
                             <div className="space-y-0.5">
                               <span className="text-red-800 text-xs font-bold block">فروقات عمل/تناسب</span>
-                              <span className="text-[10px] text-red-600 block">نقص {selectedPayroll.workingDays - selectedPayroll.actualWorkDays} يوم من الدورة</span>
+                              <span className="text-[10px] text-red-600 block">نقص {(selectedPayroll.workingDays || 30) - (selectedPayroll.actualWorkDays || 0)} يوم من الدورة</span>
                             </div>
                             <span className="font-bold text-xs text-red-700">-{formatCurrency(Number(selectedPayroll.fullMonthBaseSalary) - Number(selectedPayroll.baseSalary))}</span>
                           </div>
@@ -1582,11 +1817,11 @@ const Payroll: React.FC = () => {
                             : (selectedPayroll.deductions || {});
 
                           // Filter out metadata and handled keys
-                          const metadataKeys = ['details', 'manualDetails', 'capNotes', 'advanceDetails'];
+                          const metadataKeys = ['details', 'manualDetails', 'capNotes', 'advanceDetails', 'absenceDetails', 'lateDetails', 'deficitDetails'];
                           return Object.entries(deductions)
                             .filter(([key]) => !metadataKeys.includes(key))
                             .map(([name, amount], i) => {
-                              // If it's a known metadata key, skip (already filtered but just in case)
+                              // If it's a known metadata key, skip
                               if (metadataKeys.includes(name)) return null;
 
                               // Process whole details string to find parts matching this name
@@ -1604,13 +1839,19 @@ const Payroll: React.FC = () => {
                                 subNote = "سداد أقساط سلف قائمة";
                               } else if (name === 'خصم يدوي' && deductions.manualDetails) {
                                 subNote = deductions.manualDetails;
-                              } else if (specificDetails.length > 0) {
-                                subNote = specificDetails.join(' | ');
+                              } else if (name === 'غياب' && deductions.absenceDetails) {
+                                subNote = deductions.absenceDetails;
+                              } else if (name === 'تأخيرات' && deductions.lateDetails) {
+                                subNote = deductions.lateDetails;
+                              } else if (name === 'عجز ساعات العمل' && deductions.deficitDetails) {
+                                subNote = deductions.deficitDetails;
                               } else if (name === 'غياب وتأخير' && (selectedPayroll.absentDays > 0 || selectedPayroll.latePenalty > 0)) {
                                 const notes = [];
                                 if (selectedPayroll.absentDays > 0) notes.push(`${selectedPayroll.absentDays} أيام غياب`);
                                 if (selectedPayroll.latePenalty > 0) notes.push(`تأخيرات`);
                                 subNote = notes.join(' و ');
+                              } else if (specificDetails.length > 0) {
+                                subNote = specificDetails.join(' | ');
                               }
 
                               return (

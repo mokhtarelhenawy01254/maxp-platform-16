@@ -2893,6 +2893,51 @@ async function generateMonthlyPayroll(req, res) {
 }
 
 /**
+ * أتمتة حساب وخصم الرواتب تلقائياً وفقاً للغياب والتأخيرات وساعات العمل وسجلات الحضور
+ * POST /api/hr/payroll/auto-calculate
+ */
+async function autoCalculateAndDeductPayrolls(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { month, year, forceRegenerate } = req.body;
+    const result = await payrollService.autoCalculateAndDeductPayrolls(
+      companyId,
+      month,
+      year,
+      { forceRegenerate: forceRegenerate === true }
+    );
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error("❌ Error auto-calculating payroll:", error);
+    res
+      .status(500)
+      .json({ error: error.message || "حدث خطأ أثناء أتمتة حساب الرواتب والخصومات" });
+  }
+}
+
+/**
+ * جلب حالة أتمتة الرواتب والخصومات للشركة
+ * GET /api/hr/payroll/auto-status
+ */
+async function getPayrollAutomationStatus(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { month, year } = req.query;
+    const result = await payrollService.getPayrollAutomationStatus(
+      companyId,
+      month,
+      year
+    );
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error("❌ Error getting payroll automation status:", error);
+    res
+      .status(500)
+      .json({ error: error.message || "حدث خطأ أثناء جلب حالة أتمتة الرواتب" });
+  }
+}
+
+/**
  * جلب كشوف الرواتب
  * GET /api/hr/payroll
  */
@@ -7091,6 +7136,8 @@ module.exports = {
   // Payroll
   createPayroll,
   generateMonthlyPayroll,
+  autoCalculateAndDeductPayrolls,
+  getPayrollAutomationStatus,
   getPayrolls,
   getPayrollById,
   updatePayroll,

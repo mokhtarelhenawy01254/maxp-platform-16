@@ -21,7 +21,11 @@ class PayrollService {
   }
 
   get prisma() {
-    return getSharedPrismaClient();
+    return this._mockPrisma || getSharedPrismaClient();
+  }
+
+  set prisma(client) {
+    this._mockPrisma = client;
   }
 
   /**
@@ -1097,19 +1101,57 @@ class PayrollService {
       });
     });
 
-    const attendedDatesMap = new Set(
-      attendance
-        .filter(a => ['PRESENT', 'LATE', 'REMOTE'].includes(a.status))
-        .map(a => this.toLocalDateKey(a.date))
+    // تصنيف سجلات الحضور وساعات العمل
+    const attendedFullDatesSet = new Set();
+    const halfDayDatesSet = new Set();
+    const restOrHolidayDatesSet = new Set();
+    const attendanceMapByDate = new Map();
+
+    attendance.forEach(a => {
+      const dateKey = this.toLocalDateKey(a.date);
+      attendanceMapByDate.set(dateKey, a);
+      if (['PRESENT', 'LATE', 'REMOTE'].includes(a.status)) {
+        attendedFullDatesSet.add(dateKey);
+      } else if (a.status === 'HALF_DAY') {
+        halfDayDatesSet.add(dateKey);
+      } else if (['HOLIDAY', 'REST_DAY', 'ON_LEAVE'].includes(a.status)) {
+        restOrHolidayDatesSet.add(dateKey);
+      }
+    });
+
+    // إجازات نصف يوم
+    const halfDayLeaveDatesSet = new Set();
+    leaves.forEach(leave => {
+      if (leave.isHalfDay) {
+        const dates = this.getDateRange(leave.startDate, leave.endDate);
+        dates.forEach(d => {
+          const dateStr = this.toLocalDateKey(d);
+          if (workingDatesSet.has(dateStr)) {
+            halfDayLeaveDatesSet.add(dateStr);
+          }
+        });
+      }
+    });
+
+    // أيام الغياب غير المبررة (لا حضور ولا إجازة ولا راحة/عطلة)
+    const trulyAbsentDates = workingDates.filter(d =>
+      !attendedFullDatesSet.has(d) &&
+      !halfDayDatesSet.has(d) &&
+      !paidLeaveDates.has(d) &&
+      !unpaidLeaveDates.has(d) &&
+      !restOrHolidayDatesSet.has(d)
     );
 
-    // أيام الحضور الفعلي + الإجازات المدفوعة
-    const paidDatesCount = workingDates.filter(d => attendedDatesMap.has(d) || paidLeaveDates.has(d)).length;
-    const presentDays = paidDatesCount;
+    // إجمالي أيام الغياب (الأيام الكاملة + 0.5 لكل نصف يوم غير مغطى بإجازة)
+    const absentDays = trulyAbsentDates.length + (halfDayDatesSet.size * 0.5);
 
-    // أيام الغياب (لا حضور ولا إجازة ولا عطلة رسمية)
-    const trulyAbsentDates = workingDates.filter(d => !attendedDatesMap.has(d) && !paidLeaveDates.has(d) && !unpaidLeaveDates.has(d));
-    const absentDays = trulyAbsentDates.length;
+    // أيام الحضور الفعلي والمدفوعة
+    const paidDatesCount = workingDates.filter(d =>
+      attendedFullDatesSet.has(d) ||
+      paidLeaveDates.has(d) ||
+      restOrHolidayDatesSet.has(d)
+    ).length + (halfDayDatesSet.size * 0.5);
+    const presentDays = paidDatesCount;
 
     // حساب ساعات العمل الإضافي
     const totalOvertimeHours = attendance.reduce((sum, a) =>
@@ -1120,10 +1162,12 @@ class PayrollService {
     const totalLateMinutes = attendance.reduce((sum, a) => sum + (a.lateMinutes || 0), 0);
     const totalEarlyMinutes = attendance.reduce((sum, a) => sum + (a.earlyLeaveMinutes || 0), 0);
 
-    // الراتب الأساسي (مع إمكانية المحاكاة)
+    // الراتب الأساسي وسعر اليوم والساعة والدقيقة
     const fullMonthBaseSalary = parseFloat(data.overrides?.baseSalary || employee.baseSalary) || 0;
     const dailyRate = fullMonthBaseSalary / totalWorkingDaysInMonth;
-    const hourlyRate = dailyRate / 8;
+    const workingHoursPerDay = settings?.workingHoursPerDay || 8;
+    const hourlyRate = dailyRate / workingHoursPerDay;
+    const minuteRate = hourlyRate / 60;
 
     // البدلات (Allowances)
     let allowances = data.allowances || {};
@@ -1150,7 +1194,7 @@ class PayrollService {
     let totalAllowances = fullMonthAllowances;
 
     if (isCurrentMonth) {
-      const daysPassedWorking = this.getWorkingDaysInMonth(year, month, now.getDate());
+      const daysPassedWorking = this.getWorkingDaysInMonth(year, month, now.getDate(), workingDaysConfig, publicHolidays);
       const earnedRatio = daysPassedWorking / totalWorkingDaysInMonth;
       baseSalary = fullMonthBaseSalary * earnedRatio;
       totalAllowances = fullMonthAllowances * earnedRatio;
@@ -1165,25 +1209,17 @@ class PayrollService {
     }
 
     // ---------------------------------------------------------
-    // 💸 DEDUCTIONS INTEGRATION (الخصومات) - Daily Aware Logic
+    // 💸 DEDUCTIONS INTEGRATION (الخصومات التلقائية واليدوية)
     // ---------------------------------------------------------
 
-    // التحقق من تفعيل الخصم التلقائي (على مستوى الشركة والموظف)
     const isCompanyAutoDeductionEnabled = settings?.autoDeductionEnabled !== false;
     const isEmployeeAutoDeductionEnabled = employee.enableAutoDeduction !== false;
     const isAutoDeductionEnabled = isCompanyAutoDeductionEnabled && isEmployeeAutoDeductionEnabled;
-    console.log('🔍 [PAYROLL-DEDUCTION] Auto deduction check:', {
-      employeeId,
-      companyAutoDeduction: settings?.autoDeductionEnabled,
-      employeeAutoDeduction: employee.enableAutoDeduction,
-      isAutoDeductionEnabled
-    });
 
     const dailyPenaltyMap = new Map();
     const deductions = {};
     let attendanceDeduction = 0;
     let latePenalty = 0;
-    let manualDeductionAmount = 0;
 
     const maxDailyDeductionDays = parseFloat(settings?.maxDailyDeductionDays) || 0;
     const dailyCapLimit = maxDailyDeductionDays > 0 ? (dailyRate * maxDailyDeductionDays) : Infinity;
@@ -1206,11 +1242,7 @@ class PayrollService {
         ...d,
         date: new Date(d.date)
       }));
-      console.log(`🧪 [PAYROLL-SIM] Using simulation manual deductions: ${manualDeductions.length} records`);
     } else {
-      // عند تعطيل الخصم التلقائي، نستبعد سجلات AUTO_DEDUCTION
-      // لأن الخصم التلقائي ينشئ سجلاتها مع مراعاة المدة المسموحة،
-      // وفي المسار اليدوي سنعيد حساب غرامات التأخير من الحضور مباشرة
       const manualDeductionCategoryFilter = isAutoDeductionEnabled
         ? { not: 'UNPAID_LEAVE' }
         : { notIn: ['UNPAID_LEAVE', 'AUTO_DEDUCTION'] };
@@ -1221,7 +1253,6 @@ class PayrollService {
           companyId,
           effectiveMonth: parseInt(month),
           effectiveYear: parseInt(year),
-          // Include both APPROVED and PENDING auto-deductions so they are always applied
           OR: [
             { status: 'APPROVED' },
             { status: 'PENDING', category: 'AUTO_DEDUCTION' }
@@ -1230,11 +1261,6 @@ class PayrollService {
         }
       });
     }
-
-    // حساب قيمة latePenalty من الخصومات التلقائية للتأخير (للتخزين في حقل latePenalty)
-    latePenalty = manualDeductions
-      .filter(d => d.category === 'AUTO_DEDUCTION' && d.type === 'LATE')
-      .reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
 
     manualDeductions.forEach(d => {
       addDailyPenalty(d.date, parseFloat(d.amount), `يدوي: ${d.reason}`, 'manual');
@@ -1251,140 +1277,178 @@ class PayrollService {
       addDailyPenalty(new Date(dateStr), dailyRate, 'إجازة بدون راتب');
     });
 
-    // 2. Absence Penalty (Find specific dates) - فقط للأيام التي لم يحضر فيها ولم يكن لديه إجازة
-    // تم تعديل السلوك ليحسب خصم الغياب للشهر الحالي أيضاً بناءً على الإعدادات
+    // 2. Absence Penalty (حساب وخصم الغياب تلقائياً)
     const absenceMultiplier = parseFloat(settings?.absencePenaltyRate) || 1.0;
+    const deductAbsenceInCurrentMonth = settings?.deductAbsenceInCurrentMonth !== false;
 
-    // التحقق من إعدادات خصم الغياب للشهر الحالي
-    const deductAbsenceInCurrentMonth = settings?.deductAbsenceInCurrentMonth !== false; // القيمة الافتراضية هي true
+    let totalAbsencePenalty = 0;
+    const absenceDetails = [];
 
-    // حساب خصم الغياب
     workingDates.forEach(dateStr => {
-      // نتأكد أن اليوم قد مر فعلاً (للشهر الحالي)
       const dayDate = new Date(dateStr);
       const isPastDay = isCurrentMonth ? dayDate <= now : true;
 
-      // نطبق خصم الغياب فقط على الأيام التي مرت ولم يسجل فيها حضور أو إجازة
-      // للشهر الحالي: نتحقق من إعداد deductAbsenceInCurrentMonth
-      // للشهور السابقة: نحسب خصم الغياب دائماً
-      if (isPastDay && !attendedDatesMap.has(dateStr) && !paidLeaveDates.has(dateStr) && !unpaidLeaveDates.has(dateStr)) {
+      if (isPastDay && trulyAbsentDates.includes(dateStr)) {
         if (!isCurrentMonth || deductAbsenceInCurrentMonth) {
-          addDailyPenalty(new Date(dateStr), dailyRate * absenceMultiplier, 'غياب');
+          const dayAbsenceAmount = dailyRate * absenceMultiplier;
+          totalAbsencePenalty += dayAbsenceAmount;
+          absenceDetails.push(`${dateStr} (غياب كامل × ${absenceMultiplier} = ${dayAbsenceAmount.toFixed(2)})`);
+          addDailyPenalty(new Date(dateStr), dayAbsenceAmount, `غياب كامل (معامل ${absenceMultiplier}x)`, 'absence');
         }
       }
     });
 
-    // 3. Late Penalty - يتم تخطي إعادة الحساب إذا كان الخصم التلقائي مفعلاً
-    // لأن الخصم التلقائي ينشئ سجلات ManualDeduction (مع مراعاة المدة المسموحة)
-    // ويتم تضمينها تلقائياً في الخصومات أعلاه
-    if (isAutoDeductionEnabled) {
-      console.log('🔍 [PAYROLL-DEDUCTION] Auto deduction is enabled - skipping late penalty recalculation (already handled via ManualDeduction records with grace period)');
-    } else {
-      // إذا كان الخصم التلقائي معطلاً، نحتاج لحساب غرامات التأخير يدوياً
-      // مع مراعاة المدة المسموحة (grace period) من رصيد المرونة
-      console.log('🔍 [PAYROLL-DEDUCTION] Auto deduction disabled - calculating late penalties manually with grace period');
+    halfDayDatesSet.forEach(dateStr => {
+      const dayDate = new Date(dateStr);
+      const isPastDay = isCurrentMonth ? dayDate <= now : true;
 
-      const lateOccurrences = attendance.filter(a => (a.lateMinutes > 0 || a.status === 'LATE')).sort((a, b) => new Date(a.date) - new Date(b.date));
-      const delayPenaltyTiers = settings?.delayPenaltyTiers ? JSON.parse(settings.delayPenaltyTiers) : [];
-      const lateWarningLevels = settings?.lateWarningLevels ? JSON.parse(settings.lateWarningLevels) : [];
-      const monthlyLateLimit = parseInt(settings?.monthlyLateLimit) || 3;
-      const gracePeriodMinutes = settings?.gracePeriodMinutes || 60;
-
-      console.log('🔍 [PAYROLL-DEDUCTION] Processing late penalties:', {
-        lateOccurrencesCount: lateOccurrences.length,
-        delayPenaltyTiersCount: delayPenaltyTiers.length,
-        lateWarningLevelsCount: lateWarningLevels.length,
-        monthlyLateLimit,
-        gracePeriodMinutes
-      });
-
-      // جلب رصيد المرونة الحالي للموظف (المدة المسموحة)
-      const latenessBalance = await this.prisma.latenessBalance.findUnique({
-        where: {
-          employeeId_month_year: {
-            employeeId,
-            month: parseInt(month),
-            year: parseInt(year)
-          }
+      if (isPastDay && !halfDayLeaveDatesSet.has(dateStr)) {
+        if (!isCurrentMonth || deductAbsenceInCurrentMonth) {
+          const halfDayAbsenceAmount = (dailyRate * 0.5) * absenceMultiplier;
+          totalAbsencePenalty += halfDayAbsenceAmount;
+          absenceDetails.push(`${dateStr} (غياب نصف يوم × ${absenceMultiplier} = ${halfDayAbsenceAmount.toFixed(2)})`);
+          addDailyPenalty(new Date(dateStr), halfDayAbsenceAmount, `غياب نصف يوم (معامل ${absenceMultiplier}x)`, 'absence');
         }
-      });
-
-      let remainingGrace = gracePeriodMinutes - (latenessBalance?.graceMinutesUsed || 0);
-      if (remainingGrace < 0) remainingGrace = 0;
-      let cumulativeLateMinutes = latenessBalance?.totalLateMinutes || 0;
-
-      if (delayPenaltyTiers && delayPenaltyTiers.length > 0) {
-        lateOccurrences.forEach(occ => {
-          const mins = occ.lateMinutes || 0;
-          // تطبيق المدة المسموحة: نحتسب فقط الدقائق التي تتجاوز رصيد المرونة المتبقي
-          let effectiveLateMinutes = mins;
-          if (remainingGrace > 0) {
-            const graceUsed = Math.min(effectiveLateMinutes, remainingGrace);
-            remainingGrace -= graceUsed;
-            effectiveLateMinutes -= graceUsed;
-          }
-          if (effectiveLateMinutes <= 0) return;
-
-          const applicableTier = [...delayPenaltyTiers].sort((a, b) => b.minMinutes - a.minMinutes).find(t => effectiveLateMinutes >= t.minMinutes);
-          if (applicableTier) {
-            const amount = dailyRate * (parseFloat(applicableTier.deductionDays) || 0);
-            console.log('🔍 [PAYROLL-DEDUCTION] Applying tier penalty:', {
-              date: occ.date,
-              minutes: mins,
-              effectiveMinutes: effectiveLateMinutes,
-              tier: applicableTier,
-              amount,
-              remainingGrace
-            });
-            addDailyPenalty(occ.date, amount, `تأخير ${mins}د (بعد خصم ${mins - effectiveLateMinutes}د مسموحة)`);
-          }
-        });
-      } else {
-        lateOccurrences.forEach((occ, index) => {
-          const rank = index + 1;
-          const mins = occ.lateMinutes || 0;
-
-          // تطبيق المدة المسموحة: نحتسب فقط الدقائق التي تتجاوز رصيد المرونة المتبقي
-          let effectiveLateMinutes = mins;
-          if (remainingGrace > 0) {
-            const graceUsed = Math.min(effectiveLateMinutes, remainingGrace);
-            remainingGrace -= graceUsed;
-            effectiveLateMinutes -= graceUsed;
-          }
-
-          cumulativeLateMinutes += mins;
-          // للمدة المسموحة نستخدم cumulative بدلاً من الفردي
-          if (effectiveLateMinutes <= 0) return;
-
-          if (rank > monthlyLateLimit) {
-            const occurrenceSeq = rank - monthlyLateLimit;
-            const level = lateWarningLevels.find(l => l.count === occurrenceSeq) || (lateWarningLevels.length > 0 ? lateWarningLevels[lateWarningLevels.length - 1] : null);
-            if (level) {
-              const amount = dailyRate * (parseFloat(level.deductionFactor) || 0);
-              console.log('🔍 [PAYROLL-DEDUCTION] Applying escalation penalty:', {
-                date: occ.date,
-                rank,
-                level,
-                amount,
-                remainingGrace
-              });
-              addDailyPenalty(occ.date, amount, `تأخير رقم ${rank} (بعد خصم المسموح)`);
-            }
-          }
-        });
       }
-    }
+    });
 
-    // Early Leave - 60 دقيقة مسموحة شهرياً، يتم حساب الخصم بعد تجاوزها
-    if (totalEarlyMinutes > 60) {
-      const penalizedMinutes = totalEarlyMinutes - 60;
-      const earlyPenaltyHours = Math.ceil(penalizedMinutes / 60);
-      const amount = hourlyRate * earlyPenaltyHours;
-      const lastCheckOut = attendance.filter(a => a.check_out).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-      if (lastCheckOut) {
-        addDailyPenalty(lastCheckOut.date, amount, `خروج مبكر ${earlyPenaltyHours}س (بعد خصم 60د مسموحة)`);
+    // 3. Late Penalty (حساب وخصم التأخيرات تلقائياً)
+    let totalLatePenalty = 0;
+    const lateDetails = [];
+
+    const lateOccurrences = attendance
+      .filter(a => (a.lateMinutes > 0 || a.status === 'LATE'))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const autoDeductionMap = new Map();
+    manualDeductions.forEach(d => {
+      if (d.category === 'AUTO_DEDUCTION' && d.type === 'LATE') {
+        const key = this.toLocalDateKey(d.date);
+        autoDeductionMap.set(key, d);
       }
-    }
+    });
+
+    const latenessBalance = await this.prisma.latenessBalance.findUnique({
+      where: {
+        employeeId_month_year: {
+          employeeId,
+          month: parseInt(month),
+          year: parseInt(year)
+        }
+      }
+    });
+
+    const monthlyGrace = settings?.gracePeriodMinutes !== undefined ? settings.gracePeriodMinutes : 60;
+    let remainingGrace = Math.max(0, monthlyGrace - (latenessBalance?.graceMinutesUsed || 0));
+    const maxDailyThreshold = settings?.lateThresholdMinutes || settings?.lateGracePeriod || 10;
+    const delayPenaltyTiers = settings?.delayPenaltyTiers
+      ? (typeof settings.delayPenaltyTiers === 'string' ? JSON.parse(settings.delayPenaltyTiers) : settings.delayPenaltyTiers)
+      : [];
+    const firstViolationMultiplier = parseFloat(settings?.firstViolationMultiplier) || 1.0;
+    const secondViolationMultiplier = parseFloat(settings?.secondViolationMultiplier) || 2.0;
+    const thirdViolationMultiplier = parseFloat(settings?.thirdViolationMultiplier) || 3.0;
+
+    lateOccurrences.forEach((occ, index) => {
+      const dateStr = this.toLocalDateKey(occ.date);
+      const mins = occ.lateMinutes || 0;
+
+      // إذا وُجد خصم تلقائي محفوظ مسبقاً في ManualDeduction، نعتمد قيمته
+      if (autoDeductionMap.has(dateStr)) {
+        const existingDeduction = autoDeductionMap.get(dateStr);
+        const amount = parseFloat(existingDeduction.amount) || 0;
+        totalLatePenalty += amount;
+        lateDetails.push(`${dateStr}: تأخير ${mins}د = ${amount.toFixed(2)} ج.م (تلقائي معتمد)`);
+        return;
+      }
+
+      // حساب ديناميكي للتأخير غير المحفوظ مسبقاً
+      if (mins <= maxDailyThreshold) {
+        return; // ضمن حد التسامح اليومي
+      }
+
+      let effectiveLateMinutes = mins;
+      if (remainingGrace > 0) {
+        const graceUsed = Math.min(effectiveLateMinutes, remainingGrace);
+        remainingGrace -= graceUsed;
+        effectiveLateMinutes -= graceUsed;
+      }
+
+      if (effectiveLateMinutes <= 0) {
+        return; // مغطى برصيد التسامح الشهري
+      }
+
+      let dayLatePenalty = 0;
+
+      // تطبيق شرائح التأخير إن وُجدت
+      if (Array.isArray(delayPenaltyTiers) && delayPenaltyTiers.length > 0) {
+        const applicableTier = [...delayPenaltyTiers]
+          .sort((a, b) => b.minMinutes - a.minMinutes)
+          .find(t => effectiveLateMinutes >= t.minMinutes);
+        if (applicableTier) {
+          dayLatePenalty = dailyRate * (parseFloat(applicableTier.deductionDays) || 0);
+        }
+      }
+
+      // إذا لم تنطبق شريحة، الحساب بالدقيقة مع مضاعف التكرار
+      if (dayLatePenalty === 0) {
+        let multiplier = firstViolationMultiplier;
+        if (index === 1) multiplier = secondViolationMultiplier;
+        else if (index >= 2) multiplier = thirdViolationMultiplier;
+
+        dayLatePenalty = effectiveLateMinutes * minuteRate * multiplier;
+      }
+
+      if (dayLatePenalty > 0) {
+        totalLatePenalty += dayLatePenalty;
+        lateDetails.push(`${dateStr}: تأخير ${mins}د (مخصوم ${effectiveLateMinutes}د) = ${dayLatePenalty.toFixed(2)} ج.م`);
+        addDailyPenalty(occ.date, dayLatePenalty, `تأخير ${mins}د (${dayLatePenalty.toFixed(2)} ج.م)`, 'late');
+      }
+    });
+
+    latePenalty = totalLatePenalty;
+
+    // 4. Work Hours Deficit & Early Checkout (حساب وخصم عجز ساعات العمل والانصراف المبكر)
+    let totalDeficitPenalty = 0;
+    const deficitDetails = [];
+
+    attendance.forEach(a => {
+      if (!['PRESENT', 'LATE', 'REMOTE', 'HALF_DAY'].includes(a.status)) return;
+
+      const dateStr = this.toLocalDateKey(a.date);
+      const expectedHours = a.status === 'HALF_DAY' ? (workingHoursPerDay / 2) : workingHoursPerDay;
+
+      let actualHours = parseFloat(a.workHours) || 0;
+      const checkOutTime = a.checkOut || a.check_out;
+      const checkInTime = a.checkIn || a.check_in;
+
+      if (actualHours === 0 && checkInTime && checkOutTime) {
+        actualHours = Math.max(0, (new Date(checkOutTime) - new Date(checkInTime)) / (1000 * 60 * 60));
+      }
+
+      // إذن الخروج المصرح به في هذا اليوم
+      const dayPermissions = approvedPermissions.filter(p => this.toLocalDateKey(p.date) === dateStr);
+      const permittedHours = dayPermissions.reduce((sum, p) => sum + (parseFloat(p.totalHours) || 0), 0);
+
+      // ساعات التأخير المحسوبة مسبقاً لتفادي الخصم المزدوج
+      const lateHoursAlreadyPenalized = (a.lateMinutes || 0) / 60;
+
+      const rawDeficit = expectedHours - actualHours;
+      const unexcusedDeficit = Math.max(0, rawDeficit - lateHoursAlreadyPenalized - permittedHours);
+
+      // إذا كان هناك عجز غير مبرر يتجاوز 15 دقيقة (0.25 ساعة)
+      if (unexcusedDeficit > 0.25) {
+        const deficitAmount = unexcusedDeficit * hourlyRate;
+        totalDeficitPenalty += deficitAmount;
+        deficitDetails.push(`${dateStr}: عجز ${unexcusedDeficit.toFixed(2)}س = ${deficitAmount.toFixed(2)} ج.م`);
+        addDailyPenalty(a.date, deficitAmount, `عجز ساعات عمل ${unexcusedDeficit.toFixed(1)}س`, 'deficit');
+      } else if ((a.earlyLeaveMinutes || 0) > 15) {
+        const earlyHours = (a.earlyLeaveMinutes || 0) / 60;
+        const earlyAmount = earlyHours * hourlyRate;
+        totalDeficitPenalty += earlyAmount;
+        deficitDetails.push(`${dateStr}: انصراف مبكر ${a.earlyLeaveMinutes}د = ${earlyAmount.toFixed(2)} ج.م`);
+        addDailyPenalty(a.date, earlyAmount, `انصراف مبكر ${a.earlyLeaveMinutes}د`, 'deficit');
+      }
+    });
 
     // 🛡️ APPLY DAILY CAP AND SUMMARIZE
     let totalCappedAttendancePenalty = 0;
@@ -1400,7 +1464,6 @@ class PayrollService {
         dailyTotal = dailyCapLimit;
       }
 
-      // اضافة معلومات عن نوع الخصم (يدوي أو تلقائي)
       const deductionTypes = dayData.types || [];
       const isManual = deductionTypes.some(t => t === 'manual');
       const typeLabel = isManual ? 'يدوي' : 'تلقائي';
@@ -1414,7 +1477,16 @@ class PayrollService {
       }
     });
 
-    // تصنيف الخصومات حسب النوع
+    // تصنيف الخصومات وحفظها بوضوح
+    if (totalAbsencePenalty > 0) {
+      deductions['غياب'] = totalAbsencePenalty;
+    }
+    if (totalLatePenalty > 0) {
+      deductions['تأخيرات'] = totalLatePenalty;
+    }
+    if (totalDeficitPenalty > 0) {
+      deductions['عجز ساعات العمل'] = totalDeficitPenalty;
+    }
     if (totalCappedManualPenalty > 0) {
       deductions['خصم يدوي'] = totalCappedManualPenalty;
       deductions.manualDetails = manualDeductions.map(d => `${d.reason}(${d.amount})`).join(' | ');
@@ -1425,6 +1497,9 @@ class PayrollService {
       deductions['غياب وتأخير'] = attendanceDeduction;
     }
     deductions.details = deductionBreakdown.join(' | ');
+    if (absenceDetails.length > 0) deductions.absenceDetails = absenceDetails.join(' | ');
+    if (lateDetails.length > 0) deductions.lateDetails = lateDetails.join(' | ');
+    if (deficitDetails.length > 0) deductions.deficitDetails = deficitDetails.join(' | ');
 
     if (capAuditTrail.length > 0) {
       deductions.capNotes = capAuditTrail.join(' | ');
@@ -1810,6 +1885,287 @@ class PayrollService {
       return payroll;
     } catch (error) {
       console.error('❌ Error getting last payroll for employee:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * أتمتة حساب وخصم الرواتب تلقائياً لجميع الموظفين
+   * Auto Calculate & Deduct Payrolls for all active employees
+   */
+  async autoCalculateAndDeductPayrolls(companyId, month, year, options = {}) {
+    try {
+      const targetMonth = parseInt(month) || (new Date().getMonth() + 1);
+      const targetYear = parseInt(year) || new Date().getFullYear();
+      const isAutoTriggered = options.autoTriggered === true;
+
+      const employees = await this.prisma.user.findMany({
+        where: {
+          isActive: true,
+          AND: {
+            OR: [
+              { companyId: companyId },
+              { userCompanies: { some: { companyId, isActive: true } } }
+            ]
+          }
+        },
+        include: {
+          employees: true
+        }
+      });
+
+      const summary = {
+        companyId,
+        month: targetMonth,
+        year: targetYear,
+        totalEmployees: employees.length,
+        processed: 0,
+        created: 0,
+        updated: 0,
+        skippedPaid: 0,
+        failed: 0,
+        totalGross: 0,
+        totalNet: 0,
+        totalAbsenceDeductions: 0,
+        totalLateDeductions: 0,
+        totalDeficitDeductions: 0,
+        totalManualDeductions: 0,
+        totalAdvancesDeductions: 0,
+        results: []
+      };
+
+      for (const employee of employees) {
+        try {
+          // فحص كشف الراتب القائم
+          const existing = await this.prisma.payroll.findFirst({
+            where: {
+              userId: employee.id,
+              month: targetMonth,
+              year: targetYear
+            }
+          });
+
+          // حماية الكشوف المدفوعة من التعديل
+          if (existing && existing.status === 'PAID') {
+            summary.skippedPaid++;
+            summary.results.push({
+              userId: employee.id,
+              name: `${employee.firstName} ${employee.lastName}`,
+              status: 'SKIPPED_PAID',
+              payrollId: existing.id
+            });
+            continue;
+          }
+
+          // حساب بيانات الراتب والخصومات التلقائية
+          const payrollData = await this.calculatePayrollData(companyId, employee.id, targetMonth, targetYear, {});
+
+          // إحصائيات الخصم
+          const parsedDeductions = payrollData.deductions || {};
+          const absenceAmt = parseFloat(parsedDeductions['غياب'] || 0);
+          const lateAmt = parseFloat(parsedDeductions['تأخيرات'] || 0);
+          const deficitAmt = parseFloat(parsedDeductions['عجز ساعات العمل'] || 0);
+          const manualAmt = parseFloat(parsedDeductions['خصم يدوي'] || 0);
+          const advanceAmt = parseFloat(parsedDeductions['سلف'] || 0);
+
+          summary.totalAbsenceDeductions += absenceAmt;
+          summary.totalLateDeductions += lateAmt;
+          summary.totalDeficitDeductions += deficitAmt;
+          summary.totalManualDeductions += manualAmt;
+          summary.totalAdvancesDeductions += advanceAmt;
+          summary.totalGross += parseFloat(payrollData.grossSalary || 0);
+          summary.totalNet += parseFloat(payrollData.netSalary || 0);
+
+          let savedPayroll;
+          if (existing) {
+            // تحديث كشف الراتب القائم في المسودة بالقيم المحسوبة الجديدة
+            savedPayroll = await this.prisma.payroll.update({
+              where: { id: existing.id },
+              data: {
+                baseSalary: payrollData.baseSalary,
+                workingDays: payrollData.totalWorkingDaysInMonth,
+                actualWorkDays: payrollData.presentDays,
+                absentDays: Math.round(payrollData.absentDays),
+                allowances: JSON.stringify(payrollData.allowances),
+                totalAllowances: payrollData.totalAllowances,
+                deductions: JSON.stringify(payrollData.deductions),
+                totalDeductions: payrollData.totalDeductions,
+                attendanceDeduction: payrollData.attendanceDeduction,
+                latePenalty: payrollData.latePenalty,
+                overtimeHours: payrollData.totalOvertimeHours,
+                overtimeRate: payrollData.overtimeRate,
+                overtimeAmount: payrollData.overtimeAmount,
+                bonuses: payrollData.bonuses,
+                socialInsurance: payrollData.socialInsurance,
+                taxAmount: payrollData.taxAmount,
+                grossSalary: payrollData.grossSalary,
+                netSalary: payrollData.netSalary,
+                periodStart: payrollData.periodStart,
+                periodEnd: payrollData.periodEnd
+              }
+            });
+            summary.updated++;
+          } else {
+            // إنشاء كشف راتب جديد
+            const employeeRecord = employee.employees?.[0];
+            savedPayroll = await this.prisma.payroll.create({
+              data: {
+                companyId,
+                userId: employee.id,
+                employeeRelId: employeeRecord ? employeeRecord.id : null,
+                month: targetMonth,
+                year: targetYear,
+                periodStart: payrollData.periodStart,
+                periodEnd: payrollData.periodEnd,
+                baseSalary: payrollData.baseSalary,
+                workingDays: payrollData.totalWorkingDaysInMonth,
+                actualWorkDays: payrollData.presentDays,
+                absentDays: Math.round(payrollData.absentDays),
+                allowances: JSON.stringify(payrollData.allowances),
+                totalAllowances: payrollData.totalAllowances,
+                deductions: JSON.stringify(payrollData.deductions),
+                totalDeductions: payrollData.totalDeductions,
+                attendanceDeduction: payrollData.attendanceDeduction,
+                latePenalty: payrollData.latePenalty,
+                overtimeHours: payrollData.totalOvertimeHours,
+                overtimeRate: payrollData.overtimeRate,
+                overtimeAmount: payrollData.overtimeAmount,
+                bonuses: payrollData.bonuses,
+                socialInsurance: payrollData.socialInsurance,
+                taxAmount: payrollData.taxAmount,
+                grossSalary: payrollData.grossSalary,
+                netSalary: payrollData.netSalary,
+                status: 'DRAFT',
+                notes: isAutoTriggered ? 'تم الحساب والخصم تلقائياً بواسطة نظام الحضور' : 'تم الحساب والخصم الآلي عند الطلب'
+              }
+            });
+            summary.created++;
+          }
+
+          if (payrollData.approvedRewards && payrollData.approvedRewards.length > 0) {
+            await rewardPayrollIntegrationService.applyRewardsToPayroll(savedPayroll.id, payrollData.approvedRewards);
+          }
+
+          summary.processed++;
+          summary.results.push({
+            userId: employee.id,
+            name: `${employee.firstName} ${employee.lastName}`,
+            status: existing ? 'UPDATED' : 'CREATED',
+            payrollId: savedPayroll.id,
+            baseSalary: payrollData.baseSalary,
+            absentDays: payrollData.absentDays,
+            attendanceDeduction: payrollData.attendanceDeduction,
+            netSalary: payrollData.netSalary
+          });
+        } catch (empErr) {
+          console.error(`❌ [AutoCalculatePayroll] Error processing employee ${employee.id}:`, empErr);
+          summary.failed++;
+          summary.results.push({
+            userId: employee.id,
+            name: `${employee.firstName} ${employee.lastName}`,
+            status: 'FAILED',
+            error: empErr.message
+          });
+        }
+      }
+
+      // إرسال إشعار للمديرين
+      if (summary.processed > 0 && !options.silent) {
+        setImmediate(async () => {
+          try {
+            await hrNotificationService.notifyHrEvent({
+              companyId,
+              notificationKey: 'notifyOnPayrollGeneration',
+              includeManagers: true,
+              includeAllManagers: true,
+              title: 'تم حساب وخصم الرواتب تلقائياً',
+              message: `تم حساب وخصم رواتب شهر ${targetMonth}/${targetYear} تلقائياً لـ ${summary.processed} موظف بنجاح (جديد: ${summary.created}، محدث: ${summary.updated}). إجمالي الخصومات: ${(summary.totalAbsenceDeductions + summary.totalLateDeductions + summary.totalDeficitDeductions).toFixed(2)} ج.م.`,
+              type: 'HR_PAYROLL_GENERATED',
+              data: summary,
+              whatsApp: {
+                employeeName: 'نظام الرواتب الآلي',
+                actionId: 'PAYROLL_AUTO',
+                actionName: 'أتمتة الرواتب والخصومات',
+                details: `تم حساب وخصم رواتب ${targetMonth}/${targetYear} تلقائياً:\n- الموظفين: ${summary.processed}\n- خصومات الغياب: ${summary.totalAbsenceDeductions.toFixed(2)} ج.م\n- خصومات التأخير: ${summary.totalLateDeductions.toFixed(2)} ج.م\n- خصومات عجز الساعات: ${summary.totalDeficitDeductions.toFixed(2)} ج.م\n- إجمالي الصافي: ${summary.totalNet.toFixed(2)} ج.م`,
+                requiresApproval: false
+              }
+            });
+          } catch (notifErr) {
+            console.error('❌ [AutoCalculatePayroll] Notification failed:', notifErr);
+          }
+        });
+      }
+
+      return summary;
+    } catch (error) {
+      console.error('❌ Error in autoCalculateAndDeductPayrolls:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * جلب حالة أتمتة الرواتب والخصومات للشركة
+   */
+  async getPayrollAutomationStatus(companyId, month, year) {
+    try {
+      const targetMonth = parseInt(month) || (new Date().getMonth() + 1);
+      const targetYear = parseInt(year) || new Date().getFullYear();
+
+      const [settings, payrollCount, draftCount, paidCount, attendanceCount] = await Promise.all([
+        this.prisma.hRSettings.findUnique({
+          where: { companyId }
+        }),
+        this.prisma.payroll.count({
+          where: { companyId, month: targetMonth, year: targetYear }
+        }),
+        this.prisma.payroll.count({
+          where: { companyId, month: targetMonth, year: targetYear, status: 'DRAFT' }
+        }),
+        this.prisma.payroll.count({
+          where: { companyId, month: targetMonth, year: targetYear, status: 'PAID' }
+        }),
+        this.prisma.attendance.count({
+          where: {
+            companyId,
+            date: {
+              gte: new Date(targetYear, targetMonth - 1, 1),
+              lte: new Date(targetYear, targetMonth, 0, 23, 59, 59)
+            }
+          }
+        })
+      ]);
+
+      const payrollDay = settings?.payrollDay || 25;
+      const autoDeductionEnabled = settings?.autoDeductionEnabled !== false;
+      const absencePenaltyRate = parseFloat(settings?.absencePenaltyRate) || 1.0;
+      const workingHoursPerDay = settings?.workingHoursPerDay || 8;
+      const workingDaysPerMonth = settings?.workingDaysPerMonth || 22;
+
+      const today = new Date();
+      let nextRun = new Date(today.getFullYear(), today.getMonth(), payrollDay);
+      if (today.getDate() > payrollDay) {
+        nextRun = new Date(today.getFullYear(), today.getMonth() + 1, payrollDay);
+      }
+
+      return {
+        companyId,
+        month: targetMonth,
+        year: targetYear,
+        autoDeductionEnabled,
+        payrollDay,
+        nextRunDate: nextRun,
+        workingHoursPerDay,
+        workingDaysPerMonth,
+        absencePenaltyRate,
+        stats: {
+          payrollCount,
+          draftCount,
+          paidCount,
+          attendanceCount
+        }
+      };
+    } catch (error) {
+      console.error('❌ Error getting payroll automation status:', error);
       throw error;
     }
   }

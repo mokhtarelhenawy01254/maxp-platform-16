@@ -1283,6 +1283,18 @@ try {
   );
 }
 
+// Start Automated Payroll Calculation and Attendance Deduction Cron Service
+try {
+  const payrollAutoCalculationCron = require("./cron/payrollAutoCalculationCron");
+  payrollAutoCalculationCron.start();
+  console.log("✅ [PAYROLL-CRON] Automated Payroll Calculation & Attendance Deduction Service started");
+} catch (error) {
+  console.error(
+    "❌ [PAYROLL-CRON] Failed to start Automated Payroll Calculation Service:",
+    error,
+  );
+}
+
 // Start Booking Reminder Cron Service (WhatsApp appointment reminders)
 try {
   const bookingReminderCron = require("./cron/bookingReminderCron");
