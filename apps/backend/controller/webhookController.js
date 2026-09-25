@@ -90,6 +90,17 @@ let lastWebhookPageId = null;
 const facebookPagesCache = new Map();
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour (increased from 5 min for 800+ pages)
 
+// Function to invalidate cached page data when reconnected/updated/disconnected
+function invalidateFacebookPageCache(pageId = null) {
+  if (pageId) {
+    facebookPagesCache.delete(pageId);
+    console.log(`🧹 [PAGE-CACHE] Invalidated webhook cache for page: ${pageId}`);
+  } else {
+    facebookPagesCache.clear();
+    console.log('🧹 [PAGE-CACHE] Cleared entire webhook page cache');
+  }
+}
+
 // Function to get Facebook page with caching
 async function getCachedFacebookPage(pageId) {
   const cached = facebookPagesCache.get(pageId);
@@ -1509,4 +1520,10 @@ async function handleReadReceipt(webhookEvent, pageId) {
   }
 }
 
-module.exports = { getWebhook, postWebhook, handleReadReceipt, handlePageReply };
+module.exports = {
+  getWebhook,
+  postWebhook,
+  handleReadReceipt,
+  handlePageReply,
+  invalidateFacebookPageCache,
+};

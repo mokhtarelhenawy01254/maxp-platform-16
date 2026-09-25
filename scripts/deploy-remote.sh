@@ -642,7 +642,7 @@ if [ -n "$PM2_BIN" ]; then
   cd /var/www/backend2
   echo "🚀 Starting/reloading ecosystem (backend + worker)..."
   NODE_ENV=production "$PM2_BIN" startOrReload ecosystem.config.js --env production
-  "$PM2_BIN" restart maxp-backend --update-env || true
+  "$PM2_BIN" reload maxp-backend --update-env || "$PM2_BIN" restart maxp-backend --update-env || true
   "$PM2_BIN" save
 
   sleep 3

@@ -67,8 +67,10 @@ const LEGACY_APP_SLUG_ALIASES = {
     'store-pro',
   ],
   // Treasury / Expenses aliases:
-  'treasury-expenses': ['treasury-pro', 'treasury', 'order-invoicing', ...STORE_APP_SLUGS],
-  'treasury-pro': ['treasury-expenses', 'treasury', 'order-invoicing', ...STORE_APP_SLUGS],
+  'treasury-expenses': ['treasury-expenses-pro', 'treasury-pro', 'treasury'],
+  'treasury-expenses-pro': ['treasury-expenses', 'treasury-pro', 'treasury'],
+  'treasury-pro': ['treasury-expenses-pro', 'treasury-expenses', 'treasury'],
+  'treasury': ['treasury-expenses-pro', 'treasury-expenses', 'treasury-pro'],
   // HR aliases:
   'hr-core': ['hr-basic', 'hr-pro', 'hr-attendance-pro', 'hr-payroll', 'hr-assets', 'hr-recruitment'],
   'hr-basic': ['hr-core', 'hr-pro', 'hr-attendance-pro', 'hr-payroll', 'hr-assets', 'hr-recruitment'],
@@ -291,7 +293,7 @@ const checkAppAccess = (appSlug) => {
       // 2. MUST NEVER grant if the user explicitly CANCELLED the app (status === 'CANCELLED').
       //    User cancellation must always be respected!
       if (isCompanyInActiveTrial) {
-        const primaryApp = candidateApps.find((a) => a.slug === primarySlug);
+        const primaryApp = candidateApps.find((a) => a.slug === primarySlug) || candidateApps[0];
         if (primaryApp) {
           const primaryRecord = await executeWithRetry(async () => {
             return await getSharedPrismaClient().companyApp.findUnique({
@@ -334,6 +336,41 @@ const checkAppAccess = (appSlug) => {
             req.marketplaceApp = primaryApp;
             return next();
           }
+        }
+      }
+
+      // 🎁 Free apps auto-activation: if the app is 100% free and not explicitly cancelled, auto-activate
+      const freeApp = candidateApps.find((a) => a.pricingModel === 'FREE' || Number(a.monthlyPrice) === 0);
+      if (freeApp) {
+        const existingRecord = await executeWithRetry(async () => {
+          return await getSharedPrismaClient().companyApp.findUnique({
+            where: {
+              companyId_appId: { companyId, appId: freeApp.id }
+            }
+          });
+        });
+
+        if (existingRecord?.status !== 'CANCELLED') {
+          const freeRecord = await executeWithRetry(async () => {
+            return await getSharedPrismaClient().companyApp.upsert({
+              where: {
+                companyId_appId: { companyId, appId: freeApp.id }
+              },
+              create: {
+                companyId,
+                appId: freeApp.id,
+                status: 'ACTIVE',
+                activePricingModel: 'FREE'
+              },
+              update: {
+                status: 'ACTIVE',
+                activePricingModel: 'FREE'
+              }
+            });
+          });
+          req.companyApp = freeRecord;
+          req.marketplaceApp = freeApp;
+          return next();
         }
       }
 

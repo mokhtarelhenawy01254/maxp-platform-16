@@ -9,7 +9,10 @@ const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const {
   buildFacebookPageTokenFailureMessage,
   ensureValidFacebookPageAccessToken,
+  validateFacebookPageAccessToken,
 } = require("../utils/facebookPageTokenUtils");
+const pageTokenCache = require("../utils/pageTokenCache");
+const { invalidateFacebookPageCache } = require("../controller/webhookController");
 const {
   buildFacebookTokenUpdateData,
 } = require("../utils/facebookOAuthTokenFields");
@@ -718,8 +721,7 @@ router.post(
  */
 router.post(
   "/force-disconnect-page",
-  authenticateToken,
-  requireSuperAdmin,
+  verifyToken.authenticateToken,
   async (req, res) => {
     try {
       const { pageId } = req.body;
@@ -749,6 +751,64 @@ router.post(
         });
       }
 
+      // 🔐 التحقق من الصلاحيات: سوبر أدمن، أو مستخدم مصادق تم رصد محاولته لربط هذه الصفحة ومعه إثبات ملكية
+      const isSuperAdmin = req.user.role === "SUPER_ADMIN";
+      let isVerifiedOwner = false;
+
+      if (!isSuperAdmin) {
+        const userCompanyId = req.user.companyId;
+        if (!userCompanyId) {
+          return res.status(403).json({
+            success: false,
+            message: "معرف الشركة غير متوفر",
+          });
+        }
+
+        // 1. هل الصفحة مسجلة في قائمة التخطي لنفس شركة المستخدم الحالي؟
+        const skippedRecord = await getSharedPrismaClient().skippedFacebookPage.findFirst({
+          where: {
+            pageId,
+            attemptedCompanyId: userCompanyId,
+            isResolved: false,
+          },
+        });
+
+        if (skippedRecord) {
+          isVerifiedOwner = true;
+        } else {
+          // 2. هل توكن الشركة الحالي يرى الصفحة على فيسبوك؟
+          const userCompany = await getSharedPrismaClient().company.findUnique({
+            where: { id: userCompanyId },
+            select: { facebookUserAccessToken: true },
+          });
+
+          if (userCompany?.facebookUserAccessToken) {
+            try {
+              const checkRes = await axios.get(
+                `${FACEBOOK_GRAPH_API_BASE_URL}/${pageId}`,
+                {
+                  params: {
+                    access_token: userCompany.facebookUserAccessToken,
+                    fields: "id",
+                  },
+                  timeout: 5000,
+                },
+              );
+              if (checkRes.data?.id === pageId) {
+                isVerifiedOwner = true;
+              }
+            } catch (_) {}
+          }
+        }
+
+        if (!isVerifiedOwner) {
+          return res.status(403).json({
+            success: false,
+            message: "غير مصرح لك بفك ربط هذه الصفحة — يجب أن تكون سوبر أدمن أو مالك الصفحة الموثق في فيسبوك",
+          });
+        }
+      }
+
       const { disconnectedPages } = await disconnectCompanyFacebookPages({
         companyId: page.companyId,
         pageIds: [page.id],
@@ -759,10 +819,13 @@ router.post(
         data: { isResolved: true, resolvedAt: new Date() },
       });
 
+      invalidateFacebookPageCache(page.pageId);
+      pageTokenCache.delete(page.pageId);
+
       return res.json({
         success: true,
         disconnectedPages,
-        message: `تم فك ربط "${page.pageName}" من الشركة السابقة — يمكن ربطها الآن من الشركة الصحيحة`,
+        message: `تم فك ربط "${page.pageName}" من الشركة السابقة — يمكنك الآن إعادة ربطها بشركتك الحالية`,
       });
     } catch (error) {
       console.error("❌ Error force-disconnecting Facebook page:", error);
@@ -775,10 +838,13 @@ router.post(
   },
 );
 
-// 🎯 NEW: Function to subscribe page to app webhooks
+const CORE_FACEBOOK_PAGE_WEBHOOK_FIELDS =
+  "messages,messaging_postbacks,messaging_optins,messaging_referrals,message_deliveries,message_reads,message_echoes";
+
+// 🎯 Function to subscribe page to app webhooks with resilient fallback
 const subscribePageToApp = async (pageId, pageAccessToken) => {
   try {
-    console.log(`🔔 Subscribing page ${pageId} to app webhooks...`);
+    console.log(`🔔 Subscribing page ${pageId} to app webhooks (all fields)...`);
 
     const response = await axios.post(
       `${FACEBOOK_GRAPH_API_BASE_URL}/${pageId}/subscribed_apps`,
@@ -798,15 +864,35 @@ const subscribePageToApp = async (pageId, pageAccessToken) => {
     );
     return { success: true, data: response.data };
   } catch (error) {
-    console.error(
-      `❌ Failed to subscribe page ${pageId}:`,
-      error.response?.data || error.message,
+    console.warn(
+      `⚠️ Full webhook subscription failed for page ${pageId}, retrying with core messaging fields:`,
+      error.response?.data?.error?.message || error.message,
     );
-    return { success: false, error: error.response?.data || error.message };
+    try {
+      const fallbackResponse = await axios.post(
+        `${FACEBOOK_GRAPH_API_BASE_URL}/${pageId}/subscribed_apps`,
+        {},
+        {
+          params: {
+            access_token: pageAccessToken,
+            subscribed_fields: CORE_FACEBOOK_PAGE_WEBHOOK_FIELDS,
+          },
+          timeout: 10000,
+        },
+      );
+      console.log(`✅ Subscribed page ${pageId} to core webhooks successfully`);
+      return { success: true, data: fallbackResponse.data, isCoreFallback: true };
+    } catch (coreError) {
+      console.error(
+        `❌ Failed core webhook subscription for page ${pageId}:`,
+        coreError.response?.data?.error?.message || coreError.message,
+      );
+      return { success: false, error: coreError.response?.data || coreError.message };
+    }
   }
 };
 
-// 🎯 NEW: Function to check if page is subscribed
+// 🎯 Function to check if page is subscribed
 const checkPageSubscription = async (pageId, pageAccessToken) => {
   try {
     const response = await axios.get(
@@ -829,15 +915,7 @@ const checkPageSubscription = async (pageId, pageAccessToken) => {
 };
 
 const ensurePageWebhookSubscription = async (pageId, pageAccessToken) => {
-  const existingSubscription = await checkPageSubscription(pageId, pageAccessToken);
-  if (
-    existingSubscription &&
-    Array.isArray(existingSubscription.data) &&
-    existingSubscription.data.length > 0
-  ) {
-    return { success: true, alreadySubscribed: true };
-  }
-
+  // Always subscribe to ensure the current app and fields are active and registered
   return subscribePageToApp(pageId, pageAccessToken);
 };
 
@@ -1098,6 +1176,9 @@ const disconnectCompanyFacebookPages = async ({ companyId, pageIds, permanent = 
       pageName: page.pageName,
       webhookUnsubscribed,
     });
+
+    invalidateFacebookPageCache(page.pageId);
+    pageTokenCache.delete(page.pageId);
   }
 
   return {
@@ -1118,6 +1199,7 @@ const reconnectCompanyFacebookPages = async ({ companyId, pageIds }) => {
       pageName: true,
       pageAccessToken: true,
       status: true,
+      facebookAccountId: true,
     },
   });
 
@@ -1142,7 +1224,7 @@ const reconnectCompanyFacebookPages = async ({ companyId, pageIds }) => {
         pageId: page.pageId,
         pageName: page.pageName,
         reason: "MISSING_PAGE_ACCESS_TOKEN",
-        message: "لا يوجد Page Access Token محفوظ لهذه الصفحة. أعيدي الربط من Facebook.",
+        message: "لا يوجد Page Access Token محفوظ لهذه الصفحة. يرجى الضغط على «ربط مع Facebook».",
       });
       continue;
     }
@@ -1158,18 +1240,24 @@ const reconnectCompanyFacebookPages = async ({ companyId, pageIds }) => {
       allowRefresh: true,
     });
 
-    if (tokenState.ok) {
-      pageAccessToken = tokenState.pageAccessToken;
-      pageName = tokenState.page?.name || pageName;
-    } else {
-      warnings.push({
+    // 🛑 حماية حاسمة: إذا كان التوكن منتهياً أو غير صالح وفشل تجديده،
+    // لا نعلّم الصفحة كـ connected زائفاً بل نُبقيها غير متصلة ونُبلغ المستخدم
+    if (!tokenState.ok) {
+      failedPages.push({
+        id: page.id,
+        pageId: page.pageId,
+        pageName: page.pageName,
         reason:
           tokenState.validation?.reason ||
           tokenState.refresh?.reason ||
           "TOKEN_VALIDATION_FAILED",
-        message: buildFacebookPageTokenFailureMessage(tokenState, page.pageId),
+        message: "انتهت صلاحية رمز الوصول (Token) لهذه الصفحة في فيسبوك. يرجى الضغط على «ربط مع Facebook» لتسجيل الدخول وتجديد الصلاحيات.",
       });
+      continue;
     }
+
+    pageAccessToken = tokenState.pageAccessToken;
+    pageName = tokenState.page?.name || pageName;
 
     let webhookSubscribed = false;
     const webhookResult = await ensurePageWebhookSubscription(
@@ -1203,6 +1291,9 @@ const reconnectCompanyFacebookPages = async ({ companyId, pageIds }) => {
         updatedAt: new Date(),
       },
     });
+
+    invalidateFacebookPageCache(page.pageId);
+    pageTokenCache.delete(page.pageId);
 
     reconnectedPages.push({
       id: updatedPage.id,
@@ -1330,13 +1421,17 @@ router.get("/authorize", verifyToken.authenticateToken, async (req, res) => {
       popup: popup === "true",
     });
 
+    const authType =
+      req.query.authType ||
+      (req.query.reauthorize === "true" ? "reauthorize" : "rerequest");
+
     const authUrl =
       `${FACEBOOK_OAUTH_BASE_URL}/dialog/oauth?` +
       `client_id=${appId}&` +
       `redirect_uri=${encodeURIComponent(getFacebookRedirectUri("page"))}&` +
       `scope=${FACEBOOK_PAGE_SCOPES}&` +
       `response_type=code&` +
-      `auth_type=rerequest&` +
+      `auth_type=${authType}&` +
       `state=${encodeURIComponent(encodedState)}`;
 
     res.json({
@@ -1534,12 +1629,13 @@ router.post("/reauthorize-consent", verifyToken.authenticateToken, async (req, r
     } catch (accountsError) {
       pagesVisible = 0;
     }
-    if (pagesVisible > 0) {
+    const isForce = req.query.force === "true" || req.body?.force === true;
+    if (pagesVisible > 0 && !isForce) {
       return res.status(409).json({
         success: false,
         reason: "pages_visible",
         pagesVisible,
-        message: "الحساب يرى صفحات بالفعل — استخدم إعادة الربط العادية بدلاً من إعادة الموافقة",
+        message: "الحساب يرى صفحات بالفعل — استخدم إعادة الربط العادية أو أرسل force=true لإعادة الموافقة الكاملة واختيار الصفحات",
       });
     }
 
@@ -2169,14 +2265,45 @@ router.get("/callback", async (req, res) => {
         );
 
         if (isConnectedToAnotherCompany) {
-          skippedPages.push({
-            pageId: page.id,
-            pageName: page.name,
-            reason: "already_connected_to_another_company",
-            connectedCompanyId: existingPageInDB.companyId,
-            attemptedCompanyId: companyId,
-          });
-          continue;
+          // 🔍 فحص هل التوكن القديم لدى الشركة السابقة لا يزال يعمل أصلاً؟
+          // إذا كان التوكن القديم منتهي أو غير صالح، ننقل الصفحة للشركة الحالية تلقائياً
+          let oldTokenStillValid = false;
+          try {
+            const oldTokenCheck = await validateFacebookPageAccessToken({
+              pageId: page.id,
+              pageAccessToken: existingPageInDB.pageAccessToken,
+              timeoutMs: 3500,
+            });
+            oldTokenStillValid = oldTokenCheck.isValid;
+          } catch (_) {
+            oldTokenStillValid = false;
+          }
+
+          if (oldTokenStillValid) {
+            skippedPages.push({
+              pageId: page.id,
+              pageName: page.name,
+              reason: "already_connected_to_another_company",
+              connectedCompanyId: existingPageInDB.companyId,
+              attemptedCompanyId: companyId,
+            });
+            continue;
+          } else {
+            console.log(
+              `🔄 [OAUTH] Page ${page.name} had dead token in previous company (${existingPageInDB.companyId}). Auto-transferring to current company ${companyId}...`,
+            );
+            try {
+              await axios.delete(
+                `${FACEBOOK_GRAPH_API_BASE_URL}/${page.id}/subscribed_apps`,
+                {
+                  params: { access_token: existingPageInDB.pageAccessToken },
+                  timeout: 5000,
+                },
+              );
+            } catch (_) {}
+            invalidateFacebookPageCache(page.id);
+            pageTokenCache.delete(page.id);
+          }
         }
 
         // Update or Create page
@@ -2215,6 +2342,9 @@ router.get("/callback", async (req, res) => {
             create: pageDataToCreate,
           });
         }
+
+        invalidateFacebookPageCache(page.id);
+        pageTokenCache.delete(page.id);
 
         savedPages.push({
           pageId: page.id,

@@ -8525,10 +8525,15 @@
     "forceDisconnectSuccess": "Page disconnected from the previous company — reconnect it now via the connect button",
     "forceDisconnectError": "Failed to disconnect the page from the previous company",
     "resolveSuccess": "Marked {{count}} page(s) as resolved",
-    "resolveError": "Error marking skipped pages",
     "accountsCount": "Accounts: {{count}}",
     "accountGroupTitle": "Facebook Account: {{name}}",
-    "unknownAccount": "Unknown Account"
+    "unknownAccount": "Unknown Account",
+    "reselectPages": "Re-select Pages & Permissions from Facebook",
+    "reselectPagesTooltip": "Opens the Facebook dialog forcing the page selection screen to appear, useful if your page was previously linked or isn't appearing",
+    "reselectPagesInitial": "Was the page previously linked and not showing? Click here to reselect",
+    "claimPageToCompany": "Transfer Page to this Company",
+    "reconnectPagesHelpTip": "If your page was previously connected and doesn't show up after linking, use \"Re-select Pages & Permissions from Facebook\" to force Meta to display the page selection list again.",
+    "resolveError": "An error occurred while resolving skipped pages"
   },
   "facebookPostCreator": {
     "pageTitle": "Create & Schedule Posts",
@@ -10572,6 +10577,8 @@
   },
   "users": {
     "title": "Users Management",
+    "pageDescription": "Manage and monitor team members, access roles, and invitations from one place.",
+    "userListDescription": "List of all team accounts and invitations with role and permission management.",
     "usageText": "You have used {{current}} of {{limit}} users ({{percentage}}%).",
     "upgradePlanAddMore": " Please upgrade your plan to add more users.",
     "considerUpgradeSoon": " Consider upgrading your plan soon.",

@@ -1,5 +1,7 @@
 {
   "title": "Users Management",
+  "pageDescription": "Manage and monitor team members, access roles, and invitations from one place.",
+  "userListDescription": "List of all team accounts and invitations with role and permission management.",
   "usageText": "You have used {{current}} of {{limit}} users ({{percentage}}%).",
   "upgradePlanAddMore": " Please upgrade your plan to add more users.",
   "considerUpgradeSoon": " Consider upgrading your plan soon.",

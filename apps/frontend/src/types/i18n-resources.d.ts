@@ -8518,10 +8518,15 @@ declare module 'react-i18next' {
         forceDisconnectSuccess: string;
         forceDisconnectError: string;
         resolveSuccess: string;
-        resolveError: string;
         accountsCount: string;
         accountGroupTitle: string;
         unknownAccount: string;
+        reselectPages: string;
+        reselectPagesTooltip: string;
+        reselectPagesInitial: string;
+        claimPageToCompany: string;
+        reconnectPagesHelpTip: string;
+        resolveError: string;
       };
       facebookPostCreator: {
         pageTitle: string;

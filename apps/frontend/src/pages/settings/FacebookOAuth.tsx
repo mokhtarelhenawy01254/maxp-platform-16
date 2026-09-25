@@ -88,16 +88,18 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
   if (isRecord(error)) {
-    const response = error.response;
-    if (isRecord(response) && isRecord(response.data)) {
-      const message = response.data.message;
+    const response = error["response"];
+    if (isRecord(response) && isRecord(response["data"])) {
+      const data = response["data"];
+      const message = data["message"];
       if (typeof message === "string" && message.trim()) {
         return message;
       }
     }
 
-    if (typeof error.message === "string" && error.message.trim()) {
-      return error.message;
+    const errorMsg = error["message"];
+    if (typeof errorMsg === "string" && errorMsg.trim()) {
+      return errorMsg;
     }
   }
 
@@ -252,10 +254,10 @@ const FacebookOAuth: React.FC = () => {
         setSuccess(null);
       } else {
         setNoPageGrants(false);
-        let successMessage = t("facebookOAuth.pagesConnected", { count: pagesCount });
+        let successMessage = String(t("facebookOAuth.pagesConnected" as any, { count: parseInt(pagesCount, 10) }));
 
-      if (parseInt(skippedCount) > 0) {
-        successMessage += t("facebookOAuth.pagesSkipped", { count: skippedCount });
+      if (parseInt(skippedCount, 10) > 0) {
+        successMessage += " " + String(t("facebookOAuth.pagesSkipped" as any, { count: parseInt(skippedCount, 10) }));
 
 
         if (skippedDataParam) {
@@ -292,20 +294,21 @@ const FacebookOAuth: React.FC = () => {
     }
 
     if (errorParam) {
-      let errorMessage = t("facebookOAuth.connectError", { error: decodeURIComponent(errorParam) });
+      let errorMessage = String(t("facebookOAuth.connectError" as any, { error: decodeURIComponent(errorParam) }));
 
-      const errorTranslations: { [key: string]: string } = {
-        missing_code_or_state: t("facebookOAuth.missingCodeOrState"),
-        invalid_state: t("facebookOAuth.invalidState"),
-        no_company_id: t("facebookOAuth.noCompanyId"),
-        no_pages_found: t("facebookOAuth.noPagesFound"),
-        facebook_oauth_access_denied: t("facebookOAuth.accessDenied"),
-        account_identity_failed: t("facebookOAuth.accountIdentityFailed"),
-        account_link_failed: t("facebookOAuth.accountLinkFailed"),
+      const errorTranslations: Record<string, string> = {
+        missing_code_or_state: String(t("facebookOAuth.missingCodeOrState" as any)),
+        invalid_state: String(t("facebookOAuth.invalidState" as any)),
+        no_company_id: String(t("facebookOAuth.noCompanyId" as any)),
+        no_pages_found: String(t("facebookOAuth.noPagesFound" as any)),
+        facebook_oauth_access_denied: String(t("facebookOAuth.accessDenied" as any)),
+        account_identity_failed: String(t("facebookOAuth.accountIdentityFailed" as any)),
+        account_link_failed: String(t("facebookOAuth.accountLinkFailed" as any)),
       };
 
-      if (errorTranslations[errorParam]) {
-        errorMessage = errorTranslations[errorParam];
+      const translatedErr = errorTranslations[errorParam];
+      if (translatedErr) {
+        errorMessage = translatedErr;
       }
 
       setError(errorMessage);
@@ -338,11 +341,11 @@ const FacebookOAuth: React.FC = () => {
 
       if (data.success) {
         setSkippedPages([]);
-        setSuccess(t("facebookOAuth.pagesResolved", { count: data.resolvedCount }));
+        setSuccess(String(t("facebookOAuth.pagesResolved" as any, { count: data.resolvedCount })));
       }
     } catch (error: unknown) {
       console.error("❌ Error resolving skipped pages:", error);
-      setError(t("facebookOAuth.resolveError"));
+      setError(String(t("facebookOAuth.resolveError" as any)));
     }
   };
 
@@ -420,7 +423,7 @@ const FacebookOAuth: React.FC = () => {
     return () => window.removeEventListener("message", handleMessage);
   }, [loadOAuthStatus, loadSkippedPages, user?.companyId]);
 
-  const handleConnectFacebook = async () => {
+  const handleConnectFacebook = async (reauthorize = false) => {
     if (!user?.companyId) {
       setError(t("facebookOAuth.companyIdMissing"));
       return;
@@ -441,8 +444,9 @@ const FacebookOAuth: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      const reauthParam = reauthorize ? "&reauthorize=true" : "";
       const response = await fetch(
-        `${envConfig.apiUrl}/facebook-oauth/authorize?companyId=${user.companyId}&userId=${user.id}&popup=true&returnOrigin=${encodeURIComponent(window.location.origin)}`,
+        `${envConfig.apiUrl}/facebook-oauth/authorize?companyId=${user.companyId}&userId=${user.id}&popup=true&returnOrigin=${encodeURIComponent(window.location.origin)}${reauthParam}`,
         {
           headers: getAuthHeaders({ "Content-Type": "application/json" }),
         },
@@ -517,11 +521,11 @@ const FacebookOAuth: React.FC = () => {
       setError(null);
 
       const response = await fetch(
-        `${envConfig.apiUrl}/facebook-oauth/reauthorize-consent?companyId=${user.companyId}&popup=true&returnOrigin=${encodeURIComponent(window.location.origin)}`,
+        `${envConfig.apiUrl}/facebook-oauth/reauthorize-consent?companyId=${user.companyId}&popup=true&force=true&returnOrigin=${encodeURIComponent(window.location.origin)}`,
         {
           method: "POST",
           headers: getAuthHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({}),
+          body: JSON.stringify({ force: true }),
         },
       );
 
@@ -806,6 +810,7 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
       console.error("Debug error:", error);
     }
   };
+  void handleDebug;
 
   if (!isAuthenticated) {
     return (
@@ -872,15 +877,19 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                       <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 text-xs rounded-full">
                         {t("facebookOAuth.skippedPageBoundToOther")}
                       </span>
-                      {user?.role === "SUPER_ADMIN" && (
+                      {(user?.role === "SUPER_ADMIN" ||
+                        user?.role === "OWNER" ||
+                        user?.role === "MANAGER" ||
+                        user?.role === "COMPANY_ADMIN" ||
+                        user?.role === "ADMIN") && (
                         <button
                           onClick={() => void forceDisconnectPage(page.pageId)}
                           disabled={forceDisconnecting === page.pageId}
-                          className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-xs font-medium"
+                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-xs font-medium transition-colors"
                         >
                           {forceDisconnecting === page.pageId
                             ? t("facebookOAuth.forceDisconnecting")
-                            : t("facebookOAuth.forceDisconnect")}
+                            : t("facebookOAuth.claimPageToCompany")}
                         </button>
                       )}
                     </div>
@@ -985,14 +994,26 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
               )}
             </div>
 
-            <button
-              onClick={handleConnectFacebook}
-              disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-            >
-              <PlusIcon className="h-4 w-4" />
-              {loading ? t("facebookOAuth.loading") : t("facebookOAuth.addMorePages")}
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => void handleConnectFacebook(false)}
+                disabled={loading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+              >
+                <PlusIcon className="h-4 w-4" />
+                {loading ? t("facebookOAuth.loading") : t("facebookOAuth.addMorePages")}
+              </button>
+
+              <button
+                onClick={() => void handleConnectFacebook(true)}
+                disabled={loading}
+                title={t("facebookOAuth.reselectPagesTooltip")}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 text-sm font-medium rounded-lg transition-colors border border-gray-200 dark:border-gray-600"
+              >
+                <ArrowPathIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                {t("facebookOAuth.reselectPages")}
+              </button>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center py-6">
@@ -1023,14 +1044,32 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
               </div>
             )}
 
-            <button
-              onClick={handleConnectFacebook}
-              disabled={loading || !user?.companyId}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-sm font-medium shadow-lg shadow-blue-600/20 transition-colors"
-            >
-              <ArrowTopRightOnSquareIcon className="h-5 w-5" />
-              {loading ? t("facebookOAuth.loading") : t("facebookOAuth.connectWithFacebook")}
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={() => void handleConnectFacebook(false)}
+                disabled={loading || !user?.companyId}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-sm font-medium shadow-lg shadow-blue-600/20 transition-colors"
+              >
+                <ArrowTopRightOnSquareIcon className="h-5 w-5" />
+                {loading ? t("facebookOAuth.loading") : t("facebookOAuth.connectWithFacebook")}
+              </button>
+
+              <button
+                onClick={() => void handleConnectFacebook(true)}
+                disabled={loading || !user?.companyId}
+                title={t("facebookOAuth.reselectPagesTooltip")}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 text-sm font-medium rounded-xl transition-colors border border-gray-200 dark:border-gray-600"
+              >
+                <ArrowPathIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                {t("facebookOAuth.reselectPagesInitial")}
+              </button>
+            </div>
+
+            <div className="mt-5 p-3 bg-blue-50/70 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl max-w-lg text-center">
+              <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+                {t("facebookOAuth.reconnectPagesHelpTip")}
+              </p>
+            </div>
 
             {!user?.companyId && (
               <p className="mt-2 text-sm text-red-600">{t("facebookOAuth.companyIdMissing")}</p>

@@ -1500,8 +1500,8 @@ const UsersManagement: React.FC = () => {
       <div className="p-4 md:p-6 lg:p-8 space-y-6 w-full">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("users.title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("users.pageDescription")}</p>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("users.title", "إدارة المستخدمين")}</h1>
+            <p className="text-sm text-muted-foreground">{t("users.pageDescription", "إدارة ومتابعة أعضاء الفريق، صلاحيات الوصول، والدعوات من مكان واحد.")}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -1772,7 +1772,7 @@ const UsersManagement: React.FC = () => {
                         ? "حسابات تم إنشاؤها أو دعوتها لكنها لم تسجل الدخول للمنصة حتى الآن."
                         : activeTab === "inactive"
                           ? "عرض وإدارة حسابات الفريق المعطلة أو المستقيلة مع إمكانية إعادة التفعيل."
-                          : t("users.userListDescription")}
+                          : t("users.userListDescription", "قائمة بجميع حسابات فريق العمل والدعوات النشطة والمعلقة مع إمكانية إدارة الصلاحيات.")}
                   </CardDescription>
                 </div>
                 <Button type="button" variant="outline" className="h-10 rounded-2xl" onClick={() => void fetchUsers()}>
