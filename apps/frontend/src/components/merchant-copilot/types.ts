@@ -15,7 +15,7 @@ export interface ActionCardData {
   id: string;
   toolCallId?: string;
   title: string;
-  actionType: 'price_update' | 'order_confirm' | 'order_cancel' | 'discount_create' | 'inventory_adjust' | 'shipping_update' | 'generic';
+  actionType: 'price_update' | 'order_confirm' | 'order_cancel' | 'discount_create' | 'inventory_adjust' | 'shipping_update' | 'learned_rule' | 'agent_skill' | 'agent_spawn' | 'generic';
   summary: string;
   parameters: Record<string, any>;
   status: 'pending' | 'approved' | 'rejected';

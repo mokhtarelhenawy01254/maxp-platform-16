@@ -6084,7 +6084,7 @@ const kioskScanCase = async (req, res) => {
     });
 
     if (!dentalCase) {
-      const partialMatches = await prisma.dentalLabCase.findMany({
+      const partialMatches = (await prisma.dentalLabCase.findMany({
         where: {
           companyId,
           isDeleted: false,
@@ -6098,7 +6098,7 @@ const kioskScanCase = async (req, res) => {
           status: true,
         },
         take: 10,
-      });
+      })) || [];
 
       if (partialMatches.length > 1) {
         return res.status(409).json({

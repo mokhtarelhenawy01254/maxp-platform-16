@@ -10653,26 +10653,12 @@
       "emailInvalid": "البريد الإلكتروني غير صحيح",
       "passwordRequired": "كلمة المرور مطلوبة",
       "passwordMinLength": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
-      "roleRequired": "الدور مطلوب",
-      "cannotDeactivateSelf": "لا يمكنك تعطيل حسابك الشخصي",
-      "phoneInvalid": "رقم الهاتف غير صحيح",
-      "salaryInvalid": "الراتب الأساسي غير صحيح"
+      "roleRequired": "الدور مطلوب"
     },
     "noUsers": "لا يوجد مستخدمين",
     "unlimited": "غير محدود",
     "editUser": "تعديل المستخدم",
-    "inviteNewUser": "دعوة مستخدم جديد",
-    "pageDescription": "إدارة أعضاء الفريق وصلاحيات الوصول وحسابات الموظفين بالمنصة",
-    "userListDescription": "عرض وإدارة جميع حسابات المستخدمين النشطة وغير النشطة",
-    "bulkActionsDescription": "تنفيذ إجراءات سريعة على المستخدمين المحددين في القائمة",
-    "exportCsv": "تصدير CSV",
-    "selectedUsers": "المستخدمون المحددون ({{count}})",
-    "activate": "تفعيل",
-    "deactivate": "تعطيل",
-    "deleteSelected": "حذف المحدد",
-    "clearSelection": "إلغاء التحديد",
-    "pendingInvitations": "دعوات معلقة ({{count}})",
-    "invitationsDescription": "قائمة الدعوات المرسلة للانضمام إلى فريق العمل والتي لم تُقبل بعد"
+    "inviteNewUser": "دعوة مستخدم جديد"
   },
   "customerAnalytics": {
     "title": "تحليلات العملاء",
@@ -12823,9 +12809,6 @@
       },
       "academy": {
         "description": "نظام إدارة وبيع الكورسات مع كوتش الذكاء الاصطناعي واختبارات تفاعلية"
-      },
-      "treasuryExpenses": {
-        "description": "إدارة الخزينة وسندات القبض والصرف ومصروفات الشركة"
       }
     }
   },

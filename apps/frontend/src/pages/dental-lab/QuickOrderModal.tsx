@@ -421,6 +421,15 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
     }
   };
 
+  const handleCancel = () => {
+    try {
+      sessionStorage.removeItem(DRAFT_KEY);
+    } catch {
+      // ignore
+    }
+    onClose();
+  };
+
   // Load Initial Refs
   useEffect(() => {
     let mounted = true;
@@ -491,7 +500,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   // Recalculate price when service, unitsCount, or teeth change
   useEffect(() => {
     if (primaryService) {
-      if (primaryService.defaultMaterial && !material) {
+      if (primaryService.defaultMaterial) {
         setMaterial(primaryService.defaultMaterial);
       }
       const count = selectedTeeth.length > 0 ? selectedTeeth.length : (primaryService.defaultCrownCount || 1);
@@ -678,7 +687,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   const netTotal = Math.max(0, (Number(priceSnapshot) || 0) - (Number(discount) || 0));
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3" onClick={() => !submitting && onClose()}>
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3" onClick={() => !submitting && handleCancel()}>
       <div className={`${MODAL_CONTENT_CLS} !max-w-4xl max-h-[92vh] flex flex-col overflow-hidden`} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b dark:border-gray-700 shrink-0">
@@ -708,7 +717,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
           </div>
           <button
             type="button"
-            onClick={() => !submitting && !submittingAndPrint && onClose()}
+            onClick={() => !submitting && !submittingAndPrint && handleCancel()}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"
           >
             <XMarkIcon className="w-5 h-5" />
@@ -1189,7 +1198,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => onClose()}
+              onClick={() => handleCancel()}
               disabled={submitting}
               className="px-4 py-2 border dark:border-gray-600 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >

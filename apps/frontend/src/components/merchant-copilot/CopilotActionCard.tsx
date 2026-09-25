@@ -34,6 +34,12 @@ export const CopilotActionCard: React.FC<CopilotActionCardProps> = ({ card, onDe
         return 'تعديل كمية المخزون';
       case 'shipping_update':
         return 'تحديث تسعير الشحن';
+      case 'learned_rule':
+        return 'تثبيت قاعدة تشغيلية في الذاكرة';
+      case 'agent_skill':
+        return 'إنشاء مهارة مخصصة للمتجر';
+      case 'agent_spawn':
+        return 'تجهيز وتعيين وكيل جديد';
       default:
         return 'إجراء تشغيلي جاهز للتنفيذ';
     }

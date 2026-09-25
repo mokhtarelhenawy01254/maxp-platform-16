@@ -46,13 +46,14 @@ const createPrisma = (overrides = {}) => {
       update: jest.fn(),
     },
     dentalLabCase: {
-      findMany: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
       count: jest.fn(),
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
-      groupBy: jest.fn(),
+      groupBy: jest.fn().mockResolvedValue([]),
     },
     dentalCaseStage: {
       findMany: jest.fn(),
@@ -1006,7 +1007,7 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       expect(res.payload.data.overdue).toBe(1);
       expect(res.payload.data.totalRevenue).toBe(150);
       expect(res.payload.data.outstanding).toBe(50);
-      expect(res.payload.data.topDoctors).toEqual([{ doctorId: 'doc-1', doctorName: 'د. أحمد', revenue: 150 }]);
+      expect(res.payload.data.topDoctors).toEqual([{ doctorId: 'doc-1', doctorName: 'د. أحمد', revenue: 150, count: 0 }]);
     });
   });
 
@@ -1492,13 +1493,11 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       );
     });
 
-    test('createTechnician links existing user and creates UserCompany with role AGENT', async () => {
+    test('createTechnician links existing company user without overwriting credentials', async () => {
       const prisma = createPrisma();
       prisma.user.findFirst.mockResolvedValue({ id: 'user-existing-1', email: 'existing@lab.com' });
       prisma.dentalTechnician.findFirst.mockResolvedValue(null);
-      prisma.userCompany.findFirst.mockResolvedValue(null);
-      prisma.userCompany.create.mockResolvedValue({ id: 'uc-2' });
-      prisma.user.update.mockResolvedValue({});
+      prisma.userCompany.findFirst.mockResolvedValue({ id: 'uc-1', userId: 'user-existing-1', companyId: 'company-1' });
       prisma.dentalSetting.upsert.mockResolvedValue({});
       prisma.dentalTechnician.create.mockImplementation(({ data }) => Promise.resolve({ id: 'tech-2', ...data }));
       getSharedPrismaClient.mockReturnValue(prisma);
@@ -1518,16 +1517,39 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.payload.success).toBe(true);
-      expect(prisma.user.update).toHaveBeenCalled();
-      expect(prisma.userCompany.create).toHaveBeenCalledWith({
-        data: {
-          userId: 'user-existing-1',
-          companyId: 'company-1',
-          role: 'AGENT',
-          isActive: true,
-          isDefault: false,
-        },
-      });
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(prisma.dentalTechnician.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            userId: 'user-existing-1',
+          }),
+        })
+      );
+    });
+
+    test('createTechnician rejects existing user from another company (S1 security guard)', async () => {
+      const prisma = createPrisma();
+      prisma.user.findFirst.mockResolvedValue({ id: 'user-foreign-1', email: 'other@company.com' });
+      prisma.userCompany.findFirst.mockResolvedValue(null);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createTechnician(
+        req({
+          body: {
+            name: 'سامح حسن',
+            role: 'CERAMIST',
+            email: 'other@company.com',
+            password: 'newPassword123',
+          },
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.success).toBe(false);
+      expect(res.payload.error).toContain('مسجل بالفعل لمستخدم آخر على المنصة');
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
   });
 

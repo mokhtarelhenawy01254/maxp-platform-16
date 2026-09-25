@@ -6628,6 +6628,7 @@ declare module 'react-i18next' {
           rag: string;
           tools: string;
           skills: string;
+          incidents: string;
           scheduler: string;
           routing: string;
           ignoreList: string;
@@ -8485,6 +8486,13 @@ declare module 'react-i18next' {
         attributionStaleHint: string;
         attributionUnlinked: string;
         attributionUnlinkedHint: string;
+        noPageGrantsTitle: string;
+        noPageGrantsMessage: string;
+        reconsentButton: string;
+        reconsentProcessing: string;
+        reconsentWarningCompanies: string;
+        reconsentManualHint: string;
+        reconsentFailed: string;
         addMorePages: string;
         noPagesConnected: string;
         connectWithFacebook: string;

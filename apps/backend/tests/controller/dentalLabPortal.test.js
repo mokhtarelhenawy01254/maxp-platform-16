@@ -37,9 +37,22 @@ const createResponse = () => {
 
 const createPrisma = (overrides = {}) => {
   const prisma = {
+    company: {
+      findUnique: jest.fn().mockResolvedValue({
+        id: 'company-1',
+        name: 'معمل النور',
+        installedApps: [{ app: { slug: 'dental-lab-app' } }],
+      }),
+      findFirst: jest.fn().mockResolvedValue({
+        id: 'company-1',
+        name: 'معمل النور',
+        installedApps: [{ app: { slug: 'dental-lab-app' } }],
+      }),
+    },
     dentalLabDoctor: {
       findFirst: jest.fn(),
       findUnique: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([makeDentist()]),
     },
     dentalWorkType: {
       findMany: jest.fn(),
@@ -161,6 +174,7 @@ describe('dentalLabPortalController', () => {
 
     test('rejects an unknown phone', async () => {
       const prisma = createPrisma();
+      prisma.dentalLabDoctor.findMany.mockResolvedValue([]);
       prisma.dentalLabDoctor.findFirst.mockResolvedValue(null);
       getSharedPrismaClient.mockReturnValue(prisma);
 

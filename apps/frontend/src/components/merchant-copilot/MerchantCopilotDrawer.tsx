@@ -139,28 +139,38 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
     const startTime = Date.now();
 
     try {
-      const res = await apiClient.post<any>('/ai/chat/message', {
-        message: text,
-        sessionId: targetSessionId,
-        agentId: selectedAgent.slug,
-        images: currentImages.length > 0 ? currentImages : undefined,
-        executiveContext: context,
-      });
+      const res = await apiClient.post<any>(
+        '/ai/chat/message',
+        {
+          message: text,
+          sessionId: targetSessionId,
+          agentId: selectedAgent.slug,
+          images: currentImages.length > 0 ? currentImages : undefined,
+          executiveContext: context,
+        },
+        { timeout: 120000 }
+      );
 
       const replyText = res.data?.reply || res.data?.message || 'تمت معالجة طلبك بنجاح.';
       const toolCalls = res.data?.toolCalls || res.data?.tool_calls || [];
 
-      // Extract action cards if tools require approval
+      // Extract action cards if tools require approval or return structured action proposals
       const detectedActionCards: ActionCardData[] = [];
       for (const tc of toolCalls) {
-        if (
+        const isAwaiting =
           tc.status === 'pending_approval' ||
           tc.output?.status === 'PENDING_APPROVAL' ||
+          tc.output?.status === 'awaiting_approval' ||
           tc.arguments?.requireConfirmation ||
           tc.name?.includes('price') ||
           tc.name?.includes('cancel') ||
-          tc.name?.includes('discount')
-        ) {
+          tc.name?.includes('discount') ||
+          tc.name?.includes('learned_rule') ||
+          tc.name?.includes('agent_skill') ||
+          tc.name?.includes('agent_spawn') ||
+          tc.name?.includes('agent.spawn');
+
+        if (isAwaiting) {
           detectedActionCards.push({
             id: tc.id || `action-${Date.now()}`,
             toolCallId: tc.id,
@@ -171,9 +181,22 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
               ? 'order_cancel'
               : tc.name?.includes('discount')
               ? 'discount_create'
+              : tc.name?.includes('learned_rule')
+              ? 'learned_rule'
+              : tc.name?.includes('agent_skill')
+              ? 'agent_skill'
+              : (tc.name?.includes('agent_spawn') || tc.name?.includes('agent.spawn'))
+              ? 'agent_spawn'
               : 'generic',
-            summary: tc.output?.summary || tc.output?.message || 'إجراء ينتظر اعتمادك النهائي لتطبيقه.',
-            parameters: tc.arguments || {},
+            summary:
+              tc.output?.summary ||
+              tc.output?.message ||
+              tc.output?.action_args?.rule_title ||
+              tc.output?.action_args?.name ||
+              tc.arguments?.rule_title ||
+              tc.arguments?.name ||
+              'إجراء تشغيلي ينتظر اعتمادك النهائي لتطبيقه.',
+            parameters: tc.output?.action_args || tc.arguments || {},
             status: 'pending',
           });
         }

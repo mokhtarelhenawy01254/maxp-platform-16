@@ -76,6 +76,13 @@
     "manage.todo",
     "delegate.task",
     "agent.handoff.to",
+    "record_learned_rule",
+    "record.learned.rule",
+    "manage_agent_skill",
+    "manage.agent.skill",
+    "update_agent_identity",
+    "agent.spawn",
+    "agent_spawn",
     "unlock.advanced.tools"
   ],
   "allowedSkills": [],

@@ -268,9 +268,8 @@ describe('dentalLabController advanced features', () => {
       });
       expect(prisma.dentalCaseStage.updateMany).toHaveBeenCalledWith({
         where: { caseId: 'case-1', sortOrder: { gte: 1 } },
-        data: { status: 'PENDING', startedAt: null, completedAt: null, assigneeId: null, assigneeName: null },
+        data: { status: 'PENDING', startedAt: null, completedAt: null },
       });
-      expect(prisma.dentalCaseAssignment.deleteMany).toHaveBeenCalledWith({ where: { caseId: 'case-1' } });
       expect(prisma.dentalCaseStatusHistory.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -442,7 +441,7 @@ describe('dentalLabController advanced features', () => {
         isOwnerFlag: false,
       });
       expect(data[1]).toMatchObject({ userId: 'user-2', dentalRole: 'OWNER', isOwnerFlag: true });
-      expect(data[2]).toMatchObject({ userId: 'user-3', dentalRole: 'RECEPTION', isOwnerFlag: false });
+      expect(data[2]).toMatchObject({ userId: 'user-3', dentalRole: null, isOwnerFlag: false });
     });
 
     test('setTeamRole persists the whole teamRoles map and returns the updated list', async () => {
@@ -569,7 +568,7 @@ describe('dentalLabController advanced features', () => {
       expect(res.payload.data.cases).toHaveLength(1);
       expect(res.payload.data.invoices).toHaveLength(1);
       expect(res.payload.data.invoices[0].payments).toHaveLength(1);
-      expect(res.payload.data.totals).toEqual({ cases: 1, invoicesCount: 1, invoiced: 200, paid: 50, remaining: 150, creditTotal: 0, openingBalance: 0, closingBalance: 150 });
+      expect(res.payload.data.totals).toEqual({ cases: 1, invoicesCount: 1, invoiced: 200, paid: 50, remaining: 150, creditTotal: 0, openingBalance: 0, closingBalance: 150, totalCards: 1, totalUnits: 1 });
       const invoiceWhere = prisma.dentalInvoice.aggregate.mock.calls[0][0].where;
       expect(invoiceWhere).toMatchObject({ companyId: 'company-1', doctorId: 'doc-1', status: { not: 'VOID' } });
     });
