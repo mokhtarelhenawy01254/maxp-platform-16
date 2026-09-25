@@ -1,6 +1,6 @@
 {
   "slug": "store-manager-agent",
-  "name": "Store Manager Agent",
+  "name": "كريم — مدير تشغيل المتجر",
   "role": "STORE_MANAGER",
   "version": "1.0.0",
   "modelPolicy": {

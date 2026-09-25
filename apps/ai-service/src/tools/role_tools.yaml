@@ -363,4 +363,8 @@ roles:
     - delegate_task
     - agent_handoff_to
     - unlock_advanced_tools
+    - record_learned_rule
+    - manage_agent_skill
+    - update_agent_identity
+    - agent_spawn
 

@@ -48,11 +48,9 @@ def test_manifest_tools_match_role_yaml():
     manifest = _manifest()
     manifest_tools = {canonical_tool_name(n) for n in manifest["allowedTools"]}
     role_tools = set(get_tool_names_for_role("STORE_MANAGER"))
-    # registry injects these universal self-learning tools into every role
-    universal = {"record_learned_rule", "manage_agent_skill"}
-    assert role_tools - universal == manifest_tools, (
+    assert role_tools == manifest_tools, (
         "role_tools.yaml STORE_MANAGER must mirror agent.json allowedTools; "
-        f"yaml-only={sorted(role_tools - universal - manifest_tools)}, "
+        f"yaml-only={sorted(role_tools - manifest_tools)}, "
         f"manifest-only={sorted(manifest_tools - role_tools)}"
     )
 
