@@ -19,7 +19,8 @@ const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const {
     createSession,
     deleteSession,
-    connectSession
+    connectSession,
+    getSessions
 } = require('../../controller/whatsappController');
 
 describe('whatsappController session lifecycle retention and relink behavior', () => {
@@ -178,6 +179,40 @@ describe('whatsappController session lifecycle retention and relink behavior', (
                 qrCode: null,
                 phoneNumber: '201234567890'
             }
+        });
+    });
+
+    test('getSessions maps sessions correctly including agentId from metadata without ReferenceError', async () => {
+        prisma.whatsAppSession.findMany = jest.fn().mockResolvedValue([
+            {
+                id: 'session-test-1',
+                companyId: 'company-1',
+                name: 'Main WhatsApp',
+                phoneNumber: '201000000000',
+                provider: 'BAILEYS',
+                status: 'CONNECTED',
+                metadata: JSON.stringify({ agentId: 'agent-sales-1' }),
+                _count: { whatsAppMessages: 5, whatsAppContacts: 2 }
+            }
+        ]);
+        prisma.whatsAppSessionHistoryImport = {
+            findMany: jest.fn().mockResolvedValue([])
+        };
+
+        mockWhatsAppManager.getSession.mockReturnValue(null);
+
+        await getSessions({
+            user: { companyId: 'company-1', id: 'user-1', role: 'COMPANY_ADMIN' }
+        }, res);
+
+        expect(res.status).not.toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalled();
+        const responseData = res.json.mock.calls[0][0];
+        expect(responseData.sessions).toHaveLength(1);
+        expect(responseData.sessions[0]).toMatchObject({
+            id: 'session-test-1',
+            agentId: 'agent-sales-1',
+            liveStatus: 'reconnecting'
         });
     });
 });
