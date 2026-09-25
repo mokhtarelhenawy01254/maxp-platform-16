@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ArrowUp, Paperclip, X } from 'lucide-react';
+import { ArrowUp, Paperclip, Undo2, X } from 'lucide-react';
 
 interface CopilotInputFooterProps {
   inputValue: string;
@@ -9,6 +9,8 @@ interface CopilotInputFooterProps {
   onRemoveImage: (index: number) => void;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSendMessage: () => void;
+  onRewind?: () => void;
+  canRewind?: boolean;
   telemetry: { model?: string; latency_ms?: number } | null;
   inputRef?: React.RefObject<HTMLTextAreaElement>;
 }
@@ -21,6 +23,8 @@ export const CopilotInputFooter: React.FC<CopilotInputFooterProps> = ({
   onRemoveImage,
   onFileUpload,
   onSendMessage,
+  onRewind,
+  canRewind = false,
   telemetry,
   inputRef,
 }) => {
@@ -90,6 +94,20 @@ export const CopilotInputFooter: React.FC<CopilotInputFooterProps> = ({
               <Paperclip className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">إرفاق صورة</span>
             </button>
+
+            {onRewind && (
+              <button
+                type="button"
+                onClick={onRewind}
+                disabled={!canRewind}
+                className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 px-2 py-1 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                title="تراجع عن آخر خطوة (Undo)"
+                aria-label="تراجع عن آخر خطوة"
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">تراجع</span>
+              </button>
+            )}
 
             <span className="font-mono text-[9px] text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-800 border border-slate-300/60 dark:border-slate-700/60 px-2 py-0.5 rounded-md">
               DeepSeek-V3

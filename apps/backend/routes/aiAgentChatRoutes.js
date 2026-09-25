@@ -22,6 +22,7 @@ const {
   listSessions,
   createSession,
   deleteSession,
+  rewindSession,
   getStatus,
 } = require('../controller/aiAgentChatController');
 
@@ -45,6 +46,7 @@ router.post('/rag-knowledge-proposals/:id/reject', rejectRagKnowledgeProposal);
 router.get('/sessions', listSessions);
 router.post('/sessions', createSession);
 router.delete('/sessions/:sessionId', deleteSession);
+router.post('/sessions/:sessionId/rewind', rewindSession);
 router.get('/history', getHistory);
 router.delete('/history', clearHistory);
 router.get('/status', getStatus);

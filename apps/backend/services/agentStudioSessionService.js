@@ -281,6 +281,67 @@ class AgentStudioSessionService {
       return false;
     }
   }
+
+  /**
+   * SOTA 2026 Session State Rewind: Rolls back the last turn (user + assistant) from database.
+   */
+  async rewindSession(companyId, sessionId) {
+    if (!companyId || !sessionId) throw new Error('companyId and sessionId are required');
+    await this.ensureTables();
+
+    try {
+      const lastMessages = await this.prisma.$queryRawUnsafe(`
+        SELECT id, role, content FROM public.agent_studio_messages
+        WHERE "sessionId" = $1
+        ORDER BY "createdAt" DESC
+        LIMIT 2
+      `, sessionId);
+
+      if (!lastMessages || lastMessages.length === 0) {
+        return { success: false, message: 'لا توجد رسائل سابقة للتراجع عنها في هذه الجلسة' };
+      }
+
+      for (const m of lastMessages) {
+        await this.prisma.$executeRawUnsafe(`
+          DELETE FROM public.agent_studio_messages
+          WHERE id = $1
+        `, m.id);
+      }
+
+      await this.prisma.$executeRawUnsafe(`
+        UPDATE public.agent_studio_sessions
+        SET "updatedAt" = CURRENT_TIMESTAMP
+        WHERE id = $1 AND "companyId" = $2
+      `, sessionId, companyId);
+
+      const remainingMessages = await this.prisma.$queryRawUnsafe(`
+        SELECT id, "sessionId", role, content, images, "toolCalls", "createdAt"
+        FROM public.agent_studio_messages
+        WHERE "sessionId" = $1
+        ORDER BY "createdAt" ASC
+      `, sessionId);
+
+      const formatted = (remainingMessages || []).map(m => ({
+        id: m.id,
+        sender: m.role === 'assistant' || m.role === 'agent' ? 'assistant' : 'user',
+        text: m.content || '',
+        timestamp: m.createdAt ? new Date(m.createdAt).toISOString() : new Date().toISOString(),
+        toolCalls: m.toolCalls || [],
+      }));
+
+      return {
+        success: true,
+        undoneCount: lastMessages.length,
+        undoneMessages: lastMessages,
+        messages: formatted,
+        message: 'تم التراجع عن آخر خطوة بنجاح واستعادة حالة المحادثة السابقة ↩️',
+      };
+    } catch (err) {
+      console.error('❌ [AgentStudioSessionService] rewindSession error:', err);
+      throw err;
+    }
+  }
 }
 
 module.exports = new AgentStudioSessionService();
+

@@ -102,6 +102,29 @@ export function useCopilotCloudSessions(companyId?: string | null) {
     return [];
   }, []);
 
+  const rewindActiveSession = useCallback(async (): Promise<{ success: boolean; messages?: CopilotMessage[] }> => {
+    if (!activeSessionId) return { success: false };
+    try {
+      const res = await apiClient.post<{ success?: boolean; messages?: any[]; message?: string }>(
+        `/ai/chat/sessions/${encodeURIComponent(activeSessionId)}/rewind`
+      );
+      if (res.data?.success) {
+        const rawMessages = res.data?.messages || [];
+        const formatted: CopilotMessage[] = rawMessages.map((m: any) => ({
+          id: m.id || `msg-${Date.now()}-${Math.random()}`,
+          sender: m.sender === 'user' || m.role === 'user' ? 'user' : 'assistant',
+          text: m.content || m.text || '',
+          timestamp: m.createdAt || m.timestamp || new Date().toISOString(),
+          toolCalls: m.toolCalls || m.tool_calls || [],
+        }));
+        return { success: true, messages: formatted };
+      }
+    } catch (e) {
+      console.warn('[CopilotCloudSessions] Failed rewinding session:', e);
+    }
+    return { success: false };
+  }, [activeSessionId]);
+
   return {
     sessions,
     activeSessionId,
@@ -110,6 +133,7 @@ export function useCopilotCloudSessions(companyId?: string | null) {
     createNewCloudSession,
     deleteCloudSession,
     loadSessionHistory,
+    rewindActiveSession,
     fetchSessions,
   };
 }

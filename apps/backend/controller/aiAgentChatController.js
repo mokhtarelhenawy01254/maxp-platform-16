@@ -29,6 +29,28 @@ async function sendMessage(req, res) {
       return res.status(400).json({ success: false, error: 'message is required' });
     }
 
+    const activeSessionId = sessionId || `copilot_sess_${Date.now()}`;
+
+    // SOTA 2026: Arabic/English Natural Language Rewind Command Interceptor
+    const isRewindCommand = /^\s*(\/?(تراجع|undo|rewind)|ارجع\s+(للخلف|خطوة|ورا|للخطوة\s+اللي\s+فاتت))/i.test(message);
+    if (isRewindCommand && sessionId) {
+      const rewindRes = await aiSessionService.rewindSession(companyId, sessionId);
+      return res.json({
+        success: true,
+        reply: rewindRes.message || 'تم التراجع عن آخر خطوة بنجاح واستعادة حالة المحادثة السابقة ↩️',
+        rewind: true,
+        messages: rewindRes.messages || [],
+        session: { id: sessionId },
+      });
+    }
+
+    // Persist incoming user turn to PostgreSQL durable ledger
+    await aiSessionService.appendMessage(companyId, activeSessionId, {
+      sender: 'user',
+      text: message,
+      images: req.body?.images,
+    });
+
     let result = null;
     const targetAgentId = agentId || agentSlug || 'store-manager-agent';
     const combinedMemoryContext = {
@@ -107,6 +129,15 @@ async function sendMessage(req, res) {
       }
     }
 
+    // Persist assistant turn to PostgreSQL durable ledger
+    if (result?.reply) {
+      await aiSessionService.appendMessage(companyId, activeSessionId, {
+        sender: 'assistant',
+        text: result.reply,
+        toolCalls: result.toolCalls || [],
+      });
+    }
+
     return res.json({
       success: true,
       reply: result.reply,
@@ -114,7 +145,7 @@ async function sendMessage(req, res) {
       agentInfo: result.agentInfo || null,
       modelSelection: result.modelSelection || null,
       conversationId: result.conversationId || result.threadId,
-      session: result.session || { id: result.threadId },
+      session: result.session || { id: activeSessionId },
     });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] sendMessage error:', error.message);
@@ -626,7 +657,11 @@ async function getHistory(req, res) {
     }
 
     const history = await aiSessionService.getHistory(companyId, userId, req.query?.sessionId, req.user);
-    return res.json({ success: true, ...history });
+    return res.json({
+      success: true,
+      session: history.session || null,
+      messages: history.messages || [],
+    });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] getHistory error:', error.message);
     return res.status(500).json({ success: false, error: 'Failed to get history' });
@@ -686,8 +721,7 @@ async function createSession(req, res) {
     const session = await aiSessionService.createSession(companyId, userId, req.user, {
       title: req.body?.title,
     });
-    const history = await aiSessionService.getHistory(companyId, userId, session.id, req.user);
-    return res.status(201).json({ success: true, session, messages: history.messages });
+    return res.status(201).json({ success: true, session, messages: [] });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] createSession error:', error.message);
     return res.status(500).json({ success: false, error: 'Failed to create session' });
@@ -708,6 +742,29 @@ async function deleteSession(req, res) {
   } catch (error) {
     console.error('[AI-CHAT-CTRL] deleteSession error:', error.message);
     return res.status(500).json({ success: false, error: 'Failed to delete session' });
+  }
+}
+
+/**
+ * POST /api/v1/ai/chat/sessions/:sessionId/rewind
+ */
+async function rewindSession(req, res) {
+  try {
+    const companyId = req.user?.companyId;
+    const sessionId = req.params?.sessionId || req.body?.sessionId || req.query?.sessionId;
+
+    if (!companyId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+    if (!sessionId) {
+      return res.status(400).json({ success: false, error: 'sessionId is required' });
+    }
+
+    const result = await aiSessionService.rewindSession(companyId, sessionId);
+    return res.json(result);
+  } catch (error) {
+    console.error('[AI-CHAT-CTRL] rewindSession error:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to rewind session' });
   }
 }
 
@@ -750,5 +807,6 @@ module.exports = {
   listSessions,
   createSession,
   deleteSession,
+  rewindSession,
   getStatus,
 };

@@ -1,35 +1,45 @@
 /**
  * @module aiSessionService
- * @description Manages AI agent chat sessions and history.
+ * @description Manages AI agent chat sessions, history, and rewind via AgentStudioSessionService.
  */
 
-const { getSharedPrismaClient } = require('./sharedDatabase');
+const agentStudioSessionService = require('./agentStudioSessionService');
 
 async function getHistory(companyId, userId, sessionId, user) {
   try {
-    const prisma = getSharedPrismaClient();
-    const where = { companyId };
-    if (sessionId) where.id = sessionId;
-    if (userId) where.userId = userId;
-    const session = sessionId
-      ? await prisma.aIChatSession.findFirst({ where, include: { messages: { orderBy: { createdAt: 'asc' } } } })
-      : await prisma.aIChatSession.findFirst({ where: { companyId, userId }, orderBy: { updatedAt: 'desc' }, include: { messages: { orderBy: { createdAt: 'asc' } } } });
-    return session ? session.messages : [];
-  } catch {
-    return [];
+    if (!companyId) return { session: null, messages: [] };
+    if (!sessionId) {
+      const sessions = await agentStudioSessionService.listSessions(companyId, 'copilot', 1);
+      if (sessions && sessions.length > 0) {
+        return { session: sessions[0], messages: sessions[0].messages || [] };
+      }
+      return { session: null, messages: [] };
+    }
+    const session = await agentStudioSessionService.getSession(companyId, sessionId);
+    return {
+      session,
+      messages: session?.messages || [],
+    };
+  } catch (err) {
+    console.warn('[aiSessionService] getHistory warning:', err.message);
+    return { session: null, messages: [] };
+  }
+}
+
+async function appendMessage(companyId, sessionId, messageData) {
+  try {
+    return await agentStudioSessionService.appendMessage(companyId, sessionId, messageData, 'copilot');
+  } catch (err) {
+    console.warn('[aiSessionService] appendMessage warning:', err.message);
+    return false;
   }
 }
 
 async function clearHistory(companyId, userId, sessionId) {
   try {
-    const prisma = getSharedPrismaClient();
     if (sessionId) {
-      await prisma.aIChatMessage.deleteMany({ where: { sessionId } });
+      await agentStudioSessionService.deleteSession(companyId, sessionId);
       return { success: true };
-    }
-    const sessions = await prisma.aIChatSession.findMany({ where: { companyId, userId } });
-    for (const s of sessions) {
-      await prisma.aIChatMessage.deleteMany({ where: { sessionId: s.id } });
     }
     return { success: true };
   } catch {
@@ -39,29 +49,34 @@ async function clearHistory(companyId, userId, sessionId) {
 
 async function listSessions(companyId, userId) {
   try {
-    const prisma = getSharedPrismaClient();
-    return await prisma.aIChatSession.findMany({
-      where: { companyId, userId },
-      orderBy: { updatedAt: 'desc' },
-    });
-  } catch {
+    return await agentStudioSessionService.listSessions(companyId, 'copilot', 50);
+  } catch (err) {
+    console.warn('[aiSessionService] listSessions warning:', err.message);
     return [];
   }
 }
 
 async function createSession(companyId, userId, user, options = {}) {
   try {
-    const prisma = getSharedPrismaClient();
-    return await prisma.aIChatSession.create({
-      data: {
-        companyId,
-        userId,
-        title: options.title || 'New conversation',
-        metadata: options.metadata ? JSON.stringify(options.metadata) : null,
-      },
+    const sessionId = options.id || `copilot_sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const saved = await agentStudioSessionService.saveSession(companyId, userId, 'copilot', {
+      id: sessionId,
+      title: options.title || 'جلسة جديدة',
+      messages: [],
     });
-  } catch {
-    return { id: null, companyId, userId };
+    return saved || { id: sessionId, title: options.title || 'جلسة جديدة' };
+  } catch (err) {
+    console.warn('[aiSessionService] createSession warning:', err.message);
+    return { id: `copilot_sess_${Date.now()}`, title: 'جلسة جديدة' };
+  }
+}
+
+async function rewindSession(companyId, sessionId) {
+  try {
+    return await agentStudioSessionService.rewindSession(companyId, sessionId);
+  } catch (err) {
+    console.warn('[aiSessionService] rewindSession warning:', err.message);
+    return { success: false, error: err.message };
   }
 }
 
@@ -71,8 +86,10 @@ async function getAgentStatus(companyId) {
 
 module.exports = {
   getHistory,
+  appendMessage,
   clearHistory,
   listSessions,
   createSession,
+  rewindSession,
   getAgentStatus,
 };

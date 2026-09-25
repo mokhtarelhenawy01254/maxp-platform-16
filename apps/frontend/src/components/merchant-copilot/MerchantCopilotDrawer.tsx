@@ -28,6 +28,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
     createNewCloudSession,
     deleteCloudSession,
     loadSessionHistory,
+    rewindActiveSession,
   } = useCopilotCloudSessions(context.companyId);
 
   const [selectedAgent, setSelectedAgent] = useState<SpecialistAgent>(SPECIALIST_AGENTS[0]!);
@@ -242,6 +243,23 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
     setMessages([]);
   };
 
+  const handleRewind = useCallback(async () => {
+    if (loading || messages.length === 0) return;
+    setLoading(true);
+    try {
+      const res = await rewindActiveSession();
+      if (res.success && res.messages) {
+        setMessages(res.messages);
+      } else {
+        setMessages((prev) => prev.slice(0, Math.max(0, prev.length - 2)));
+      }
+    } catch (e) {
+      console.warn('[Copilot] Rewind error:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, messages.length, rewindActiveSession]);
+
   if (!isOpen) return null;
 
   return (
@@ -392,6 +410,8 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
                 onRemoveImage={(idx) => setAttachedImages((prev) => prev.filter((_, i) => i !== idx))}
                 onFileUpload={handleFileUpload}
                 onSendMessage={handleSendMessage}
+                onRewind={handleRewind}
+                canRewind={messages.length > 0 && !loading}
                 telemetry={telemetry}
                 inputRef={inputRef}
               />
