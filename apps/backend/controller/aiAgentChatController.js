@@ -11,13 +11,18 @@ const RagKnowledgeProposalService = require('../services/rag/RagKnowledgeProposa
 const RagKnowledgeMaintenanceService = require('../services/rag/RagKnowledgeMaintenanceService');
 const RagKnowledgeEvaluationSchedulerService = require('../services/rag/RagKnowledgeEvaluationSchedulerService');
 
+function resolveCompanyId(req) {
+  const isSuperAdmin = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'superadmin';
+  return (isSuperAdmin && (req.query?.companyId || req.body?.companyId)) || req.user?.companyId;
+}
+
 /**
  * POST /api/v1/ai/chat/message
  * Body: { message: string, sessionId?: string }
  */
 async function sendMessage(req, res) {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     const userId = req.user?.id;
 
     if (!companyId || !userId) {
@@ -649,7 +654,7 @@ async function rejectRagKnowledgeProposal(req, res) {
  */
 async function getHistory(req, res) {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     const userId = req.user?.id;
 
     if (!companyId || !userId) {
@@ -673,7 +678,7 @@ async function getHistory(req, res) {
  */
 async function clearHistory(req, res) {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     const userId = req.user?.id;
 
     if (!companyId || !userId) {
@@ -690,7 +695,7 @@ async function clearHistory(req, res) {
 
 async function listSessions(req, res) {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     const userId = req.user?.id;
 
     if (!companyId || !userId) {
@@ -711,7 +716,7 @@ async function listSessions(req, res) {
 
 async function createSession(req, res) {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     const userId = req.user?.id;
 
     if (!companyId || !userId) {
@@ -730,7 +735,7 @@ async function createSession(req, res) {
 
 async function deleteSession(req, res) {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     const userId = req.user?.id;
 
     if (!companyId || !userId) {
@@ -750,7 +755,7 @@ async function deleteSession(req, res) {
  */
 async function rewindSession(req, res) {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     const sessionId = req.params?.sessionId || req.body?.sessionId || req.query?.sessionId;
 
     if (!companyId) {
@@ -773,7 +778,7 @@ async function rewindSession(req, res) {
  */
 async function getStatus(req, res) {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = resolveCompanyId(req);
     if (!companyId) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }

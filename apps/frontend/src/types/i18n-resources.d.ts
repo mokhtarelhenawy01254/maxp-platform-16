@@ -10579,6 +10579,7 @@ declare module 'react-i18next' {
         limitNearWarning: string;
         addNewUser: string;
         inviteUser: string;
+        exportCsv: string;
         userList: string;
         statsReports: string;
         fromDate: string;

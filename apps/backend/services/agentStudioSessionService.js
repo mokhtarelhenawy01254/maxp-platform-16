@@ -104,9 +104,12 @@ class AgentStudioSessionService {
       const msgMap = {};
       for (const m of (messages || [])) {
         if (!msgMap[m.sessionId]) msgMap[m.sessionId] = [];
+        const isAssistant = m.role === 'assistant' || m.role === 'agent';
         msgMap[m.sessionId].push({
           id: m.id,
-          sender: m.role === 'assistant' || m.role === 'agent' ? 'agent' : 'user',
+          role: isAssistant ? 'assistant' : 'user',
+          sender: isAssistant ? 'agent' : 'user',
+          content: m.content || '',
           text: m.content || '',
           images: Array.isArray(m.images) ? m.images : undefined,
           toolCalls: m.toolCalls || undefined,
@@ -161,14 +164,19 @@ class AgentStudioSessionService {
         createdAt: s.createdAt ? new Date(s.createdAt).toISOString() : new Date().toISOString(),
         updatedAt: s.updatedAt ? new Date(s.updatedAt).toISOString() : new Date().toISOString(),
         context: s.context || {},
-        messages: (messages || []).map(m => ({
-          id: m.id,
-          sender: m.role === 'assistant' || m.role === 'agent' ? 'agent' : 'user',
-          text: m.content || '',
-          images: Array.isArray(m.images) ? m.images : undefined,
-          toolCalls: m.toolCalls || undefined,
-          timestamp: m.createdAt ? new Date(m.createdAt).toISOString() : new Date().toISOString(),
-        })),
+        messages: (messages || []).map(m => {
+          const isAssistant = m.role === 'assistant' || m.role === 'agent';
+          return {
+            id: m.id,
+            role: isAssistant ? 'assistant' : 'user',
+            sender: isAssistant ? 'agent' : 'user',
+            content: m.content || '',
+            text: m.content || '',
+            images: Array.isArray(m.images) ? m.images : undefined,
+            toolCalls: m.toolCalls || undefined,
+            timestamp: m.createdAt ? new Date(m.createdAt).toISOString() : new Date().toISOString(),
+          };
+        }),
       };
     } catch (err) {
       console.error('[AgentStudioSessionService] getSession error:', err.message);
@@ -321,13 +329,18 @@ class AgentStudioSessionService {
         ORDER BY "createdAt" ASC
       `, sessionId);
 
-      const formatted = (remainingMessages || []).map(m => ({
-        id: m.id,
-        sender: m.role === 'assistant' || m.role === 'agent' ? 'assistant' : 'user',
-        text: m.content || '',
-        timestamp: m.createdAt ? new Date(m.createdAt).toISOString() : new Date().toISOString(),
-        toolCalls: m.toolCalls || [],
-      }));
+      const formatted = (remainingMessages || []).map(m => {
+        const isAssistant = m.role === 'assistant' || m.role === 'agent';
+        return {
+          id: m.id,
+          role: isAssistant ? 'assistant' : 'user',
+          sender: isAssistant ? 'agent' : 'user',
+          content: m.content || '',
+          text: m.content || '',
+          timestamp: m.createdAt ? new Date(m.createdAt).toISOString() : new Date().toISOString(),
+          toolCalls: m.toolCalls || [],
+        };
+      });
 
       return {
         success: true,
