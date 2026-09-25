@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "../../components/ui/alert";
 const AgentSkillsPage = React.lazy(() => import("../admin/AgentSkillsPage"));
 const AgentToolsPage = React.lazy(() => import("../admin/AgentToolsPage"));
 const AgenticRAGLab = React.lazy(() => import("../admin/AgenticRAGLab"));
+const SuperAdminAiIncidentsPage = React.lazy(() => import("./ai-incidents/SuperAdminAiIncidentsPage"));
 
 interface Company {
   id: string;
@@ -15,15 +16,16 @@ interface Company {
 }
 
 const TABS = [
-  { key: "skills", labelKey: "aiHub.tabs.skills", needsCompany: false },
-  { key: "tools", labelKey: "aiHub.tabs.tools", needsCompany: false },
-  { key: "rag", labelKey: "aiHub.tabs.rag", needsCompany: true },
+  { key: "skills", labelKey: "aiHub.tabs.skills", labelDefault: "المهارات", needsCompany: false },
+  { key: "tools", labelKey: "aiHub.tabs.tools", labelDefault: "الأدوات", needsCompany: false },
+  { key: "incidents", labelKey: "aiHub.tabs.incidents", labelDefault: "رصد أعطال الأدوات", needsCompany: false },
+  { key: "rag", labelKey: "aiHub.tabs.rag", labelDefault: "مختبر RAG", needsCompany: true },
 ] as const;
 
 export default function SuperAdminAIHubLayout() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
-  const activeTab = (searchParams.get("tab") || "skills") as "skills" | "tools" | "rag";
+  const activeTab = (searchParams.get("tab") || "skills") as "skills" | "tools" | "incidents" | "rag";
   const currentTabMeta = TABS.find((t) => t.key === activeTab) ?? TABS[0];
 
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -88,7 +90,7 @@ export default function SuperAdminAIHubLayout() {
                     : "text-muted-foreground hover:bg-muted"
                 }`}
               >
-                {t(tab.labelKey)}
+                {t(tab.labelKey, tab.labelDefault)}
               </button>
             ))}
           </div>
@@ -133,6 +135,9 @@ export default function SuperAdminAIHubLayout() {
           )}
           {activeTab === "tools" && (
             <AgentToolsPage key={selectedCompanyId || "no-company"} companyId={selectedCompanyId || undefined} />
+          )}
+          {activeTab === "incidents" && (
+            <SuperAdminAiIncidentsPage />
           )}
           {activeTab === "rag" && (
             selectedCompanyId

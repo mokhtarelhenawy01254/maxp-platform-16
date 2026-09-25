@@ -1006,6 +1006,9 @@ const SuperAdminAIChatPage = React.lazy(
 const SuperAdminAIHubLayout = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIHubLayout"),
 );
+const SuperAdminAiIncidentsPage = React.lazy(
+  () => import("./pages/super-admin/ai-incidents/SuperAdminAiIncidentsPage"),
+);
 const SkillDetailPage = React.lazy(
   () => import("./pages/super-admin/SkillDetailPage"),
 );
@@ -2658,6 +2661,14 @@ const AppContent = () => {
               element={
                 <Layout fullWidth>
                   <SuperAdminAIHubLayout />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-incidents"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminAiIncidentsPage />
                 </Layout>
               }
             />

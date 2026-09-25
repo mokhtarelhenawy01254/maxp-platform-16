@@ -44,6 +44,7 @@ import {
   Monitor,
   TrendingUp,
   ShoppingBag,
+  ShieldAlert,
 } from "lucide-react";
 import i18n from "../../i18n";
 import { cn } from "@/lib/utils";
@@ -292,6 +293,11 @@ export const getMenuGroups = (t: (key: string) => string): SuperAdminMenuGroup[]
         text: t("superAdmin.sidebar.aiKeyLogs") || "سجلات استخدام المفاتيح",
         icon: <History className="h-4 w-4" />,
         path: "/super-admin/ai-key-logs",
+      },
+      {
+        text: "رصد أعطال أدوات الوكلاء",
+        icon: <ShieldAlert className="h-4 w-4 text-rose-500" />,
+        path: "/super-admin/ai-incidents",
       },
       {
         text: t("superAdmin.sidebar.aiPlayground") || "منصة تجربة AI Playground",

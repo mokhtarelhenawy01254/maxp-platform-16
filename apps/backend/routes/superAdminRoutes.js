@@ -1367,4 +1367,12 @@ router.put('/ai-image-generator-settings', superAdminAIImageGeneratorController.
 router.get('/ai-image-generator-settings/companies', superAdminAIImageGeneratorController.listCompanies);
 router.put('/ai-image-generator-settings/companies/:companyId', superAdminAIImageGeneratorController.updateCompanyOverride);
 
+// ⚡ AI Agent & Tool Incidents Telemetry (2026 Observability Standard)
+const superAdminAiIncidentsController = require('../controller/superAdminAiIncidentsController');
+router.get('/ai/incidents', checkPermission('canViewReports'), superAdminAiIncidentsController.getIncidents);
+router.post('/ai/incidents/:id/retest', checkPermission('canManageSettings'), superAdminAiIncidentsController.retestIncident);
+router.post('/ai/incidents/:id/notify-tenant', checkPermission('canManageSettings'), superAdminAiIncidentsController.notifyTenant);
+router.post('/ai/incidents/:id/kill-switch', checkPermission('canManageSettings'), superAdminAiIncidentsController.toggleKillSwitch);
+
 module.exports = router;
+

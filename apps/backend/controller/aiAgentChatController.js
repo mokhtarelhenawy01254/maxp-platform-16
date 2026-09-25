@@ -84,6 +84,29 @@ async function sendMessage(req, res) {
       };
     }
 
+    // Automatically capture tool execution failures into the persistent observability ledger
+    if (Array.isArray(result?.toolCalls)) {
+      for (const tc of result.toolCalls) {
+        if (tc.status === 'failed' || tc.error || tc.output?.error || tc.output?.success === false) {
+          try {
+            const { recordToolIncident } = require('./superAdminAiIncidentsController');
+            recordToolIncident({
+              companyId,
+              conversationId: result.conversationId || result.threadId || sessionId,
+              customerId: userId,
+              errorType: 'TOOL_EXECUTION_FAILURE',
+              errorMessage: tc.error || tc.output?.error || tc.output?.message || 'فشل استدعاء الأداة من قِبل الوكيل',
+              toolName: tc.name,
+              toolArguments: tc.arguments,
+              agentId: targetAgentId,
+              model: result.modelSelection?.model || 'DeepSeek-V3',
+              userMessage: message,
+            }).catch(() => {});
+          } catch (_) {}
+        }
+      }
+    }
+
     return res.json({
       success: true,
       reply: result.reply,
@@ -95,6 +118,22 @@ async function sendMessage(req, res) {
     });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] sendMessage error:', error.message);
+
+    // Record runtime error in the observability ledger
+    try {
+      const { recordToolIncident } = require('./superAdminAiIncidentsController');
+      recordToolIncident({
+        companyId: req.user?.companyId,
+        conversationId: req.body?.sessionId,
+        customerId: req.user?.id,
+        errorType: error.code || 'AGENT_RUNTIME_FAILURE',
+        errorMessage: error.message,
+        agentId: req.body?.agentId || req.body?.agentSlug || 'store-manager-agent',
+        userMessage: req.body?.message,
+        stack: error.stack,
+      }).catch(() => {});
+    } catch (_) {}
+
     if (
       error.code === 'AI_AGENT_EMPTY_REPLY' ||
       error.code === 'AI_AGENT_LLM_UNAVAILABLE' ||
