@@ -24,13 +24,18 @@ async function sendMessage(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    const { message, sessionId, agentId, agentSlug } = req.body;
+    const { message, sessionId, agentId, agentSlug, memoryContext, memory_context, executiveContext } = req.body;
     if (!message?.trim()) {
       return res.status(400).json({ success: false, error: 'message is required' });
     }
 
     let result = null;
-    const targetAgentId = agentId || agentSlug;
+    const targetAgentId = agentId || agentSlug || 'store-manager-agent';
+    const combinedMemoryContext = {
+      ...(memoryContext || {}),
+      ...(memory_context || {}),
+      ...(executiveContext ? { executiveContext } : {}),
+    };
 
     if (targetAgentId && targetAgentId !== 'CEO' && targetAgentId !== 'ceo-agent') {
       try {
@@ -40,6 +45,7 @@ async function sendMessage(req, res) {
           agentId: targetAgentId,
           message,
           threadId: sessionId,
+          memoryContext: combinedMemoryContext,
         });
 
         if (agentChatResult && (agentChatResult.reply || agentChatResult.tool_calls || agentChatResult.status === 'ok')) {
@@ -66,6 +72,7 @@ async function sendMessage(req, res) {
         customerId: userId,
         message,
         threadId: sessionId,
+        memoryContext: combinedMemoryContext,
       });
       result = {
         reply: fallbackResult.reply,

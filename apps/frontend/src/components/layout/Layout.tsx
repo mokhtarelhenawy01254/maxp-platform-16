@@ -10,8 +10,8 @@ import {
   UserCircleIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-} from "@heroicons/react/24/outline";
-import { Wallet } from "lucide-react";
+import { Wallet, Sparkles } from "lucide-react";
+import { MerchantCopilotDrawer } from "../merchant-copilot/MerchantCopilotDrawer";
 import "../../styles/hr-theme.css";
 import { useTranslation } from "react-i18next";
 import i18n from "../../i18n";
@@ -167,6 +167,18 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const [isOrderSearchOpen, setIsOrderSearchOpen] = useState(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setIsCopilotOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const { settings: sidebarSettings, userSettings, userLayout } = useSidebarSettings();
 
@@ -761,6 +773,21 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             </div>
 
             <AppUpdateIndicator />
+            <button
+              type="button"
+              onClick={() => setIsCopilotOpen((prev) => !prev)}
+              className="business-icon-button relative group flex items-center gap-1.5 px-2.5 py-1 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-full border border-emerald-500/20 transition-all duration-200"
+              title="مساعد المتجر التنفيذي (Ctrl + J)"
+              aria-label="مساعد المتجر التنفيذي"
+            >
+              <Sparkles className="h-4 w-4 text-emerald-500" />
+              <span className="hidden md:inline text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                المساعد الذكي
+              </span>
+              <span className="hidden lg:inline text-[10px] font-mono opacity-70 bg-emerald-500/20 px-1 py-0.5 rounded">
+                Ctrl+J
+              </span>
+            </button>
             <NotificationDropdown className="business-shell-notification-slot shrink-0" />
 
             <a
@@ -1168,6 +1195,10 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
            onClose={() => setShowActiveUsers(false)}
          />
        )}
+        <MerchantCopilotDrawer
+          isOpen={isCopilotOpen}
+          onClose={() => setIsCopilotOpen(false)}
+        />
      </div>
    );
  };

@@ -455,6 +455,27 @@ You are continuing an existing conversation on Facebook Messenger that was previ
             if active_obj:
                 working_memory_lines.append(f"  <current_objective>{active_obj}</current_objective>")
 
+            # Anchor Merchant Screen & Executive Context (2026 Global Copilot)
+            exec_ctx = session_state.get("executiveContext") or session_state.get("pageContext")
+            if isinstance(exec_ctx, dict):
+                working_memory_lines.append("  <merchant_screen_context>")
+                r_path = exec_ctx.get("pathname") or exec_ctx.get("currentRoute")
+                if r_path:
+                    working_memory_lines.append(f"    Current Route: {r_path}")
+                if exec_ctx.get("pageTitle"):
+                    working_memory_lines.append(f"    Page Title: {exec_ctx.get('pageTitle')}")
+                if exec_ctx.get("businessType"):
+                    working_memory_lines.append(f"    Business Vertical: {exec_ctx.get('businessType')}")
+                if exec_ctx.get("activeApps"):
+                    working_memory_lines.append(f"    Active Apps: {', '.join(str(a) for a in exec_ctx.get('activeApps'))}")
+                if exec_ctx.get("entityId"):
+                    working_memory_lines.append(f"    Screen Entity ID: {exec_ctx.get('entityId')} (Type: {exec_ctx.get('entityType', 'item')})")
+                working_memory_lines.append(
+                    "    Directive: The merchant is actively on this page. When they say 'الأوردر ده', 'شايف الشاشة دي؟', 'الطلب المعروض', "
+                    "or ask for summary/actions on the current page, use this context immediately without asking for the entity ID or URL again."
+                )
+                working_memory_lines.append("  </merchant_screen_context>")
+
             working_memory_lines.append("</session_working_memory>")
 
             scratchpad_xml = "\n" + "\n".join(working_memory_lines)
