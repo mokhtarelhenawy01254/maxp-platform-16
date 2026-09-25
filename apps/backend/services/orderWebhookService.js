@@ -28,11 +28,12 @@ async function ensureTablesExist() {
         "lastError" TEXT,
         "failureCount" INTEGER NOT NULL DEFAULT 0,
         "successCount" INTEGER NOT NULL DEFAULT 0
-      );
+      )
+    `);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "order_webhook_configs_companyId_idx" ON "order_webhook_configs"("companyId")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "order_webhook_configs_companyId_isActive_idx" ON "order_webhook_configs"("companyId", "isActive")`);
 
-      CREATE INDEX IF NOT EXISTS "order_webhook_configs_companyId_idx" ON "order_webhook_configs"("companyId");
-      CREATE INDEX IF NOT EXISTS "order_webhook_configs_companyId_isActive_idx" ON "order_webhook_configs"("companyId", "isActive");
-
+    await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "order_webhook_logs" (
         "id" TEXT PRIMARY KEY,
         "webhookId" TEXT NOT NULL,
@@ -48,12 +49,11 @@ async function ensureTablesExist() {
         "isSuccess" BOOLEAN NOT NULL DEFAULT false,
         "error" TEXT,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE INDEX IF NOT EXISTS "order_webhook_logs_webhookId_createdAt_idx" ON "order_webhook_logs"("webhookId", "createdAt");
-      CREATE INDEX IF NOT EXISTS "order_webhook_logs_companyId_createdAt_idx" ON "order_webhook_logs"("companyId", "createdAt");
-      CREATE INDEX IF NOT EXISTS "order_webhook_logs_orderId_idx" ON "order_webhook_logs"("orderId");
+      )
     `);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "order_webhook_logs_webhookId_createdAt_idx" ON "order_webhook_logs"("webhookId", "createdAt")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "order_webhook_logs_companyId_createdAt_idx" ON "order_webhook_logs"("companyId", "createdAt")`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "order_webhook_logs_orderId_idx" ON "order_webhook_logs"("orderId")`);
     _tablesEnsured = true;
   } catch (err) {
     console.warn('⚠️ [ORDER-WEBHOOK] Auto-migration check:', err.message);

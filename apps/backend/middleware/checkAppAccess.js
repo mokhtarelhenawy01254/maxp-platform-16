@@ -437,10 +437,10 @@ const checkWalletBalance = (minBalance = 0) => {
   };
 };
 
-module.exports = {
-  checkAppAccess,
-  checkWalletBalance,
-  getCandidateAppSlugs,
-  STORE_APP_SLUGS,
-  LEGACY_APP_SLUG_ALIASES
-};
+module.exports = checkAppAccess;
+module.exports.checkAppAccess = checkAppAccess;
+module.exports.checkWalletBalance = checkWalletBalance;
+module.exports.getCandidateAppSlugs = getCandidateAppSlugs;
+module.exports.STORE_APP_SLUGS = STORE_APP_SLUGS;
+module.exports.LEGACY_APP_SLUG_ALIASES = LEGACY_APP_SLUG_ALIASES;
+

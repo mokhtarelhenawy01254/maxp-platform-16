@@ -648,12 +648,14 @@ async function runHealthCheck() {
             try {
                 await safeQuery(async () => {
                     const prisma = getSharedPrismaClient();
-                    await prisma.$transaction(
-                        statusDiffs.map(d => prisma.whatsAppSession.update({
-                            where: { id: d.id },
-                            data: { status: d.status }
-                        }))
-                    );
+                    await prisma.$transaction(async (tx) => {
+                        for (const d of statusDiffs) {
+                            await tx.whatsAppSession.update({
+                                where: { id: d.id },
+                                data: { status: d.status }
+                            });
+                        }
+                    });
                 }, 3);
             } catch (diffErr) {
                 WA_LOG.error(null, `Health check status sync failed:`, diffErr.message);

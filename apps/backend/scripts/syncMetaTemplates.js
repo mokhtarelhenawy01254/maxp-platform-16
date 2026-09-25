@@ -6,8 +6,8 @@
  */
 const axios = require('axios');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { getMetaGraphApiVersion } = require('../../config/metaApi');
-const { decryptField } = require('../../utils/fieldEncryption');
+const { getMetaGraphApiVersion } = require('../config/metaApi');
+const { decryptField } = require('../utils/fieldEncryption');
 const prisma = getSharedPrismaClient();
 
 const COMPANY_ID = process.env.SYNC_COMPANY_ID || 'cmleybpf70028juo2wwpmp8rt';

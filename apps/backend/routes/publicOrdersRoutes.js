@@ -2245,8 +2245,8 @@ router.post('/', async (req, res) => {
               await prisma.cartConversionLog.create({
                 data: {
                   cartId,
-                  orderId: newOrder?.id || null,
-                  orderNumber: newOrder?.orderNumber || null,
+                  orderId: order?.id || null,
+                  orderNumber: order?.orderNumber || null,
                   employeeId: null,
                   employeeName: null,
                   companyId: company.id,
