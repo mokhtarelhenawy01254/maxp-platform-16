@@ -10643,6 +10643,9 @@
       "lastNameRequired": "الاسم الأخير مطلوب",
       "emailRequired": "البريد الإلكتروني مطلوب",
       "emailInvalid": "البريد الإلكتروني غير صحيح",
+      "cannotDeactivateSelf": "لا يمكنك تعطيل حسابك الشخصي الحالي",
+      "phoneInvalid": "رقم الهاتف غير صالح",
+      "salaryInvalid": "الراتب الأساسي يجب أن يكون رقماً موجباً",
       "passwordRequired": "كلمة المرور مطلوبة",
       "passwordMinLength": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
       "roleRequired": "الدور مطلوب"
@@ -10650,7 +10653,18 @@
     "noUsers": "لا يوجد مستخدمين",
     "unlimited": "غير محدود",
     "editUser": "تعديل المستخدم",
-    "inviteNewUser": "دعوة مستخدم جديد"
+    "inviteNewUser": "دعوة مستخدم جديد",
+    "pageDescription": "إدارة حسابات المستخدمين وصلاحياتهم داخل المنصة وتتبع أنشطتهم.",
+    "userListDescription": "قائمة بجميع المستخدمين المسجلين في الشركة وحالات نشاطهم وأدوارهم.",
+    "bulkActionsDescription": "إجراء تعديلات سريعة على المستخدمين المحددين.",
+    "selectedUsers": "تم تحديد {{count}} مستخدم",
+    "clearSelection": "إلغاء التحديد",
+    "deleteSelected": "حذف المحدد",
+    "activate": "تنشيط",
+    "deactivate": "تعطيل",
+    "exportCsv": "تصدير CSV",
+    "pendingInvitations": "الدعوات المعلقة ({{count}})",
+    "invitationsDescription": "قائمة بالدعوات المرسلة والتي لم تُقبل بعد من قِبل المستخدمين."
   },
   "customerAnalytics": {
     "title": "تحليلات العملاء",
@@ -12732,6 +12746,9 @@
       },
       "legal": {
         "description": "الشروط والأحكام والخصوصية"
+      },
+      "treasuryExpenses": {
+        "description": "إدارة الخزينة والمصروفات النثرية والعهد"
       },
       "serviceRequests": {
         "description": "إدارة طلبات الخدمات من العملاء"

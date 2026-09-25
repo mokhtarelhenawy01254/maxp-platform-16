@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ArrowUp, Paperclip, X, Image as ImageIcon } from 'lucide-react';
+import { ArrowUp, Paperclip, X } from 'lucide-react';
 
 interface CopilotInputFooterProps {
   inputValue: string;
@@ -29,22 +29,22 @@ export const CopilotInputFooter: React.FC<CopilotInputFooterProps> = ({
   const canSubmit = !loading && (inputValue.trim().length > 0 || attachedImages.length > 0);
 
   return (
-    <footer className="px-3 pb-3 pt-1 bg-[#09090b]">
+    <footer className="px-4 pb-4 pt-1 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-850">
       {/* Seamless Input Chassis */}
-      <div className="rounded-2xl border border-white/[0.1] bg-[#121215] p-2.5 focus-within:border-zinc-500 focus-within:ring-1 focus-within:ring-zinc-500/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-all">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-850/80 p-3 focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:ring-2 focus-within:ring-indigo-500/20 shadow-2xs transition-all">
         {/* Attached Images Carousel/Thumbnails */}
         {attachedImages.length > 0 && (
-          <div className="flex items-center gap-2 pb-2 mb-2 border-b border-white/[0.06] overflow-x-auto">
+          <div className="flex items-center gap-2 pb-2.5 mb-2.5 border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
             {attachedImages.map((img, idx) => (
               <div
                 key={idx}
-                className="relative h-14 w-14 rounded-lg border border-white/[0.12] overflow-hidden flex-shrink-0 group"
+                className="relative h-14 w-14 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden flex-shrink-0 group shadow-2xs"
               >
                 <img src={img} alt="attached" className="h-full w-full object-cover" />
                 <button
                   type="button"
                   onClick={() => onRemoveImage(idx)}
-                  className="absolute top-1 right-1 rounded-full bg-black/80 p-0.5 text-zinc-300 hover:text-white hover:bg-rose-600 transition-colors"
+                  className="absolute top-1 right-1 rounded-full bg-slate-900/80 p-0.5 text-white hover:bg-rose-600 transition-colors"
                   aria-label="إزالة الصورة"
                 >
                   <X className="h-3 w-3" />
@@ -67,12 +67,12 @@ export const CopilotInputFooter: React.FC<CopilotInputFooterProps> = ({
           }}
           rows={2}
           placeholder="اكتب استفسارك أو أمرك التشغيلي (Enter للإرسال)..."
-          className="w-full bg-transparent text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none resize-none leading-relaxed min-h-[44px] max-h-32"
+          className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none resize-none leading-relaxed min-h-[44px] max-h-32"
         />
 
         {/* Bottom Control Toolbar */}
-        <div className="flex items-center justify-between pt-1.5 border-t border-white/[0.04]">
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-800">
+          <div className="flex items-center gap-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -83,15 +83,15 @@ export const CopilotInputFooter: React.FC<CopilotInputFooterProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-200 px-2 py-1 rounded-md hover:bg-white/[0.06] transition-colors"
+              className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 px-2 py-1 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors"
               title="إرفاق صورة أو لقطة شاشة"
               aria-label="إرفاق صورة أو لقطة شاشة"
             >
               <Paperclip className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">إرفاق</span>
+              <span className="hidden sm:inline">إرفاق صورة</span>
             </button>
 
-            <span className="font-mono text-[9px] text-zinc-400 bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.5 rounded">
+            <span className="font-mono text-[9px] text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-800 border border-slate-300/60 dark:border-slate-700/60 px-2 py-0.5 rounded-md">
               DeepSeek-V3
             </span>
           </div>
@@ -100,7 +100,7 @@ export const CopilotInputFooter: React.FC<CopilotInputFooterProps> = ({
             type="button"
             onClick={onSendMessage}
             disabled={!canSubmit}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-white text-zinc-950 font-medium text-xs shadow-sm transition-all duration-150 active:scale-[0.96] disabled:opacity-30 disabled:pointer-events-none"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.97] text-white font-bold text-xs shadow-xs transition-all duration-150 disabled:opacity-40 disabled:pointer-events-none"
             aria-label="إرسال الطلب"
           >
             <span>إرسال</span>
@@ -110,16 +110,21 @@ export const CopilotInputFooter: React.FC<CopilotInputFooterProps> = ({
       </div>
 
       {/* Telemetry and Shortcuts Bar */}
-      <div className="flex items-center justify-between text-[10px] text-zinc-400 px-1 pt-1 font-mono">
-        <span className="font-sans flex items-center gap-1">
-          <span>اختصار:</span>
-          <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1 py-0.5 text-zinc-400 font-mono text-[9px]">
+      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1 pt-1.5 font-mono">
+        <span className="font-sans flex items-center gap-1.5">
+          <span>اختصار الإرسال:</span>
+          <kbd className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-slate-600 dark:text-slate-400 font-mono text-[9px]">
+            Enter
+          </kbd>
+          <span className="text-slate-400">·</span>
+          <span>فتح المساعد:</span>
+          <kbd className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-slate-600 dark:text-slate-400 font-mono text-[9px]">
             Ctrl + J
           </kbd>
         </span>
 
         {telemetry && (
-          <span className="tabular-nums flex items-center gap-1.5">
+          <span className="tabular-nums flex items-center gap-1.5 text-slate-500">
             <span>{telemetry.model || 'DeepSeek-V3'}</span>
             <span>·</span>
             <span>{telemetry.latency_ms}ms</span>

@@ -8479,6 +8479,12 @@ declare module 'react-i18next' {
         connectedPagesCount: string;
         disconnectedPagesHint: string;
         linkedAccount: string;
+        accountIdentityFailed: string;
+        accountLinkFailed: string;
+        attributionStale: string;
+        attributionStaleHint: string;
+        attributionUnlinked: string;
+        attributionUnlinkedHint: string;
         addMorePages: string;
         noPagesConnected: string;
         connectWithFacebook: string;

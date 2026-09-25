@@ -765,16 +765,16 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             <button
               type="button"
               onClick={toggleMerchantCopilot}
-              className="relative group flex items-center gap-1.5 px-2.5 py-1 text-zinc-300 dark:text-zinc-200 hover:text-white bg-zinc-900/80 hover:bg-zinc-800 rounded-lg border border-zinc-700/60 hover:border-zinc-500/60 transition-all duration-160 active:scale-95 shadow-xs"
+              className="relative group flex items-center gap-1.5 px-3 py-1.5 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-white bg-slate-100/80 hover:bg-indigo-50/70 dark:bg-slate-800/80 dark:hover:bg-slate-750 rounded-xl border border-slate-200/80 hover:border-indigo-300 dark:border-slate-700/80 dark:hover:border-slate-600 transition-all duration-160 active:scale-95 shadow-2xs cursor-pointer"
               title="المساعد التنفيذي للمتجر (Ctrl + J)"
               aria-label="المساعد التنفيذي للمتجر"
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 ring-2 ring-emerald-500/20" />
-              <Cpu className="h-3.5 w-3.5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
-              <span className="hidden md:inline text-xs font-medium text-zinc-200">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
+              <Cpu className="h-4 w-4 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform" />
+              <span className="hidden md:inline text-xs font-bold text-slate-800 dark:text-slate-100">
                 المساعد التنفيذي
               </span>
-              <kbd className="hidden lg:inline text-[9px] font-mono text-zinc-400 bg-white/5 border border-white/10 px-1 py-0.5 rounded">
+              <kbd className="hidden lg:inline text-[9px] font-mono text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-1.5 py-0.5 rounded-md font-semibold">
                 Ctrl+J
               </kbd>
             </button>

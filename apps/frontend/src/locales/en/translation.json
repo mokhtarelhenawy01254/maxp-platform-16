@@ -10643,6 +10643,9 @@
       "lastNameRequired": "Last name is required",
       "emailRequired": "Email is required",
       "emailInvalid": "Invalid email format",
+      "cannotDeactivateSelf": "You cannot deactivate your own account",
+      "phoneInvalid": "Invalid phone number",
+      "salaryInvalid": "Base salary must be a positive number",
       "passwordRequired": "Password is required",
       "passwordMinLength": "Password must be at least 6 characters",
       "roleRequired": "Role is required"
@@ -10650,7 +10653,18 @@
     "noUsers": "No users found",
     "unlimited": "Unlimited",
     "editUser": "Edit User",
-    "inviteNewUser": "Invite New User"
+    "inviteNewUser": "Invite New User",
+    "pageDescription": "Manage user accounts, platform permissions, and track activities.",
+    "userListDescription": "List of all registered users in the company, their status, and roles.",
+    "bulkActionsDescription": "Perform bulk actions on selected users.",
+    "selectedUsers": "{{count}} users selected",
+    "clearSelection": "Clear selection",
+    "deleteSelected": "Delete selected",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "exportCsv": "Export CSV",
+    "pendingInvitations": "Pending Invitations ({{count}})",
+    "invitationsDescription": "List of sent invitations that have not yet been accepted."
   },
   "customerAnalytics": {
     "title": "Customer Analytics",
@@ -12732,6 +12746,9 @@
       },
       "legal": {
         "description": "Terms, conditions, and privacy"
+      },
+      "treasuryExpenses": {
+        "description": "Treasury and petty cash expense management"
       },
       "serviceRequests": {
         "description": "Manage service requests from customers"
