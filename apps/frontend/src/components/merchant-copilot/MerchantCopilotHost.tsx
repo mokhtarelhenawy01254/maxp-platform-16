@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Cpu } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuthSimple';
+import { shouldUseSuperAdminShell } from '../layout/layoutMode';
 import { MerchantCopilotDrawer } from './MerchantCopilotDrawer';
 
 export const toggleMerchantCopilot = () => {
@@ -12,11 +14,19 @@ export const toggleMerchantCopilot = () => {
 export const MerchantCopilotHost: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
+
+  const isSuperAdminRoute =
+    user?.role === 'SUPER_ADMIN' ||
+    location.pathname.startsWith('/super-admin') ||
+    shouldUseSuperAdminShell(user?.role, location.pathname);
 
   // Suppress floating trigger on chat/inbox screens to prevent blocking the mobile composer and send button
   const isInboxOrChatRoute = /inbox|conversations|whatsapp|chat/i.test(location.pathname);
 
   useEffect(() => {
+    if (isSuperAdminRoute) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
         e.preventDefault();
@@ -35,7 +45,11 @@ export const MerchantCopilotHost: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('toggle-merchant-copilot', handleCustomToggle);
     };
-  }, []);
+  }, [isSuperAdminRoute]);
+
+  if (isSuperAdminRoute) {
+    return null;
+  }
 
   return (
     <>
