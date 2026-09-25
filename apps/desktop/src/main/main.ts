@@ -230,11 +230,19 @@ function createMainWindow(): void {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
     },
   });
 
   mainWindow.setMenuBarVisibility(false);
+
+  // Diagnostic logging for renderer console and crashes
+  mainWindow.webContents.on('console-message', (_e, level, msg, line, src) => {
+    console.log(`[Renderer L${level}] ${msg} (${src}:${line})`);
+  });
+  mainWindow.webContents.on('render-process-gone', (_e, details) => {
+    console.error('[Main] Render process gone:', details);
+  });
 
   // Allow opening external links (like tasks web view) in default system browser, deny internal popups
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

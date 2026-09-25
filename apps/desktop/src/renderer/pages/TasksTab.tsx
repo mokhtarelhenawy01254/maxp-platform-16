@@ -595,9 +595,10 @@ export const TasksTab: React.FC = () => {
   const activeTaskIdsList = Object.keys(activeTasksMap);
 
   // Smart 2026 SaaS sorting: running timers pinned to top, urgent tasks next, eliminating visual clutter
-  const sortedDisplayTasks = [...displayTasks].sort((a, b) => {
-    const aRunning = activeTasksMap[a.id] ? 1 : 0;
-    const bRunning = activeTasksMap[b.id] ? 1 : 0;
+  const sortedDisplayTasks = [...displayTasks].filter(Boolean).sort((a, b) => {
+    if (!a || !b) return 0;
+    const aRunning = (a.id && activeTasksMap?.[a.id]) ? 1 : 0;
+    const bRunning = (b.id && activeTasksMap?.[b.id]) ? 1 : 0;
     if (aRunning !== bRunning) return bRunning - aRunning;
 
     const priorityWeight: Record<string, number> = {
@@ -749,13 +750,15 @@ export const TasksTab: React.FC = () => {
           <div style={styles.multiRunnerList}>
             {activeTaskIdsList.map((id) => {
               const item = activeTasksMap[id];
+              if (!item) return null;
               const taskSeconds = elapsedMap[id] || 0;
-              const taskObj = tasks.find((t) => t.id === id);
+              const taskObj = tasks.find((t) => t && t.id === id);
               const isCreator = !!(
                 taskObj &&
                 (taskObj.createdBy === currentUser?.id || taskObj.createdBy === currentUser?.userId)
               );
               const canDirectComplete = isAdminOrManager || isCreator;
+              const taskTitle = item.title || taskObj?.title || 'مهمة جارية';
 
               return (
                 <div key={id} style={styles.multiRunnerItem}>
@@ -765,8 +768,8 @@ export const TasksTab: React.FC = () => {
                       <Play size={12} fill="#22c55e" color="#22c55e" />
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={styles.runnerTaskTitle} title={item.title}>
-                        {item.title}
+                      <div style={styles.runnerTaskTitle} title={taskTitle}>
+                        {taskTitle}
                       </div>
                     </div>
                   </div>
