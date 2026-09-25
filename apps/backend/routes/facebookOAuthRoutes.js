@@ -631,12 +631,12 @@ const resolveOAuthCallbackContext = (state, fallbackType) => {
   }
 };
 
-// Facebook OAuth Scopes - Pages/Messenger (بدون business_management عشان المستخدم يقدر يختار الصفحات)
+// Facebook OAuth Scopes - Pages/Messenger (تشمل business_management لضمان ظهور صفحات محافظ الأعمال New Pages Experience)
 // بدون pages_read_engagement — Advanced Access غير معتمد في التطبيق حاليًا،
 // وطلبه من فيسبوك كان بيمنع الصفحات اللي محتاجته من الظهور في /me/accounts.
 // (يُضاف لاحقًا عند تفعيل الكومنتات/المنشورات بعد App Review)
 const FACEBOOK_PAGE_SCOPES =
-  "public_profile,email,pages_show_list,pages_manage_metadata,pages_messaging,pages_read_user_content,pages_manage_engagement";
+  "public_profile,email,pages_show_list,pages_manage_metadata,pages_messaging,pages_read_user_content,pages_manage_engagement,business_management";
 
 // Facebook OAuth Scopes - Pixel/Ads (بـ business_management للوصول للأعمال)
 const FACEBOOK_PIXEL_SCOPES =
