@@ -114,8 +114,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Goals (OKRs)
   getTodayGoals: (userId?: string) =>
     ipcRenderer.invoke('goals:get-today', userId),
+  ensureTodayGoals: (userId?: string) =>
+    ipcRenderer.invoke('goals:ensure-today', userId),
   getGoals: (params?: any) =>
     ipcRenderer.invoke('goals:get-all', params),
+  createGoal: (goalData: any) =>
+    ipcRenderer.invoke('goals:create', goalData),
   updateGoalProgress: (goalId: string, current: number, notes?: string) =>
     ipcRenderer.invoke('goals:update-progress', { goalId, current, notes }),
 

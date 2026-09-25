@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { audioAlerts } from '../utils/audioAlerts';
+import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 
 interface GoalItem {
   id: string;
@@ -38,6 +39,8 @@ export const GoalsTab: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<'today' | 'all'>('today');
   const [updatingGoalId, setUpdatingGoalId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [ensuringGoals, setEnsuringGoals] = useState(false);
 
   const loadGoals = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -103,6 +106,21 @@ export const GoalsTab: React.FC = () => {
     }
   };
 
+  const handleEnsureTodayGoals = async () => {
+    setEnsuringGoals(true);
+    try {
+      const res = await window.electronAPI?.ensureTodayGoals();
+      if (res?.success && Array.isArray(res.goals)) {
+        setGoals(res.goals);
+        audioAlerts.playTaskComplete();
+      }
+    } catch (err) {
+      console.warn('[GoalsTab] ensureTodayGoals error:', err);
+    } finally {
+      setEnsuringGoals(false);
+    }
+  };
+
   const totalGoals = goals.length;
   const completedGoals = goals.filter((g) => {
     const prog = g.progress ?? (g.target ? Math.round(((g.current || 0) / g.target) * 100) : 0);
@@ -159,6 +177,27 @@ export const GoalsTab: React.FC = () => {
             </button>
           </div>
 
+          {activeFilter === 'today' && (
+            <button
+              onClick={handleEnsureTodayGoals}
+              disabled={ensuringGoals}
+              style={styles.actionOutlineBtn}
+              title="توليد أهداف اليوم المعتمدة آلياً"
+            >
+              <Sparkles size={12} color="var(--accent-blue)" />
+              <span>{ensuringGoals ? 'جاري التوليد…' : 'توليد أهداف اليوم'}</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            style={styles.primaryActionBtn}
+            title="إضافة هدف مخصص جديد"
+          >
+            <Plus size={13} />
+            <span>إضافة هدف</span>
+          </button>
+
           <button
             onClick={() => loadGoals(true)}
             disabled={loading}
@@ -210,10 +249,29 @@ export const GoalsTab: React.FC = () => {
           <div style={styles.emptyBox}>
             <Target size={28} color="var(--text-dim)" style={{ opacity: 0.5, marginBottom: 8 }} />
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-              {activeFilter === 'today' ? 'لا توجد أهداف محددة لليوم' : 'لا توجد أهداف نشطة حالياً'}
+              {activeFilter === 'today' ? 'لا توجد أهداف محددة لليوم بعد' : 'لا توجد أهداف نشطة حالياً'}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-              يتم إنشاء وتعيين الأهداف آلياً من إدارة الفريق أو بناءً على معايير الإنتاجية
+              يمكنك توليد أهداف اليوم المعتمدة بنقرة واحدة أو إضافة أهداف مخصصة
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
+              {activeFilter === 'today' && (
+                <button
+                  onClick={handleEnsureTodayGoals}
+                  disabled={ensuringGoals}
+                  style={styles.primaryActionBtn}
+                >
+                  <Sparkles size={12} />
+                  <span>توليد أهداف اليوم المعتمدة</span>
+                </button>
+              )}
+              <button
+                onClick={() => setIsCreateOpen(true)}
+                style={styles.actionOutlineBtn}
+              >
+                <Plus size={12} />
+                <span>إضافة هدف مخصص</span>
+              </button>
             </div>
           </div>
         ) : (
@@ -322,6 +380,12 @@ export const GoalsTab: React.FC = () => {
           </div>
         )}
       </div>
+
+      <CreateGoalModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onGoalCreated={() => loadGoals(false)}
+      />
     </div>
   );
 };
@@ -514,6 +578,34 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     cursor: 'pointer',
     fontFamily: 'inherit',
+  },
+  primaryActionBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'var(--accent-blue)',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: 6,
+    padding: '4px 10px',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 120ms ease',
+  },
+  actionOutlineBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'transparent',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 6,
+    padding: '4px 10px',
+    fontSize: 11,
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'all 120ms ease',
   },
 };
 

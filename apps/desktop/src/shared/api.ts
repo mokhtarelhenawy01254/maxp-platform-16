@@ -534,7 +534,7 @@ class MonitorApiClient {
         headers: this.getAuthHeaders(),
         timeout: 10_000,
       });
-      return res.data?.data ?? [];
+      return res.data?.activeTimers ?? res.data?.data ?? [];
     } catch (err: any) {
       console.warn('[API] getCompanyActiveTimers failed:', err?.message);
       return [];
@@ -648,6 +648,31 @@ class MonitorApiClient {
       console.warn('[API] getGoals failed:', err?.message);
       return [];
     }
+  }
+
+  async ensureTodayGoals(userId?: string): Promise<any[]> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.post(
+        `${base}/api/v1/tasks/goals/today/ensure`,
+        userId ? { userId } : {},
+        { headers: this.getAuthHeaders(), timeout: 10_000 }
+      );
+      return res.data?.goals ?? res.data?.data ?? [];
+    } catch (err: any) {
+      console.warn('[API] ensureTodayGoals failed:', err?.message);
+      return [];
+    }
+  }
+
+  async createGoal(data: any): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.post(
+      `${base}/api/v1/tasks/goals`,
+      data,
+      { headers: this.getAuthHeaders(), timeout: 10_000 }
+    );
+    return res.data?.goal ?? res.data?.data ?? res.data;
   }
 
   async updateGoalProgress(goalId: string, current: number, notes?: string): Promise<any> {

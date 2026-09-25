@@ -3,6 +3,7 @@ import { Coffee, Play, Clock, CheckCircle2, Sparkles, LogOut, Calendar } from 'l
 import Sidebar, { TabId } from '../components/Sidebar';
 import CockpitTab from './CockpitTab';
 import TasksTab from './TasksTab';
+import LiveTeamTimersTab from './LiveTeamTimersTab';
 import GoalsTab from './GoalsTab';
 import SimpleReportTab from './SimpleReportTab';
 import AppsTimelineTab from './AppsTimelineTab';
@@ -214,6 +215,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
         return isAdmin ? 'النشاط المباشر والعدادات' : 'النشاط وساعات العمل';
       case 'tasks':
         return 'المهام اليومية ومعدل الإنجاز';
+      case 'live-team':
+        return 'المهام الجارية الآن (نشاط الفريق المباشر)';
       case 'goals':
         return 'الأهداف ومؤشرات الأداء (OKRs)';
       case 'reports':
@@ -423,6 +426,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
           )}
 
           {activeTab === 'tasks' && <TasksTab />}
+          {activeTab === 'live-team' && <LiveTeamTimersTab />}
           {activeTab === 'goals' && <GoalsTab />}
           {activeTab === 'reports' && <SimpleReportTab />}
 

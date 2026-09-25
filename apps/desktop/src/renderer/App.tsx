@@ -67,7 +67,9 @@ declare global {
 
       // Goals (OKRs)
       getTodayGoals: (userId?: string) => Promise<{ success: boolean; goals: any[]; error?: string }>;
+      ensureTodayGoals: (userId?: string) => Promise<{ success: boolean; goals: any[]; error?: string }>;
       getGoals: (params?: any) => Promise<{ success: boolean; goals: any[]; error?: string }>;
+      createGoal: (goalData: any) => Promise<{ success: boolean; goal?: any; error?: string }>;
       updateGoalProgress: (goalId: string, current: number, notes?: string) => Promise<{ success: boolean; result?: any; error?: string }>;
 
       // Performance Report & Stats

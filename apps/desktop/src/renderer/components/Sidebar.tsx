@@ -13,10 +13,11 @@ import {
   Sun,
   Target,
   FileText,
+  Radio,
 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
 
-export type TabId = 'tasks' | 'goals' | 'reports' | 'cockpit' | 'apps' | 'attendance' | 'system';
+export type TabId = 'tasks' | 'live-team' | 'goals' | 'reports' | 'cockpit' | 'apps' | 'attendance' | 'system';
 
 interface SidebarProps {
   activeTab: TabId;
@@ -38,13 +39,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { mode, toggleTheme } = useTheme();
   const roleStr = String(user?.role || '').toUpperCase();
   const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
+  const isManager = isAdmin || ['MANAGER', 'HR_MANAGER'].includes(roleStr);
 
-  const navItems: { id: TabId; label: string; icon: React.ReactNode }[] = isAdmin
+  const [activeTeamCount, setActiveTeamCount] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    if (!isManager) return;
+    const fetchActive = async () => {
+      try {
+        const res = await window.electronAPI?.getCompanyActiveTimers();
+        if (res?.success && Array.isArray(res.activeTimers)) {
+          setActiveTeamCount(res.activeTimers.length);
+        }
+      } catch {}
+    };
+    fetchActive();
+    const interval = setInterval(fetchActive, 4000);
+    return () => clearInterval(interval);
+  }, [isManager]);
+
+  const navItems: { id: TabId; label: string; icon: React.ReactNode; badge?: number }[] = isManager
     ? [
         {
           id: 'tasks',
           label: 'المهام والإنتاجية',
           icon: <CheckSquare size={17} />,
+        },
+        {
+          id: 'live-team',
+          label: 'المهام الجارية الآن',
+          icon: <Radio size={17} />,
+          badge: activeTeamCount,
         },
         {
           id: 'goals',
@@ -53,12 +78,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         },
         {
           id: 'reports',
-          label: 'التقرير اليومي',
+          label: 'التقرير والملخص',
           icon: <FileText size={17} />,
         },
         {
           id: 'cockpit',
-          label: 'النشاط المباشر',
+          label: 'سجل النشاط وساعات العمل',
           icon: <Activity size={17} />,
         },
         {
@@ -177,6 +202,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                 fontWeight: isActive ? 600 : 500,
               }}>{item.label}</span>
+
+              {item.badge !== undefined && item.badge > 0 && (
+                <span
+                  style={{
+                    marginRight: 'auto',
+                    backgroundColor: '#10b981',
+                    color: '#062015',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: '1px 6px',
+                    borderRadius: 10,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {item.badge}
+                </span>
+              )}
             </button>
           );
         })}

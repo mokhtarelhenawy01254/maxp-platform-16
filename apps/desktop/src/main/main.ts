@@ -1082,6 +1082,26 @@ function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('goals:ensure-today', async (_, userId?: string) => {
+    try {
+      const goals = await apiClient.ensureTodayGoals(userId);
+      mainWindow?.webContents.send('goals:refresh', {});
+      return { success: true, goals };
+    } catch (err: any) {
+      return { success: false, error: err.message, goals: [] };
+    }
+  });
+
+  ipcMain.handle('goals:create', async (_, goalData: any) => {
+    try {
+      const goal = await apiClient.createGoal(goalData);
+      mainWindow?.webContents.send('goals:refresh', {});
+      return { success: true, goal };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
   // ── Dashboard Stats & Performance Report Handlers ──
   ipcMain.handle('tasks:get-dashboard-stats', async () => {
     try {

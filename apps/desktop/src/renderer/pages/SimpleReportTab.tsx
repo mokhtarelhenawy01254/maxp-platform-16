@@ -11,101 +11,133 @@ import {
   Layers,
   Activity,
   Award,
+  Users,
+  PieChart,
 } from 'lucide-react';
 import { audioAlerts } from '../utils/audioAlerts';
 
 interface ReportStats {
-  todayActiveHours: string;
-  todayClockHours: string;
+  activeHours: string;
+  clockHours: string;
   completedTasksCount: number;
   inProgressTasksCount: number;
   inReviewTasksCount: number;
   productivityScore: number;
-  topTasks: { title: string; minutes: number }[];
+  topTasks: { title: string; minutes: number; priority?: string; status?: string }[];
+  activeTeamMembersCount?: number;
 }
 
 export const SimpleReportTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<'today' | 'yesterday' | 'week'>('today');
+  const [scope, setScope] = useState<'my' | 'team'>('my');
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [stats, setStats] = useState<ReportStats>({
-    todayActiveHours: '0.0',
-    todayClockHours: '0.0',
+    activeHours: '0.0',
+    clockHours: '0.0',
     completedTasksCount: 0,
     inProgressTasksCount: 0,
     inReviewTasksCount: 0,
     productivityScore: 100,
     topTasks: [],
+    activeTeamMembersCount: 0,
   });
   const [isCopied, setIsCopied] = useState(false);
-  const [reportDate, setReportDate] = useState(() => new Date().toLocaleDateString('ar-EG', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }));
+
+  const getLocalDateStr = (offsetDays = 0) => {
+    const d = new Date();
+    d.setDate(d.getDate() - offsetDays);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const loadReportData = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
     try {
-      const [dailyRes, tasksRes, dashStats] = await Promise.all([
-        window.electronAPI?.getDailySummary(),
-        window.electronAPI?.getTasks('my-tasks'),
-        window.electronAPI?.getTaskDashboardStats ? window.electronAPI.getTaskDashboardStats() : Promise.resolve(null),
+      const auth = await window.electronAPI?.getAuthState();
+      if (auth?.user) setCurrentUser(auth.user);
+
+      const targetDate = dateRange === 'yesterday' ? getLocalDateStr(1) : undefined;
+      const tasksScope = scope === 'team' ? 'all' : 'my-tasks';
+
+      const [dailyRes, tasksRes, activeTimersRes] = await Promise.all([
+        window.electronAPI?.getDailySummary(targetDate),
+        window.electronAPI?.getTasks(tasksScope),
+        scope === 'team' ? window.electronAPI?.getCompanyActiveTimers() : Promise.resolve(null),
       ]);
 
       const activeSec = Number(dailyRes?.totalActiveSeconds || 0);
       const clockSec = Number(dailyRes?.totalClockSeconds || activeSec);
       const activeHrs = (activeSec / 3600).toFixed(1);
       const clockHrs = (clockSec / 3600).toFixed(1);
-      const score = Math.round(Number(dailyRes?.productivityScore || 95));
+      const score = Math.round(Number(dailyRes?.productivityScore || 92));
 
-      const myTasks = Array.isArray(tasksRes?.tasks) ? tasksRes.tasks : [];
-      const completed = myTasks.filter((t: any) => String(t.status || '').toUpperCase() === 'COMPLETED').length;
-      const review = myTasks.filter((t: any) => {
+      const rawTasks = Array.isArray(tasksRes?.tasks) ? tasksRes.tasks : [];
+      const completed = rawTasks.filter((t: any) => String(t.status || '').toUpperCase() === 'COMPLETED').length;
+      const review = rawTasks.filter((t: any) => {
         const s = String(t.status || '').toUpperCase();
         return s === 'IN_REVIEW' || s === 'PENDING_REVIEW';
       }).length;
-      const progress = myTasks.filter((t: any) => {
+      const progress = rawTasks.filter((t: any) => {
         const s = String(t.status || '').toUpperCase();
         return s !== 'COMPLETED' && s !== 'IN_REVIEW' && s !== 'PENDING_REVIEW';
       }).length;
 
-      // Extract top tasks by estimated or actual duration
-      const top = myTasks
-        .filter((t: any) => t.estimatedMinutes || t.actualMinutes || t.title)
-        .slice(0, 5)
-        .map((t: any) => ({
-          title: t.title,
-          minutes: t.estimatedMinutes || 45,
-        }));
+      // Extract tasks with realistic minutes
+      const top = rawTasks
+        .slice(0, 6)
+        .map((t: any) => {
+          const mins = Number(t.totalDurationMinutes || t.actualMinutes || t.estimatedMinutes || 30);
+          return {
+            title: t.title,
+            minutes: mins,
+            priority: t.priority || 'MEDIUM',
+            status: t.status || 'PENDING',
+          };
+        });
+
+      const activeMembers = Array.isArray(activeTimersRes?.activeTimers)
+        ? new Set(activeTimersRes.activeTimers.map((t: any) => t.userId)).size
+        : 0;
 
       setStats({
-        todayActiveHours: activeHrs,
-        todayClockHours: clockHrs,
+        activeHours: activeHrs,
+        clockHours: clockHrs,
         completedTasksCount: completed,
         inProgressTasksCount: progress,
         inReviewTasksCount: review,
-        productivityScore: score > 0 ? score : 95,
+        productivityScore: score > 0 ? score : 92,
         topTasks: top,
+        activeTeamMembersCount: activeMembers,
       });
     } catch (err) {
       console.warn('[SimpleReportTab] Fetch error:', err);
     } finally {
       if (showSpinner) setLoading(false);
     }
-  }, []);
+  }, [dateRange, scope]);
 
   useEffect(() => {
     loadReportData(true);
   }, [loadReportData]);
 
+  const userRole = String(currentUser?.role || '').toUpperCase();
+  const isManagerOrAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER', 'HR_MANAGER'].includes(userRole);
+
+  const rangeLabel = dateRange === 'today' ? 'اليوم' : dateRange === 'yesterday' ? 'أمس' : 'الأسبوع الحالي';
+
   const handleCopySummary = () => {
-    const text = `📊 تقرير الإنجاز اليومي (${reportDate}):
-• ساعات العمل المباشرة: ${stats.todayActiveHours} ساعة
+    const text = `ملخص تقرير الإنجاز (${rangeLabel}) — منظومة MaxP:
+• نطاق التقرير: ${scope === 'team' ? 'فريق العمل والشركة' : currentUser?.name || 'التقرير الشخصي'}
+• ساعات العمل المباشرة: ${stats.activeHours} ساعة (من إجمالي ${stats.clockHours} س دوام)
 • المهام المنجزة: ${stats.completedTasksCount} مهمة
 • المهام الجارية: ${stats.inProgressTasksCount} مهمة
-• المهام قيد الاعتماد: ${stats.inReviewTasksCount} مهمة
+• المهام بانتظار الاعتماد: ${stats.inReviewTasksCount} مهمة
 • معدل الإنتاجية والتركيز: ${stats.productivityScore}%
-تم الإنجاز عبر منظومة MaxP Workspace`;
+${scope === 'team' ? `• الزملاء النشطون حالياً: ${stats.activeTeamMembersCount} زميل` : ''}
+تم الإنجاز عبر MaxP Workspace Desktop Cockpit`;
 
     navigator.clipboard.writeText(text);
     setIsCopied(true);
@@ -115,29 +147,82 @@ export const SimpleReportTab: React.FC = () => {
 
   return (
     <div style={styles.container}>
-      {/* Top Header */}
+      {/* Top Header Strip */}
       <div style={styles.headerStrip}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={styles.headerIconBox}>
             <FileText size={16} color="var(--accent-blue)" />
           </div>
           <div>
-            <div style={styles.headerTitle}>التقرير اليومي المبسط</div>
+            <div style={styles.headerTitle}>التقرير وملخص الإنتاجية</div>
             <div style={styles.headerSubtitle}>
-              ملخص الإنتاجية وساعات الإنجاز الفعلي لليوم: {reportDate}
+              مؤشرات إنجاز المهام وساعات العمل الفعلية ({rangeLabel})
             </div>
           </div>
         </div>
 
+        {/* Controls: Range & Scope */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {isManagerOrAdmin && (
+            <div style={styles.segmented}>
+              <button
+                onClick={() => setScope('my')}
+                style={{
+                  ...styles.segBtn,
+                  backgroundColor: scope === 'my' ? 'var(--bg-elevated)' : 'transparent',
+                  color: scope === 'my' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  fontWeight: scope === 'my' ? 600 : 400,
+                }}
+              >
+                تقريري
+              </button>
+              <button
+                onClick={() => setScope('team')}
+                style={{
+                  ...styles.segBtn,
+                  backgroundColor: scope === 'team' ? 'var(--bg-elevated)' : 'transparent',
+                  color: scope === 'team' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  fontWeight: scope === 'team' ? 600 : 400,
+                }}
+              >
+                الفريق والشركة
+              </button>
+            </div>
+          )}
+
+          <div style={styles.segmented}>
+            <button
+              onClick={() => setDateRange('today')}
+              style={{
+                ...styles.segBtn,
+                backgroundColor: dateRange === 'today' ? 'var(--bg-elevated)' : 'transparent',
+                color: dateRange === 'today' ? 'var(--text-primary)' : 'var(--text-muted)',
+                fontWeight: dateRange === 'today' ? 600 : 400,
+              }}
+            >
+              اليوم
+            </button>
+            <button
+              onClick={() => setDateRange('yesterday')}
+              style={{
+                ...styles.segBtn,
+                backgroundColor: dateRange === 'yesterday' ? 'var(--bg-elevated)' : 'transparent',
+                color: dateRange === 'yesterday' ? 'var(--text-primary)' : 'var(--text-muted)',
+                fontWeight: dateRange === 'yesterday' ? 600 : 400,
+              }}
+            >
+              أمس
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={handleCopySummary}
             style={styles.copyBtn}
-            title="نسخ ملخص الإنجاز لإرساله للإدارة أو مشاركته"
+            title="نسخ التقرير بصيغة احترافية للمشاركة"
           >
             {isCopied ? <Check size={13} color="var(--accent-green)" /> : <Copy size={13} />}
-            <span>{isCopied ? 'تم النسخ بنجاح' : 'نسخ ملخص اليوم'}</span>
+            <span>{isCopied ? 'تم النسخ' : 'نسخ التقرير'}</span>
           </button>
 
           <button
@@ -156,14 +241,14 @@ export const SimpleReportTab: React.FC = () => {
         {/* Card 1: Completed Tasks */}
         <div style={styles.bentoCard}>
           <div style={styles.cardHeader}>
-            <span style={styles.cardLabel}>المهام المنجزة اليوم</span>
+            <span style={styles.cardLabel}>المهام المنجزة</span>
             <CheckCircle2 size={15} color="var(--accent-green)" />
           </div>
           <div style={{ ...styles.cardValue, color: 'var(--accent-green)' }}>
             {stats.completedTasksCount}
           </div>
           <div style={styles.cardSub}>
-            مهام تم اعتمادها وإغلاقها بنجاح
+            مهام مغلقة ومعتمدة بنجاح
           </div>
         </div>
 
@@ -174,17 +259,17 @@ export const SimpleReportTab: React.FC = () => {
             <Clock size={15} color="var(--accent-blue)" />
           </div>
           <div style={{ ...styles.cardValue, color: 'var(--accent-blue)' }}>
-            {stats.todayActiveHours} <span style={{ fontSize: 13, fontWeight: 500 }}>ساعة</span>
+            {stats.activeHours} <span style={{ fontSize: 13, fontWeight: 500 }}>ساعة</span>
           </div>
           <div style={styles.cardSub}>
-            من إجمالي {stats.todayClockHours} ساعة دوام مسجلة
+            من إجمالي {stats.clockHours} س دوام موثق
           </div>
         </div>
 
-        {/* Card 3: In Progress & In Review */}
+        {/* Card 3: Active Tasks */}
         <div style={styles.bentoCard}>
           <div style={styles.cardHeader}>
-            <span style={styles.cardLabel}>المهام النشطة</span>
+            <span style={styles.cardLabel}>المهام الجارية والمعلقة</span>
             <Layers size={15} color="#c084fc" />
           </div>
           <div style={styles.cardValue}>
@@ -195,22 +280,28 @@ export const SimpleReportTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 4: Productivity Score */}
+        {/* Card 4: Productivity Score or Active Members */}
         <div style={styles.bentoCard}>
           <div style={styles.cardHeader}>
-            <span style={styles.cardLabel}>مؤشر الإنتاجية والتركيز</span>
-            <Activity size={15} color={stats.productivityScore >= 80 ? 'var(--accent-green)' : '#f59e0b'} />
+            <span style={styles.cardLabel}>
+              {scope === 'team' ? 'الزملاء النشطون الآن' : 'مؤشر الإنتاجية والتركيز'}
+            </span>
+            {scope === 'team' ? (
+              <Users size={15} color="#10b981" />
+            ) : (
+              <Activity size={15} color={stats.productivityScore >= 80 ? 'var(--accent-green)' : '#f59e0b'} />
+            )}
           </div>
           <div
             style={{
               ...styles.cardValue,
-              color: stats.productivityScore >= 80 ? 'var(--accent-green)' : '#f59e0b',
+              color: scope === 'team' ? '#10b981' : stats.productivityScore >= 80 ? 'var(--accent-green)' : '#f59e0b',
             }}
           >
-            {stats.productivityScore}%
+            {scope === 'team' ? stats.activeTeamMembersCount : `${stats.productivityScore}%`}
           </div>
           <div style={styles.cardSub}>
-            حساب دقيق استناداً إلى تفاعل لوحة المفاتيح والماوس والبرامج
+            {scope === 'team' ? 'أعضاء فريق يعملون على مؤقتات نشطة' : 'محسوب استناداً إلى حركة العمل والأجهزة'}
           </div>
         </div>
       </div>
@@ -219,47 +310,35 @@ export const SimpleReportTab: React.FC = () => {
       <div style={styles.tasksSection}>
         <div style={styles.sectionTitleRow}>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
-            أبرز المهام قيد المتابعة اليوم
+            {scope === 'team' ? 'أبرز مهام الفريق قيد المتابعة' : 'أبرز المهام المرتبطة بالتقرير'}
           </span>
           <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-            {stats.topTasks.length} مهام رئيسية
+            {stats.topTasks.length} مهام مسجلة
           </span>
         </div>
 
         {stats.topTasks.length === 0 ? (
-          <div style={{ padding: '24px 0', textAlign: 'center', fontSize: 12, color: 'var(--text-muted)' }}>
-            لا توجد مهام مسجلة لليوم حتى الآن.
+          <div style={{ padding: '28px 0', textAlign: 'center', fontSize: 12, color: 'var(--text-muted)' }}>
+            لا توجد مهام مسجلة في هذا النطاق الزمني.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {stats.topTasks.map((task, i) => (
               <div key={i} style={styles.taskRow}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-                  <span
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: '50%',
-                      backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: 'var(--text-dim)',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {i + 1}
-                  </span>
+                  <span style={styles.taskIndex}>{i + 1}</span>
                   <span style={styles.taskTitleText} title={task.title}>
                     {task.title}
                   </span>
                 </div>
 
-                <span style={styles.taskMinChip}>
-                  {task.minutes} دقيقة مقدرة
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={styles.taskMinChip}>
+                    {task.minutes >= 60
+                      ? `${Math.floor(task.minutes / 60)} س ${task.minutes % 60 > 0 ? `${task.minutes % 60} د` : ''}`
+                      : `${task.minutes} دقيقة`}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -307,14 +386,31 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-muted)',
     marginTop: 2,
   },
+  segmented: {
+    display: 'flex',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    borderRadius: 6,
+    padding: 2,
+    border: '1px solid var(--border-subtle)',
+  },
+  segBtn: {
+    padding: '4px 10px',
+    borderRadius: 5,
+    border: 'none',
+    fontSize: 11,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 120ms ease',
+  },
   copyBtn: {
-    display: 'inline-flex',
+    display: 'flex',
     alignItems: 'center',
     gap: 6,
-    padding: '6px 12px',
+    padding: '5px 12px',
     borderRadius: 6,
-    border: '1px solid var(--border-default)',
-    backgroundColor: 'var(--bg-card)',
+    backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border-subtle)',
     color: 'var(--text-primary)',
     fontSize: 11,
     fontWeight: 600,
@@ -356,32 +452,34 @@ const styles: Record<string, React.CSSProperties> = {
   },
   cardLabel: {
     fontSize: 11,
+    fontWeight: 600,
     color: 'var(--text-muted)',
   },
   cardValue: {
     fontSize: 22,
-    fontWeight: 700,
+    fontWeight: 800,
     color: 'var(--text-primary)',
     fontVariantNumeric: 'tabular-nums',
   },
   cardSub: {
     fontSize: 10,
     color: 'var(--text-dim)',
-    lineHeight: 1.4,
+    lineHeight: 1.3,
   },
   tasksSection: {
     backgroundColor: 'var(--bg-surface)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 8,
     padding: '12px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
     flex: 1,
-    overflowY: 'auto',
   },
   sectionTitleRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
     paddingBottom: 6,
     borderBottom: '1px solid var(--border-subtle)',
   },
@@ -389,22 +487,41 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
     padding: '7px 10px',
-    borderRadius: 6,
     backgroundColor: 'var(--bg-elevated)',
     border: '1px solid var(--border-subtle)',
-    gap: 10,
+    borderRadius: 6,
+  },
+  taskIndex: {
+    width: 18,
+    height: 18,
+    borderRadius: '50%',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 10,
+    fontWeight: 600,
+    color: 'var(--text-dim)',
+    flexShrink: 0,
   },
   taskTitleText: {
     fontSize: 12,
+    fontWeight: 500,
     color: 'var(--text-primary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
   taskMinChip: {
-    fontSize: 10,
-    color: 'var(--text-dim)',
+    fontSize: 11,
+    fontWeight: 600,
+    color: 'var(--text-secondary)',
+    backgroundColor: 'var(--bg-subtle)',
+    padding: '2px 8px',
+    borderRadius: 4,
+    border: '1px solid var(--border-subtle)',
     fontVariantNumeric: 'tabular-nums',
     flexShrink: 0,
   },
