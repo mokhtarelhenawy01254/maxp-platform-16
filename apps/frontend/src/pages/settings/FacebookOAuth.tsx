@@ -423,7 +423,7 @@ const FacebookOAuth: React.FC = () => {
     return () => window.removeEventListener("message", handleMessage);
   }, [loadOAuthStatus, loadSkippedPages, user?.companyId]);
 
-  const handleConnectFacebook = async (reauthorize = false) => {
+  const handleConnectFacebook = async (reauthorize = true) => {
     if (!user?.companyId) {
       setError(t("facebookOAuth.companyIdMissing"));
       return;
@@ -444,7 +444,7 @@ const FacebookOAuth: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const reauthParam = reauthorize ? "&reauthorize=true" : "";
+      const reauthParam = reauthorize === false ? "&reauthorize=false" : "&reauthorize=true";
       const response = await fetch(
         `${envConfig.apiUrl}/facebook-oauth/authorize?companyId=${user.companyId}&userId=${user.id}&popup=true&returnOrigin=${encodeURIComponent(window.location.origin)}${reauthParam}`,
         {

@@ -1423,7 +1423,7 @@ router.get("/authorize", verifyToken.authenticateToken, async (req, res) => {
 
     const authType =
       req.query.authType ||
-      (req.query.reauthorize === "true" ? "reauthorize" : "rerequest");
+      (req.query.reauthorize === "false" ? "rerequest" : "reauthorize");
 
     const authUrl =
       `${FACEBOOK_OAUTH_BASE_URL}/dialog/oauth?` +
