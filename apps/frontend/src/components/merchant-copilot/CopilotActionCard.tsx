@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, XCircle, Loader2, ShieldCheck, ArrowRight } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, ShieldCheck } from 'lucide-react';
 import type { ActionCardData } from './types';
 
 interface CopilotActionCardProps {

@@ -15,18 +15,21 @@ export function useExecutiveContext(): {
   }, [user]);
 
   const activeApps = useMemo(() => {
-    if (Array.isArray(currentCompany?.activeApps)) {
-      return currentCompany.activeApps;
+    const apps = (currentCompany as any)?.activeApps;
+    if (Array.isArray(apps)) {
+      return apps;
     }
     return [];
   }, [currentCompany]);
 
   const businessType = useMemo(() => {
-    if (currentCompany?.businessSpecialty?.slug) {
-      return currentCompany.businessSpecialty.slug;
+    const comp = currentCompany as any;
+    if (comp?.businessSpecialty?.slug) {
+      return comp.businessSpecialty.slug;
     }
     try {
-      const s = typeof user?.settings === 'string' ? JSON.parse(user.settings) : user?.settings;
+      const u = user as any;
+      const s = typeof u?.settings === 'string' ? JSON.parse(u.settings) : u?.settings;
       if (s?.businessType) return s.businessType;
     } catch {
       // ignore parse error

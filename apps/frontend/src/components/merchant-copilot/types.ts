@@ -46,9 +46,9 @@ export interface CopilotMessage {
 export interface CopilotSession {
   id: string;
   title: string;
-  createdAt: string;
+  createdAt?: string;
   updatedAt: string;
-  messages: CopilotMessage[];
+  messages?: CopilotMessage[];
 }
 
 export interface QuickPrompt {
