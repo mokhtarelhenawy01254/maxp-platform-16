@@ -18,6 +18,7 @@ model TreasuryAccount {
   expenses        CompanyExpense[]      @relation("TreasuryExpenses")
   transactions    TreasuryTransaction[] @relation("AccountTransactions")
   capitalDeposits CapitalTransaction[]  @relation("AccountCapitalDeposits")
+  financialPostings FinancialPosting[]  @relation("AccountFinancialPostings")
 
   @@index([companyId])
   @@index([type])
@@ -121,4 +122,32 @@ model TreasuryTransaction {
   @@index([treasuryAccountId])
   @@index([date])
   @@map("treasury_transactions")
+}
+
+model FinancialPosting {
+  id                 String           @id @default(cuid())
+  companyId          String
+  sourceType         String           /// CASE_INVOICE, SUPPLIER_PAYMENT, TECHNICIAN_PAYOUT, CASE_BOM_CONSUMPTION, CAPITAL_DEPOSIT, EXPENSE
+  sourceId           String
+  treasuryAccountId  String?
+  direction          String           /// IN, OUT
+  amount             Decimal          @db.Decimal(12, 2)
+  status             String           @default("PENDING_CONFIRM") /// PENDING_CONFIRM, POSTED, VOID
+  postedBy           String?
+  postedAt           DateTime?
+  reference          String?
+  notes              String?
+  metadata           Json?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  treasuryAccount    TreasuryAccount? @relation("AccountFinancialPostings", fields: [treasuryAccountId], references: [id], onDelete: SetNull)
+
+  @@unique([companyId, sourceType, sourceId])
+  @@index([companyId])
+  @@index([treasuryAccountId])
+  @@index([status])
+  @@index([sourceType])
+  @@index([createdAt])
+  @@map("financial_postings")
 }

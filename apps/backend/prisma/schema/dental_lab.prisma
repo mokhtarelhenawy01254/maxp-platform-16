@@ -32,6 +32,7 @@ model DentalWorkType {
   price                Float    @default(0) // سعر الكراون/الوحدة أو السعر الثابت
   costPrice            Float?   @default(0) // تكلفة المواد الخام التقديرية للمعمل
   leadTimeDays         Int      @default(5)
+  urgentLeadTimeDays   Int?     // مدة التسليم للمستعجل (null => حسب نسبة الاستعجال في السياسة)
   defaultMaterial      String?  // خامة افتراضية
   materialBrand        String?  // ماركة أو شركة الخامة المعتمدة
   instructions         String?  // إرشادات التحضير والملاحظات الفنية
@@ -42,8 +43,9 @@ model DentalWorkType {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  cases DentalLabCase[]
-  boms  DentalWorkTypeBOM[]
+  cases          DentalLabCase[]
+  boms           DentalWorkTypeBOM[]
+  stageTemplates WorkTypeStageTemplate[]
 
   @@index([companyId])
   @@map("dental_work_types")
@@ -56,8 +58,12 @@ model DentalTechnician {
   name         String
   phone        String?
   role         String   @default("GENERAL_TECHNICIAN") // CAD_DESIGNER | CERAMIST | MODEL_WAX | METAL_CASTING | FINISHING_POLISHING | QC_INSPECTOR | RECEPTION_LOGISTICS | SUPERVISOR | GENERAL_TECHNICIAN
-  wagePerStage Float?   // أجر الفني عن كل مرحلة مكتملة (null => المعدل الافتراضي)
-  isActive     Boolean  @default(true)
+  wagePerStage       Float?   // أجر الفني عن كل مرحلة مكتملة (null => المعدل الافتراضي)
+  workingDays        Json?    // e.g. [0, 1, 2, 3, 4, 6] (أيام العمل)
+  vacations          Json?    // قائمة الإجازات الاستثنائية [{ startDate, endDate, reason }]
+  dailyCap           Int?     @default(0) // سقف الإسناد اليومي (0 = غير محدود)
+  backupTechnicianId String?  // الفني الاحتياطي المفضل
+  isActive           Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -104,8 +110,15 @@ model DentalLabCase {
   paid          Float     @default(0)
   remaining     Float     @default(0)
   paymentStatus String    @default("UNPAID") // UNPAID | PARTIAL | PAID
-  notes         String?
-  isDeleted     Boolean   @default(false)
+  notes              String?
+  externalLabName    String?
+  externalLabContact String?
+  outsourceCost      Float?    @default(0)
+  outsourcedAt       DateTime?
+  expectedReturnAt   DateTime?
+  returnedAt         DateTime?
+  outsourceNotes     String?
+  isDeleted          Boolean   @default(false)
   deletedAt     DateTime?
   createdBy     String?
   createdAt     DateTime  @default(now())
@@ -148,6 +161,10 @@ model DentalCaseStage {
   startedAt    DateTime?
   completedAt  DateTime?
   sortOrder    Int       @default(0)
+  requiredRole String?   // دور الفني المطلوب (null => GENERAL_TECHNICIAN)
+  stageWage    Float?    @default(0) // أجر المرحلة المخصص من القالب (0 أو null => أجر الفني الافتراضي)
+  slaHours     Int?      @default(24) // المدة المحددة للمرحلة بالساعات
+  isRequired   Boolean   @default(true) // هل المرحلة إلزامية في مسار الإنتاج
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -552,4 +569,25 @@ model DentalWorkTypeBOM {
   @@index([workTypeId])
   @@index([materialId])
   @@map("dental_work_type_boms")
+}
+
+model WorkTypeStageTemplate {
+  id           String         @id @default(cuid())
+  companyId    String?
+  workTypeId   String
+  name         String
+  sortOrder    Int            @default(0)
+  requiredRole String         @default("GENERAL_TECHNICIAN")
+  stageWage    Float?         @default(0)
+  isRequired   Boolean        @default(true)
+  slaHours     Int?           @default(24)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  workType     DentalWorkType @relation(fields: [workTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([workTypeId, sortOrder])
+  @@index([companyId])
+  @@index([workTypeId])
+  @@map("work_type_stage_templates")
 }

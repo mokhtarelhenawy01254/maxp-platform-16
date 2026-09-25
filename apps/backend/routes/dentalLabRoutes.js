@@ -4,6 +4,8 @@ const fs = require('fs');
 const multer = require('multer');
 const router = express.Router();
 const controller = require('../controller/dentalLabController');
+const financialController = require('../controller/dentalFinancialController');
+const policyController = require('../controller/dentalPolicyController');
 const verifyToken = require('../utils/verifyToken');
 const { upload, dentalLabDir } = require('../utils/dentalLabUpload');
 const { dentalRoleGuard } = require('../services/dentalRoles');
@@ -195,6 +197,25 @@ router.get('/dashboard', verifyToken.authenticateToken, dentalRoleGuard(['OWNER'
 // Settings
 router.get('/settings', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.getSettings);
 router.put('/settings', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.updateSettings);
+
+// Policies & Automation (P5, P6, P7, P8, P9)
+router.get('/policies', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), policyController.getPolicies);
+router.put('/policies', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), policyController.updatePolicies);
+router.post('/policies/dry-run', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), policyController.simulateAutomation);
+router.post('/escalation/run', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), policyController.runEscalation);
+router.get('/work-types/:id/stages', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'TECHNICIAN']), policyController.getWorkTypeStages);
+router.post('/work-types/:id/stages', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), policyController.setWorkTypeStages);
+router.get('/patients/lookup', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), policyController.lookupPatient);
+router.get('/reports/outsourced', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), policyController.getOutsourcedReport);
+
+// Financial Layer (P1)
+router.get('/financial/postings', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), financialController.listFinancialPostings);
+router.get('/financial/postings/pending', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), financialController.getPendingPostings);
+router.post('/financial/postings/:id/confirm', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), financialController.confirmPosting);
+router.post('/financial/postings/:id/void', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), financialController.voidPosting);
+router.get('/financial/reports/cashflow', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), financialController.getCashFlowReport);
+router.get('/financial/reports/profitability', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), financialController.getProfitabilityReport);
+
 
 // Team roles
 router.get('/team', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.listTeam);

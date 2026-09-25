@@ -451,6 +451,25 @@ const updateDoctor = async (req, res) => {
     if ('isActive' in data) data.isActive = normalizeBool(data.isActive, true);
 
     const doctor = await prisma.dentalLabDoctor.update({ where: { id }, data });
+
+    // P2 Backfill: تحديث النسخ غير المقفولة في نفس العملية
+    if (data.name && data.name !== existing.name) {
+      try {
+        await prisma.$transaction([
+          prisma.dentalLabCase.updateMany({
+            where: { companyId, doctorId: id, status: { notIn: ['CLOSED'] } },
+            data: { doctorName: data.name },
+          }),
+          prisma.dentalInvoice.updateMany({
+            where: { companyId, doctorId: id, status: { notIn: ['PAID', 'VOID'] } },
+            data: { doctorName: data.name },
+          }),
+        ]);
+      } catch (backfillErr) {
+        console.warn('Warning: Doctor name backfill failed:', backfillErr.message);
+      }
+    }
+
     res.json({ success: true, data: doctor });
   } catch (error) {
     console.error('Error updating dental doctor:', error);
@@ -658,10 +677,26 @@ const updateWorkType = async (req, res) => {
     if ('leadTimeDays' in data) data.leadTimeDays = parseInt(data.leadTimeDays, 10) || 5;
     if ('defaultWarrantyYears' in data) data.defaultWarrantyYears = Math.max(0, parseInt(data.defaultWarrantyYears, 10) || 0);
     if ('defaultCrownCount' in data) data.defaultCrownCount = Math.max(1, parseInt(data.defaultCrownCount, 10) || 1);
+    if ('urgentLeadTimeDays' in body) {
+      data.urgentLeadTimeDays = body.urgentLeadTimeDays ? Math.max(1, parseInt(body.urgentLeadTimeDays, 10)) : null;
+    }
     if ('sortOrder' in data) data.sortOrder = parseInt(data.sortOrder, 10) || 0;
     if ('isActive' in data) data.isActive = normalizeBool(data.isActive, true);
 
     const workType = await prisma.dentalWorkType.update({ where: { id }, data });
+
+    // P2 Backfill: تحديث النسخ غير المقفولة في نفس العملية
+    if (data.name && data.name !== existing.name) {
+      try {
+        await prisma.dentalLabCase.updateMany({
+          where: { companyId, workTypeId: id, status: { notIn: ['CLOSED'] } },
+          data: { workTypeName: data.name },
+        });
+      } catch (backfillErr) {
+        console.warn('Warning: WorkType name backfill failed:', backfillErr.message);
+      }
+    }
+
     res.json({ success: true, data: workType });
   } catch (error) {
     console.error('Error updating dental work type:', error);
