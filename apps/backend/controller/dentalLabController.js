@@ -1502,8 +1502,13 @@ const listCases = async (req, res) => {
       { caseNumber: { contains: search, mode: 'insensitive' } },
       { patientName: { contains: search, mode: 'insensitive' } },
       { doctorName: { contains: search, mode: 'insensitive' } },
-      { patientPhone: { contains: search, mode: 'insensitive' } },
     ] : null;
+
+    if (req.query.patientPhone) {
+      where.patientPhone = { contains: String(req.query.patientPhone).trim() };
+    } else if (search && /^[0-9+]+$/.test(search.trim()) && searchOr) {
+      searchOr.push({ patientPhone: { contains: search.trim() } });
+    }
 
     let techOr = null;
     if (technicianId) {
@@ -1581,14 +1586,8 @@ const createCase = async (req, res) => {
     }
 
     let dueDate = parseDate(body.dueDate);
-    if (!dueDate && (body.workTypeId || workType)) {
-      const { calculateExpectedDueDate } = require('../services/dentalAssignmentService');
-      dueDate = calculateExpectedDueDate({
-        workType,
-        priority: body.priority,
-        orderDate: (body.receivedDate && parseDate(body.receivedDate)) || new Date(),
-        policies: labPolicies,
-      });
+    if (!dueDate && body.workTypeId) {
+      dueDate = await suggestDueDate(prisma, companyId, body.workTypeId, (body.receivedDate && parseDate(body.receivedDate)) || new Date(), { priority: body.priority });
     }
     if (!dueDate) {
       dueDate = await suggestDueDate(prisma, companyId, null, new Date(), { priority: body.priority });
@@ -1803,7 +1802,9 @@ const createCase = async (req, res) => {
     }
 
     res.json({ success: true, data: dentalCase });
-    dentalNotificationService.notifyCaseReceived(dentalCase.id).catch(() => {});
+    try {
+      dentalNotificationService.notifyCaseReceived?.(dentalCase.id)?.catch?.(() => {});
+    } catch (_) {}
   } catch (error) {
     console.error('Error creating dental case:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء حالة المعمل' });

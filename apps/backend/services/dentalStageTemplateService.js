@@ -18,36 +18,44 @@ const DEFAULT_STAGE_ROLES = {
 /**
  * Get stage templates for a specific work type, falling back to default chain if none exist
  */
-async function getStageTemplatesForWorkType(prisma, companyId, workTypeId) {
-  if (!workTypeId) {
-    return DEFAULT_STAGE_NAMES.map((name, idx) => ({
-      name,
-      sortOrder: idx,
-      requiredRole: DEFAULT_STAGE_ROLES[name] || 'GENERAL_TECHNICIAN',
-      stageWage: 0,
-      slaHours: 24,
-      isRequired: true,
-      isDefault: true,
-    }));
+async function getStageTemplatesForWorkType(prisma, companyId, workTypeId, category = null) {
+  if (prisma?.workTypeStageTemplate && typeof prisma.workTypeStageTemplate.findMany === 'function' && workTypeId) {
+    try {
+      const customTemplates = await prisma.workTypeStageTemplate.findMany({
+        where: { workTypeId },
+        orderBy: { sortOrder: 'asc' },
+      });
+
+      if (customTemplates && customTemplates.length > 0) {
+        return customTemplates.map((t) => ({
+          id: t.id,
+          name: t.name,
+          sortOrder: t.sortOrder,
+          requiredRole: t.requiredRole || 'GENERAL_TECHNICIAN',
+          stageWage: Number(t.stageWage) || 0,
+          slaHours: t.slaHours || 24,
+          isRequired: t.isRequired !== false,
+          isDefault: false,
+        }));
+      }
+    } catch (_) {}
   }
 
-  const customTemplates = await prisma.workTypeStageTemplate.findMany({
-    where: { workTypeId },
-    orderBy: { sortOrder: 'asc' },
-  });
-
-  if (customTemplates && customTemplates.length > 0) {
-    return customTemplates.map((t) => ({
-      id: t.id,
-      name: t.name,
-      sortOrder: t.sortOrder,
-      requiredRole: t.requiredRole || 'GENERAL_TECHNICIAN',
-      stageWage: Number(t.stageWage) || 0,
-      slaHours: t.slaHours || 24,
-      isRequired: t.isRequired !== false,
-      isDefault: false,
-    }));
-  }
+  try {
+    const { getStageTemplates } = require('../utils/dentalLabHelpers');
+    const stageNames = await getStageTemplates(prisma, companyId, category);
+    if (Array.isArray(stageNames) && stageNames.length > 0) {
+      return stageNames.map((name, idx) => ({
+        name,
+        sortOrder: idx,
+        requiredRole: DEFAULT_STAGE_ROLES[name] || 'GENERAL_TECHNICIAN',
+        stageWage: 0,
+        slaHours: 24,
+        isRequired: true,
+        isDefault: true,
+      }));
+    }
+  } catch (_) {}
 
   return DEFAULT_STAGE_NAMES.map((name, idx) => ({
     name,
@@ -103,8 +111,8 @@ async function setStageTemplatesForWorkType(prisma, companyId, workTypeId, templ
 /**
  * Build case stages from work type template
  */
-async function buildCaseStagesFromWorkType(prisma, companyId, workTypeId) {
-  const templates = await getStageTemplatesForWorkType(prisma, companyId, workTypeId);
+async function buildCaseStagesFromWorkType(prisma, companyId, workTypeId, category = null) {
+  const templates = await getStageTemplatesForWorkType(prisma, companyId, workTypeId, category);
 
   return templates.map((tpl, index) => ({
     companyId,
