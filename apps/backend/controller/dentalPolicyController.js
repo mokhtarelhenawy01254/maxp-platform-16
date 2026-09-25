@@ -208,7 +208,7 @@ const lookupPatient = async (req, res) => {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
 
-    const phone = req.query.phone ? String(req.query.phone).trim() : '';
+    const phone = (req.query.phone || req.query.search || req.query.q) ? String(req.query.phone || req.query.search || req.query.q).trim() : '';
     if (!phone) {
       return res.status(400).json({ success: false, error: 'رقم الهاتف مطلوب' });
     }

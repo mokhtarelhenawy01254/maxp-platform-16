@@ -922,7 +922,9 @@ const createTechnician = async (req, res) => {
       }
     }
 
-    const workingDays = Array.isArray(body.workingDays) ? body.workingDays : undefined;
+    const workingDays = Array.isArray(body.workingDays)
+      ? body.workingDays
+      : (Array.isArray(body.workDays) ? body.workDays : undefined);
     const vacations = Array.isArray(body.vacations) ? body.vacations : undefined;
     const dailyCap = Number.isInteger(parseInt(body.dailyCap, 10)) ? Math.max(0, parseInt(body.dailyCap, 10)) : 0;
     const backupTechnicianId = body.backupTechnicianId ? String(body.backupTechnicianId) : null;
@@ -1074,7 +1076,11 @@ const updateTechnician = async (req, res) => {
       }
     }
 
-    if ('workingDays' in body) data.workingDays = Array.isArray(body.workingDays) ? body.workingDays : null;
+    if ('workingDays' in body || 'workDays' in body) {
+      data.workingDays = Array.isArray(body.workingDays)
+        ? body.workingDays
+        : (Array.isArray(body.workDays) ? body.workDays : null);
+    }
     if ('vacations' in body) data.vacations = Array.isArray(body.vacations) ? body.vacations : null;
     if ('dailyCap' in body) data.dailyCap = Math.max(0, parseInt(body.dailyCap, 10) || 0);
     if ('backupTechnicianId' in body) data.backupTechnicianId = body.backupTechnicianId ? String(body.backupTechnicianId) : null;
@@ -3395,10 +3401,33 @@ const recordInvoicePayment = async (req, res) => {
     let method = body.method ? String(body.method).toUpperCase() : null;
     if (method && !PAYMENT_METHODS.has(method)) method = 'OTHER';
 
-const prisma = getSharedPrismaClient();
+    const prisma = getSharedPrismaClient();
     const invoice = await prisma.dentalInvoice.findFirst({ where: { id, companyId } });
     if (!invoice) return res.status(404).json({ success: false, error: 'الفاتورة غير موجودة' });
     if (invoice.status === 'VOID') return res.status(400).json({ success: false, error: 'لا يمكن تحصيل فاتورة ملغاة' });
+
+    const idempotencyKey = body.idempotencyKey ? String(body.idempotencyKey).trim() : null;
+    if (idempotencyKey) {
+      const existingPosting = await prisma.financialPosting.findUnique({
+        where: {
+          companyId_sourceType_sourceId: {
+            companyId,
+            sourceType: 'CASE_INVOICE',
+            sourceId: idempotencyKey,
+          },
+        },
+      });
+      if (existingPosting) {
+        const currentInvoice = await prisma.dentalInvoice.findFirst({
+          where: { id, companyId },
+          include: {
+            case: { select: { id: true, caseNumber: true, patientName: true } },
+            payments: { orderBy: { createdAt: 'desc' } },
+          },
+        });
+        return res.json({ success: true, data: currentInvoice, financialPosting: existingPosting, isDuplicate: true });
+      }
+    }
 
     const total = round2(Number(invoice.total) || 0);
     const paidSoFar = round2(Number(invoice.paid) || 0);

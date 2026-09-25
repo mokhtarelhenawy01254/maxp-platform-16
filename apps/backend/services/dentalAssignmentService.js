@@ -12,8 +12,9 @@ const DEFAULT_WORKING_DAYS = [0, 1, 2, 3, 4, 6];
  * Check if a technician is on duty today
  */
 function isTechnicianOnDuty(technician, date = new Date()) {
-  const dayOfWeek = date.getDay(); // 0 = Sun, 5 = Fri
-  const workingDays = Array.isArray(technician.workingDays) ? technician.workingDays : DEFAULT_WORKING_DAYS;
+  const workingDays = Array.isArray(technician.workingDays)
+    ? technician.workingDays
+    : (Array.isArray(technician.workDays) ? technician.workDays : DEFAULT_WORKING_DAYS);
 
   // 1. Day of week check
   if (!workingDays.includes(dayOfWeek)) {

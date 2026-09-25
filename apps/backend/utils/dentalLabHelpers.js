@@ -139,6 +139,23 @@ function stageForStatus(stages, targetStatus) {
   return null;
 }
 
+function getCompanyId(req, res) {
+  const companyId = req?.user?.companyId || req?.companyId;
+  if (!companyId) {
+    if (res && typeof res.status === 'function') {
+      res.status(403).json({ success: false, error: 'غير مصرح' });
+    }
+    return null;
+  }
+  return companyId;
+}
+
+function parsePagination(query = {}) {
+  const pageNum = Math.max(1, parseInt(query?.page, 10) || 1);
+  const limitNum = Math.min(200, Math.max(1, parseInt(query?.limit, 10) || 50));
+  return { pageNum, limitNum, skip: (pageNum - 1) * limitNum };
+}
+
 module.exports = {
   CASE_STATUS_CHAIN,
   DEFAULT_STAGE_NAMES,
@@ -156,4 +173,6 @@ module.exports = {
   buildStagesData,
   findActiveStage,
   stageForStatus,
+  getCompanyId,
+  parsePagination,
 };

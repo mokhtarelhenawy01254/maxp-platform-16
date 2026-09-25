@@ -3,7 +3,7 @@ const { parseSettingValue } = require('../utils/dentalLabHelpers');
 
 const DENTAL_ROLES = ['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN', 'ACCOUNTANT'];
 
-const PLATFORM_OWNER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'];
+const PLATFORM_OWNER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'ADMIN', 'LAB_ADMIN'];
 
 function resolveDentalRole(user, teamRoles) {
   const platformRole = user && user.role;
