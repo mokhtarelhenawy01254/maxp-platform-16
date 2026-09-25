@@ -579,6 +579,7 @@ export interface DentalLabSettings {
   whatsappTemplates?: { ready?: string; received?: string; overdue?: string };
   customFields?: DentalCustomFieldDef[];
   billingPolicy?: BillingPolicy;
+  guards?: { requireQualityCheckBeforeReady?: boolean };
   wages?: { defaultPerStage?: number };
   doctorPricing?: Record<string, Record<string, number>>;
   notifications?: { dunningEnabled?: boolean; dunningAgingDays?: number; dunningIntervalHours?: number };

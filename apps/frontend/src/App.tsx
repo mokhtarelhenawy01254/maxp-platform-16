@@ -4219,10 +4219,19 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/my-companies"
+                  element={<Navigate to="/my-companies/links" replace />}
+                />
+                <Route
                   path="/companies"
                   element={
                     <Layout>
-                      <CompaniesManagement />
+                      <RoleProtectedRoute
+                        allowedRoles={['SUPER_ADMIN']}
+                        fallback={<Navigate to="/my-companies/links" replace />}
+                      >
+                        <CompaniesManagement />
+                      </RoleProtectedRoute>
                     </Layout>
                   }
                 />

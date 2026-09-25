@@ -226,6 +226,11 @@ const placeOrder = async (req, res) => {
           const remaining = total;
           const paymentStatus = derivePaymentStatus(total, paid);
 
+          const unitsCount = Number(p.unitsCount) > 0 ? Number(p.unitsCount) : 1;
+          const unitPrice = round2(total / unitsCount);
+          const receivedDate = new Date();
+          receivedDate.setHours(0, 0, 0, 0);
+
           let dentalCase = null;
           for (let attempt = 0; attempt < 4; attempt++) {
             try {
@@ -245,9 +250,12 @@ const placeOrder = async (req, res) => {
                   status: 'RECEIVED',
                   orderStatus: 'PENDING',
                   priority: 'NORMAL',
+                  receivedDate,
                   dueDate,
                   source: 'PORTAL',
-                  priceSnapshot,
+                  priceSnapshot: priceSnapshot || unitPrice,
+                  unitsCount,
+                  unitPrice,
                   discount: 0,
                   total,
                   paid,
@@ -459,6 +467,30 @@ const designApproval = async (req, res) => {
     });
     if (!dentalCase) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
+    if (approved) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          await tx.dentalCaseStage.updateMany({
+            where: { caseId: id, name: { in: ['التصميم', 'Design', 'DESIGN'] } },
+            data: { status: 'DONE', completedAt: new Date() },
+          });
+          const currentCase = await tx.dentalLabCase.findUnique({ where: { id }, select: { status: true } });
+          if (currentCase && (currentCase.status === 'DESIGN' || currentCase.status === 'RECEIVED')) {
+            await tx.dentalLabCase.update({
+              where: { id },
+              data: { status: 'MANUFACTURING', orderStatus: 'IN_PROGRESS' },
+            });
+            await tx.dentalCaseStage.updateMany({
+              where: { caseId: id, name: { in: ['التصنيع', 'Manufacturing', 'MANUFACTURING'] } },
+              data: { status: 'IN_PROGRESS', startedAt: new Date() },
+            });
+          }
+        });
+      } catch (txErr) {
+        console.warn('Could not auto-advance stage on design approval:', txErr.message);
+      }
+    }
+
     await recordDentalLabStatusHistory(prisma, {
       companyId: dentist.companyId,
       caseId: id,
@@ -467,7 +499,7 @@ const designApproval = async (req, res) => {
       oldStatus: null,
       changedBy: `doctor:${dentist.id}`,
       userName: dentist.name,
-      reason: note || (approved ? 'اعتماد التصميم' : 'طلب تعديل على التصميم'),
+      reason: note || (approved ? 'اعتماد التصميم والانتقال إلى التصنيع' : 'طلب تعديل على التصميم'),
     });
     res.json({ success: true, data: { approved, note, caseNumber: dentalCase.caseNumber } });
   } catch (error) {

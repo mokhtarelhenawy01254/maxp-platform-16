@@ -79,6 +79,7 @@ export default function DentalLabSettingsTab() {
     requireFullPaymentBeforeDelivery: false,
     enforceCreditLimit: false,
   });
+  const [guards, setGuards] = useState<{ requireQualityCheckBeforeReady?: boolean }>({});
   const [wageDefault, setWageDefault] = useState<number>(0);
   const [dunningEnabled, setDunningEnabled] = useState(false);
   const [dunningAgingDays, setDunningAgingDays] = useState<number>(15);
@@ -111,7 +112,7 @@ export default function DentalLabSettingsTab() {
       case "dunning":
         return { notifications: { dunningEnabled, dunningAgingDays: Number(dunningAgingDays) || 15 } };
       case "billing":
-        return { billingPolicy };
+        return { billingPolicy, guards };
       default:
         return null;
     }
@@ -155,8 +156,10 @@ export default function DentalLabSettingsTab() {
       setReadyTemplate(settings.whatsappTemplates?.ready ?? "");
       setReceivedTemplate(settings.whatsappTemplates?.received ?? "");
       setOverdueTemplate(settings.whatsappTemplates?.overdue ?? "");
+      const guardsVal = settings.guards ?? {};
       setCustomFields(fields);
       setBillingPolicy(bp);
+      setGuards(guardsVal);
       setWageDefault(wage);
       setDunningEnabled(dunningEnabledVal);
       setDunningAgingDays(dunningAgingDaysVal);
@@ -166,7 +169,7 @@ export default function DentalLabSettingsTab() {
         whatsapp: { whatsappTemplates: { ready: rdy, received: rcv, overdue: ovd } },
         wages: { wages: { defaultPerStage: Number(wage) || 0 } },
         dunning: { notifications: { dunningEnabled: dunningEnabledVal, dunningAgingDays: Number(dunningAgingDaysVal) || 15 } },
-        billing: { billingPolicy: bp },
+        billing: { billingPolicy: bp, guards: guardsVal },
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : t("dentalLab.settings.loadError"));
@@ -585,6 +588,12 @@ export default function DentalLabSettingsTab() {
                   hint={t("dentalLab.settings.billingPolicy.enforceCreditLimit_hint")}
                   checked={billingPolicy.enforceCreditLimit === true}
                   onChange={v => setBillingPolicy(prev => ({ ...prev, enforceCreditLimit: v }))}
+                />
+                <ToggleRow
+                  label="إلزام فحص الجودة قبل التسليم"
+                  hint="يمنع نقل الحالة إلى جاهز للتسليم (READY) إلا بعد إجراء فحص جودة معتمد وناجح"
+                  checked={guards.requireQualityCheckBeforeReady === true}
+                  onChange={v => setGuards(prev => ({ ...prev, requireQualityCheckBeforeReady: v }))}
                 />
               </div>
             </div>

@@ -1238,6 +1238,21 @@ const CASE_LIST_INCLUDE = {
     include: { technician: { select: { id: true, name: true, role: true } } },
     orderBy: { assignedAt: 'desc' },
   },
+  stages: {
+    where: { status: { in: ['PENDING', 'IN_PROGRESS'] } },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      assigneeId: true,
+      assigneeName: true,
+      assignees: {
+        include: { technician: { select: { id: true, name: true, role: true } } },
+      },
+    },
+    orderBy: { sortOrder: 'asc' },
+    take: 2,
+  },
 };
 
 const CASE_DETAIL_INCLUDE = {
@@ -2088,10 +2103,21 @@ const bulkAdvanceCases = async (req, res) => {
         reason: meta.reason,
       }).catch(() => null);
 
-      updatedCount++;
+      updatedCount += 1;
     }
 
-    res.json({ success: true, count: updatedCount, message: `تمت ترقية ${updatedCount} حالة إلى "${target}" بنجاح` });
+    const STAGE_NAMES_AR = {
+      RECEIVED: 'تم الاستلام',
+      DESIGN: 'التصميم',
+      MANUFACTURING: 'التصنيع',
+      QC: 'مراجعة الجودة',
+      READY: 'جاهز للتسليم',
+      DELIVERED: 'تم التسليم',
+      CLOSED: 'مغلق',
+    };
+    const targetLabel = STAGE_NAMES_AR[target] || target;
+
+    res.json({ success: true, count: updatedCount, message: `تمت ترقية ${updatedCount} حالة إلى "${targetLabel}" بنجاح` });
   } catch (error) {
     console.error('Error bulk advancing dental cases:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في الترقية الجماعية للحالات' });
@@ -4005,7 +4031,8 @@ const getSettings = async (req, res) => {
   }
 };
 
-const SETTINGS_KEYS = ['workOrderHeader', 'stageTemplates', 'whatsappTemplates', 'enabledCustomFields', 'billingPolicy', 'wages', 'doctorPricing', 'notifications'];
+const SETTINGS_KEYS = ['workOrderHeader', 'stageTemplates', 'whatsappTemplates', 'enabledCustomFields', 'billingPolicy', 'wages', 'doctorPricing', 'notifications', 'guards'];
+const VALID_INVOICE_MODES = new Set(['AUTO_ON_RECEIPT', 'AUTO_ON_DELIVERY', 'MANUAL']);
 
 const updateSettings = async (req, res) => {
   try {
@@ -4013,6 +4040,31 @@ const updateSettings = async (req, res) => {
     if (!companyId) return;
     const body = req.body || {};
     const prisma = getSharedPrismaClient();
+
+    // Validate billingPolicy
+    if (body.billingPolicy && typeof body.billingPolicy === 'object') {
+      if (body.billingPolicy.invoiceMode && !VALID_INVOICE_MODES.has(body.billingPolicy.invoiceMode)) {
+        return res.status(400).json({ success: false, error: 'وضع الفوترة المحدد غير صالح (يجب أن يكون AUTO_ON_DELIVERY أو AUTO_ON_RECEIPT أو MANUAL)' });
+      }
+    }
+
+    // Validate wages
+    if (body.wages && typeof body.wages === 'object') {
+      if (body.wages.defaultPerStage !== undefined && Number(body.wages.defaultPerStage) < 0) {
+        return res.status(400).json({ success: false, error: 'أجر المرحلة الافتراضي لا يمكن أن يكون سالباً' });
+      }
+    }
+
+    // Validate workOrderHeader lengths
+    if (body.workOrderHeader && typeof body.workOrderHeader === 'object') {
+      if (body.workOrderHeader.labName && String(body.workOrderHeader.labName).length > 150) {
+        body.workOrderHeader.labName = String(body.workOrderHeader.labName).slice(0, 150);
+      }
+      if (body.workOrderHeader.address && String(body.workOrderHeader.address).length > 250) {
+        body.workOrderHeader.address = String(body.workOrderHeader.address).slice(0, 250);
+      }
+    }
+
     const updated = {};
     for (const key of SETTINGS_KEYS) {
       if (key in body) {
@@ -4434,18 +4486,22 @@ const flagRefabrication = async (req, res) => {
       where: { id, companyId },
       include: { stages: { orderBy: { sortOrder: 'asc' } } },
     });
-    if (!dentalCase) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
+    if (dentalCase.status === 'DELIVERED' || dentalCase.status === 'CLOSED') {
+      return res.status(400).json({ success: false, error: 'لا يمكن إعادة تصنيع حالة مسلمة أو مغلقة بالفعل' });
+    }
 
     const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
     if (!reason) return res.status(400).json({ success: false, error: 'سبب إعادة التصنيع مطلوب' });
 
-    let stageFrom = body.stageFrom ? String(body.stageFrom).toUpperCase() : 'DESIGN';
+    let stageFrom = body.stageFrom ? String(body.stageFrom).toUpperCase() : (dentalCase.status || 'DESIGN');
     if (!CASE_STATUSES.has(stageFrom)) {
       return res.status(400).json({ success: false, error: 'المرحلة غير صحيحة' });
     }
     if (stageFrom === 'DELIVERED' || stageFrom === 'CLOSED') {
-      return res.status(400).json({ success: false, error: 'لا يمكن إعادة تصنيع حالة مسلمة أو مغلقة' });
+      return res.status(400).json({ success: false, error: 'لا يمكن إعادة تصنيع إلى مرحلة تسليم أو إغلاق' });
     }
+
+    const isBillable = body.isBillable !== undefined ? Boolean(body.isBillable) : Boolean(body.billable);
 
     const refab = await prisma.$transaction(async (tx) => {
       const created = await tx.dentalRefabrication.create({
@@ -4454,7 +4510,7 @@ const flagRefabrication = async (req, res) => {
           caseId: id,
           reason,
           rootCauseCategory: body.rootCauseCategory ? String(body.rootCauseCategory).trim() : 'OTHER',
-          isBillable: Boolean(body.isBillable),
+          isBillable,
           stageFrom,
           status: 'OPEN',
           createdBy: req.user?.id || req.user?.email || null,
@@ -4473,14 +4529,8 @@ const flagRefabrication = async (req, res) => {
         const whereStage = Number.isFinite(fromOrder) && fromOrder >= 0 ? { caseId: id, sortOrder: { gte: fromOrder } } : { caseId: id };
         await tx.dentalCaseStage.updateMany({
           where: whereStage,
-          data: { status: 'PENDING', startedAt: null, completedAt: null, assigneeId: null, assigneeName: null },
+          data: { status: 'PENDING', startedAt: null, completedAt: null },
         });
-      }
-
-      try {
-        await tx.dentalCaseAssignment.deleteMany({ where: { caseId: id } });
-      } catch (assignmentError) {
-        console.error('Best-effort cleanup of dental assignments failed:', assignmentError);
       }
 
       return created;
@@ -5951,14 +6001,11 @@ const kioskScanCase = async (req, res) => {
     const code = barcode.trim();
     const prisma = getSharedPrismaClient();
 
-    const dentalCase = await prisma.dentalLabCase.findFirst({
+    let dentalCase = await prisma.dentalLabCase.findFirst({
       where: {
         companyId,
-        OR: [
-          { caseNumber: code },
-          { id: code },
-          { caseNumber: { endsWith: code } },
-        ],
+        isDeleted: false,
+        OR: [{ caseNumber: code }, { id: code }],
       },
       include: {
         doctor: { select: { id: true, name: true, phone: true } },
@@ -5967,6 +6014,44 @@ const kioskScanCase = async (req, res) => {
         assignments: { include: { technician: true } },
       },
     });
+
+    if (!dentalCase) {
+      const partialMatches = await prisma.dentalLabCase.findMany({
+        where: {
+          companyId,
+          isDeleted: false,
+          caseNumber: { endsWith: code },
+        },
+        select: {
+          id: true,
+          caseNumber: true,
+          patientName: true,
+          doctorName: true,
+          status: true,
+        },
+        take: 10,
+      });
+
+      if (partialMatches.length > 1) {
+        return res.status(409).json({
+          success: false,
+          error: `الكود الجزئي (${code}) يطابق ${partialMatches.length} حالات. يرجى مسح الباركود الكامل أو إدخال رقم الحالة كاملاً منعاً للالتباس.`,
+          matches: partialMatches,
+        });
+      }
+
+      if (partialMatches.length === 1) {
+        dentalCase = await prisma.dentalLabCase.findUnique({
+          where: { id: partialMatches[0].id },
+          include: {
+            doctor: { select: { id: true, name: true, phone: true } },
+            workType: { select: { id: true, name: true, category: true } },
+            stages: { orderBy: { sortOrder: 'asc' } },
+            assignments: { include: { technician: true } },
+          },
+        });
+      }
+    }
 
     if (!dentalCase) {
       return res.status(404).json({ success: false, error: `لم يتم العثور على أي حالة مطابقة للباركود (${code})` });
@@ -6025,6 +6110,22 @@ const kioskScanCase = async (req, res) => {
         userName: techName ? `مسح سريع (Kiosk) - الفني: ${techName}` : 'مسح سريع (Kiosk)',
         reason: `ترقية سريعة للمرحلة عبر محطة الباركود (${activeStage ? activeStage.name : 'مسح'})`,
       });
+
+      if (effectiveTechId) {
+        const existingAssignment = await tx.dentalCaseAssignment.findFirst({
+          where: { caseId: dentalCase.id, technicianId: effectiveTechId },
+        });
+        if (!existingAssignment) {
+          await tx.dentalCaseAssignment.create({
+            data: {
+              companyId,
+              caseId: dentalCase.id,
+              technicianId: effectiveTechId,
+              role: 'PRIMARY',
+            },
+          });
+        }
+      }
 
       return c;
     });
@@ -6384,14 +6485,37 @@ const recordCaseMaterialConsumption = async (req, res) => {
       return res.status(404).json({ success: false, error: 'الخامة غير موجودة' });
     }
 
+    const rawUnits = req.body?.unitsUsed ?? req.body?.units ?? 1;
+    const usedUnitsCount = Math.max(1, Number(rawUnits) || 1);
+
     let resolvedStock = null;
     if (stockId) {
       resolvedStock = await prisma.dentalMaterialStock.findFirst({
         where: { id: stockId, materialId, companyId },
       });
+      if (!resolvedStock) {
+        return res.status(400).json({ success: false, error: 'المخزون المحدد غير موجود لهذه الخامة' });
+      }
+    } else if (lotNumber) {
+      resolvedStock = await prisma.dentalMaterialStock.findFirst({
+        where: { lotNumber: String(lotNumber).trim(), materialId, companyId, isDepleted: false },
+        orderBy: { purchaseDate: 'asc' },
+      });
+      if (!resolvedStock) {
+        return res.status(400).json({
+          success: false,
+          error: `لم يتم العثور على تشغيلة نشطة برقم (${lotNumber}) لهذه الخامة لتسجيل الاستهلاك وخصم المخزون.`,
+        });
+      }
     }
 
-    const usedUnitsCount = Math.max(1, Number(unitsUsed) || 1);
+    if (resolvedStock && resolvedStock.remainingUnits < usedUnitsCount) {
+      return res.status(400).json({
+        success: false,
+        error: `الرصيد المتبقي في هذه التشغيلة (${resolvedStock.remainingUnits}) أقل من الكمية المطلوبة (${usedUnitsCount}).`,
+      });
+    }
+
     const finalLot = resolvedStock ? resolvedStock.lotNumber : (lotNumber ? String(lotNumber).trim() : null);
     const unitPriceRecorded = resolvedStock ? resolvedStock.unitCost : material.costPerUnit;
     const totalCostRecorded = round2(unitPriceRecorded * usedUnitsCount);

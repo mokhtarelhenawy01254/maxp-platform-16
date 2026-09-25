@@ -1804,6 +1804,19 @@ export default function DentalCasesTab() {
                               </span>
                             ))}
                           </div>
+                        ) : (c.stages && c.stages.some((s) => s.assigneeName || (s.assignees && s.assignees.length > 0))) ? (
+                          <div className="flex flex-wrap gap-1 items-center max-w-[170px]">
+                            {c.stages.filter((s) => s.assigneeName || (s.assignees && s.assignees.length > 0)).map((s) => (
+                              <span
+                                key={s.id || s.name}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                                title={`فني المرحلة: ${s.name}`}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                <span>{s.assigneeName || s.assignees?.[0]?.technician?.name}</span>
+                              </span>
+                            ))}
+                          </div>
                         ) : (
                           <span className="text-xs text-gray-400 dark:text-gray-500">غير مسند</span>
                         )}

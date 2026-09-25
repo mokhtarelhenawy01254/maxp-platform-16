@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent, type ReactNode } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import DentalModelViewer from "./DentalModelViewer";
@@ -859,6 +859,24 @@ export default function DentalCaseDetailPage() {
   }, [id, t]);
 
   const [caseBusy, setCaseBusy] = useState(false);
+  const [snoozing, setSnoozing] = useState(false);
+
+  const handleSnoozeOverdue = async (days: number) => {
+    if (!id || snoozing) return;
+    try {
+      setSnoozing(true);
+      const base = new Date();
+      base.setDate(base.getDate() + days);
+      const newDueDateIso = base.toISOString().split("T")[0];
+      await updateCase(id, { dueDate: newDueDateIso });
+      toast.success(`تم تمديد ميعاد التسليم بمقدار ${days} يوم إلى ${fmtDate(newDueDateIso)}`);
+      await refresh();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.message || "فشل تمديد ميعاد التسليم");
+    } finally {
+      setSnoozing(false);
+    }
+  };
 
   const handleTrash = async () => {
     if (!id || caseBusy) return;
@@ -1169,8 +1187,30 @@ export default function DentalCaseDetailPage() {
   const infoRows: { label: string; value: ReactNode }[] = [
     { label: t("dentalLab.cases.patient"), value: c.patientName },
     { label: t("dentalLab.cases.patientPhone"), value: c.patientPhone ? <span dir="ltr">{c.patientPhone}</span> : "—" },
-    { label: t("dentalLab.cases.doctor"), value: c.doctorName || "—" },
-    { label: t("dentalLab.cases.workType"), value: c.workTypeName || "—" },
+    { 
+      label: t("dentalLab.cases.doctor"), 
+      value: c.doctorId && c.doctorName ? (
+        <Link 
+          to={`/dental-lab/doctors/${c.doctorId}`} 
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1 font-medium transition-colors"
+        >
+          {c.doctorName}
+          <ExternalLink className="w-3 h-3 opacity-70" />
+        </Link>
+      ) : (c.doctorName || "—") 
+    },
+    { 
+      label: t("dentalLab.cases.workType"), 
+      value: c.workTypeName ? (
+        <Link 
+          to="/dental-lab/work-types" 
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1 font-medium transition-colors"
+        >
+          {c.workTypeName}
+          <ExternalLink className="w-3 h-3 opacity-70" />
+        </Link>
+      ) : "—" 
+    },
     { label: "عدد الوحدات", value: c.unitsCount ? `${c.unitsCount} وحدات` : "1 وحدة" },
     { label: "سعر الوحدة", value: c.unitPrice ? fmtMoney(c.unitPrice) : "—" },
     { label: t("dentalLab.cases.teeth"), value: c.teeth || "—" },
@@ -1294,7 +1334,7 @@ export default function DentalCaseDetailPage() {
       </div>
 
       {isOverdue && (
-        <div className="mb-6 p-4 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 flex items-center justify-between gap-4 animate-in fade-in duration-200">
+        <div className="mb-6 p-4 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 flex flex-wrap items-center justify-between gap-4 animate-in fade-in duration-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-sm">
               <AlertTriangle className="w-5 h-5 animate-pulse" />
@@ -1307,6 +1347,33 @@ export default function DentalCaseDetailPage() {
                 تاريخ الاستحقاق كان في: <b className="font-sans">{fmtDate(c.dueDate)}</b> — يرجى الإسراع في إنهاء المراحل المتبقية وتجهيز الشغل للتسليم.
               </p>
             </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs font-semibold text-rose-800 dark:text-rose-300 hidden sm:inline">تمديد الموعد:</span>
+            <button
+              type="button"
+              onClick={() => handleSnoozeOverdue(1)}
+              disabled={snoozing}
+              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-200 text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-900/50 shadow-sm disabled:opacity-50 transition-colors"
+            >
+              +1 يوم
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSnoozeOverdue(3)}
+              disabled={snoozing}
+              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-200 text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-900/50 shadow-sm disabled:opacity-50 transition-colors"
+            >
+              +3 أيام
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSnoozeOverdue(7)}
+              disabled={snoozing}
+              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-200 text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-900/50 shadow-sm disabled:opacity-50 transition-colors"
+            >
+              +أسبوع
+            </button>
           </div>
         </div>
       )}
