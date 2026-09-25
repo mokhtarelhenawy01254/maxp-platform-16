@@ -7,3 +7,4 @@ export * from './CopilotSessionsModal';
 export * from './CopilotInputFooter';
 export * from './CopilotHeader';
 export * from './MerchantCopilotDrawer';
+export * from './MerchantCopilotHost';
