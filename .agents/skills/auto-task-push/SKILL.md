@@ -1,6 +1,6 @@
 ---
 name: auto-task-push
-description: Automatically commit and push updates to https://github.com/mkhtrlhnw-blip/maxp-platform-11 with descriptive commit messages after completing any task.
+description: Automatically commit and push updates to https://github.com/mokhtarelhenawy091-crypto/maxp-platform-12 with descriptive commit messages after completing any task.
 ---
 
 # Auto Task Push Skill
@@ -13,7 +13,7 @@ Automatically triggered upon completing **ANY** task, feature implementation, bu
 
 ## Target Repository
 
-- **Repository URL:** `https://github.com/mkhtrlhnw-blip/maxp-platform-11`
+- **Repository URL:** `https://github.com/mokhtarelhenawy091-crypto/maxp-platform-12`
 - **Git Remote Name:** `origin`
 - **Branch:** `main` (or current active branch)
 
@@ -48,4 +48,4 @@ Automatically triggered upon completing **ANY** task, feature implementation, bu
    ```
 
 5. **Report to User:**
-   Provide the commit message, commit hash, and confirmation that updates were pushed to `https://github.com/mkhtrlhnw-blip/maxp-platform-11`.
+   Provide the commit message, commit hash, and confirmation that updates were pushed to `https://github.com/mokhtarelhenawy091-crypto/maxp-platform-12`.
