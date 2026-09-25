@@ -11,7 +11,7 @@ import {
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
-import { Sparkles } from "lucide-react";
+import { Cpu } from "lucide-react";
 import { MerchantCopilotHost, toggleMerchantCopilot } from "../merchant-copilot";
 import "../../styles/hr-theme.css";
 import { useTranslation } from "react-i18next";
@@ -765,17 +765,18 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             <button
               type="button"
               onClick={toggleMerchantCopilot}
-              className="business-icon-button relative group flex items-center gap-1.5 px-2.5 py-1 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-full border border-emerald-500/20 transition-all duration-200"
-              title="مساعد المتجر التنفيذي (Ctrl + J)"
-              aria-label="مساعد المتجر التنفيذي"
+              className="relative group flex items-center gap-1.5 px-2.5 py-1 text-zinc-300 dark:text-zinc-200 hover:text-white bg-zinc-900/80 hover:bg-zinc-800 rounded-lg border border-zinc-700/60 hover:border-zinc-500/60 transition-all duration-160 active:scale-95 shadow-xs"
+              title="المساعد التنفيذي للمتجر (Ctrl + J)"
+              aria-label="المساعد التنفيذي للمتجر"
             >
-              <Sparkles className="h-4 w-4 text-emerald-500" />
-              <span className="hidden md:inline text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                المساعد الذكي
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 ring-2 ring-emerald-500/20" />
+              <Cpu className="h-3.5 w-3.5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
+              <span className="hidden md:inline text-xs font-medium text-zinc-200">
+                المساعد التنفيذي
               </span>
-              <span className="hidden lg:inline text-[10px] font-mono opacity-70 bg-emerald-500/20 px-1 py-0.5 rounded">
+              <kbd className="hidden lg:inline text-[9px] font-mono text-zinc-400 bg-white/5 border border-white/10 px-1 py-0.5 rounded">
                 Ctrl+J
-              </span>
+              </kbd>
             </button>
             <NotificationDropdown className="business-shell-notification-slot shrink-0" />
 

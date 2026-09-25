@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Loader2 } from 'lucide-react';
+import { ArrowUpRight, Cpu } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { useExecutiveContext } from './useExecutiveContext';
 import { useCopilotCloudSessions } from './useCopilotCloudSessions';
@@ -58,24 +58,13 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
     (async () => {
       const history = await loadSessionHistory(activeSessionId);
       if (isMounted) {
-        if (history.length > 0) {
-          setMessages(history);
-        } else {
-          const companyLabel = context.companyName || 'منشأتك';
-          const welcome: CopilotMessage = {
-            id: 'welcome-msg',
-            sender: 'assistant',
-            text: `أهلاً بك يا فندم في **${companyLabel}**! أنا **${selectedAgent.name}**.\n\nأنا متابع معاك كل تفاصيل المنظومة والشاشة الحالية (**${context.pageTitle || context.pathname}**).\n\nيمكنك سؤالي عن الطلبات، المخزون، الإعلانات، أو اتخاذ أي إجراء تشغيلي فوراً دون الحاجة لفتح الإعدادات بنفسك.`,
-            timestamp: new Date().toISOString(),
-          };
-          setMessages([welcome]);
-        }
+        setMessages(history);
       }
     })();
     return () => {
       isMounted = false;
     };
-  }, [activeSessionId, loadSessionHistory, context.companyName, context.pageTitle, context.pathname, selectedAgent.name]);
+  }, [activeSessionId, loadSessionHistory]);
 
   // Handle action approvals
   const handleDecision = useCallback(
@@ -83,7 +72,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
       try {
         await apiClient.post(`/agent-approvals/${cardId}/${approved ? 'approve' : 'reject'}`, {
           threadId: activeSessionId,
-          reason: approved ? 'اعتمد بواسطة التاجر من المساعد المباشر' : 'ألغيت بواسطة التاجر',
+          reason: approved ? 'اعتمد بواسطة التاجر من المساعد التنفيذي' : 'ألغي الإجراء من قبل التاجر',
         });
 
         setMessages((prev) =>
@@ -209,13 +198,13 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
         latency_ms: assistantMsg.telemetry?.latency_ms,
       });
     } catch (err: any) {
-      const errorText = err.response?.data?.error || err.message || 'تعذر الاتصال بالمساعد الذكي.';
+      const errorText = err.response?.data?.error || err.message || 'تعذر الاتصال بالمساعد التنفيذي.';
       setMessages((prev) => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           sender: 'assistant',
-          text: `⚠️ عذراً يا فندم: ${errorText}`,
+          text: `تنبيه: ${errorText}`,
           timestamp: new Date().toISOString(),
         },
       ]);
@@ -234,15 +223,15 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden" dir="rtl">
-      {/* Backdrop */}
+      {/* Precision Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
+        className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-200"
         onClick={onClose}
       />
 
-      {/* Drawer Surface */}
-      <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
-        <aside className="w-screen max-w-md sm:max-w-lg bg-[#09090b] text-slate-100 border-l border-white/10 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+      {/* Drawer Surface - Single Seamless OLED Chassis */}
+      <div className="absolute inset-y-0 right-0 max-w-full flex pl-4 sm:pl-10">
+        <aside className="w-screen max-w-md sm:max-w-lg md:max-w-xl bg-[#09090b] text-zinc-100 border-l border-white/[0.08] flex flex-col shadow-[-32px_0_80px_rgba(0,0,0,0.9)] animate-in slide-in-from-right duration-250">
           {/* Header */}
           <CopilotHeader
             selectedAgent={selectedAgent}
@@ -269,13 +258,13 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
             <>
               {/* Quick Prompts Bar */}
               {quickPrompts && quickPrompts.length > 0 && (
-                <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-2 border-b border-white/5 bg-[#09090b]/80 scrollbar-none">
+                <div className="flex items-center gap-1.5 overflow-x-auto px-3.5 py-2 border-b border-white/[0.06] bg-[#0c0c0e]/80 scrollbar-none">
                   {quickPrompts.map((qp) => (
                     <button
                       key={qp.id}
                       type="button"
                       onClick={() => handleSendMessage(qp.prompt)}
-                      className="whitespace-nowrap rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300 hover:bg-white/10 hover:text-white transition-all active:scale-95 flex-shrink-0"
+                      className="whitespace-nowrap rounded-full border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] px-3 py-1 text-[11px] text-zinc-300 hover:text-white transition-all active:scale-95 flex-shrink-0"
                     >
                       {qp.label}
                     </button>
@@ -283,41 +272,103 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
                 </div>
               )}
 
-              {/* Messages Feed */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-sm">
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-                  >
-                    <div
-                      className={`max-w-[90%] rounded-xl px-3.5 py-2.5 ${
-                        msg.sender === 'user'
-                          ? 'bg-emerald-600 text-white rounded-br-none shadow-sm'
-                          : 'bg-[#18181b] border border-white/10 text-slate-200 rounded-bl-none shadow-sm'
-                      }`}
-                    >
-                      <AgentStudioMarkdownMessage content={msg.text} isUser={msg.sender === 'user'} />
-
-                      {/* Render Action Cards */}
-                      {msg.actionCards?.map((card) => (
-                        <CopilotActionCard key={card.id} card={card} onDecision={handleDecision} />
-                      ))}
+              {/* Messages Timeline */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs">
+                {messages.length === 0 ? (
+                  /* Minimalist Linear-Style Cockpit Welcome */
+                  <div className="py-6 px-2 space-y-6">
+                    <div className="space-y-2">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 border border-white/[0.1] text-zinc-200 shadow-sm">
+                        <Cpu className="h-4 w-4 text-emerald-400" />
+                      </div>
+                      <h2 className="text-sm font-semibold text-zinc-100 text-wrap: balance">
+                        {selectedAgent.name}
+                      </h2>
+                      <p className="text-xs text-zinc-400 leading-relaxed text-pretty max-w-sm">
+                        {selectedAgent.description}
+                      </p>
                     </div>
 
-                    <span className="text-[10px] text-slate-500 mt-1 px-1 tabular-nums">
-                      {new Date(msg.timestamp).toLocaleTimeString('ar-EG', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                        إجراءات مقترحة فورية
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        {selectedAgent.suggestedPrompts.map((prompt, pIdx) => (
+                          <button
+                            key={pIdx}
+                            type="button"
+                            onClick={() => handleSendMessage(prompt)}
+                            className="group flex items-center justify-between p-3 rounded-xl border border-white/[0.06] bg-[#121215] hover:border-white/[0.15] hover:bg-zinc-900/90 text-right transition-all active:scale-[0.98]"
+                          >
+                            <span className="text-xs text-zinc-200 group-hover:text-white transition-colors leading-relaxed">
+                              {prompt}
+                            </span>
+                            <ArrowUpRight className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-200 transition-colors flex-shrink-0 mr-2" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                ))}
+                ) : (
+                  messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                    >
+                      {msg.sender === 'user' ? (
+                        /* User Message: Clean Architectural Pill (Ban WhatsApp Green) */
+                        <div className="flex flex-col items-end max-w-[85%]">
+                          <div className="rounded-2xl bg-zinc-800/80 border border-zinc-700/60 px-3.5 py-2.5 text-zinc-100 shadow-sm leading-relaxed text-xs">
+                            <p className="whitespace-pre-line text-pretty">{msg.text}</p>
+                          </div>
+                          <span className="text-[10px] text-zinc-500 mt-1 px-1 tabular-nums font-mono">
+                            {new Date(msg.timestamp).toLocaleTimeString('ar-EG', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                      ) : (
+                        /* Assistant Turn: Seamless Chassis Integration */
+                        <div className="w-full space-y-1.5 py-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-zinc-800 border border-white/[0.08] text-zinc-300">
+                              <Cpu className="h-3 w-3 text-emerald-400" />
+                            </div>
+                            <span className="text-xs font-semibold text-zinc-200">
+                              {selectedAgent.name}
+                            </span>
+                            <span className="rounded bg-white/[0.04] border border-white/[0.06] px-1 py-0.2 font-mono text-[9px] text-zinc-500">
+                              {msg.telemetry?.model || 'DeepSeek-V3'}
+                            </span>
+                            <span className="text-[10px] text-zinc-500 tabular-nums font-mono mr-auto">
+                              {new Date(msg.timestamp).toLocaleTimeString('ar-EG', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+
+                          <div className="pr-7 text-zinc-200 leading-relaxed text-xs">
+                            <AgentStudioMarkdownMessage content={msg.text} isUser={false} />
+
+                            {/* Render Action Cards */}
+                            {msg.actionCards?.map((card) => (
+                              <CopilotActionCard key={card.id} card={card} onDecision={handleDecision} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
 
                 {loading && (
-                  <div className="flex items-center gap-2 text-slate-400 text-xs py-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
-                    <span>{selectedAgent.name} يفحص بيانات المنظومة ويجهز الرد...</span>
+                  <div className="flex items-center gap-2 text-zinc-400 text-xs py-2 pr-7">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>جاري فحص مؤشرات المنظومة وتوليد القرار التشغيلي…</span>
+                    <span className="font-mono text-[9px] text-zinc-500 mr-auto">DeepSeek-V3</span>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
