@@ -352,7 +352,7 @@ async function notifyTenant(req, res) {
     // Find company admin user
     const companyAdmin = await prisma.user.findFirst({
       where: { companyId: incident.companyId, role: { in: ['COMPANY_ADMIN', 'ADMIN'] } },
-      select: { id: true, email: true, name: true },
+      select: { id: true, email: true, firstName: true, lastName: true },
     });
 
     const alertTitle = `تنبيه تكامل ذكي: تعطل استدعاء [${toolName}]`;
