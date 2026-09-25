@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Cpu } from 'lucide-react';
 import { MerchantCopilotDrawer } from './MerchantCopilotDrawer';
 
@@ -10,6 +11,10 @@ export const toggleMerchantCopilot = () => {
 
 export const MerchantCopilotHost: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+
+  // Suppress floating trigger on chat/inbox screens to prevent blocking the mobile composer and send button
+  const isInboxOrChatRoute = /inbox|conversations|whatsapp|chat/i.test(location.pathname);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -34,7 +39,7 @@ export const MerchantCopilotHost: React.FC = () => {
 
   return (
     <>
-      {!isOpen && (
+      {!isOpen && !isInboxOrChatRoute && (
         <button
           type="button"
           onClick={() => setIsOpen(true)}
