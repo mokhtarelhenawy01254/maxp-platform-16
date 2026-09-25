@@ -285,7 +285,7 @@ describe('dentalLabController advanced features', () => {
 
     test('defaults stageFrom to DESIGN', async () => {
       const prisma = createPrisma();
-      prisma.dentalLabCase.findFirst.mockResolvedValue(caseWithStages);
+      prisma.dentalLabCase.findFirst.mockResolvedValue({ ...caseWithStages, status: null });
       prisma.dentalRefabrication.create.mockResolvedValue({ id: 'refab-1', stageFrom: 'DESIGN' });
       prisma.dentalLabCase.update.mockResolvedValue({});
       prisma.dentalCaseStage.updateMany.mockResolvedValue({});
