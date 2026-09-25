@@ -158,6 +158,15 @@ export const TasksTab: React.FC = () => {
     return {};
   });
 
+  const [activeTask, setActiveTask] = useState<ActiveTaskState | null>(() => {
+    try {
+      const saved = localStorage.getItem('maxp_active_task');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+  const [runnerSeconds, setRunnerSeconds] = useState<number>(0);
+
   const [elapsedMap, setElapsedMap] = useState<Record<string, number>>({});
   const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
 
@@ -166,6 +175,7 @@ export const TasksTab: React.FC = () => {
     const taskIds = Object.keys(activeTasksMap);
     if (taskIds.length === 0) {
       setElapsedMap({});
+      setRunnerSeconds(0);
       return;
     }
 
@@ -177,7 +187,11 @@ export const TasksTab: React.FC = () => {
         if (item?.startTime) {
           const diff = Math.floor((now - Number(item.startTime)) / 1000);
           const accumulated = Number(item.accumulatedSeconds || 0);
-          updated[id] = accumulated + (diff > 0 ? diff : 0);
+          const total = accumulated + (diff > 0 ? diff : 0);
+          updated[id] = total;
+          if (activeTask && activeTask.id === id) {
+            setRunnerSeconds(total);
+          }
         }
       }
       setElapsedMap(updated);
@@ -186,7 +200,7 @@ export const TasksTab: React.FC = () => {
     calcAll();
     const interval = setInterval(calcAll, 1000);
     return () => clearInterval(interval);
-  }, [activeTasksMap]);
+  }, [activeTasksMap, activeTask]);
 
   // Real-time ticking stopwatch for all company active timers
   useEffect(() => {
@@ -215,6 +229,11 @@ export const TasksTab: React.FC = () => {
       accumulatedSeconds: 0,
     };
 
+    setActiveTask(newTask);
+    try {
+      localStorage.setItem('maxp_active_task', JSON.stringify(newTask));
+    } catch {}
+
     setActiveTasksMap((prev) => {
       const updated = { ...prev, [task.id]: newTask };
       try {
@@ -227,6 +246,7 @@ export const TasksTab: React.FC = () => {
       const timerRes = await window.electronAPI.startTaskTimer(task.id);
       const entryObj = timerRes?.entry || timerRes?.data;
       if (entryObj?.id) {
+        setActiveTask((prev) => (prev?.id === task.id ? { ...prev, entryId: entryObj.id } : prev));
         setActiveTasksMap((prev) => {
           if (prev[task.id]) {
             const updated = {
@@ -268,6 +288,13 @@ export const TasksTab: React.FC = () => {
         } catch {}
         return next;
       });
+      if (activeTask?.id === taskIdToStop) {
+        setActiveTask(null);
+        setRunnerSeconds(0);
+        try {
+          localStorage.removeItem('maxp_active_task');
+        } catch {}
+      }
     } else {
       // Stop all active timers
       const entries = Object.values(activeTasksMap);
@@ -279,8 +306,11 @@ export const TasksTab: React.FC = () => {
         }
       }
       setActiveTasksMap({});
+      setActiveTask(null);
+      setRunnerSeconds(0);
       try {
         localStorage.removeItem('maxp_active_tasks_multi');
+        localStorage.removeItem('maxp_active_task');
       } catch {}
     }
     loadData(false);
@@ -469,9 +499,27 @@ export const TasksTab: React.FC = () => {
 
     // If completing the task or submitting for review, stop runner and clear state
     if (targetStatus === 'COMPLETED' || targetStatus === 'IN_REVIEW') {
+      if (activeTasksMap[taskId]) {
+        const item = activeTasksMap[taskId];
+        if (item?.entryId) {
+          try {
+            await window.electronAPI.stopTaskTimer(item.entryId);
+          } catch {}
+        }
+        setActiveTasksMap((prev) => {
+          const next = { ...prev };
+          delete next[taskId];
+          try {
+            localStorage.setItem('maxp_active_tasks_multi', JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+      }
+
       if (activeTask?.id === taskId) {
         let entryId = activeTask?.entryId;
         setActiveTask(null);
+        setRunnerSeconds(0);
         try {
           localStorage.removeItem('maxp_active_task');
         } catch {}
