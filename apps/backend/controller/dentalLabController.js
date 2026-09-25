@@ -18,6 +18,7 @@ const {
   buildStagesData,
   findActiveStage,
   stageForStatus,
+  parseSettingValue,
 } = require('../utils/dentalLabHelpers');
 const { recordDentalLabStatusHistory, adminDisplayName, syncCasePayments } = require('../utils/dentalLabStatusHistory');
 const { dentalLabDir } = require('../utils/dentalLabUpload');
@@ -796,6 +797,12 @@ const createTechnician = async (req, res) => {
 
     // Direct User Account creation for Technician
     let userId = body.userId ? String(body.userId).trim() : null;
+    if (userId) {
+      const uc = await prisma.userCompany.findFirst({ where: { userId, companyId } });
+      if (!uc) {
+        return res.status(400).json({ success: false, error: 'المستخدم المحدد غير مسجل في هذه الشركة' });
+      }
+    }
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const password = typeof body.password === 'string' ? body.password : '';
 
@@ -925,7 +932,15 @@ const updateTechnician = async (req, res) => {
     }
     if ('phone' in data) data.phone = data.phone ? String(data.phone).trim() : null;
     if ('role' in data) data.role = data.role ? String(data.role).trim() : 'GENERAL_TECHNICIAN';
-    if ('userId' in data) data.userId = data.userId ? String(data.userId).trim() : null;
+    if ('userId' in data) {
+      data.userId = data.userId ? String(data.userId).trim() : null;
+      if (data.userId) {
+        const uc = await prisma.userCompany.findFirst({ where: { userId: data.userId, companyId } });
+        if (!uc) {
+          return res.status(400).json({ success: false, error: 'المستخدم المحدد غير مسجل في هذه الشركة' });
+        }
+      }
+    }
     if ('wagePerStage' in data) {
       if (data.wagePerStage === null || data.wagePerStage === undefined || data.wagePerStage === '') {
         data.wagePerStage = null;
@@ -940,36 +955,33 @@ const updateTechnician = async (req, res) => {
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const password = typeof body.password === 'string' ? body.password : '';
 
-    // Handle password update if technician already has a linked user
-    const targetUserId = data.userId || existing.userId;
-    if (password && password.length >= 6 && targetUserId) {
-      // Ensure targetUserId belongs to this company and is not an OWNER/SUPER_ADMIN/COMPANY_ADMIN
-      const targetUser = await prisma.user.findUnique({
-        where: { id: targetUserId },
-        include: { userCompanies: { where: { companyId } } },
-      });
-      if (!targetUser || !targetUser.userCompanies || targetUser.userCompanies.length === 0) {
-        return res.status(403).json({ success: false, error: 'غير مصرح بتعديل هذا المستخدم' });
-      }
-      if (['SUPER_ADMIN', 'OWNER', 'COMPANY_ADMIN', 'ADMIN'].includes(targetUser.role)) {
-        return res.status(403).json({ success: false, error: 'غير مصرح بتعديل كلمة مرور مديري أو ملاك المنصة' });
-      }
-      const hashedPassword = await bcrypt.hash(password, 10);
-      await prisma.user.update({
-        where: { id: targetUserId },
-        data: { password: hashedPassword },
+    if (password && password.length < 6) {
+      return res.status(400).json({ success: false, error: 'كلمة المرور يجب ألا تقل عن 6 أحرف' });
+    }
+
+    // Security S1: strictly ban changing the password of ANY existing user from technician updates
+    const targetUserId = data.userId !== undefined ? data.userId : existing.userId;
+    if (password && targetUserId) {
+      return res.status(400).json({
+        success: false,
+        error: 'لا يمكن تعديل كلمة مرور مستخدم قائم من خلال إدارة الفنيين، يجب تعديلها من إعدادات المستخدمين أو ملف المستخدم الشخصي',
       });
     }
 
-    // If technician had no linked user, and email + password provided:
-    if (!targetUserId && email && password && password.length >= 6) {
+    // If technician had no linked user, and email (+ optional password) provided:
+    if (!targetUserId && email) {
       const existingUser = await prisma.user.findFirst({ where: { email } });
       if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          error: 'هذا البريد الإلكتروني مسجل بالفعل لمستخدم على المنصة، لا يمكن ربطه أو تغيير كلمة مروره',
-        });
-      } else {
+        const uc = await prisma.userCompany.findFirst({ where: { userId: existingUser.id, companyId } });
+        if (!uc) {
+          return res.status(400).json({
+            success: false,
+            error: 'هذا البريد الإلكتروني مسجل بالفعل لمستخدم في شركة أخرى ولا يمكن ربطه',
+          });
+        }
+        // Link existing employee to technician WITHOUT overwriting their password!
+        data.userId = existingUser.id;
+      } else if (password && password.length >= 6) {
         const hashedPassword = await bcrypt.hash(password, 10);
         const nameParts = (data.name || existing.name).split(/\s+/);
         const firstName = nameParts[0] || existing.name;
@@ -5925,9 +5937,14 @@ const getWarrantyCertificatePdf = async (req, res) => {
     });
     if (!dentalCase) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
-    const company = await prisma.company.findUnique({ where: { id: companyId } });
+    const [settingsRows, company] = await Promise.all([
+      prisma.dentalSetting.findMany({ where: { companyId } }),
+      prisma.company.findFirst({ where: { id: companyId } }),
+    ]);
+    const settings = mergeSettings(settingsRows);
+    const workOrderHeader = settings.workOrderHeader || {};
+
     const { generateWarrantyCertificatePdf } = require('../services/dentalWorkOrderService');
-    const workOrderHeader = await getWorkOrderHeader(prisma, companyId);
     const { buffer, caseNumber } = await generateWarrantyCertificatePdf({ company, caseRow: dentalCase, workOrderHeader });
 
     const safeCaseNumber = String(caseNumber || 'case').replace(/[^\w.-]/g, '_');

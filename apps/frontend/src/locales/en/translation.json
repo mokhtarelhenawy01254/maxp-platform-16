@@ -10653,12 +10653,26 @@
       "emailInvalid": "Invalid email format",
       "passwordRequired": "Password is required",
       "passwordMinLength": "Password must be at least 6 characters",
-      "roleRequired": "Role is required"
+      "roleRequired": "Role is required",
+      "cannotDeactivateSelf": "You cannot deactivate your own account",
+      "phoneInvalid": "Invalid phone number",
+      "salaryInvalid": "Invalid base salary"
     },
     "noUsers": "No users found",
     "unlimited": "Unlimited",
     "editUser": "Edit User",
-    "inviteNewUser": "Invite New User"
+    "inviteNewUser": "Invite New User",
+    "pageDescription": "Manage team members, access permissions, and staff accounts",
+    "userListDescription": "View and manage all active and inactive user accounts",
+    "bulkActionsDescription": "Perform batch actions on selected users in the list",
+    "exportCsv": "Export CSV",
+    "selectedUsers": "Selected Users ({{count}})",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "deleteSelected": "Delete Selected",
+    "clearSelection": "Clear Selection",
+    "pendingInvitations": "Pending Invitations ({{count}})",
+    "invitationsDescription": "List of sent team invitations waiting to be accepted"
   },
   "customerAnalytics": {
     "title": "Customer Analytics",
@@ -12809,6 +12823,9 @@
       },
       "academy": {
         "description": "Course catalog, AI coaching, interactive quizzes, and student management"
+      },
+      "treasuryExpenses": {
+        "description": "Manage treasury cashflows, vouchers, and company expenses"
       }
     }
   },

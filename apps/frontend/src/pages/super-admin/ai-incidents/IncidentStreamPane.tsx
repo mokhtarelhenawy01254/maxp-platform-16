@@ -150,11 +150,18 @@ export const IncidentStreamPane: React.FC<IncidentStreamPaneProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <span
-                    className={`font-mono text-[9px] px-1.5 py-0.5 rounded border font-semibold ${style.badge}`}
-                  >
-                    {style.label}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`font-mono text-[9px] px-1.5 py-0.5 rounded border font-semibold ${style.badge}`}
+                    >
+                      {style.label}
+                    </span>
+                    {inc.isolated && (
+                      <span className="font-mono text-[9px] px-1.5 py-0.5 rounded border font-semibold bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-200">
+                        معزولة (ISOLATED)
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono tabular-nums">
                     <span>{inc.latencyMs ? `${inc.latencyMs}ms` : '—'}</span>
                     <span>·</span>

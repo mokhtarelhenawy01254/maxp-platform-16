@@ -43,7 +43,12 @@ const DentalPortalCartPage: React.FC = () => {
   const [result, setResult] = useState<DentalOrderResult | null>(null);
 
   const total = useMemo(
-    () => lines.reduce((sum, line) => sum + (Number(line.price) || 0), 0),
+    () =>
+      lines.reduce(
+        (sum, line) =>
+          sum + (Number(line.price) || 0) * (Math.max(1, Number(line.unitsCount) || 1)),
+        0,
+      ),
     [lines],
   );
   const estimatedDays = useMemo(
@@ -79,7 +84,10 @@ const DentalPortalCartPage: React.FC = () => {
     setError("");
     try {
       const created = await placeOrder({
-        items: lines,
+        items: lines.map((l) => ({
+          ...l,
+          unitsCount: Math.max(1, Number(l.unitsCount) || 1),
+        })),
         patientName: patientName.trim() || undefined,
         patientPhone: patientPhone.trim() || undefined,
         notes: notes.trim() || undefined,
@@ -239,7 +247,12 @@ const DentalPortalCartPage: React.FC = () => {
                       {line.workTypeName}
                     </p>
                     <p className="mt-0.5 text-sm text-gray-500">
-                      {formatCurrency(line.price)}
+                      {formatCurrency(line.price)} / وحدة
+                      {(line.unitsCount && line.unitsCount > 1) ? (
+                        <span className="font-semibold text-indigo-700 mx-1">
+                          (الإجمالي: {formatCurrency(line.price * line.unitsCount)})
+                        </span>
+                      ) : null}
                       {line.leadTimeDays
                         ? ` — ${line.leadTimeDays} ${t(
                             "dentalPortal.catalog.days",
@@ -257,7 +270,23 @@ const DentalPortalCartPage: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-gray-600">
+                      عدد الوحدات
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={line.unitsCount ?? 1}
+                      onChange={(e) =>
+                        updateLine(index, {
+                          unitsCount: Math.max(1, parseInt(e.target.value, 10) || 1),
+                        })
+                      }
+                      className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                    />
+                  </div>
                   <div>
                     <label className="mb-1.5 block text-xs font-medium text-gray-600">
                       {t("dentalPortal.cart.teeth")}

@@ -39,6 +39,7 @@ const DentalPortalNewOrderPage: React.FC = () => {
   const [patientPhone, setPatientPhone] = useState("");
   const [teeth, setTeeth] = useState("");
   const [selectedTeeth, setSelectedTeeth] = useState<string[]>([]);
+  const [unitsCount, setUnitsCount] = useState<number>(1);
   const [shade, setShade] = useState("");
   const [material, setMaterial] = useState("");
   const [notes, setNotes] = useState("");
@@ -81,7 +82,11 @@ const DentalPortalNewOrderPage: React.FC = () => {
       workTypeId: selectedWorkType.id,
       workTypeName: selectedWorkType.name,
       price: selectedWorkType.price,
+      unitsCount: Math.max(1, Number(unitsCount) || 1),
       leadTimeDays: selectedWorkType.leadTimeDays,
+      teeth: teeth.trim() || undefined,
+      shade: shade || undefined,
+      material: material || undefined,
     });
     setNotice({
       message: t("dentalPortal.cart.added"),
@@ -101,6 +106,7 @@ const DentalPortalNewOrderPage: React.FC = () => {
     try {
       const created = await placeOrder({
         workTypeId,
+        unitsCount: Math.max(1, Number(unitsCount) || 1),
         teeth: teeth.trim() || undefined,
         shade: shade || undefined,
         material: material || undefined,
@@ -273,10 +279,30 @@ const DentalPortalNewOrderPage: React.FC = () => {
                     onChange={(arr) => {
                       setSelectedTeeth(arr);
                       setTeeth(arr.join(", "));
+                      if (arr.length > 0) setUnitsCount(arr.length);
                     }}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label
+                      htmlFor="dp-units-count"
+                      className="mb-1.5 block text-sm font-medium text-gray-700"
+                    >
+                      عدد الوحدات (Units) *
+                    </label>
+                    <input
+                      id="dp-units-count"
+                      type="number"
+                      min={1}
+                      value={unitsCount}
+                      onChange={(e) =>
+                        setUnitsCount(Math.max(1, parseInt(e.target.value, 10) || 1))
+                      }
+                      className="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                      required
+                    />
+                  </div>
                   <div>
                     <label
                       htmlFor="dp-shade"
@@ -358,6 +384,12 @@ const DentalPortalNewOrderPage: React.FC = () => {
                       {formatCurrency(selectedWorkType.price)}
                     </span>
                   </div>
+                  {unitsCount > 1 ? (
+                    <div className="flex items-center justify-between text-xs font-medium text-indigo-700">
+                      <span>العدد: {unitsCount} وحدة</span>
+                      <span>{unitsCount} × {formatCurrency(selectedWorkType.price)}</span>
+                    </div>
+                  ) : null}
                   <div className="flex items-center gap-2 text-gray-500">
                     <Clock size={16} />
                     <span>
@@ -370,7 +402,7 @@ const DentalPortalNewOrderPage: React.FC = () => {
                       {t("dentalPortal.newOrder.total")}
                     </span>
                     <span className="text-lg font-bold text-indigo-700">
-                      {formatCurrency(selectedWorkType.price)}
+                      {formatCurrency(selectedWorkType.price * unitsCount)}
                     </span>
                   </div>
                 </div>

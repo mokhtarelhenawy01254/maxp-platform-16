@@ -170,6 +170,7 @@ async function getIncidents(req, res) {
         latencyMs: parsedContext.latencyMs || 0,
         stack: parsedContext.stack || null,
         resolved: Boolean(parsedContext.resolved),
+        isolated: Boolean(parsedContext.isolated),
       };
     });
 

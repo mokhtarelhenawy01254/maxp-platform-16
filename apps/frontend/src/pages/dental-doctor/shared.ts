@@ -107,6 +107,7 @@ export interface CartLine {
   workTypeName: string;
   price: number;
   leadTimeDays?: number;
+  unitsCount?: number;
   teeth?: string;
   shade?: string;
   material?: string;
@@ -115,6 +116,7 @@ export interface CartLine {
 export interface DentalOrderInput {
   items?: CartLine[];
   workTypeId?: string;
+  unitsCount?: number;
   teeth?: string;
   shade?: string;
   material?: string;

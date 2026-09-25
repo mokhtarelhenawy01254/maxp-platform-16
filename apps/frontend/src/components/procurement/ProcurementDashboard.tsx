@@ -92,6 +92,8 @@ const ProcurementDashboard: React.FC = () => {
     return <div className="p-3">{t("procurement.dashboard.loading")}</div>;
   }
 
+  const summary = data?.summary || {};
+
   return (
     <div className="p-3">
       <h1 className="text-2xl font-bold mb-3">{t("procurement.dashboard.title")}</h1>
@@ -99,25 +101,25 @@ const ProcurementDashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-3">
         <StatCard
           title={t("procurement.dashboard.totalSuppliers")}
-          value={data.summary.totalSuppliers}
+          value={summary.totalSuppliers ?? 0}
           icon={<Users />}
           color="#1976d2"
         />
         <StatCard
           title={t("procurement.dashboard.purchaseOrders")}
-          value={data.summary.totalPurchaseOrders}
+          value={summary.totalPurchaseOrders ?? 0}
           icon={<ShoppingCart />}
           color="#2e7d32"
         />
         <StatCard
           title={t("procurement.dashboard.pendingInvoices")}
-          value={data.summary.pendingInvoices}
+          value={summary.pendingInvoices ?? 0}
           icon={<Receipt />}
           color="#ed6c02"
         />
         <StatCard
           title={t("procurement.dashboard.totalPayments")}
-          value={data.summary.totalPayments}
+          value={summary.totalPayments ?? 0}
           icon={<CreditCard />}
           color="#9c27b0"
         />
@@ -127,19 +129,19 @@ const ProcurementDashboard: React.FC = () => {
         <Card>
           <CardContent>
             <h3 className="text-base font-semibold mb-1">{t("procurement.dashboard.totalPurchases")}</h3>
-            {fmtMoney(data.summary.totalPurchaseAmount)} {t("dashboard.egp")}
+            {fmtMoney(summary.totalPurchaseAmount)} {t("dashboard.egp")}
           </CardContent>
         </Card>
         <Card>
           <CardContent>
             <h3 className="text-base font-semibold mb-1">{t("procurement.dashboard.totalPaid")}</h3>
-            {fmtMoney(data.summary.totalPaidAmount)} {t("dashboard.egp")}
+            {fmtMoney(summary.totalPaidAmount)} {t("dashboard.egp")}
           </CardContent>
         </Card>
         <Card>
           <CardContent>
             <h3 className="text-base font-semibold mb-1">{t("procurement.dashboard.pendingAmount")}</h3>
-            {fmtMoney(data.summary.totalPendingAmount)} {t("dashboard.egp")}
+            {fmtMoney(summary.totalPendingAmount)} {t("dashboard.egp")}
           </CardContent>
         </Card>
       </div>
@@ -158,7 +160,7 @@ const ProcurementDashboard: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.topSuppliers.map((supplier) => (
+                {(data.topSuppliers ?? []).map((supplier) => (
                   <TableRow key={supplier.id}>
                     <TableCell>{supplier.name || "—"}</TableCell>
                     <TableCell className="text-right">{supplier._count?.purchaseOrders ?? 0}</TableCell>
@@ -186,7 +188,7 @@ const ProcurementDashboard: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.recentOrders.map((order) => (
+                {(data.recentOrders ?? []).map((order) => (
                   <TableRow key={order.id}>
                     <TableCell>{order.orderNumber}</TableCell>
                     <TableCell>{order.supplier?.name || "—"}</TableCell>
@@ -219,7 +221,7 @@ const ProcurementDashboard: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.recentInvoices.map((invoice) => (
+                {(data.recentInvoices ?? []).map((invoice) => (
                   <TableRow key={invoice.id}>
                     <TableCell>{invoice.invoiceNumber}</TableCell>
                     <TableCell>{invoice.supplier?.name || "—"}</TableCell>
