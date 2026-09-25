@@ -38,23 +38,23 @@ async function run() {
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 30000 });
   await page.waitForTimeout(3000);
 
-  console.log('Navigating to Super Admin AI Incidents Cockpit (/super-admin/ai-incidents)...');
-  await page.goto('https://maxp.online/super-admin/ai-incidents', { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForTimeout(4000);
-
-  console.log('Capturing AI Incidents Cockpit screenshot...');
-  await page.screenshot({
-    path: path.join(outDir, 'ai_incidents_cockpit_2026.png'),
-    fullPage: false,
-  });
-
-  console.log('Navigating to AI Hub with incidents tab (/super-admin/ai-hub?tab=incidents)...');
-  await page.goto('https://maxp.online/super-admin/ai-hub?tab=incidents', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  console.log('Navigating to Tenant AI Hub Incidents Tab (/admin/ai-hub?tab=incidents)...');
+  await page.goto('https://maxp.online/admin/ai-hub?tab=incidents', { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(4000);
 
   console.log('Capturing AI Hub Incidents Tab screenshot...');
   await page.screenshot({
     path: path.join(outDir, 'ai_hub_incidents_tab.png'),
+    fullPage: false,
+  });
+
+  console.log('Navigating to Direct AI Incidents Cockpit (/admin/ai-incidents)...');
+  await page.goto('https://maxp.online/admin/ai-incidents', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForTimeout(4000);
+
+  console.log('Capturing AI Incidents Cockpit screenshot...');
+  await page.screenshot({
+    path: path.join(outDir, 'ai_incidents_cockpit_2026.png'),
     fullPage: false,
   });
 

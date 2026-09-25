@@ -1355,6 +1355,254 @@ router.get("/authorize", verifyToken.authenticateToken, async (req, res) => {
 });
 
 /**
+ * Step 0b: Re-consent eligibility check (New Pages Experience page-grant drift)
+ * GET /api/v1/facebook-oauth/reauthorize-consent/check?companyId=
+ * ✅ REQUIRES AUTHENTICATION
+ * Detects the "valid token but zero page grants" state: identity resolves and
+ * permissions are granted, yet /me/accounts is empty because the per-user
+ * page opt-in was never granted (or was cleared from Business Integrations).
+ * Reports which other companies would be affected by a full de-authorization.
+ */
+router.get("/reauthorize-consent/check", verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const { companyId } = req.query;
+
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: "معرف الشركة مطلوب" });
+    }
+    if (req.user.companyId !== companyId) {
+      return res.status(403).json({ success: false, message: "غير مصرح لك بالوصول لهذه الشركة" });
+    }
+
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { facebookUserAccessToken: true },
+    });
+    const token = company?.facebookUserAccessToken;
+    if (!token) {
+      return res.json({ success: true, eligible: false, reason: "no_token" });
+    }
+
+    let identity = null;
+    try {
+      const meResponse = await axios.get(`${FACEBOOK_GRAPH_API_BASE_URL}/me`, {
+        params: { access_token: token, fields: "id,name" },
+        timeout: 8000,
+      });
+      identity = meResponse.data || null;
+    } catch (identityError) {
+      return res.json({ success: true, eligible: false, reason: "token_invalid" });
+    }
+    if (!identity?.id) {
+      return res.json({ success: true, eligible: false, reason: "token_invalid" });
+    }
+
+    let pagesVisible = 0;
+    try {
+      const accountsResponse = await axios.get(
+        `${FACEBOOK_GRAPH_API_BASE_URL}/me/accounts`,
+        { params: { access_token: token, fields: "id", limit: 100 }, timeout: 10000 },
+      );
+      pagesVisible = Array.isArray(accountsResponse.data?.data)
+        ? accountsResponse.data.data.length
+        : 0;
+    } catch (accountsError) {
+      pagesVisible = 0;
+    }
+
+    if (pagesVisible > 0) {
+      return res.json({
+        success: true,
+        eligible: false,
+        reason: "pages_visible",
+        pagesVisible,
+        facebookUserName: identity.name,
+      });
+    }
+
+    let affectedCompanies = [];
+    try {
+      const otherConnections =
+        await getSharedPrismaClient().facebookAccountConnection.findMany({
+          where: {
+            facebookUserId: identity.id,
+            companyId: { not: companyId },
+            status: "connected",
+          },
+          select: { id: true, companyId: true },
+        });
+      for (const connection of otherConnections) {
+        const pages = await getSharedPrismaClient().facebookPage.findMany({
+          where: { facebookAccountId: connection.id, status: "connected" },
+          select: { pageName: true },
+        });
+        const linkedCompany = await getSharedPrismaClient().company.findUnique({
+          where: { id: connection.companyId },
+          select: { name: true },
+        });
+        affectedCompanies.push({
+          companyName: linkedCompany?.name || connection.companyId,
+          pages: pages.map((page) => page.pageName),
+        });
+      }
+    } catch (affectedError) {
+      console.warn(
+        "⚠️ [FACEBOOK-OAUTH] reauthorize check: could not list affected companies:",
+        affectedError.message,
+      );
+    }
+
+    return res.json({
+      success: true,
+      eligible: true,
+      facebookUserId: identity.id,
+      facebookUserName: identity.name,
+      affectedCompanies,
+    });
+  } catch (error) {
+    console.error("❌ Error checking reauthorize eligibility:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Failed to check re-authorization eligibility",
+    });
+  }
+});
+
+/**
+ * Step 0c: Full re-consent — de-authorize the app for this Facebook user and
+ * return a fresh OAuth URL so the page-selection screen appears again.
+ * Only executes when the stored token still sees ZERO pages (nothing to lose).
+ * POST /api/v1/facebook-oauth/reauthorize-consent?companyId=
+ * ✅ REQUIRES AUTHENTICATION
+ */
+router.post("/reauthorize-consent", verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const { companyId } = req.query;
+
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: "معرف الشركة مطلوب" });
+    }
+    if (req.user.companyId !== companyId) {
+      return res.status(403).json({ success: false, message: "غير مصرح لك بالوصول لهذه الشركة" });
+    }
+
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { facebookUserAccessToken: true },
+    });
+    const token = company?.facebookUserAccessToken;
+    if (!token) {
+      return res.status(409).json({
+        success: false,
+        reason: "no_token",
+        message: "لا يوجد توكن فيسبوك محفوظ — ابدأ بربط عادي جديد",
+      });
+    }
+
+    let identity = null;
+    try {
+      const meResponse = await axios.get(`${FACEBOOK_GRAPH_API_BASE_URL}/me`, {
+        params: { access_token: token, fields: "id,name" },
+        timeout: 8000,
+      });
+      identity = meResponse.data || null;
+    } catch (identityError) {
+      return res.status(409).json({
+        success: false,
+        reason: "token_invalid",
+        message: "التوكن الحالي منتهي — ابدأ بربط عادي جديد",
+      });
+    }
+    if (!identity?.id) {
+      return res.status(409).json({
+        success: false,
+        reason: "token_invalid",
+        message: "التوكن الحالي منتهي — ابدأ بربط عادي جديد",
+      });
+    }
+
+    let pagesVisible = 0;
+    try {
+      const accountsResponse = await axios.get(
+        `${FACEBOOK_GRAPH_API_BASE_URL}/me/accounts`,
+        { params: { access_token: token, fields: "id", limit: 100 }, timeout: 10000 },
+      );
+      pagesVisible = Array.isArray(accountsResponse.data?.data)
+        ? accountsResponse.data.data.length
+        : 0;
+    } catch (accountsError) {
+      pagesVisible = 0;
+    }
+    if (pagesVisible > 0) {
+      return res.status(409).json({
+        success: false,
+        reason: "pages_visible",
+        pagesVisible,
+        message: "الحساب يرى صفحات بالفعل — استخدم إعادة الربط العادية بدلاً من إعادة الموافقة",
+      });
+    }
+
+    try {
+      await axios.delete(`${FACEBOOK_GRAPH_API_BASE_URL}/me/permissions`, {
+        params: { access_token: token },
+        timeout: 10000,
+      });
+      console.log(
+        `🔓 [FACEBOOK-OAUTH] App de-authorized for ${identity.name} (${identity.id}) to restore page-selection consent`,
+      );
+    } catch (deauthError) {
+      console.warn(
+        "⚠️ [FACEBOOK-OAUTH] De-authorization call failed (continuing with fresh consent):",
+        deauthError.response?.data || deauthError.message,
+      );
+    }
+
+    try {
+      await getSharedPrismaClient().facebookAccountConnection.updateMany({
+        where: { facebookUserId: identity.id, status: "connected" },
+        data: { status: "disconnected", updatedAt: new Date() },
+      });
+    } catch (connectionError) {
+      console.warn(
+        "⚠️ [FACEBOOK-OAUTH] Could not mark account connections disconnected:",
+        connectionError.message,
+      );
+    }
+
+    const { appId } = getFacebookOAuthConfig();
+    const returnOrigin = getRequestedFrontendOrigin(req);
+    const encodedState = buildFacebookOAuthState({
+      companyId,
+      userId: req.user.id,
+      returnOrigin,
+      popup: true,
+    });
+    const authUrl =
+      `${FACEBOOK_OAUTH_BASE_URL}/dialog/oauth?` +
+      `client_id=${appId}&` +
+      `redirect_uri=${encodeURIComponent(getFacebookRedirectUri("page"))}&` +
+      `scope=${FACEBOOK_PAGE_SCOPES}&` +
+      `response_type=code&` +
+      `state=${encodeURIComponent(encodedState)}`;
+
+    return res.json({
+      success: true,
+      authUrl,
+      facebookUserName: identity.name,
+      message: "تم إلغاء التوكيل — أكمل الموافقة واختر صفحاتك من الشاشة القادمة",
+    });
+  } catch (error) {
+    console.error("❌ Error executing full re-consent:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Failed to execute full re-consent",
+    });
+  }
+});
+
+/**
  * Handle the isolated Ads OAuth callback flow.
  * Stores the token as a Facebook account source (isolated from Messenger/page
  * tokens), then syncs the user's ad accounts into FacebookAdAccount.

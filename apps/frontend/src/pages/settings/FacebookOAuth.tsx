@@ -113,6 +113,9 @@ const FacebookOAuth: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [skippedPages, setSkippedPages] = useState<SkippedPage[]>([]);
   const [forceDisconnecting, setForceDisconnecting] = useState<string | null>(null);
+  const [noPageGrants, setNoPageGrants] = useState(false);
+  const [affectedCompanies, setAffectedCompanies] = useState<{ companyName: string; pages: string[] }[]>([]);
+  const [reconsenting, setReconsenting] = useState(false);
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
 
   const loadOAuthStatus = useCallback(async () => {
@@ -242,7 +245,14 @@ const FacebookOAuth: React.FC = () => {
       const pagesCount = pagesParam || "0";
       const skippedCount = skippedParam || "0";
 
-      let successMessage = t("facebookOAuth.pagesConnected", { count: pagesCount });
+      if (pagesCount === "0") {
+        // Valid token but zero page grants (New Pages Experience opt-in lost) —
+        // name the state instead of showing a fake "success".
+        setNoPageGrants(true);
+        setSuccess(null);
+      } else {
+        setNoPageGrants(false);
+        let successMessage = t("facebookOAuth.pagesConnected", { count: pagesCount });
 
       if (parseInt(skippedCount) > 0) {
         successMessage += t("facebookOAuth.pagesSkipped", { count: skippedCount });
@@ -278,6 +288,7 @@ const FacebookOAuth: React.FC = () => {
     void loadSkippedPages();
         emitFacebookPageSync(companyParam || user?.companyId || null);
       }, 2000);
+      }
     }
 
     if (errorParam) {
@@ -377,11 +388,16 @@ const FacebookOAuth: React.FC = () => {
         if (data.success) {
           const pagesCount = data.pages || "0";
           const skippedCount = data.skipped || "0";
-          let msg = t("facebookOAuth.pagesConnected", { count: pagesCount });
-          if (parseInt(skippedCount) > 0) {
-            msg += t("facebookOAuth.pagesSkipped", { count: skippedCount });
+          if (pagesCount === "0") {
+            setNoPageGrants(true);
+          } else {
+            setNoPageGrants(false);
+            let msg = t("facebookOAuth.pagesConnected", { count: pagesCount });
+            if (parseInt(skippedCount) > 0) {
+              msg += t("facebookOAuth.pagesSkipped", { count: skippedCount });
+            }
+            setSuccess(msg);
           }
-          setSuccess(msg);
           if (data.skippedPages) {
             setSkippedPages(data.skippedPages);
           }
@@ -450,6 +466,84 @@ const FacebookOAuth: React.FC = () => {
       setError(t("facebookOAuth.startOAuthError"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // When the zero-page-grants state appears, fetch which companies would be
+  // affected by a full re-consent (same Facebook user linked pages elsewhere).
+  useEffect(() => {
+    if (!noPageGrants || !user?.companyId) {
+      return;
+    }
+    let cancelled = false;
+    const checkEligibility = async () => {
+      try {
+        const response = await fetch(
+          `${envConfig.apiUrl}/facebook-oauth/reauthorize-consent/check?companyId=${user.companyId}`,
+          { headers: getAuthHeaders({ "Content-Type": "application/json" }) },
+        );
+        const data = await response.json();
+        if (!cancelled && data.success) {
+          setAffectedCompanies(Array.isArray(data.affectedCompanies) ? data.affectedCompanies : []);
+        }
+      } catch (checkError) {
+        console.warn("⚠️ reauthorize-consent check failed:", checkError);
+      }
+    };
+    void checkEligibility();
+    return () => {
+      cancelled = true;
+    };
+  }, [noPageGrants, user?.companyId]);
+
+  const handleFullReconsent = async () => {
+    if (!user?.companyId) {
+      return;
+    }
+
+    const popup = window.open(
+      "",
+      "facebook-oauth",
+      "width=600,height=800,scrollbars=yes,resizable=yes",
+    );
+    if (!popup) {
+      setError(t("facebookOAuth.popupBlocked"));
+      return;
+    }
+    popupRef.current = popup;
+
+    try {
+      setReconsenting(true);
+      setError(null);
+
+      const response = await fetch(
+        `${envConfig.apiUrl}/facebook-oauth/reauthorize-consent?companyId=${user.companyId}&popup=true&returnOrigin=${encodeURIComponent(window.location.origin)}`,
+        {
+          method: "POST",
+          headers: getAuthHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({}),
+        },
+      );
+
+      const data = await response.json();
+
+      if (data.success && data.authUrl) {
+        setNoPageGrants(false);
+        popup.location.href = data.authUrl;
+      } else {
+        popup.close();
+        popupRef.current = null;
+        setError(data.message || t("facebookOAuth.reconsentFailed"));
+      }
+    } catch (reconsentError) {
+      if (popupRef.current && !popupRef.current.closed) {
+        popupRef.current.close();
+      }
+      popupRef.current = null;
+      console.error("Error executing full re-consent:", reconsentError);
+      setError(t("facebookOAuth.reconsentFailed"));
+    } finally {
+      setReconsenting(false);
     }
   };
 

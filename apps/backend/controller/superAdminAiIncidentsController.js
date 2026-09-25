@@ -257,6 +257,12 @@ async function retestIncident(req, res) {
       return res.status(404).json({ success: false, error: 'Incident not found' });
     }
 
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+    const userCompanyId = req.user?.companyId;
+    if (!isSuperAdmin && incident.companyId !== userCompanyId) {
+      return res.status(403).json({ success: false, error: 'غير مصرح بتعديل هذا البلاغ' });
+    }
+
     let parsedContext = {};
     try {
       parsedContext = incident.context ? JSON.parse(incident.context) : {};
@@ -322,6 +328,12 @@ async function notifyTenant(req, res) {
       return res.status(404).json({ success: false, error: 'Incident not found' });
     }
 
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+    const userCompanyId = req.user?.companyId;
+    if (!isSuperAdmin && incident.companyId !== userCompanyId) {
+      return res.status(403).json({ success: false, error: 'غير مصرح بتعديل هذا البلاغ' });
+    }
+
     let parsedContext = {};
     try {
       parsedContext = incident.context ? JSON.parse(incident.context) : {};
@@ -379,6 +391,12 @@ async function toggleKillSwitch(req, res) {
     const incident = await prisma.aiFailureLog.findUnique({ where: { id } });
     if (!incident) {
       return res.status(404).json({ success: false, error: 'Incident not found' });
+    }
+
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+    const userCompanyId = req.user?.companyId;
+    if (!isSuperAdmin && incident.companyId !== userCompanyId) {
+      return res.status(403).json({ success: false, error: 'غير مصرح بتعديل هذا البلاغ' });
     }
 
     let parsedContext = {};

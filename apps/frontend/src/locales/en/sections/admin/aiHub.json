@@ -16,6 +16,7 @@
     "rag": "Knowledge Base",
     "tools": "Tools",
     "skills": "Skills",
+    "incidents": "Tool Incidents Log",
     "scheduler": "Scheduler",
     "routing": "Channel Routing",
     "ignoreList": "Do-Not-Reply",
