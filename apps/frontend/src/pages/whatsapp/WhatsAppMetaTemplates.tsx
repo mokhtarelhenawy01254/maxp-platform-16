@@ -185,6 +185,21 @@ const COMPLIANCE_RULES = [
   { id: "body_required", check: (f: typeof initialForm) => !f.bodyText, message: "محتوى الرسالة (BODY) مطلوب — لا يمكن ترك الحقل فارغاً" },
   { id: "header_text_length", check: (f: typeof initialForm) => f.headerFormat === "TEXT" && f.headerText.length > 60, message: "نص رأس الرسالة (HEADER) يجب ألا يتجاوز 60 حرفاً" },
   { id: "footer_length", check: (f: typeof initialForm) => f.footerText.length > 60, message: "نص التذييل (FOOTER) يجب ألا يتجاوز 60 حرفاً" },
+  { id: "footer_vars", check: (f: typeof initialForm) => /\{\{.+?\}\}/.test(f.footerText), message: "⚠️ Meta يمنع تماماً وجود أي متغيرات في التذييل (FOOTER). استخدم نصاً ثابتاً فقط بدون {{1}} أو أقواس." },
+  { id: "var_sequential_body", check: (f: typeof initialForm) => {
+    const matches = (f.bodyText.match(/\{\{(\d+)\}\}/g) || []).map(m => parseInt(m.replace(/\D/g, ""), 10));
+    if (matches.length === 0) return false;
+    let expected = 1;
+    const seen = new Set<number>();
+    for (const num of matches) {
+      if (!seen.has(num)) {
+        if (num !== expected) return true;
+        seen.add(num);
+        expected++;
+      }
+    }
+    return false;
+  }, message: "⚠️ المتغيرات في محتوى الرسالة يجب أن تبدأ بـ {{1}} وتتسلسل تصاعدياً ({{1}}, {{2}}, ...) بدون قفزات أو ترتيب معكوس" },
   { id: "body_length", check: (f: typeof initialForm) => f.bodyText.length > 1024, message: "محتوى الرسالة (BODY) يجب ألا يتجاوز 1024 حرفاً" },
   { id: "named_vars_header", check: (f: typeof initialForm) => f.headerFormat === "TEXT" && hasNamedVariables(f.headerText), message: "⚠️ Meta لا يقبل أسماء متغيرات في HEADER. استخدم {{1}}, {{2}} بدلاً من {{name}}" },
   { id: "named_vars_body", check: (f: typeof initialForm) => hasNamedVariables(f.bodyText), message: "⚠️ Meta لا يقبل أسماء متغيرات في BODY. استخدم {{1}}, {{2}} بدلاً من {{name}}" },
