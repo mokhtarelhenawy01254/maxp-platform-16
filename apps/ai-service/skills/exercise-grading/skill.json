@@ -1,0 +1,12 @@
+{
+  "id": "exercise-grading",
+  "displayName": "Exercise Grading",
+  "version": "1.0.0",
+  "description": "Evaluate student exercise submissions strictly against lesson rubric and exercise requirements.",
+  "allowedTools": [
+    "get_current_lesson_exercise",
+    "get_lesson_rubric"
+  ],
+  "requiresHumanApproval": false,
+  "maxToolCount": 2
+}

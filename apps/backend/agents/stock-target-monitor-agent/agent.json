@@ -39,11 +39,7 @@
     "whatsapp.send",
     "agent.handoff.to"
   ],
-  "allowedSkills": [
-    "low-stock-watch",
-    "target-pacing-tracker",
-    "inventory-velocity-forecast"
-  ],
+  "allowedSkills": [],
   "channels": [
     "dashboard",
     "whatsapp",

@@ -36,12 +36,7 @@
     "knowledge_search",
     "agent_handoff_to"
   ],
-  "allowedSkills": [
-    "hr-self-service",
-    "attendance-tracking",
-    "leaves-management",
-    "payroll-inquiry"
-  ],
+  "allowedSkills": [],
   "channels": [
     "dashboard",
     "whatsapp",
