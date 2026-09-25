@@ -252,7 +252,37 @@ const listDoctors = async (req, res) => {
       };
     });
 
-    res.json({ success: true, data: { items: enriched, total, activeCount, archivedCount, page: pageNum, limit: limitNum } });
+    // Company-wide summary across all doctors (eliminates page 1 vs dashboard discrepancy)
+    const [allInvAgg, allCreditAgg] = await Promise.all([
+      prisma.dentalInvoice.aggregate({
+        where: { companyId, status: { not: 'VOID' } },
+        _sum: { total: true, paid: true, remaining: true },
+      }),
+      prisma.dentalCreditNote.aggregate({
+        where: { companyId },
+        _sum: { amount: true },
+      }),
+    ]);
+    const totalBilled = round2(allInvAgg._sum.total || 0);
+    const totalPaid = round2(allInvAgg._sum.paid || 0);
+    const totalOutstanding = round2(Math.max(0, (allInvAgg._sum.remaining || 0) - (allCreditAgg._sum.amount || 0)));
+
+    res.json({
+      success: true,
+      data: {
+        items: enriched,
+        total,
+        activeCount,
+        archivedCount,
+        page: pageNum,
+        limit: limitNum,
+        summary: {
+          totalBilled,
+          totalPaid,
+          totalOutstanding,
+        },
+      },
+    });
   } catch (error) {
     console.error('Error listing dental doctors:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب الأطباء' });
@@ -734,6 +764,8 @@ const listTechnicians = async (req, res) => {
         completedStages: e.completedStages || 0,
         totalEarnings: wage,
         totalPaid,
+        totalBonuses: round2(pAgg.bonuses),
+        totalDeductions: round2(pAgg.deductions),
         balanceDue,
       };
     });
@@ -778,6 +810,14 @@ const createTechnician = async (req, res) => {
       // Check if user already exists
       const existingUser = await prisma.user.findFirst({ where: { email } });
       if (existingUser) {
+        // Security guard S1: verify if user already belongs to this company
+        const uc = await prisma.userCompany.findFirst({ where: { userId: existingUser.id, companyId } });
+        if (!uc) {
+          return res.status(400).json({
+            success: false,
+            error: 'هذا البريد الإلكتروني مسجل بالفعل لمستخدم آخر على المنصة، ولا يمكن الاستيلاء عليه أو تغيير كلمة مروره',
+          });
+        }
         // Verify if user is already tied to another active technician in this company
         const existingTech = await prisma.dentalTechnician.findFirst({
           where: { companyId, userId: existingUser.id, isActive: true },
@@ -785,30 +825,8 @@ const createTechnician = async (req, res) => {
         if (existingTech) {
           return res.status(400).json({ success: false, error: 'هذا البريد الإلكتروني مرتبط بالفعل بعضو آخر في فريق العمل' });
         }
+        // Link existing employee to technician profile WITHOUT overwriting their password!
         userId = existingUser.id;
-
-        // If password provided, update it to ensure user can log in
-        if (password && password.length >= 6) {
-          const hashedPassword = await bcrypt.hash(password, 10);
-          await prisma.user.update({
-            where: { id: existingUser.id },
-            data: { password: hashedPassword },
-          });
-        }
-
-        // Ensure user is linked in userCompany for this company
-        const uc = await prisma.userCompany.findFirst({ where: { userId: existingUser.id, companyId } });
-        if (!uc) {
-          await prisma.userCompany.create({
-            data: {
-              userId: existingUser.id,
-              companyId,
-              role: 'AGENT',
-              isActive: true,
-              isDefault: false,
-            },
-          });
-        }
       } else {
         // Create new User record
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -925,6 +943,17 @@ const updateTechnician = async (req, res) => {
     // Handle password update if technician already has a linked user
     const targetUserId = data.userId || existing.userId;
     if (password && password.length >= 6 && targetUserId) {
+      // Ensure targetUserId belongs to this company and is not an OWNER/SUPER_ADMIN/COMPANY_ADMIN
+      const targetUser = await prisma.user.findUnique({
+        where: { id: targetUserId },
+        include: { userCompanies: { where: { companyId } } },
+      });
+      if (!targetUser || !targetUser.userCompanies || targetUser.userCompanies.length === 0) {
+        return res.status(403).json({ success: false, error: 'غير مصرح بتعديل هذا المستخدم' });
+      }
+      if (['SUPER_ADMIN', 'OWNER', 'COMPANY_ADMIN', 'ADMIN'].includes(targetUser.role)) {
+        return res.status(403).json({ success: false, error: 'غير مصرح بتعديل كلمة مرور مديري أو ملاك المنصة' });
+      }
       const hashedPassword = await bcrypt.hash(password, 10);
       await prisma.user.update({
         where: { id: targetUserId },
@@ -932,28 +961,14 @@ const updateTechnician = async (req, res) => {
       });
     }
 
-    // If technician had no linked user, and email + password provided: create and link!
+    // If technician had no linked user, and email + password provided:
     if (!targetUserId && email && password && password.length >= 6) {
       const existingUser = await prisma.user.findFirst({ where: { email } });
       if (existingUser) {
-        data.userId = existingUser.id;
-        const hashedPassword = await bcrypt.hash(password, 10);
-        await prisma.user.update({
-          where: { id: existingUser.id },
-          data: { password: hashedPassword },
+        return res.status(400).json({
+          success: false,
+          error: 'هذا البريد الإلكتروني مسجل بالفعل لمستخدم على المنصة، لا يمكن ربطه أو تغيير كلمة مروره',
         });
-        const uc = await prisma.userCompany.findFirst({ where: { userId: existingUser.id, companyId } });
-        if (!uc) {
-          await prisma.userCompany.create({
-            data: {
-              userId: existingUser.id,
-              companyId,
-              role: 'AGENT',
-              isActive: true,
-              isDefault: false,
-            },
-          });
-        }
       } else {
         const hashedPassword = await bcrypt.hash(password, 10);
         const nameParts = (data.name || existing.name).split(/\s+/);
@@ -3453,9 +3468,10 @@ const batchCreateMonthlyInvoices = async (req, res) => {
           remaining: Number(c.remaining) || 0,
         }));
 
+        const invoiceTitle = notes ? String(notes).trim() : `فاتورة مجمعة - ${new Date().toLocaleDateString('ar-EG', { month: 'short', year: 'numeric' })}`;
         const consolidatedPayload = {
           isConsolidated: true,
-          title: invoiceNotes,
+          title: invoiceTitle,
           casesCount: docCases.length,
           totalUnits: invoiceItems.reduce((acc, it) => acc + (it.unitsCount || 1), 0),
           items: invoiceItems,
@@ -3968,25 +3984,37 @@ prisma.dentalInvoice.groupBy({
       .reduce((acc, [, c]) => acc + (Number(c) || 0), 0);
 
     const doctorIds = (topDoctorRows || []).map((row) => row.doctorId).filter(Boolean);
-    const doctors = doctorIds.length
-      ? await prisma.dentalLabDoctor.findMany({ where: { id: { in: doctorIds } }, select: { id: true, name: true } })
-      : [];
+    const debtorIds = (topDebtorRows || []).map((row) => row.doctorId).filter(Boolean);
+    const allDocIds = [...new Set([...doctorIds, ...debtorIds])];
+
+    const [doctors, caseCounts] = await Promise.all([
+      allDocIds.length
+        ? prisma.dentalLabDoctor.findMany({ where: { id: { in: allDocIds } }, select: { id: true, name: true } })
+        : [],
+      allDocIds.length
+        ? prisma.dentalLabCase.groupBy({
+            by: ['doctorId'],
+            where: { companyId, isDeleted: false, doctorId: { in: allDocIds } },
+            _count: { _all: true },
+          })
+        : [],
+    ]);
+
     const doctorNameById = new Map(doctors.map((d) => [d.id, d.name]));
+    const caseCountByDoctorId = new Map(caseCounts.map((c) => [c.doctorId, c._count._all || 0]));
+
     const topDoctors = (topDoctorRows || []).map((row) => ({
       doctorId: row.doctorId,
       doctorName: row.doctorId ? doctorNameById.get(row.doctorId) || 'غير محدد' : 'غير محدد',
       revenue: round2(row._sum.paid || 0),
+      count: row.doctorId ? caseCountByDoctorId.get(row.doctorId) || 0 : 0,
     }));
 
-    const debtorIds = (topDebtorRows || []).map((row) => row.doctorId).filter(Boolean);
-    const debtors = debtorIds.length
-      ? await prisma.dentalLabDoctor.findMany({ where: { id: { in: debtorIds } }, select: { id: true, name: true } })
-      : [];
-    const debtorNameById = new Map(debtors.map((d) => [d.id, d.name]));
     const topDebtors = (topDebtorRows || []).map((row) => ({
       doctorId: row.doctorId,
-      doctorName: row.doctorId ? debtorNameById.get(row.doctorId) || 'غير محدد' : 'غير محدد',
+      doctorName: row.doctorId ? doctorNameById.get(row.doctorId) || 'غير محدد' : 'غير محدد',
       outstanding: round2(row._sum.remaining || 0),
+      count: row.doctorId ? caseCountByDoctorId.get(row.doctorId) || 0 : 0,
     }));
 
     res.json({
@@ -4065,10 +4093,30 @@ const updateSettings = async (req, res) => {
       }
     }
 
+    // Fetch existing settings for this company to enable deep merge
+    const existingRows = await prisma.dentalSetting.findMany({
+      where: { companyId, key: { in: SETTINGS_KEYS } },
+    });
+    const existingByKey = new Map();
+    for (const r of existingRows) {
+      existingByKey.set(r.key, parseSettingValue(r));
+    }
+
     const updated = {};
     for (const key of SETTINGS_KEYS) {
       if (key in body) {
-        const value = body[key] === undefined ? null : body[key];
+        let value = body[key] === undefined ? null : body[key];
+        const existingVal = existingByKey.get(key);
+        if (
+          value &&
+          typeof value === 'object' &&
+          !Array.isArray(value) &&
+          existingVal &&
+          typeof existingVal === 'object' &&
+          !Array.isArray(existingVal)
+        ) {
+          value = { ...existingVal, ...value };
+        }
         const row = await prisma.dentalSetting.upsert({
           where: { companyId_key: { companyId, key } },
           update: { value },
@@ -5882,8 +5930,11 @@ const getWarrantyCertificatePdf = async (req, res) => {
     const workOrderHeader = await getWorkOrderHeader(prisma, companyId);
     const { buffer, caseNumber } = await generateWarrantyCertificatePdf({ company, caseRow: dentalCase, workOrderHeader });
 
+    const safeCaseNumber = String(caseNumber || 'case').replace(/[^\w.-]/g, '_');
+    const asciiFilename = `warranty-${safeCaseNumber}.pdf`;
+    const encodedFilename = encodeURIComponent(`warranty-${caseNumber || 'case'}.pdf`);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="warranty-${caseNumber}.pdf"`);
+    res.setHeader('Content-Disposition', `inline; filename="${asciiFilename}"; filename*=UTF-8''${encodedFilename}`);
     return res.send(buffer);
   } catch (error) {
     console.error('Error generating warranty certificate:', error);

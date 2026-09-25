@@ -15,6 +15,7 @@ import AIIgnoreListPage from "./AIIgnoreListPage";
 const AgenticRAGLab = React.lazy(() => import("./AgenticRAGLab"));
 const WebChatWidgetPage = React.lazy(() => import("./WebChatWidgetPage"));
 const AgentTrainingPage = React.lazy(() => import("./AgentTrainingPage"));
+const SuperAdminAiIncidentsPage = React.lazy(() => import("../super-admin/ai-incidents/SuperAdminAiIncidentsPage"));
 
 const TABS = [
   { key: "sandbox", labelKey: "aiHub.tabs.sandbox" },
@@ -22,6 +23,7 @@ const TABS = [
   { key: "widget", labelKey: "aiHub.tabs.widget" },
   { key: "skills", labelKey: "aiHub.tabs.skills" },
   { key: "tools", labelKey: "aiHub.tabs.tools" },
+  { key: "incidents", labelKey: "aiHub.tabs.incidents" },
   { key: "routing", labelKey: "aiHub.tabs.routing" },
   { key: "ignoreList", labelKey: "aiHub.tabs.ignoreList" },
   { key: "test", labelKey: "aiHub.tabs.test", superOnly: true },
@@ -199,6 +201,7 @@ export default function AIHubLayout() {
           {currentTab === "widget" && <div className="h-full overflow-y-auto"><WebChatWidgetPage /></div>}
           {currentTab === "skills" && <div className="h-full overflow-y-auto"><AgentSkillsPage companyId={isSuper ? selectedCompanyId || undefined : undefined} /></div>}
           {currentTab === "tools" && <div className="h-full overflow-y-auto"><AgentToolsPage companyId={isSuper ? selectedCompanyId || undefined : undefined} /></div>}
+          {currentTab === "incidents" && <SuperAdminAiIncidentsPage />}
           {currentTab === "routing" && <div className="h-full overflow-y-auto"><ChannelRoutingPage /></div>}
           {currentTab === "ignoreList" && (
             <div className="h-full overflow-y-auto">

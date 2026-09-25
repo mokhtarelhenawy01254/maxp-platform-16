@@ -218,6 +218,7 @@ export default function DentalDoctorsTab() {
   const [viewMode, setViewMode] = useState<"ACTIVE" | "ARCHIVED">("ACTIVE");
   const [activeCount, setActiveCount] = useState(0);
   const [archivedCount, setArchivedCount] = useState(0);
+  const [summary, setSummary] = useState<{ totalBilled: number; totalPaid: number; totalOutstanding: number } | null>(null);
   const [modal, setModal] = useState<DoctorForm | null>(null);
   const [pricingDoctor, setPricingDoctor] = useState<DentalLabDoctor | null>(null);
   const [bulkDoctor, setBulkDoctor] = useState<DentalLabDoctor | null>(null);
@@ -263,6 +264,7 @@ export default function DentalDoctorsTab() {
       setRows(res.items);
       setActiveCount(res.activeCount);
       setArchivedCount(res.archivedCount);
+      if (res.summary) setSummary(res.summary);
       setError(null);
     } catch (e) {
       if (!quiet) setError(e instanceof Error ? e.message : t("dentalLab.common.noData"));
@@ -464,11 +466,15 @@ export default function DentalDoctorsTab() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.doctors.ledger.totalOutstanding")}</p>
-          <p className="text-xl font-bold mt-1">{fmtMoney(rows.reduce((s, d) => s + (d.outstanding ?? 0), 0))} {t("dentalLab.common.egp")}</p>
+          <p className="text-xl font-bold mt-1">
+            {fmtMoney(summary ? summary.totalOutstanding : rows.reduce((s, d) => s + (d.outstanding ?? 0), 0))} {t("dentalLab.common.egp")}
+          </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.doctors.ledger.totalBilled")}</p>
-          <p className="text-xl font-bold mt-1">{fmtMoney(rows.reduce((s, d) => s + (d.totalBilled ?? 0), 0))} {t("dentalLab.common.egp")}</p>
+          <p className="text-xl font-bold mt-1">
+            {fmtMoney(summary ? summary.totalBilled : rows.reduce((s, d) => s + (d.totalBilled ?? 0), 0))} {t("dentalLab.common.egp")}
+          </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.doctors.ledger.overCredit")}</p>

@@ -86,6 +86,8 @@ const ProcurementDashboard: React.FC = () => {
     }
   };
 
+  const fmtMoney = (v: any) => (Number(v) || 0).toFixed(2);
+
   if (loading || !data) {
     return <div className="p-3">{t("procurement.dashboard.loading")}</div>;
   }
@@ -125,19 +127,19 @@ const ProcurementDashboard: React.FC = () => {
         <Card>
           <CardContent>
             <h3 className="text-base font-semibold mb-1">{t("procurement.dashboard.totalPurchases")}</h3>
-            {Number(data.summary.totalPurchaseAmount).toFixed(2)} {t("dashboard.egp")}
+            {fmtMoney(data.summary.totalPurchaseAmount)} {t("dashboard.egp")}
           </CardContent>
         </Card>
         <Card>
           <CardContent>
             <h3 className="text-base font-semibold mb-1">{t("procurement.dashboard.totalPaid")}</h3>
-            {Number(data.summary.totalPaidAmount).toFixed(2)} {t("dashboard.egp")}
+            {fmtMoney(data.summary.totalPaidAmount)} {t("dashboard.egp")}
           </CardContent>
         </Card>
         <Card>
           <CardContent>
             <h3 className="text-base font-semibold mb-1">{t("procurement.dashboard.pendingAmount")}</h3>
-            {Number(data.summary.totalPendingAmount).toFixed(2)} {t("dashboard.egp")}
+            {fmtMoney(data.summary.totalPendingAmount)} {t("dashboard.egp")}
           </CardContent>
         </Card>
       </div>
@@ -158,11 +160,11 @@ const ProcurementDashboard: React.FC = () => {
               <TableBody>
                 {data.topSuppliers.map((supplier) => (
                   <TableRow key={supplier.id}>
-                    <TableCell>{supplier.name}</TableCell>
-                    <TableCell className="text-right">{supplier._count.purchaseOrders}</TableCell>
-                    <TableCell className="text-right">{supplier._count.purchaseInvoices}</TableCell>
+                    <TableCell>{supplier.name || "—"}</TableCell>
+                    <TableCell className="text-right">{supplier._count?.purchaseOrders ?? 0}</TableCell>
+                    <TableCell className="text-right">{supplier._count?.purchaseInvoices ?? 0}</TableCell>
                     <TableCell className="text-right">
-                      {Number(supplier.currentBalance).toFixed(2)} {t("dashboard.egp")}
+                      {fmtMoney(supplier.currentBalance)} {t("dashboard.egp")}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -187,9 +189,9 @@ const ProcurementDashboard: React.FC = () => {
                 {data.recentOrders.map((order) => (
                   <TableRow key={order.id}>
                     <TableCell>{order.orderNumber}</TableCell>
-                    <TableCell>{order.supplier.name}</TableCell>
+                    <TableCell>{order.supplier?.name || "—"}</TableCell>
                     <TableCell className="text-right">
-                      {order.totalAmount.toFixed(2)} {t("dashboard.egp")}
+                      {fmtMoney(order.totalAmount)} {t("dashboard.egp")}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{order.status}</Badge>
@@ -220,18 +222,18 @@ const ProcurementDashboard: React.FC = () => {
                 {data.recentInvoices.map((invoice) => (
                   <TableRow key={invoice.id}>
                     <TableCell>{invoice.invoiceNumber}</TableCell>
-                    <TableCell>{invoice.supplier.name}</TableCell>
+                    <TableCell>{invoice.supplier?.name || "—"}</TableCell>
                     <TableCell>
                       {new Date(invoice.invoiceDate).toLocaleDateString(i18n.language)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {invoice.totalAmount.toFixed(2)} {t("dashboard.egp")}
+                      {fmtMoney(invoice.totalAmount)} {t("dashboard.egp")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {invoice.paidAmount.toFixed(2)} {t("dashboard.egp")}
+                      {fmtMoney(invoice.paidAmount)} {t("dashboard.egp")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {invoice.remainingAmount.toFixed(2)} {t("dashboard.egp")}
+                      {fmtMoney(invoice.remainingAmount)} {t("dashboard.egp")}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{invoice.status}</Badge>

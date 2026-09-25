@@ -65,7 +65,12 @@ export const IncidentTraceInspector: React.FC<IncidentTraceInspectorProps> = ({
     setRetesting(true);
     setRetestResult(null);
     try {
-      const res = await apiClient.post<any>(`/super-admin/ai/incidents/${incident.id}/retest`);
+      let res;
+      try {
+        res = await apiClient.post<any>(`/ai/chat/incidents/${incident.id}/retest`);
+      } catch {
+        res = await apiClient.post<any>(`/super-admin/ai/incidents/${incident.id}/retest`);
+      }
       if (res.data?.success) {
         setRetestResult(res.data.diagnostic);
       }
@@ -80,7 +85,12 @@ export const IncidentTraceInspector: React.FC<IncidentTraceInspectorProps> = ({
     setNotifying(true);
     setNotifySuccess(null);
     try {
-      const res = await apiClient.post<any>(`/super-admin/ai/incidents/${incident.id}/notify-tenant`);
+      let res;
+      try {
+        res = await apiClient.post<any>(`/ai/chat/incidents/${incident.id}/notify-tenant`);
+      } catch {
+        res = await apiClient.post<any>(`/super-admin/ai/incidents/${incident.id}/notify-tenant`);
+      }
       if (res.data?.success) {
         setNotifySuccess(res.data.message || 'تم إرسال التنبيه لإدارة المتجر.');
       }
@@ -94,9 +104,15 @@ export const IncidentTraceInspector: React.FC<IncidentTraceInspectorProps> = ({
   const handleToggleKillSwitch = async () => {
     setKillSwitching(true);
     try {
-      await apiClient.post(`/super-admin/ai/incidents/${incident.id}/kill-switch`, {
-        disableTool: !incident.isolated,
-      });
+      try {
+        await apiClient.post(`/ai/chat/incidents/${incident.id}/kill-switch`, {
+          disableTool: !incident.isolated,
+        });
+      } catch {
+        await apiClient.post(`/super-admin/ai/incidents/${incident.id}/kill-switch`, {
+          disableTool: !incident.isolated,
+        });
+      }
       onRefresh();
     } catch (err: any) {
       console.error(err);

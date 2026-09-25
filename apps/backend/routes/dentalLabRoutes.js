@@ -86,6 +86,17 @@ router.get('/design-review/:name', async (req, res) => {
   }
 });
 
+// Protection: enforce authentication & dental-lab-app subscription on all API routes
+const { checkAppAccess } = require('../middleware/checkAppAccess');
+router.use((req, res, next) => {
+  if (req.path.startsWith('/files/') || req.path.startsWith('/design-review/')) {
+    return next();
+  }
+  verifyToken.authenticateToken(req, res, () => {
+    checkAppAccess('dental-lab-app')(req, res, next);
+  });
+});
+
 // Doctors
 router.get('/doctors', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'ACCOUNTANT']), controller.listDoctors);
 router.get('/doctors/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'ACCOUNTANT']), controller.getDoctorDetail);

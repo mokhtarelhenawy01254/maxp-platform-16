@@ -544,6 +544,7 @@ export const getSidebarConfig = (
                 { to: '/admin/ai-hub?tab=ignoreList', icon: Ban, label: t('sidebar.aiIgnoreList') },
                 { to: '/admin/ai-hub?tab=skills', icon: Palette, label: t('sidebar.aiAgentSkills'), hidden: !isFeatureEnabled('aiToolsEnabled') },
                 { to: '/admin/ai-hub?tab=tools', icon: Wrench, label: t('sidebar.aiAgentTools'), hidden: !isFeatureEnabled('aiToolsEnabled') },
+                { to: '/admin/ai-hub?tab=incidents', icon: ShieldAlert, label: isEn ? 'AI Tool Incidents' : 'رصد أعطال الأدوات', hidden: !isFeatureEnabled('aiToolsEnabled') },
             ]
         }] : []),
 

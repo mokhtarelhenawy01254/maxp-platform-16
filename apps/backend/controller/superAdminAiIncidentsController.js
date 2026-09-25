@@ -79,6 +79,9 @@ function categorizeError(message = '') {
 async function getIncidents(req, res) {
   try {
     const prisma = getSharedPrismaClient();
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+    const userCompanyId = req.user?.companyId;
+
     const {
       page = 1,
       limit = 30,
@@ -105,7 +108,14 @@ async function getIncidents(req, res) {
       createdAt: { gte: since },
     };
 
-    if (companyId) where.companyId = String(companyId);
+    if (isSuperAdmin) {
+      if (companyId) where.companyId = String(companyId);
+    } else {
+      if (!userCompanyId) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      where.companyId = String(userCompanyId);
+    }
 
     const [rawLogs, totalCount] = await Promise.all([
       prisma.aiFailureLog.findMany({

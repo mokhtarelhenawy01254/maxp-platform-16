@@ -283,7 +283,19 @@ export default function DentalTechniciansTab() {
                       )}
                     </td>
                     <td className="py-3 px-3 font-mono font-medium text-blue-600 dark:text-blue-400">{x.completedStages ?? 0}</td>
-                    <td className="py-3 px-3 font-semibold text-blue-600 dark:text-blue-400">{fmtMoney(x.totalEarnings)} ج.م</td>
+                    <td className="py-3 px-3 font-semibold text-blue-600 dark:text-blue-400">
+                      <div>{fmtMoney(x.totalEarnings)} ج.م</div>
+                      {(Number(x.totalBonuses) > 0 || Number(x.totalDeductions) > 0) ? (
+                        <div className="text-[11px] font-normal flex items-center gap-1 mt-0.5">
+                          {Number(x.totalBonuses) > 0 && (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-mono">+{fmtMoney(x.totalBonuses)}</span>
+                          )}
+                          {Number(x.totalDeductions) > 0 && (
+                            <span className="text-red-600 dark:text-red-400 font-mono">-{fmtMoney(x.totalDeductions)}</span>
+                          )}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="py-3 px-3 font-semibold text-purple-600 dark:text-purple-400">{fmtMoney(x.totalPaid ?? 0)} ج.م</td>
                     <td className={`py-3 px-3 font-bold ${(x.balanceDue ?? 0) > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-600 dark:text-gray-300"}`}>
                       {fmtMoney(x.balanceDue ?? 0)} ج.م

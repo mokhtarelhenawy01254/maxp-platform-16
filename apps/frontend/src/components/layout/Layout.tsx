@@ -254,6 +254,9 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     location.pathname.startsWith("/settings/turbo-tickets") ||
     location.pathname.startsWith("/admin/agent-chat") ||
     location.pathname.startsWith("/admin/agent-profiles") ||
+    location.pathname.startsWith("/admin/ai-hub") ||
+    location.pathname.startsWith("/admin/ai-incidents") ||
+    location.pathname.startsWith("/super-admin/ai-incidents") ||
     location.pathname.startsWith("/tickets");
   const resolvedUserLayout = userLayout || (user?.company?.sidebarLayout as SidebarLayoutType);
   const currentLayout = resolvedUserLayout || "three-tier";

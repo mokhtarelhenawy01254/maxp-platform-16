@@ -474,7 +474,7 @@ async function generateWarrantyCertificatePdf({ company, caseRow, workOrderHeade
   const c = caseRow || {};
   const header = workOrderHeader || {};
   const labName = header.labName || (company && company.name) || 'معمل الأسنان';
-  const caseNumber = c.caseNumber || '—';
+  const caseNumber = c.caseNumber || 'CASE';
   const warrantyYears = Number(c.warrantyYears) > 0 ? Number(c.warrantyYears) : 5;
 
   const issueDate = c.deliveredAt ? new Date(c.deliveredAt) : new Date();

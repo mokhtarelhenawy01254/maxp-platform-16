@@ -106,6 +106,8 @@ export interface DentalTechnician {
   completedStages?: number;
   completedUnits?: number;
   totalEarnings?: number;
+  totalBonuses?: number;
+  totalDeductions?: number;
   totalPaid?: number;
   balanceDue?: number;
 }
@@ -742,7 +744,17 @@ export const fetchDoctors = async (params?: string | { search?: string; isActive
   return unwrapListEnvelope<DentalLabDoctor>(res);
 };
 
-export const fetchDoctorsFull = async (params?: { search?: string; isActive?: boolean | string; archived?: boolean; all?: boolean; page?: number; limit?: number }): Promise<{ items: DentalLabDoctor[]; total: number; activeCount: number; archivedCount: number }> => {
+export const fetchDoctorsFull = async (params?: { search?: string; isActive?: boolean | string; archived?: boolean; all?: boolean; page?: number; limit?: number }): Promise<{
+  items: DentalLabDoctor[];
+  total: number;
+  activeCount: number;
+  archivedCount: number;
+  summary?: {
+    totalBilled: number;
+    totalPaid: number;
+    totalOutstanding: number;
+  };
+}> => {
   const res = await apiClient.get("/dental-lab/doctors", { params });
   const body = asRecord(res.data) ?? {};
   const data = (body["data"] as Record<string, unknown>) || {};
@@ -751,6 +763,7 @@ export const fetchDoctorsFull = async (params?: { search?: string; isActive?: bo
     total: typeof data["total"] === "number" ? data["total"] : 0,
     activeCount: typeof data["activeCount"] === "number" ? data["activeCount"] : 0,
     archivedCount: typeof data["archivedCount"] === "number" ? data["archivedCount"] : 0,
+    summary: data["summary"] as any,
   };
 };
 
@@ -1254,7 +1267,7 @@ export const fetchCaseFileBlob = async (storedName?: string): Promise<Blob> => {
   return res.data as Blob;
 };
 
-export const fmtMoney = (n?: number): string => (typeof n === "number" && Number.isFinite(n) ? n.toLocaleString("ar-EG", { maximumFractionDigits: 2 }) : "0");
+export const fmtMoney = (n?: number): string => (typeof n === "number" && Number.isFinite(n) ? n.toLocaleString("ar-EG", { maximumFractionDigits: 2 }).replace(/[\u061C\u200E\u200F]/g, "") : "0");
 
 export const fmtDate = (iso?: string): string => (iso ? new Date(iso).toLocaleDateString("ar-EG") : "—");
 

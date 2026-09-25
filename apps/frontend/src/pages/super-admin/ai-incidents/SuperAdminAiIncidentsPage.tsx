@@ -26,15 +26,30 @@ export default function SuperAdminAiIncidentsPage() {
   const fetchIncidents = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get<any>('/super-admin/ai/incidents', {
-        params: {
-          timeHorizon,
-          category: activeCategory !== 'ALL' ? activeCategory : undefined,
-          search: searchQuery.trim() || undefined,
-        },
-      });
+      let res;
+      try {
+        res = await apiClient.get<any>('/ai/chat/incidents', {
+          params: {
+            timeHorizon,
+            category: activeCategory !== 'ALL' ? activeCategory : undefined,
+            search: searchQuery.trim() || undefined,
+          },
+        });
+      } catch (err: any) {
+        if (err?.response?.status === 404 || err?.response?.status === 403) {
+          res = await apiClient.get<any>('/super-admin/ai/incidents', {
+            params: {
+              timeHorizon,
+              category: activeCategory !== 'ALL' ? activeCategory : undefined,
+              search: searchQuery.trim() || undefined,
+            },
+          });
+        } else {
+          throw err;
+        }
+      }
 
-      if (res.data?.success) {
+      if (res?.data?.success) {
         const list: AiIncident[] = res.data.data?.incidents || [];
         setIncidents(list);
         setTelemetry(

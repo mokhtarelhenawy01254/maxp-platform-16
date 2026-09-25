@@ -41,6 +41,37 @@ const portalLogin = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const requestedCompanyId = body.companyId || req.headers['x-company-id'] || req.headers['X-Company-Id'] || null;
+
+    if (!requestedCompanyId) {
+      const candidateDoctors = await prisma.dentalLabDoctor.findMany({
+        where: { phone, isActive: true },
+        select: {
+          id: true,
+          companyId: true,
+          name: true,
+          clinicName: true,
+          company: { select: { id: true, name: true } },
+        },
+      });
+
+      if (candidateDoctors.length === 0) {
+        return res.status(401).json({ success: false, error: 'رقم الهاتف أو الرقم السري غير صحيح' });
+      }
+
+      if (candidateDoctors.length > 1) {
+        return res.status(400).json({
+          success: false,
+          requireCompanySelection: true,
+          error: 'رقم الهاتف مرتبط بأكثر من معمل أسنان، يرجى تحديد المعمل المطلوب',
+          labs: candidateDoctors.map((doc) => ({
+            companyId: doc.companyId,
+            companyName: doc.company?.name || 'معمل أسنان',
+            clinicName: doc.clinicName,
+          })),
+        });
+      }
+    }
+
     const where = { phone, isActive: true };
     if (requestedCompanyId) where.companyId = requestedCompanyId;
 
@@ -72,6 +103,27 @@ const portalLogin = async (req, res) => {
     }
     if (!pinValid) {
       return res.status(401).json({ success: false, error: 'رقم الهاتف أو الرقم السري غير صحيح' });
+    }
+
+    // Verify lab company subscription (H8)
+    const labCompany = await prisma.company.findUnique({
+      where: { id: dentist.companyId },
+      select: {
+        trialModeEnabled: true,
+        trialEndsAt: true,
+        installedApps: {
+          where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
+          select: { app: { select: { slug: true } } },
+        },
+      },
+    });
+    const hasDentalApp = labCompany?.installedApps?.some((a) => ['dental-lab-app', 'dental-lab'].includes(a.app?.slug));
+    const isTrial = labCompany?.trialModeEnabled && labCompany?.trialEndsAt && new Date(labCompany.trialEndsAt) > new Date();
+    if (!hasDentalApp && !isTrial) {
+      return res.status(403).json({
+        success: false,
+        error: 'اشتراك معمل الأسنان غير مفعل حالياً، يرجى التواصل مع إدارة المعمل',
+      });
     }
 
     const token = jwt.sign(
@@ -188,15 +240,18 @@ const placeOrder = async (req, res) => {
         if (!workType) {
           return res.status(400).json({ success: false, error: `نوع الشغل غير متاح: ${it.workTypeId}` });
         }
-        const priceSnapshot = round2(Number(workType.price) || 0);
         const resolvedPrice = await resolveDoctorWorkTypePrice(prisma, dentist.companyId, dentist.id, workType);
+        const unitsCount = Math.max(1, parseInt(it.unitsCount, 10) || 1);
+        const totalPrice = round2(resolvedPrice * unitsCount);
         const stageNames = await getStageTemplates(prisma, dentist.companyId, workType.category || null);
         const stagesData = buildStagesData(dentist.companyId, stageNames);
         const dueDate = body.dueDate ? parseDate(body.dueDate) : await suggestDueDate(prisma, dentist.companyId, workType.id);
         prepared.push({
           workType,
-          priceSnapshot: resolvedPrice,
-          total: resolvedPrice,
+          unitsCount,
+          unitPrice: resolvedPrice,
+          priceSnapshot: totalPrice,
+          total: totalPrice,
           stagesData,
           dueDate,
           teeth: it.teeth ? String(it.teeth) : null,
@@ -221,13 +276,10 @@ const placeOrder = async (req, res) => {
       const created = await prisma.$transaction(async (tx) => {
         const results = [];
         for (const p of prepared) {
-          const { workType, priceSnapshot, total, stagesData, dueDate, teeth, shade, material } = p;
+          const { workType, unitsCount, unitPrice, priceSnapshot, total, stagesData, dueDate, teeth, shade, material } = p;
           const paid = 0;
           const remaining = total;
           const paymentStatus = derivePaymentStatus(total, paid);
-
-          const unitsCount = Number(p.unitsCount) > 0 ? Number(p.unitsCount) : 1;
-          const unitPrice = round2(total / unitsCount);
           const receivedDate = new Date();
           receivedDate.setHours(0, 0, 0, 0);
 
@@ -253,7 +305,7 @@ const placeOrder = async (req, res) => {
                   receivedDate,
                   dueDate,
                   source: 'PORTAL',
-                  priceSnapshot: priceSnapshot || unitPrice,
+                  priceSnapshot: priceSnapshot || total,
                   unitsCount,
                   unitPrice,
                   discount: 0,
@@ -308,8 +360,9 @@ const placeOrder = async (req, res) => {
     });
     if (!workType) return res.status(400).json({ success: false, error: 'نوع الشغل غير متاح' });
 
-    const priceSnapshot = round2(Number(workType.price) || 0);
-    const total = priceSnapshot;
+    const resolvedPrice = await resolveDoctorWorkTypePrice(prisma, dentist.companyId, dentist.id, workType);
+    const unitsCount = Math.max(1, parseInt(body.unitsCount, 10) || 1);
+    const total = round2(resolvedPrice * unitsCount);
     const paid = 0;
     const remaining = total;
     const paymentStatus = derivePaymentStatus(total, paid);
@@ -347,7 +400,9 @@ const placeOrder = async (req, res) => {
             priority: 'NORMAL',
             dueDate,
             source: 'PORTAL',
-            priceSnapshot,
+            priceSnapshot: total,
+            unitsCount,
+            unitPrice: resolvedPrice,
             discount: 0,
             total,
             paid,

@@ -19,6 +19,8 @@ const LEGACY_APP_SLUG_ALIASES = {
   // order-core / ecommerce-basic / store-basic do NOT open manual orders anymore —
   // manual-orders-pro is now a standalone paid app.
   'manual-orders-pro': ['store-pro'],
+  'dental-lab-app': ['dental-lab'],
+  'dental-lab': ['dental-lab-app'],
   // WhatsApp apps aliases & backwards compatibility:
   'whatsapp-business': ['whatsapp-integration', 'whatsapp-inbox', 'whatsapp-settings', 'whatsapp-notifications', 'whatsapp-templates', 'whatsapp-routing', 'unified-inbox'],
   'whatsapp-integration': ['whatsapp-business', 'whatsapp-inbox', 'whatsapp-settings', 'whatsapp-notifications', 'whatsapp-templates', 'whatsapp-routing', 'unified-inbox'],

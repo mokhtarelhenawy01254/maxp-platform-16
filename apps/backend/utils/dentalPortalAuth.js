@@ -39,6 +39,24 @@ const dentalPortalAuth = async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'الحساب غير نشط' });
     }
 
+    // Check if the dental lab company has an active subscription for dental-lab-app (H8)
+    const company = await prisma.company.findUnique({
+      where: { id: dentist.companyId },
+      select: {
+        trialModeEnabled: true,
+        trialEndsAt: true,
+        installedApps: {
+          where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
+          select: { app: { select: { slug: true } } },
+        },
+      },
+    });
+    const hasDentalApp = company?.installedApps?.some((a) => ['dental-lab-app', 'dental-lab'].includes(a.app?.slug));
+    const isTrial = company?.trialModeEnabled && company?.trialEndsAt && new Date(company.trialEndsAt) > new Date();
+    if (!hasDentalApp && !isTrial) {
+      return res.status(403).json({ success: false, error: 'اشتراك معمل الأسنان غير مفعل حالياً، يرجى مراجعة إدارة المعمل' });
+    }
+
     req.dentist = dentist;
     next();
   } catch (error) {

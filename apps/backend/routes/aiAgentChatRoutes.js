@@ -49,4 +49,11 @@ router.get('/history', getHistory);
 router.delete('/history', clearHistory);
 router.get('/status', getStatus);
 
+// ⚡ AI Agent & Tool Incidents Telemetry (Accessible to Super Admin & Company Admin)
+const superAdminAiIncidentsController = require('../controller/superAdminAiIncidentsController');
+router.get('/incidents', superAdminAiIncidentsController.getIncidents);
+router.post('/incidents/:id/retest', superAdminAiIncidentsController.retestIncident);
+router.post('/incidents/:id/notify-tenant', superAdminAiIncidentsController.notifyTenant);
+router.post('/incidents/:id/kill-switch', superAdminAiIncidentsController.toggleKillSwitch);
+
 module.exports = router;
