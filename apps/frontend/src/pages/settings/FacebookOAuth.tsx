@@ -1039,6 +1039,43 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
         )}
       </div>
 
+      {/* Zero page grants — named state with guided recovery */}
+      {noPageGrants && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-800 shadow-sm p-5">
+          <h3 className="text-base font-semibold text-amber-800 dark:text-amber-200 mb-2 flex items-center gap-2">
+            <ExclamationTriangleIcon className="h-5 w-5 shrink-0" />
+            {t("facebookOAuth.noPageGrantsTitle")}
+          </h3>
+          <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+            {t("facebookOAuth.noPageGrantsMessage")}
+          </p>
+          {affectedCompanies.length > 0 && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 mb-3">
+              {t("facebookOAuth.reconsentWarningCompanies", {
+                companies: affectedCompanies
+                  .map((company) => company.companyName)
+                  .join("، "),
+              })}
+            </p>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleFullReconsent}
+              disabled={reconsenting || loading}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+            >
+              <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+              {reconsenting
+                ? t("facebookOAuth.reconsentProcessing")
+                : t("facebookOAuth.reconsentButton")}
+            </button>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {t("facebookOAuth.reconsentManualHint")}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Connected Pages */}
       {pages.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm p-6">

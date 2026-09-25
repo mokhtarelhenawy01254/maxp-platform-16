@@ -131,7 +131,12 @@ async function getIncidents(req, res) {
     const companyIds = [...new Set(rawLogs.map((l) => l.companyId).filter(Boolean))];
     const companies = await prisma.company.findMany({
       where: { id: { in: companyIds } },
-      select: { id: true, name: true, logo: true, businessSpecialty: { select: { name: true } } },
+      select: {
+        id: true,
+        name: true,
+        logo: true,
+        businessSpecialty: { select: { nameAr: true, nameEn: true } },
+      },
     });
     const companyMap = new Map(companies.map((c) => [c.id, c]));
 
@@ -151,7 +156,7 @@ async function getIncidents(req, res) {
         id: log.id,
         companyId: log.companyId,
         companyName: comp?.name || `شركة #${log.companyId.slice(0, 8)}`,
-        companySpecialty: comp?.businessSpecialty?.name || null,
+        companySpecialty: comp?.businessSpecialty?.nameAr || comp?.businessSpecialty?.nameEn || null,
         conversationId: log.conversationId,
         errorType: log.errorType,
         errorMessage: log.errorMessage,
