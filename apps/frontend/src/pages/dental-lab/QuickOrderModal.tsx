@@ -480,20 +480,23 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   const activeWorkTypes = useMemo(() => workTypes.filter((w) => w.isActive), [workTypes]);
 
   const selectedServices = useMemo(
-    () => workTypes.filter((w) => selectedServiceIds.includes(w.id)),
+    () => selectedServiceIds.map((id) => workTypes.find((w) => w.id === id)).filter(Boolean) as DentalWorkType[],
     [workTypes, selectedServiceIds],
   );
 
   const primaryService = selectedServices[0] || null;
 
-  // Toggle Services in Step 2
-  const toggleService = (id: string) => {
+  // Toggle or Switch Services in Step 2 (replaces by default to prevent unintentional stacking)
+  const toggleService = (id: string, allowMulti = false) => {
     setSelectedServiceIds((prev) => {
       if (prev.includes(id)) {
-        const next = prev.filter((x) => x !== id);
-        return next;
+        if (prev.length === 1) return [];
+        return prev.filter((x) => x !== id);
       }
-      return [id, ...prev]; // make newest primary
+      if (!allowMulti) {
+        return [id];
+      }
+      return [id, ...prev.filter((x) => x !== id)];
     });
   };
 
@@ -843,11 +846,12 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-36 overflow-y-auto p-1 border dark:border-gray-700 rounded-xl">
                     {activeWorkTypes.map((w) => {
                       const checked = selectedServiceIds.includes(w.id);
+                      const isPrimary = selectedServiceIds[0] === w.id;
                       return (
                         <button
                           key={w.id}
                           type="button"
-                          onClick={() => toggleService(w.id)}
+                          onClick={(e) => toggleService(w.id, e.shiftKey || e.ctrlKey || e.metaKey)}
                           className={[
                             "p-2.5 rounded-lg border text-right transition flex items-center justify-between text-xs",
                             checked
@@ -856,9 +860,16 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                           ].join(" ")}
                         >
                           <div className="truncate">
-                            <div>{w.name}</div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="truncate">{w.name}</span>
+                              {isPrimary && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-600 text-white font-medium shrink-0">
+                                  الأساسية
+                                </span>
+                              )}
+                            </div>
                             <div className="text-[10px] text-gray-400 font-normal">
-                              {w.price ? `${fmtMoney(w.price)} ج.م` : "—"} {w.pricingMode === "PER_UNIT" ? "/ كراون" : ""}
+                              {w.price ? `${fmtMoney(w.price)} ج.م` : "—"} {w.pricingMode === "PER_UNIT" ? "/ وحدة" : ""}
                             </div>
                           </div>
                           {checked && <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />}

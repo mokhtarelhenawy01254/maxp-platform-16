@@ -10570,6 +10570,8 @@ declare module 'react-i18next' {
       };
       users: {
         title: string;
+        pageDescription: string;
+        userListDescription: string;
         usageText: string;
         upgradePlanAddMore: string;
         considerUpgradeSoon: string;
