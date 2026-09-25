@@ -143,3 +143,4 @@ class AudioAlertSystem {
 }
 
 export const audioAlerts = new AudioAlertSystem();
+export default audioAlerts;

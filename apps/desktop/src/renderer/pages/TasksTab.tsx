@@ -14,6 +14,11 @@ import {
   Pause,
   Send,
   Search,
+  WifiOff,
+  ShieldCheck,
+  Flame,
+  AlertCircle,
+  ClipboardCheck,
 } from 'lucide-react';
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
@@ -139,37 +144,49 @@ export const TasksTab: React.FC = () => {
     };
   }, [previewImage, authToken]);
 
-  // Active Task Runner state persisted in localStorage
-  const [activeTask, setActiveTask] = useState<ActiveTaskState | null>(() => {
+  // Multi-timer active tasks map: taskId -> ActiveTaskState
+  const [activeTasksMap, setActiveTasksMap] = useState<Record<string, ActiveTaskState>>(() => {
     try {
-      const saved = localStorage.getItem('maxp_active_task');
-      if (saved) return JSON.parse(saved);
+      const savedMulti = localStorage.getItem('maxp_active_tasks_multi');
+      if (savedMulti) return JSON.parse(savedMulti);
+      const savedSingle = localStorage.getItem('maxp_active_task');
+      if (savedSingle) {
+        const parsed = JSON.parse(savedSingle);
+        if (parsed?.id) return { [parsed.id]: parsed };
+      }
     } catch {}
-    return null;
+    return {};
   });
-  const [runnerSeconds, setRunnerSeconds] = useState<number>(0);
 
-  // Ticking stopwatch for active task
+  const [elapsedMap, setElapsedMap] = useState<Record<string, number>>({});
+  const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
+
+  // Ticking stopwatch for all active tasks simultaneously
   useEffect(() => {
-    if (!activeTask?.startTime) {
-      setRunnerSeconds(0);
+    const taskIds = Object.keys(activeTasksMap);
+    if (taskIds.length === 0) {
+      setElapsedMap({});
       return;
     }
 
-    const startTime = Number(activeTask.startTime);
-    const accumulated = Number(activeTask.accumulatedSeconds || 0);
-
-    const calc = () => {
+    const calcAll = () => {
       const now = Date.now();
-      const diff = Math.floor((now - startTime) / 1000);
-      const elapsed = accumulated + (diff > 0 ? diff : 0);
-      setRunnerSeconds(elapsed);
+      const updated: Record<string, number> = {};
+      for (const id of taskIds) {
+        const item = activeTasksMap[id];
+        if (item?.startTime) {
+          const diff = Math.floor((now - Number(item.startTime)) / 1000);
+          const accumulated = Number(item.accumulatedSeconds || 0);
+          updated[id] = accumulated + (diff > 0 ? diff : 0);
+        }
+      }
+      setElapsedMap(updated);
     };
 
-    calc();
-    const interval = setInterval(calc, 1000);
+    calcAll();
+    const interval = setInterval(calcAll, 1000);
     return () => clearInterval(interval);
-  }, [activeTask?.id, activeTask?.startTime, activeTask?.accumulatedSeconds]);
+  }, [activeTasksMap]);
 
   // Real-time ticking stopwatch for all company active timers
   useEffect(() => {
@@ -186,16 +203,8 @@ export const TasksTab: React.FC = () => {
   }, [teamActiveTimers.length]);
 
   const handleStartTask = async (task: any) => {
-    // If clicking on a task that is ALREADY active, do nothing
-    if (activeTask && activeTask.id === task.id) {
+    if (activeTasksMap[task.id]) {
       return;
-    }
-
-    // If another task was running, stop its timer first
-    if (activeTask?.entryId) {
-      try {
-        await window.electronAPI.stopTaskTimer(activeTask.entryId);
-      } catch {}
     }
 
     const newTask: ActiveTaskState = {
@@ -205,20 +214,27 @@ export const TasksTab: React.FC = () => {
       startTime: Date.now(),
       accumulatedSeconds: 0,
     };
-    setActiveTask(newTask);
-    try {
-      localStorage.setItem('maxp_active_task', JSON.stringify(newTask));
-    } catch {}
+
+    setActiveTasksMap((prev) => {
+      const updated = { ...prev, [task.id]: newTask };
+      try {
+        localStorage.setItem('maxp_active_tasks_multi', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
 
     try {
       const timerRes = await window.electronAPI.startTaskTimer(task.id);
       const entryObj = timerRes?.entry || timerRes?.data;
       if (entryObj?.id) {
-        setActiveTask((prev) => {
-          if (prev && prev.id === task.id) {
-            const updated = { ...prev, entryId: entryObj.id };
+        setActiveTasksMap((prev) => {
+          if (prev[task.id]) {
+            const updated = {
+              ...prev,
+              [task.id]: { ...prev[task.id], entryId: entryObj.id },
+            };
             try {
-              localStorage.setItem('maxp_active_task', JSON.stringify(updated));
+              localStorage.setItem('maxp_active_tasks_multi', JSON.stringify(updated));
             } catch {}
             return updated;
           }
@@ -236,27 +252,37 @@ export const TasksTab: React.FC = () => {
     }
   };
 
-  const handleStopTask = async () => {
-    let entryId = activeTask?.entryId;
-    if (!entryId) {
-      try {
-        const runningRes = await window.electronAPI.getRunningTaskTimer();
-        if (runningRes?.success && runningRes.runningTimer?.id) {
-          entryId = runningRes.runningTimer.id;
+  const handleStopTask = async (taskIdToStop?: string) => {
+    if (taskIdToStop && activeTasksMap[taskIdToStop]) {
+      const item = activeTasksMap[taskIdToStop];
+      if (item.entryId) {
+        try {
+          await window.electronAPI.stopTaskTimer(item.entryId);
+        } catch {}
+      }
+      setActiveTasksMap((prev) => {
+        const next = { ...prev };
+        delete next[taskIdToStop];
+        try {
+          localStorage.setItem('maxp_active_tasks_multi', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    } else {
+      // Stop all active timers
+      const entries = Object.values(activeTasksMap);
+      for (const item of entries) {
+        if (item.entryId) {
+          try {
+            await window.electronAPI.stopTaskTimer(item.entryId);
+          } catch {}
         }
+      }
+      setActiveTasksMap({});
+      try {
+        localStorage.removeItem('maxp_active_tasks_multi');
       } catch {}
     }
-    if (entryId) {
-      try {
-        await window.electronAPI.stopTaskTimer(entryId);
-      } catch (err) {
-        console.warn('[TasksTab] stopTaskTimer failed:', err);
-      }
-    }
-    setActiveTask(null);
-    try {
-      localStorage.removeItem('maxp_active_task');
-    } catch {}
     loadData(false);
   };
 
@@ -292,6 +318,9 @@ export const TasksTab: React.FC = () => {
       const res = await window.electronAPI.getTasks(activeView);
       if (res.success && Array.isArray(res.tasks)) {
         setTasks(res.tasks);
+        setIsOfflineMode(Boolean(res.isOffline || res.fromCache));
+      } else if (!res.success && res.error) {
+        setIsOfflineMode(true);
       }
 
       // 2. Fetch company users for assign dropdown
@@ -300,62 +329,80 @@ export const TasksTab: React.FC = () => {
         setUsers(usersRes.users);
       }
 
-      // 3. Sync active timer with backend
+      // 3. Sync active multi-timers with backend
       try {
         const runningRes = await window.electronAPI.getRunningTaskTimer();
-        if (runningRes?.success && runningRes.runningTimer) {
-          const rt = runningRes.runningTimer;
-          const isTaskDone = String(rt.task?.status || '').toUpperCase() === 'COMPLETED';
-          if (isTaskDone) {
+        if (runningRes?.success) {
+          const rawTimers: any[] = Array.isArray(runningRes.runningTimers)
+            ? runningRes.runningTimers
+            : runningRes.runningTimer
+            ? [runningRes.runningTimer]
+            : [];
+
+          setActiveTasksMap((prev) => {
+            const next = { ...prev };
+            const activeServerTaskIds = new Set<string>();
+
+            for (const rt of rawTimers) {
+              const isTaskDone = String(rt.task?.status || '').toUpperCase() === 'COMPLETED';
+              if (isTaskDone) {
+                delete next[rt.taskId];
+                if (rt.id) window.electronAPI.stopTaskTimer(rt.id).catch(() => {});
+                continue;
+              }
+
+              activeServerTaskIds.add(rt.taskId);
+              const existing = next[rt.taskId];
+              if (existing) {
+                if (!existing.entryId && rt.id) {
+                  next[rt.taskId] = { ...existing, entryId: rt.id };
+                }
+              } else {
+                const serverStart = new Date(rt.startTime).getTime();
+                const safeStart = !isNaN(serverStart) && serverStart <= Date.now() ? serverStart : Date.now();
+                next[rt.taskId] = {
+                  id: rt.taskId,
+                  title: rt.task?.title || 'مهمة جارية',
+                  priority: rt.task?.priority || 'MEDIUM',
+                  startTime: safeStart,
+                  accumulatedSeconds: 0,
+                  entryId: rt.id,
+                };
+              }
+            }
+
+            // If verified response from server, remove local items whose server entry is gone
+            if (runningRes.runningTimers !== undefined) {
+              for (const [taskId, localItem] of Object.entries(next)) {
+                if (localItem.entryId && !activeServerTaskIds.has(taskId)) {
+                  delete next[taskId];
+                }
+              }
+            }
+
+            try {
+              localStorage.setItem('maxp_active_tasks_multi', JSON.stringify(next));
+            } catch {}
+            return next;
+          });
+
+          // Sync single activeTask for backward compatibility
+          if (rawTimers.length > 0) {
+            const first = rawTimers[0];
+            setActiveTask({
+              id: first.taskId,
+              title: first.task?.title || 'مهمة جارية',
+              priority: 'MEDIUM',
+              startTime: new Date(first.startTime).getTime() || Date.now(),
+              accumulatedSeconds: 0,
+              entryId: first.id,
+            });
+          } else if (runningRes.runningTimers !== undefined) {
             setActiveTask(null);
             try {
               localStorage.removeItem('maxp_active_task');
             } catch {}
-            if (rt.id) {
-              window.electronAPI.stopTaskTimer(rt.id).catch(() => {});
-            }
-          } else {
-            setActiveTask((prev) => {
-              // If the task is ALREADY running locally with the SAME id, preserve local startTime!
-              if (prev && prev.id === rt.taskId) {
-                if (!prev.entryId && rt.id) {
-                  const updated = { ...prev, entryId: rt.id };
-                  try {
-                    localStorage.setItem('maxp_active_task', JSON.stringify(updated));
-                  } catch {}
-                  return updated;
-                }
-                return prev; // Same instance -> ZERO re-triggering of effect!
-              }
-
-              // Otherwise initialize from server timer
-              const serverStart = new Date(rt.startTime).getTime();
-              const safeStart = !isNaN(serverStart) && serverStart <= Date.now() ? serverStart : Date.now();
-              const newTaskState: ActiveTaskState = {
-                id: rt.taskId,
-                title: rt.task?.title || 'مهمة جارية',
-                priority: 'MEDIUM',
-                startTime: safeStart,
-                accumulatedSeconds: 0,
-                entryId: rt.id,
-              };
-              try {
-                localStorage.setItem('maxp_active_task', JSON.stringify(newTaskState));
-              } catch {}
-              return newTaskState;
-            });
           }
-        } else if (runningRes?.success && !runningRes.runningTimer) {
-          // Only clear if activeTask was verified on server and now stopped
-          setActiveTask((prev) => {
-            if (prev?.entryId) {
-              try {
-                localStorage.removeItem('maxp_active_task');
-              } catch {}
-              return null;
-            }
-            return prev;
-          });
         }
       } catch {}
 
@@ -545,6 +592,33 @@ export const TasksTab: React.FC = () => {
   );
   const canDirectCompleteActive = isAdminOrManager || isCreatorOfActive;
 
+  const activeTaskIdsList = Object.keys(activeTasksMap);
+
+  // Smart 2026 SaaS sorting: running timers pinned to top, urgent tasks next, eliminating visual clutter
+  const sortedDisplayTasks = [...displayTasks].sort((a, b) => {
+    const aRunning = activeTasksMap[a.id] ? 1 : 0;
+    const bRunning = activeTasksMap[b.id] ? 1 : 0;
+    if (aRunning !== bRunning) return bRunning - aRunning;
+
+    const priorityWeight: Record<string, number> = {
+      URGENT: 4,
+      HIGH: 3,
+      MEDIUM: 2,
+      LOW: 1,
+    };
+    const aWeight = priorityWeight[String(a.priority || '').toUpperCase()] || 0;
+    const bWeight = priorityWeight[String(b.priority || '').toUpperCase()] || 0;
+    if (aWeight !== bWeight) return bWeight - aWeight;
+
+    if (a.dueDate && b.dueDate) {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    }
+    if (a.dueDate && !b.dueDate) return -1;
+    if (!a.dueDate && b.dueDate) return 1;
+
+    return 0;
+  });
+
   return (
     <div style={styles.container}>
       {/* Top Scope & Action Bar (Zero Overflow 2026 Strip) */}
@@ -624,72 +698,129 @@ export const TasksTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Active Task Runner Dock */}
-      {activeTask && (
-        <div style={styles.runnerDock}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-            <div style={styles.runnerIconBox}>
-              <span style={styles.runnerPulseDot} />
-              <Play size={13} fill="#22c55e" color="#22c55e" />
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={styles.runnerSubtitle}>المشغل قيد العمل المباشر:</div>
-              <div style={styles.runnerTaskTitle} title={activeTask.title}>
-                {activeTask.title}
-              </div>
-            </div>
-          </div>
-
+      {/* Offline Status Alert Banner */}
+      {isOfflineMode && (
+        <div style={styles.offlineBanner}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* Live Timer Display */}
-            <div style={styles.runnerTimerBadge} title="عداد وقت العمل الفعلي على هذه المهمة">
-              <Clock size={13} color="#38bdf8" />
-              <span style={styles.runnerTimerText}>{formatRunnerTimer(runnerSeconds)}</span>
+            <AlertCircle size={15} color="#f59e0b" />
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
+              أنت تعمل في وضع عدم الاتصال (Offline Cache) — يتم عرض البيانات المحفوظة محلياً، وستتم المزامنة تلقائياً فور عودة الشبكة.
+            </span>
+          </div>
+          <button
+            onClick={() => loadData(true)}
+            style={styles.offlineRetryBtn}
+            title="إعادة محاولة المزامنة مع السيرفر"
+          >
+            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+            <span>إعادة المزامنة</span>
+          </button>
+        </div>
+      )}
+
+      {/* Active Tasks Multi-Runner Dock */}
+      {activeTaskIdsList.length > 0 && (
+        <div style={styles.multiRunnerContainer}>
+          <div style={styles.multiRunnerHeader}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={styles.runnerPulseDotStatic} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
+                المؤقتات قيد التشغيل التزامني
+              </span>
+              <span style={styles.multiRunnerCountBadge}>
+                {activeTaskIdsList.length} {activeTaskIdsList.length === 1 ? 'مهمة نشطة' : 'مهام متزامنة'}
+              </span>
             </div>
 
-            {/* Pause / Stop Button */}
-            <button
-              onClick={handleStopTask}
-              style={styles.runnerPauseBtn}
-              title="إيقاف مؤقت للمشغل"
-              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-            >
-              <Pause size={12} />
-              <span>إيقاف مؤقت</span>
-            </button>
-
-            {/* Submit for Review Button (Available to all) */}
-            <button
-              onClick={() => {
-                audioAlerts.playTaskComplete();
-                handleUpdateStatus(activeTask.id, 'IN_REVIEW');
-              }}
-              style={styles.runnerSubmitBtn}
-              title="تسليم المهمة للمراجعة والاعتماد (نقلها لقيد الاعتماد)"
-              onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
-              onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
-            >
-              <Send size={12} />
-              <span>تسليم للمراجعة</span>
-            </button>
-
-            {/* Direct Complete Task Button (Admins & Task Creators Only) */}
-            {canDirectCompleteActive && (
+            {activeTaskIdsList.length > 1 && (
               <button
-                onClick={() => {
-                  audioAlerts.playTaskComplete();
-                  handleUpdateStatus(activeTask.id, 'COMPLETED');
-                }}
-                style={styles.runnerCompleteBtn}
-                title="اعتماد وإنجاز المهمة مباشرة (المكتمل) — متاح للإدارة ومنشئ المهمة فقط"
+                onClick={() => handleStopTask()}
+                style={styles.stopAllBtn}
+                title="إيقاف جميع المؤقتات الشغالة حالياً دفعة واحدة"
                 onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                 onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
               >
-                <CheckCircle2 size={13} />
-                <span>إنجاز مباشر</span>
+                <Pause size={11} />
+                <span>إيقاف جميع المؤقتات ({activeTaskIdsList.length})</span>
               </button>
             )}
+          </div>
+
+          <div style={styles.multiRunnerList}>
+            {activeTaskIdsList.map((id) => {
+              const item = activeTasksMap[id];
+              const taskSeconds = elapsedMap[id] || 0;
+              const taskObj = tasks.find((t) => t.id === id);
+              const isCreator = !!(
+                taskObj &&
+                (taskObj.createdBy === currentUser?.id || taskObj.createdBy === currentUser?.userId)
+              );
+              const canDirectComplete = isAdminOrManager || isCreator;
+
+              return (
+                <div key={id} style={styles.multiRunnerItem}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                    <div style={styles.runnerIconBox}>
+                      <span style={styles.runnerPulseDot} />
+                      <Play size={12} fill="#22c55e" color="#22c55e" />
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={styles.runnerTaskTitle} title={item.title}>
+                        {item.title}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    <div style={styles.runnerTimerBadge} title="عداد وقت العمل الفعلي">
+                      <Clock size={12} color="#38bdf8" />
+                      <span style={styles.runnerTimerText}>{formatRunnerTimer(taskSeconds)}</span>
+                    </div>
+
+                    <button
+                      onClick={() => handleStopTask(id)}
+                      style={styles.runnerPauseBtn}
+                      title="إيقاف مؤقت لهذه المهمة"
+                      onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                      onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                    >
+                      <Pause size={11} />
+                      <span>إيقاف</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        audioAlerts.playTaskComplete();
+                        handleUpdateStatus(id, 'IN_REVIEW');
+                      }}
+                      style={styles.runnerSubmitBtn}
+                      title="تسليم المهمة للمراجعة والاعتماد"
+                      onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                      onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                    >
+                      <Send size={11} />
+                      <span>للمراجعة</span>
+                    </button>
+
+                    {canDirectComplete && (
+                      <button
+                        onClick={() => {
+                          audioAlerts.playTaskComplete();
+                          handleUpdateStatus(id, 'COMPLETED');
+                        }}
+                        style={styles.runnerCompleteBtn}
+                        title="اعتماد وإنجاز المهمة مباشرة"
+                        onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                      >
+                        <CheckCircle2 size={12} />
+                        <span>إنجاز</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -882,7 +1013,7 @@ export const TasksTab: React.FC = () => {
             )}
           </div>
         ) : (
-          displayTasks.map((t) => (
+          sortedDisplayTasks.map((t) => (
             <TaskItemCard
               key={t.id}
               task={t}
@@ -897,6 +1028,7 @@ export const TasksTab: React.FC = () => {
                 String(currentUser?.role || '').toUpperCase()
               )}
               activeTaskId={activeTask?.id}
+              activeTaskIds={elapsedMap}
               activeRunnerSeconds={runnerSeconds}
               onStartTask={handleStartTask}
               onStopTask={handleStopTask}
@@ -1143,6 +1275,95 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'var(--accent-green)',
     boxShadow: '0 0 6px var(--accent-green-dim)',
     display: 'inline-block',
+  },
+  offlineBanner: {
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    border: '1px solid rgba(245, 158, 11, 0.3)',
+    borderRadius: 8,
+    padding: '8px 14px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  offlineRetryBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    border: '1px solid rgba(245, 158, 11, 0.4)',
+    color: '#f59e0b',
+    borderRadius: 6,
+    padding: '4px 10px',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  multiRunnerContainer: {
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
+    boxShadow: 'var(--shadow-card)',
+    borderRadius: 8,
+    padding: '10px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+  },
+  multiRunnerHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 6,
+    borderBottom: '1px solid var(--border-subtle)',
+  },
+  runnerPulseDotStatic: {
+    width: 7,
+    height: 7,
+    borderRadius: '50%',
+    backgroundColor: 'var(--accent-green)',
+    boxShadow: '0 0 8px var(--accent-green-dim)',
+    display: 'inline-block',
+  },
+  multiRunnerCountBadge: {
+    fontSize: 10,
+    fontWeight: 700,
+    padding: '2px 8px',
+    borderRadius: 10,
+    backgroundColor: 'var(--accent-green-bg)',
+    color: 'var(--accent-green)',
+    border: '1px solid var(--accent-green-border)',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  stopAllBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    border: '1px solid rgba(239, 68, 68, 0.3)',
+    color: '#ef4444',
+    borderRadius: 6,
+    padding: '4px 10px',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 120ms ease-out',
+  },
+  multiRunnerList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  multiRunnerItem: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    padding: '6px 10px',
+    backgroundColor: 'var(--bg-elevated)',
+    borderRadius: 6,
+    border: '1px solid var(--border-subtle)',
   },
   runnerDock: {
     backgroundColor: 'var(--bg-surface)',

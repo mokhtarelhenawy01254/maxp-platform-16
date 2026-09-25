@@ -12,6 +12,8 @@ import {
   Paperclip,
   Image as ImageIcon,
   Eye,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
 
@@ -49,6 +51,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [copiedDesc, setCopiedDesc] = useState(false);
   const [assignedTo, setAssignedTo] = useState('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
   const [watchers, setWatchers] = useState<string[]>([]);
@@ -270,7 +273,37 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
           {/* Description */}
           <div>
-            <label style={modalStyles.label}>الوصف والتفاصيل</label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <label style={modalStyles.label}>الوصف والتفاصيل</label>
+              {description && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(description);
+                    setCopiedDesc(true);
+                    setTimeout(() => setCopiedDesc(false), 2000);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    border: '1px solid var(--border-default)',
+                    backgroundColor: 'var(--bg-card)',
+                    color: copiedDesc ? 'var(--accent-green)' : 'var(--text-dim)',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                  title="نسخ الوصف إلى الحافظة بنقرة واحدة"
+                >
+                  {copiedDesc ? <Check size={11} color="var(--accent-green)" /> : <Copy size={11} />}
+                  <span>{copiedDesc ? 'تم النسخ' : 'نسخ الوصف'}</span>
+                </button>
+              )}
+            </div>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}

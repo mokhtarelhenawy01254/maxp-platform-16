@@ -255,7 +255,7 @@ class MonitorApiClient {
       return res.data?.data ?? res.data?.tasks ?? [];
     } catch (err: any) {
       console.warn(`[API] getTasks(${type}) failed:`, err?.message);
-      return [];
+      throw err;
     }
   }
 
@@ -538,6 +538,140 @@ class MonitorApiClient {
     } catch (err: any) {
       console.warn('[API] getCompanyActiveTimers failed:', err?.message);
       return [];
+    }
+  }
+
+  // ── Subtasks & Checklists ─────────────────────────────────────
+  async getSubtasks(parentTaskId: string): Promise<any[]> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.get(`${base}/api/v1/tasks/${parentTaskId}/subtasks`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return res.data?.data ?? [];
+    } catch (err: any) {
+      console.warn('[API] getSubtasks failed:', err?.message);
+      return [];
+    }
+  }
+
+  async createSubtask(parentTaskId: string, data: { title: string; assignedTo?: string; priority?: string }): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.post(`${base}/api/v1/tasks/${parentTaskId}/subtasks`, data, {
+      headers: this.getAuthHeaders(),
+      timeout: 10_000,
+    });
+    return res.data?.data ?? res.data;
+  }
+
+  async getChecklists(taskId: string): Promise<any[]> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.get(`${base}/api/v1/tasks/${taskId}/checklists`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return res.data?.data ?? [];
+    } catch (err: any) {
+      console.warn('[API] getChecklists failed:', err?.message);
+      return [];
+    }
+  }
+
+  async createChecklist(taskId: string, title: string = 'قائمة المهام'): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.post(
+      `${base}/api/v1/tasks/${taskId}/checklists`,
+      { title },
+      { headers: this.getAuthHeaders(), timeout: 10_000 }
+    );
+    return res.data?.data ?? res.data;
+  }
+
+  async addChecklistItem(checklistId: string, text: string): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.post(
+      `${base}/api/v1/tasks/checklists/${checklistId}/items`,
+      { text },
+      { headers: this.getAuthHeaders(), timeout: 10_000 }
+    );
+    return res.data?.data ?? res.data;
+  }
+
+  async updateChecklistItem(itemId: string, data: { isCompleted?: boolean; text?: string }): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.put(
+      `${base}/api/v1/tasks/checklists/items/${itemId}`,
+      data,
+      { headers: this.getAuthHeaders(), timeout: 10_000 }
+    );
+    return res.data?.data ?? res.data;
+  }
+
+  async deleteChecklistItem(itemId: string): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.delete(
+      `${base}/api/v1/tasks/checklists/items/${itemId}`,
+      { headers: this.getAuthHeaders(), timeout: 10_000 }
+    );
+    return res.data;
+  }
+
+  // ── Goals (OKRs) ──────────────────────────────────────────────
+  async getTodayGoals(userId?: string): Promise<any[]> {
+    try {
+      const base = this.serverUrl;
+      const params = userId ? { userId } : {};
+      const res = await axios.get(`${base}/api/v1/tasks/goals/today`, {
+        params,
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return res.data?.goals ?? res.data?.data ?? [];
+    } catch (err: any) {
+      console.warn('[API] getTodayGoals failed:', err?.message);
+      return [];
+    }
+  }
+
+  async getGoals(params: any = {}): Promise<any[]> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.get(`${base}/api/v1/tasks/goals`, {
+        params,
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return res.data?.goals ?? res.data?.data ?? [];
+    } catch (err: any) {
+      console.warn('[API] getGoals failed:', err?.message);
+      return [];
+    }
+  }
+
+  async updateGoalProgress(goalId: string, current: number, notes?: string): Promise<any> {
+    const base = this.serverUrl;
+    const res = await axios.post(
+      `${base}/api/v1/tasks/goals/${goalId}/progress`,
+      { current, notes },
+      { headers: this.getAuthHeaders(), timeout: 10_000 }
+    );
+    return res.data?.data ?? res.data;
+  }
+
+  // ── Task Reports & Stats ──────────────────────────────────────
+  async getTaskDashboardStats(): Promise<any> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.get(`${base}/api/v1/tasks/dashboard-stats`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return res.data?.data ?? res.data?.stats ?? null;
+    } catch (err: any) {
+      console.warn('[API] getTaskDashboardStats failed:', err?.message);
+      return null;
     }
   }
 

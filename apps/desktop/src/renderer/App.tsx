@@ -25,14 +25,14 @@ declare global {
       getAuthState: () => Promise<{ isLoggedIn: boolean; user: any; serverUrl: string }>;
       getSettings: () => Promise<any>;
       updateSettings: (settings: Record<string, any>) => Promise<boolean>;
-      getTasks: (type?: 'my-tasks' | 'assigned-by-me') => Promise<{ success: boolean; tasks: any[]; error?: string }>;
+      getTasks: (type?: 'my-tasks' | 'assigned-by-me' | 'all') => Promise<{ success: boolean; tasks: any[]; fromCache?: boolean; isOffline?: boolean; error?: string }>;
       getCompanyUsers: () => Promise<{ success: boolean; users: any[]; error?: string }>;
       createTask: (taskData: any) => Promise<{ success: boolean; task?: any; error?: string }>;
       updateTask: (taskId: string, data: any) => Promise<{ success: boolean; task?: any; error?: string }>;
       updateTaskStatus: (taskId: string, status: string) => Promise<{ success: boolean; task?: any; error?: string }>;
       startTaskTimer: (taskId: string) => Promise<{ success: boolean; entry?: any; error?: string }>;
       stopTaskTimer: (entryId: string) => Promise<{ success: boolean; result?: any; error?: string }>;
-      getRunningTaskTimer: () => Promise<{ success: boolean; runningTimer?: any; error?: string }>;
+      getRunningTaskTimer: () => Promise<{ success: boolean; runningTimer?: any; runningTimers?: any[]; error?: string }>;
       getCompanyActiveTimers: () => Promise<{ success: boolean; activeTimers?: any[]; error?: string }>;
       getAuthToken: () => Promise<{ token: string }>;
       uploadTaskAttachment: (data: {
@@ -55,6 +55,24 @@ declare global {
       getTaskDependencies: (taskId: string) => Promise<{ success: boolean; data?: any; error?: string }>;
       addTaskDependency: (taskId: string, dependsOnId: string, type: string) => Promise<{ success: boolean; data?: any; error?: string }>;
       removeTaskDependency: (dependencyId: string) => Promise<{ success: boolean; data?: any; error?: string }>;
+
+      // Subtasks & Checklists
+      getSubtasks: (parentTaskId: string) => Promise<{ success: boolean; subtasks: any[]; error?: string }>;
+      createSubtask: (data: { parentTaskId: string; title: string; assignedTo?: string; priority?: string }) => Promise<{ success: boolean; subtask?: any; error?: string }>;
+      getChecklists: (taskId: string) => Promise<{ success: boolean; checklists: any[]; error?: string }>;
+      createChecklist: (taskId: string, title?: string) => Promise<{ success: boolean; checklist?: any; error?: string }>;
+      addChecklistItem: (checklistId: string, text: string) => Promise<{ success: boolean; item?: any; error?: string }>;
+      updateChecklistItem: (itemId: string, data: { isCompleted?: boolean; text?: string }) => Promise<{ success: boolean; item?: any; error?: string }>;
+      deleteChecklistItem: (itemId: string) => Promise<{ success: boolean; error?: string }>;
+
+      // Goals (OKRs)
+      getTodayGoals: (userId?: string) => Promise<{ success: boolean; goals: any[]; error?: string }>;
+      getGoals: (params?: any) => Promise<{ success: boolean; goals: any[]; error?: string }>;
+      updateGoalProgress: (goalId: string, current: number, notes?: string) => Promise<{ success: boolean; result?: any; error?: string }>;
+
+      // Performance Report & Stats
+      getTaskDashboardStats: () => Promise<{ success: boolean; stats: any; error?: string }>;
+
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
       windowMinimize: () => Promise<boolean>;
       windowToggleMaximize: () => Promise<boolean>;

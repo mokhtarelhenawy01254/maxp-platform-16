@@ -820,11 +820,23 @@ function registerIpcHandlers(): void {
 
   // ── Tasks Engine Handlers ──
   ipcMain.handle('tasks:get', async (_, type?: 'my-tasks' | 'assigned-by-me' | 'all') => {
+    const scope = type || 'my-tasks';
     try {
-      const tasks = await apiClient.getTasks(type || 'my-tasks');
-      return { success: true, tasks };
+      const tasks = await apiClient.getTasks(scope);
+      if (Array.isArray(tasks) && tasks.length > 0) {
+        localDb.saveTasksCache(scope, tasks);
+      }
+      return { success: true, tasks: tasks || [], fromCache: false, isOffline: false };
     } catch (err: any) {
-      return { success: false, error: err.message, tasks: [] };
+      console.warn(`[main] Failed to fetch tasks (${scope}), serving from local cache:`, err.message);
+      const cached = localDb.getTasksCache(scope);
+      return {
+        success: true,
+        tasks: cached,
+        fromCache: true,
+        isOffline: true,
+        error: err.message,
+      };
     }
   });
 
@@ -896,10 +908,12 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle('tasks:get-running-timer', async () => {
     try {
-      const runningTimer = await apiClient.getRunningTaskTimer();
-      return { success: true, runningTimer };
+      const res = await apiClient.getRunningTaskTimer();
+      const runningTimer = res?.runningTimer ?? res?.data ?? res ?? null;
+      const runningTimers = res?.runningTimers ?? (runningTimer ? [runningTimer] : []);
+      return { success: true, runningTimer, runningTimers };
     } catch (err: any) {
-      return { success: false, error: err.message };
+      return { success: false, error: err.message, runningTimer: null, runningTimers: [] };
     }
   });
 
@@ -959,6 +973,110 @@ function registerIpcHandlers(): void {
       return { success: true, data };
     } catch (err: any) {
       return { success: false, error: err.message };
+    }
+  });
+
+  // ── Subtasks & Checklists Handlers ──
+  ipcMain.handle('tasks:get-subtasks', async (_, { parentTaskId }) => {
+    try {
+      const data = await apiClient.getSubtasks(parentTaskId);
+      return { success: true, subtasks: data };
+    } catch (err: any) {
+      return { success: false, error: err.message, subtasks: [] };
+    }
+  });
+
+  ipcMain.handle('tasks:create-subtask', async (_, { parentTaskId, title, assignedTo, priority }) => {
+    try {
+      const data = await apiClient.createSubtask(parentTaskId, { title, assignedTo, priority });
+      mainWindow?.webContents.send('tasks:refresh', { action: 'create-subtask', parentTaskId });
+      return { success: true, subtask: data };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('tasks:get-checklists', async (_, { taskId }) => {
+    try {
+      const data = await apiClient.getChecklists(taskId);
+      return { success: true, checklists: data };
+    } catch (err: any) {
+      return { success: false, error: err.message, checklists: [] };
+    }
+  });
+
+  ipcMain.handle('tasks:create-checklist', async (_, { taskId, title }) => {
+    try {
+      const data = await apiClient.createChecklist(taskId, title);
+      return { success: true, checklist: data };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('tasks:add-checklist-item', async (_, { checklistId, text }) => {
+    try {
+      const data = await apiClient.addChecklistItem(checklistId, text);
+      return { success: true, item: data };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('tasks:update-checklist-item', async (_, { itemId, isCompleted, text }) => {
+    try {
+      const data = await apiClient.updateChecklistItem(itemId, { isCompleted, text });
+      return { success: true, item: data };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('tasks:delete-checklist-item', async (_, { itemId }) => {
+    try {
+      const data = await apiClient.deleteChecklistItem(itemId);
+      return { success: true, data };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  // ── Goals Handlers ──
+  ipcMain.handle('goals:get-today', async (_, userId?: string) => {
+    try {
+      const goals = await apiClient.getTodayGoals(userId);
+      return { success: true, goals };
+    } catch (err: any) {
+      return { success: false, error: err.message, goals: [] };
+    }
+  });
+
+  ipcMain.handle('goals:get-all', async (_, params?: any) => {
+    try {
+      const goals = await apiClient.getGoals(params || {});
+      return { success: true, goals };
+    } catch (err: any) {
+      return { success: false, error: err.message, goals: [] };
+    }
+  });
+
+  ipcMain.handle('goals:update-progress', async (_, { goalId, current, notes }) => {
+    try {
+      const result = await apiClient.updateGoalProgress(goalId, current, notes);
+      mainWindow?.webContents.send('goals:refresh', { goalId });
+      return { success: true, result };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  // ── Dashboard Stats & Performance Report Handlers ──
+  ipcMain.handle('tasks:get-dashboard-stats', async () => {
+    try {
+      const stats = await apiClient.getTaskDashboardStats();
+      return { success: true, stats };
+    } catch (err: any) {
+      return { success: false, error: err.message, stats: null };
     }
   });
 

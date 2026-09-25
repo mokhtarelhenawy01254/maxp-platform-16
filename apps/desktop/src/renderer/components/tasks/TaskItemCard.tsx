@@ -21,9 +21,13 @@ import {
   Send,
   ClipboardCheck,
   Calendar,
+  Copy,
+  CheckCheck,
+  Shield,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
 import { TaskDependencyBadge } from './TaskDependencyBadge';
+import { TaskSubtasks } from './TaskSubtasks';
 
 interface TaskItemCardProps {
   task: any;
@@ -36,9 +40,10 @@ interface TaskItemCardProps {
   currentUserId?: string;
   isAdmin?: boolean;
   activeTaskId?: string | null;
+  activeTaskIds?: Record<string, number>;
   activeRunnerSeconds?: number;
   onStartTask?: (task: any) => void;
-  onStopTask?: () => void;
+  onStopTask?: (taskId?: string) => void;
   viewType?: 'my-tasks' | 'assigned-by-me' | 'all';
 }
 
@@ -53,6 +58,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   currentUserId = '',
   isAdmin = false,
   activeTaskId = null,
+  activeTaskIds,
   activeRunnerSeconds = 0,
   onStartTask,
   onStopTask,
@@ -60,6 +66,17 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopyDescription = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const textToCopy = task.description || task.title || '';
+    if (textToCopy) {
+      navigator.clipboard.writeText(textToCopy);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
 
   const rawStatus = String(task.status || '').toUpperCase();
   const isCompleted = rawStatus === 'COMPLETED';
@@ -67,7 +84,10 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const isInProgress = rawStatus === 'IN_PROGRESS';
   const isOnHold = rawStatus === 'ON_HOLD';
   const isPending = !isCompleted && !isInReview && !isInProgress && !isOnHold;
-  const isRunning = !isCompleted && !isInReview && activeTaskId === task.id;
+
+  const isMultiRunning = activeTaskIds ? activeTaskIds[task.id] !== undefined : false;
+  const isRunning = !isCompleted && !isInReview && (activeTaskId === task.id || isMultiRunning);
+  const currentElapsed = isMultiRunning && activeTaskIds ? activeTaskIds[task.id] : activeRunnerSeconds;
 
   const attachments = task.taskAttachments || task.attachments || [];
   const watchers = task.taskWatchers || task.watchers || [];
@@ -182,6 +202,16 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
   const targetPerson = viewType === 'my-tasks' ? (creatorName || 'مخصص') : assigneeName;
 
+  const visibilityReason = isAssignedToMe
+    ? { label: 'مكلف بالتنفيذ', bg: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8' }
+    : isCreatedByMe
+    ? { label: 'أنشأتها', bg: 'rgba(168, 85, 247, 0.12)', color: '#c084fc' }
+    : isWatching
+    ? { label: 'متابع', bg: 'rgba(34, 197, 94, 0.12)', color: '#22c55e' }
+    : isAdmin
+    ? { label: 'إشراف إداري', bg: 'rgba(245, 158, 11, 0.12)', color: '#fbbf24' }
+    : { label: 'فريق', bg: 'rgba(255, 255, 255, 0.05)', color: '#a1a1aa' };
+
   return (
     <div
       style={{
@@ -285,9 +315,23 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         </div>
 
         {/* Col 2: Creator / Assignee */}
-        <div style={rowStyles.personCol} title={viewType === 'my-tasks' ? `أنشأها: ${creatorName}` : `المكلف: ${assigneeName}`}>
+        <div style={rowStyles.personCol} title={`${viewType === 'my-tasks' ? `أنشأها: ${creatorName}` : `المكلف: ${assigneeName}`} (صلاحية الظهور: ${visibilityReason.label})`}>
           <User size={11} color="#71717a" />
           <span style={rowStyles.personName}>{targetPerson}</span>
+          <span
+            style={{
+              fontSize: 9.5,
+              fontWeight: 600,
+              padding: '1px 5px',
+              borderRadius: 4,
+              backgroundColor: visibilityReason.bg,
+              color: visibilityReason.color,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            {visibilityReason.label}
+          </span>
         </div>
 
         {/* Col 3: Estimated Time */}
@@ -331,6 +375,19 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           {/* Hover Action Tools (Rendered ONLY when hovered to prevent taking up space when idle) */}
           {isHovered && (
             <div style={rowStyles.hoverTools}>
+              {/* One-Click Copy Description */}
+              <button
+                type="button"
+                onClick={handleCopyDescription}
+                style={{
+                  ...rowStyles.iconBtn,
+                  color: isCopied ? 'var(--accent-green)' : '#94a3b8',
+                }}
+                title={isCopied ? 'تم نسخ الوصف بنجاح!' : 'نسخ وصف المهمة بنقرة واحدة'}
+              >
+                {isCopied ? <CheckCheck size={11} color="var(--accent-green)" /> : <Copy size={11} />}
+              </button>
+
               {canEditTask && onEdit && !isCompleted && (
                 <button
                   type="button"
@@ -414,11 +471,11 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           ) : isRunning ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={rowStyles.runningTimerChip}>
-                {formatRunnerTimer(activeRunnerSeconds)}
+                {formatRunnerTimer(currentElapsed)}
               </span>
               <button
                 type="button"
-                onClick={onStopTask}
+                onClick={() => onStopTask?.(task.id)}
                 style={rowStyles.pauseBtn}
                 title="إيقاف مؤقت"
               >
@@ -476,8 +533,24 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
       {expanded && (
         <div style={rowStyles.expandedPanel}>
           {task.description && task.description !== task.title && (
-            <div style={rowStyles.descBox}>{task.description}</div>
+            <div style={rowStyles.descBox}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                <div style={{ flex: 1, whiteSpace: 'pre-wrap' }}>{task.description}</div>
+                <button
+                  type="button"
+                  onClick={handleCopyDescription}
+                  style={rowStyles.copyDescBtn}
+                  title="نسخ الوصف إلى الحافظة بنقرة واحدة"
+                >
+                  {isCopied ? <CheckCheck size={11} color="var(--accent-green)" /> : <Copy size={11} />}
+                  <span>{isCopied ? 'تم النسخ' : 'نسخ الوصف'}</span>
+                </button>
+              </div>
+            </div>
           )}
+
+          {/* Subtasks Component */}
+          <TaskSubtasks taskId={task.id} canEdit={canEditTask} />
 
           <TaskDependencyBadge taskId={task.id} />
 
@@ -891,6 +964,21 @@ const rowStyles: Record<string, React.CSSProperties> = {
     color: 'var(--text-secondary)',
     lineHeight: 1.5,
     border: '1px solid var(--border-subtle)',
+  },
+  copyDescBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '3px 8px',
+    borderRadius: 4,
+    border: '1px solid var(--border-default)',
+    backgroundColor: 'var(--bg-card)',
+    color: 'var(--text-dim)',
+    fontSize: 10,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    flexShrink: 0,
   },
   directDoneInExpanded: {
     display: 'inline-flex',

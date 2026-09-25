@@ -11,10 +11,12 @@ import {
   Lock,
   Moon,
   Sun,
+  Target,
+  FileText,
 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
 
-export type TabId = 'cockpit' | 'tasks' | 'apps' | 'attendance' | 'system';
+export type TabId = 'tasks' | 'goals' | 'reports' | 'cockpit' | 'apps' | 'attendance' | 'system';
 
 interface SidebarProps {
   activeTab: TabId;
@@ -45,6 +47,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: <CheckSquare size={17} />,
         },
         {
+          id: 'goals',
+          label: 'الأهداف ومؤشرات الأداء',
+          icon: <Target size={17} />,
+        },
+        {
+          id: 'reports',
+          label: 'التقرير اليومي',
+          icon: <FileText size={17} />,
+        },
+        {
           id: 'cockpit',
           label: 'النشاط المباشر',
           icon: <Activity size={17} />,
@@ -70,6 +82,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'tasks',
           label: 'المهام والإنتاجية',
           icon: <CheckSquare size={17} />,
+        },
+        {
+          id: 'goals',
+          label: 'الأهداف ومؤشرات الأداء',
+          icon: <Target size={17} />,
+        },
+        {
+          id: 'reports',
+          label: 'التقرير اليومي',
+          icon: <FileText size={17} />,
         },
         {
           id: 'cockpit',

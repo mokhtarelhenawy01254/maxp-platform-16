@@ -12,6 +12,7 @@ import {
   Sparkles,
   Moon,
   Sun,
+  Type,
 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -33,7 +34,7 @@ const DEFAULT_PREFS: Prefs = {
 };
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-  const { mode, setTheme } = useTheme();
+  const { mode, setTheme, fontSize, setFontSize } = useTheme();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [saved, setSaved] = useState(false);
 
@@ -295,6 +296,93 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               >
                 <Sun size={14} />
                 <span>فاتح</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Typography & Font Size Section */}
+          <div style={styles.sectionCard}>
+            <div style={styles.sectionHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Type size={13} color="var(--accent-blue)" />
+                <span style={styles.sectionTitle}>حجم الخط وكثافة العرض</span>
+              </div>
+            </div>
+            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+              تحكم في مقياس النصوص لعرض مريح يناسب شاشة جهازك
+            </div>
+            <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setFontSize('compact')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 3,
+                  padding: '8px 10px',
+                  borderRadius: 6,
+                  border: fontSize === 'compact' ? '1px solid var(--accent-blue)' : '1px solid var(--border-default)',
+                  background: fontSize === 'compact' ? 'var(--accent-blue-bg)' : 'var(--bg-input)',
+                  color: fontSize === 'compact' ? 'var(--accent-blue)' : 'var(--text-dim)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'all 140ms ease-out',
+                }}
+                onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+              >
+                <span style={{ fontSize: 12, fontWeight: 700 }}>مدمج</span>
+                <span style={{ fontSize: 10, opacity: 0.8 }}>شاشات اللابتوب</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFontSize('normal')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 3,
+                  padding: '8px 10px',
+                  borderRadius: 6,
+                  border: fontSize === 'normal' ? '1px solid var(--accent-blue)' : '1px solid var(--border-default)',
+                  background: fontSize === 'normal' ? 'var(--accent-blue-bg)' : 'var(--bg-input)',
+                  color: fontSize === 'normal' ? 'var(--accent-blue)' : 'var(--text-dim)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'all 140ms ease-out',
+                }}
+                onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 700 }}>قياسي</span>
+                <span style={{ fontSize: 10, opacity: 0.8 }}>الموصى به</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFontSize('large')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 3,
+                  padding: '8px 10px',
+                  borderRadius: 6,
+                  border: fontSize === 'large' ? '1px solid var(--accent-blue)' : '1px solid var(--border-default)',
+                  background: fontSize === 'large' ? 'var(--accent-blue-bg)' : 'var(--bg-input)',
+                  color: fontSize === 'large' ? 'var(--accent-blue)' : 'var(--text-dim)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'all 140ms ease-out',
+                }}
+                onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+              >
+                <span style={{ fontSize: 14, fontWeight: 700 }}>كبير</span>
+                <span style={{ fontSize: 10, opacity: 0.8 }}>قراءة أوضح</span>
               </button>
             </div>
           </div>

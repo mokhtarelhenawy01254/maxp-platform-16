@@ -30,6 +30,7 @@ class LocalDatabase {
   private appsQueue: QueueItem<AppUsageRecord>[] = [];
   private websitesQueue: QueueItem<WebUsageRecord>[] = [];
   private dailyStatsMap: Record<string, any> = {};
+  private tasksCache: Record<string, any[]> = {};
 
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -49,6 +50,7 @@ class LocalDatabase {
         this.appsQueue = parsed.apps || [];
         this.websitesQueue = parsed.websites || [];
         this.dailyStatsMap = parsed.dailyStats || {};
+        this.tasksCache = parsed.tasksCache || {};
         this.nextId = parsed.nextId || 1;
       }
     } catch (err: any) {
@@ -82,12 +84,26 @@ class LocalDatabase {
         apps: this.appsQueue,
         websites: this.websitesQueue,
         dailyStats: this.dailyStatsMap,
+        tasksCache: this.tasksCache,
         nextId: this.nextId,
       };
       fs.writeFileSync(this.jsonFile, JSON.stringify(data, null, 2), 'utf8');
     } catch (err: any) {
       console.warn('[LocalDb] Error saving cache to disk:', err.message);
     }
+  }
+
+  // ── Tasks Offline Cache ─────────────────────────────────────
+
+  saveTasksCache(scope: string, tasks: any[]): void {
+    if (Array.isArray(tasks)) {
+      this.tasksCache[scope] = tasks;
+      this.scheduleSave();
+    }
+  }
+
+  getTasksCache(scope: string = 'my-tasks'): any[] {
+    return this.tasksCache[scope] || this.tasksCache['my-tasks'] || [];
   }
 
   // ── Queue data for sync ───────────────────────────────────────

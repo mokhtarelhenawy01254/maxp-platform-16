@@ -2642,26 +2642,31 @@ const taskController = {
         });
       }
 
-      const runningEntry = await getSharedPrismaClient().timeEntry.findFirst({
-        where: { userId, companyId, isRunning: true },
+      const { stopOthers } = req.body;
+      const existingTaskEntry = await getSharedPrismaClient().timeEntry.findFirst({
+        where: { userId, companyId, taskId, isRunning: true },
         include: { task: { select: { title: true } } },
       });
-      if (runningEntry) {
-        if (runningEntry.taskId === taskId) {
-          // Already running for this exact task, return existing entry cleanly
-          return res.json({
-            success: true,
-            data: runningEntry,
-            message: "المؤقت يعمل بالفعل لهذه المهمة",
+      if (existingTaskEntry) {
+        return res.json({
+          success: true,
+          data: existingTaskEntry,
+          message: "المؤقت يعمل بالفعل لهذه المهمة",
+        });
+      }
+
+      if (stopOthers === true) {
+        const otherRunningEntries = await getSharedPrismaClient().timeEntry.findMany({
+          where: { userId, companyId, isRunning: true },
+        });
+        const stopNow = new Date();
+        for (const runningEntry of otherRunningEntries) {
+          const dur = Math.max(1, Math.round((stopNow - new Date(runningEntry.startTime)) / 60000));
+          await getSharedPrismaClient().timeEntry.update({
+            where: { id: runningEntry.id },
+            data: { endTime: stopNow, duration: dur, isRunning: false },
           });
         }
-        // If running for another task, gracefully stop it to switch to new task
-        const stopNow = new Date();
-        const dur = Math.max(1, Math.round((stopNow - new Date(runningEntry.startTime)) / 60000));
-        await getSharedPrismaClient().timeEntry.update({
-          where: { id: runningEntry.id },
-          data: { endTime: stopNow, duration: dur, isRunning: false },
-        });
       }
 
       const timeEntry = await getSharedPrismaClient().timeEntry.create({
@@ -2995,25 +3000,34 @@ const taskController = {
       const companyId = await resolveCompanyContext(req);
       const userId = req.user.userId || req.user.id;
 
-      const runningEntry = await getSharedPrismaClient().timeEntry.findFirst({
+      const runningEntries = await getSharedPrismaClient().timeEntry.findMany({
         where: { userId, companyId, isRunning: true },
-        include: { task: { select: { id: true, title: true, status: true } } },
+        include: { task: { select: { id: true, title: true, status: true, priority: true } } },
+        orderBy: { startTime: 'desc' },
       });
 
-      if (runningEntry) {
-        const taskStatus = String(runningEntry.task?.status || "").toUpperCase();
+      const validRunning = [];
+      const stopNow = new Date();
+      for (const entry of runningEntries) {
+        const taskStatus = String(entry.task?.status || "").toUpperCase();
         if (["COMPLETED", "CANCELLED"].includes(taskStatus)) {
-          const stopNow = new Date();
-          const dur = Math.max(1, Math.round((stopNow - new Date(runningEntry.startTime)) / 60000));
+          const dur = Math.max(1, Math.round((stopNow - new Date(entry.startTime)) / 60000));
           await getSharedPrismaClient().timeEntry.update({
-            where: { id: runningEntry.id },
+            where: { id: entry.id },
             data: { endTime: stopNow, duration: dur, isRunning: false },
           });
-          return res.json({ success: true, data: null });
+        } else {
+          validRunning.push(entry);
         }
       }
 
-      res.json({ success: true, data: runningEntry });
+      const primaryRunning = validRunning[0] || null;
+      res.json({
+        success: true,
+        data: primaryRunning,
+        runningTimer: primaryRunning,
+        runningTimers: validRunning,
+      });
     } catch (error) {
       console.error("Error fetching running timer:", error);
       res

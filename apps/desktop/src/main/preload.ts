@@ -94,6 +94,35 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('tasks:add-dependency', { taskId, dependsOnId, type }),
   removeTaskDependency: (dependencyId: string) =>
     ipcRenderer.invoke('tasks:remove-dependency', { dependencyId }),
+
+  // Subtasks & Checklists
+  getSubtasks: (parentTaskId: string) =>
+    ipcRenderer.invoke('tasks:get-subtasks', { parentTaskId }),
+  createSubtask: (data: { parentTaskId: string; title: string; assignedTo?: string; priority?: string }) =>
+    ipcRenderer.invoke('tasks:create-subtask', data),
+  getChecklists: (taskId: string) =>
+    ipcRenderer.invoke('tasks:get-checklists', { taskId }),
+  createChecklist: (taskId: string, title?: string) =>
+    ipcRenderer.invoke('tasks:create-checklist', { taskId, title }),
+  addChecklistItem: (checklistId: string, text: string) =>
+    ipcRenderer.invoke('tasks:add-checklist-item', { checklistId, text }),
+  updateChecklistItem: (itemId: string, data: { isCompleted?: boolean; text?: string }) =>
+    ipcRenderer.invoke('tasks:update-checklist-item', { itemId, ...data }),
+  deleteChecklistItem: (itemId: string) =>
+    ipcRenderer.invoke('tasks:delete-checklist-item', { itemId }),
+
+  // Goals (OKRs)
+  getTodayGoals: (userId?: string) =>
+    ipcRenderer.invoke('goals:get-today', userId),
+  getGoals: (params?: any) =>
+    ipcRenderer.invoke('goals:get-all', params),
+  updateGoalProgress: (goalId: string, current: number, notes?: string) =>
+    ipcRenderer.invoke('goals:update-progress', { goalId, current, notes }),
+
+  // Performance Report & Stats
+  getTaskDashboardStats: () =>
+    ipcRenderer.invoke('tasks:get-dashboard-stats'),
+
   openExternal: (url: string) =>
     ipcRenderer.invoke('shell:open-external', url),
 
