@@ -99,6 +99,12 @@ function stepLabel(step: Step): string {
   return "المريض والملفات";
 }
 
+function getDefaultDueDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 3);
+  return d.toISOString().split("T")[0];
+}
+
 function StepIndicator({ current }: { current: Step }) {
   const steps: Step[] = [1, 2, 3];
   return (
@@ -297,7 +303,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [receivedDate, setReceivedDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [dueDate, setDueDate] = useState("");
+  const [dueDate, setDueDate] = useState(() => getDefaultDueDate());
   const [priority, setPriority] = useState<"NORMAL" | "URGENT" | "STAT">("NORMAL");
   const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
   const [selectedTechnicianRole, setSelectedTechnicianRole] = useState<DentalTechnicianRole>("CAD_DESIGNER");
@@ -409,7 +415,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
       setPatientName("");
       setPatientPhone("");
       setReceivedDate(new Date().toISOString().split("T")[0]);
-      setDueDate("");
+      setDueDate(getDefaultDueDate());
       setPriority("NORMAL");
       setNotes("");
       setSelectedTechnicianId("");
@@ -982,7 +988,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                   <input className={inputCls} placeholder="مثال: زيركون Katana" value={material} onChange={(e) => setMaterial(e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelCls}>عدد الكراونات / الوحدات</label>
+                  <label className={labelCls}>عدد الوحدات / الأسنان</label>
                   <input className={inputCls} type="number" min="1" value={unitsCount} onChange={(e) => handleManualUnitsChange(Number(e.target.value))} />
                 </div>
                 <div>
@@ -1168,11 +1174,13 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                   <div><span className="text-gray-400">الطبيب: </span>{selectedDoctor?.name || "—"}</div>
                   <div><span className="text-gray-400">الخدمة: </span>{primaryService?.name || "—"}</div>
                   <div><span className="text-gray-400">الأسنان: </span>{selectedTeeth.join(", ") || "—"}</div>
-                  <div><span className="text-gray-400">عدد الكراونات: </span>{unitsCount}</div>
+                  <div><span className="text-gray-400">عدد الوحدات: </span>{unitsCount}</div>
                   <div><span className="text-gray-400">اللون: </span>{customShade || shade || "غير محدد"}</div>
                   <div><span className="text-gray-400">الخامة: </span>{material || "—"}</div>
                   <div><span className="text-gray-400">الخصم: </span>{fmtMoney(discount)} ج.م</div>
                   <div><span className="text-gray-400">الأولوية: </span>{PRIORITY_CONFIG[priority].label}</div>
+                  <div><span className="text-gray-400">تاريخ التسليم: </span>{dueDate || "غير محدد"}</div>
+                  <div><span className="text-gray-400">الفني المسند: </span>{technicians.find((t) => t.id === selectedTechnicianId)?.name || "غير مسند"}</div>
                 </div>
               </div>
             </div>

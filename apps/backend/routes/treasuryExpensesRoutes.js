@@ -3,8 +3,11 @@ const router = express.Router();
 const controller = require('../controller/treasuryExpensesController');
 const verifyToken = require('../utils/verifyToken');
 
-// All treasury & expenses routes require authentication
+const { checkAppAccess } = require('../middleware/checkAppAccess');
+
+// All treasury & expenses routes require authentication and subscription access
 router.use(verifyToken.authenticateToken);
+router.use(checkAppAccess('treasury-expenses'));
 
 // 1. Treasury Accounts & Vaults
 router.get('/accounts', controller.getAccounts);

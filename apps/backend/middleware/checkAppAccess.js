@@ -66,8 +66,22 @@ const LEGACY_APP_SLUG_ALIASES = {
     'orders-analytics',
     'store-pro',
   ],
+  // Treasury / Expenses aliases:
+  'treasury-expenses': ['treasury-pro', 'treasury', 'order-invoicing', ...STORE_APP_SLUGS],
+  'treasury-pro': ['treasury-expenses', 'treasury', 'order-invoicing', ...STORE_APP_SLUGS],
+  // HR aliases:
+  'hr-core': ['hr-basic', 'hr-pro', 'hr-attendance-pro', 'hr-payroll', 'hr-assets', 'hr-recruitment'],
+  'hr-basic': ['hr-core', 'hr-pro', 'hr-attendance-pro', 'hr-payroll', 'hr-assets', 'hr-recruitment'],
+  'hr-pro': ['hr-basic', 'hr-core', 'hr-attendance-pro', 'hr-payroll', 'hr-assets', 'hr-recruitment'],
+  // Academy aliases:
+  'academy-app': ['academy', 'academy-pro'],
+  'academy': ['academy-app', 'academy-pro'],
+  // Radiology aliases:
+  'radiology-app': ['radiology', 'radiology-pro'],
+  'radiology': ['radiology-app', 'radiology-pro'],
   // Booking / Services aliases:
-  'booking-app': ['service-request-app', 'service-requests'],
+  'booking-app': ['service-request-app', 'service-requests', 'medical-system', 'booking-appointments'],
+  'booking-appointments': ['booking-app', 'service-request-app', 'service-requests', 'medical-system'],
   'service-request-app': ['booking-app', 'service-requests'],
   // Shipping multi-carrier hub & carrier aliases:
   'order-shipping-hub': ['order-shipping-turbo', 'order-shipping-bosta', 'order-shipping-qpexpress', 'order-shipping', ...STORE_APP_SLUGS],

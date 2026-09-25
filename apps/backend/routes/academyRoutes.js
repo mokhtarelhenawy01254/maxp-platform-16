@@ -2,28 +2,31 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controller/academyController');
 const { authenticateToken, optionalAuth } = require('../utils/verifyToken');
+const checkAppAccess = require('../middleware/checkAppAccess');
+
+const instructorAuth = [authenticateToken, checkAppAccess('academy-app')];
 
 // -------------------------------------------------------------
 // Instructor / Company Course Management (Protected)
 // -------------------------------------------------------------
-router.post('/courses', authenticateToken, controller.createCourse);
-router.get('/courses', authenticateToken, controller.getCourses);
-router.get('/courses/:id', authenticateToken, controller.getCourseDetails);
-router.put('/courses/:id', authenticateToken, controller.updateCourse);
-router.delete('/courses/:id', authenticateToken, controller.deleteCourse);
+router.post('/courses', instructorAuth, controller.createCourse);
+router.get('/courses', instructorAuth, controller.getCourses);
+router.get('/courses/:id', instructorAuth, controller.getCourseDetails);
+router.put('/courses/:id', instructorAuth, controller.updateCourse);
+router.delete('/courses/:id', instructorAuth, controller.deleteCourse);
 
 // Modules & Lessons
-router.post('/courses/:courseId/modules', authenticateToken, controller.addModule);
-router.put('/modules/:id', authenticateToken, controller.updateModule);
-router.delete('/modules/:id', authenticateToken, controller.deleteModule);
+router.post('/courses/:courseId/modules', instructorAuth, controller.addModule);
+router.put('/modules/:id', instructorAuth, controller.updateModule);
+router.delete('/modules/:id', instructorAuth, controller.deleteModule);
 
-router.post('/modules/:moduleId/lessons', authenticateToken, controller.addLesson);
-router.put('/lessons/:id', authenticateToken, controller.updateLesson);
-router.delete('/lessons/:id', authenticateToken, controller.deleteLesson);
-router.post('/lessons/:id/quiz', authenticateToken, controller.saveLessonQuiz);
+router.post('/modules/:moduleId/lessons', instructorAuth, controller.addLesson);
+router.put('/lessons/:id', instructorAuth, controller.updateLesson);
+router.delete('/lessons/:id', instructorAuth, controller.deleteLesson);
+router.post('/lessons/:id/quiz', instructorAuth, controller.saveLessonQuiz);
 
 // Progress & Analytics for Instructor
-router.get('/courses/:id/students', authenticateToken, controller.getStudentsProgress);
+router.get('/courses/:id/students', instructorAuth, controller.getStudentsProgress);
 
 // -------------------------------------------------------------
 // Student Portal & Catalog (Public / Token Protected)
@@ -41,9 +44,9 @@ router.post('/lessons/:id/submit-exercise', optionalAuth, controller.submitExerc
 router.post('/lessons/:id/coach-chat', optionalAuth, controller.askCoach);
 
 // Instructor Submissions Review
-router.get('/courses/:id/submissions', authenticateToken, controller.getCourseSubmissions);
-router.get('/lessons/:id/submissions', authenticateToken, controller.getLessonSubmissions);
-router.post('/submissions/:id/review', authenticateToken, controller.reviewSubmission);
+router.get('/courses/:id/submissions', instructorAuth, controller.getCourseSubmissions);
+router.get('/lessons/:id/submissions', instructorAuth, controller.getLessonSubmissions);
+router.post('/submissions/:id/review', instructorAuth, controller.reviewSubmission);
 
 // Certificates
 router.get('/certificates/:enrollmentId/view', controller.renderCertificate);

@@ -262,6 +262,7 @@ async function sendDentalNotification({ companyId, eventType, caseRow, doctor })
       recipientType: 'CUSTOMER',
       category: 'CUSTOMER',
       eventType,
+      orderId: (caseRow && caseRow.id) || null,
       priority: 4,
     };
     if (stored && stored.content) {
@@ -626,6 +627,49 @@ async function scanUninvoicedBillingCycle(companyId = null, options = {}) {
   }
 }
 
+async function cancelPendingNotificationsForCase(companyId, caseIdOrIds) {
+  try {
+    const prisma = getSharedPrismaClient();
+    if (!prisma || !prisma.whatsAppNotificationQueue) return;
+    const ids = Array.isArray(caseIdOrIds) ? caseIdOrIds : [caseIdOrIds];
+    if (ids.length === 0) return;
+    await prisma.whatsAppNotificationQueue.updateMany({
+      where: {
+        companyId,
+        orderId: { in: ids },
+        status: 'PENDING',
+      },
+      data: {
+        status: 'CANCELLED',
+      },
+    });
+  } catch (error) {
+    console.error('[DentalNotification] cancelPendingNotificationsForCase error:', error.message);
+  }
+}
+
+async function cancelPendingNotificationsForDoctor(companyId, doctorPhone) {
+  try {
+    if (!doctorPhone) return;
+    const prisma = getSharedPrismaClient();
+    if (!prisma || !prisma.whatsAppNotificationQueue) return;
+    const { formatPhoneNumber } = require('./whatsapp/WhatsAppNotificationService');
+    const formatted = formatPhoneNumber ? formatPhoneNumber(doctorPhone) : String(doctorPhone).trim();
+    await prisma.whatsAppNotificationQueue.updateMany({
+      where: {
+        companyId,
+        recipientPhone: formatted,
+        status: 'PENDING',
+      },
+      data: {
+        status: 'CANCELLED',
+      },
+    });
+  } catch (error) {
+    console.error('[DentalNotification] cancelPendingNotificationsForDoctor error:', error.message);
+  }
+}
+
 module.exports = {
   DENTAL_NOTIFICATION_EVENTS,
   DEFAULT_TEMPLATES,
@@ -641,4 +685,6 @@ module.exports = {
   scanOverdueCases,
   scanUninvoicedBillingCycle,
   runDunningCheck,
+  cancelPendingNotificationsForCase,
+  cancelPendingNotificationsForDoctor,
 };

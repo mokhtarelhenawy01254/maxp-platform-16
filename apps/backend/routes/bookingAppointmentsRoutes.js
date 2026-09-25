@@ -2,15 +2,19 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controller/bookingAppointmentsController');
 const verifyToken = require('../utils/verifyToken');
+const checkAppAccess = require('../middleware/checkAppAccess');
 
-router.get('/', verifyToken.authenticateToken, controller.getAllAppointments);
-router.get('/available-slots', verifyToken.authenticateToken, controller.getAvailableSlots);
-router.get('/timeline', verifyToken.authenticateToken, controller.getTimeline);
-router.post('/', verifyToken.authenticateToken, controller.createAppointment);
-router.put('/bulk-status', verifyToken.authenticateToken, controller.bulkUpdateStatus);
-router.post('/bulk-delete', verifyToken.authenticateToken, controller.bulkDelete);
-router.put('/:id', verifyToken.authenticateToken, controller.updateAppointment);
-router.put('/:id/status', verifyToken.authenticateToken, controller.updateAppointmentStatus);
-router.post('/:id/confirm', verifyToken.authenticateToken, controller.confirmAppointment);
+router.use(verifyToken.authenticateToken);
+router.use(checkAppAccess('booking-app'));
+
+router.get('/', controller.getAllAppointments);
+router.get('/available-slots', controller.getAvailableSlots);
+router.get('/timeline', controller.getTimeline);
+router.post('/', controller.createAppointment);
+router.put('/bulk-status', controller.bulkUpdateStatus);
+router.post('/bulk-delete', controller.bulkDelete);
+router.put('/:id', controller.updateAppointment);
+router.put('/:id/status', controller.updateAppointmentStatus);
+router.post('/:id/confirm', controller.confirmAppointment);
 
 module.exports = router;

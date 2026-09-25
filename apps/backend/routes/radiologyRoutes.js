@@ -4,6 +4,7 @@ const multer = require('multer');
 const controller = require('../controller/radiologyController');
 const examCategories = require('../controller/radiologyExamCategoriesController');
 const verifyToken = require('../utils/verifyToken');
+const checkAppAccess = require('../middleware/checkAppAccess');
 
 const MANAGER_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'];
 
@@ -22,6 +23,7 @@ const upload = multer({
 });
 
 router.use(verifyToken.authenticateToken);
+router.use(checkAppAccess('radiology-app'));
 
 // Exam types
 router.get('/exam-types', controller.listExamTypes);

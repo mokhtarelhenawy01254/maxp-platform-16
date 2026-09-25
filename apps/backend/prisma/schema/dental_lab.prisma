@@ -223,7 +223,7 @@ model DentalCaseAttachment {
 model DentalInvoice {
   id            String    @id @default(cuid())
   companyId     String?
-  invoiceNumber String    @unique // INV-DL-YYYYMMDD-XXXX
+  invoiceNumber String    // INV-DL-YYYYMMDD-XXXX
   caseId        String?
   doctorId      String?
   doctorName    String?
@@ -241,6 +241,7 @@ model DentalInvoice {
   doctor   DentalLabDoctor? @relation(fields: [doctorId], references: [id], onDelete: SetNull)
   payments DentalPayment[]
 
+  @@unique([companyId, invoiceNumber])
   @@unique([companyId, caseId])
   @@index([companyId])
   @@index([caseId])

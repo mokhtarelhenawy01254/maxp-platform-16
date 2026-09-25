@@ -29,7 +29,13 @@ const isMysqlDatabase = () => getDatabaseUrl().toLowerCase().startsWith('mysql:/
 const quoteSqlIdentifier = (identifier) =>
     isMysqlDatabase() ? `\`${identifier}\`` : `"${identifier}"`;
 const parseJsonSafely = (value, fallback = {}) => {
-    if (!value || typeof value !== 'string') {
+    if (!value) {
+        return fallback;
+    }
+    if (typeof value === 'object') {
+        return value;
+    }
+    if (typeof value !== 'string') {
         return fallback;
     }
 
@@ -105,6 +111,7 @@ const resolveSessionProvider = (sessionLike) => {
 };
 const mapSessionForResponse = (session, includeQrData = false) => {
     const provider = resolveSessionProvider(session);
+    const metadata = parseJsonSafely(session?.metadata, {});
     const activeSession = WhatsAppManager.getSession(session.id);
     const count = session._count ? {
         ...session._count,
@@ -797,6 +804,7 @@ async function getSession(req, res) {
                     contacts: session._count.contacts ?? session._count.whatsAppContacts ?? 0
                 } : session._count,
                 liveStatus: activeSession?.status || getLiveStatusFromDbStatus(session.status, session.provider),
+                agentId: parseJsonSafely(session.metadata, {})?.agentId || null,
                 qrCode: session.provider === 'META_CLOUD' ? null : (activeSession?.qrCode || null),
                 pairingCode: session.provider === 'META_CLOUD' ? null : (activeSession?.pairingCode || null),
                 historyImport

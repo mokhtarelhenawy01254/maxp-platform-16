@@ -1,11 +1,12 @@
 const { getDateStringInTimezone } = require('./dateUtils');
 
-const CASE_STATUS_CHAIN = ['RECEIVED', 'DESIGN', 'MANUFACTURING', 'QC', 'READY', 'DELIVERED', 'CLOSED'];
+const CASE_STATUS_CHAIN = ['RECEIVED', 'DESIGN', 'MANUFACTURING', 'OUTSOURCED', 'QC', 'READY', 'DELIVERED', 'CLOSED'];
 const DEFAULT_STAGE_NAMES = ['الاستلام', 'التصميم', 'التصنيع', 'مراجعة الجودة', 'التسليم'];
 const STATUS_STAGE_NAMES = {
   RECEIVED: 'الاستلام',
   DESIGN: 'التصميم',
   MANUFACTURING: 'التصنيع',
+  OUTSOURCED: 'التصنيع',
   QC: 'مراجعة الجودة',
   READY: 'التسليم',
   DELIVERED: 'التسليم',

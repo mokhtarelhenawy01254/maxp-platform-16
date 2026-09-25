@@ -476,11 +476,13 @@ const deleteDoctor = async (req, res) => {
     if (casesCount === 0 && invoicesCount === 0) {
       // Safe hard delete: no history
       await prisma.dentalLabDoctor.delete({ where: { id } });
+      dentalNotificationService.cancelPendingNotificationsForDoctor(companyId, existing.phone).catch(() => {});
       return res.json({ success: true, mode: 'DELETED', message: 'تم حذف الطبيب نهائياً من النظام' });
     }
 
     // Doctor has history -> Soft Archive to protect financial ledger
     const doctor = await prisma.dentalLabDoctor.update({ where: { id }, data: { isActive: false } });
+    dentalNotificationService.cancelPendingNotificationsForDoctor(companyId, existing.phone).catch(() => {});
     res.json({
       success: true,
       mode: 'ARCHIVED',
@@ -532,6 +534,7 @@ const permanentDeleteDoctor = async (req, res) => {
     }
 
     await prisma.dentalLabDoctor.delete({ where: { id } });
+    dentalNotificationService.cancelPendingNotificationsForDoctor(companyId, existing.phone).catch(() => {});
     res.json({ success: true, message: 'تم حذف الطبيب نهائياً من قاعدة البيانات' });
   } catch (error) {
     console.error('Error permanently deleting dental doctor:', error);
@@ -1992,6 +1995,8 @@ const trashCase = async (req, res) => {
       },
     }).catch(() => null);
 
+    dentalNotificationService.cancelPendingNotificationsForCase(companyId, id).catch(() => {});
+
     res.json({ success: true, data: dentalCase, message: 'تم نقل الحالة إلى سلة المهملات بنجاح' });
   } catch (error) {
     console.error('Error trashing dental case:', error);
@@ -2048,6 +2053,8 @@ const permanentDeleteCase = async (req, res) => {
       await tx.dentalInvoice.updateMany({ where: { caseId: id, companyId }, data: { caseId: null } });
       await tx.dentalLabCase.delete({ where: { id } });
     });
+
+    dentalNotificationService.cancelPendingNotificationsForCase(companyId, id).catch(() => {});
 
     res.json({ success: true, message: 'تم حذف الحالة نهائياً من النظام' });
   } catch (error) {
@@ -2268,6 +2275,8 @@ const bulkTrashCases = async (req, res) => {
       data: { isDeleted: true, deletedAt: new Date() },
     });
 
+    dentalNotificationService.cancelPendingNotificationsForCase(companyId, caseIds).catch(() => {});
+
     res.json({ success: true, count: result.count, message: `تم نقل ${result.count} حالة إلى سلة المهملات` });
   } catch (error) {
     console.error('Error bulk trashing dental cases:', error);
@@ -2407,19 +2416,30 @@ const advanceCaseStatus = async (req, res) => {
     const current = existing.status;
     if (!CASE_STATUSES.has(current)) return res.status(400).json({ success: false, error: 'الحالة الحالية غير صحيحة' });
     const currentIndex = CASE_STATUS_CHAIN.indexOf(current);
-    const nextInChain = currentIndex < CASE_STATUS_CHAIN.length - 1 ? CASE_STATUS_CHAIN[currentIndex + 1] : null;
+    const standardNext = current === 'MANUFACTURING' ? 'QC' : (current === 'OUTSOURCED' ? 'QC' : (currentIndex < CASE_STATUS_CHAIN.length - 1 ? CASE_STATUS_CHAIN[currentIndex + 1] : null));
+    const nextInChain = standardNext;
+
+    const isValidTransition = (from, to) => {
+      if (from === 'MANUFACTURING') {
+        return to === 'QC' || to === 'OUTSOURCED';
+      }
+      if (from === 'OUTSOURCED') {
+        return to === 'QC' || to === 'MANUFACTURING';
+      }
+      return to === nextInChain;
+    };
 
     let target = null;
     if (body.to !== undefined && body.to !== null && body.to !== '') {
       target = String(body.to).toUpperCase();
       if (!CASE_STATUSES.has(target)) return res.status(400).json({ success: false, error: 'الحالة المطلوبة غير صحيحة' });
-      if (target !== nextInChain) {
+      if (!isValidTransition(current, target)) {
         return res.status(400).json({ success: false, error: `لا يمكن الانتقال من "${current}" إلى "${target}"` });
       }
     } else if (body.status !== undefined && body.status !== null && body.status !== '') {
       target = String(body.status).toUpperCase();
       if (!CASE_STATUSES.has(target)) return res.status(400).json({ success: false, error: 'الحالة المطلوبة غير صحيحة' });
-      if (target !== nextInChain) {
+      if (!isValidTransition(current, target)) {
         return res.status(400).json({ success: false, error: `لا يمكن الانتقال من "${current}" إلى "${target}"` });
       }
     } else {

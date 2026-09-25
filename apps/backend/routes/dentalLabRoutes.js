@@ -28,25 +28,28 @@ router.get('/files/:name', async (req, res) => {
     const filePath = path.join(dentalLabDir, name);
     if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'الملف غير موجود' });
 
-    // نوع المحتوى حسب الامتداد: الصور و PDF و HTML تُفتح inline في المتصفح،
-    // وملفات 3D/أخرى تبقى للتحميل (المعاينة 3D عبر model-viewer من الـ blob).
+    // نوع المحتوى حسب الامتداد: الصور و PDF تُفتح inline في المتصفح،
+    // وملفات HTML و 3D وأخرى تُقدَّم كـ attachment حصراً لمنع ثغرات XSS.
     const ext = path.extname(attachment.fileName || name).toLowerCase();
     const isHtml = ext === '.html' || ext === '.htm';
-    const inlineTypes = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.pdf', '.html', '.htm']);
+    const inlineTypes = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.pdf']);
     const contentTypeMap = {
       '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
       '.webp': 'image/webp', '.gif': 'image/gif', '.pdf': 'application/pdf',
-      '.html': 'text/html; charset=utf-8', '.htm': 'text/html; charset=utf-8',
+      '.html': 'text/plain', '.htm': 'text/plain',
       '.json': 'application/json', '.txt': 'text/plain',
     };
+    if (isHtml) {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(attachment.fileName || name)}"`);
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+      return res.sendFile(filePath);
+    }
     const isInline = inlineTypes.has(ext);
     res.setHeader('Content-Type', contentTypeMap[ext] || 'application/octet-stream');
     res.setHeader('Content-Disposition', isInline ? 'inline' : `attachment; filename="${encodeURIComponent(attachment.fileName || name)}"`);
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    if (isHtml) {
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-      res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob: data:; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: data:; media-src 'self' blob:; worker-src 'self' blob:; object-src 'none'");
-    }
     res.sendFile(filePath);
   } catch (error) {
     console.error('Error serving dental file:', error);
@@ -77,7 +80,7 @@ router.get('/design-review/:name', async (req, res) => {
     res.setHeader('Content-Disposition', 'inline');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; media-src 'self' blob:; worker-src 'none'; object-src 'none'");
+    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob:; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; media-src blob:; worker-src 'none'; object-src 'none'; sandbox allow-scripts");
     res.setHeader('Cache-Control', 'no-store');
     res.sendFile(filePath);
   } catch (error) {

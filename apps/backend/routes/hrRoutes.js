@@ -22,6 +22,7 @@ const assetReportsRoutes = require('./hr/assetReportsRoutes');
 const verifyToken = require("../utils/verifyToken");
 const { handleHRError } = require('../utils/hrErrors');
 const { cacheMiddleware } = require('../middleware/performanceOptimization');
+const checkAppAccess = require('../middleware/checkAppAccess');
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -121,6 +122,7 @@ router.use((req, res, next) => {
 });
 
 router.use(verifyToken.authenticateToken);
+router.use(checkAppAccess('hr-core'));
 
 // Asset Management
 router.use('/assets/reports', assetReportsRoutes);
