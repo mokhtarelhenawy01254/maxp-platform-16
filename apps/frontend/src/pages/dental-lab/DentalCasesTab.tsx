@@ -1520,7 +1520,7 @@ export default function DentalCasesTab() {
             className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${priority === "URGENT" ? "bg-purple-600 text-white shadow-sm" : "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 hover:bg-purple-100 border border-purple-200 dark:border-purple-900"}`}
           >
             <Zap className="w-3.5 h-3.5 text-purple-500" />
-            <span>مستعجل 🔥</span>
+            <span>مستعجل</span>
           </button>
           <button
             type="button"
@@ -1528,7 +1528,15 @@ export default function DentalCasesTab() {
             className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${priority === "STAT" ? "bg-red-600 text-white shadow-sm" : "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 hover:bg-red-100 border border-red-200 dark:border-red-900"}`}
           >
             <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
-            <span>طارئ فوري ⚡</span>
+            <span>طارئ فوري</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode("ACTIVE"); setStatus(status === "OUTSOURCED" ? "" : "OUTSOURCED"); setPage(1); }}
+            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${status === "OUTSOURCED" ? "bg-amber-600 text-white shadow-sm" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 border border-amber-200 dark:border-amber-900"}`}
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-amber-500" />
+            <span>بره المعمل (خارجي)</span>
           </button>
         </div>
 

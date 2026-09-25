@@ -686,6 +686,168 @@ function ReturnFromTryInModal({ caseId, onClose, onSaved }: { caseId: string; on
   );
 }
 
+// O4: واجهة إرسال الشغل لجهة خارجية (بره المعمل - OUTSOURCED)
+function OutsourceModal({ caseId, onClose, onSaved }: { caseId: string; onClose: () => void; onSaved: () => void }) {
+  const [saving, setSaving] = useState(false);
+  const [providerName, setProviderName] = useState("");
+  const [workDescription, setWorkDescription] = useState("");
+  const [cost, setCost] = useState("");
+  const [returnDate, setReturnDate] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const save = async () => {
+    if (!providerName.trim()) {
+      toast.error("يرجى إدخال اسم جهة التنفيذ الخارجية (المعمل أو المركز)");
+      return;
+    }
+    if (saving) return;
+    setSaving(true);
+    try {
+      const summaryParts = [
+        `جهة التنفيذ: ${providerName.trim()}`,
+        workDescription.trim() && `العمل: ${workDescription.trim()}`,
+        cost.trim() && `التكلفة: ${cost.trim()} ج.م`,
+        returnDate && `موعد الاستلام: ${returnDate}`,
+        trackingNumber.trim() && `رقم الإيصال: ${trackingNumber.trim()}`,
+        notes.trim() && `ملاحظات: ${notes.trim()}`,
+      ].filter(Boolean);
+
+      const combinedNotes = `[بره المعمل (OUTSOURCED) | ${summaryParts.join(" | ")}]`;
+
+      await advanceCase(caseId, {
+        to: "OUTSOURCED",
+        reason: `إرسال إلى: ${providerName.trim()}`,
+        notes: combinedNotes,
+        dueDate: returnDate || undefined,
+      });
+
+      toast.success("تم تحويل الحالة إلى مرحلة (بره المعمل) بنجاح");
+      onSaved();
+      onClose();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || e?.message || "فشل إرسال الحالة للجهة الخارجية");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !saving && onClose()}>
+      <div className={`${MODAL_CONTENT_CLS} max-w-lg w-full`} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4 border-b dark:border-gray-700 pb-3">
+          <div className="flex items-center gap-2">
+            <ExternalLink className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <h3 className="text-base sm:text-lg font-bold">إرسال الشغل لجهة خارجية (بره المعمل)</h3>
+          </div>
+          <button onClick={() => !saving && onClose()} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-3.5 text-xs">
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              اسم جهة التنفيذ الخارجية (مركز ميلنج / معمل صب / مورد) *
+            </label>
+            <input
+              className={MODAL_INPUT_CLS}
+              value={providerName}
+              onChange={e => setProviderName(e.target.value)}
+              placeholder="مثال: مركز الأمل للميلنج والـ CAD/CAM..."
+              autoFocus
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                نوع العمل المطلوب خارجياً
+              </label>
+              <input
+                className={MODAL_INPUT_CLS}
+                value={workDescription}
+                onChange={e => setWorkDescription(e.target.value)}
+                placeholder="مثال: خرط زيركون Katana 3D..."
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                التكلفة المتوقعة (ج.م)
+              </label>
+              <input
+                className={MODAL_INPUT_CLS}
+                type="number"
+                min="0"
+                value={cost}
+                onChange={e => setCost(e.target.value)}
+                placeholder="مثال: 150"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                موعد الاستلام المتوقع
+              </label>
+              <input
+                className={MODAL_INPUT_CLS}
+                type="date"
+                value={returnDate}
+                onChange={e => setReturnDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                رقم الإيصال / البوليصة
+              </label>
+              <input
+                className={MODAL_INPUT_CLS}
+                value={trackingNumber}
+                onChange={e => setTrackingNumber(e.target.value)}
+                placeholder="رقم متابعة الاستلام..."
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              ملاحظات وتعليمات للجهة الخارجية
+            </label>
+            <textarea
+              className={`${MODAL_INPUT_CLS} min-h-[60px] resize-y`}
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="أي تعليمات أو مقاسات خاصة مطلوبة من المورد الخارجي..."
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2.5 mt-5 pt-3 border-t dark:border-gray-700">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            className="px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
+          >
+            إلغاء
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+            تأكيد الإرسال لجهة خارجية
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DentalCaseDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
@@ -708,6 +870,7 @@ export default function DentalCaseDetailPage() {
   const [warrantyLoading, setWarrantyLoading] = useState(false);
   const [tryInSendOpen, setTryInSendOpen] = useState(false);
   const [tryInReturnOpen, setTryInReturnOpen] = useState(false);
+  const [outsourceOpen, setOutsourceOpen] = useState(false);
   const [qualityOpen, setQualityOpen] = useState(false);
   const [refabOpen, setRefabOpen] = useState(false);
   const [refabBusyId, setRefabBusyId] = useState<string | null>(null);
@@ -876,6 +1039,26 @@ export default function DentalCaseDetailPage() {
       toast.error(err?.response?.data?.error || err?.message || "فشل تأجيل تنبيه التأخير");
     } finally {
       setSnoozing(false);
+    }
+  };
+
+  // O4: استلام الشغل من الجهة الخارجية ونقله إلى مراجعة الجودة
+  const handleReturnFromOutsource = async () => {
+    if (!id || caseBusy) return;
+    if (!window.confirm("هل تم استلام الشغل من الجهة الخارجية ونقله إلى مراجعة الجودة (QC)؟")) return;
+    setCaseBusy(true);
+    try {
+      await advanceCase(id, {
+        to: "QC",
+        reason: "استلام الشغل من الجهة الخارجية",
+        notes: "تم استلام الشغل من الجهة الخارجية بنجاح ونقله إلى فحص الجودة (QC).",
+      });
+      toast.success("تم استلام الشغل من الجهة الخارجية ونقله لفحص الجودة (QC)");
+      await refresh();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.message || "فشل استلام الشغل من الجهة الخارجية");
+    } finally {
+      setCaseBusy(false);
     }
   };
 
@@ -1299,6 +1482,29 @@ export default function DentalCaseDetailPage() {
               <Pencil className="w-4 h-4" /> تعديل الحالة بالكامل
             </button>
           )}
+          {c.status === "MANUFACTURING" && !c.isTryIn && !c.isDeleted && (
+            <button
+              type="button"
+              onClick={() => setOutsourceOpen(true)}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 border border-amber-300 dark:border-amber-700 bg-amber-50/80 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-lg text-sm font-semibold hover:bg-amber-100 dark:hover:bg-amber-900/50 shadow-sm transition"
+              title="إرسال الحالة لجهة خارجية (ميلنج، صب، ليزر...)"
+            >
+              <ExternalLink className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              بره المعمل
+            </button>
+          )}
+          {c.status === "OUTSOURCED" && !c.isDeleted && (
+            <button
+              type="button"
+              onClick={handleReturnFromOutsource}
+              disabled={caseBusy}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold shadow-sm transition disabled:opacity-50"
+              title="استلام الشغل من الجهة الخارجية ونقله لفحص الجودة"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              استلام من بره المعمل
+            </button>
+          )}
           {next && !c.isTryIn && !c.isDeleted && (
             <button onClick={() => setAdvanceOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
               <ArrowRightCircle className="w-4 h-4" />{t("dentalLab.cases.advance")}
@@ -1379,6 +1585,33 @@ export default function DentalCaseDetailPage() {
               تأجيل +أسبوع
             </button>
           </div>
+        </div>
+      )}
+
+      {c.status === "OUTSOURCED" && (
+        <div className="mb-6 p-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 flex flex-wrap items-center justify-between gap-4 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <ExternalLink className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                الشغل حالياً لدى جهة خارجية (بره المعمل)
+              </h4>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                الحالة في مرحلة التشغيل الخارجي (مركز ميلنج / صب / ليزر). فور استلام الشغل الجاهز، اضغط على زر الاستلام لنقل الحالة إلى مراجعة الجودة (QC).
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleReturnFromOutsource}
+            disabled={caseBusy}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition disabled:opacity-50 flex items-center gap-1.5"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            استلام الشغل وفحص الجودة
+          </button>
         </div>
       )}
 
@@ -2085,6 +2318,14 @@ export default function DentalCaseDetailPage() {
           caseId={c.id}
           onClose={() => setTryInReturnOpen(false)}
           onSaved={() => { setTryInReturnOpen(false); refresh(); }}
+        />
+      )}
+
+      {outsourceOpen && (
+        <OutsourceModal
+          caseId={c.id}
+          onClose={() => setOutsourceOpen(false)}
+          onSaved={() => { setOutsourceOpen(false); refresh(); }}
         />
       )}
 

@@ -946,7 +946,7 @@ export const restoreCase = async (id: string): Promise<DentalLabCase> =>
 export const permanentDeleteCase = async (id: string): Promise<{ success: boolean; message?: string }> =>
   unwrapEnvelope<{ success: boolean; message?: string }>(await apiClient.delete(`/dental-lab/cases/${id}/permanent`));
 
-export const advanceCase = async (id: string, body: { to?: string; status?: string; reason?: string; assigneeId?: string }): Promise<DentalLabCase> =>
+export const advanceCase = async (id: string, body: { to?: string; status?: string; reason?: string; assigneeId?: string; notes?: string; dueDate?: string }): Promise<DentalLabCase> =>
   unwrapEnvelope<DentalLabCase>(await apiClient.post(`/dental-lab/cases/${id}/advance`, body));
 
 export const assignCase = async (id: string, body: { technicianId: string; role: DentalTechnicianRole }): Promise<DentalLabCase> =>
