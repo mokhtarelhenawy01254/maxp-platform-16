@@ -99,10 +99,39 @@ function stepLabel(step: Step): string {
   return "المريض والملفات";
 }
 
-function getDefaultDueDate(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 3);
-  return d.toISOString().split("T")[0];
+function calculateDynamicDueDate(
+  workType?: DentalWorkType | null,
+  priority: "NORMAL" | "URGENT" | "STAT" = "NORMAL",
+  baseDateStr?: string
+): { dateStr: string; reason: string } {
+  const base = baseDateStr ? new Date(baseDateStr) : new Date();
+  if (isNaN(base.getTime())) base.setTime(Date.now());
+
+  let leadDays = (workType && typeof workType.leadTimeDays === 'number' && workType.leadTimeDays > 0)
+    ? workType.leadTimeDays
+    : 3;
+
+  let reason = `${workType?.name || 'المدة القياسية'} (${leadDays} أيام عمل)`;
+
+  if (priority === 'URGENT') {
+    const reduced = Math.max(1, Math.ceil(leadDays * 0.5));
+    reason = `${workType?.name || 'نوع العمل'} (مستعجل: ${reduced} أيام بدل ${leadDays})`;
+    leadDays = reduced;
+  } else if (priority === 'STAT') {
+    leadDays = 1;
+    reason = `${workType?.name || 'نوع العمل'} (طارئ جداً: يوم واحد)`;
+  }
+
+  const result = new Date(base);
+  result.setDate(result.getDate() + leadDays);
+  return {
+    dateStr: result.toISOString().split("T")[0],
+    reason,
+  };
+}
+
+function getDefaultDueDate(workType?: DentalWorkType | null, priority: "NORMAL" | "URGENT" | "STAT" = "NORMAL"): string {
+  return calculateDynamicDueDate(workType, priority).dateStr;
 }
 
 function StepIndicator({ current }: { current: Step }) {
@@ -304,11 +333,26 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   const [patientPhone, setPatientPhone] = useState("");
   const [receivedDate, setReceivedDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [dueDate, setDueDate] = useState(() => getDefaultDueDate());
+  const [dueDateReason, setDueDateReason] = useState("");
+  const [isDueDateUserModified, setIsDueDateUserModified] = useState(false);
   const [priority, setPriority] = useState<"NORMAL" | "URGENT" | "STAT">("NORMAL");
   const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
   const [selectedTechnicianRole, setSelectedTechnicianRole] = useState<DentalTechnicianRole>("CAD_DESIGNER");
   const [notes, setNotes] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+
+  const primaryWorkType = useMemo(() => {
+    const id = selectedServiceIds[0];
+    return workTypes.find((w) => w.id === id) || null;
+  }, [selectedServiceIds, workTypes]);
+
+  useEffect(() => {
+    if (!isDueDateUserModified) {
+      const calc = calculateDynamicDueDate(primaryWorkType, priority, receivedDate);
+      setDueDate(calc.dateStr);
+      setDueDateReason(calc.reason);
+    }
+  }, [primaryWorkType, priority, receivedDate, isDueDateUserModified]);
   const [submitting, setSubmitting] = useState(false);
   const [submittingAndPrint, setSubmittingAndPrint] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -569,6 +613,20 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
     }
     if (!patientName.trim()) {
       toast.error("اسم المريض مطلوب");
+      setStep(3);
+      return;
+    }
+    if (patientPhone.trim()) {
+      const egPhoneRegex = /^(?:\+20|0)?1[0125][0-9]{8}$/;
+      if (!egPhoneRegex.test(patientPhone.trim())) {
+        toast.error("رقم هاتف المريض غير صحيح (يجب أن يبدأ بـ 010 أو 011 أو 012 أو 015 ومكون من 11 رقماً)");
+        setStep(3);
+        return;
+      }
+    }
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (dueDate && dueDate < todayStr) {
+      toast.error("لا يمكن حفظ الحالة بتاريخ تسليم سابق لتاريخ اليوم");
       setStep(3);
       return;
     }
@@ -1035,7 +1093,27 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                 </div>
                 <div>
                   <label className={labelCls}>تاريخ التسليم المطلوب</label>
-                  <input className={inputCls} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                  <input
+                    className={inputCls}
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    value={dueDate}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const todayStr = new Date().toISOString().split("T")[0];
+                      if (val && val < todayStr) {
+                        toast.error("لا يمكن تحديد تاريخ تسليم سابق لتاريخ اليوم");
+                        return;
+                      }
+                      setDueDate(val);
+                      setIsDueDateUserModified(true);
+                    }}
+                  />
+                  {dueDateReason && (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      الموعد المقترح بناءً على: {dueDateReason}
+                    </p>
+                  )}
                 </div>
                 <div className="sm:col-span-2">
                   <label className={labelCls}>الأولوية والاستعجال</label>

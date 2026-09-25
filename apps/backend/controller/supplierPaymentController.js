@@ -118,10 +118,37 @@ exports.createSupplierPayment = async (req, res) => {
       );
     }
 
+    // P1: ترحيل دفعة المورد للطبقة المالية والخزينة (Idempotent)
+    let financialPosting = null;
+    try {
+      const { createOrGetFinancialPosting, SOURCE_TYPES } = require('../services/financialPostingService');
+      const finResult = await createOrGetFinancialPosting({
+        companyId,
+        sourceType: SOURCE_TYPES.SUPPLIER_PAYMENT,
+        sourceId: payment.id,
+        treasuryAccountId: req.body.treasuryAccountId || null,
+        direction: 'OUT',
+        amount: paymentAmount,
+        reference: `سداد مورد ${payment.supplier?.name || ''} - ${payment.paymentNumber}`,
+        notes: notes || `سداد دفعة للمورد ${payment.supplier?.name || ''}`,
+        metadata: {
+          supplierId,
+          supplierName: payment.supplier?.name,
+          paymentNumber: payment.paymentNumber,
+          purchaseInvoiceId: purchaseInvoiceId || null,
+        },
+        userId,
+      });
+      financialPosting = finResult?.posting || null;
+    } catch (finErr) {
+      console.warn('Warning: Financial posting failed for supplier payment:', finErr.message);
+    }
+
     res.status(201).json({
       success: true,
       message: 'تم تسجيل الدفعة بنجاح',
-      payment
+      payment,
+      financialPosting
     });
   } catch (error) {
     console.error('Error creating supplier payment:', error);

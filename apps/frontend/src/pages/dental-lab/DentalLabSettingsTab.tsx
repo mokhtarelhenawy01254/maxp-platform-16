@@ -2,17 +2,21 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Plus, RefreshCw, Save, Trash2, X as XMarkIcon, CreditCard, Coins, BellRing, Building2, Workflow, MessageSquareText, FilePlus2, CheckCircle2 } from "lucide-react";
+import { Loader2, Plus, RefreshCw, Save, Trash2, X as XMarkIcon, CreditCard, Coins, BellRing, Building2, Workflow, MessageSquareText, FilePlus2, CheckCircle2, Bot, DollarSign } from "lucide-react";
+import DentalPoliciesSection from "./settings/DentalPoliciesSection";
+import DentalFinancialPoliciesSection from "./settings/DentalFinancialPoliciesSection";
 import {
   DentalCustomFieldDef, fetchSettings, saveSettings,
   fetchCustomFields, createCustomField, updateCustomField, deleteCustomField,
   WORK_TYPE_CATEGORIES, tKey, MODAL_INPUT_CLS, BillingPolicy, DentalInvoiceMode, DentalLabSettings,
 } from "./shared";
 
-type SettingsSectionId = "general" | "stages" | "whatsapp" | "fields" | "wages" | "dunning" | "billing";
+type SettingsSectionId = "general" | "policies" | "financial" | "stages" | "whatsapp" | "fields" | "wages" | "dunning" | "billing";
 
 const SETTINGS_SECTIONS: { id: SettingsSectionId; labelKey: string; icon: typeof Building2 }[] = [
   { id: "general", labelKey: "dentalLab.settings.sections.general", icon: Building2 },
+  { id: "policies", labelKey: "الأتمتة والسياسات", icon: Bot },
+  { id: "financial", labelKey: "الطبقة المالية والترحيل", icon: DollarSign },
   { id: "stages", labelKey: "dentalLab.settings.sections.stages", icon: Workflow },
   { id: "whatsapp", labelKey: "dentalLab.settings.sections.whatsapp", icon: MessageSquareText },
   { id: "fields", labelKey: "dentalLab.settings.sections.fields", icon: FilePlus2 },
@@ -387,6 +391,10 @@ export default function DentalLabSettingsTab() {
               </div>
             </div>
           )}
+
+          {activeSection === "policies" && <DentalPoliciesSection />}
+
+          {activeSection === "financial" && <DentalFinancialPoliciesSection />}
 
           {activeSection === "stages" && (
             <div className={`${sectionCls} space-y-4`}>

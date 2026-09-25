@@ -297,6 +297,30 @@ async function notifyCaseEvent(caseId, eventType) {
   try {
     const ctx = await loadCaseForNotification(caseId);
     if (!ctx) return { success: false, reason: 'not_found' };
+
+    // P7: إذا كان إشعار المريض مفعل في السياسات مع وجود رقم صالح للمريض
+    try {
+      const { getLabPolicies } = require('./dentalAssignmentService');
+      const policies = await getLabPolicies(getSharedPrismaClient(), ctx.caseRow.companyId);
+      if (policies.notify?.patientEnabled && ctx.caseRow.patientPhone) {
+        const patientPhone = String(ctx.caseRow.patientPhone).trim();
+        const egRegex = /^(\+20|0)?1[0125][0-9]{8}$/;
+        if (egRegex.test(patientPhone)) {
+          return await sendDentalNotification({
+            companyId: ctx.caseRow.companyId,
+            eventType,
+            caseRow: ctx.caseRow,
+            doctor: {
+              name: ctx.caseRow.patientName || 'المريض العزيز',
+              phone: patientPhone,
+            },
+          });
+        }
+      }
+    } catch (polErr) {
+      console.warn('[DentalNotification] Could not check patient notify policy:', polErr.message);
+    }
+
     return sendDentalNotification({
       companyId: ctx.caseRow.companyId,
       eventType,

@@ -477,6 +477,9 @@ const ScheduledOrderSettings = React.lazy(
 const Suppliers = React.lazy(
   () => import("./components/procurement/Suppliers"),
 );
+const SupplierDetails = React.lazy(
+  () => import("./components/procurement/SupplierDetails"),
+);
 const PurchaseOrders = React.lazy(
   () => import("./components/procurement/PurchaseOrders"),
 );
@@ -5148,7 +5151,7 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
-                        <Suppliers />
+                        <SupplierDetails />
                       </AppAccessRoute>
                     </Layout>
                   }

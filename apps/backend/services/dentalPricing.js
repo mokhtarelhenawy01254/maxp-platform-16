@@ -62,6 +62,7 @@ const computeTechnicianEarnings = async (prisma, companyId, { technicianId, from
   const selectStageFields = {
     id: true,
     assigneeId: true,
+    stageWage: true,
     case: { select: { teeth: true } },
   };
   // فقط إذا كان النموذج أو الموك يدعم assignees نختاره لتفادي الأخطاء في البيئات التجريبية القديمة
@@ -92,6 +93,7 @@ const computeTechnicianEarnings = async (prisma, companyId, { technicianId, from
       },
       select: {
         assigneeId: true,
+        stageWage: true,
         case: { select: { teeth: true } },
       },
     })) || [];
@@ -122,13 +124,14 @@ const computeTechnicianEarnings = async (prisma, companyId, { technicianId, from
 
   for (const s of stages) {
     const units = s.case && s.case.teeth ? parseUnitCount(s.case.teeth) : 1;
+    const stageWageNum = s.stageWage != null && Number(s.stageWage) > 0 ? Number(s.stageWage) : null;
 
     if (Array.isArray(s.assignees) && s.assignees.length > 0) {
       for (const a of s.assignees) {
         const id = a.technicianId;
         if (!id) continue;
         if (technicianId && id !== technicianId) continue;
-        const rate = rateById.get(id) || 0;
+        const rate = stageWageNum != null ? stageWageNum : (rateById.get(id) || 0);
         const shareFactor = Math.max(0, Number(a.sharePercent) || 100) / 100;
         const earned = rate * units * shareFactor;
         const proRatedUnits = units * shareFactor;
@@ -141,7 +144,7 @@ const computeTechnicianEarnings = async (prisma, companyId, { technicianId, from
     } else if (s.assigneeId) {
       const id = s.assigneeId;
       if (technicianId && id !== technicianId) continue;
-      const rate = rateById.get(id) || 0;
+      const rate = stageWageNum != null ? stageWageNum : (rateById.get(id) || 0);
       if (!agg[id]) agg[id] = { technicianId: id, name: nameById.get(id) || 'غير محدد', completedStages: 0, completedUnits: 0, wage: 0 };
       agg[id].completedStages += 1;
       agg[id].completedUnits += units;

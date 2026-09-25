@@ -348,6 +348,7 @@ const getOutsourcedReport = async (req, res) => {
 module.exports = {
   getPolicies,
   updatePolicies,
+  getLabPolicies,
   simulateAutomation,
   runEscalation,
   getWorkTypeStages,

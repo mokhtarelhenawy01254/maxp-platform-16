@@ -1072,6 +1072,8 @@ const updateTechnician = async (req, res) => {
           console.warn('Could not set dental role for technician user:', roleErr.message);
         }
       }
+    }
+
     if ('workingDays' in body) data.workingDays = Array.isArray(body.workingDays) ? body.workingDays : null;
     if ('vacations' in body) data.vacations = Array.isArray(body.vacations) ? body.vacations : null;
     if ('dailyCap' in body) data.dailyCap = Math.max(0, parseInt(body.dailyCap, 10) || 0);
@@ -1251,7 +1253,30 @@ const recordTechnicianPayout = async (req, res) => {
       },
     });
 
-    res.status(201).json({ success: true, data: payout, message: 'تم تسجيل الحركة المالية بنجاح' });
+    // P1: ترحيل صرف أجر أو سلفة الفني للخزينة (Idempotent)
+    let financialPosting = null;
+    if (normType === 'PAYOUT' || normType === 'ADVANCE') {
+      try {
+        const { createOrGetFinancialPosting, SOURCE_TYPES } = require('../services/financialPostingService');
+        const finResult = await createOrGetFinancialPosting({
+          companyId,
+          sourceType: SOURCE_TYPES.TECHNICIAN_PAYOUT,
+          sourceId: payout.id,
+          treasuryAccountId: req.body.treasuryAccountId || null,
+          direction: 'OUT',
+          amount: round2(amt),
+          reference: reference || `صرف مستحقات فني: ${technician.name}`,
+          notes: notes || `صرف ${normType === 'ADVANCE' ? 'سلفة' : 'أجر'} للفني ${technician.name}`,
+          metadata: { technicianId: id, technicianName: technician.name, payoutType: normType },
+          userId: req.user?.id || req.user?.email,
+        });
+        financialPosting = finResult?.posting || null;
+      } catch (finErr) {
+        console.warn('Warning: Failed to create financial posting for technician payout:', finErr.message);
+      }
+    }
+
+    res.status(201).json({ success: true, data: payout, financialPosting, message: 'تم تسجيل الحركة المالية بنجاح' });
   } catch (error) {
     console.error('Error recording technician payout:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل الدفعة' });
@@ -1420,6 +1445,9 @@ const listCases = async (req, res) => {
         where.paymentStatus = ps;
       }
     }
+    if (req.query.patientPhone) {
+      where.patientPhone = { contains: String(req.query.patientPhone).trim(), mode: 'insensitive' };
+    }
 
     if (dueDateFrom || dueDateTo) {
       where.dueDate = where.dueDate || {};
@@ -1474,6 +1502,7 @@ const listCases = async (req, res) => {
       { caseNumber: { contains: search, mode: 'insensitive' } },
       { patientName: { contains: search, mode: 'insensitive' } },
       { doctorName: { contains: search, mode: 'insensitive' } },
+      { patientPhone: { contains: search, mode: 'insensitive' } },
     ] : null;
 
     let techOr = null;
@@ -1537,9 +1566,29 @@ const createCase = async (req, res) => {
         : (workType && workType.name) || '';
     if (!workTypeName) return res.status(400).json({ success: false, error: 'اسم نوع الشغل مطلوب' });
 
+    // التحقق من سياسات المعمل (الحقول المطلوبة وأرقام الهواتف)
+    const { getLabPolicies } = require('./dentalPolicyController');
+    const labPolicies = await getLabPolicies(prisma, companyId);
+    if (labPolicies?.fields?.patientPhoneRequired && !body.patientPhone) {
+      return res.status(400).json({ success: false, error: 'رقم هاتف المريض إلزامي بحسب سياسة المعمل' });
+    }
+    if (body.patientPhone) {
+      const phoneClean = String(body.patientPhone).trim();
+      const egPhoneRegex = /^(?:\+20|0)?1[0125][0-9]{8}$/;
+      if (!egPhoneRegex.test(phoneClean)) {
+        return res.status(400).json({ success: false, error: 'رقم هاتف المريض غير صحيح (يجب أن يكون رقماً مصرياً صحيحاً مثل 01012345678)' });
+      }
+    }
+
     let dueDate = parseDate(body.dueDate);
-    if (!dueDate && body.workTypeId) {
-      dueDate = await suggestDueDate(prisma, companyId, body.workTypeId, new Date(), { priority: body.priority });
+    if (!dueDate && (body.workTypeId || workType)) {
+      const { calculateExpectedDueDate } = require('../services/dentalAssignmentService');
+      dueDate = calculateExpectedDueDate({
+        workType,
+        priority: body.priority,
+        orderDate: (body.receivedDate && parseDate(body.receivedDate)) || new Date(),
+        policies: labPolicies,
+      });
     }
     if (!dueDate) {
       dueDate = await suggestDueDate(prisma, companyId, null, new Date(), { priority: body.priority });
@@ -1591,8 +1640,13 @@ const createCase = async (req, res) => {
       return res.status(400).json({ success: false, error: 'أولوية الحالة غير صحيحة' });
     }
 
-    const stageNames = await getStageTemplates(prisma, companyId, workType ? workType.category : null);
-    const stagesData = buildStagesData(companyId, stageNames);
+    const { buildCaseStagesFromWorkType } = require('../services/dentalStageTemplateService');
+    const stagesData = await buildCaseStagesFromWorkType(
+      prisma,
+      companyId,
+      body.workTypeId,
+      workType ? workType.category : null
+    );
 
     const doctorRow = doctorId
       ? await prisma.dentalLabDoctor.findFirst({ where: { id: doctorId, companyId }, select: { name: true } })
@@ -1622,7 +1676,7 @@ const createCase = async (req, res) => {
             doctorId,
             doctorName: (body.doctorName && String(body.doctorName).trim()) || (doctorRow && doctorRow.name) || null,
             patientName: body.patientName ? String(body.patientName).trim() : null,
-            patientPhone: body.patientPhone ? String(body.patientPhone) : null,
+            patientPhone: body.patientPhone ? String(body.patientPhone).trim() : null,
             workTypeId: body.workTypeId || null,
             workTypeName,
             unitsCount,
@@ -1646,6 +1700,11 @@ const createCase = async (req, res) => {
             remaining,
             paymentStatus,
             notes: body.notes ? String(body.notes) : null,
+            externalLabName: body.externalLabName ? String(body.externalLabName).trim() : null,
+            outsourceCost: body.outsourceCost != null ? Number(body.outsourceCost) || null : null,
+            outsourcedAt: body.outsourcedAt ? parseDate(body.outsourcedAt) : null,
+            expectedReturnAt: body.expectedReturnAt ? parseDate(body.expectedReturnAt) : null,
+            outsourceNotes: body.outsourceNotes ? String(body.outsourceNotes).trim() : null,
             createdBy: req.user?.id || req.user?.email || null,
             stages: { create: stagesData },
           },
@@ -1669,6 +1728,22 @@ const createCase = async (req, res) => {
       changedBy: req.user?.id || req.user?.email || null,
       userName: adminDisplayName(req),
     });
+
+    if (!body.technicianId && labPolicies?.assignment?.mode === 'AUTO') {
+      try {
+        const { selectTechnicianForAssignment } = require('../services/dentalAssignmentService');
+        const autoTech = await selectTechnicianForAssignment(prisma, companyId, {
+          workTypeId: body.workTypeId,
+          requiredRole: 'TECHNICIAN',
+          policies: labPolicies,
+        });
+        if (autoTech) {
+          body.technicianId = autoTech.id;
+        }
+      } catch (autoErr) {
+        console.warn('Auto assignment failed during createCase:', autoErr.message);
+      }
+    }
 
     if (body.technicianId) {
       try {
@@ -1777,7 +1852,12 @@ const getCaseDetail = async (req, res) => {
   }
 };
 
-const CASE_UPDATE_FIELDS = ['patientName', 'patientPhone', 'teeth', 'shade', 'material', 'lotNumber', 'materialBrand', 'warrantyYears', 'priority', 'notes', 'dueDate', 'receivedDate', 'unitsCount', 'unitPrice'];
+const CASE_UPDATE_FIELDS = [
+  'patientName', 'patientPhone', 'teeth', 'shade', 'material', 'lotNumber',
+  'materialBrand', 'warrantyYears', 'priority', 'notes', 'dueDate', 'receivedDate',
+  'unitsCount', 'unitPrice', 'externalLabName', 'outsourceCost', 'outsourcedAt',
+  'expectedReturnAt', 'returnedAt', 'outsourceNotes'
+];
 
 const updateCase = async (req, res) => {
   try {
@@ -1829,6 +1909,15 @@ const updateCase = async (req, res) => {
     if ('notes' in data) data.notes = data.notes ? String(data.notes) : null;
     if ('dueDate' in data) data.dueDate = parseDate(data.dueDate);
     if ('receivedDate' in data) data.receivedDate = parseDate(data.receivedDate) || existing.receivedDate;
+    if ('externalLabName' in data) data.externalLabName = data.externalLabName ? String(data.externalLabName).trim() : null;
+    if ('outsourceCost' in data) {
+      const oc = toNonNegativeNumber(data.outsourceCost, 0);
+      data.outsourceCost = oc.valid ? oc.value : null;
+    }
+    if ('outsourcedAt' in data) data.outsourcedAt = parseDate(data.outsourcedAt);
+    if ('expectedReturnAt' in data) data.expectedReturnAt = parseDate(data.expectedReturnAt);
+    if ('returnedAt' in data) data.returnedAt = parseDate(data.returnedAt);
+    if ('outsourceNotes' in data) data.outsourceNotes = data.outsourceNotes ? String(data.outsourceNotes).trim() : null;
     if ('priority' in data) {
       const priority = String(data.priority).toUpperCase();
       if (!['NORMAL', 'URGENT', 'STAT'].includes(priority)) {
@@ -2555,6 +2644,19 @@ if (target === 'READY') {
     }
 
 const updateData = { status: target };
+    if (target === 'OUTSOURCED') {
+      if (body.externalLabName) updateData.externalLabName = String(body.externalLabName).trim();
+      if (body.outsourceCost !== undefined && body.outsourceCost !== null && body.outsourceCost !== '') {
+        const oc = toNonNegativeNumber(body.outsourceCost, 0);
+        if (oc.valid) updateData.outsourceCost = oc.value;
+      }
+      updateData.outsourcedAt = body.outsourcedAt ? parseDate(body.outsourcedAt) : new Date();
+      if (body.expectedReturnAt) updateData.expectedReturnAt = parseDate(body.expectedReturnAt);
+      if (body.outsourceNotes) updateData.outsourceNotes = String(body.outsourceNotes).trim();
+    }
+    if (current === 'OUTSOURCED' && target !== 'OUTSOURCED') {
+      updateData.returnedAt = new Date();
+    }
     if (target === 'DELIVERED') {
       updateData.deliveredAt = new Date();
       updateData.orderStatus = 'COMPLETED';
@@ -2620,6 +2722,40 @@ const updateData = { status: target };
       userName: adminDisplayName(req),
       reason: body.reason ? String(body.reason) : null,
     });
+
+    // P8: ترحيل تكلفة التشغيل الخارجي للطبقة المالية
+    if (target === 'OUTSOURCED') {
+      const cost = Number(updateData.outsourceCost ?? existing.outsourceCost) || 0;
+      if (cost > 0) {
+        try {
+          const { createFinancialPosting } = require('../services/financialPostingService');
+          await createFinancialPosting(prisma, companyId, {
+            sourceType: 'OUTSOURCE_EXPENSE',
+            sourceId: id,
+            direction: 'EXPENSE',
+            amount: cost,
+            partyType: 'EXTERNAL_LAB',
+            partyName: updateData.externalLabName || existing.externalLabName || 'معمل خارجي',
+            notes: `تكلفة تشغيل خارجي للحالة ${existing.caseNumber || id}: ${updateData.externalLabName || existing.externalLabName || ''}`,
+            createdBy: req.user?.id || req.user?.email || null,
+          });
+        } catch (fErr) {
+          console.warn('Failed creating financial posting for outsource cost:', fErr.message);
+        }
+      }
+    }
+
+    // P1: خصم مخزون الوصفة الفنية (BOM) عند الجاهزية أو التسليم أو الإغلاق
+    if (target === 'READY' || target === 'DELIVERED' || target === 'CLOSED') {
+      try {
+        const { processCaseBOMConsumption } = require('../services/financialPostingService');
+        processCaseBOMConsumption(prisma, companyId, id).catch((bomErr) => {
+          console.warn('[BOM Consumption] Notice on status transition:', bomErr.message);
+        });
+      } catch (bomEx) {
+        console.warn('[BOM Consumption] Error invoking service:', bomEx.message);
+      }
+    }
 
     res.json({ success: true, data: dentalCase });
     if (target === 'READY') dentalNotificationService.notifyCaseReady(id).catch(() => {});
@@ -3329,7 +3465,37 @@ const prisma = getSharedPrismaClient();
       });
     }
 
-    res.json({ success: true, data: updated });
+    // P1: ترحيل التحصيل للطبقة المالية والخزينة (Idempotent)
+    let financialPosting = null;
+    try {
+      const { createOrGetFinancialPosting, SOURCE_TYPES } = require('../services/financialPostingService');
+      const latestPayment = updated.payments?.[0];
+      const sourceId = body.paymentId || body.idempotencyKey || (latestPayment ? latestPayment.id : `${id}:${amountResult.value}:${Date.now()}`);
+
+      const finResult = await createOrGetFinancialPosting({
+        companyId,
+        sourceType: SOURCE_TYPES.CASE_INVOICE,
+        sourceId,
+        treasuryAccountId: body.treasuryAccountId || null,
+        direction: 'IN',
+        amount: amountResult.value,
+        reference: `تحصيل فاتورة ${invoice.invoiceNumber}`,
+        notes: body.note ? String(body.note) : `تحصيل دفعة بقيمة ${amountResult.value} ج.م على الفاتورة ${invoice.invoiceNumber}`,
+        metadata: {
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          caseId: invoice.caseId,
+          method,
+          paymentId: latestPayment?.id,
+        },
+        userId: req.user?.id || req.user?.email,
+      });
+      financialPosting = finResult?.posting || null;
+    } catch (finErr) {
+      console.warn('Warning: Financial posting failed for invoice payment:', finErr.message);
+    }
+
+    res.json({ success: true, data: updated, financialPosting });
   } catch (error) {
     console.error('Error recording dental payment:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل الدفعة' });

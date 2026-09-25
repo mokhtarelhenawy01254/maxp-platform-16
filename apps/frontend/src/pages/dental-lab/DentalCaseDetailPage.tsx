@@ -718,6 +718,11 @@ function OutsourceModal({ caseId, onClose, onSaved }: { caseId: string; onClose:
       await advanceCase(caseId, {
         to: "OUTSOURCED",
         reason: `إرسال إلى: ${providerName.trim()}`,
+        externalLabName: providerName.trim(),
+        outsourceCost: Number(cost) || 0,
+        outsourcedAt: new Date().toISOString(),
+        expectedReturnAt: returnDate || undefined,
+        outsourceNotes: summaryParts.join(" | "),
         notes: combinedNotes,
         dueDate: returnDate || undefined,
       });
@@ -1373,27 +1378,45 @@ export default function DentalCaseDetailPage() {
     { label: t("dentalLab.cases.patientPhone"), value: c.patientPhone ? <span dir="ltr">{c.patientPhone}</span> : "—" },
     { 
       label: t("dentalLab.cases.doctor"), 
-      value: c.doctorId && c.doctorName ? (
-        <Link 
-          to={`/dental-lab/doctors/${c.doctorId}`} 
-          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1 font-medium transition-colors"
-        >
-          {c.doctorName}
-          <ExternalLink className="w-3 h-3 opacity-70" />
-        </Link>
-      ) : (c.doctorName || "—") 
+      value: (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {c.doctorId ? (
+            <Link 
+              to={`/dental-lab/doctors/${c.doctorId}`} 
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1 font-medium transition-colors"
+            >
+              {c.doctor?.name || c.doctorName || "—"}
+              <ExternalLink className="w-3 h-3 opacity-70" />
+            </Link>
+          ) : (
+            <span>{c.doctorName || "—"}</span>
+          )}
+          {c.doctor && c.doctorName && c.doctor.name !== c.doctorName && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20" title="الاسم وقت إنشاء الحالة">
+              الاسم وقت التنفيذ: {c.doctorName}
+            </span>
+          )}
+        </div>
+      )
     },
     { 
       label: t("dentalLab.cases.workType"), 
-      value: c.workTypeName ? (
-        <Link 
-          to="/dental-lab/work-types" 
-          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1 font-medium transition-colors"
-        >
-          {c.workTypeName}
-          <ExternalLink className="w-3 h-3 opacity-70" />
-        </Link>
-      ) : "—" 
+      value: (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Link 
+            to="/dental-lab/work-types" 
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1 font-medium transition-colors"
+          >
+            {c.workType?.name || c.workTypeName || "—"}
+            <ExternalLink className="w-3 h-3 opacity-70" />
+          </Link>
+          {c.workType && c.workTypeName && c.workType.name !== c.workTypeName && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20" title="نوع العمل وقت إنشاء الحالة">
+              الاسم وقت التنفيذ: {c.workTypeName}
+            </span>
+          )}
+        </div>
+      )
     },
     { label: "عدد الوحدات", value: c.unitsCount ? `${c.unitsCount} وحدات` : "1 وحدة" },
     { label: "سعر الوحدة", value: c.unitPrice ? fmtMoney(c.unitPrice) : "—" },
@@ -1412,6 +1435,12 @@ export default function DentalCaseDetailPage() {
       <span dir="ltr" className="whitespace-nowrap">{fmtMoney(c.total)} / {fmtMoney(c.paid)} / {fmtMoney(c.remaining)}</span>
     ) },
     { label: t("dentalLab.common.status"), value: badge(PAYMENT_STATUS_MAP, c.paymentStatus) },
+    ...(c.externalLabName ? [
+      { label: "جهة التشغيل الخارجي", value: <span className="font-semibold text-amber-600 dark:text-amber-400">{c.externalLabName}</span> },
+      { label: "تكلفة التشغيل الخارجي", value: c.outsourceCost != null ? fmtMoney(c.outsourceCost) : "—" },
+      { label: "موعد العودة المتوقع", value: c.expectedReturnAt ? fmtDate(c.expectedReturnAt) : "—" },
+      ...(c.returnedAt ? [{ label: "تاريخ الاستلام الفعلي", value: fmtDate(c.returnedAt) }] : []),
+    ] : []),
   ];
 
   const isOverdue = Boolean(
@@ -1595,11 +1624,20 @@ export default function DentalCaseDetailPage() {
               <ExternalLink className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-amber-900 dark:text-amber-200">
-                الشغل حالياً لدى جهة خارجية (بره المعمل)
-              </h4>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                  الشغل حالياً لدى جهة خارجية: {c.externalLabName || 'معمل خارجي'}
+                </h4>
+                {c.expectedReturnAt && new Date(c.expectedReturnAt) < new Date() && (
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-500 text-white animate-pulse">
+                    متأخر عن موعد العودة المتوقع
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
-                الحالة في مرحلة التشغيل الخارجي (مركز ميلنج / صب / ليزر). فور استلام الشغل الجاهز، اضغط على زر الاستلام لنقل الحالة إلى مراجعة الجودة (QC).
+                {c.expectedReturnAt ? `موعد الاستلام المتوقع: ${fmtDate(c.expectedReturnAt)}` : 'جاري التشغيل الخارجي'}
+                {c.outsourceCost != null ? ` | التكلفة: ${fmtMoney(c.outsourceCost)}` : ''}
+                {c.outsourceNotes ? ` | ${c.outsourceNotes}` : ''}
               </p>
             </div>
           </div>

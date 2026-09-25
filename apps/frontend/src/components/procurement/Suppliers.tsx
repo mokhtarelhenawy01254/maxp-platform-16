@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Pencil,
@@ -95,6 +96,7 @@ const Suppliers: React.FC = () => {
   const { t, i18n } = useTranslation();
   const tr = (key: string) => String(t(key));
   const isRtl = i18n.language === "ar";
+  const navigate = useNavigate();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
@@ -216,16 +218,8 @@ const Suppliers: React.FC = () => {
     }
   };
 
-  const handleViewDetails = async (supplier: Supplier) => {
-    try {
-      const response = await apiClient.get(
-        `/procurement/suppliers/${supplier.id}`,
-      );
-      setSelectedSupplier(response.data);
-      setOpenViewDialog(true);
-    } catch (error) {
-      console.error("Error fetching supplier details:", error);
-    }
+  const handleViewDetails = (supplier: Supplier) => {
+    navigate(`/procurement/suppliers/${supplier.id}`);
   };
 
   return (

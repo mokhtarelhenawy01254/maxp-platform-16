@@ -16,6 +16,7 @@ exports.createSupplier = async (req, res) => {
       commercialRegister,
       paymentTerms,
       creditLimit,
+      openingBalance,
       rating,
       notes,
       isActive
@@ -24,6 +25,8 @@ exports.createSupplier = async (req, res) => {
     if (!name) {
       return res.status(400).json({ message: 'اسم المورد مطلوب' });
     }
+
+    const initialBal = openingBalance ? parseFloat(openingBalance) : 0;
 
     const supplier = await safeQuery(() =>
       getSharedPrismaClient().supplier.create({
@@ -41,6 +44,8 @@ exports.createSupplier = async (req, res) => {
           commercialRegister,
           paymentTerms,
           creditLimit: creditLimit ? parseFloat(creditLimit) : null,
+          openingBalance: initialBal,
+          currentBalance: initialBal,
           rating: rating ? parseInt(rating) : 0,
           notes,
           isActive: isActive !== undefined ? isActive : true,
@@ -127,16 +132,14 @@ exports.getSupplierById = async (req, res) => {
       where: { id, companyId },
       include: {
         purchaseOrders: {
-          take: 10,
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: 'desc' },
+          take: 50
         },
         purchaseInvoices: {
-          take: 10,
-          orderBy: { createdAt: 'desc' }
+          orderBy: { invoiceDate: 'desc' }
         },
         supplierPayments: {
-          take: 10,
-          orderBy: { createdAt: 'desc' }
+          orderBy: { paymentDate: 'desc' }
         }
       }
     }));
@@ -145,7 +148,95 @@ exports.getSupplierById = async (req, res) => {
       return res.status(404).json({ message: 'المورد غير موجود' });
     }
 
-    res.json(supplier);
+    const openingBalance = parseFloat(supplier.openingBalance) || 0;
+    const currentBalance = parseFloat(supplier.currentBalance) || 0;
+
+    // Chronological statement combining invoices and payments
+    const statementItems = [];
+    (supplier.purchaseInvoices || []).forEach((inv) => {
+      statementItems.push({
+        id: inv.id,
+        type: 'INVOICE',
+        typeName: 'فاتورة شراء',
+        date: inv.invoiceDate || inv.createdAt,
+        reference: inv.invoiceNumber,
+        debit: parseFloat(inv.totalAmount) || 0, // زيادة المديونية
+        credit: 0,
+        amount: parseFloat(inv.totalAmount) || 0,
+        paid: parseFloat(inv.paidAmount) || 0,
+        remaining: parseFloat(inv.remainingAmount) || 0,
+        status: inv.status,
+        notes: inv.notes,
+      });
+    });
+
+    (supplier.supplierPayments || []).forEach((pay) => {
+      statementItems.push({
+        id: pay.id,
+        type: 'PAYMENT',
+        typeName: 'سند صرف / دفعة',
+        date: pay.paymentDate || pay.createdAt,
+        reference: pay.paymentNumber,
+        debit: 0,
+        credit: parseFloat(pay.amount) || 0, // سداد / تخفيض المديونية
+        amount: parseFloat(pay.amount) || 0,
+        method: pay.paymentMethod,
+        status: 'PAID',
+        notes: pay.notes,
+      });
+    });
+
+    // Sort ascending to calculate running balance accurately
+    statementItems.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    let running = openingBalance;
+    const statement = statementItems.map((item) => {
+      running = running + item.debit - item.credit;
+      return {
+        ...item,
+        runningBalance: Math.round(running * 100) / 100,
+      };
+    });
+
+    // Reverse for UI display (newest first)
+    statement.reverse();
+
+    // Debt Aging based on unpaid purchase invoices
+    const now = new Date();
+    const aging = {
+      days0To30: 0,
+      days31To60: 0,
+      days61To90: 0,
+      days90Plus: 0,
+      totalUnpaid: 0,
+    };
+
+    (supplier.purchaseInvoices || []).forEach((inv) => {
+      const remaining = parseFloat(inv.remainingAmount) || 0;
+      if (remaining > 0 && inv.status !== 'PAID') {
+        const invDate = new Date(inv.invoiceDate || inv.createdAt);
+        const diffDays = Math.floor((now - invDate) / (1000 * 60 * 60 * 24));
+        aging.totalUnpaid = Math.round((aging.totalUnpaid + remaining) * 100) / 100;
+
+        if (diffDays <= 30) {
+          aging.days0To30 = Math.round((aging.days0To30 + remaining) * 100) / 100;
+        } else if (diffDays <= 60) {
+          aging.days31To60 = Math.round((aging.days31To60 + remaining) * 100) / 100;
+        } else if (diffDays <= 90) {
+          aging.days61To90 = Math.round((aging.days61To90 + remaining) * 100) / 100;
+        } else {
+          aging.days90Plus = Math.round((aging.days90Plus + remaining) * 100) / 100;
+        }
+      }
+    });
+
+    res.json({
+      ...supplier,
+      openingBalance,
+      currentBalance,
+      statement,
+      aging,
+    });
   } catch (error) {
     console.error('Error fetching supplier:', error);
     res.status(500).json({ message: 'حدث خطأ أثناء جلب بيانات المورد' });
@@ -197,6 +288,7 @@ exports.updateSupplier = async (req, res) => {
         commercialRegister,
         paymentTerms,
         creditLimit: creditLimit ? parseFloat(creditLimit) : null,
+        openingBalance: req.body.openingBalance !== undefined ? parseFloat(req.body.openingBalance) : existingSupplier.openingBalance,
         rating: rating ? parseInt(rating) : existingSupplier.rating,
         notes,
         isActive
