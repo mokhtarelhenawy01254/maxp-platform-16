@@ -1112,6 +1112,37 @@ function registerIpcHandlers(): void {
     }
   });
 
+  // ── Task Comments Handlers ──
+  ipcMain.handle('tasks:get-comments', async (_, taskId: string) => {
+    try {
+      const res = await apiClient.getTaskComments(taskId);
+      return res;
+    } catch (err: any) {
+      return { success: false, error: err.message, comments: [] };
+    }
+  });
+
+  ipcMain.handle(
+    'tasks:add-comment',
+    async (_, { taskId, content }: { taskId: string; content: string }) => {
+      try {
+        const res = await apiClient.addTaskComment(taskId, content);
+        return res;
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    }
+  );
+
+  ipcMain.handle('tasks:delete-comment', async (_, commentId: string) => {
+    try {
+      const res = await apiClient.deleteTaskComment(commentId);
+      return res;
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('auth:get-token', async () => {
     return { token: apiClient.token };
   });

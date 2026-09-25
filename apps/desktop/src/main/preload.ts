@@ -111,6 +111,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteChecklistItem: (itemId: string) =>
     ipcRenderer.invoke('tasks:delete-checklist-item', { itemId }),
 
+  // Task Comments
+  getTaskComments: (taskId: string) =>
+    ipcRenderer.invoke('tasks:get-comments', taskId),
+  addTaskComment: (taskId: string, content: string) =>
+    ipcRenderer.invoke('tasks:add-comment', { taskId, content }),
+  deleteTaskComment: (commentId: string) =>
+    ipcRenderer.invoke('tasks:delete-comment', commentId),
+
   // Goals (OKRs)
   getTodayGoals: (userId?: string) =>
     ipcRenderer.invoke('goals:get-today', userId),

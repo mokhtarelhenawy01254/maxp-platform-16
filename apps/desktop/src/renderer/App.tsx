@@ -64,6 +64,10 @@ declare global {
       addChecklistItem: (checklistId: string, text: string) => Promise<{ success: boolean; item?: any; error?: string }>;
       updateChecklistItem: (itemId: string, data: { isCompleted?: boolean; text?: string }) => Promise<{ success: boolean; item?: any; error?: string }>;
       deleteChecklistItem: (itemId: string) => Promise<{ success: boolean; error?: string }>;
+      // Task Comments
+      getTaskComments: (taskId: string) => Promise<{ success: boolean; comments: any[]; error?: string }>;
+      addTaskComment: (taskId: string, content: string) => Promise<{ success: boolean; comment?: any; error?: string }>;
+      deleteTaskComment: (commentId: string) => Promise<{ success: boolean; data?: any; error?: string }>;
 
       // Goals (OKRs)
       getTodayGoals: (userId?: string) => Promise<{ success: boolean; goals: any[]; error?: string }>;

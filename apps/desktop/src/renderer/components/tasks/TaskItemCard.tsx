@@ -28,6 +28,7 @@ import {
 import { audioAlerts } from '../../utils/audioAlerts';
 import { TaskDependencyBadge } from './TaskDependencyBadge';
 import { TaskSubtasks } from './TaskSubtasks';
+import { TaskComments } from './TaskComments';
 
 interface TaskItemCardProps {
   task: any;
@@ -553,6 +554,9 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           <TaskSubtasks taskId={task.id} canEdit={canEditTask} />
 
           <TaskDependencyBadge taskId={task.id} />
+
+          {/* Task Comments & Discussions */}
+          <TaskComments taskId={task.id} currentUserId={currentUserId} isAdmin={isAdmin} />
 
           {/* Admin Direct Complete shortcut inside details if needed */}
           {canApprove && !isCompleted && !isInReview && (

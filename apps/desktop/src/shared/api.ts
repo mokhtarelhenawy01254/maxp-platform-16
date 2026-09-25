@@ -804,6 +804,51 @@ class MonitorApiClient {
       return { success: false, error: err.response?.data?.error || err.message };
     }
   }
+
+  // ── Task Comments ─────────────────────────────────────────────
+  async getTaskComments(taskId: string): Promise<any> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.get(`${base}/api/v1/tasks/${taskId}/comments`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return { success: true, comments: res.data?.data ?? res.data?.comments ?? [] };
+    } catch (err: any) {
+      console.warn('[API] getTaskComments failed:', err?.message);
+      return { success: false, error: err.response?.data?.error || err.message, comments: [] };
+    }
+  }
+
+  async addTaskComment(taskId: string, content: string): Promise<any> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.post(
+        `${base}/api/v1/tasks/${taskId}/comments`,
+        { content },
+        {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        }
+      );
+      return { success: true, comment: res.data?.data ?? res.data };
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.error || err.message };
+    }
+  }
+
+  async deleteTaskComment(commentId: string): Promise<any> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.delete(`${base}/api/v1/tasks/comments/${commentId}`, {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      });
+      return { success: true, data: res.data };
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.error || err.message };
+    }
+  }
 }
 
 export const apiClient = new MonitorApiClient();
