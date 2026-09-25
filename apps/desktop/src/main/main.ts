@@ -917,8 +917,12 @@ function registerIpcHandlers(): void {
   ipcMain.handle('tasks:get-running-timer', async () => {
     try {
       const res = await apiClient.getRunningTaskTimer();
-      const runningTimer = res?.runningTimer ?? res?.data ?? res ?? null;
-      const runningTimers = res?.runningTimers ?? (runningTimer ? [runningTimer] : []);
+      const runningTimer = res?.runningTimer ?? (Array.isArray(res?.data) ? res?.data[0] : res?.data) ?? null;
+      const runningTimers = Array.isArray(res?.runningTimers)
+        ? res.runningTimers
+        : Array.isArray(res?.data)
+        ? res.data
+        : (runningTimer ? [runningTimer] : []);
       return { success: true, runningTimer, runningTimers };
     } catch (err: any) {
       return { success: false, error: err.message, runningTimer: null, runningTimers: [] };

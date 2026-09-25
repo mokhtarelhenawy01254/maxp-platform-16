@@ -403,8 +403,11 @@ export const TasksTab: React.FC = () => {
 
             // If verified response from server, remove local items whose server entry is gone
             if (runningRes.runningTimers !== undefined) {
+              const now = Date.now();
               for (const [taskId, localItem] of Object.entries(next)) {
-                if (localItem.entryId && !activeServerTaskIds.has(taskId)) {
+                // Never delete a timer started within the last 45s or one without entryId to prevent race conditions
+                const isRecent = localItem.startTime && (now - Number(localItem.startTime)) < 45000;
+                if (localItem.entryId && !activeServerTaskIds.has(taskId) && !isRecent) {
                   delete next[taskId];
                 }
               }
@@ -418,16 +421,21 @@ export const TasksTab: React.FC = () => {
 
           // Sync single activeTask for backward compatibility
           if (rawTimers.length > 0) {
-            const first = rawTimers[0];
-            setActiveTask({
-              id: first.taskId,
-              title: first.task?.title || 'مهمة جارية',
-              priority: 'MEDIUM',
-              startTime: new Date(first.startTime).getTime() || Date.now(),
-              accumulatedSeconds: 0,
-              entryId: first.id,
+            setActiveTask((prev) => {
+              if (prev && rawTimers.some((rt) => rt.taskId === prev.id)) {
+                return prev;
+              }
+              const first = rawTimers[0];
+              return {
+                id: first.taskId,
+                title: first.task?.title || 'مهمة جارية',
+                priority: 'MEDIUM',
+                startTime: new Date(first.startTime).getTime() || Date.now(),
+                accumulatedSeconds: 0,
+                entryId: first.id,
+              };
             });
-          } else if (runningRes.runningTimers !== undefined) {
+          } else if (runningRes.runningTimers !== undefined && Array.isArray(runningRes.runningTimers) && runningRes.runningTimers.length === 0) {
             setActiveTask(null);
             try {
               localStorage.removeItem('maxp_active_task');

@@ -496,7 +496,7 @@ class MonitorApiClient {
     const base = this.serverUrl;
     const res = await axios.post(
       `${base}/api/v1/tasks/${taskId}/time-tracking/start`,
-      {},
+      { stopOthers: false },
       {
         headers: this.getAuthHeaders(),
         timeout: 10_000,
@@ -524,7 +524,7 @@ class MonitorApiClient {
       headers: this.getAuthHeaders(),
       timeout: 10_000,
     });
-    return res.data?.data ?? null;
+    return res.data;
   }
 
   async getCompanyActiveTimers(): Promise<any[]> {
