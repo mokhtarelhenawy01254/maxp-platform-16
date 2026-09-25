@@ -111,16 +111,16 @@ export const CopilotInputFooter: React.FC<CopilotInputFooterProps> = ({
 
       {/* Telemetry and Shortcuts Bar */}
       <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1 pt-1.5 font-mono">
-        <span className="font-sans flex items-center gap-1.5">
-          <span>اختصار الإرسال:</span>
-          <kbd className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-slate-600 dark:text-slate-400 font-mono text-[9px]">
+        <span className="font-sans flex items-center gap-1.5 text-slate-400 dark:text-slate-500 text-[10px]">
+          <kbd className="rounded border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-1 py-0.5 font-mono text-[9px] text-slate-600 dark:text-slate-300">
             Enter
           </kbd>
-          <span className="text-slate-400">·</span>
-          <span>فتح المساعد:</span>
-          <kbd className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-slate-600 dark:text-slate-400 font-mono text-[9px]">
-            Ctrl + J
+          <span>إرسال</span>
+          <span className="text-slate-300 dark:text-slate-700">·</span>
+          <kbd className="rounded border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-1 py-0.5 font-mono text-[9px] text-slate-600 dark:text-slate-300">
+            Ctrl+J
           </kbd>
+          <span>المساعد</span>
         </span>
 
         {telemetry && (
