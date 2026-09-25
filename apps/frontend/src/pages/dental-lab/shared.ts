@@ -19,7 +19,7 @@ export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] 
   { id: "reports", label: "dentalLab.reports.title", icon: BarChart3 },
 ];
 
-export type DentalCaseStatus = "RECEIVED" | "DESIGN" | "MANUFACTURING" | "QC" | "READY" | "DELIVERED" | "CLOSED";
+export type DentalCaseStatus = "RECEIVED" | "DESIGN" | "MANUFACTURING" | "OUTSOURCED" | "QC" | "READY" | "DELIVERED" | "CLOSED";
 export type DentalCasePriority = "NORMAL" | "URGENT" | "STAT";
 export type DentalPaymentStatus = "UNPAID" | "PARTIAL" | "PAID";
 export type DentalTechnicianRole =
@@ -611,6 +611,7 @@ export const CASE_STATUSES: { id: DentalCaseStatus; label: string; color: string
   { id: "RECEIVED", label: "وصل", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300", barColor: "#9ca3af", dotColor: "bg-gray-400" },
   { id: "DESIGN", label: "تصميم", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300", barColor: "#3b82f6", dotColor: "bg-blue-500" },
   { id: "MANUFACTURING", label: "تصنيع", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300", barColor: "#6366f1", dotColor: "bg-indigo-500" },
+  { id: "OUTSOURCED", label: "بره المعمل", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300", barColor: "#f59e0b", dotColor: "bg-amber-500" },
   { id: "QC", label: "فحص جودة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300", barColor: "#eab308", dotColor: "bg-yellow-500" },
   { id: "READY", label: "جاهز للتسليم", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300", barColor: "#22c55e", dotColor: "bg-green-500" },
   { id: "DELIVERED", label: "اتسلم", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300", barColor: "#14b8a6", dotColor: "bg-teal-500" },
@@ -622,7 +623,7 @@ export const CASE_STATUS_MAP: Record<string, { label: string; color: string }> =
   {} as Record<string, { label: string; color: string }>,
 );
 
-export const CASE_STATUS_FLOW: DentalCaseStatus[] = ["RECEIVED", "DESIGN", "MANUFACTURING", "QC", "READY", "DELIVERED", "CLOSED"];
+export const CASE_STATUS_FLOW: DentalCaseStatus[] = ["RECEIVED", "DESIGN", "MANUFACTURING", "OUTSOURCED", "QC", "READY", "DELIVERED", "CLOSED"];
 
 export const nextStatusOf = (status: string): DentalCaseStatus | null => {
   const idx = CASE_STATUS_FLOW.indexOf(status as DentalCaseStatus);

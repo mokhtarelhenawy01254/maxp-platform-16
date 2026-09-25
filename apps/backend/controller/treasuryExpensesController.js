@@ -709,6 +709,107 @@ exports.depositCapital = async (req, res) => {
   }
 };
 
+// T20: عكس وتصحيح إيداع رأس المال (Capital Deposit Reversal)
+exports.reverseCapitalDeposit = async (req, res) => {
+  try {
+    const { companyId, id: userId } = req.user;
+    const { id } = req.params;
+    const { reason } = req.body || {};
+
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'معرف عملية رأس المال مطلوب' });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Fetch capital transaction
+      const capitalTx = await tx.capitalTransaction.findFirst({
+        where: { id, companyId }
+      });
+
+      if (!capitalTx) {
+        throw new Error('عملية رأس المال غير موجودة');
+      }
+
+      if (capitalTx.type === 'REVERSED') {
+        throw new Error('هذه العملية تم عكسها بالفعل مسبقاً');
+      }
+
+      // 2. Fetch associated treasury account
+      const account = await tx.treasuryAccount.findFirst({
+        where: { id: capitalTx.treasuryAccountId, companyId }
+      });
+
+      if (!account) {
+        throw new Error('الخزينة المرتبطة بعملية رأس المال غير موجودة');
+      }
+
+      const txAmount = Number(capitalTx.amount);
+      const currentBalance = Number(account.balance);
+      const newBalance = currentBalance - txAmount;
+
+      if (newBalance < 0) {
+        throw new Error(`لا يمكن عكس العملية: رصيد الخزينة الحالي (${currentBalance}) غير كافٍ لاستقطاع مبلغ رأس المال (${txAmount})`);
+      }
+
+      // 3. Update account balance
+      await tx.treasuryAccount.update({
+        where: { id: account.id },
+        data: { balance: newBalance }
+      });
+
+      // 4. Update capital transaction record to mark as REVERSED
+      const updatedNotes = [
+        capitalTx.notes,
+        `[تم العكس والتصحيح: ${reason ? reason.trim() : 'تصحيح إيداع رأس المال'} بواسطة المستخدم ${userId} في ${new Date().toISOString()}]`
+      ].filter(Boolean).join(' | ');
+
+      const updatedCapitalTx = await tx.capitalTransaction.update({
+        where: { id: capitalTx.id },
+        data: {
+          type: 'REVERSED',
+          notes: updatedNotes
+        }
+      });
+
+      // 5. Create reversal transaction in TreasuryTransaction ledger
+      const revDesc = `عكس/تصحيح إيداع رأس مال [${capitalTx.referenceNumber || capitalTx.id}]: ${reason ? reason.trim() : (capitalTx.investorName ? `المستثمر: ${capitalTx.investorName}` : 'تصحيح قيد')}`;
+      const treasuryTx = await tx.treasuryTransaction.create({
+        data: {
+          companyId,
+          treasuryAccountId: account.id,
+          amount: txAmount,
+          type: 'WITHDRAWAL',
+          runningBalance: newBalance,
+          referenceType: 'CAPITAL_REVERSAL',
+          referenceId: capitalTx.id,
+          description: revDesc,
+          date: new Date(),
+          createdById: userId,
+        }
+      });
+
+      return {
+        reversedCapitalTransaction: updatedCapitalTx,
+        treasuryTransaction: treasuryTx,
+        updatedBalance: newBalance,
+        deductedAmount: txAmount,
+        accountName: account.name
+      };
+    });
+
+    return res.json({
+      success: true,
+      message: 'تم عكس إيداع رأس المال واستقطاع المبلغ من الخزينة بنجاح',
+      data: result
+    });
+  } catch (error) {
+    console.error('[treasury] reverseCapitalDeposit error:', error);
+    return res.status(400).json({ success: false, message: error.message || 'فشل عكس إيداع رأس المال' });
+  }
+};
+
 // -------------------------------------------------------------
 // 3. CATEGORIES
 // -------------------------------------------------------------

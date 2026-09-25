@@ -18,6 +18,8 @@ router.post('/transfer', controller.transferBetweenAccounts);
 // 2. Capital & Injections
 router.get('/capital/stats', controller.getCapitalStats);
 router.post('/capital/deposit', controller.depositCapital);
+router.post('/capital/:id/reverse', controller.reverseCapitalDeposit);
+router.delete('/capital/:id', controller.reverseCapitalDeposit);
 
 // 3. Categories
 router.get('/categories', controller.getCategories);

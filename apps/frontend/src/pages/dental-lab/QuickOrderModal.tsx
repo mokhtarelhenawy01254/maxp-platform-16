@@ -704,7 +704,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-lg font-bold flex items-center gap-2">
                 <Stethoscope className="w-5 h-5 text-blue-600" />
-                الطلب السريع لأمر الشغل (Quick Order 2026)
+                الطلب السريع لأمر الشغل
               </h3>
               {draftRestored && (
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-[11px] font-semibold border border-amber-200 dark:border-amber-800">
@@ -892,7 +892,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
               <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                    دليل لون الأسنان (VITA Shade Guide)
+                    دليل ألوان الأسنان (VITA)
                   </label>
                   {(shade || customShade) && (
                     <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
@@ -970,7 +970,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                 </div>
 
                 <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-2">
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">نوع مرحلة التسليم (Try-in / Final)</label>
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">نوع مرحلة التسليم (تجربة / نهائي)</label>
                   <div className="grid grid-cols-2 gap-1.5">
                     {CASE_INTENTS.map((intent) => (
                       <button

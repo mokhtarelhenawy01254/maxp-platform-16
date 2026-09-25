@@ -210,7 +210,7 @@ export default function DentalWorkTypesTab() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold">{t("dentalLab.workTypes.title")}</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">إدارة الخدمات، تسعير الكراونات، الماركات المعتمدة، وهوامش الربح</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">إدارة الخدمات، تسعير الخدمات والوحدات، الماركات المعتمدة، وهوامش الربح</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => load()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -284,7 +284,7 @@ export default function DentalWorkTypesTab() {
                       </td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${w.pricingMode === "PER_UNIT" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" : "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"}`}>
-                          {w.pricingMode === "PER_UNIT" ? "لكل كراون / سن" : "سعر ثابت للخدمة"}
+                          {w.pricingMode === "PER_UNIT" ? "لكل وحدة" : "سعر ثابت للخدمة"}
                         </span>
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-gray-900 dark:text-gray-100">
@@ -386,14 +386,14 @@ export default function DentalWorkTypesTab() {
                   <div>
                     <label className={labelCls}>طريقة التسعير *</label>
                     <select className={inputCls} value={modal.pricingMode} onChange={e => setModal({ ...modal, pricingMode: e.target.value as "PER_UNIT" | "FLAT" })}>
-                      <option value="PER_UNIT">تسعير لكل كراون / سن (Per Unit/Crown)</option>
+                      <option value="PER_UNIT">تسعير لكل وحدة (Per Unit)</option>
                       <option value="FLAT">سعر ثابت للخدمة كاملة (Flat Rate)</option>
                     </select>
                   </div>
 
                   <div>
                     <label className={labelCls}>
-                      {modal.pricingMode === "PER_UNIT" ? "سعر الكراون للعيادة (ج.م) *" : "السعر الإجمالي للخدمة (ج.م) *"}
+                      {modal.pricingMode === "PER_UNIT" ? "سعر الوحدة للعيادة (ج.م) *" : "السعر الإجمالي للخدمة (ج.م) *"}
                     </label>
                     <input className={inputCls} type="number" min="0" value={modal.price} onChange={e => setModal({ ...modal, price: Number(e.target.value) })} />
                   </div>
@@ -405,7 +405,7 @@ export default function DentalWorkTypesTab() {
 
                   {modal.pricingMode === "PER_UNIT" && (
                     <div>
-                      <label className={labelCls}>عدد الكراونات الافتراضي</label>
+                      <label className={labelCls}>عدد الوحدات الافتراضي</label>
                       <input className={inputCls} type="number" min="1" value={modal.defaultCrownCount} onChange={e => setModal({ ...modal, defaultCrownCount: Math.max(1, Number(e.target.value)) })} />
                     </div>
                   )}
@@ -488,7 +488,7 @@ export default function DentalWorkTypesTab() {
                           {fmtMoney(modal.price)} ج.م
                         </div>
                         <span className="text-[10px] text-gray-400">
-                          {modal.pricingMode === "PER_UNIT" ? "/ كراون واحد" : "سعر شامل"}
+                          {modal.pricingMode === "PER_UNIT" ? "/ وحدة واحدة" : "سعر شامل"}
                         </span>
                       </div>
                     </div>
@@ -541,7 +541,7 @@ export default function DentalWorkTypesTab() {
                       <span className="text-red-500 font-bold">-{fmtMoney(modal.costPrice)} ج.م</span>
                     </div>
                     <div className="flex justify-between pt-1 border-t dark:border-gray-700 font-bold text-emerald-600 dark:text-emerald-400">
-                      <span>صافي ربح الكراون / الخدمة:</span>
+                      <span>صافي ربح الوحدة / الخدمة:</span>
                       <span>+{fmtMoney(liveProfit)} ج.م</span>
                     </div>
                   </div>

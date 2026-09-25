@@ -9,6 +9,7 @@
   "limitNearWarning": "Warning: Approaching Limit",
   "addNewUser": "Add New User",
   "inviteUser": "Invite User",
+  "exportCsv": "Export CSV",
   "userList": "User List",
   "statsReports": "Statistics Reports",
   "fromDate": "From Date",

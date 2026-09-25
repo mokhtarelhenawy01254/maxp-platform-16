@@ -277,8 +277,8 @@ function ProductivityView() {
           <p className="text-2xl font-bold mt-1 text-blue-600 dark:text-blue-400">{totalStages} <span className="text-xs font-normal text-gray-400">مرحلة</span></p>
         </div>
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">إجمالي الكراونات والوحدات</p>
-          <p className="text-2xl font-bold mt-1 text-purple-600 dark:text-purple-400">{totalUnits} <span className="text-xs font-normal text-gray-400">كراون / سن</span></p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">إجمالي الوحدات المنجزة</p>
+          <p className="text-2xl font-bold mt-1 text-purple-600 dark:text-purple-400">{totalUnits} <span className="text-xs font-normal text-gray-400">وحدة</span></p>
         </div>
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">إجمالي مستحقات وأجور الفريق</p>
@@ -297,15 +297,15 @@ function ProductivityView() {
       ) : (
         <div className="space-y-5">
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-4">
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">مقارنة إنتاجية مراحل وكراونات فريق العمل</h4>
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">مقارنة إنتاجية مراحل ووحدات فريق العمل</h4>
             <ResponsiveContainer width="100%" height={240}>
               <ReBarChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" opacity={0.08} />
                 <XAxis dataKey="name" tick={chartText} axisLine={false} tickLine={false} />
                 <YAxis allowDecimals={false} tick={chartText} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(v, name) => [String(v), name === "stages" ? "المراحل" : name === "units" ? "الكراونات" : "الأجر (ج.م)"]} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
+                <Tooltip formatter={(v, name) => [String(v), name === "stages" ? "المراحل" : name === "units" ? "الوحدات" : "الأجر (ج.م)"]} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
                 <Bar dataKey="stages" name="المراحل" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={20} />
-                <Bar dataKey="units" name="الكراونات" fill="#a855f7" radius={[6, 6, 0, 0]} barSize={20} />
+                <Bar dataKey="units" name="الوحدات" fill="#a855f7" radius={[6, 6, 0, 0]} barSize={20} />
               </ReBarChart>
             </ResponsiveContainer>
           </div>
@@ -318,7 +318,7 @@ function ProductivityView() {
                   <th className={thCls}>التخصص / المحطة</th>
                   <th className={thCls}>الحالات المسندة</th>
                   <th className={thCls}>المراحل المنجزة</th>
-                  <th className={thCls}>الكراونات المنجزة</th>
+                  <th className={thCls}>الوحدات المنجزة</th>
                   <th className={thCls}>متوسط سرعة الإنجاز</th>
                   <th className={thCls}>أجر المرحلة</th>
                   <th className={thCls}>إجمالي المستحقات</th>

@@ -535,7 +535,7 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
               <div className="mb-2 flex items-center justify-between text-xs">
                 <span className="font-semibold text-slate-300 flex items-center gap-1.5 text-[11px] sm:text-xs">
                   <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
-                  محاكي تدرج الألوان (VITA Shade Guide):
+                  محاكي تدرج الألوان (VITA):
                 </span>
                 <span className="font-mono text-cyan-400 font-bold text-xs sm:text-sm">{activeShade.name}</span>
               </div>

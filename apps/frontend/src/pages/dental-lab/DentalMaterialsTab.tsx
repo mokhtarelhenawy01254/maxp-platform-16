@@ -217,7 +217,7 @@ export default function DentalMaterialsTab() {
             <span>خامات المعمل والموردين (Dental Materials & Supply)</span>
           </h2>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-            إدارة خامات الزيركون والـ CAD/CAM والزرعات برقم التشغيلة الطبي (Lot#) وحساب استهلاك كل كراون.
+            إدارة خامات الزيركون والـ CAD/CAM والزرعات برقم التشغيلة الطبي (Lot#) وحساب استهلاك كل وحدة.
           </p>
         </div>
 
@@ -289,7 +289,7 @@ export default function DentalMaterialsTab() {
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
-            {summary?.totalStockUnits ?? 0} <span className="text-xs font-normal">كراون</span>
+            {summary?.totalStockUnits ?? 0} <span className="text-xs font-normal">وحدة</span>
           </p>
         </div>
 
@@ -439,7 +439,7 @@ export default function DentalMaterialsTab() {
 
                 <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2">
                   <div className="text-[11px] text-gray-500">
-                    <span>تكلفة الكراون: </span>
+                    <span>تكلفة الوحدة: </span>
                     <strong className="text-gray-900 dark:text-white font-mono">
                       {fmtMoney(mat.costPerUnit)} ج.م
                     </strong>

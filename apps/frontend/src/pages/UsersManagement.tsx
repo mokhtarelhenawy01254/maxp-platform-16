@@ -1522,7 +1522,7 @@ const UsersManagement: React.FC = () => {
             </Button>
             <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={exportCurrentUsers} disabled={users.length === 0}>
               <ArrowDownToLine className="size-4" />
-              {t("users.exportCsv")}
+              {t("users.exportCsv", "تصدير CSV")}
             </Button>
           </div>
         </div>

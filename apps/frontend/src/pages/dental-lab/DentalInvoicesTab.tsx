@@ -106,7 +106,7 @@ function shareInvoiceWhatsApp(inv: DentalInvoice) {
 
   let text = "";
   if (isConsolidated) {
-    text = `مرحباً دكتور ${inv.doctorName || ""}\nتحية طيبة من إدارة معمل الأسنان 🦷\nمرفق الفاتورة الشهرية المجمعة رقم: *${invNum}*\nعدد الحالات المشمولة: *${casesCount} حالة* (${totalUnits} كراون/وحدة)${cleanNote ? `\nملاحظة: ${cleanNote}` : ""}\n------------------\nالإجمالي: *${fmtMoney(inv.total)} ج.م*\nالمسدد: *${fmtMoney(inv.paid)} ج.م*\nالمتبقي المستحق: *${fmtMoney(inv.remaining)} ج.م*\n------------------\nشكراً لتعاملكم معنا.`;
+    text = `مرحباً دكتور ${inv.doctorName || ""}\nتحية طيبة من إدارة معمل الأسنان 🦷\nمرفق الفاتورة الشهرية المجمعة رقم: *${invNum}*\nعدد الحالات المشمولة: *${casesCount} حالة* (${totalUnits} وحدة)${cleanNote ? `\nملاحظة: ${cleanNote}` : ""}\n------------------\nالإجمالي: *${fmtMoney(inv.total)} ج.م*\nالمسدد: *${fmtMoney(inv.paid)} ج.م*\nالمتبقي المستحق: *${fmtMoney(inv.remaining)} ج.م*\n------------------\nشكراً لتعاملكم معنا.`;
   } else {
     const patient = inv.patientName || inv.case?.patientName || "—";
     const caseNum = inv.case?.caseNumber ? ` (حالة: ${inv.case.caseNumber})` : "";
@@ -512,7 +512,7 @@ function BatchMonthlyInvoiceModal({
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">نمط إصدار الفواتير</label>
               <select className={`${MODAL_INPUT_CLS} text-sm`} value={mode} onChange={(e) => setMode(e.target.value as "PER_CASE" | "CONSOLIDATED")}>
                 <option value="PER_CASE">فاتورة مستقلة لكل حالة (إصدار فاتورة برقم منفصل لكل كارتة)</option>
-                <option value="CONSOLIDATED">فاتورة شهرية مجمعة لكل طبيب (تضم كافة الحالات مفصلة بالمرضى والكروتات والأسعار)</option>
+                <option value="CONSOLIDATED">فاتورة شهرية مجمعة لكل طبيب (تضم كافة الحالات مفصلة بالمرضى والوحدات والأسعار)</option>
               </select>
             </div>
             <div>
@@ -780,10 +780,10 @@ function DoctorStatementModal({
     const columns = [
       { key: "doctorName", label: "اسم الطبيب" },
       { key: "clinicName", label: "العيادة" },
-      { key: "caseNumber", label: "رقم الكارتة / أمر الشغل" },
+      { key: "caseNumber", label: "رقم الحالة / أمر الشغل" },
       { key: "patientName", label: "اسم المريض" },
       { key: "workTypeName", label: "نوع الشغل / التركيبة" },
-      { key: "unitsCount", label: "عدد الكروتات / الوحدات" },
+      { key: "unitsCount", label: "عدد الوحدات" },
       { key: "invoiceNumber", label: "رقم الفاتورة" },
       { key: "createdAt", label: "تاريخ الفاتورة" },
       { key: "total", label: "القيمة الإجمالية (ج.م)" },
@@ -945,9 +945,9 @@ function DoctorStatementModal({
         {/* Totals Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4 print:grid-cols-4 print:border print:border-slate-300 print:p-2">
           <div className="p-3 bg-blue-50/60 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 rounded-xl print:border-none print:p-1">
-            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium print:text-black">عدد الكروتات والوحدات</span>
+            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium print:text-black">عدد الحالات والوحدات</span>
             <p className="text-base sm:text-lg font-bold text-blue-700 dark:text-blue-300 mt-0.5 print:text-black">
-              {statement?.totals?.totalCards ?? statement?.totals?.invoicesCount ?? statement?.invoices?.length ?? 0} كارتة ({statement?.totals?.totalUnits ?? statement?.invoices?.reduce((sum, inv) => sum + (inv.unitsCount || inv.case?.unitsCount || 1), 0) ?? 0} وحدة)
+              {statement?.totals?.totalCards ?? statement?.totals?.invoicesCount ?? statement?.invoices?.length ?? 0} حالة ({statement?.totals?.totalUnits ?? statement?.invoices?.reduce((sum, inv) => sum + (inv.unitsCount || inv.case?.unitsCount || 1), 0) ?? 0} وحدة)
             </p>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800/60 border dark:border-gray-700 rounded-xl print:border-none print:p-1">
@@ -1801,7 +1801,7 @@ function InvoiceDetailModal({
                     فاتورة شهرية مجمعة ({casesCount} حالة)
                   </span>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    إجمالي الكروتات: <strong className="text-gray-800 dark:text-gray-200">{totalUnits} وحدة / كراون</strong>
+                    إجمالي الوحدات: <strong className="text-gray-800 dark:text-gray-200">{totalUnits} وحدة</strong>
                   </p>
                 </div>
               ) : (
@@ -1826,7 +1826,7 @@ function InvoiceDetailModal({
               <div className="bg-indigo-50/70 dark:bg-indigo-950/40 p-2.5 px-3 border-b dark:border-gray-700 flex items-center justify-between">
                 <span className="font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5 text-xs">
                   <FileSpreadsheet className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  تفاصيل كروتات الفاتورة المجمعة ({casesCount} حالة — {totalUnits} كراون)
+                  تفاصيل حالات الفاتورة المجمعة ({casesCount} حالة — {totalUnits} وحدة)
                 </span>
                 <span className="text-[11px] text-indigo-700 dark:text-indigo-300 font-medium">
                   متوسط الحالة: {fmtMoney(invoice.total / (casesCount || 1))} ج.م
@@ -1837,7 +1837,7 @@ function InvoiceDetailModal({
                   <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-300 sticky top-0 font-semibold border-b dark:border-gray-700">
                     <tr>
                       <th className="py-2 px-2.5 text-center w-8">م</th>
-                      <th className="py-2 px-2.5 whitespace-nowrap">رقم الكارتة</th>
+                      <th className="py-2 px-2.5 whitespace-nowrap">رقم الحالة</th>
                       <th className="py-2 px-2.5 whitespace-nowrap">اسم المريض</th>
                       <th className="py-2 px-2.5 whitespace-nowrap">نوع التركيبة / الشغل</th>
                       <th className="py-2 px-2.5 text-center whitespace-nowrap">العدد</th>
@@ -1873,7 +1873,7 @@ function InvoiceDetailModal({
                   <p className="font-semibold text-gray-900 dark:text-gray-100">{invoice.case.workTypeName || "—"}</p>
                 </div>
                 <div>
-                  <span className="text-gray-400">عدد الكراونات/الوحدات:</span>
+                  <span className="text-gray-400">عدد الوحدات:</span>
                   <p className="font-semibold text-gray-900 dark:text-gray-100">{invoice.case.unitsCount || 1} وحدة</p>
                 </div>
                 <div>
@@ -2092,10 +2092,10 @@ export default function DentalInvoicesTab() {
     }
     const columns = [
       { key: "doctorName", label: "اسم الطبيب / العيادة" },
-      { key: "caseNumber", label: "رقم الكارتة / الحالة" },
+      { key: "caseNumber", label: "رقم الحالة" },
       { key: "patientName", label: "اسم المريض" },
       { key: "workTypeName", label: "نوع التركيبة" },
-      { key: "unitsCount", label: "عدد الكروتات / الوحدات" },
+      { key: "unitsCount", label: "عدد الوحدات" },
       { key: "invoiceNumber", label: "رقم الفاتورة" },
       { key: "createdAt", label: "تاريخ الإصدار" },
       { key: "total", label: "الإجمالي (ج.م)" },
@@ -2493,7 +2493,7 @@ export default function DentalInvoicesTab() {
                                 فاتورة مجمعة ({casesCount} حالة)
                               </span>
                               {totalUnits > 0 && (
-                                <span className="text-[11px] text-gray-500">{totalUnits} كروتة / كراون</span>
+                                <span className="text-[11px] text-gray-500">{totalUnits} وحدة</span>
                               )}
                             </div>
                           );

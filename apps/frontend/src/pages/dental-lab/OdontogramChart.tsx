@@ -97,10 +97,10 @@ export default function OdontogramChart({
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-blue-600" />
           <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-            خريطة الأسنان التفاعلية (FDI System)
+            خريطة الأسنان التفاعلية (نظام FDI)
           </span>
           <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-            {selectedSet.size} سن / كراون
+            {selectedSet.size} سن / وحدة
           </span>
         </div>
 
@@ -164,7 +164,7 @@ export default function OdontogramChart({
           {/* Divider */}
           <div className="flex items-center justify-center gap-2 py-0.5">
             <div className="h-px bg-gray-200 dark:bg-gray-700 flex-1" />
-            <span className="text-[10px] text-gray-400 tracking-wider font-mono">خط الإطباق OCCLUSION</span>
+            <span className="text-[10px] text-gray-400 tracking-wider font-mono">خط الإطباق</span>
             <div className="h-px bg-gray-200 dark:bg-gray-700 flex-1" />
           </div>
 

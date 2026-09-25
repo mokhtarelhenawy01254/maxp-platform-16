@@ -861,6 +861,7 @@ export default function DentalCaseDetailPage() {
   const [caseBusy, setCaseBusy] = useState(false);
   const [snoozing, setSnoozing] = useState(false);
 
+  // O5: تأجيل تنبيهات التأخير (Snooze overdue alerts: +1 / +3 days / +week)
   const handleSnoozeOverdue = async (days: number) => {
     if (!id || snoozing) return;
     try {
@@ -869,10 +870,10 @@ export default function DentalCaseDetailPage() {
       base.setDate(base.getDate() + days);
       const newDueDateIso = base.toISOString().split("T")[0];
       await updateCase(id, { dueDate: newDueDateIso });
-      toast.success(`تم تمديد ميعاد التسليم بمقدار ${days} يوم إلى ${fmtDate(newDueDateIso)}`);
+      toast.success(`تم تأجيل تنبيه التأخير (Snooze) وتمديد ميعاد التسليم بمقدار ${days} يوم إلى ${fmtDate(newDueDateIso)}`);
       await refresh();
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || err?.message || "فشل تمديد ميعاد التسليم");
+      toast.error(err?.response?.data?.error || err?.message || "فشل تأجيل تنبيه التأخير");
     } finally {
       setSnoozing(false);
     }
@@ -1349,30 +1350,33 @@ export default function DentalCaseDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-semibold text-rose-800 dark:text-rose-300 hidden sm:inline">تمديد الموعد:</span>
+            <span className="text-xs font-semibold text-rose-800 dark:text-rose-300 hidden sm:inline">تأجيل التنبيه (Snooze):</span>
             <button
               type="button"
               onClick={() => handleSnoozeOverdue(1)}
               disabled={snoozing}
               className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-200 text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-900/50 shadow-sm disabled:opacity-50 transition-colors"
+              title="تأجيل تنبيه التأخير وتمديد الموعد ليوم إضافي"
             >
-              +1 يوم
+              تأجيل +1 يوم
             </button>
             <button
               type="button"
               onClick={() => handleSnoozeOverdue(3)}
               disabled={snoozing}
               className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-200 text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-900/50 shadow-sm disabled:opacity-50 transition-colors"
+              title="تأجيل تنبيه التأخير وتمديد الموعد لـ 3 أيام"
             >
-              +3 أيام
+              تأجيل +3 أيام
             </button>
             <button
               type="button"
               onClick={() => handleSnoozeOverdue(7)}
               disabled={snoozing}
               className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-200 text-xs font-bold hover:bg-rose-100 dark:hover:bg-rose-900/50 shadow-sm disabled:opacity-50 transition-colors"
+              title="تأجيل تنبيه التأخير وتمديد الموعد لأسبوع كامل"
             >
-              +أسبوع
+              تأجيل +أسبوع
             </button>
           </div>
         </div>
@@ -2753,7 +2757,7 @@ function EditCaseModal({ caseData, doctors, workTypes, onClose, onSaved }: EditC
                 </select>
               </div>
               <div>
-                <label className={labelCls}>عدد الوحدات / الكراونات</label>
+                <label className={labelCls}>عدد الوحدات / الأسنان</label>
                 <input
                   className={MODAL_INPUT_CLS}
                   type="number"
