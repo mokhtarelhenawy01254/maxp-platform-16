@@ -1671,29 +1671,47 @@ router.get("/callback", async (req, res) => {
 
     // 🔗 Resolve the Facebook user identity so every page links to the
     // account connection that granted it (enables multi-account linking).
+    // Page linking REQUIRES a resolved identity: saving the company token
+    // without it re-creates the "pages stuck under the old account" bug
+    // (silent half-link), so we abort loudly instead — BEFORE any DB write.
+    const isPageOAuthFlow = type !== "pixel" && type !== "ads";
     let facebookUserId = null;
     let facebookUserName = null;
     let facebookUserEmail = null;
-    try {
-      const meResponse = await axios.get(
-        `${FACEBOOK_GRAPH_API_BASE_URL}/me`,
-        {
-          params: {
-            access_token: userAccessToken,
-            fields: "id,name,email",
+    let identityResolved = false;
+    for (let identityAttempt = 1; identityAttempt <= 2 && !identityResolved; identityAttempt++) {
+      try {
+        const meResponse = await axios.get(
+          `${FACEBOOK_GRAPH_API_BASE_URL}/me`,
+          {
+            params: {
+              access_token: userAccessToken,
+              fields: "id,name,email",
+            },
+            timeout: 10000,
           },
-          timeout: 10000,
-        },
-      );
-      facebookUserId = meResponse.data?.id || null;
-      facebookUserName = meResponse.data?.name || null;
-      facebookUserEmail = meResponse.data?.email || null;
-      console.log(`👤 [FACEBOOK-OAUTH] OAuth account: ${facebookUserName} (${facebookUserId})`);
-    } catch (meError) {
-      console.warn(
-        "⚠️ [FACEBOOK-OAUTH] Could not resolve Facebook user identity:",
-        meError.response?.data || meError.message,
-      );
+        );
+        facebookUserId = meResponse.data?.id || null;
+        facebookUserName = meResponse.data?.name || null;
+        facebookUserEmail = meResponse.data?.email || null;
+        identityResolved = Boolean(facebookUserId);
+        console.log(`👤 [FACEBOOK-OAUTH] OAuth account: ${facebookUserName} (${facebookUserId})`);
+      } catch (meError) {
+        console.warn(
+          `⚠️ [FACEBOOK-OAUTH] Could not resolve Facebook user identity (attempt ${identityAttempt}/2):`,
+          meError.response?.data || meError.message,
+        );
+        if (identityAttempt < 2) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+    }
+
+    if (!identityResolved && isPageOAuthFlow) {
+      console.error("❌ [FACEBOOK-OAUTH] Aborting page linking: identity unresolved — company token NOT saved to avoid stale page attribution");
+      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
+        error: "account_identity_failed",
+      });
     }
 
     // 🔍 تسجيل معلومات Token (خاصة للـ Pixels)
@@ -1826,6 +1844,7 @@ router.get("/callback", async (req, res) => {
     // للمستخدم لحظة إغلاق البوب أب (مش بعد ساعة)
     const savedPages = [];
     const skippedPages = [];
+    const failedPages = [];
 
     // 🔗 Upsert the Facebook account connection so every page fetched in
     // this OAuth session is refreshable from THIS account's token even
@@ -1864,15 +1883,18 @@ router.get("/callback", async (req, res) => {
           `✅ [OAUTH] Account connection ready for ${facebookUserName} (${facebookUserId}): ${accountConnectionId}`,
         );
       } catch (accountError) {
-        console.warn(
-          "⚠️ [OAUTH] Could not save Facebook account connection:",
+        // Page linking without a persisted account connection re-creates the
+        // stale-attribution bug (pages silently keep the previous account),
+        // so abort loudly instead of continuing half-linked.
+        console.error(
+          "❌ [OAUTH] Could not save Facebook account connection — aborting page linking:",
           accountError.message,
         );
+        return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
+          error: "account_link_failed",
+        });
       }
     }
-    const accountLink = accountConnectionId
-      ? { facebookAccountId: accountConnectionId }
-      : {};
 
     // 🔍 Fetch existing pages from DB to check for company ownership
     const existingPages =
@@ -1932,43 +1954,18 @@ router.get("/callback", async (req, res) => {
           ...(accountConnectionId ? { facebookAccountId: accountConnectionId } : {}),
         };
 
-        try {
-          if (existingPageInDB && existingPageInDB.companyId === companyId) {
-            await getSharedPrismaClient().facebookPage.update({
-              where: { pageId: page.id },
-              data: pageDataToUpdate,
-            });
-          } else {
-            await getSharedPrismaClient().facebookPage.upsert({
-              where: { pageId: page.id },
-              update: pageDataToUpdate,
-              create: pageDataToCreate,
-            });
-          }
-        } catch (dbErr) {
-          // If Prisma complains about facebookAccountId / facebookAccount relation syntax mismatch, retry without accountLink
-          if (String(dbErr.message).includes("facebookAccount")) {
-            console.warn("⚠️ [OAUTH] Retrying page save without accountLink:", dbErr.message);
-            const fallbackUpdate = { ...pageDataToUpdate };
-            delete fallbackUpdate.facebookAccountId;
-            const fallbackCreate = { ...pageDataToCreate };
-            delete fallbackCreate.facebookAccountId;
-
-            if (existingPageInDB && existingPageInDB.companyId === companyId) {
-              await getSharedPrismaClient().facebookPage.update({
-                where: { pageId: page.id },
-                data: fallbackUpdate,
-              });
-            } else {
-              await getSharedPrismaClient().facebookPage.upsert({
-                where: { pageId: page.id },
-                update: fallbackUpdate,
-                create: fallbackCreate,
-              });
-            }
-          } else {
-            throw dbErr;
-          }
+        // ✅ الحفظ دائمًا مع ربط الحساب — لا يوجد fallback يسقط الربط بصمت
+        if (existingPageInDB && existingPageInDB.companyId === companyId) {
+          await getSharedPrismaClient().facebookPage.update({
+            where: { pageId: page.id },
+            data: pageDataToUpdate,
+          });
+        } else {
+          await getSharedPrismaClient().facebookPage.upsert({
+            where: { pageId: page.id },
+            update: pageDataToUpdate,
+            create: pageDataToCreate,
+          });
         }
 
         savedPages.push({
@@ -1980,6 +1977,11 @@ router.get("/callback", async (req, res) => {
           `❌ [OAUTH] Error processing page ${page.name}:`,
           pageError.message,
         );
+        failedPages.push({
+          pageId: page.id,
+          pageName: page.name,
+          reason: pageError.message,
+        });
       }
     }
 
@@ -2010,6 +2012,11 @@ router.get("/callback", async (req, res) => {
       success: true,
       pages: savedPages.length,
       skipped: skippedPages.length,
+      failed: failedPages.length,
+      failedPages: failedPages.map((fp) => ({
+        pageId: fp.pageId,
+        pageName: fp.pageName,
+      })),
       skippedPages: skippedPages.map((sp) => ({
         pageId: sp.pageId,
         pageName: sp.pageName,
@@ -2279,6 +2286,29 @@ router.get("/status", verifyToken.authenticateToken, async (req, res) => {
       }
     }
 
+    // 🔍 كشف تناقض نسبة الصفحات لحساب الربط (attribution drift):
+    // - stale: الصفحة مسبوطة بحساب ربط مختلف عن آخر حساب اتعمل منه ربط للشركة
+    //   (نتيجة شائعة لربط قديم فشل بصمت قبل حماية account_identity_failed).
+    // - unattributed: الصفحة مش مربوطة بأي حساب فيسبوك (سجلات قديمة قبل
+    //   حسابات الربط المتعددة) — تجديد التوكن ليها أقل ضمان.
+    // ملاحظة: تعدد الحسابات مشروع، فده مؤشر factual مش خطأ إجباري.
+    const pagesWithAttribution = pages.map((page) => {
+      let attribution = "ok";
+      if (!page.account) {
+        attribution = "unattributed";
+      } else if (
+        facebookUser?.id &&
+        page.account.facebookUserId &&
+        page.account.facebookUserId !== facebookUser.id
+      ) {
+        attribution = "stale";
+      }
+      return { ...page, attribution };
+    });
+    const attributionIssues = pagesWithAttribution.filter(
+      (page) => page.attribution !== "ok"
+    ).length;
+
     res.json({
       success: true,
       connected: connectedPages.length > 0,
@@ -2286,11 +2316,12 @@ router.get("/status", verifyToken.authenticateToken, async (req, res) => {
       pagesCount: pages.length,
       connectedPagesCount: connectedPages.length,
       disconnectedPagesCount: disconnectedPages.length,
-      pages,
+      pages: pagesWithAttribution,
       accounts,
       needsAttention:
-        unhealthyPages.length > 0 || disconnectedPages.length > 0,
+        unhealthyPages.length > 0 || disconnectedPages.length > 0 || attributionIssues > 0,
       unhealthyPagesCount: unhealthyPages.length,
+      attributionIssues,
       facebookUser,
       message:
         pages.length === 0

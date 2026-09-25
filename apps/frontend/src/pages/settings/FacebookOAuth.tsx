@@ -32,6 +32,7 @@ interface FacebookPage {
   needsReconnect?: boolean;
   canReconnect?: boolean;
   healthMessage?: string | null;
+  attribution?: "ok" | "stale" | "unattributed";
   account?: {
     id: string;
     facebookUserId: string | null;
@@ -288,6 +289,8 @@ const FacebookOAuth: React.FC = () => {
         no_company_id: t("facebookOAuth.noCompanyId"),
         no_pages_found: t("facebookOAuth.noPagesFound"),
         facebook_oauth_access_denied: t("facebookOAuth.accessDenied"),
+        account_identity_failed: t("facebookOAuth.accountIdentityFailed"),
+        account_link_failed: t("facebookOAuth.accountLinkFailed"),
       };
 
       if (errorTranslations[errorParam]) {
@@ -1073,6 +1076,23 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
                           : t("facebookOAuth.connected")
                         : t("facebookOAuth.pageNotConnected")}
                     </span>
+
+                    {page.attribution === "stale" && (
+                      <span
+                        title={t("facebookOAuth.attributionStaleHint")}
+                        className="px-2.5 py-0.5 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 cursor-help"
+                      >
+                        {t("facebookOAuth.attributionStale")}
+                      </span>
+                    )}
+                    {page.attribution === "unattributed" && (
+                      <span
+                        title={t("facebookOAuth.attributionUnlinkedHint")}
+                        className="px-2.5 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 cursor-help"
+                      >
+                        {t("facebookOAuth.attributionUnlinked")}
+                      </span>
+                    )}
 
                     {page.canReconnect !== false && (
                       <button
