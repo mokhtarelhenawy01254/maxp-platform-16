@@ -1622,6 +1622,42 @@ exports.installApp = async (req, res) => {
       });
     });
 
+    try {
+      const client = getSharedPrismaClient();
+      if (client?.activityLog?.create) {
+        const userDisplayName = req.user?.name || req.user?.email || 'مستخدم النظام';
+        const cycleLabel = requestedPricingModel === 'SUBSCRIPTION'
+          ? (isYearly ? ' (اشتراك سنوي)' : ' (اشتراك شهري)')
+          : (requestedPricingModel === 'FREE' ? ' (مجاني)' : ' (حسب الاستهلاك)');
+
+        await client.activityLog.create({
+          data: {
+            userId: req.user?.id || null,
+            companyId,
+            category: 'MARKETPLACE',
+            action: 'INSTALL_APP',
+            description: `قام ${userDisplayName} بتثبيت وتفعيل تطبيق "${app.name}"${cycleLabel}`,
+            targetType: 'APP',
+            targetId: app.id,
+            targetName: app.name,
+            metadata: JSON.stringify({
+              appSlug: app.slug,
+              appName: app.name,
+              pricingModel: requestedPricingModel,
+              billingCycle: normalizedBillingCycle,
+              cost: installationResult?.installation?.totalSpent || 0,
+              trial: isTrialActive,
+              installedAt: new Date().toISOString()
+            }),
+            severity: 'LOW',
+            isSuccess: true
+          }
+        });
+      }
+    } catch (logErr) {
+      console.warn('[marketplace] failed to create ActivityLog for install:', logErr.message);
+    }
+
     res.json({
       success: true,
       message: isTrialActive
@@ -1720,9 +1756,37 @@ exports.uninstallApp = async (req, res) => {
       });
     });
 
+    try {
+      const client = getSharedPrismaClient();
+      if (client?.activityLog?.create) {
+        const userDisplayName = req.user?.name || req.user?.email || 'مستخدم النظام';
+        await client.activityLog.create({
+          data: {
+            userId: req.user?.id || null,
+            companyId,
+            category: 'MARKETPLACE',
+            action: 'UNINSTALL_APP',
+            description: `قام ${userDisplayName} بإلغاء تثبيت تطبيق "${app.name}"`,
+            targetType: 'APP',
+            targetId: app.id,
+            targetName: app.name,
+            metadata: JSON.stringify({
+              appSlug: app.slug,
+              appName: app.name,
+              uninstalledAt: new Date().toISOString()
+            }),
+            severity: 'MEDIUM',
+            isSuccess: true
+          }
+        });
+      }
+    } catch (logErr) {
+      console.warn('[marketplace] failed to create ActivityLog for uninstall:', logErr.message);
+    }
+
     res.json({
       success: true,
-      message: `ØªÙ… Ø¥Ù„ØºØ§Ø¡ ${app.name} Ø¨Ù†Ø¬Ø§Ø­`
+      message: `تم إلغاء تثبيت ${app.name} بنجاح`
     });
   } catch (error) {
     console.error('Error uninstalling app:', error);
@@ -2222,7 +2286,36 @@ exports.subscribeToBundle = async (req, res) => {
       });
     });
 
-    res.json({ success: true, message: `تم الاشتراك في ${bundle.name} وتفعيل ${bundleAppIds.length} أداة بنجاح! 🎉` });
+    try {
+      const client = getSharedPrismaClient();
+      if (client?.activityLog?.create) {
+        const userDisplayName = req.user?.name || req.user?.email || 'مستخدم النظام';
+        await client.activityLog.create({
+          data: {
+            userId: req.user?.id || null,
+            companyId,
+            category: 'MARKETPLACE',
+            action: 'INSTALL_APP',
+            description: `قام ${userDisplayName} بالاشتراك في باقة "${bundle.name}" وتفعيل ${bundleAppIds.length} أداة`,
+            targetType: 'BUNDLE',
+            targetId: bundle.id || bundle.slug,
+            targetName: bundle.name,
+            metadata: JSON.stringify({
+              bundleSlug: bundle.slug,
+              bundleName: bundle.name,
+              appCount: bundleAppIds.length,
+              subscribedAt: new Date().toISOString()
+            }),
+            severity: 'LOW',
+            isSuccess: true
+          }
+        });
+      }
+    } catch (logErr) {
+      console.warn('[marketplace] failed to create ActivityLog for bundle subscribe:', logErr.message);
+    }
+
+    res.json({ success: true, message: `تم الاشتراك في ${bundle.name} وتفعيل ${bundleAppIds.length} أداة بنجاح!` });
 
   } catch (error) {
     console.error('Error subscribing to bundle:', error);
@@ -2232,4 +2325,166 @@ exports.subscribeToBundle = async (req, res) => {
     });
   }
 };
+
+/**
+ * @route GET /api/v1/marketplace/logs
+ * @desc Get application activity / audit logs for the company (who installed or uninstalled apps)
+ * @access Protected
+ */
+exports.getMarketplaceLogs = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    if (!companyId) {
+      return res.json({
+        success: true,
+        data: {
+          logs: [],
+          pagination: { page: 1, limit: 20, total: 0, pages: 0 },
+          stats: { totalInstalls: 0, totalUninstalls: 0, totalActions: 0 }
+        }
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const skip = (page - 1) * limit;
+    const { action, search, startDate, endDate } = req.query;
+
+    const where = {
+      companyId,
+      category: 'MARKETPLACE'
+    };
+
+    if (action && action !== 'ALL') {
+      where.action = action;
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
+
+    if (search && search.trim()) {
+      const term = search.trim();
+      where.OR = [
+        { description: { contains: term, mode: 'insensitive' } },
+        { targetName: { contains: term, mode: 'insensitive' } },
+        { user: { name: { contains: term, mode: 'insensitive' } } },
+        { user: { email: { contains: term, mode: 'insensitive' } } }
+      ];
+    }
+
+    const [logsRaw, total, installsCount, uninstallsCount] = await Promise.all([
+      prisma.activityLog.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              avatar: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit
+      }),
+      prisma.activityLog.count({ where }),
+      prisma.activityLog.count({ where: { companyId, category: 'MARKETPLACE', action: 'INSTALL_APP' } }),
+      prisma.activityLog.count({ where: { companyId, category: 'MARKETPLACE', action: 'UNINSTALL_APP' } })
+    ]);
+
+    let logs = logsRaw.map((log) => {
+      let parsedMeta = null;
+      if (log.metadata) {
+        try {
+          parsedMeta = typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata;
+        } catch {
+          parsedMeta = null;
+        }
+      }
+      return {
+        id: log.id,
+        action: log.action,
+        description: log.description,
+        targetName: log.targetName,
+        targetId: log.targetId,
+        createdAt: log.createdAt,
+        user: log.user || { name: 'مدير النظام', email: '', role: 'ADMIN', avatar: null },
+        metadata: parsedMeta
+      };
+    });
+
+    // Fallback baseline: if no logs exist yet in activityLog for this company,
+    // synthesize baseline entries from existing companyApp table so the screen is useful immediately.
+    if (logs.length === 0 && page === 1 && !search && (!action || action === 'ALL')) {
+      const companyApps = await prisma.companyApp.findMany({
+        where: { companyId },
+        include: { app: true },
+        orderBy: { createdAt: 'desc' },
+        take: limit
+      });
+
+      if (companyApps.length > 0) {
+        logs = companyApps.map((ca) => ({
+          id: `synth-${ca.id}`,
+          action: ca.status === 'CANCELLED' ? 'UNINSTALL_APP' : 'INSTALL_APP',
+          description: ca.status === 'CANCELLED'
+            ? `تم إلغاء تثبيت تطبيق "${ca.app?.name || 'تطبيق'}"`
+            : `تم تثبيت وتفعيل تطبيق "${ca.app?.name || 'تطبيق'}"`,
+          targetName: ca.app?.name || 'تطبيق',
+          targetId: ca.appId,
+          createdAt: ca.status === 'CANCELLED' ? ca.updatedAt : ca.createdAt,
+          user: {
+            id: null,
+            name: 'مدير الحساب',
+            email: '',
+            role: 'OWNER',
+            avatar: null
+          },
+          metadata: {
+            appSlug: ca.app?.slug,
+            status: ca.status,
+            activePricingModel: ca.activePricingModel,
+            synthetic: true
+          }
+        }));
+      }
+    }
+
+    const calculatedTotal = total > 0 ? total : logs.length;
+    const finalInstalls = installsCount || logs.filter((l) => l.action === 'INSTALL_APP').length;
+    const finalUninstalls = uninstallsCount || logs.filter((l) => l.action === 'UNINSTALL_APP').length;
+
+    return res.json({
+      success: true,
+      data: {
+        logs,
+        pagination: {
+          page,
+          limit,
+          total: calculatedTotal,
+          pages: Math.ceil(calculatedTotal / limit) || 1
+        },
+        stats: {
+          totalInstalls: finalInstalls,
+          totalUninstalls: finalUninstalls,
+          totalActions: finalInstalls + finalUninstalls
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[marketplace] Error fetching marketplace logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب سجل حركات التطبيقات'
+    });
+  }
+};
+
 

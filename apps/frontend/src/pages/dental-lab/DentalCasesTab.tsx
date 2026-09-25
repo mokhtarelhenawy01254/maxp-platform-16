@@ -121,6 +121,25 @@ function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, on
     }
   }, [doctorPricingMap]);
 
+  useEffect(() => {
+    if (!initial && workTypeId) {
+      const wt = workTypes.find((w) => w.id === workTypeId);
+      if (wt) {
+        let leadDays = (typeof wt.leadTimeDays === 'number' && wt.leadTimeDays > 0) ? wt.leadTimeDays : 3;
+        if (priority === 'URGENT') {
+          leadDays = (typeof wt.urgentLeadTimeDays === 'number' && wt.urgentLeadTimeDays > 0)
+            ? wt.urgentLeadTimeDays
+            : Math.max(1, Math.ceil(leadDays * 0.5));
+        } else if (priority === 'STAT') {
+          leadDays = 1;
+        }
+        const target = new Date(receivedDate || Date.now());
+        target.setDate(target.getDate() + leadDays);
+        setDueDate(target.toISOString().split("T")[0]);
+      }
+    }
+  }, [workTypeId, priority, receivedDate]);
+
   const save = async () => {
     if (saving) return;
     if (!patientName.trim()) { toast.error(t("dentalLab.common.name")); return; }

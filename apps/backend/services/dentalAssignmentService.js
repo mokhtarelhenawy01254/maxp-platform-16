@@ -12,6 +12,9 @@ const DEFAULT_WORKING_DAYS = [0, 1, 2, 3, 4, 6];
  * Check if a technician is on duty today
  */
 function isTechnicianOnDuty(technician, date = new Date()) {
+  const checkDate = (date instanceof Date && !isNaN(date)) ? date : new Date(date || Date.now());
+  const dayOfWeek = checkDate.getDay(); // 0 = Sun, 1 = Mon, ..., 5 = Fri, 6 = Sat
+
   const workingDays = Array.isArray(technician.workingDays)
     ? technician.workingDays
     : (Array.isArray(technician.workDays) ? technician.workDays : DEFAULT_WORKING_DAYS);
@@ -23,7 +26,7 @@ function isTechnicianOnDuty(technician, date = new Date()) {
 
   // 2. Vacations check
   if (Array.isArray(technician.vacations) && technician.vacations.length > 0) {
-    const todayStr = date.toISOString().split('T')[0];
+    const todayStr = checkDate.toISOString().split('T')[0];
     for (const vac of technician.vacations) {
       if (vac && vac.startDate && vac.endDate) {
         if (todayStr >= vac.startDate && todayStr <= vac.endDate) {

@@ -14,7 +14,7 @@ import {
   LayoutGrid, List,
   Truck,
   CreditCard, Gamepad2, Palette, ClipboardList, Percent,
-  Laptop,
+  Laptop, History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -406,8 +406,17 @@ export default function MarketplaceV2() {
               })}
 
               <Link
+                to="/marketplace/history"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/30 transition-all shrink-0 active:scale-[0.98] mr-auto"
+                title="سجل حركات وتثبيت التطبيقات"
+              >
+                <History size={14} className="text-primary" />
+                <span>سجل التطبيقات</span>
+              </Link>
+
+              <Link
                 to="/marketplace/downloads"
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 transition-all shrink-0 active:scale-[0.98] mr-auto"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 transition-all shrink-0 active:scale-[0.98]"
               >
                 <Laptop size={14} className="text-primary" />
                 <span>تطبيقات الأجهزة والموبايل</span>

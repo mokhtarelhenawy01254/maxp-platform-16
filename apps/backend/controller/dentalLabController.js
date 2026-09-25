@@ -2582,6 +2582,9 @@ const advanceCaseStatus = async (req, res) => {
     const nextInChain = standardNext;
 
     const isValidTransition = (from, to) => {
+      if (to === 'OUTSOURCED') {
+        return ['RECEIVED', 'DESIGN', 'MANUFACTURING'].includes(from);
+      }
       if (from === 'MANUFACTURING') {
         return to === 'QC' || to === 'OUTSOURCED';
       }
@@ -2591,15 +2594,10 @@ const advanceCaseStatus = async (req, res) => {
       return to === nextInChain;
     };
 
+    const requestedTarget = body.to || body.status || body.target || body.targetStatus;
     let target = null;
-    if (body.to !== undefined && body.to !== null && body.to !== '') {
-      target = String(body.to).toUpperCase();
-      if (!CASE_STATUSES.has(target)) return res.status(400).json({ success: false, error: 'الحالة المطلوبة غير صحيحة' });
-      if (!isValidTransition(current, target)) {
-        return res.status(400).json({ success: false, error: `لا يمكن الانتقال من "${current}" إلى "${target}"` });
-      }
-    } else if (body.status !== undefined && body.status !== null && body.status !== '') {
-      target = String(body.status).toUpperCase();
+    if (requestedTarget !== undefined && requestedTarget !== null && requestedTarget !== '') {
+      target = String(requestedTarget).toUpperCase();
       if (!CASE_STATUSES.has(target)) return res.status(400).json({ success: false, error: 'الحالة المطلوبة غير صحيحة' });
       if (!isValidTransition(current, target)) {
         return res.status(400).json({ success: false, error: `لا يمكن الانتقال من "${current}" إلى "${target}"` });

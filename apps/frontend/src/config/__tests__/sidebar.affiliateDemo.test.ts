@@ -57,8 +57,9 @@ describe("affiliate demo sidebar preset", () => {
 
     expect(appLinks).toEqual([
       "/marketplace",
-      "/marketplace/downloads",
       "/my-apps",
+      "/marketplace/history",
+      "/marketplace/downloads",
       "/marketplace/bundles",
       "/payments",
       "/subscription/pricing",

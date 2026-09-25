@@ -13,7 +13,7 @@ import {
   SlidersHorizontal, Users, MessageSquare,
   Bot, DollarSign, Layers, Truck, Activity,
   ChevronLeft, ArrowUpDown, Plus,
-  Download, Trash2, CheckSquare, Square
+  Download, Trash2, CheckSquare, Square, History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAppSystemHub, SYSTEM_HUBS, resolveRecommendedSystemHub } from "@/utils/marketplaceSystems";
@@ -552,6 +552,17 @@ export function MyApps() {
               <RefreshCw className={cn("size-3.5", isRefreshing && "animate-spin text-primary")} />
               <span className="hidden sm:inline">تحديث</span>
             </Button>
+            <Link to="/marketplace/history">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 rounded-xl px-3 text-xs font-semibold gap-1.5 border-border/60 hover:bg-muted"
+                title="سجل حركات وتثبيت التطبيقات (من قام بالتثبيت أو الإلغاء)"
+              >
+                <History className="size-3.5 text-primary" />
+                <span>سجل التطبيقات</span>
+              </Button>
+            </Link>
             <Link to="/marketplace/downloads" className="hidden sm:inline-flex">
               <Button
                 variant="outline"

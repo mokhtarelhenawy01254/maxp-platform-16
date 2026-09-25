@@ -1434,6 +1434,9 @@ const CompareApps = React.lazy(
 const AppDownloadsPage = React.lazy(
   () => import("./pages/marketplace/AppDownloadsPage"),
 );
+const AppHistoryPage = React.lazy(
+  () => import("./pages/marketplace/AppHistoryPage"),
+);
 
 const MindMapPage = React.lazy(() => import("./pages/mindmap/MindMapPage"));
 
@@ -1763,6 +1766,7 @@ if (typeof window !== "undefined") {
   p["/profile"] = () => import("./pages/profile/Profile");
   p["/marketplace"] = () => import("./pages/marketplace/MarketplaceV2");
   p["/marketplace/downloads"] = () => import("./pages/marketplace/AppDownloadsPage");
+  p["/marketplace/history"] = () => import("./pages/marketplace/AppHistoryPage");
   p["/marketplace/agents"] = () => import("./pages/marketplace/agents/AgentMarketplacePage");
   p["/my-apps"] = () => import("./pages/marketplace/MyApps");
   p["/mindmap"] = () => import("./pages/mindmap/MindMapPage");
@@ -3250,6 +3254,27 @@ const AppContent = () => {
                       <MyApps />
                     </Layout>
                   }
+                />
+                {/* Marketplace Audit / History Log */}
+                <Route
+                  path="/marketplace/history"
+                  element={
+                    <Layout>
+                      <AppHistoryPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/marketplace/logs"
+                  element={<Navigate to="/marketplace/history" replace />}
+                />
+                <Route
+                  path="/my-apps/history"
+                  element={<Navigate to="/marketplace/history" replace />}
+                />
+                <Route
+                  path="/my-apps/logs"
+                  element={<Navigate to="/marketplace/history" replace />}
                 />
                 {/* App Management Routes */}
                 <Route

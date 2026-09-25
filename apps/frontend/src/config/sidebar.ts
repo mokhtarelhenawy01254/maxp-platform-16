@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders, Trash2 } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope, Coffee, Sliders, Trash2, History } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 import { APP_REGISTRY } from './appRegistry';
 import { STORE_APP_SLUGS } from '../utils/storeShortcut';
@@ -477,8 +477,9 @@ export const getSidebarConfig = (
                 icon: Box,
                 items: [
                     { to: '/marketplace', icon: Box, label: isEn ? 'App Marketplace' : 'متجر التطبيقات' },
-                    { to: '/marketplace/downloads', icon: Monitor, label: isEn ? 'Device & Mobile Apps' : 'تطبيقات الأجهزة والموبايل' },
                     { to: '/my-apps', icon: Grid3x3, label: t('sidebar.myApps') },
+                    { to: '/marketplace/history', icon: History, label: isEn ? 'Apps Activity Log' : 'سجل التطبيقات' },
+                    { to: '/marketplace/downloads', icon: Monitor, label: isEn ? 'Device & Mobile Apps' : 'تطبيقات الأجهزة والموبايل' },
                     { to: '/marketplace/bundles', icon: Gift, label: t('sidebar.browseBundles') },
                     { to: '/payments', icon: Wallet, label: t('sidebar.myPayments') },
 
@@ -1594,6 +1595,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/marketplace', icon: Box, label: isEn ? 'App Marketplace' : 'متجر التطبيقات' },
                 { to: '/my-apps', icon: Grid3x3, label: t('sidebar.myApps') },
+                { to: '/marketplace/history', icon: History, label: isEn ? 'Apps Activity Log' : 'سجل التطبيقات' },
                 { to: '/marketplace/downloads', icon: Monitor, label: isEn ? 'Device & Mobile Apps' : 'تطبيقات الأجهزة والموبايل' },
                 { to: '/marketplace/agents', icon: Bot, label: isEn ? 'Agents Marketplace' : 'سوق الإيجنت (Workforce)' },
                 { to: '/marketplace/themes', icon: Palette, label: t('sidebar.storeThemes') },

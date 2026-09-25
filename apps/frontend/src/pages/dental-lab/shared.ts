@@ -82,6 +82,7 @@ export interface DentalWorkType {
   price: number;
   costPrice?: number;
   leadTimeDays?: number;
+  urgentLeadTimeDays?: number;
   defaultMaterial?: string;
   materialBrand?: string;
   instructions?: string;

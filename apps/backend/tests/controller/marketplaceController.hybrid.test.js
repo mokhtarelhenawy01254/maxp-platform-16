@@ -1026,4 +1026,53 @@ describe("Marketplace Controller Hybrid", () => {
     expect(res.statusCode).toBe(200);
     expect(res.payload.success).toBe(true);
   });
+
+  it("getMarketplaceLogs returns activity logs for company", async () => {
+    mockPrisma.activityLog = {
+      findMany: jest.fn().mockResolvedValue([
+        {
+          id: "log-1",
+          action: "INSTALL_APP",
+          description: 'قام أحمد بتثبيت وتفعيل تطبيق "WhatsApp Cloud API"',
+          targetName: "WhatsApp Cloud API",
+          targetId: "app-wa",
+          createdAt: new Date("2026-09-26T00:00:00Z"),
+          metadata: JSON.stringify({ appSlug: "whatsapp-cloud-api" }),
+          user: { id: "u-1", name: "أحمد", email: "ahmed@example.com", role: "ADMIN", avatar: null }
+        },
+        {
+          id: "log-2",
+          action: "UNINSTALL_APP",
+          description: 'قام أحمد بإلغاء تثبيت تطبيق "Bulk Search"',
+          targetName: "Bulk Search",
+          targetId: "app-bs",
+          createdAt: new Date("2026-09-25T12:00:00Z"),
+          metadata: JSON.stringify({ appSlug: "bulk-search" }),
+          user: { id: "u-1", name: "أحمد", email: "ahmed@example.com", role: "ADMIN", avatar: null }
+        }
+      ]),
+      count: jest.fn().mockImplementation(async ({ where }) => {
+        if (where?.action === "INSTALL_APP") return 1;
+        if (where?.action === "UNINSTALL_APP") return 1;
+        return 2;
+      })
+    };
+
+    const req = {
+      user: { companyId: "company-1", id: "u-1" },
+      query: { page: "1", limit: "20" }
+    };
+    const res = createResponseMock();
+
+    await marketplaceController.getMarketplaceLogs(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.success).toBe(true);
+    expect(res.payload.data.logs).toHaveLength(2);
+    expect(res.payload.data.stats.totalInstalls).toBe(1);
+    expect(res.payload.data.stats.totalUninstalls).toBe(1);
+    expect(res.payload.data.logs[0].action).toBe("INSTALL_APP");
+    expect(res.payload.data.logs[0].user.name).toBe("أحمد");
+  });
 });
+

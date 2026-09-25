@@ -114,7 +114,9 @@ function calculateDynamicDueDate(
   let reason = `${workType?.name || 'المدة القياسية'} (${leadDays} أيام عمل)`;
 
   if (priority === 'URGENT') {
-    const reduced = Math.max(1, Math.ceil(leadDays * 0.5));
+    const reduced = (workType && typeof workType.urgentLeadTimeDays === 'number' && workType.urgentLeadTimeDays > 0)
+      ? workType.urgentLeadTimeDays
+      : Math.max(1, Math.ceil(leadDays * 0.5));
     reason = `${workType?.name || 'نوع العمل'} (مستعجل: ${reduced} أيام بدل ${leadDays})`;
     leadDays = reduced;
   } else if (priority === 'STAT') {

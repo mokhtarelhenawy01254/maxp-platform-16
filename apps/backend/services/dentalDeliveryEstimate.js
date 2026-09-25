@@ -52,6 +52,13 @@ async function estimateLeadDays(prisma, companyId, workTypeId) {
  * يقترح تاريخ استحقاق ذكي مع مراعاة أيام العمل (استثناء الجمعة افتراضياً) والأولوية (URGENT / STAT).
  */
 async function suggestDueDate(prisma, companyId, workTypeId, base = new Date(), options = {}) {
+  let workType = null;
+  if (workTypeId && prisma && prisma.dentalWorkType) {
+    try {
+      workType = await prisma.dentalWorkType.findFirst({ where: { id: String(workTypeId) } });
+    } catch (_) {}
+  }
+
   const estimate = await estimateLeadDays(prisma, companyId, workTypeId);
   let days = Math.max(1, Math.round(estimate.days));
 
@@ -60,7 +67,11 @@ async function suggestDueDate(prisma, companyId, workTypeId, base = new Date(), 
   if (priority === 'STAT') {
     days = Math.max(1, Math.round(days * 0.25));
   } else if (priority === 'URGENT') {
-    days = Math.max(1, Math.round(days * 0.5));
+    if (workType && Number(workType.urgentLeadTimeDays) > 0) {
+      days = Number(workType.urgentLeadTimeDays);
+    } else {
+      days = Math.max(1, Math.round(days * 0.5));
+    }
   }
 
   const baseDate = base instanceof Date && !Number.isNaN(base.getTime()) ? new Date(base) : new Date();

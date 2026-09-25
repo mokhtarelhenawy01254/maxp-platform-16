@@ -435,6 +435,35 @@ exports.cancelApp = async (req, res) => {
     });
 
     try {
+      const client = getSharedPrismaClient();
+      if (client?.activityLog?.create) {
+        const userDisplayName = req.user?.name || req.user?.email || 'مستخدم النظام';
+        const appName = companyApp.app?.name || 'التطبيق';
+        await client.activityLog.create({
+          data: {
+            userId: req.user?.id || null,
+            companyId,
+            category: 'MARKETPLACE',
+            action: 'UNINSTALL_APP',
+            description: `قام ${userDisplayName} بإلغاء تثبيت تطبيق "${appName}"`,
+            targetType: 'APP',
+            targetId: companyApp.appId,
+            targetName: appName,
+            metadata: JSON.stringify({
+              appSlug: companyApp.app?.slug,
+              appName,
+              uninstalledAt: new Date().toISOString()
+            }),
+            severity: 'MEDIUM',
+            isSuccess: true
+          }
+        });
+      }
+    } catch (logErr) {
+      console.warn('[companyApps] failed to create ActivityLog for cancelApp:', logErr.message);
+    }
+
+    try {
       await redisCacheService.del(`storefront_settings:${companyId}`);
     } catch (cacheErr) {
       console.error('⚠️ [REDIS] error deleting storefront settings cache:', cacheErr);
