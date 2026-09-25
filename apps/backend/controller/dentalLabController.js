@@ -922,6 +922,11 @@ const createTechnician = async (req, res) => {
       }
     }
 
+    const workingDays = Array.isArray(body.workingDays) ? body.workingDays : undefined;
+    const vacations = Array.isArray(body.vacations) ? body.vacations : undefined;
+    const dailyCap = Number.isInteger(parseInt(body.dailyCap, 10)) ? Math.max(0, parseInt(body.dailyCap, 10)) : 0;
+    const backupTechnicianId = body.backupTechnicianId ? String(body.backupTechnicianId) : null;
+
     const technician = await prisma.dentalTechnician.create({
       data: {
         companyId,
@@ -930,6 +935,10 @@ const createTechnician = async (req, res) => {
         phone: body.phone ? String(body.phone).trim() : null,
         role,
         wagePerStage,
+        workingDays,
+        vacations,
+        dailyCap,
+        backupTechnicianId,
         isActive: normalizeBool(body.isActive, true),
       },
     });
@@ -1063,9 +1072,31 @@ const updateTechnician = async (req, res) => {
           console.warn('Could not set dental role for technician user:', roleErr.message);
         }
       }
-    }
+    if ('workingDays' in body) data.workingDays = Array.isArray(body.workingDays) ? body.workingDays : null;
+    if ('vacations' in body) data.vacations = Array.isArray(body.vacations) ? body.vacations : null;
+    if ('dailyCap' in body) data.dailyCap = Math.max(0, parseInt(body.dailyCap, 10) || 0);
+    if ('backupTechnicianId' in body) data.backupTechnicianId = body.backupTechnicianId ? String(body.backupTechnicianId) : null;
 
     const technician = await prisma.dentalTechnician.update({ where: { id }, data });
+
+    // P2 Backfill: تحديث النسخ غير المقفولة للمراحل غير المكتملة
+    if (data.name && data.name !== existing.name) {
+      try {
+        await prisma.$transaction([
+          prisma.dentalCaseStage.updateMany({
+            where: { companyId, assigneeId: id, status: { not: 'DONE' } },
+            data: { assigneeName: data.name },
+          }),
+          prisma.dentalStageAssignee.updateMany({
+            where: { companyId, technicianId: id },
+            data: { technicianName: data.name },
+          }),
+        ]);
+      } catch (backfillErr) {
+        console.warn('Warning: Technician name backfill failed:', backfillErr.message);
+      }
+    }
+
     res.json({ success: true, data: technician });
   } catch (error) {
     console.error('Error updating dental technician:', error);
