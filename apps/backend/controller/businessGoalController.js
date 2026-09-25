@@ -183,4 +183,15 @@ module.exports = {
       handleGoalError(res, error, "حدث خطأ أثناء تحديث تقدم الهدف");
     }
   },
+
+  async getMetricsCatalog(req, res) {
+    try {
+      const goalMetricEngine = require("../services/goalMetricEngine");
+      const metrics = goalMetricEngine.getMetricCatalog();
+      res.json({ success: true, metrics });
+    } catch (error) {
+      handleGoalError(res, error, "حدث خطأ أثناء جلب كتالوج المؤشرات");
+    }
+  },
 };
+

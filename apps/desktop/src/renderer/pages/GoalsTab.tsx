@@ -11,6 +11,7 @@ import {
   Award,
   Layers,
   Sparkles,
+  Zap,
 } from 'lucide-react';
 import { audioAlerts } from '../utils/audioAlerts';
 import { CreateGoalModal } from '../components/goals/CreateGoalModal';
@@ -22,6 +23,8 @@ interface GoalItem {
   goalType?: string;
   target?: number;
   current?: number;
+  targetValue?: number;
+  currentValue?: number;
   progress?: number;
   unit?: string;
   status?: string;
@@ -31,6 +34,9 @@ interface GoalItem {
   dueDate?: string;
   userName?: string;
   departmentName?: string;
+  isAutoTracked?: boolean;
+  metricKey?: string;
+  metricLabel?: string;
 }
 
 export const GoalsTab: React.FC = () => {
@@ -121,15 +127,22 @@ export const GoalsTab: React.FC = () => {
     }
   };
 
+  const getGoalProgress = (g: GoalItem) => {
+    if (g.progress !== undefined && g.progress !== null) return Number(g.progress);
+    const tgt = Number(g.target !== undefined ? g.target : (g.targetValue || 0));
+    const cur = Number(g.current !== undefined ? g.current : (g.currentValue || 0));
+    return tgt > 0 ? Math.round((cur / tgt) * 100) : 0;
+  };
+
   const totalGoals = goals.length;
   const completedGoals = goals.filter((g) => {
-    const prog = g.progress ?? (g.target ? Math.round(((g.current || 0) / g.target) * 100) : 0);
+    const prog = getGoalProgress(g);
     return prog >= 100 || String(g.status || '').toUpperCase() === 'COMPLETED';
   }).length;
   const avgProgress = totalGoals > 0
     ? Math.round(
         goals.reduce((acc, g) => {
-          const p = g.progress ?? (g.target ? Math.round(((g.current || 0) / g.target) * 100) : 0);
+          const p = getGoalProgress(g);
           return acc + Math.min(100, Math.max(0, p));
         }, 0) / totalGoals
       )
@@ -277,8 +290,8 @@ export const GoalsTab: React.FC = () => {
         ) : (
           <div style={styles.goalsGrid}>
             {goals.map((goal) => {
-              const currentVal = Number(goal.current || 0);
-              const targetVal = Number(goal.target || 100);
+              const currentVal = Number(goal.current !== undefined ? goal.current : (goal.currentValue || 0));
+              const targetVal = Number(goal.target !== undefined ? goal.target : (goal.targetValue || 100));
               const unit = goal.unit || 'نقطة';
               const progress = goal.progress ?? (targetVal > 0 ? Math.round((currentVal / targetVal) * 100) : 0);
               const isCompleted = progress >= 100 || String(goal.status || '').toUpperCase() === 'COMPLETED';
@@ -306,7 +319,28 @@ export const GoalsTab: React.FC = () => {
                         )}
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={styles.goalTitle} title={goal.title}>{goal.title}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span style={styles.goalTitle} title={goal.title}>{goal.title}</span>
+                          {goal.isAutoTracked && (
+                            <span
+                              style={{
+                                fontSize: 9,
+                                fontWeight: 700,
+                                padding: '1px 6px',
+                                borderRadius: 4,
+                                backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                                color: 'var(--accent-blue)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 3,
+                              }}
+                              title="هذا الهدف مربوط بمؤشرات المنصة التلقائية ويزداد تلقائياً عند تنفيذ العمليات"
+                            >
+                              <Zap size={9} />
+                              <span>تلقائي: {goal.metricLabel || 'النظام'}</span>
+                            </span>
+                          )}
+                        </div>
                         {goal.description && (
                           <div style={styles.goalDesc} title={goal.description}>{goal.description}</div>
                         )}

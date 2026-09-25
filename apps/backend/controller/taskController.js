@@ -1496,6 +1496,24 @@ const taskController = {
           successMsg = "تم إنجاز المهمة بنجاح";
           notifTitle = "إنجاز المهمة";
           notifMsg = `أنجز ${req.user.firstName || "مستخدم"} المهمة "${task.title}"`;
+
+          // 🎯 GOAL-METRIC-ENGINE: Auto-advance goals on task completion
+          if (existingTask.status !== "COMPLETED") {
+            try {
+              const goalMetricEngine = require("../services/goalMetricEngine");
+              goalMetricEngine.recordGoalMetricEvent({
+                companyId,
+                userId: task.assignedTo || existingTask.assignedTo || req.user.userId || req.user.id,
+                departmentId: task.departmentId || existingTask.departmentId || null,
+                projectId: task.projectId || existingTask.projectId || null,
+                metricKey: "TASK_COMPLETED",
+                incrementValue: 1,
+                metadata: { taskId: task.id || id, title: task.title },
+              }).catch(err => console.warn("⚠️ [GOAL-HOOK] Task completion error:", err.message));
+            } catch (goalHookErr) {
+              console.warn("⚠️ [GOAL-HOOK] Task goal error:", goalHookErr.message);
+            }
+          }
         }
 
         res.json({
@@ -1686,6 +1704,24 @@ const taskController = {
         successMsg = "تم إنجاز المهمة بنجاح";
         notifTitle = "إنجاز المهمة";
         notifMsg = `أنجز ${req.user.firstName || "مستخدم"} المهمة "${task.title}"`;
+
+        // 🎯 GOAL-METRIC-ENGINE: Auto-advance goals on task completion
+        if (existingTask.status !== "COMPLETED") {
+          try {
+            const goalMetricEngine = require("../services/goalMetricEngine");
+            goalMetricEngine.recordGoalMetricEvent({
+              companyId,
+              userId: task.assignedTo || existingTask.assignedTo || req.user.userId || req.user.id,
+              departmentId: task.departmentId || existingTask.departmentId || null,
+              projectId: task.projectId || existingTask.projectId || null,
+              metricKey: "TASK_COMPLETED",
+              incrementValue: 1,
+              metadata: { taskId: task.id || id, title: task.title },
+            }).catch(err => console.warn("⚠️ [GOAL-HOOK] Fallback task completion error:", err.message));
+          } catch (goalHookErr) {
+            console.warn("⚠️ [GOAL-HOOK] Fallback task goal error:", goalHookErr.message);
+          }
+        }
       }
 
       res.json({
@@ -2755,6 +2791,27 @@ const taskController = {
         where: { id: timeEntry.taskId },
         data: { actualHours: { increment: Math.round(duration / 60) } },
       });
+
+      // 🎯 GOAL-METRIC-ENGINE: Auto-advance hours goal on timer stop
+      try {
+        const hoursLogged = Math.round((duration / 60) * 100) / 100;
+        if (hoursLogged > 0) {
+          const goalMetricEngine = require("../services/goalMetricEngine");
+          goalMetricEngine
+            .recordGoalMetricEvent({
+              companyId,
+              userId,
+              metricKey: "TASK_STOPWATCH_HOURS",
+              incrementValue: hoursLogged,
+              metadata: { taskId: timeEntry.taskId, durationMinutes: duration },
+            })
+            .catch((err) =>
+              console.warn("⚠️ [GOAL-HOOK] Timer hours error:", err.message)
+            );
+        }
+      } catch (timerGoalErr) {
+        console.warn("⚠️ [GOAL-HOOK] Timer goal error:", timerGoalErr.message);
+      }
 
       res.json({
         success: true,

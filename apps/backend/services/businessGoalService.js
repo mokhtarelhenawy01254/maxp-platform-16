@@ -200,6 +200,22 @@ class BusinessGoalService {
 
   formatGoal(goal, userMap = {}) {
     const user = goal.userId ? userMap[goal.userId] || null : null;
+    let isAutoTracked = false;
+    let metricKey = null;
+    let metricLabel = null;
+
+    try {
+      const goalMetricEngine = require("./goalMetricEngine");
+      metricKey = goalMetricEngine.detectMetricKey(goal);
+      if (metricKey) {
+        isAutoTracked = true;
+        const catalog = goalMetricEngine.getMetricCatalog();
+        const def = catalog.find((m) => m.key === metricKey);
+        metricLabel = def?.label || metricKey;
+      }
+    } catch {
+      // Fallback if engine fails
+    }
 
     return {
       ...goal,
@@ -208,6 +224,9 @@ class BusinessGoalService {
       targetValue: roundToTwo(goal.targetValue),
       currentValue: roundToTwo(goal.currentValue),
       progress: Number(goal.progress || 0),
+      isAutoTracked,
+      metricKey,
+      metricLabel,
       user,
       employee: user,
       project: goal.project || null,
@@ -225,6 +244,9 @@ class BusinessGoalService {
               targetValue: roundToTwo(childGoal.targetValue),
               currentValue: roundToTwo(childGoal.currentValue),
               progress: Number(childGoal.progress || 0),
+              isAutoTracked,
+              metricKey,
+              metricLabel,
               user: childUser,
               employee: childUser,
             };
@@ -302,8 +324,15 @@ class BusinessGoalService {
       data.endDate ? new Date(data.endDate) : startDate,
       timezone,
     );
-    const targetValue = roundToTwo(data.targetValue);
+    const targetValue = roundToTwo(
+      data.targetValue !== undefined ? data.targetValue : (data.target !== undefined ? data.target : 1)
+    );
     const currentValue = roundToTwo(data.currentValue || 0);
+
+    let description = data.description ? String(data.description).trim() : "";
+    if (data.metricKey && !description.includes(`[METRIC:${data.metricKey}]`)) {
+      description = `[METRIC:${data.metricKey}] ${description}`.trim();
+    }
 
     return {
       companyId,
@@ -313,7 +342,7 @@ class BusinessGoalService {
       parentGoalId: data.parentGoalId || null,
       attendanceId: data.attendanceId || null,
       title: data.title,
-      description: data.description || null,
+      description: description || null,
       goalType,
       priority: normalizePriority(data.priority),
       targetValue,

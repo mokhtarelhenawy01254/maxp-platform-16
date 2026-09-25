@@ -113,6 +113,7 @@ router.get(
 // ==================== Goals Routes (MUST be before /:id) ====================
 router.get("/goals/today", businessGoalController.getTodayGoals);
 router.post("/goals/today/ensure", businessGoalController.ensureTodayGoals);
+router.get("/goals/metrics", businessGoalController.getMetricsCatalog);
 router.get(
   "/goals/stats",
   verifyToken.requireRole(MANAGE_GOALS_ROLES),

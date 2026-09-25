@@ -1526,6 +1526,53 @@ class OrderService {
       // All other operations (Turbo, Returns, Commissions, Notifications) happen in the background
       (async () => {
         try {
+          // 🎯 GOAL-METRIC-ENGINE: Auto-advance goals on order events
+          try {
+            const goalMetricEngine = require("./goalMetricEngine");
+            if (status === "CONFIRMED") {
+              goalMetricEngine
+                .recordGoalMetricEvent({
+                  companyId: order.companyId,
+                  userId: userId || null,
+                  metricKey: "ORDER_CONFIRMED",
+                  incrementValue: 1,
+                  metadata: { orderId: order.id, orderNumber: order.orderNumber },
+                })
+                .catch((err) =>
+                  console.warn("⚠️ [GOAL-HOOK] Order confirmed error:", err.message)
+                );
+            } else if (status === "DELIVERED") {
+              goalMetricEngine
+                .recordGoalMetricEvent({
+                  companyId: order.companyId,
+                  userId: userId || null,
+                  metricKey: "ORDER_DELIVERED",
+                  incrementValue: 1,
+                  metadata: { orderId: order.id, orderNumber: order.orderNumber },
+                })
+                .catch((err) =>
+                  console.warn("⚠️ [GOAL-HOOK] Order delivered error:", err.message)
+                );
+
+              const revenue = Number(order.totalAmount || order.total || 0);
+              if (revenue > 0) {
+                goalMetricEngine
+                  .recordGoalMetricEvent({
+                    companyId: order.companyId,
+                    userId: userId || null,
+                    metricKey: "REVENUE_COLLECTED",
+                    incrementValue: revenue,
+                    metadata: { orderId: order.id, amount: revenue },
+                  })
+                  .catch((err) =>
+                    console.warn("⚠️ [GOAL-HOOK] Revenue error:", err.message)
+                  );
+              }
+            }
+          } catch (goalHookErr) {
+            console.warn("⚠️ [GOAL-HOOK] Failed to trigger goal event:", goalHookErr.message);
+          }
+
           let shouldAutoCreateTurbo = Boolean(
             order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey
           );
