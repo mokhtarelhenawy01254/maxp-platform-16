@@ -264,7 +264,7 @@ jobs:
         run: |
           if [ "${{ steps.cache-frontend.outputs.cache-hit }}" != 'true' ] || [ ! -f node_modules/.bin/vite ]; then
             echo "📦 Installing frontend dependencies (cache-hit=${{ steps.cache-frontend.outputs.cache-hit }}, vite-found=$(test -f node_modules/.bin/vite && echo yes || echo no))..."
-            npm ci
+            npm ci || npm install
           else
             echo "✅ Frontend dependencies restored from cache and vite binary found"
           fi
