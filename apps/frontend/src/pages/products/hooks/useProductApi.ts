@@ -237,7 +237,10 @@ export const useProductApi = () => {
                   if (variant.id) {
                     await apiClient.put(`/products/${id}/variants/${variant.id}`, cleanedVariant);
                   } else {
-                    await productApi.createVariant(id, cleanedVariant);
+                    const created = await productApi.createVariant(id, cleanedVariant);
+                    if (created?.data?.id || created?.id) {
+                      variant.id = created.data?.id || created.id;
+                    }
                   }
                 } catch (err) {
                   console.error(`Error processing variant:`, err);

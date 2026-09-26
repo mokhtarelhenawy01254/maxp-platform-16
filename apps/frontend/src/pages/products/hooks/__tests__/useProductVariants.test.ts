@@ -189,4 +189,108 @@ describe("useProductVariants - Pricing Settings Inheritance", () => {
     expect(result.current.variants[1].image).toBeUndefined();
     expect(result.current.variants[2].image).toBe("https://example.com/test-batch.jpg");
   });
+
+  it("generateVariations preserves existing variant ID and pricing when combination matches", () => {
+    const { result } = renderHook(() => useProductVariants(true, { price: 100 }));
+
+    // Simulate an existing variant loaded from DB
+    act(() => {
+      result.current.setVariants([
+        {
+          id: "var_existing_m",
+          name: "M",
+          type: "combination",
+          sku: "SKU-M",
+          price: 250,
+          comparePrice: 300,
+          cost: 120,
+          images: ["https://example.com/m.jpg"],
+          stock: 15,
+          trackInventory: true,
+          isActive: true,
+          sortOrder: 0,
+          attributeValues: { size: "M" },
+        },
+      ]);
+      result.current.setAttributes([
+        {
+          id: "attr_size",
+          name: "Size",
+          slug: "size",
+          values: ["M", "L"],
+          visible: true,
+          forVariations: true,
+        },
+      ]);
+    });
+
+    act(() => {
+      result.current.generateVariations("SKU");
+    });
+
+    expect(result.current.variants).toHaveLength(2);
+
+    // Existing variant M must keep its ID, price, stock, images
+    const variantM = result.current.variants.find((v) => v.name === "M");
+    expect(variantM).toBeDefined();
+    expect(variantM?.id).toBe("var_existing_m");
+    expect(variantM?.price).toBe(250);
+    expect(variantM?.stock).toBe(15);
+    expect(variantM?.images).toEqual(["https://example.com/m.jpg"]);
+
+    // New variant L must be created with default pricing and without ID
+    const variantL = result.current.variants.find((v) => v.name === "L");
+    expect(variantL).toBeDefined();
+    expect(variantL?.id).toBeUndefined();
+    expect(variantL?.price).toBe(100);
+
+    // No variants were deleted
+    expect(result.current.deletedVariantIds).toHaveLength(0);
+  });
+
+  it("generateVariations tracks removed variant IDs in deletedVariantIds when an attribute value is removed", () => {
+    const { result } = renderHook(() => useProductVariants(true, { price: 100 }));
+
+    act(() => {
+      result.current.setVariants([
+        {
+          id: "var_m",
+          name: "M",
+          type: "combination",
+          attributeValues: { size: "M" },
+          isActive: true,
+          sortOrder: 0,
+        },
+        {
+          id: "var_l",
+          name: "L",
+          type: "combination",
+          attributeValues: { size: "L" },
+          isActive: true,
+          sortOrder: 1,
+        },
+      ]);
+      // Merchant removed "L", only "M" remains
+      result.current.setAttributes([
+        {
+          id: "attr_size",
+          name: "Size",
+          slug: "size",
+          values: ["M"],
+          visible: true,
+          forVariations: true,
+        },
+      ]);
+    });
+
+    act(() => {
+      result.current.generateVariations("SKU");
+    });
+
+    expect(result.current.variants).toHaveLength(1);
+    expect(result.current.variants[0].id).toBe("var_m");
+
+    // var_l must be tracked in deletedVariantIds so backend deletes it on save!
+    expect(result.current.deletedVariantIds).toContain("var_l");
+  });
 });

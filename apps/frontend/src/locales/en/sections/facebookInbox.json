@@ -31,5 +31,16 @@
   "cancel": "Cancel",
   "blocking": "Blocking...",
   "confirmBlock": "Confirm block",
-  "customerBlocked": "⚠️ This customer is blocked on the Facebook page - their messages will not be received"
+  "customerBlocked": "⚠️ This customer is blocked on the Facebook page - their messages will not be received",
+  "stopAi": "Stop AI",
+  "startAi": "Enable AI",
+  "stopAiTooltip": "AI auto-reply active — click to stop AI for this conversation",
+  "startAiTooltip": "AI auto-reply paused (human takeover) — click to enable AI",
+  "aiEnabledSuccess": "AI auto-reply enabled for this conversation",
+  "aiDisabledSuccess": "AI auto-reply stopped for this conversation (manual control)",
+  "aiToggleFailed": "Failed to update AI status",
+  "humanTakeover": "Human Takeover",
+  "aiPausedHandover": "AI paused temporarily due to manual reply (human handover)",
+  "aiStoppedManually": "AI is stopped for this conversation (manual control)",
+  "resumeAi": "Enable AI"
 }
