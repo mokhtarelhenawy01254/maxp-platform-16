@@ -90,6 +90,16 @@ const DEFAULT_AGENTS: AgentItem[] = [
     model: "DeepSeek-V3",
     description: "متابعة سجلات الحضور، استعلام وتأكيد الإجازات والأذونات، مفردات الراتب، والإجراءات الإدارية للموظفين.",
   },
+  {
+    id: "stock-target-monitor-agent",
+    slug: "stock-target-monitor-agent",
+    name: "فارس — مراقب المخزون والتارجت",
+    role: "STOCK_TARGET_MONITOR",
+    icon: "📈",
+    departmentName: "العمليات والمبيعات",
+    model: "DeepSeek-V3",
+    description: "متابعة لحظية لمستويات المخزون والنواقص، وتنبيهات تحقيق أهداف الأوردرات اليومية والأسبوعية.",
+  },
 ];
 
 export const AgentChatStudioPage: React.FC = () => {

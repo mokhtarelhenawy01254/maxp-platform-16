@@ -10,6 +10,7 @@ import {
   ListBulletIcon,
   EllipsisVerticalIcon,
   ExclamationTriangleIcon,
+  ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { ViewMode } from "./ProductsTypes";
 
@@ -159,6 +160,16 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
           </button>
         )}
 
+        {/* Delivery & Returns Analytics Shortcut */}
+        <Link
+          to="/analytics/orders/product-delivery-returns"
+          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-lg text-xs font-semibold text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700/60 transition-all shrink-0 shadow-2xs"
+          title={isEn ? "Product Delivery & Returns Report" : "تحليل تسليم ومرتجع المنتجات"}
+        >
+          <ChartBarIcon className="h-4 w-4 text-indigo-500" />
+          <span>{isEn ? "Delivery & Returns" : "نسب التسليم والمرتجع"}</span>
+        </Link>
+
         {/* Primary Action Button: Add Product */}
         {canCreateProducts && (
           <Link
@@ -184,6 +195,15 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
 
           {showMenu && (
             <div className={`absolute ${isEn ? "right-0" : "left-0"} mt-1.5 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-1.5 z-50 ring-1 ring-black/10 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-100`}>
+              {/* Delivery & Returns report link in dropdown */}
+              <Link
+                to="/analytics/orders/product-delivery-returns"
+                onClick={() => setShowMenu(false)}
+                className="flex w-full items-center px-3.5 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors border-b border-gray-100 dark:border-gray-700/50 pb-2 mb-1"
+              >
+                <ChartBarIcon className={`h-4 w-4 ${isEn ? "mr-2.5" : "ml-2.5"} text-indigo-500`} />
+                <span>{isEn ? "Delivery & Returns Report" : "تحليل التسليم والمرتجعات"}</span>
+              </Link>
               {/* Quick Add / Advanced links in dropdown */}
               {canCreateProducts && onQuickAddClick && (
                 <>

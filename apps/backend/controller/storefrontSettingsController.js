@@ -713,7 +713,16 @@ const updateSettings = async (req, res) => {
 
     // Synchronize enabledPaymentMethods and walletPaymentSettings.enabled
     if (sanitizedInput.walletPaymentSettings && typeof sanitizedInput.walletPaymentSettings === 'object') {
-      const walletEnabled = sanitizedInput.walletPaymentSettings.enabled;
+      let walletEnabled = sanitizedInput.walletPaymentSettings.enabled;
+      if (
+        walletEnabled === undefined &&
+        (sanitizedInput.walletPaymentSettings.discountEnabled === true ||
+          sanitizedInput.walletPaymentSettings.discountEnabled === 'true') &&
+        Boolean(sanitizedInput.walletPaymentSettings.walletNumber?.trim())
+      ) {
+        walletEnabled = true;
+        sanitizedInput.walletPaymentSettings.enabled = true;
+      }
       if (typeof walletEnabled === 'boolean') {
         const existingMethodsRaw = sanitizedInput.enabledPaymentMethods !== undefined
           ? sanitizedInput.enabledPaymentMethods

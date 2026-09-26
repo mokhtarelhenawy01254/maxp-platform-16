@@ -365,6 +365,7 @@ const getConversations = async (req, res) => {
             let pageName = null;
             let pageId = null;
             let snoozedUntil = null;
+            let aiPausedUntil = null;
 
             if (conv.metadata) {
                 try {
@@ -372,6 +373,7 @@ const getConversations = async (req, res) => {
                     pageName = metadata.pageName || null;
                     pageId = metadata.pageId || null;
                     snoozedUntil = metadata.snoozedUntil || null;
+                    aiPausedUntil = metadata.aiPausedUntil || null;
                 } catch (e) {
                     // ignore parse errors
                 }
@@ -424,6 +426,8 @@ const getConversations = async (req, res) => {
                 assignedTo: conv.assignedUserId || null,
                 assignedToName: conv.user ? `${conv.user.firstName || ''} ${conv.user.lastName || ''}`.trim() : null,
                 priority: conv.priority > 1,
+                aiEnabled: conv.aiEnabled !== false,
+                aiPausedUntil: aiPausedUntil,
                 metadata: conv.metadata,
                 snoozedUntil: snoozedUntil,
                 pageName: pageName,
@@ -559,14 +563,20 @@ const updateConversation = async (req, res) => {
             updateData.aiEnabled = Boolean(aiEnabled);
         }
 
-        // Update metadata if tab is provided
-        if (tab !== undefined) {
+        // Update metadata if tab is provided or aiEnabled is toggled
+        if (tab !== undefined || aiEnabled !== undefined) {
             let metadata = {};
             try {
                 metadata = conversation.metadata ? JSON.parse(conversation.metadata) : {};
             } catch (e) { }
 
-            metadata.tab = tab;
+            if (tab !== undefined) {
+                metadata.tab = tab;
+            }
+            if (aiEnabled !== undefined) {
+                // When explicitly setting aiEnabled (manual stop or start), clear temporary handover pause
+                delete metadata.aiPausedUntil;
+            }
             updateData.metadata = JSON.stringify(metadata);
         }
 
@@ -598,6 +608,20 @@ const updateConversation = async (req, res) => {
             }
         });
 
+        if (aiEnabled !== undefined) {
+            try {
+                const io = socketService.getIO();
+                if (io) {
+                    io.to(`company_${companyId}`).emit('conversation:ai_status_changed', {
+                        conversationId: updated.id,
+                        channel: updated.channel,
+                        aiEnabled: Boolean(aiEnabled),
+                        aiPausedUntil: null
+                    });
+                }
+            } catch (e) {}
+        }
+
         // Helper to parse metadata
         let meta = {};
         try {
@@ -612,6 +636,8 @@ const updateConversation = async (req, res) => {
                 assignedTo: updated.assignedUserId,
                 assignedToName: updated.user ? `${updated.user.firstName} ${updated.user.lastName}`.trim() : null,
                 priority: updated.priority > 1,
+                aiEnabled: updated.aiEnabled !== false,
+                aiPausedUntil: meta.aiPausedUntil || null,
                 tab: meta.tab || null,
                 customerId: updated.customerId,
                 customerName: updated.customer ? `${updated.customer.firstName || ''} ${updated.customer.lastName || ''}`.trim() : 'Unknown',

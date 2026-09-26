@@ -253,13 +253,56 @@ export const useProductVariants = (
     const defaultLowStock =
       defaults?.lowStockThreshold !== undefined ? defaults.lowStockThreshold : 5;
 
+    const matchedExistingVariantIds = new Set<string>();
+
     const newVariants: ProductVariant[] = allCombinations.map((combo, idx) => {
       const attributeValues = combo.reduce((acc, curr) => ({ ...acc, ...curr }), {});
       const name = Object.values(attributeValues).join(" - ");
+
+      // Match against existing variants to preserve their ID, pricing, images, and inventory
+      const existingMatch = variants.find((ev) => {
+        if (ev.id && matchedExistingVariantIds.has(ev.id)) return false;
+
+        // 1. Check exact or normalized name match
+        if (ev.name && ev.name.trim().toLowerCase() === name.trim().toLowerCase()) {
+          return true;
+        }
+
+        // 2. Check attributeValues match (exact or normalized keys)
+        if (ev.attributeValues && typeof ev.attributeValues === "object") {
+          const evEntries = Object.entries(ev.attributeValues);
+          const comboEntries = Object.entries(attributeValues);
+          if (evEntries.length === comboEntries.length && comboEntries.length > 0) {
+            const allMatched = comboEntries.every(([k, v]) => {
+              const cleanK = k.replace(/[:_ـ\-]/g, "").trim().toLowerCase();
+              return evEntries.some(([ek, evVal]) => {
+                const cleanEk = ek.replace(/[:_ـ\-]/g, "").trim().toLowerCase();
+                return cleanEk === cleanK && String(evVal).trim() === String(v).trim();
+              });
+            });
+            if (allMatched) return true;
+          }
+        }
+
+        return false;
+      });
+
+      if (existingMatch) {
+        if (existingMatch.id) {
+          matchedExistingVariantIds.add(existingMatch.id);
+        }
+        return {
+          ...existingMatch,
+          name,
+          attributeValues,
+          sortOrder: idx,
+        };
+      }
+
       return {
         name,
         type: "combination",
-        sku: "",
+        sku: baseSku ? `${baseSku}-${idx + 1}` : "",
         price: defaultPrice,
         comparePrice: defaultComparePrice,
         cost: defaultCost,
@@ -276,6 +319,18 @@ export const useProductVariants = (
         attributeValues,
       };
     });
+
+    // Detect all existing variants with ID that are no longer part of new combinations
+    const newlyDeletedVariantIds: string[] = [];
+    variants.forEach((v) => {
+      if (v.id && !matchedExistingVariantIds.has(v.id)) {
+        newlyDeletedVariantIds.push(v.id);
+      }
+    });
+
+    if (newlyDeletedVariantIds.length > 0) {
+      setDeletedVariantIds((prev) => Array.from(new Set([...prev, ...newlyDeletedVariantIds])));
+    }
 
     setVariants(newVariants);
   };

@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import { Bot } from "lucide-react";
 import { InboxConversation } from "../../../types/inbox.types";
 import { getInboxCustomerAvatarUrl } from "../../../utils/imageUrl";
 
@@ -165,6 +166,16 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
                 </span>
               )}
 
+              {(conversation.aiEnabled === false || (conversation.aiPausedUntil && new Date(conversation.aiPausedUntil).getTime() > Date.now())) && (
+                <span
+                  className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 dark:border dark:border-amber-500/25"
+                  title="الذكاء الاصطناعي متوقف عن هذه المحادثة (تدخل بشري)"
+                >
+                  <Bot className="w-3 h-3 opacity-80" />
+                  <span>تدخل بشري</span>
+                </span>
+              )}
+
               {conversation.snoozedUntil && new Date(conversation.snoozedUntil).getTime() > Date.now() && (
                 <span
                   className="rounded px-1.5 py-0.5 text-[11px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 dark:border dark:border-amber-500/25"
@@ -200,6 +211,8 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
       prevProps.conversation.status === nextProps.conversation.status &&
       prevProps.conversation.assignedTo === nextProps.conversation.assignedTo &&
       prevProps.conversation.priority === nextProps.conversation.priority &&
+      prevProps.conversation.aiEnabled === nextProps.conversation.aiEnabled &&
+      prevProps.conversation.aiPausedUntil === nextProps.conversation.aiPausedUntil &&
       (prevProps.conversation.snoozedUntil?.getTime() || 0) ===
         (nextProps.conversation.snoozedUntil?.getTime() || 0) &&
       prevProps.conversation.tags.length ===

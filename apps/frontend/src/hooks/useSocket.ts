@@ -63,11 +63,11 @@ const useSocket = (
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
-    const s = socketService.getSocket();
-    if (!s) return;
-
-    setSocket(s);
-    setIsConnected(s.connected);
+    let activeSocket = socketService.getSocket();
+    if (activeSocket) {
+      setSocket(activeSocket);
+      setIsConnected(activeSocket.connected);
+    }
 
     const onConnect = () => {
       setIsConnected(true);
@@ -94,22 +94,61 @@ const useSocket = (
       setIsReconnecting(true);
     };
 
-    s.on("connect", onConnect);
-    s.on("disconnect", onDisconnect);
-    s.on("connect_error", onConnectError);
-    s.on("reconnect", onReconnect);
-    s.on("reconnect_attempt", onReconnectAttempt);
+    const bindSocket = (s: Socket) => {
+      s.on("connect", onConnect);
+      s.on("disconnect", onDisconnect);
+      s.on("connect_error", onConnectError);
+      s.on("reconnect", onReconnect);
+      s.on("reconnect_attempt", onReconnectAttempt);
+    };
 
-    if (!s.connected) {
-      socketService.connect();
-    }
-
-    return () => {
+    const unbindSocket = (s: Socket) => {
       s.off("connect", onConnect);
       s.off("disconnect", onDisconnect);
       s.off("connect_error", onConnectError);
       s.off("reconnect", onReconnect);
       s.off("reconnect_attempt", onReconnectAttempt);
+    };
+
+    if (activeSocket) {
+      bindSocket(activeSocket);
+      if (!activeSocket.connected) {
+        socketService.connect();
+      }
+    } else {
+      socketService.connect();
+    }
+
+    // Keep state continuously synchronized with singleton socketService
+    const syncInterval = setInterval(() => {
+      const currentSocket = socketService.getSocket();
+      if (currentSocket !== activeSocket) {
+        if (activeSocket) unbindSocket(activeSocket);
+        activeSocket = currentSocket;
+        if (activeSocket) bindSocket(activeSocket);
+        setSocket(activeSocket);
+      }
+      const currentlyConnected = socketService.isConnected();
+      setIsConnected((prev) => (prev !== currentlyConnected ? currentlyConnected : prev));
+    }, 1500);
+
+    const handleWindowOnline = () => {
+      socketService.connect();
+      setIsConnected(socketService.isConnected());
+    };
+    const handleWindowOffline = () => {
+      setIsConnected(false);
+    };
+    window.addEventListener("online", handleWindowOnline);
+    window.addEventListener("offline", handleWindowOffline);
+
+    return () => {
+      clearInterval(syncInterval);
+      window.removeEventListener("online", handleWindowOnline);
+      window.removeEventListener("offline", handleWindowOffline);
+      if (activeSocket) {
+        unbindSocket(activeSocket);
+      }
     };
   }, []);
 

@@ -1507,6 +1507,59 @@ async function getMessages(req, res) {
 }
 
 /**
+ * 🛡️ Helper: Auto-pause AI on conversation when human staff sends WhatsApp message
+ */
+async function pauseWhatsAppAiOnHumanReply(companyId, sessionId, to, userId, userName) {
+    try {
+        const jid = WhatsAppMessageHandler.formatJid ? WhatsAppMessageHandler.formatJid(to) : to;
+        const prisma = getSharedPrismaClient();
+        const contact = await prisma.whatsAppContact.findFirst({
+            where: {
+                sessionId,
+                OR: [
+                    { jid },
+                    { phone: to.replace(/\D/g, '') }
+                ]
+            }
+        });
+        if (contact?.customerId) {
+            const waConvs = await prisma.conversation.findMany({
+                where: { customerId: contact.customerId, channel: 'WHATSAPP', companyId }
+            });
+            for (const waConv of waConvs) {
+                let meta = {};
+                try { meta = typeof waConv.metadata === 'string' ? JSON.parse(waConv.metadata) : (waConv.metadata || {}); } catch (e) {}
+                const pauseHours = 2;
+                meta.aiPausedUntil = new Date(Date.now() + pauseHours * 60 * 60 * 1000).toISOString();
+                meta.lastHumanReplyAt = new Date().toISOString();
+                if (userId) meta.lastHumanSenderId = userId;
+                meta.lastHumanSenderName = userName || 'موظف';
+
+                await prisma.conversation.update({
+                    where: { id: waConv.id },
+                    data: {
+                        aiEnabled: false,
+                        metadata: JSON.stringify(meta),
+                        updatedAt: new Date()
+                    }
+                });
+
+                if (getIO()) {
+                    getIO().to(`company_${companyId}`).emit('conversation:ai_status_changed', {
+                        conversationId: waConv.id,
+                        channel: 'WHATSAPP',
+                        aiEnabled: false,
+                        aiPausedUntil: meta.aiPausedUntil
+                    });
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('⚠️ [WA-CONTROLLER] Error auto-pausing AI:', e.message);
+    }
+}
+
+/**
  * إرسال رسالة
  * POST /api/whatsapp/messages/send
  */
@@ -1553,6 +1606,9 @@ async function sendMessage(req, res) {
             senderId: req.body.userId || req.user?.userId,
             typingSimulation: true
         });
+
+        // 🛡️ Auto-pause AI on human staff WhatsApp reply
+        pauseWhatsAppAiOnHumanReply(companyId, targetSessionId, to, req.body.userId || req.user?.userId || req.user?.id, req.user?.firstName);
 
         res.json({ success: true, message });
     } catch (error) {
@@ -1605,6 +1661,9 @@ async function sendMedia(req, res) {
             default:
                 return res.status(400).json({ error: 'نوع الوسائط غير مدعوم' });
         }
+
+        // 🛡️ Auto-pause AI on human staff WhatsApp media reply
+        pauseWhatsAppAiOnHumanReply(companyId, targetSessionId, to, req.body.userId || req.user?.userId || req.user?.id, req.user?.firstName);
 
         res.json({ success: true, message });
     } catch (error) {

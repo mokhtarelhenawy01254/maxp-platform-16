@@ -390,6 +390,55 @@ export const AGENT_LISTINGS: AgentListing[] = [
     },
   },
 
+  // ── Stock & Sales Target Monitor Agent (PRO) ─────────────────
+  {
+    id: "agent_stock_target_monitor",
+    slug: "stock-target-monitor-agent",
+    name: "فارس — مراقب المخزون والتارجت",
+    position: "مسؤول مراقبة المخزون ومستهدفات الأوردرات (Inventory & Sales Target Controller)",
+    category: "operations",
+    tier: "pro",
+    priceMonthly: 350,
+    currency: "ج.م",
+    featured: true,
+    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+    summary: "المتابعة اللحظية للمخزون والنواقص على مستوى المقاسات والألوان، وحساب وتيرة مبيعات الأصناف (Burn Rate)، وتنبيهات تحقيق أهداف الأوردرات اليومية والأسبوعية.",
+    tools: [
+      "order_target_settings",
+      "order_target_progress",
+      "inventory_variant_stock_scan",
+      "inventory_burn_rate_forecast",
+      "inventory_check",
+      "order_summary",
+      "whatsapp_send",
+    ],
+    skills: ["low-stock-watch", "target-pacing-tracker", "inventory-velocity-forecast"],
+    telemetry: {
+      engine: "DeepSeek-V3",
+      fallbackEngine: "Llama 3.3 70B",
+      p95Latency: "0.55s",
+      taskPrecision: "99.8%",
+      governance: "autonomous_loop",
+      contextWindow: "64k Tokens",
+    },
+    dossier: {
+      bio: "مسؤول عمليات تشغيلية تحليلي، يراقب حركة المخزون لحظة بلحظة، ويحسب معدل السحب اليومي ومؤشرات نفاد المخزون، ويتابع تحقيق تارجت الأوردرات اليومية والأسبوعية مع إرسال تنبيهات تلقائية.",
+      persona: "هادئ، تحليلي، يعتمد على لغة الأرقام والمؤشرات الدقيقة، استباقي في إرسال التنبيهات قبل نفاد البضاعة.",
+      dialect: "عربية فصحى معاصرة ومباشرة بنبرة بيئة الأعمال المصرية.",
+      boundaries: [
+        "لا يُجري تعديلات نهائية على أرصدة المخزون إلا بتأكيد صريح من التاجر.",
+        "يحيل قرارات زيادة ميزانية الإعلانات إلى وكيل التسويق عند التأخر عن التارجت.",
+      ],
+      executionStream: [
+        { step: "01: فحص التارجت", action: "order_target_progress(period='today')", type: "tool" },
+        { step: "02: تحليل المسار الزمني", action: "معدل الإنجاز 82% ومتقدم عن الجدول الزمني لليوم", type: "thought" },
+        { step: "03: مسح النواقص والمتغيرات", action: "inventory_variant_stock_scan(threshold=5)", type: "tool" },
+        { step: "04: التنبؤ بمعدل الاستهلاك", action: "inventory_burn_rate_forecast(days_lookback=7)", type: "tool" },
+        { step: "05: إرسال تنبيه الإنجاز والنواقص", action: "whatsapp_send(phone='010xxxxxxxx', message='تقرير الإنجاز والنواقص')", type: "output" },
+      ],
+    },
+  },
+
   // ── 8. Manager CEO Agent (PRO) ─────────────────────────────
   {
     id: "agent_manager_ceo",

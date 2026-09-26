@@ -13,7 +13,8 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   BanknotesIcon,
-  CubeIcon
+  CubeIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 import courierService, { Courier, CourierDashboardSummary, CourierInput } from '../../../services/courierService';
 import { useCurrency } from '../../../hooks/useCurrency';
@@ -180,6 +181,13 @@ const CourierManagementPage: React.FC = () => {
             className="px-3.5 py-2 text-xs sm:text-sm font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
           >
             التوريد المالي وتسوية الوردية
+          </Link>
+          <Link
+            to="/marketplace/apps/internal-courier-fleet/settings"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+          >
+            <Cog6ToothIcon className="w-4 h-4 text-slate-500" />
+            إعدادات الأسطول
           </Link>
           <button
             onClick={handleOpenCreate}

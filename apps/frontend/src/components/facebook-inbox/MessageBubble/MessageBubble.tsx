@@ -207,7 +207,14 @@ const getAttachmentMediaUrl = (
   }
 
   if (kind === "audio") {
-    return attachmentType === "audio" || mimeType.startsWith("audio/")
+    const isAudioUrl =
+      /\.(mp3|m4a|aac|ogg|oga|opus|wav|weba|webm)(\?.*)?$/i.test(rawUrl) ||
+      /audioclip/i.test(rawUrl);
+    return attachmentType === "audio" ||
+      attachmentType === "voice" ||
+      attachmentType === "audio_clip" ||
+      mimeType.startsWith("audio/") ||
+      isAudioUrl
       ? rawUrl
       : "";
   }
@@ -490,7 +497,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
       : [];
     const isImageMessage = message.type === "image" || message.type === "IMAGE";
     const isVideoMessage = message.type === "video" || message.type === "VIDEO";
-    const isAudioMessage = message.type === "audio" || message.type === "AUDIO";
+    const isAudioMessage =
+      message.type === "audio" ||
+      message.type === "AUDIO" ||
+      message.type === "voice" ||
+      message.type === "VOICE";
     const isFileMessage = message.type === "file" || message.type === "FILE";
     const rawImageMediaUrls = uniqueUrls([
       ...attachments.map((attachment) =>
@@ -874,6 +885,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                 <audio
                   src={audioMediaUrl}
                   controls
+                  preload="metadata"
+                  playsInline
                   className="w-full min-w-[200px]"
                 />
               </div>

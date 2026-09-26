@@ -253,6 +253,57 @@ const authenticateToken = async (req, res, next) => {
       return require('../services/tenantContext').run(customerCompanyId, () => next());
     }
 
+    // 🚚 [COURIER] Dedicated mobile run link tokens for field couriers
+    if (decoded.role === 'COURIER') {
+      const courierId = decoded.courierId || decoded.userId || decoded.id;
+      const courierCompanyId = decoded.companyId;
+
+      if (!courierId || !courierCompanyId) {
+        return res.status(401).json({
+          success: false,
+          message: 'رمز مصادقة المندوب غير صالح',
+          code: 'INVALID_TOKEN_PAYLOAD'
+        });
+      }
+
+      const prisma = await getSharedPrismaClientAsync();
+      const courier = await executeWithRetry(async () =>
+        prisma.courier.findFirst({
+          where: { id: courierId, companyId: courierCompanyId },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            companyId: true,
+            status: true,
+            isActive: true
+          }
+        })
+      );
+
+      if (!courier || !courier.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: 'المندوب غير مسجل أو حسابه معطل',
+          code: 'COURIER_NOT_FOUND'
+        });
+      }
+
+      req.user = {
+        ...decoded,
+        id: courier.id,
+        courierId: courier.id,
+        userId: courier.id,
+        name: courier.name,
+        role: 'COURIER',
+        companyId: courierCompanyId,
+        effectiveCompanyId: courierCompanyId,
+        userPermissions: ['orders.shipping.view', 'courier.runs.view', 'courier.runs.manage']
+      };
+
+      return require('../services/tenantContext').run(courierCompanyId, () => next());
+    }
+
     // 🛡️ [SAAS] Secure Company Context Resolution
     let companyId = decoded.companyId;
     const headerCompanyId = req.headers['x-company-id'] || req.headers['X-Company-Id'];

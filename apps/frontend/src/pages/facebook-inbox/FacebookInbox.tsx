@@ -51,6 +51,7 @@ import {
   MoreHorizontal,
   PanelRightClose,
   PanelRightOpen,
+  Bot,
 } from "lucide-react";
 import {
   CheckCircleIcon,
@@ -149,6 +150,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     loadMoreConversations,
     // Update selected conversation
     updateSelectedConversation,
+    updateConversationInList,
     // Selection
     selectedIds,
     toggleSelection,
@@ -1466,6 +1468,51 @@ const getApiError = (error: unknown): ApiErrorLike => {
     debouncedLoadConversations,
   ]);
 
+  const isAiPaused = Boolean(
+    selectedConversation?.aiPausedUntil &&
+      new Date(selectedConversation.aiPausedUntil).getTime() > Date.now(),
+  );
+  const isAiActive = selectedConversation
+    ? selectedConversation.aiEnabled !== false && !isAiPaused
+    : true;
+
+  const handleToggleAi = useCallback(async () => {
+    if (!selectedConversation) return;
+
+    const isCurrentlyPaused = Boolean(
+      selectedConversation.aiPausedUntil &&
+        new Date(selectedConversation.aiPausedUntil).getTime() > Date.now(),
+    );
+    const isCurrentlyActive =
+      selectedConversation.aiEnabled !== false && !isCurrentlyPaused;
+    const nextAiEnabled = !isCurrentlyActive;
+
+    // Optimistic update for zero-latency UI response
+    updateConversationInList(selectedConversation.id, {
+      aiEnabled: nextAiEnabled,
+      aiPausedUntil: nextAiEnabled ? null : selectedConversation.aiPausedUntil,
+    });
+
+    try {
+      await apiService.updateConversation(selectedConversation.id, {
+        aiEnabled: nextAiEnabled,
+      });
+      toast.success(
+        nextAiEnabled
+          ? t("facebookInbox.aiEnabledSuccess", "تم تشغيل الرد الآلي للذكاء الاصطناعي لهذه المحادثة")
+          : t("facebookInbox.aiDisabledSuccess", "تم إيقاف الذكاء الاصطناعي عن هذه المحادثة (التحكم يدوي)"),
+      );
+    } catch (err) {
+      console.error("Failed to toggle AI status:", err);
+      toast.error(t("facebookInbox.aiToggleFailed", "تعذر تغيير حالة الذكاء الاصطناعي"));
+      // Revert on error
+      updateConversationInList(selectedConversation.id, {
+        aiEnabled: !nextAiEnabled,
+        aiPausedUntil: selectedConversation.aiPausedUntil,
+      });
+    }
+  }, [selectedConversation, updateConversationInList, t]);
+
   // Tags handler
   const handleTagsChange = useCallback(
     async (tags: string[]) => {
@@ -1848,10 +1895,28 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
     socket.on("message_reaction_updated", handleReactionUpdated);
 
+    // Real-time AI status updates (manual toggle or human handover pause)
+    const handleAiStatusChanged = (data: {
+      conversationId: string;
+      channel?: string;
+      aiEnabled: boolean;
+      aiPausedUntil?: string | null;
+    }) => {
+      if (data?.conversationId) {
+        updateConversationInList(data.conversationId, {
+          aiEnabled: data.aiEnabled,
+          aiPausedUntil: data.aiPausedUntil ?? (data.aiEnabled ? null : undefined),
+        });
+      }
+    };
+
+    socket.on("conversation:ai_status_changed", handleAiStatusChanged);
+
     return () => {
       socket.off("new_message", handleNewMessage);
       socket.off("messages_read", handleMessagesRead);
       socket.off("message_reaction_updated", handleReactionUpdated);
+      socket.off("conversation:ai_status_changed", handleAiStatusChanged);
       if (loadConversationsTimeoutRef.current)
         clearTimeout(loadConversationsTimeoutRef.current);
     };
@@ -1861,6 +1926,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     selectedConversation,
     addMessage,
     updateMessage,
+    updateConversationInList,
     user?.id,
     user?.userId,
     debouncedLoadConversations,
@@ -2616,12 +2682,23 @@ const getApiError = (error: unknown): ApiErrorLike => {
                     </div>
 
                     <div className="min-w-0">
-                      <h2
-                        className="truncate text-lg font-semibold"
-                        style={{ color: "var(--color-foreground)" }}
-                      >
-                        {selectedConversation.customerName}
-                      </h2>
+                      <div className="flex items-center gap-2">
+                        <h2
+                          className="truncate text-lg font-semibold"
+                          style={{ color: "var(--color-foreground)" }}
+                        >
+                          {selectedConversation.customerName}
+                        </h2>
+                        {!isAiActive && (
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex-shrink-0"
+                            title={isAiPaused ? t("facebookInbox.aiPausedHandover", "الذكاء الاصطناعي متوقف مؤقتاً بسبب رد يدوي (تدخل بشري)") : t("facebookInbox.aiStoppedManually", "الذكاء الاصطناعي متوقف عن هذه المحادثة (التحكم يدوي)")}
+                          >
+                            <Bot className="h-3 w-3 opacity-80" />
+                            <span>{t("facebookInbox.humanTakeover", "تدخل بشري")}</span>
+                          </span>
+                        )}
+                      </div>
                       {selectedConversation.pageName && (
                         <p
                           className="truncate text-xs"
@@ -2636,6 +2713,45 @@ const getApiError = (error: unknown): ApiErrorLike => {
                   <div className="business-inbox-chat-actions">
                     {isMobileViewport ? (
                       <>
+                        <button
+                          type="button"
+                          onClick={handleToggleAi}
+                          className="business-icon-button relative rounded-xl transition-all duration-160 active:scale-[0.97]"
+                          data-tone={isAiActive ? "primary" : "warning"}
+                          style={
+                            isAiActive
+                              ? {
+                                  background: "color-mix(in srgb, var(--color-primary) 12%, transparent)",
+                                  color: "var(--color-primary)",
+                                  borderColor: "color-mix(in srgb, var(--color-primary) 28%, transparent)",
+                                }
+                              : {
+                                  background: "color-mix(in srgb, var(--business-warning) 14%, transparent)",
+                                  color: "var(--business-warning)",
+                                  borderColor: "color-mix(in srgb, var(--business-warning) 32%, transparent)",
+                                }
+                          }
+                          title={
+                            isAiActive
+                              ? t("facebookInbox.stopAiTooltip", "الرد الذكي مفعّل — اضغط لإيقاف الذكاء الاصطناعي عن هذه المحادثة")
+                              : t("facebookInbox.startAiTooltip", "الذكاء الاصطناعي متوقف (تدخل بشري) — اضغط لإعادة تشغيل الرد الآلي")
+                          }
+                          aria-label={
+                            isAiActive
+                              ? t("facebookInbox.stopAi", "إيقاف الذكاء الاصطناعي")
+                              : t("facebookInbox.startAi", "تشغيل الذكاء الاصطناعي")
+                          }
+                        >
+                          <Bot className="h-5 w-5" />
+                          <span className="absolute -top-0.5 -end-0.5 flex h-2.5 w-2.5">
+                            {isAiActive ? (
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white dark:border-slate-900"></span>
+                            ) : (
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500 border border-white dark:border-slate-900"></span>
+                            )}
+                          </span>
+                        </button>
+
                         <button
                           onClick={handleOpenProfilePanel}
                           className="business-icon-button rounded-xl transition-colors"
@@ -2663,6 +2779,45 @@ const getApiError = (error: unknown): ApiErrorLike => {
                       </>
                     ) : shouldCollapseActions ? (
                       <>
+                        <button
+                          type="button"
+                          onClick={handleToggleAi}
+                          className="business-icon-button relative rounded-xl transition-all duration-160 active:scale-[0.97]"
+                          data-tone={isAiActive ? "primary" : "warning"}
+                          style={
+                            isAiActive
+                              ? {
+                                  background: "color-mix(in srgb, var(--color-primary) 12%, transparent)",
+                                  color: "var(--color-primary)",
+                                  borderColor: "color-mix(in srgb, var(--color-primary) 28%, transparent)",
+                                }
+                              : {
+                                  background: "color-mix(in srgb, var(--business-warning) 14%, transparent)",
+                                  color: "var(--business-warning)",
+                                  borderColor: "color-mix(in srgb, var(--business-warning) 32%, transparent)",
+                                }
+                          }
+                          title={
+                            isAiActive
+                              ? t("facebookInbox.stopAiTooltip", "الرد الذكي مفعّل — اضغط لإيقاف الذكاء الاصطناعي عن هذه المحادثة")
+                              : t("facebookInbox.startAiTooltip", "الذكاء الاصطناعي متوقف (تدخل بشري) — اضغط لإعادة تشغيل الرد الآلي")
+                          }
+                          aria-label={
+                            isAiActive
+                              ? t("facebookInbox.stopAi", "إيقاف الذكاء الاصطناعي")
+                              : t("facebookInbox.startAi", "تشغيل الذكاء الاصطناعي")
+                          }
+                        >
+                          <Bot className="h-5 w-5" />
+                          <span className="absolute -top-0.5 -end-0.5 flex h-2.5 w-2.5">
+                            {isAiActive ? (
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white dark:border-slate-900"></span>
+                            ) : (
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500 border border-white dark:border-slate-900"></span>
+                            )}
+                          </span>
+                        </button>
+
                         <ConversationActionsBar
                           isPriority={selectedConversation.priority}
                           onTogglePriority={handleTogglePriority}
@@ -2711,6 +2866,22 @@ const getApiError = (error: unknown): ApiErrorLike => {
                                 aria-label={t("facebookInbox.closeMenu")}
                               />
                               <div className="business-dropdown-surface absolute left-0 top-full z-30 mt-2 p-2 w-56 flex flex-col gap-1">
+                                <button
+                                  type="button"
+                                  className="business-dropdown-option"
+                                  onClick={() => {
+                                    setShowDesktopMoreMenu(false);
+                                    handleToggleAi();
+                                  }}
+                                >
+                                  <Bot className={`h-5 w-5 ${isAiActive ? "text-amber-500" : "text-emerald-500"}`} />
+                                  <span>
+                                    {isAiActive
+                                      ? t("facebookInbox.stopAi", "إيقاف الذكاء الاصطناعي")
+                                      : t("facebookInbox.startAi", "تشغيل الذكاء الاصطناعي")}
+                                  </span>
+                                </button>
+
                                 <button
                                   type="button"
                                   className="business-dropdown-option"
@@ -2838,6 +3009,45 @@ const getApiError = (error: unknown): ApiErrorLike => {
                           )}
                         </button>
 
+                        <button
+                          type="button"
+                          onClick={handleToggleAi}
+                          className="business-icon-button relative rounded-xl transition-all duration-160 active:scale-[0.97]"
+                          data-tone={isAiActive ? "primary" : "warning"}
+                          style={
+                            isAiActive
+                              ? {
+                                  background: "color-mix(in srgb, var(--color-primary) 12%, transparent)",
+                                  color: "var(--color-primary)",
+                                  borderColor: "color-mix(in srgb, var(--color-primary) 28%, transparent)",
+                                }
+                              : {
+                                  background: "color-mix(in srgb, var(--business-warning) 14%, transparent)",
+                                  color: "var(--business-warning)",
+                                  borderColor: "color-mix(in srgb, var(--business-warning) 32%, transparent)",
+                                }
+                          }
+                          title={
+                            isAiActive
+                              ? t("facebookInbox.stopAiTooltip", "الرد الذكي مفعّل — اضغط لإيقاف الذكاء الاصطناعي عن هذه المحادثة")
+                              : t("facebookInbox.startAiTooltip", "الذكاء الاصطناعي متوقف (تدخل بشري) — اضغط لإعادة تشغيل الرد الآلي")
+                          }
+                          aria-label={
+                            isAiActive
+                              ? t("facebookInbox.stopAi", "إيقاف الذكاء الاصطناعي")
+                              : t("facebookInbox.startAi", "تشغيل الذكاء الاصطناعي")
+                          }
+                        >
+                          <Bot className="h-5 w-5" />
+                          <span className="absolute -top-0.5 -end-0.5 flex h-2.5 w-2.5">
+                            {isAiActive ? (
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white dark:border-slate-900"></span>
+                            ) : (
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500 border border-white dark:border-slate-900"></span>
+                            )}
+                          </span>
+                        </button>
+
                         <div
                           className="business-inbox-chat-separator h-6 w-px mx-1"
                           style={{ background: "var(--business-muted-line)" }}
@@ -2881,6 +3091,22 @@ const getApiError = (error: unknown): ApiErrorLike => {
                       aria-label={t("facebookInbox.closeMenu")}
                     />
                     <div className="business-inbox-mobile-action-menu business-dropdown-surface absolute inset-x-3 top-full z-30 mt-2 p-2 md:hidden">
+                      <button
+                        type="button"
+                        className="business-dropdown-option"
+                        onClick={() => {
+                          setShowMobileActionMenu(false);
+                          handleToggleAi();
+                        }}
+                      >
+                        <Bot className={`h-5 w-5 ${isAiActive ? "text-amber-500" : "text-emerald-500"}`} />
+                        <span>
+                          {isAiActive
+                            ? t("facebookInbox.stopAi", "إيقاف الذكاء الاصطناعي")
+                            : t("facebookInbox.startAi", "تشغيل الذكاء الاصطناعي")}
+                        </span>
+                      </button>
+
                       <button
                         type="button"
                         className="business-dropdown-option"
@@ -3057,6 +3283,40 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
               {/* Bottom composer */}
               <div className="flex-shrink-0 mt-auto" style={{ flexShrink: 0, marginTop: "auto" }}>
+                {!isAiActive && (
+                  <div
+                    className="flex items-center justify-between px-3.5 py-1.5 text-xs border-t backdrop-blur-sm"
+                    style={{
+                      background:
+                        "color-mix(in srgb, var(--business-warning) 8%, var(--color-card, #ffffff))",
+                      borderColor:
+                        "color-mix(in srgb, var(--business-warning) 22%, transparent)",
+                      color: "var(--color-foreground)",
+                    }}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Bot className="h-4 w-4 flex-shrink-0 text-amber-500" />
+                      <span className="truncate font-medium">
+                        {isAiPaused
+                          ? t(
+                              "facebookInbox.aiPausedHandover",
+                              "الذكاء الاصطناعي متوقف مؤقتاً بسبب رد يدوي (تدخل بشري)",
+                            )
+                          : t(
+                              "facebookInbox.aiStoppedManually",
+                              "الذكاء الاصطناعي متوقف عن هذه المحادثة (التحكم يدوي)",
+                            )}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleToggleAi}
+                      className="ms-2 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white transition-all flex-shrink-0 shadow-sm cursor-pointer"
+                    >
+                      {t("facebookInbox.resumeAi", "تشغيل الرد الآلي")}
+                    </button>
+                  </div>
+                )}
                 <MessageInput
                   onSendMessage={handleSendMessage}
                   onSendFile={handleSendFile}
@@ -3240,18 +3500,18 @@ const getApiError = (error: unknown): ApiErrorLike => {
         )}
       </div>
 
-      {!isConnected && hasConnectionGracePeriodPassed && (
+      {typeof navigator !== "undefined" && !navigator.onLine && (
         <div
-          className="fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg business-page-panel"
+          className="fixed bottom-4 right-4 z-50 px-3.5 py-1.5 rounded-lg shadow-lg text-xs font-medium"
           style={{
             background:
-              "color-mix(in srgb, var(--business-warning) 12%, var(--color-card, #ffffff))",
-            borderColor:
-              "color-mix(in srgb, var(--business-warning) 24%, transparent)",
+              "color-mix(in srgb, var(--business-warning) 14%, var(--color-card, #ffffff))",
+            border:
+              "1px solid color-mix(in srgb, var(--business-warning) 30%, transparent)",
             color: "var(--business-warning)",
           }}
         >
-              {t("facebookInbox.disconnected")}
+          {t("facebookInbox.disconnected", "⚠️ لا يوجد اتصال بالإنترنت")}
         </div>
       )}
 

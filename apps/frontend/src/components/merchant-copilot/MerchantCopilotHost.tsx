@@ -22,7 +22,10 @@ export const MerchantCopilotHost: React.FC = () => {
     shouldUseSuperAdminShell(user?.role, location.pathname);
 
   // Suppress floating trigger on chat/inbox screens to prevent blocking the mobile composer and send button
-  const isInboxOrChatRoute = /inbox|conversations|whatsapp|chat/i.test(location.pathname);
+  const isInboxOrChatRoute =
+    /inbox|conversations|whatsapp|chat|facebook|instagram|tiktok|messages|comments/i.test(
+      location.pathname,
+    );
 
   useEffect(() => {
     if (isSuperAdminRoute) return;
@@ -57,7 +60,7 @@ export const MerchantCopilotHost: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-4 end-4 sm:bottom-6 sm:end-6 z-40 group flex items-center justify-center gap-2.5 h-11 px-3.5 sm:px-4 rounded-full bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-xl shadow-slate-900/10 dark:shadow-black/50 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-indigo-500/10 backdrop-blur-xl transition-all duration-160 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 cursor-pointer"
+          className="hidden sm:flex fixed sm:bottom-6 sm:end-6 z-40 group items-center justify-center gap-2.5 h-11 px-3.5 sm:px-4 rounded-full bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-xl shadow-slate-900/10 dark:shadow-black/50 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-indigo-500/10 backdrop-blur-xl transition-all duration-160 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 cursor-pointer"
           title="المساعد التنفيذي للمتجر (Ctrl + J)"
           aria-label="المساعد التنفيذي للمتجر"
         >

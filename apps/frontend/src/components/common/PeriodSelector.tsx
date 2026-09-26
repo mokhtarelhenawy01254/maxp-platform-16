@@ -80,7 +80,8 @@ interface PeriodSelectorProps {
   initialPeriod?: PeriodKey;
   initialStartDate?: string;
   initialEndDate?: string;
-  onRangeChange: (range: PeriodRange) => void;
+  onRangeChange?: (range: PeriodRange) => void;
+  onChange?: (range: PeriodRange) => void;
   className?: string;
   inputClassName?: string;
 }
@@ -90,6 +91,7 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   initialStartDate = "",
   initialEndDate = "",
   onRangeChange,
+  onChange,
   className,
   inputClassName,
 }) => {
@@ -98,14 +100,23 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   const [customStart, setCustomStart] = useState(initialStartDate);
   const [customEnd, setCustomEnd] = useState(initialEndDate);
 
+  const notifyChange = (newRange: PeriodRange) => {
+    if (typeof onRangeChange === "function") {
+      onRangeChange(newRange);
+    }
+    if (typeof onChange === "function") {
+      onChange(newRange);
+    }
+  };
+
   useEffect(() => {
     if (period === "custom") {
       if (customStart && customEnd) {
-        onRangeChange({ period, startDate: customStart, endDate: customEnd });
+        notifyChange({ period, startDate: customStart, endDate: customEnd });
       }
       return;
     }
-    onRangeChange({
+    notifyChange({
       period,
       ...computePeriodRange(period),
     });

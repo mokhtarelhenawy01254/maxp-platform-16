@@ -828,10 +828,12 @@ const UnifiedInbox: React.FC = () => {
                   lastMessage: previewText,
                   lastMessageTime: new Date().toISOString(),
                   lastMessageIsFromCustomer: false,
+                  aiEnabled: false,
                 }
               : c,
           ),
         );
+        setSelectedConversation((prev) => prev ? { ...prev, aiEnabled: false } : null);
       }
     } catch (error: any) {
       console.error("❌ Error sending message:", error);
@@ -1093,6 +1095,23 @@ const UnifiedInbox: React.FC = () => {
     socketService.on("whatsapp:message:new", waHandler);
     socketService.on("whatsapp:message:sent", waHandler);
 
+    const aiStatusHandler = (data: { conversationId: string; aiEnabled: boolean }) => {
+      if (!data?.conversationId) return;
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === data.conversationId || c.metadata?.["conversationId"] === data.conversationId
+            ? { ...c, aiEnabled: data.aiEnabled }
+            : c,
+        ),
+      );
+      setSelectedConversation((prev) =>
+        prev && (prev.id === data.conversationId || prev.metadata?.["conversationId"] === data.conversationId)
+          ? { ...prev, aiEnabled: data.aiEnabled }
+          : prev,
+      );
+    };
+    socketService.on("conversation:ai_status_changed", aiStatusHandler);
+
     return () => {
       if (socketHandlerRef.current) {
         socketService.off("new_message", socketHandlerRef.current);
@@ -1107,6 +1126,7 @@ const UnifiedInbox: React.FC = () => {
         socketService.off("whatsapp:message:sent", waSocketHandlerRef.current);
         waSocketHandlerRef.current = null;
       }
+      socketService.off("conversation:ai_status_changed", aiStatusHandler);
     };
   }, [selectedConversation]);
 
@@ -1614,7 +1634,7 @@ const UnifiedInbox: React.FC = () => {
                         background: selectedConversation.aiEnabled !== false ? "color-mix(in srgb, var(--color-primary) 12%, var(--color-background))" : "none",
                         color: selectedConversation.aiEnabled !== false ? "var(--color-primary)" : "var(--color-muted-foreground)",
                       }}
-                      title={selectedConversation.aiEnabled !== false ? t("unifiedInbox.aiToggleOn") : t("unifiedInbox.aiToggleOff")}
+                      title={selectedConversation.aiEnabled !== false ? t("unifiedInbox.aiToggleOn", "الرد الذكي مفعّل (اضغط للإيقاف)") : t("unifiedInbox.aiToggleOff", "الرد الذكي متوقف (تدخل بشري - اضغط لإعادة التفعيل)")}
                     >
                       <span className="text-base font-bold">🤖</span>
                     </button>

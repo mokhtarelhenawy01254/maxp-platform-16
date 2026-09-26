@@ -24,7 +24,7 @@ import {
 import { getPdpQuickOrderSettingsFromDesignTokens } from "../utils/pdpQuickOrderSettings";
 import { EGYPT_GOVERNORATES, getGovernorateByName } from "../../constants/egyptGovernorates";
 import { useIpGovernorateDetection } from "../hooks/useIpGovernorateDetection";
-import { getCompanyId, storefrontApi } from "../../utils/storefrontApi";
+import { getCartId, getCompanyId, storefrontApi } from "../../utils/storefrontApi";
 import { persistPurchaseTracking } from "../utils/purchaseTrackingStorage";
 import type { CartItem } from "../store/useCartStore";
 import type { Product } from "../hooks/useProducts";
@@ -233,25 +233,48 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const companyId = storefrontSettings?.company?.id || getCompanyId();
   const walletPaymentSettings =
     (storefrontSettings?.storefront?.settings as any)?.walletPaymentSettings || null;
-  const dbEnabledMethods =
-    storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods;
+  const dbEnabledMethods = useMemo(() => {
+    const raw =
+      storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods ??
+      (storefrontSettings?.storefront?.settings as any)?.enabledPaymentMethods ??
+      (storefrontSettings as any)?.storefrontSettings?.enabledPaymentMethods ??
+      (storefrontSettings as any)?.enabledPaymentMethods;
+    if (Array.isArray(raw)) return raw.map(String);
+    if (typeof raw === "string") {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.map(String);
+      } catch {}
+    }
+    return ["cod"];
+  }, [storefrontSettings]);
+
   const isWalletActiveInSettings =
     walletPaymentSettings?.enabled !== false &&
-    (
-      Array.isArray(dbEnabledMethods)
-        ? dbEnabledMethods.includes('wallet')
-        : walletPaymentSettings?.enabled === true
-    );
+    dbEnabledMethods.includes("wallet");
   const walletEnabled = Boolean(
     walletPaymentSettings?.walletNumber?.trim() && isWalletActiveInSettings
   );
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "wallet">("cod");
+  const isCodActive = dbEnabledMethods.includes("cod");
+  const isCardActive = dbEnabledMethods.includes("card");
+
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "wallet" | "card">(() => {
+    if (isCodActive) return "cod";
+    if (walletEnabled) return "wallet";
+    if (isCardActive) return "card";
+    return "cod";
+  });
 
   useEffect(() => {
-    if (!walletEnabled && paymentMethod === "wallet") {
-      setPaymentMethod("cod");
+    const availableMethods: Array<"cod" | "wallet" | "card"> = [];
+    if (isCodActive) availableMethods.push("cod");
+    if (walletEnabled) availableMethods.push("wallet");
+    if (isCardActive) availableMethods.push("card");
+
+    if (availableMethods.length > 0 && !availableMethods.includes(paymentMethod)) {
+      setPaymentMethod(availableMethods[0]);
     }
-  }, [walletEnabled, paymentMethod]);
+  }, [isCodActive, walletEnabled, isCardActive, paymentMethod]);
   const [walletProofImageUrl, setWalletProofImageUrl] = useState("");
   const [walletProofUploading, setWalletProofUploading] = useState(false);
   const [walletTransferRef, setWalletTransferRef] = useState("");
@@ -870,7 +893,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
           quantityOfferLabel: activeQuantityOffer?.offerLabel || "",
           customAttributesSummary,
         }),
-        paymentMethod: "cod",
+        paymentMethod,
         shippingCost,
         subtotal: resolvedSubtotal,
         total,
@@ -1261,6 +1284,50 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
           console.warn(
             "[PdpQuickOrderForm] preview order simulation failed, falling back to storefrontApi:",
             previewErr,
+          );
+        }
+      }
+
+      if (paymentMethod === "card" && !marketplacePreviewThemeId) {
+        const cartId = getCartId();
+        const cardPayload = {
+          guestName: payload.customerName,
+          guestEmail: payload.email || undefined,
+          guestPhone: payload.phone,
+          shippingAddress: {
+            governorate: resolvedGovernorate || undefined,
+            city: resolvedGovernorate || undefined,
+            street: resolvedAddress || undefined,
+            address: resolvedAddress || undefined,
+            phone2: effectiveAlternatePhoneField.enabled && resolvedAlternatePhone ? resolvedAlternatePhone : undefined,
+          },
+          items: quickOrderItems.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId || undefined,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            image: item.imageUrl,
+            attributes: item.attributes || {},
+            quantityOffer: item.quantityOffer || undefined,
+          })),
+          subtotal: resolvedSubtotal,
+          shippingCost,
+          total,
+          cartId,
+          pixelEventId,
+          notes: payload.notes,
+        };
+
+        const cardResponse = (await storefrontApi.kashierCheckout(cardPayload)) as any;
+        if (cardResponse?.success && cardResponse?.data?.sessionUrl) {
+          window.location.href = cardResponse.data.sessionUrl;
+          return;
+        } else {
+          throw new Error(
+            cardResponse?.error ||
+            cardResponse?.message ||
+            (prefersArabicCopy ? "تعذر إنشاء جلسة الدفع بالبطاقة. يرجى التحقق من إعدادات بوابة الدفع." : "Failed to initiate card payment session.")
           );
         }
       }
@@ -2156,36 +2223,53 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
               </div>
             ) : null}
 
-            {walletEnabled ? (
+            {walletEnabled || isCardActive ? (
               <div className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-800/60 dark:bg-emerald-950/20">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
                     {prefersArabicCopy ? "طريقة الدفع" : "Payment method"}
                   </span>
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("cod")}
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                        paymentMethod === "cod"
-                          ? "border-emerald-600 bg-emerald-600 text-white"
-                          : "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-700 dark:bg-gray-900 dark:text-emerald-200"
-                      }`}
-                    >
-                      {prefersArabicCopy ? "الدفع عند الاستلام" : "Cash on delivery"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("wallet")}
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                        paymentMethod === "wallet"
-                          ? "border-emerald-600 bg-emerald-600 text-white"
-                          : "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-700 dark:bg-gray-900 dark:text-emerald-200"
-                      }`}
-                    >
-                      {prefersArabicCopy ? "الدفع بالمحفظة" : "Wallet payment"}
-                    </button>
-                    {walletDiscountActive && walletPaymentSettings?.showDiscountBadge !== false ? (
+                    {isCodActive ? (
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod("cod")}
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                          paymentMethod === "cod"
+                            ? "border-emerald-600 bg-emerald-600 text-white"
+                            : "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-700 dark:bg-gray-900 dark:text-emerald-200"
+                        }`}
+                      >
+                        {prefersArabicCopy ? "الدفع عند الاستلام" : "Cash on delivery"}
+                      </button>
+                    ) : null}
+                    {walletEnabled ? (
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod("wallet")}
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                          paymentMethod === "wallet"
+                            ? "border-emerald-600 bg-emerald-600 text-white"
+                            : "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-700 dark:bg-gray-900 dark:text-emerald-200"
+                        }`}
+                      >
+                        {prefersArabicCopy ? "الدفع بالمحفظة" : "Wallet payment"}
+                      </button>
+                    ) : null}
+                    {isCardActive ? (
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod("card")}
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                          paymentMethod === "card"
+                            ? "border-emerald-600 bg-emerald-600 text-white"
+                            : "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-700 dark:bg-gray-900 dark:text-emerald-200"
+                        }`}
+                      >
+                        💳 {prefersArabicCopy ? "بطاقة بنكية / فيزا" : "Card"}
+                      </button>
+                    ) : null}
+                    {walletDiscountEnabled && walletDiscountPercent > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
                       <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
                         🎁 {prefersArabicCopy
                           ? `خصم ${walletDiscountPercent}%`
@@ -2194,6 +2278,27 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     ) : null}
                   </div>
                 </div>
+
+                {walletDiscountEnabled && walletDiscountPercent > 0 && paymentMethod === "cod" ? (
+                  <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                    💡 {prefersArabicCopy
+                      ? `وفّر ${walletDiscountPercent}% فوراً عند اختيار الدفع الإلكتروني المسبق (المحفظة أو البطاقة)`
+                      : `Save ${walletDiscountPercent}% instantly by choosing electronic payment`}
+                  </p>
+                ) : null}
+
+                {paymentMethod === "card" ? (
+                  <div className="space-y-2 border-t border-emerald-200 pt-3 dark:border-emerald-800/60">
+                    <p className="text-xs font-bold text-emerald-900 dark:text-emerald-100 flex items-center gap-1.5">
+                      🔒 {prefersArabicCopy ? "دفع إلكتروني آمن بالبطاقة (فيزا / ماستركارد / ميزة)" : "Secure Card Payment"}
+                    </p>
+                    <p className="text-[11px] text-emerald-800 dark:text-emerald-200">
+                      {prefersArabicCopy
+                        ? "عند الضغط على تأكيد الطلب، سيتم نقلك مباشرة إلى بوابة الدفع لإدخال بيانات البطاقة وإتمام الطلب."
+                        : "Upon submitting, you will be redirected securely to the payment gateway to complete your purchase."}
+                    </p>
+                  </div>
+                ) : null}
 
                 {paymentMethod === "wallet" ? (
                   <div className="space-y-3 border-t border-emerald-200 pt-3 dark:border-emerald-800/60">

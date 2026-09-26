@@ -12,6 +12,7 @@ export interface VariantColorGroup {
   attributeName?: string;
   items: VariantGroupItem[];
   currentImage?: string;
+  savedAttributeImage?: string;
   hasMixedImages?: boolean;
   imagesCount: number;
 }
@@ -205,12 +206,60 @@ export const extractVariantGroupValue = (
 };
 
 /**
+ * Resolves saved color image from variantSettings.attributeImages
+ */
+export const getSavedAttributeImage = (
+  variantSettings: any,
+  attributeNameOrSlug?: string,
+  colorValue?: string
+): string | undefined => {
+  if (!variantSettings || !colorValue) return undefined;
+  const attrImages = variantSettings.attributeImages;
+  if (!attrImages || typeof attrImages !== "object") return undefined;
+
+  const normalizedColor = normalizeArabicString(colorValue);
+
+  // 1. Direct match on attributeNameOrSlug if provided
+  if (attributeNameOrSlug) {
+    for (const [attrKey, colorMap] of Object.entries(attrImages)) {
+      if (!colorMap || typeof colorMap !== "object") continue;
+
+      const isMatchingAttr =
+        attrKey === attributeNameOrSlug ||
+        normalizeArabicString(attrKey) === normalizeArabicString(attributeNameOrSlug) ||
+        (isColorAttributeName(attrKey) && isColorAttributeName(attributeNameOrSlug));
+
+      if (isMatchingAttr) {
+        for (const [colName, imgUrl] of Object.entries(colorMap as Record<string, string>)) {
+          if (normalizeArabicString(colName) === normalizedColor && imgUrl) {
+            return imgUrl;
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Fallback: Search all attributeImages entries for matching colorValue
+  for (const [, colorMap] of Object.entries(attrImages)) {
+    if (!colorMap || typeof colorMap !== "object") continue;
+    for (const [colName, imgUrl] of Object.entries(colorMap as Record<string, string>)) {
+      if (normalizeArabicString(colName) === normalizedColor && imgUrl) {
+        return imgUrl;
+      }
+    }
+  }
+
+  return undefined;
+};
+
+/**
  * Groups variants by color (or specified attribute)
  */
 export const groupVariantsByColor = (
   variants: ProductVariant[] = [],
   attributes: ProductAttribute[] = [],
-  selectedAttributeKey?: string
+  selectedAttributeKey?: string,
+  variantSettings?: any
 ): VariantColorGroup[] => {
   if (!variants || variants.length === 0) return [];
 
@@ -262,5 +311,32 @@ export const groupVariantsByColor = (
     }
   });
 
+  // Cross-reference saved attribute images from variantSettings for each group
+  if (variantSettings) {
+    groupsMap.forEach((group) => {
+      const savedImg = getSavedAttributeImage(
+        variantSettings,
+        group.attributeName,
+        group.name
+      );
+      if (savedImg) {
+        group.savedAttributeImage = savedImg;
+        if (!group.currentImage) {
+          group.currentImage = savedImg;
+        }
+      }
+    });
+  }
+
   return Array.from(groupsMap.values());
 };
+
+/**
+ * Counts how many groups have a saved or current image that can be synced to all variants
+ */
+export const countSyncableColorImages = (groups: VariantColorGroup[]): number => {
+  return groups.filter(
+    (g) => Boolean(g.currentImage || g.savedAttributeImage) && g.imagesCount < g.items.length
+  ).length;
+};
+

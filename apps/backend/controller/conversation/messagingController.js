@@ -235,6 +235,43 @@ const postMessageConverstation = async (req, res) => {
           content: socketData.content?.substring(0, 50)
         });
       }
+
+      // 🛡️ Auto-pause AI on human staff manual reply
+      try {
+        let convMeta = {};
+        try {
+          convMeta = typeof conversation.metadata === 'string' ? JSON.parse(conversation.metadata) : (conversation.metadata || {});
+        } catch (e) { convMeta = {}; }
+
+        const pauseHours = 2;
+        convMeta.aiPausedUntil = new Date(Date.now() + pauseHours * 60 * 60 * 1000).toISOString();
+        convMeta.lastHumanReplyAt = new Date().toISOString();
+        convMeta.lastHumanSenderId = senderId;
+        convMeta.lastHumanSenderName = senderName;
+
+        await getSharedPrismaClient().conversation.update({
+          where: { id },
+          data: {
+            aiEnabled: false,
+            metadata: JSON.stringify(convMeta),
+            lastMessageAt: new Date(),
+            lastMessagePreview: (message || '').substring(0, 100),
+            lastMessageIsFromCustomer: false,
+            updatedAt: new Date()
+          }
+        });
+
+        if (io) {
+          io.to(`company_${conversation.companyId}`).emit('conversation:ai_status_changed', {
+            conversationId: id,
+            channel: conversation.channel,
+            aiEnabled: false,
+            aiPausedUntil: convMeta.aiPausedUntil
+          });
+        }
+      } catch (pauseErr) {
+        console.warn('⚠️ [HANDOVER] Error auto-pausing AI on staff reply:', pauseErr.message);
+      }
     } catch (saveError) {
       console.error('❌ [INSTANT-SAVE] Error saving message:', saveError.message);
       // استمر في المحاولة للإرسال لفيسبوك حتى لو فشل الحفظ

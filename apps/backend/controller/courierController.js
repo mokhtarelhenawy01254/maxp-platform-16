@@ -280,6 +280,38 @@ async function settleRun(req, res) {
   }
 }
 
+/**
+ * GET /api/v1/couriers/runs/:id/share-link
+ */
+async function getRunShareLink(req, res) {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
+    }
+
+    const run = await courierService.getDeliveryRunById(companyId, req.params.id);
+    if (!run) {
+      return res.status(404).json({ success: false, message: 'مأمورية التوصيل غير موجودة' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        runId: run.id,
+        runNumber: run.runNumber,
+        mobileToken: run.mobileToken,
+        shareUrl: `/courier/run/${run.id}${run.mobileToken ? `?token=${run.mobileToken}` : ''}`,
+        courierPhone: run.courier?.phone,
+        courierName: run.courier?.name
+      }
+    });
+  } catch (error) {
+    console.error('❌ [COURIER-CTRL] Error in getRunShareLink:', error);
+    res.status(500).json({ success: false, message: error.message || 'تعذر إنشاء رابط المندوب' });
+  }
+}
+
 module.exports = {
   getSummary,
   listCouriers,
@@ -290,6 +322,7 @@ module.exports = {
   createRun,
   listRuns,
   getRun,
+  getRunShareLink,
   updateShipmentStatus,
   settleRun
 };

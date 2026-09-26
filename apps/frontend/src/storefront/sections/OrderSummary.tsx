@@ -679,15 +679,24 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
   const walletPaymentSettings = (storefrontSettings?.storefront?.settings?.['walletPaymentSettings'] as
     | { enabled?: boolean; walletNumber?: string; discountEnabled?: boolean; discountPercent?: number; showDiscountBadge?: boolean }
     | undefined) || null;
-  const dbEnabledMethods =
-    storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods;
+  const dbEnabledMethods = useMemo(() => {
+    const raw =
+      storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods ??
+      (storefrontSettings?.storefront?.settings as any)?.enabledPaymentMethods ??
+      (storefrontSettings as any)?.storefrontSettings?.enabledPaymentMethods ??
+      (storefrontSettings as any)?.enabledPaymentMethods;
+    if (Array.isArray(raw)) return raw.map(String);
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.map(String);
+      } catch {}
+    }
+    return ['cod'];
+  }, [storefrontSettings]);
   const isWalletActiveInSettings =
     walletPaymentSettings?.enabled !== false &&
-    (
-      Array.isArray(dbEnabledMethods)
-        ? dbEnabledMethods.includes('wallet')
-        : walletPaymentSettings?.enabled === true
-    );
+    dbEnabledMethods.includes('wallet');
   const isWalletAvailable =
     Boolean(walletPaymentSettings?.walletNumber) && isWalletActiveInSettings;
   const walletDiscountEnabled = Boolean(walletPaymentSettings?.discountEnabled);
@@ -1530,6 +1539,16 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
               </span>
               <span className="text-emerald-600">
                 -{formatStorefrontCurrency(walletDiscount, currency)}
+              </span>
+            </div>
+          ) : walletDiscount === 0 && walletDiscountEnabled && walletDiscountPercent > 0 && walletPaymentSettings?.showDiscountBadge !== false && (Number(subtotal) || 0) > 0 ? (
+            <div className="flex items-center justify-between rounded-lg bg-emerald-50/80 px-2.5 py-1.5 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800/40">
+              <span className="flex items-center gap-1 font-medium">
+                <span>🎁</span>
+                <span>خصم {walletDiscountPercent}% بالدفع الإلكتروني</span>
+              </span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                وفر {formatStorefrontCurrency(((Number(subtotal) || 0) * walletDiscountPercent) / 100, currency)}
               </span>
             </div>
           ) : null}

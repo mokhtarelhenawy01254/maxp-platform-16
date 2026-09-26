@@ -290,6 +290,21 @@ class ContextAssembler:
             if _db_rules:
                 base_prompt += f"\n\n<rules>\n{_db_rules}\n</rules>"
 
+        # Inject company-level custom instructions / prompt from public.ai_settings
+        if ctx.company_id and ctx.session:
+            try:
+                ai_set_res = await ctx.session.execute(
+                    text('SELECT "promptTemplate", "responsePrompt" FROM public.ai_settings WHERE "companyId" = :cid LIMIT 1'),
+                    {"cid": ctx.company_id}
+                )
+                ai_set_row = ai_set_res.fetchone()
+                if ai_set_row:
+                    co_prompt = (ai_set_row[1] or ai_set_row[0] or "").strip()
+                    if co_prompt:
+                        base_prompt += f"\n\n<store_instructions>\n{co_prompt}\n</store_instructions>"
+            except Exception as e:
+                logger.debug("fetch_ai_settings_prompt_failed", error=str(e))
+
         # Channel-specific: Facebook continuation instructions
         # Prevents the agent from introducing itself or changing direction when
         # the customer was already talking to a human agent before AI activation.

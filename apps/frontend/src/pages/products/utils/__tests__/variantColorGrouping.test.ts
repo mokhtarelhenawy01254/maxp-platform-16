@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import {
   isColorAttributeName,
   normalizeArabicString,
@@ -205,5 +206,64 @@ describe("variantColorGrouping Utility", () => {
       const blueGroup = groups.find((g) => g.name === "أزرق");
       expect(blueGroup?.items).toHaveLength(1);
     });
+
+    it("populates savedAttributeImage and pre-fills currentImage from variantSettings", () => {
+      const attributes: ProductAttribute[] = [
+        {
+          id: "attr_1",
+          name: "اللون :",
+          slug: "اللون_:",
+          values: ["ابيض", "اسود"],
+          visible: true,
+          forVariations: true,
+        },
+      ];
+
+      const variants: ProductVariant[] = [
+        {
+          name: "ابيض - 37",
+          type: "combination",
+          sku: "W-37",
+          stock: 10,
+          trackInventory: true,
+          isActive: true,
+          sortOrder: 0,
+          images: [],
+          attributeValues: { "اللون_:": "ابيض", "المقاس_:": "37" },
+        },
+        {
+          name: "اسود - 37",
+          type: "combination",
+          sku: "B-37",
+          stock: 10,
+          trackInventory: true,
+          isActive: true,
+          sortOrder: 1,
+          images: [],
+          attributeValues: { "اللون_:": "اسود", "المقاس_:": "37" },
+        },
+      ];
+
+      const variantSettings = {
+        attributeImages: {
+          "اللون :": {
+            "ابيض": "https://img.com/white.jpg",
+            "اسود": "https://img.com/black.jpg",
+          },
+        },
+      };
+
+      const groups = groupVariantsByColor(variants, attributes, undefined, variantSettings);
+      expect(groups).toHaveLength(2);
+      const whiteGroup = groups.find((g) => g.name === "ابيض");
+      expect(whiteGroup?.savedAttributeImage).toBe("https://img.com/white.jpg");
+      expect(whiteGroup?.currentImage).toBe("https://img.com/white.jpg");
+      expect(whiteGroup?.imagesCount).toBe(0); // variants themselves don't have it applied yet
+
+      const blackGroup = groups.find((g) => g.name === "اسود");
+      expect(blackGroup?.savedAttributeImage).toBe("https://img.com/black.jpg");
+      expect(blackGroup?.currentImage).toBe("https://img.com/black.jpg");
+    });
   });
 });
+

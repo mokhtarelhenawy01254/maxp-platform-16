@@ -78,6 +78,16 @@ const PERMISSIONS = [
   { key: 'orders.shipping.view', name: 'عرض شركات الشحن', domain: 'ORDERS' },
   { key: 'orders.shipping.manage', name: 'إدارة شركات الشحن', domain: 'ORDERS' },
 
+  // Internal Courier Fleet
+  { key: 'courier.view', name: 'عرض أسطول المناديب', domain: 'COURIER_FLEET' },
+  { key: 'courier.manage', name: 'إدارة وتعديل المناديب', domain: 'COURIER_FLEET' },
+  { key: 'courier.runs.view', name: 'عرض رحلات التوزيع والمانيفست', domain: 'COURIER_FLEET' },
+  { key: 'courier.runs.manage', name: 'إنشاء وإسناد رحلات التوزيع', domain: 'COURIER_FLEET' },
+  { key: 'courier.settlement.view', name: 'عرض تسويات وتوريد المناديب', domain: 'COURIER_FLEET' },
+  { key: 'courier.settlement.manage', name: 'إجراء تسويات وتوريد النقدية', domain: 'COURIER_FLEET' },
+  { key: 'courier.settings.view', name: 'عرض إعدادات أسطول المناديب', domain: 'COURIER_FLEET' },
+  { key: 'courier.settings.manage', name: 'تعديل إعدادات أسطول المناديب', domain: 'COURIER_FLEET' },
+
   // Orders — Turbo Tickets
   { key: 'orders.tickets.view', name: 'عرض تذاكر Turbo', domain: 'ORDERS' },
   { key: 'orders.tickets.create', name: 'إنشاء تذكرة Turbo', domain: 'ORDERS' },

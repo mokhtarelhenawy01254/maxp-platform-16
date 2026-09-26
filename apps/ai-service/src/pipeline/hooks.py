@@ -320,17 +320,42 @@ class AttachmentHook:
                 if not prod_name:
                     continue
 
-                # Strict name matching: prevent partial generic single-word false matches
-                name_words = [w for w in re.findall(r"[\u0600-\u06FF\w]+", prod_name) if len(w) >= 3]
+                def _norm_ar_token(w: str) -> str:
+                    w = re.sub(r"^[او]ل", "", w)
+                    w = re.sub(r"[أإآ]", "ا", w)
+                    w = re.sub(r"ة$", "ه", w)
+                    w = re.sub(r"ى$", "ي", w)
+                    return w
+
+                # Extract the primary subject part before promotional suffixes (e.g. ".. دلعي نفسك")
+                title_clean = re.sub(r"[^\w\s\u0600-\u06FF]", " ", prod_name)
+                primary_chunk = re.split(r"[.]{2,}|[.!—–\(\)\[\]؛]|(?:\s+-\s+)", prod_name)[0].strip()
+                primary_clean = re.sub(r"[^\w\s\u0600-\u06FF]", " ", primary_chunk)
+
+                name_words = [w for w in primary_clean.split() if len(w) >= 3]
                 distinctive_words = [w for w in name_words if w not in GENERIC_PRODUCT_WORDS]
 
-                if prod_name in search_scope:
+                # Fallback to full title words if primary chunk was too short
+                if not distinctive_words:
+                    all_name_words = [w for w in title_clean.split() if len(w) >= 3]
+                    distinctive_words = [w for w in all_name_words if w not in GENERIC_PRODUCT_WORDS]
+
+                # Check if search scope contains the product name or its distinctive keywords
+                if prod_name in search_scope or primary_clean in search_scope:
                     name_match = True
                 elif distinctive_words:
-                    matched = sum(1 for w in distinctive_words if w in search_scope)
-                    name_match = (matched > 0 and (matched >= math.ceil(len(distinctive_words) * 0.5) or len(distinctive_words) <= 2))
+                    search_tokens = set(re.findall(r"[\u0600-\u06FF\w]+", search_scope))
+                    search_norm = {_norm_ar_token(t) for t in search_tokens}
+
+                    # Direct word match or normalized Arabic root match
+                    matched = sum(
+                        1 for w in distinctive_words
+                        if w in search_tokens or _norm_ar_token(w) in search_norm
+                    )
+                    # For long marketing titles, matching the core keyword (e.g. الفيونكة / القلوب) is enough
+                    name_match = (matched > 0 and (matched >= math.ceil(len(distinctive_words) * 0.4) or matched >= 1))
                 elif name_words:
-                    name_match = all(w in search_scope for w in name_words)
+                    name_match = any(w in search_scope for w in name_words)
                 else:
                     name_match = False
 
@@ -346,10 +371,12 @@ class AttachmentHook:
                         continue
 
                 added_for_prod = 0
+                max_per_prod = 2 if len(items) == 1 else 1
+                max_total_attachments = 4
                 for img in raw_images:
                     if not img or not isinstance(img, str):
                         continue
-                    if added_for_prod >= 1 or len(ctx.response_attachments) >= 2:
+                    if added_for_prod >= max_per_prod or len(ctx.response_attachments) >= max_total_attachments:
                         break
                     img_clean = img.strip()
                     full_url = img_clean
