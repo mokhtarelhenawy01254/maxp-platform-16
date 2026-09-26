@@ -57,14 +57,35 @@ export const VariantColorImagesModal: React.FC<VariantColorImagesModalProps> = (
 
   // Group variants by selected attribute (default: color)
   const groups = useMemo(() => {
-    return groupVariantsByColor(variants, attributes, activeAttrKey);
-  }, [variants, attributes, activeAttrKey]);
+    return groupVariantsByColor(variants, attributes, activeAttrKey, variantSettings);
+  }, [variants, attributes, activeAttrKey, variantSettings]);
+
+
+  const syncableSavedGroups = useMemo(() => {
+    return groups.filter(
+      (g) => Boolean(g.savedAttributeImage || g.currentImage) && g.imagesCount < g.items.length
+    );
+  }, [groups]);
 
   if (!isOpen) return null;
 
   const showToast = (message: string) => {
     setSuccessToast(message);
     setTimeout(() => setSuccessToast(null), 3500);
+  };
+
+  const handleApplyAllSavedImages = () => {
+    let count = 0;
+    syncableSavedGroups.forEach((group) => {
+      const img = group.savedAttributeImage || group.currentImage;
+      if (img) {
+        handleApplyImageToGroup(group, img);
+        count += 1;
+      }
+    });
+    if (count > 0) {
+      showToast(`✓ تم تطبيق الصور بنجاح على مقاسات ${count} ألوان`);
+    }
   };
 
   const handleApplyImageToGroup = (group: VariantColorGroup, imageUrl: string) => {
@@ -234,6 +255,25 @@ export const VariantColorImagesModal: React.FC<VariantColorImagesModalProps> = (
           </div>
         )}
 
+        {/* Saved Attributes Quick Sync Banner */}
+        {syncableSavedGroups.length > 0 && (
+          <div className="mx-5 mt-3 p-3 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl flex items-center justify-between flex-wrap gap-2 text-xs animate-fade-in">
+            <div className="flex items-center gap-2">
+              <span className="text-indigo-800 dark:text-indigo-200 font-semibold">
+                ✨ تم العثور على {syncableSavedGroups.length} صور ألوان محفوظة مسبقاً في خصائص المنتج!
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleApplyAllSavedImages}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white rounded-lg font-semibold transition shadow-sm"
+            >
+              تطبيق على جميع المقاسات دفعة واحدة ({syncableSavedGroups.length} ألوان)
+            </button>
+          </div>
+        )}
+
+
         {/* Groups List */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
           {groups.length === 0 ? (
@@ -371,6 +411,24 @@ export const VariantColorImagesModal: React.FC<VariantColorImagesModalProps> = (
                           )}
                         </div>
                       </div>
+
+                      {/* One-click apply for existing/saved image */}
+                      {(group.currentImage || group.savedAttributeImage) &&
+                        group.imagesCount < group.items.length && (
+                          <div className="pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const img = group.currentImage || group.savedAttributeImage;
+                                if (img) handleApplyImageToGroup(group, img);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition active:scale-[0.98]"
+                            >
+                              ⚡ تطبيق هذه الصورة على كافة مقاسات "{group.name}" ({group.items.length} مقاسات)
+                            </button>
+                          </div>
+                        )}
+
 
                       {/* Quick pick from product gallery images if available */}
                       {uploadedImages && uploadedImages.length > 0 && (

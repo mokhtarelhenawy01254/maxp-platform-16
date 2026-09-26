@@ -206,4 +206,32 @@ describe("StoreSettings payment tab", () => {
     const toggleBtn = screen.getByRole("button", { name: /محفظة إلكترونية/ });
     expect(toggleBtn.getAttribute("aria-pressed")).toBe("true");
   });
+
+  it("properly auto-saves COD toggle when clicked in gateway sub-tab", async () => {
+    storefrontSettingsService.getSettings.mockResolvedValue({
+      data: {
+        enabledPaymentMethods: '["cod","wallet"]',
+      },
+    });
+    storefrontSettingsService.updateSettings.mockResolvedValue({
+      data: {
+        enabledPaymentMethods: '["wallet"]',
+      },
+    });
+
+    render(<StoreSettings forcedTab="payment" />);
+
+    const codToggleBtn = await screen.findByRole("button", { name: /الدفع عند الاستلام/ });
+    expect(codToggleBtn.getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(codToggleBtn);
+
+    await waitFor(() => {
+      expect(storefrontSettingsService.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          enabledPaymentMethods: '["wallet"]',
+        }),
+      );
+    });
+  });
 });

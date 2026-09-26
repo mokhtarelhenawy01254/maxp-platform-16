@@ -144,4 +144,37 @@ describe('PdpQuickOrderForm wallet payment method visibility', () => {
     expect(screen.getByText(/wallet payment|محفظة إلكترونية/i)).toBeTruthy();
     expect(screen.getByText(/cash on delivery|الدفع عند الاستلام/i)).toBeTruthy();
   });
+
+  it('does NOT render COD option when COD is deactivated in settings and wallet is active', () => {
+    mockUseStorefrontSettings.mockReturnValue({
+      settings: {
+        company: { id: 'comp-1', currency: 'EGP', name: 'Test Shop' },
+        storefront: {
+          storefrontFeatures: {
+            enabledPaymentMethods: ['wallet'], // COD is deactivated!
+          },
+          settings: {
+            currency: 'EGP',
+            walletPaymentSettings: {
+              enabled: true,
+              walletNumber: '01012345678',
+              recipientName: 'Test Shop',
+            },
+          },
+        },
+      },
+      isLoading: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <PdpQuickOrderForm product={mockProduct as any} />
+      </MemoryRouter>
+    );
+
+    // Wallet button should be visible
+    expect(screen.getByText(/wallet payment|محفظة إلكترونية/i)).toBeTruthy();
+    // COD button should NOT be visible
+    expect(screen.queryByText(/cash on delivery|الدفع عند الاستلام/i)).toBeNull();
+  });
 });

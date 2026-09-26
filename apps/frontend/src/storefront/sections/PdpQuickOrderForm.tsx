@@ -245,13 +245,22 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const walletEnabled = Boolean(
     walletPaymentSettings?.walletNumber?.trim() && isWalletActiveInSettings
   );
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "wallet">("cod");
+  const isCodActive = Array.isArray(dbEnabledMethods)
+    ? dbEnabledMethods.includes('cod')
+    : true;
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "wallet">(() => {
+    if (isCodActive) return "cod";
+    if (walletEnabled) return "wallet";
+    return "cod";
+  });
 
   useEffect(() => {
-    if (!walletEnabled && paymentMethod === "wallet") {
+    if (!isCodActive && walletEnabled && paymentMethod === "cod") {
+      setPaymentMethod("wallet");
+    } else if (!walletEnabled && paymentMethod === "wallet") {
       setPaymentMethod("cod");
     }
-  }, [walletEnabled, paymentMethod]);
+  }, [isCodActive, walletEnabled, paymentMethod]);
   const [walletProofImageUrl, setWalletProofImageUrl] = useState("");
   const [walletProofUploading, setWalletProofUploading] = useState(false);
   const [walletTransferRef, setWalletTransferRef] = useState("");
@@ -870,7 +879,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
           quantityOfferLabel: activeQuantityOffer?.offerLabel || "",
           customAttributesSummary,
         }),
-        paymentMethod: "cod",
+        paymentMethod,
         shippingCost,
         subtotal: resolvedSubtotal,
         total,
@@ -2163,17 +2172,19 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     {prefersArabicCopy ? "طريقة الدفع" : "Payment method"}
                   </span>
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("cod")}
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                        paymentMethod === "cod"
-                          ? "border-emerald-600 bg-emerald-600 text-white"
-                          : "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-700 dark:bg-gray-900 dark:text-emerald-200"
-                      }`}
-                    >
-                      {prefersArabicCopy ? "الدفع عند الاستلام" : "Cash on delivery"}
-                    </button>
+                    {isCodActive ? (
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod("cod")}
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                          paymentMethod === "cod"
+                            ? "border-emerald-600 bg-emerald-600 text-white"
+                            : "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-700 dark:bg-gray-900 dark:text-emerald-200"
+                        }`}
+                      >
+                        {prefersArabicCopy ? "الدفع عند الاستلام" : "Cash on delivery"}
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => setPaymentMethod("wallet")}
