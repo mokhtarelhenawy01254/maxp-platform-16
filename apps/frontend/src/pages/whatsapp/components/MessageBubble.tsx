@@ -426,7 +426,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
               <VoiceNotePlayer
                 src={fullMediaUrl}
                 messageId={message.id}
-                isCustomer={!isMe}
+                isCustomer={!message.fromMe}
               />
             );
           case "DOCUMENT":
