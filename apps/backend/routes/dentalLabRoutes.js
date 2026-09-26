@@ -204,6 +204,7 @@ router.post('/policies/dry-run', verifyToken.authenticateToken, dentalRoleGuard(
 router.post('/escalation/run', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), policyController.runEscalation);
 router.get('/work-types/:id/stages', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'TECHNICIAN']), policyController.getWorkTypeStages);
 router.post('/work-types/:id/stages', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), policyController.setWorkTypeStages);
+router.put('/work-types/:id/stages', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), policyController.setWorkTypeStages);
 router.get('/patients/lookup', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), policyController.lookupPatient);
 router.get('/reports/outsourced', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), policyController.getOutsourcedReport);
 

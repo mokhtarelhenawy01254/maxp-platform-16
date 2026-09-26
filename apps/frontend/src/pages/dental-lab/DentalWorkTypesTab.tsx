@@ -16,9 +16,11 @@ import {
   Sparkles,
   TrendingUp,
   Trash2,
+  Workflow,
   Wrench,
   X as XMarkIcon,
 } from "lucide-react";
+import DentalWorkTypeStagesModal from "./DentalWorkTypeStagesModal";
 import {
   DentalWorkType, fetchWorkTypes, createWorkType, updateWorkType, deleteWorkType,
   WORK_TYPE_CATEGORIES, tKey, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, fmtMoney,
@@ -32,6 +34,7 @@ interface WorkTypeForm {
   price: number;
   costPrice: number;
   leadTimeDays: number;
+  urgentLeadTimeDays: number;
   defaultMaterial: string;
   materialBrand: string;
   instructions: string;
@@ -70,6 +73,7 @@ export default function DentalWorkTypesTab() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<WorkTypeForm | null>(null);
+  const [stagesModalWorkType, setStagesModalWorkType] = useState<DentalWorkType | null>(null);
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
@@ -109,6 +113,7 @@ export default function DentalWorkTypesTab() {
       price: 0,
       costPrice: 0,
       leadTimeDays: 3,
+      urgentLeadTimeDays: 1,
       defaultMaterial: "زيركون (Zirconia Multilayer)",
       materialBrand: "Aidite (3D Pro Zir, Honor)",
       instructions: "",
@@ -129,6 +134,7 @@ export default function DentalWorkTypesTab() {
       price: w.price ?? 0,
       costPrice: w.costPrice ?? 0,
       leadTimeDays: w.leadTimeDays ?? 0,
+      urgentLeadTimeDays: w.urgentLeadTimeDays ?? 0,
       defaultMaterial: w.defaultMaterial || "",
       materialBrand: w.materialBrand || "",
       instructions: w.instructions || "",
@@ -152,6 +158,7 @@ export default function DentalWorkTypesTab() {
         price: Number(modal.price) || 0,
         costPrice: Number(modal.costPrice) || 0,
         leadTimeDays: Number(modal.leadTimeDays) || 0,
+        urgentLeadTimeDays: Number(modal.urgentLeadTimeDays) || 0,
         defaultMaterial: modal.defaultMaterial.trim() || undefined,
         materialBrand: modal.materialBrand.trim() || undefined,
         instructions: modal.instructions.trim() || undefined,
@@ -325,7 +332,14 @@ export default function DentalWorkTypesTab() {
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-xs font-medium">{w.leadTimeDays ?? 0} أيام</td>
+                      <td className="py-3 px-4 text-xs font-medium">
+                        <div className="tabular-nums font-mono">{w.leadTimeDays ?? 0} أيام</div>
+                        {(w.urgentLeadTimeDays ?? 0) > 0 && (
+                          <div className="text-[11px] text-amber-600 dark:text-amber-400 font-mono mt-0.5">
+                            مستعجل: {w.urgentLeadTimeDays} يوم
+                          </div>
+                        )}
+                      </td>
                       <td className="py-3 px-4">
                         <button
                           onClick={() => toggleActive(w)}
@@ -336,6 +350,13 @@ export default function DentalWorkTypesTab() {
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex gap-1">
+                          <button
+                            onClick={() => setStagesModalWorkType(w)}
+                            className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg"
+                            title="قالب مراحل الإنتاج ومواصفات SLA"
+                          >
+                            <Workflow className="w-4 h-4" />
+                          </button>
                           <button onClick={() => openEdit(w)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg" title={t("dentalLab.common.edit")}>
                             <Pencil className="w-4 h-4" />
                           </button>
@@ -418,8 +439,20 @@ export default function DentalWorkTypesTab() {
                   )}
 
                   <div>
-                    <label className={labelCls}>{t("dentalLab.workTypes.leadTimeDays")} (أيام العمل)</label>
+                    <label className={labelCls}>{t("dentalLab.workTypes.leadTimeDays")} (أيام العمل العادية)</label>
                     <input className={inputCls} type="number" min="1" value={modal.leadTimeDays} onChange={e => setModal({ ...modal, leadTimeDays: Number(e.target.value) })} />
+                  </div>
+
+                  <div>
+                    <label className={labelCls}>مدة الإنجاز المستعجل (أيام)</label>
+                    <input
+                      className={inputCls}
+                      type="number"
+                      min="0"
+                      value={modal.urgentLeadTimeDays}
+                      onChange={e => setModal({ ...modal, urgentLeadTimeDays: Number(e.target.value) })}
+                      placeholder="فارغ = حسب السياسة العامة"
+                    />
                   </div>
                 </div>
 
@@ -567,6 +600,16 @@ export default function DentalWorkTypesTab() {
             </div>
           </div>
         </div>
+      )}
+
+      {stagesModalWorkType && (
+        <DentalWorkTypeStagesModal
+          workType={stagesModalWorkType}
+          onClose={() => setStagesModalWorkType(null)}
+          onSaved={async () => {
+            await load(true);
+          }}
+        />
       )}
     </div>
   );

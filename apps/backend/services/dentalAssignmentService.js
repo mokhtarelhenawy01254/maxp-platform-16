@@ -56,7 +56,13 @@ async function getLabPolicies(prisma, companyId) {
         });
       }
     }
-    const p = settingRow?.value || {};
+    const raw = settingRow?.value;
+    let p = {};
+    if (typeof raw === 'string') {
+      try { p = JSON.parse(raw); } catch (_) { p = {}; }
+    } else if (raw && typeof raw === 'object') {
+      p = raw;
+    }
 
     return {
       assignment: {
@@ -76,6 +82,7 @@ async function getLabPolicies(prisma, companyId) {
       },
       dueDate: {
         fromWorkType: p.dueDate?.fromWorkType !== false,
+        defaultLeadDays: Number(p.dueDate?.defaultLeadDays) || 5,
         urgentRule: p.dueDate?.urgentRule || 'PERCENT', // PERCENT | URGENT_DAYS | FIXED_DAYS
         urgentValue: Number(p.dueDate?.urgentValue) || 50, // 50% default
         minDays: Number(p.dueDate?.minDays) || 1,
@@ -107,7 +114,7 @@ async function getLabPolicies(prisma, companyId) {
     return {
       assignment: { mode: 'SUGGEST', strategy: 'LEAST_LOADED', respectSchedule: true, dailyCapPerTechnician: 0, stageScope: 'STAGE', fallbackMode: 'SUGGEST' },
       escalation: { enabled: true, afterHoursInStage: 24, target: 'BACKUP_ROLE', maxLevels: 2, notify: true },
-      dueDate: { fromWorkType: true, urgentRule: 'PERCENT', urgentValue: 50, minDays: 1 },
+      dueDate: { fromWorkType: true, defaultLeadDays: 5, urgentRule: 'PERCENT', urgentValue: 50, minDays: 1 },
       fields: { patientPhoneRequired: false, requireToothAndShade: false },
       notify: { patientEnabled: false, doctorEnabled: true },
       stages: { usePerTypeTemplate: true },
@@ -119,8 +126,10 @@ async function getLabPolicies(prisma, companyId) {
 /**
  * Calculate expected due date based on lead time and urgency settings
  */
-function calculateExpectedDueDate(leadTimeDays = 5, priority = 'NORMAL', dueDatePolicy = {}, urgentLeadTimeDays = null) {
-  const baseDays = Math.max(1, parseInt(leadTimeDays, 10) || 5);
+function calculateExpectedDueDate(leadTimeDays = null, priority = 'NORMAL', dueDatePolicy = {}, urgentLeadTimeDays = null) {
+  const fallbackLead = dueDatePolicy.defaultLeadDays ? Number(dueDatePolicy.defaultLeadDays) : 5;
+  const rawDays = leadTimeDays !== null && leadTimeDays !== undefined ? parseInt(leadTimeDays, 10) : fallbackLead;
+  const baseDays = Math.max(1, !isNaN(rawDays) && rawDays > 0 ? rawDays : fallbackLead);
   let effectiveDays = baseDays;
 
   const prio = String(priority || 'NORMAL').toUpperCase();
@@ -236,7 +245,7 @@ async function selectTechnicianForAssignment(prisma, companyId, { requiredRole =
     }
   }
 
-  // Helper to compute active load (number of open stages in PENDING or IN_PROGRESS)
+  // Helper to compute active load and assignment telemetry
   const scoreCandidates = async (techList, isRoleMatch = true) => {
     const scores = [];
     for (const tech of techList) {
@@ -249,10 +258,24 @@ async function selectTechnicianForAssignment(prisma, companyId, { requiredRole =
           },
         });
       }
+
+      let lastAssignedAt = 0;
+      if (prisma?.dentalCaseAssignment && typeof prisma.dentalCaseAssignment.findFirst === 'function') {
+        const lastAssign = await prisma.dentalCaseAssignment.findFirst({
+          where: { technicianId: tech.id },
+          orderBy: { assignedAt: 'desc' },
+          select: { assignedAt: true },
+        });
+        if (lastAssign?.assignedAt) {
+          lastAssignedAt = new Date(lastAssign.assignedAt).getTime();
+        }
+      }
+
       scores.push({
         technician: tech,
         activeLoad: activeStagesCount,
         roleMatch: isRoleMatch,
+        lastAssignedAt,
       });
     }
     return scores;
@@ -297,17 +320,45 @@ async function selectTechnicianForAssignment(prisma, companyId, { requiredRole =
     };
   }
 
-  // 4. Sort candidates by least loaded (active open stages)
-  candidatePool.sort((a, b) => a.activeLoad - b.activeLoad);
+  // 4. Sort candidates according to configured strategy
+  const strat = String(strategy || 'LEAST_LOADED').toUpperCase();
+
+  candidatePool.sort((a, b) => {
+    if (strat === 'ROUND_ROBIN' || strat === 'OLDEST_WAITING') {
+      // Prioritize technician who hasn't been assigned for the longest time
+      if (a.lastAssignedAt !== b.lastAssignedAt) {
+        return a.lastAssignedAt - b.lastAssignedAt;
+      }
+      return a.activeLoad - b.activeLoad;
+    }
+
+    if (strat === 'BY_ROLE_MATCH') {
+      // Prioritize strict role match first
+      if (a.roleMatch !== b.roleMatch) {
+        return a.roleMatch ? -1 : 1;
+      }
+      return a.activeLoad - b.activeLoad;
+    }
+
+    // Default LEAST_LOADED
+    return a.activeLoad - b.activeLoad;
+  });
+
   const best = candidatePool[0];
 
+  let stratDesc = 'الأقل تحميلاً';
+  if (strat === 'ROUND_ROBIN') stratDesc = 'توزيع دوري عادل (Round Robin)';
+  else if (strat === 'BY_ROLE_MATCH') stratDesc = 'أولوية مطابقة الدور التخصصي';
+  else if (strat === 'OLDEST_WAITING') stratDesc = 'الأقدم انتظاراً';
+
   const rationale = isBackupCandidate
-    ? `تم اختيار الفني الاحتياطي (${best.technician.name}) لعدم توفر فني أساسي متاح بالدور (${requiredRole})، بأقل تحميل (${best.activeLoad} مراحل نشطة)`
-    : `الأقل تحميلاً (${best.activeLoad} مراحل نشطة)${best.roleMatch && hasSpecificRole ? `، ومطابق للدور (${best.technician.role})` : ''} ومتاح للعمل اليوم`;
+    ? `تم اختيار الفني الاحتياطي (${best.technician.name}) لعدم توفر فني أساسي متاح بالدور (${requiredRole})، باستراتيجية [${stratDesc}] (${best.activeLoad} مراحل نشطة)`
+    : `تم اختيار (${best.technician.name}) وفق استراتيجية [${stratDesc}] (${best.activeLoad} مراحل نشطة)${best.roleMatch && hasSpecificRole ? `، ومطابق للدور (${best.technician.role})` : ''} ومتاح للعمل اليوم`;
 
   return {
     selectedTechnician: best.technician,
     activeLoad: best.activeLoad,
+    appliedStrategy: strat,
     rationale,
     effectiveMode: mode,
     isBackup: isBackupCandidate,
@@ -354,6 +405,22 @@ async function runEscalationCheck(companyId, { userId = 'SYSTEM_ESCALATION' } = 
     const currentAssigneeId = stage.assigneeId;
     const currentAssigneeName = stage.assigneeName || 'غير مسند';
     const targetRole = stage.requiredRole || null;
+
+    // Idempotency: skip if already escalated recently in the last cutoff window
+    if (prisma?.dentalCaseStatusHistory && typeof prisma.dentalCaseStatusHistory.findFirst === 'function') {
+      const recentEscalation = await prisma.dentalCaseStatusHistory.findFirst({
+        where: {
+          companyId,
+          caseId: stage.caseId,
+          dimension: 'STAGE',
+          reason: { contains: `تصعيد` },
+          createdAt: { gte: new Date(Date.now() - Math.min(hoursThreshold, 6) * 3600 * 1000) },
+        },
+      });
+      if (recentEscalation) {
+        continue;
+      }
+    }
 
     let backupTech = null;
     let escalationReason = '';
@@ -558,6 +625,79 @@ async function simulateCaseAutomation(companyId, caseInput = {}) {
   };
 }
 
+/**
+ * Run automatic periodic escalation scan across all active dental lab tenants
+ * Protected by PostgreSQL advisory lock for zero duplicate runs in cluster mode
+ */
+async function runGlobalDentalEscalation(prismaClient = null) {
+  const prisma = prismaClient || getSharedPrismaClient();
+  let lockAcquired = false;
+  const ESCALATION_LOCK_ID = 847291;
+
+  try {
+    // 1. Cluster protection: try PostgreSQL advisory lock
+    if (typeof prisma?.$queryRaw === 'function') {
+      try {
+        const lockRes = await prisma.$queryRaw`SELECT pg_try_advisory_lock(${ESCALATION_LOCK_ID}) AS acquired`;
+        lockAcquired = Boolean(lockRes?.[0]?.acquired);
+        if (!lockAcquired) {
+          console.log('🔒 [DENTAL-ESCALATION-CRON] Another instance is currently executing escalation check, skipping.');
+          return { skipped: true, skippedDueToLock: true, reason: 'CLUSTER_LOCK_BUSY', totalEscalated: 0, escalatedStagesCount: 0 };
+        }
+      } catch (lockErr) {
+        if (process.env.NODE_APP_INSTANCE && process.env.NODE_APP_INSTANCE !== '0') {
+          return { skipped: true, skippedDueToLock: true, reason: 'SECONDARY_CLUSTER_INSTANCE', totalEscalated: 0, escalatedStagesCount: 0 };
+        }
+      }
+    }
+
+    // 2. Fetch all active companies
+    let companies = [];
+    const companyModel = prisma?.company || prisma?.dentalLabCompany;
+    if (companyModel && typeof companyModel.findMany === 'function') {
+      companies = await companyModel.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true },
+      });
+    }
+
+    let totalEscalated = 0;
+    const results = [];
+
+    for (const company of companies) {
+      try {
+        const pol = await getLabPolicies(prisma, company.id);
+        if (pol.escalation?.enabled !== false) {
+          const res = await runEscalationCheck(company.id, { userId: 'SYSTEM_CRON_ESCALATION' });
+          if (res?.escalatedCount > 0) {
+            totalEscalated += res.escalatedCount;
+            results.push({ companyId: company.id, name: company.name, count: res.escalatedCount });
+          }
+        }
+      } catch (cErr) {
+        console.warn(`⚠️ [DENTAL-ESCALATION-CRON] Error for company ${company.id}:`, cErr.message);
+      }
+    }
+
+    if (totalEscalated > 0) {
+      console.log(`⏰ [DENTAL-ESCALATION-CRON] Global escalation scan complete: escalated ${totalEscalated} stages across ${results.length} companies.`);
+    }
+
+    return {
+      executed: true,
+      skippedDueToLock: false,
+      companiesChecked: companies.length,
+      totalEscalated,
+      escalatedStagesCount: totalEscalated,
+      results,
+    };
+  } finally {
+    if (lockAcquired && typeof prisma?.$queryRaw === 'function') {
+      await prisma.$queryRaw`SELECT pg_advisory_unlock(${ESCALATION_LOCK_ID})`.catch(() => {});
+    }
+  }
+}
+
 module.exports = {
   DEFAULT_WORKING_DAYS,
   isTechnicianOnDuty,
@@ -565,5 +705,7 @@ module.exports = {
   calculateExpectedDueDate,
   selectTechnicianForAssignment,
   runEscalationCheck,
+  runGlobalDentalEscalation,
   simulateCaseAutomation,
 };
+

@@ -9,6 +9,7 @@ import {
   fetchTechnicianPayouts, createTechnicianPayout, deleteTechnicianPayout,
   fetchTeam, TeamMember,
   ROLE_CONFIG, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, fmtMoney, fmtDate,
+  DAYS_OF_WEEK,
 } from "./shared";
 
 interface TechnicianForm {
@@ -20,6 +21,9 @@ interface TechnicianForm {
   role: DentalTechnicianRole;
   userId: string;
   wagePerStage: string;
+  workingDays: number[];
+  dailyCap: string;
+  backupTechnicianId: string;
   isActive: boolean;
 }
 
@@ -80,6 +84,9 @@ export default function DentalTechniciansTab() {
       role: "CAD_DESIGNER",
       userId: "",
       wagePerStage: "",
+      workingDays: [6, 0, 1, 2, 3, 4], // السبت إلى الخميس افتراضياً
+      dailyCap: "0",
+      backupTechnicianId: "",
       isActive: true,
     });
   };
@@ -96,6 +103,9 @@ export default function DentalTechniciansTab() {
       role: x.role || "GENERAL_TECHNICIAN",
       userId: x.userId || "",
       wagePerStage: x.wagePerStage != null ? String(x.wagePerStage) : "",
+      workingDays: Array.isArray(x.workingDays) && x.workingDays.length > 0 ? x.workingDays : [6, 0, 1, 2, 3, 4],
+      dailyCap: x.dailyCap != null ? String(x.dailyCap) : "0",
+      backupTechnicianId: x.backupTechnicianId || "",
       isActive: x.isActive,
     });
   };
@@ -128,6 +138,9 @@ export default function DentalTechniciansTab() {
         password: modal.password.trim() || undefined,
         userId: modal.userId.trim() || undefined,
         wagePerStage: modal.wagePerStage.trim() === "" ? undefined : Number(modal.wagePerStage),
+        workingDays: modal.workingDays,
+        dailyCap: Math.max(0, parseInt(modal.dailyCap, 10) || 0),
+        backupTechnicianId: modal.backupTechnicianId.trim() || null,
       };
       if (modal.id) {
         await updateTechnician(modal.id, { ...payload, isActive: modal.isActive });
@@ -260,6 +273,8 @@ export default function DentalTechniciansTab() {
                   <th className="text-right py-3 px-3 whitespace-nowrap">{t("dentalLab.common.name")}</th>
                   <th className="text-right py-3 px-3 whitespace-nowrap">{t("dentalLab.common.phone")}</th>
                   <th className="text-right py-3 px-3 whitespace-nowrap">التخصص / المحطة</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">الجدول والسقف</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">البديل المفضل</th>
                   <th className="text-right py-3 px-3 whitespace-nowrap">أجر المرحلة</th>
                   <th className="text-right py-3 px-3 whitespace-nowrap">المراحل</th>
                   <th className="text-right py-3 px-3 whitespace-nowrap">إجمالي المكتسب</th>
@@ -282,8 +297,26 @@ export default function DentalTechniciansTab() {
                         {x.name}
                       </Link>
                     </td>
-                    <td className="py-3 px-3 text-gray-500 dark:text-gray-400" dir="ltr">{x.phone || "—"}</td>
                     <td className="py-3 px-3">{roleBadge(x.role)}</td>
+                    <td className="py-3 px-3 text-xs">
+                      <div className="font-mono text-gray-800 dark:text-gray-200">
+                        {Array.isArray(x.workingDays) && x.workingDays.length > 0
+                          ? `${x.workingDays.length} أيام عمل`
+                          : "6 أيام (افتراضي)"}
+                      </div>
+                      <div className="text-[11px] text-gray-400 mt-0.5 font-mono">
+                        {x.dailyCap && x.dailyCap > 0 ? `سقف: ${x.dailyCap} /يوم` : "سقف مفتوح"}
+                      </div>
+                    </td>
+                    <td className="py-3 px-3 text-xs">
+                      {x.backupTechnicianName || (x.backupTechnicianId && rows.find(r => r.id === x.backupTechnicianId)?.name) ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800">
+                          {x.backupTechnicianName || rows.find(r => r.id === x.backupTechnicianId)?.name}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
                     <td className="py-3 px-3">
                       {x.wagePerStage != null ? (
                         <span className="font-semibold text-gray-800 dark:text-gray-200">{fmtMoney(x.wagePerStage)} ج.م</span>
@@ -408,6 +441,66 @@ export default function DentalTechniciansTab() {
               <div>
                 <label className={labelCls}>أجر المرحلة المكتملة (ج.م)</label>
                 <input className={inputCls} type="number" min="0" value={modal.wagePerStage} onChange={e => setModal({ ...modal, wagePerStage: e.target.value })} placeholder="فارغ = المعدل الافتراضي" />
+              </div>
+              <div>
+                <label className={labelCls}>سقف الحالات اليومي (Daily Cap)</label>
+                <input
+                  className={inputCls}
+                  type="number"
+                  min="0"
+                  value={modal.dailyCap}
+                  onChange={e => setModal({ ...modal, dailyCap: e.target.value })}
+                  placeholder="0 = غير محدود"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className={labelCls}>الفني البديل المفضل (عند الغياب أو اكتمال السقف)</label>
+                <select
+                  className={inputCls}
+                  value={modal.backupTechnicianId}
+                  onChange={e => setModal({ ...modal, backupTechnicianId: e.target.value })}
+                >
+                  <option value="">بدون فني بديل مخصص (توزيع آلي عام)</option>
+                  {rows
+                    .filter(t => !modal.id || t.id !== modal.id)
+                    .map(t => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({ROLE_CONFIG[t.role]?.nameAr || t.role})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className={labelCls}>أيام العمل الأسبوعية (Working Schedule)</label>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {DAYS_OF_WEEK.map(({ day, label }) => {
+                    const isSelected = modal.workingDays.includes(day);
+                    return (
+                      <button
+                        type="button"
+                        key={day}
+                        onClick={() => {
+                          const next = isSelected
+                            ? modal.workingDays.filter(d => d !== day)
+                            : [...modal.workingDays, day].sort();
+                          setModal({ ...modal, workingDays: next });
+                        }}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                          isSelected
+                            ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                            : "bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                  إذا لم يتم اختيار أي يوم، يُعتبر الفني متاحاً طوال أيام الأسبوع حسب سياسة المعمل.
+                </p>
               </div>
 
               {/* Direct User Account Section (معايير 2026 لإنشاء الحساب المباشر) */}

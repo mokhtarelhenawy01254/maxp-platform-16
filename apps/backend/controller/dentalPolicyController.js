@@ -20,6 +20,24 @@ const getPolicies = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
     const policies = await getLabPolicies(prisma, companyId);
+    const enrichedPolicies = {
+      ...policies,
+      assignment: {
+        ...policies.assignment,
+        respectWorkingDays: policies.assignment?.respectSchedule !== false,
+      },
+      escalation: {
+        ...policies.escalation,
+        escalationHours: policies.escalation?.afterHoursInStage || 24,
+        notifyOwnerOnOverdue: policies.escalation?.notify !== false,
+      },
+      dueDate: {
+        ...policies.dueDate,
+        defaultLeadDays: policies.dueDate?.defaultLeadDays || 5,
+        urgentReductionPercent: policies.dueDate?.urgentRule === 'PERCENT' ? policies.dueDate?.urgentValue : 50,
+        urgentReductionDays: policies.dueDate?.urgentRule === 'FIXED_DAYS' ? policies.dueDate?.urgentValue : 1,
+      },
+    };
 
     // Active treasury accounts for financial selector
     const treasuryAccounts = await prisma.treasuryAccount.findMany({
@@ -30,7 +48,7 @@ const getPolicies = async (req, res) => {
     res.json({
       success: true,
       data: {
-        policies,
+        policies: enrichedPolicies,
         treasuryAccounts,
       },
     });
@@ -39,6 +57,131 @@ const getPolicies = async (req, res) => {
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب سياسات المعمل' });
   }
 };
+
+/**
+ * Normalize incoming policy payloads ensuring seamless mapping between UI & engine contracts
+ */
+function normalizeLabPoliciesInput(body = {}, current = {}) {
+  const assignmentIn = body.assignment || {};
+  const escalationIn = body.escalation || {};
+  const dueDateIn = body.dueDate || {};
+  const fieldsIn = body.fields || {};
+  const notifyIn = body.notify || {};
+  const stagesIn = body.stages || {};
+  const financeIn = body.finance || {};
+
+  // 1. Assignment normalization
+  let mode = assignmentIn.mode || current.assignment?.mode || 'SUGGEST';
+  if (mode === 'MANUAL') mode = 'SUGGEST';
+
+  let strategy = assignmentIn.strategy || current.assignment?.strategy || 'LEAST_LOADED';
+  if (strategy === 'LEAST_LOAD') strategy = 'LEAST_LOADED';
+  if (strategy === 'SPECIALTY_FIRST') strategy = 'BY_ROLE_MATCH';
+
+  let respectSchedule = current.assignment?.respectSchedule !== false;
+  if ('respectSchedule' in assignmentIn) {
+    respectSchedule = Boolean(assignmentIn.respectSchedule);
+  } else if ('respectWorkingDays' in assignmentIn) {
+    respectSchedule = Boolean(assignmentIn.respectWorkingDays);
+  }
+
+  let dailyCapPerTechnician = Number(current.assignment?.dailyCapPerTechnician) || 0;
+  if ('dailyCapPerTechnician' in assignmentIn) {
+    dailyCapPerTechnician = Math.max(0, parseInt(assignmentIn.dailyCapPerTechnician, 10) || 0);
+  } else if ('dailyCap' in assignmentIn) {
+    dailyCapPerTechnician = Math.max(0, parseInt(assignmentIn.dailyCap, 10) || 0);
+  }
+
+  // 2. Escalation normalization
+  const enabled = escalationIn.enabled !== undefined ? Boolean(escalationIn.enabled) : (current.escalation?.enabled !== false);
+  let afterHoursInStage = Number(current.escalation?.afterHoursInStage) || 24;
+  if ('afterHoursInStage' in escalationIn) {
+    afterHoursInStage = Math.max(1, parseInt(escalationIn.afterHoursInStage, 10) || 24);
+  } else if ('escalationHours' in escalationIn) {
+    afterHoursInStage = Math.max(1, parseInt(escalationIn.escalationHours, 10) || 24);
+  }
+
+  let notify = current.escalation?.notify !== false;
+  if ('notify' in escalationIn) {
+    notify = Boolean(escalationIn.notify);
+  } else if ('notifyOwnerOnOverdue' in escalationIn) {
+    notify = Boolean(escalationIn.notifyOwnerOnOverdue);
+  }
+
+  // 3. Due Date normalization
+  const fromWorkType = dueDateIn.fromWorkType !== undefined ? Boolean(dueDateIn.fromWorkType) : (current.dueDate?.fromWorkType !== false);
+  let urgentRule = dueDateIn.urgentRule || current.dueDate?.urgentRule || 'PERCENT';
+  let urgentValue = Number(current.dueDate?.urgentValue) || 50;
+  if ('urgentValue' in dueDateIn) {
+    urgentValue = Math.max(1, Number(dueDateIn.urgentValue) || 50);
+  } else if (dueDateIn.urgentReductionDays !== undefined && Number(dueDateIn.urgentReductionDays) > 0) {
+    urgentRule = 'FIXED_DAYS';
+    urgentValue = Number(dueDateIn.urgentReductionDays);
+  } else if (dueDateIn.urgentReductionPercent !== undefined) {
+    urgentRule = 'PERCENT';
+    urgentValue = Number(dueDateIn.urgentReductionPercent) || 50;
+  }
+
+  const defaultLeadDays = dueDateIn.defaultLeadDays !== undefined ? Math.max(1, parseInt(dueDateIn.defaultLeadDays, 10) || 5) : (current.dueDate?.defaultLeadDays || 5);
+  const minDays = dueDateIn.minDays !== undefined ? Math.max(1, parseInt(dueDateIn.minDays, 10) || 1) : (current.dueDate?.minDays || 1);
+
+  return {
+    assignment: {
+      ...current.assignment,
+      ...assignmentIn,
+      mode,
+      strategy,
+      respectSchedule,
+      respectWorkingDays: respectSchedule, // compatibility alias
+      dailyCapPerTechnician,
+      stageScope: assignmentIn.stageScope || current.assignment?.stageScope || 'STAGE',
+      fallbackMode: assignmentIn.fallbackMode || current.assignment?.fallbackMode || 'SUGGEST',
+    },
+    escalation: {
+      ...current.escalation,
+      ...escalationIn,
+      enabled,
+      afterHoursInStage,
+      escalationHours: afterHoursInStage, // compatibility alias
+      target: escalationIn.target || current.escalation?.target || 'BACKUP_ROLE',
+      maxLevels: Number(escalationIn.maxLevels) || current.escalation?.maxLevels || 2,
+      notify,
+      notifyOwnerOnOverdue: notify, // compatibility alias
+    },
+    dueDate: {
+      ...current.dueDate,
+      ...dueDateIn,
+      fromWorkType,
+      defaultLeadDays,
+      urgentRule,
+      urgentValue,
+      urgentReductionPercent: urgentRule === 'PERCENT' ? urgentValue : 50, // compatibility alias
+      urgentReductionDays: urgentRule === 'FIXED_DAYS' ? urgentValue : 1, // compatibility alias
+      minDays,
+    },
+    fields: {
+      ...current.fields,
+      ...fieldsIn,
+      patientPhoneRequired: Boolean(fieldsIn.patientPhoneRequired ?? current.fields?.patientPhoneRequired),
+      requireToothAndShade: Boolean(fieldsIn.requireToothAndShade ?? current.fields?.requireToothAndShade),
+    },
+    notify: {
+      ...current.notify,
+      ...notifyIn,
+      patientEnabled: Boolean(notifyIn.patientEnabled ?? current.notify?.patientEnabled),
+      doctorEnabled: notifyIn.doctorEnabled !== undefined ? Boolean(notifyIn.doctorEnabled) : (current.notify?.doctorEnabled !== false),
+    },
+    stages: {
+      ...current.stages,
+      ...stagesIn,
+      usePerTypeTemplate: stagesIn.usePerTypeTemplate !== undefined ? Boolean(stagesIn.usePerTypeTemplate) : (current.stages?.usePerTypeTemplate !== false),
+    },
+    finance: {
+      ...current.finance,
+      ...financeIn,
+    },
+  };
+}
 
 /**
  * Update lab policies & settings with guards
@@ -52,15 +195,7 @@ const updatePolicies = async (req, res) => {
     const current = await getLabPolicies(prisma, companyId);
     const body = req.body || {};
 
-    const updated = {
-      assignment: { ...current.assignment, ...(body.assignment || {}) },
-      escalation: { ...current.escalation, ...(body.escalation || {}) },
-      dueDate: { ...current.dueDate, ...(body.dueDate || {}) },
-      fields: { ...current.fields, ...(body.fields || {}) },
-      notify: { ...current.notify, ...(body.notify || {}) },
-      stages: { ...current.stages, ...(body.stages || {}) },
-      finance: { ...current.finance, ...(body.finance || {}) },
-    };
+    const updated = normalizeLabPoliciesInput(body, current);
 
     const warnings = [];
 
@@ -348,6 +483,7 @@ const getOutsourcedReport = async (req, res) => {
 module.exports = {
   getPolicies,
   updatePolicies,
+  normalizeLabPoliciesInput,
   getLabPolicies,
   simulateAutomation,
   runEscalation,

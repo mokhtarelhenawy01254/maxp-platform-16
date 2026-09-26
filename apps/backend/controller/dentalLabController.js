@@ -619,6 +619,7 @@ const createWorkType = async (req, res) => {
         price: priceResult.value,
         costPrice: costPriceResult.value,
         leadTimeDays: Number.isFinite(parseInt(body.leadTimeDays, 10)) ? parseInt(body.leadTimeDays, 10) : 5,
+        urgentLeadTimeDays: body.urgentLeadTimeDays ? Math.max(1, parseInt(body.urgentLeadTimeDays, 10)) : null,
         defaultMaterial,
         materialBrand,
         instructions,
@@ -796,8 +797,10 @@ const listTechnicians = async (req, res) => {
       const totalPaid = round2(pAgg.paid);
       const balanceDue = round2((wage + pAgg.bonuses) - (totalPaid + pAgg.deductions));
       const linkedUser = t.userId ? userMap.get(t.userId) : null;
+      const backupTech = t.backupTechnicianId ? items.find((b) => b.id === t.backupTechnicianId) : null;
       return {
         ...t,
+        backupTechnicianName: backupTech?.name || null,
         user: linkedUser || null,
         userEmail: linkedUser?.email || null,
         completedStages: e.completedStages || 0,
@@ -923,11 +926,17 @@ const createTechnician = async (req, res) => {
     }
 
     const workingDays = Array.isArray(body.workingDays)
-      ? body.workingDays
-      : (Array.isArray(body.workDays) ? body.workDays : undefined);
+      ? body.workingDays.map((d) => parseInt(d, 10)).filter((d) => !isNaN(d) && d >= 0 && d <= 6)
+      : (Array.isArray(body.workDays) ? body.workDays.map((d) => parseInt(d, 10)).filter((d) => !isNaN(d) && d >= 0 && d <= 6) : undefined);
     const vacations = Array.isArray(body.vacations) ? body.vacations : undefined;
     const dailyCap = Number.isInteger(parseInt(body.dailyCap, 10)) ? Math.max(0, parseInt(body.dailyCap, 10)) : 0;
-    const backupTechnicianId = body.backupTechnicianId ? String(body.backupTechnicianId) : null;
+    let backupTechnicianId = null;
+    if (body.backupTechnicianId) {
+      const bExists = await prisma.dentalTechnician.findFirst({
+        where: { id: String(body.backupTechnicianId).trim(), companyId },
+      });
+      if (bExists) backupTechnicianId = bExists.id;
+    }
 
     const technician = await prisma.dentalTechnician.create({
       data: {
@@ -958,7 +967,7 @@ const createTechnician = async (req, res) => {
   }
 };
 
-const TECHNICIAN_UPDATE_FIELDS = ['name', 'phone', 'role', 'isActive', 'userId', 'wagePerStage'];
+const TECHNICIAN_UPDATE_FIELDS = ['name', 'phone', 'role', 'isActive', 'userId', 'wagePerStage', 'workingDays', 'dailyCap', 'backupTechnicianId', 'vacations'];
 
 const updateTechnician = async (req, res) => {
   try {
@@ -998,6 +1007,35 @@ const updateTechnician = async (req, res) => {
         if (!wr.valid) return res.status(400).json({ success: false, error: 'أجر الفني غير صحيح' });
         data.wagePerStage = wr.value;
       }
+    }
+    if ('workingDays' in body) {
+      if (Array.isArray(body.workingDays)) {
+        data.workingDays = body.workingDays.map((d) => parseInt(d, 10)).filter((d) => !isNaN(d) && d >= 0 && d <= 6);
+      } else if (body.workingDays === null) {
+        data.workingDays = null;
+      }
+    }
+    if ('dailyCap' in body) {
+      const cap = parseInt(body.dailyCap, 10);
+      data.dailyCap = Number.isInteger(cap) ? Math.max(0, cap) : 0;
+    }
+    if ('backupTechnicianId' in body) {
+      const bid = body.backupTechnicianId ? String(body.backupTechnicianId).trim() : null;
+      if (bid) {
+        if (bid === id) {
+          return res.status(400).json({ success: false, error: 'لا يمكن تعيين الفني كبديل لنفسه' });
+        }
+        const backupExists = await prisma.dentalTechnician.findFirst({ where: { id: bid, companyId } });
+        if (!backupExists) {
+          return res.status(400).json({ success: false, error: 'الفني البديل المحدد غير موجود في هذه الشركة' });
+        }
+        data.backupTechnicianId = bid;
+      } else {
+        data.backupTechnicianId = null;
+      }
+    }
+    if ('vacations' in body) {
+      data.vacations = Array.isArray(body.vacations) ? body.vacations : null;
     }
     if ('isActive' in data) data.isActive = normalizeBool(data.isActive, true);
 

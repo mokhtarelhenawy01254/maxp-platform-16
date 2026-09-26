@@ -102,6 +102,11 @@ export interface DentalTechnician {
   userEmail?: string;
   user?: { id: string; email: string; firstName?: string; lastName?: string } | null;
   wagePerStage?: number;
+  workingDays?: number[] | null;
+  dailyCap?: number | null;
+  backupTechnicianId?: string | null;
+  backupTechnicianName?: string | null;
+  vacations?: any[] | null;
   isActive: boolean;
   createdAt?: string;
   completedStages?: number;
@@ -111,6 +116,26 @@ export interface DentalTechnician {
   totalDeductions?: number;
   totalPaid?: number;
   balanceDue?: number;
+}
+
+export const DAYS_OF_WEEK = [
+  { day: 6, label: "السبت", short: "سبت" },
+  { day: 0, label: "الأحد", short: "أحد" },
+  { day: 1, label: "الإثنين", short: "إثنين" },
+  { day: 2, label: "الثلاثاء", short: "ثلاثاء" },
+  { day: 3, label: "الأربعاء", short: "أربعاء" },
+  { day: 4, label: "الخميس", short: "خميس" },
+  { day: 5, label: "الجمعة", short: "جمعة" },
+];
+
+export interface WorkTypeStageTemplateItem {
+  id?: string;
+  name: string;
+  requiredRole: DentalTechnicianRole;
+  slaHours: number;
+  stageWage?: number;
+  isRequired?: boolean;
+  sortOrder?: number;
 }
 
 export type TechnicianPayoutType = "PAYOUT" | "ADVANCE" | "BONUS" | "DEDUCTION";
@@ -846,6 +871,10 @@ export const fetchWorkTypes = async (): Promise<DentalWorkType[]> => unwrapListE
 export const createWorkType = async (body: Partial<DentalWorkType>): Promise<DentalWorkType> => unwrapEnvelope<DentalWorkType>(await apiClient.post("/dental-lab/work-types", body));
 export const updateWorkType = async (id: string, body: Partial<DentalWorkType>): Promise<DentalWorkType> => unwrapEnvelope<DentalWorkType>(await apiClient.put(`/dental-lab/work-types/${id}`, body));
 export const deleteWorkType = async (id: string): Promise<void> => { await apiClient.delete(`/dental-lab/work-types/${id}`); };
+export const fetchWorkTypeStages = async (workTypeId: string): Promise<WorkTypeStageTemplateItem[]> =>
+  unwrapEnvelope<WorkTypeStageTemplateItem[]>(await apiClient.get(`/dental-lab/work-types/${workTypeId}/stages`));
+export const saveWorkTypeStages = async (workTypeId: string, stages: WorkTypeStageTemplateItem[]): Promise<WorkTypeStageTemplateItem[]> =>
+  unwrapEnvelope<WorkTypeStageTemplateItem[]>(await apiClient.put(`/dental-lab/work-types/${workTypeId}/stages`, { stages }));
 
 export const fetchTechnicians = async (): Promise<{ items: DentalTechnician[]; wageDefaults?: { defaultPerStage?: number } }> =>
   unwrapEnvelope<{ items: DentalTechnician[]; wageDefaults?: { defaultPerStage?: number } }>(await apiClient.get("/dental-lab/technicians"));
