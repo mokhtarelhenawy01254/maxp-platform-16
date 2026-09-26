@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const sharp = require("sharp");
 const { getMetaGraphApiVersion } = require("../config/metaApi");
@@ -21,10 +22,12 @@ const DIRECT_ALLOWED_URL_PATTERNS = [
   /^https:\/\/(?:[^/]+\.)?fbcdn\.net\//i,
   /^https:\/\/(?:[^/]+\.)?fbsbx\.com\//i,
   /^https:\/\/(?:[^/]+\.)?facebook\.com\//i,
+  /^https:\/\/(?:[^/]+\.)?cdninstagram\.com\//i,
+  /^https:\/\/(?:[^/]+\.)?instagram\.com\//i,
   /^https:\/\/files\.easy-orders\.net\//i,
   /^https:\/\/images\.unsplash\.com\//i,
   /^https:\/\/lh3\.googleusercontent\.com\/aida-public\//i,
-  /^https:\/\/pps\.whatsapp\.net\//i,
+  /^https:\/\/(?:[^/]+\.)?whatsapp\.net\//i,
 ];
 const MIN_TRANSFORM_WIDTH = 64;
 const MAX_TRANSFORM_WIDTH = 1600;
@@ -192,6 +195,8 @@ const isFacebookExpiringMediaUrl = (targetUrl) => {
       || normalizedHostname.endsWith("fbsbx.com")
       || normalizedHostname === "lookaside.facebook.com"
       || normalizedHostname.endsWith(".facebook.com")
+      || normalizedHostname.endsWith("cdninstagram.com")
+      || normalizedHostname.endsWith("instagram.com")
     );
   } catch {
     return false;
@@ -208,7 +213,7 @@ const isAvatarLikeUrl = (targetUrl) => {
     normalized.includes("pps.whatsapp.net")
     || normalized.includes("/t61.24694-24/")
     || normalized.includes("profile_pic")
-    || normalized.includes("lookaside.facebook.com")
+    || normalized.includes("/profile-pics/")
     || normalized.includes("avatar")
   );
 };
@@ -225,7 +230,9 @@ const getFacebookFriendlyHeaders = (targetUrl) => {
   const isFacebookCdn =
     hostname.includes("fbcdn.net") ||
     hostname.includes("fbsbx.com") ||
-    hostname.includes("facebook.com");
+    hostname.includes("facebook.com") ||
+    hostname.includes("cdninstagram.com") ||
+    hostname.includes("instagram.com");
   const isAudioOrVideo =
     /\.(mp3|m4a|aac|ogg|oga|opus|wav|webm|weba|mp4)(\?.*)?$/i.test(targetUrl) ||
     /audio|voice|audioclip|file_stream\.php/i.test(targetUrl);
@@ -447,6 +454,72 @@ const detectMediaContentType = (buffer, fallbackContentType = "") => {
   return fallbackContentType;
 };
 
+const CHAT_MEDIA_DIR = path.resolve(__dirname, "../uploads/chat-media");
+
+const archiveBufferToLocal = async (
+  prisma,
+  messageId,
+  buffer,
+  contentType,
+  targetIndex = null,
+) => {
+  if (!prisma || !messageId || !buffer || !buffer.length) return null;
+
+  try {
+    const EXT_BY_MIME = {
+      "image/jpeg": ".jpg",
+      "image/jpg": ".jpg",
+      "image/png": ".png",
+      "image/webp": ".webp",
+      "image/gif": ".gif",
+      "video/mp4": ".mp4",
+      "audio/mpeg": ".mp3",
+      "audio/ogg": ".ogg",
+      "audio/mp4": ".m4a",
+    };
+    const ext = EXT_BY_MIME[contentType] || ".jpg";
+    const day = new Date().toISOString().slice(0, 10);
+    const dayDir = path.join(CHAT_MEDIA_DIR, day);
+    await fs.promises.mkdir(dayDir, { recursive: true });
+
+    const filename = `${crypto.randomUUID()}${ext}`;
+    const filePath = path.join(dayDir, filename);
+    await fs.promises.writeFile(filePath, buffer);
+
+    const localUrl = `/uploads/chat-media/${day}/${filename}`;
+
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      select: { id: true, content: true, attachments: true },
+    });
+    if (message) {
+      const idx = Number.isInteger(targetIndex) && targetIndex >= 0 ? targetIndex : 0;
+      let attachments = parseJsonSafely(message.attachments, null);
+      let attachmentsUpdated = false;
+      if (Array.isArray(attachments) && attachments[idx]) {
+        attachments[idx] = { ...attachments[idx], url: localUrl };
+        attachmentsUpdated = true;
+      } else if (!attachments && idx === 0) {
+        attachments = [{ url: localUrl, type: "image" }];
+        attachmentsUpdated = true;
+      }
+      const isExpiringContent = isFacebookExpiringMediaUrl(message.content);
+      const shouldUpdateContent = isExpiringContent || (!message.content && idx === 0);
+      await prisma.message.update({
+        where: { id: messageId },
+        data: {
+          ...(shouldUpdateContent ? { content: localUrl } : {}),
+          ...(attachmentsUpdated ? { attachments: JSON.stringify(attachments) } : {}),
+        },
+      });
+    }
+    return localUrl;
+  } catch (err) {
+    console.warn("⚠️ [IMAGE-PROXY] Auto-archive buffer failed:", err.message);
+    return null;
+  }
+};
+
 const sendRemoteResponse = async (req, res, response, transformOptions) => {
   let contentType = response.headers.get("content-type") || "";
   const cacheControl = response.headers.get("cache-control");
@@ -505,6 +578,21 @@ const sendRemoteResponse = async (req, res, response, transformOptions) => {
     contentType = "audio/mp4";
   }
 
+  if (req.query?.messageId && responseBuffer.length > 0 && responseBuffer.length <= 25 * 1024 * 1024) {
+    const rawIdx = req.query.index ?? req.query.attachmentIndex;
+    const parsedIdx =
+      rawIdx !== undefined && rawIdx !== null && rawIdx !== ""
+        ? parseInt(String(rawIdx), 10)
+        : 0;
+    archiveBufferToLocal(
+      getSharedPrismaClient(),
+      req.query.messageId,
+      responseBuffer,
+      contentType,
+      parsedIdx,
+    ).catch(() => {});
+  }
+
   const isAudioOrVideoBuffer =
     contentType.startsWith("audio/") ||
     contentType.startsWith("video/") ||
@@ -519,7 +607,6 @@ const sendRemoteResponse = async (req, res, response, transformOptions) => {
     "Content-Type",
     shouldTransform ? `image/${transformOptions.format}` : contentType,
   );
-
   if (!shouldTransform) {
     return sendBufferWithRange(req, res, responseBuffer, contentType, 200);
   }
@@ -1105,10 +1192,12 @@ const proxyImage = async (req, res) => {
         : "";
     const transformOptions = normalizeImageTransformOptions(req.query);
     const isAvatarRequest = Boolean(
-      (customerId && !messageId) ||
-      isAvatarLikeUrl(targetUrl) ||
-      req.query.type === "avatar" ||
-      req.query.fallback === "avatar"
+      !messageId && (
+        customerId ||
+        req.query.type === "avatar" ||
+        req.query.fallback === "avatar" ||
+        isAvatarLikeUrl(targetUrl)
+      )
     );
 
     if (!targetUrl && !messageId && !customerId && !whatsAppMessageId) {

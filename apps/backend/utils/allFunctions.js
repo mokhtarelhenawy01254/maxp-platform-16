@@ -1671,8 +1671,8 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         // Normalize Facebook attachment format for AI service and UI rendering
         attachmentsData = attachmentsData.map((a, idx) => ({
           id: a.id || null,
-          type: a.type || 'image',
-          url: a.payload?.url || a.url || a.payload?.sticker_id || '',
+          type: a.type || (a.image_data ? 'image' : (a.mime_type?.startsWith('image/') ? 'image' : 'image')),
+          url: a.payload?.url || a.image_data?.url || a.file_url || a.url || a.payload?.image_url || a.payload?.sticker_id || '',
           detail: 'high',
           attachmentIndex: idx
         })).filter(a => a.url);

@@ -19,7 +19,9 @@ const axios = require('axios');
 const UPLOADS_ROOT = path.resolve(__dirname, '..', 'uploads');
 const CHAT_MEDIA_DIR = path.join(UPLOADS_ROOT, 'chat-media');
 const MAX_BYTES = 20 * 1024 * 1024;
-const DOWNLOAD_TIMEOUT_MS = 4000;
+const DOWNLOAD_TIMEOUT_MS = 8000;
+const DEFAULT_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36';
 
 const EXT_BY_MIME = {
     'image/jpeg': '.jpg',
@@ -64,11 +66,28 @@ async function archiveExternalMedia(rawUrl) {
     if (!isExternalHttpUrl(url)) return null;
 
     try {
+        let hostname = '';
+        try {
+            hostname = new URL(url).hostname.toLowerCase();
+        } catch { /* ignore */ }
+
+        const isFacebookCdn =
+            hostname.endsWith('fbcdn.net') ||
+            hostname.endsWith('fbsbx.com') ||
+            hostname.endsWith('facebook.com') ||
+            hostname.endsWith('cdninstagram.com') ||
+            hostname.endsWith('instagram.com');
+
         const response = await axios.get(url, {
             responseType: 'arraybuffer',
             timeout: DOWNLOAD_TIMEOUT_MS,
             maxContentLength: MAX_BYTES,
-            headers: { 'User-Agent': 'Mozilla/5.0 (MaxP-Chat-Media-Archiver)' },
+            headers: {
+                'User-Agent': DEFAULT_USER_AGENT,
+                'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                ...(isFacebookCdn ? { 'Referer': 'https://www.facebook.com/' } : {})
+            },
             validateStatus: (s) => s === 200
         });
 

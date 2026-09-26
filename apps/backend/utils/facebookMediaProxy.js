@@ -1,6 +1,9 @@
 const FACEBOOK_PROTECTED_MEDIA_HOST_PATTERNS = [
     /(^|\.)fbcdn\.net$/i,
-    /(^|\.)fbsbx\.com$/i
+    /(^|\.)fbsbx\.com$/i,
+    /(^|\.)facebook\.com$/i,
+    /(^|\.)cdninstagram\.com$/i,
+    /(^|\.)instagram\.com$/i
 ];
 
 const PROXY_IMAGE_ROUTE = '/api/v1/proxy-image';

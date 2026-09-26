@@ -851,14 +851,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                         return;
                       }
                       target.dataset.retried = "true";
-                      try {
-                        const parsed = new URL(target.src);
-                        const rawUrlParam = parsed.searchParams.get("url");
-                        if (rawUrlParam && rawUrlParam !== target.src) {
-                          target.src = rawUrlParam;
-                          return;
-                        }
-                      } catch {}
                       if (message.id) {
                         target.src = buildProxyImageUrl(null, {
                           messageId: message.id,

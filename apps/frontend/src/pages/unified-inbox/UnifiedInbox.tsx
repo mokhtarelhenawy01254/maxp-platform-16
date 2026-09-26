@@ -41,7 +41,7 @@ import StatusDropdown from "../../components/facebook-inbox/StatusDropdown/Statu
 import type { ConversationStatus } from "../../types/inbox.types";
 import PostsManagement from "../comments/PostsManagement";
 import AssignmentDropdown from "../../components/facebook-inbox/AssignmentDropdown/AssignmentDropdown";
-import { buildProxyImageUrl, getImageUrl } from "../../utils/imageUrl";
+import { buildProxyImageUrl, getImageUrl, getInboxMessageMediaUrl } from "../../utils/imageUrl";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📋 Types
@@ -1941,18 +1941,22 @@ const UnifiedInbox: React.FC = () => {
                               )}
 
                               {/* Media from attachments or mediaUrl */}
-                              {Array.isArray(msg.attachments) && msg.attachments.length > 1 ? (
+                              {Array.isArray(msg.attachments) && msg.attachments.length > 0 ? (
                                 <div className="mb-2 flex flex-col gap-2">
                                   {msg.attachments.map((att, idx) => {
-                                    const attUrl = att.url || "";
+                                    const rawAttUrl = att.url || "";
+                                    const attUrl = getInboxMessageMediaUrl(msg.id, rawAttUrl, {
+                                      attachmentIndex: att.attachmentIndex ?? idx,
+                                    });
                                     const isAttImage =
                                       att.type?.toLowerCase().includes("image") ||
+                                      /\.(jpe?g|png|webp|gif)/i.test(rawAttUrl) ||
                                       /\.(jpe?g|png|webp|gif)/i.test(attUrl);
-                                    if (isAttImage && attUrl) {
+                                    if (isAttImage && (attUrl || rawAttUrl)) {
                                       return (
                                         <img
-                                          key={`${attUrl}-${idx}`}
-                                          src={attUrl}
+                                          key={`${rawAttUrl || attUrl}-${idx}`}
+                                          src={attUrl || rawAttUrl}
                                           alt=""
                                           loading="lazy"
                                           className="rounded-lg max-w-full mb-1 cursor-pointer hover:opacity-90"
@@ -1980,9 +1984,12 @@ const UnifiedInbox: React.FC = () => {
                                 const isAudio = msg.type === "audio" || msg.mediaType?.includes("audio");
 
                                 if (isImage) {
+                                  const mediaSrc = getInboxMessageMediaUrl(msg.id, msg.mediaUrl, {
+                                    attachmentIndex: 0,
+                                  });
                                   return (
                                     <img
-                                      src={msg.mediaUrl}
+                                      src={mediaSrc}
                                       alt=""
                                       className="rounded-lg max-w-full mb-1.5 cursor-pointer hover:opacity-90"
                                       onError={(e) => {
@@ -2001,9 +2008,12 @@ const UnifiedInbox: React.FC = () => {
                                 }
 
                                 if (isVideo) {
+                                  const mediaSrc = getInboxMessageMediaUrl(msg.id, msg.mediaUrl, {
+                                    attachmentIndex: 0,
+                                  });
                                   return (
                                     <video
-                                      src={msg.mediaUrl}
+                                      src={mediaSrc}
                                       controls
                                       className="rounded-lg max-w-full mb-1.5"
                                       style={{ maxHeight: "300px" }}
@@ -2014,9 +2024,12 @@ const UnifiedInbox: React.FC = () => {
                                 }
 
                                 if (isAudio) {
+                                  const mediaSrc = getInboxMessageMediaUrl(msg.id, msg.mediaUrl, {
+                                    attachmentIndex: 0,
+                                  });
                                   return (
                                     <audio
-                                      src={msg.mediaUrl}
+                                      src={mediaSrc}
                                       controls
                                       className="w-full mb-1.5"
                                       style={{ minWidth: "200px" }}
@@ -2024,9 +2037,12 @@ const UnifiedInbox: React.FC = () => {
                                   );
                                 }
 
+                                const downloadSrc = getInboxMessageMediaUrl(msg.id, msg.mediaUrl, {
+                                  attachmentIndex: 0,
+                                });
                                 return (
                                   <a
-                                    href={msg.mediaUrl}
+                                    href={downloadSrc}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 rounded-lg mb-1.5 p-2 border"
@@ -2049,26 +2065,43 @@ const UnifiedInbox: React.FC = () => {
                                 if (msg.mediaUrl) return null;
                                 if (!msg.content || !msg.content.startsWith("http")) return null;
                                 const url = msg.content.split(/[\s\n]/)[0] || "";
-                                const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/i.test(url) || url.includes("fbcdn") || url.includes("cdninstagram");
+                                const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/i.test(url) || url.includes("fbcdn") || url.includes("cdninstagram") || url.includes("fbsbx");
                                 const isVideo = /\.(mp4|webm|mov|avi|mkv)(\?|$)/i.test(url);
                                 const isAudio = /\.(mp3|wav|ogg|aac|m4a|opus)(\?|$)/i.test(url);
 
                                 if (isImage) {
+                                  const mediaSrc = getInboxMessageMediaUrl(msg.id, url, { attachmentIndex: 0 });
                                   return (
                                     <img
-                                      src={url}
+                                      src={mediaSrc}
                                       alt=""
                                       className="rounded-lg max-w-full mb-1.5 cursor-pointer hover:opacity-90"
                                       loading="lazy"
-                                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                      onError={(e) => {
+                                        const target = e.currentTarget as HTMLImageElement;
+                                        if (target.dataset.retried) {
+                                          target.style.display = "none";
+                                          return;
+                                        }
+                                        target.dataset.retried = "true";
+                                        if (msg.id) {
+                                          target.src = buildProxyImageUrl(null, {
+                                            messageId: msg.id,
+                                            attachmentIndex: 0,
+                                          });
+                                        } else {
+                                          target.style.display = "none";
+                                        }
+                                      }}
                                     />
                                   );
                                 }
 
                                 if (isVideo) {
+                                  const mediaSrc = getInboxMessageMediaUrl(msg.id, url, { attachmentIndex: 0 });
                                   return (
                                     <video
-                                      src={url}
+                                      src={mediaSrc}
                                       controls
                                       className="rounded-lg max-w-full mb-1.5"
                                       style={{ maxHeight: "300px" }}
@@ -2079,9 +2112,10 @@ const UnifiedInbox: React.FC = () => {
                                 }
 
                                 if (isAudio) {
+                                  const mediaSrc = getInboxMessageMediaUrl(msg.id, url, { attachmentIndex: 0 });
                                   return (
                                     <audio
-                                      src={url}
+                                      src={mediaSrc}
                                       controls
                                       className="w-full mb-1.5"
                                       style={{ minWidth: "200px" }}

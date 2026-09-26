@@ -14,13 +14,15 @@ const OPTIMIZABLE_UPLOAD_IMAGE_EXTENSIONS = new Set([
 const PROXYABLE_REMOTE_IMAGE_PATTERNS = [
   /^https:\/\/(?:[^/]+\.)?fbcdn\.net\//i,
   /^https:\/\/(?:[^/]+\.)?fbsbx\.com\//i,
-  /^https:\/\/(?:[^/]+\.)?facebook\.com\/(?:file_stream|audioclip|video)/i,
+  /^https:\/\/(?:[^/]+\.)?facebook\.com\//i,
+  /^https:\/\/(?:[^/]+\.)?cdninstagram\.com\//i,
+  /^https:\/\/(?:[^/]+\.)?instagram\.com\//i,
   /^https:\/\/files\.easy-orders\.net\//i,
   /^https:\/\/images\.unsplash\.com\//i,
   /^https:\/\/lh3\.googleusercontent\.com\/aida-public\//i,
   /^https:\/\/(?:www\.)?mokhtarelhenawy\.online\//i,
   /^https?:\/\/[^/]+\/wp-content\/uploads\//i,
-  /^https:\/\/pps\.whatsapp\.net\//i,
+  /^https:\/\/(?:[^/]+\.)?whatsapp\.net\//i,
 ] as const;
 
 interface OptimizedUploadImageOptions {
@@ -444,22 +446,23 @@ export const getInboxMessageMediaUrl = (
     media?: "audio" | "image" | "video" | "file";
   },
 ): string => {
-  if (rawUrl && typeof rawUrl === "string") {
-    const trimmed = rawUrl.trim();
-    if (trimmed.startsWith("meta-media:")) {
-      return buildProxyImageUrl(trimmed, {
+  if (!rawUrl || !rawUrl.trim()) {
+    if (messageId) {
+      return buildProxyImageUrl(null, {
         messageId,
         attachmentIndex: options?.attachmentIndex,
         attachmentId: options?.attachmentId,
         media: options?.media,
       });
     }
+    return "";
   }
 
-  const normalized = getImageUrl(rawUrl);
+  const trimmed = rawUrl.trim();
 
-  if (normalized && shouldProxyRemoteImageUrl(normalized)) {
-    return buildProxyImageUrl(normalized, {
+  // If meta-media: format (WhatsApp Cloud API / Meta internal media ID)
+  if (trimmed.startsWith("meta-media:")) {
+    return buildProxyImageUrl(trimmed, {
       messageId,
       attachmentIndex: options?.attachmentIndex,
       attachmentId: options?.attachmentId,
@@ -467,8 +470,40 @@ export const getInboxMessageMediaUrl = (
     });
   }
 
-  if (!normalized && messageId) {
-    return buildProxyImageUrl(null, {
+  // If already a proxy-image URL, ensure messageId & attachmentIndex & attachmentId & media are attached
+  if (trimmed.includes("/proxy-image")) {
+    try {
+      const baseOrigin =
+        typeof window !== "undefined" && window.location?.origin
+          ? window.location.origin
+          : "https://app.local";
+      const parsed = new URL(trimmed, baseOrigin);
+      if (messageId && !parsed.searchParams.has("messageId")) {
+        parsed.searchParams.set("messageId", messageId);
+      }
+      if (
+        options?.attachmentIndex !== undefined &&
+        options?.attachmentIndex !== null &&
+        !parsed.searchParams.has("attachmentIndex") &&
+        !parsed.searchParams.has("index")
+      ) {
+        parsed.searchParams.set("attachmentIndex", String(options.attachmentIndex));
+      }
+      if (options?.attachmentId && !parsed.searchParams.has("attachmentId")) {
+        parsed.searchParams.set("attachmentId", options.attachmentId);
+      }
+      if (options?.media && !parsed.searchParams.has("media")) {
+        parsed.searchParams.set("media", options.media);
+      }
+      return parsed.pathname + parsed.search;
+    } catch {
+      return trimmed;
+    }
+  }
+
+  // If it's a remote URL that needs proxying (Facebook, WhatsApp, etc.)
+  if (shouldProxyRemoteImageUrl(trimmed)) {
+    return buildProxyImageUrl(trimmed, {
       messageId,
       attachmentIndex: options?.attachmentIndex,
       attachmentId: options?.attachmentId,
@@ -476,6 +511,7 @@ export const getInboxMessageMediaUrl = (
     });
   }
 
+  const normalized = getImageUrl(trimmed);
   if (normalized && normalized.includes("/uploads/") && !normalized.includes("?")) {
     return `${normalized}?v=2`;
   }

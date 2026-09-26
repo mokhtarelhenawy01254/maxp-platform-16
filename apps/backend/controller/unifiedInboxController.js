@@ -5,6 +5,7 @@
  */
 
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
+const { proxyFacebookMediaDeep, proxyMessageMediaUrl } = require('../utils/facebookMediaProxy');
 
 const tryParseJSON = (val) => {
   if (typeof val === 'object') return val;
@@ -516,16 +517,21 @@ async function getStandardConversationMessages(req, res, companyId, id, skip, ta
                 }))
                 : [];
 
+            const proxiedAttachments = proxyFacebookMediaDeep(normalizedAttachments, { messageId: msg.id });
+            const rawMediaUrl = normalizedAttachments[0]?.url || attachments[0]?.url || metadata.attachmentUrl || null;
+            const proxiedMediaUrl = proxiedAttachments[0]?.url || proxyMessageMediaUrl(msg.id, rawMediaUrl);
+            const proxiedContent = proxyMessageMediaUrl(msg.id, msg.content || '');
+
             return {
                 id: msg.id,
                 platform: conversation.channel?.toLowerCase() || 'facebook',
-                content: msg.content || '',
+                content: proxiedContent,
                 type: msg.type?.toLowerCase() || 'text',
                 isFromCustomer: msg.isFromCustomer,
                 timestamp: msg.createdAt,
                 status: msg.isRead ? 'read' : 'delivered',
-                attachments: normalizedAttachments,
-                mediaUrl: normalizedAttachments[0]?.url || attachments[0]?.url || metadata.attachmentUrl || null,
+                attachments: proxiedAttachments,
+                mediaUrl: proxiedMediaUrl,
                 mediaType: normalizedAttachments[0]?.type || attachments[0]?.type || metadata.attachmentType || null,
                 mediaFileName: attachments[0]?.name || null,
                 quotedMessage: quotedMessage,
