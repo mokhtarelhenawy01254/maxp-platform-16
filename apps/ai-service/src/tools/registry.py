@@ -63,6 +63,7 @@ CORE_TOOL_NAMES: set[str] = {
     "shipping_rates",
     "knowledge_search",
     "agent_handoff_to",
+    "unlock_advanced_tools",
     "knowledge_ask_merchant",
 }
 
@@ -107,7 +108,11 @@ ADVANCED_TOOL_NAMES: set[str] = {
     "inventory_burn_rate_forecast",
 }
 
-READ_TOOL_NAMES: set[str] = CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
+GATED_CORE_TOOL_NAMES: set[str] = {
+    "unlock_advanced_tools",
+}
+
+READ_TOOL_NAMES: set[str] = (CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
     "category_list",
     "offers_list_active",
     "coupon_validate",
@@ -117,7 +122,8 @@ READ_TOOL_NAMES: set[str] = CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
     "order_lookup_by_phone",
     "session_search",
     "delegate_task",
-}
+}) - GATED_CORE_TOOL_NAMES
+
 
 WRITE_TOOL_NAMES: set[str] = {
     "product_create",
