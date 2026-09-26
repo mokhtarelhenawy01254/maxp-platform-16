@@ -1,6 +1,7 @@
 export interface OrderItem {
   id: string;
   productId?: string;
+  variantId?: string | null;
   productName: string;
   productColor?: string;
   productSize?: string;

@@ -8292,8 +8292,10 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
 
         // Create new items
         for (const item of items) {
-          // التحقق من وجود المنتج قبل إضافته
+          // التحقق من وجود المنتج والمتغير قبل إضافته
           let validProductId = null;
+          let validVariantId = null;
+
           if (item.productId) {
             try {
               const product = await prisma.product.findUnique({
@@ -8301,14 +8303,40 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
                 select: { id: true, companyId: true }
               });
 
-              // التأكد من أن المنتج موجود وأنه تابع لنفس الشركة
               if (product && product.companyId === companyId) {
                 validProductId = item.productId;
               } else {
-                console.log(`⚠️ [ORDER-UPDATE] Product ${item.productId} not found or belongs to different company, using null`);
+                // If productId is not a Product ID, check if it's a ProductVariant ID
+                const variantAsProduct = await prisma.productVariant.findUnique({
+                  where: { id: item.productId },
+                  include: { product: true }
+                });
+                if (variantAsProduct && variantAsProduct.product?.companyId === companyId) {
+                  validProductId = variantAsProduct.productId;
+                  validVariantId = variantAsProduct.id;
+                } else {
+                  console.log(`⚠️ [ORDER-UPDATE] Product ${item.productId} not found or belongs to different company, using null`);
+                }
               }
             } catch (productError) {
               console.log(`⚠️ [ORDER-UPDATE] Error checking product ${item.productId}:`, productError.message);
+            }
+          }
+
+          const candidateVariantId = item.variantId || item.metadata?.variantId;
+          if (candidateVariantId && !validVariantId) {
+            try {
+              const variant = await prisma.productVariant.findUnique({
+                where: { id: candidateVariantId }
+              });
+              if (variant) {
+                validVariantId = variant.id;
+                if (!validProductId && variant.productId) {
+                  validProductId = variant.productId;
+                }
+              }
+            } catch (variantError) {
+              console.log(`⚠️ [ORDER-UPDATE] Error checking variant ${candidateVariantId}:`, variantError.message);
             }
           }
 
@@ -8316,12 +8344,14 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
             data: {
               orderId: regularOrder.id,
               productId: validProductId, // null إذا لم يكن المنتج موجوداً
+              variantId: validVariantId,
               quantity: item.quantity,
               price: item.price,
               total: item.total,
               productName: item.productName || item.name || null, // ✅ FIX: Persist product details
               productColor: item.productColor || item.color || null, // ✅ FIX: Persist product details
               productSize: item.productSize != null ? String(item.productSize) : (item.size != null ? String(item.size) : null), // ✅ FIX: Persist product details
+              productImage: item.productImage || item.image || item.metadata?.image || null,
               productDetails: item.productDetails || item.details || null, // ✅ FIX: Persist product details
               productSku: item.productSku || item.sku || null,
               metadata: JSON.stringify(item.metadata || {})
@@ -8342,6 +8372,31 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
             updatedAt: new Date()
           }
         });
+
+        // Synchronize twin GuestOrder if it exists
+        const twinGuestOrder = await prisma.guestOrder.findFirst({
+          where: { orderNumber: regularOrder.orderNumber, companyId }
+        });
+        if (twinGuestOrder) {
+          const guestMetadata = safeParseOrderMetadata(twinGuestOrder.metadata);
+          if (discountReason !== undefined) {
+            guestMetadata.discountReason = discountReason ? String(discountReason).trim() : null;
+          } else if (nextDiscount > 0 && !guestMetadata.discountReason) {
+            guestMetadata.discountReason = currentMetadata.discountReason || 'خصم يدوي';
+          }
+          await prisma.guestOrder.update({
+            where: { id: twinGuestOrder.id },
+            data: {
+              items: JSON.stringify(items),
+              total: subtotal,
+              shippingCost: shipping,
+              discountAmount: nextDiscount,
+              finalTotal: calculatedTotal,
+              metadata: JSON.stringify(guestMetadata),
+              updatedAt: new Date()
+            }
+          });
+        }
       }, {
         maxWait: 30000,
         timeout: 30000

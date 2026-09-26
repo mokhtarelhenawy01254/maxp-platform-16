@@ -504,6 +504,7 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
             return {
               id: item.id || Math.random().toString(),
               productId: item.productId || "",
+              variantId: item.variantId || item.variant?.id || itemMetadata.variantId || null,
               productName:
                 item.name ||
                 item.productName ||
@@ -954,9 +955,12 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
               : 1;
           return {
             productId: item.productId || item.id || "",
+            variantId: item.variantId || item.metadata?.variantId || null,
             productName: item.productName || item.name || "",
             productColor: item.productColor ? String(item.productColor) : null,
             productSize: item.productSize != null ? String(item.productSize) : null,
+            productSku: item.productSku || item.sku || item.metadata?.sku || null,
+            productImage: item.productImage || item.image || item.metadata?.image || null,
             price,
             quantity,
             total: price * quantity,

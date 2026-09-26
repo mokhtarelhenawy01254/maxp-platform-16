@@ -767,7 +767,8 @@ const OrderDetails: React.FC = () => {
     const itemSku = variant?.sku || product.sku;
 
     const newItem = {
-      productId: variant?.id || product.id,
+      productId: product.id,
+      variantId: variant?.id || null,
       productName: product.name,
       price: actualPrice,
       quantity: 1,
@@ -779,7 +780,7 @@ const OrderDetails: React.FC = () => {
       metadata: {
         ...metadata,
         image: productImage, // Add to metadata as backup
-        variantId: variant?.id,
+        variantId: variant?.id || null,
         sku: itemSku,
         originalProductId: product.id,
       },
