@@ -9,8 +9,8 @@ jest.mock("sonner", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }));
 
-const buildTask = (status: Task["status"]): Task => ({
-  id: "task-1",
+const buildTask = (status: Task["status"], id: string = "task-1"): Task => ({
+  id,
   projectId: "project-1",
   projectName: "إطلاق المنصة",
   categoryId: "category-1",
@@ -45,6 +45,7 @@ const buildTask = (status: Task["status"]): Task => ({
 interface TaskTableRenderOptions {
   updateTaskStatus?: jest.Mock;
   duplicateTask?: jest.Mock;
+  canApprove?: boolean;
 }
 
 const renderTaskTable = (
@@ -54,6 +55,7 @@ const renderTaskTable = (
   const {
     updateTaskStatus = jest.fn(),
     duplicateTask = jest.fn(),
+    canApprove = false,
   } = options;
 
   render(
@@ -64,6 +66,7 @@ const renderTaskTable = (
       }}
     >
       <TaskTable
+        canApprove={canApprove}
         paginatedTasks={[task]}
         filteredAndSortedTasks={[task]}
         searchQuery=""
@@ -153,6 +156,40 @@ describe("TaskTable employee status actions", () => {
     renderTaskTable(task);
     expect(screen.getAllByText("in_review").length).toBeGreaterThan(0);
   });
+
+  it("approves an in_review task when canApprove is true", () => {
+    const { updateTaskStatus } = renderTaskTable(buildTask("in_review"), {
+      canApprove: true,
+    });
+
+    const approveButton = screen.getAllByRole("button", { name: /اعتماد/i })[0];
+    expect(approveButton).toBeDefined();
+    fireEvent.click(approveButton);
+
+    expect(updateTaskStatus).toHaveBeenCalledWith("task-1", "completed");
+  });
+
+  it("requests revisions for an in_review task when canApprove is true", () => {
+    const { updateTaskStatus } = renderTaskTable(buildTask("in_review"), {
+      canApprove: true,
+    });
+
+    const reviseButton = screen.getAllByRole("button", { name: /طلب تعديلات/i })[0];
+    expect(reviseButton).toBeDefined();
+    fireEvent.click(reviseButton);
+
+    expect(updateTaskStatus).toHaveBeenCalledWith("task-1", "in_progress");
+  });
+
+  it("renders pending approval badge and hides approval buttons when canApprove is false", () => {
+    renderTaskTable(buildTask("in_review"), {
+      canApprove: false,
+    });
+
+    expect(screen.getAllByText(/بانتظار الاعتماد/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /^اعتماد$/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /طلب تعديلات/i })).toBeNull();
+  });
 });
 
 describe("TaskTable duplicate task", () => {
@@ -173,10 +210,10 @@ describe("TaskTable duplicate task", () => {
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
       >
         <TaskTable
-          paginatedTasks={[buildTask("pending"), buildTask("in_progress")]}
+          paginatedTasks={[buildTask("pending", "task-1"), buildTask("in_progress", "task-2")]}
           filteredAndSortedTasks={[
-            buildTask("pending"),
-            buildTask("in_progress"),
+            buildTask("pending", "task-1"),
+            buildTask("in_progress", "task-2"),
           ]}
           searchQuery=""
           selectedTasks={[]}

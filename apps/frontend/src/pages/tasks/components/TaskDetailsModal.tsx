@@ -153,6 +153,8 @@ export const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
               >
                 <option value="pending">في الانتظار</option>
                 <option value="in_progress">قيد التنفيذ</option>
+                <option value="in_review">بانتظار الاعتماد</option>
+                <option value="on_hold">معلّقة</option>
                 <option value="completed">مكتمل</option>
                 <option value="cancelled">ملغي</option>
               </select>

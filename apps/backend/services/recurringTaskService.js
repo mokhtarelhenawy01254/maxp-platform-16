@@ -126,28 +126,30 @@ const recurringTaskService = {
 
       const prisma = getSharedPrismaClient();
 
-      // Guard: Prevent duplicate spawn if a pending recurrence already exists
+      // Guard: Prevent duplicate spawn if a pending or active successor recurrence already exists
       const existingPendingSpawn = await prisma.task.findFirst({
         where: {
           companyId: completedTask.companyId,
-          status: "PENDING",
+          status: { in: ["PENDING", "IN_PROGRESS", "IN_REVIEW"] },
           OR: [
             { parentTaskId: completedTask.parentTaskId || completedTask.id },
             { id: completedTask.parentTaskId || completedTask.id },
           ],
           title: completedTask.title,
           isRecurring: true,
+          id: { not: completedTask.id },
         },
       });
 
-      if (existingPendingSpawn && existingPendingSpawn.id !== completedTask.id) {
-        console.log(`[recurringTaskService] Pending occurrence already exists (${existingPendingSpawn.id}), skipping spawn.`);
+      if (existingPendingSpawn) {
+        console.log(`[recurringTaskService] Pending or active occurrence already exists (${existingPendingSpawn.id}), skipping spawn.`);
         return existingPendingSpawn;
       }
 
+      const anchorDate = completedTask.completedDate || completedTask.dueDate || new Date();
       const dates = recurringTaskService.calculateNextDates(
         completedTask.startDate,
-        completedTask.dueDate,
+        anchorDate,
         rule
       );
 
@@ -240,15 +242,17 @@ const recurringTaskService = {
     const prisma = getSharedPrismaClient();
     try {
       const now = new Date();
-      // Find completed or overdue recurring tasks
+      // Find completed or review-submitted recurring tasks
       const recurringTasks = await prisma.task.findMany({
         where: {
           isRecurring: true,
           recurringRule: { not: null },
-          status: "COMPLETED",
-          completedDate: { lte: now },
+          OR: [
+            { status: "COMPLETED", completedDate: { lte: now } },
+            { status: "IN_REVIEW" },
+          ],
         },
-        orderBy: { completedDate: "desc" },
+        orderBy: { updatedAt: "desc" },
       });
 
       console.log(`🔁 [recurringTaskService] Processing ${recurringTasks.length} completed recurring tasks for recurrence...`);

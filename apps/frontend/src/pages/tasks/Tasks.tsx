@@ -12,6 +12,8 @@ import {
   CheckIcon,
   ClockIcon,
   ExclamationTriangleIcon,
+  ClipboardDocumentCheckIcon,
+  PauseCircleIcon,
 } from "@heroicons/react/24/outline";
 import { TaskFilters } from "./components/TaskFilters";
 import { CreateTaskModal } from "./components/CreateTaskModal";
@@ -251,6 +253,12 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     "OWNER",
     "COMPANY_ADMIN",
     "SUPER_ADMIN",
+  ].includes(user?.role || "");
+  const isApprover = [
+    "SUPER_ADMIN",
+    "COMPANY_ADMIN",
+    "OWNER",
+    "MANAGER",
   ].includes(user?.role || "");
 
   useEffect(() => {
@@ -991,6 +999,10 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         return <ClockIcon className="h-5 w-5 text-yellow-500" />;
       case "in_progress":
         return <ExclamationTriangleIcon className="h-5 w-5 text-blue-500" />;
+      case "in_review":
+        return <ClipboardDocumentCheckIcon className="h-5 w-5 text-purple-500" />;
+      case "on_hold":
+        return <PauseCircleIcon className="h-5 w-5 text-amber-500" />;
       case "completed":
         return <CheckIcon className="h-5 w-5 text-green-500" />;
       case "cancelled":
@@ -1006,6 +1018,10 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300";
       case "in_progress":
         return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300";
+      case "in_review":
+        return "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300";
+      case "on_hold":
+        return "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300";
       case "completed":
         return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300";
       case "cancelled":
@@ -1021,6 +1037,10 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         return "في الانتظار";
       case "in_progress":
         return "قيد التنفيذ";
+      case "in_review":
+        return "بانتظار الاعتماد";
+      case "on_hold":
+        return "معلّقة";
       case "completed":
         return "مكتمل";
       case "cancelled":
@@ -1346,6 +1366,17 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
                   >
                     إكمال
                   </Button>
+                  {isApprover && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 text-xs font-medium"
+                      onClick={() => handleBulkStatusChange("completed")}
+                      title="اعتماد المهام المحددة"
+                    >
+                      اعتماد
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     size="sm"
@@ -1370,6 +1401,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
           ) : null}
 
           <TaskTable
+            canApprove={isApprover}
             paginatedTasks={paginatedTasks}
             filteredAndSortedTasks={filteredAndSortedTasks}
             searchQuery={searchQuery}
@@ -1626,6 +1658,17 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
                 >
                   إكمال
                 </Button>
+                {isApprover && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => handleBulkStatusChange("completed")}
+                    title="اعتماد المهام المحددة"
+                  >
+                    اعتماد
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2">

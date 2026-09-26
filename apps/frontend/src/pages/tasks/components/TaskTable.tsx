@@ -22,6 +22,7 @@ import { Input } from "../../../components/ui/input";
 import type { Task, TaskSortBy } from "../types";
 
 export interface TaskTableProps {
+  canApprove?: boolean;
   paginatedTasks: Task[];
   filteredAndSortedTasks: Task[];
   searchQuery: string;
@@ -153,6 +154,11 @@ const statusNeedsComplete = (status: string) => {
   return norm === "in_progress";
 };
 
+const statusNeedsReview = (status: string) => {
+  const norm = String(status || "").toLowerCase();
+  return norm === "in_review";
+};
+
 const buildPageNumbers = (current: number, total: number): (number | "...")[] => {
   if (total <= 7) {
     return Array.from({ length: total }, (_, i) => i + 1);
@@ -180,6 +186,7 @@ const buildPageNumbers = (current: number, total: number): (number | "...")[] =>
 };
 
 export const TaskTable: React.FC<TaskTableProps> = ({
+  canApprove = true,
   paginatedTasks,
   filteredAndSortedTasks,
   searchQuery,
@@ -519,6 +526,38 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                       إكمال
                     </Button>
                   ) : null}
+                  {statusNeedsReview(task.status) ? (
+                    canApprove ? (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-8 rounded-full px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                          onClick={() => updateTaskStatus(task.id, "completed")}
+                          title="اعتماد وإنجاز المهمة"
+                        >
+                          اعتماد
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 rounded-full px-2.5 text-xs text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                          onClick={() => updateTaskStatus(task.id, "in_progress")}
+                          title="طلب تعديلات على المهمة"
+                        >
+                          طلب تعديلات
+                        </Button>
+                      </>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="h-8 rounded-full px-2.5 text-xs border-purple-300 bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300"
+                      >
+                        بانتظار الاعتماد
+                      </Badge>
+                    )
+                  ) : null}
                 </div>
 
                 <div className="flex items-center gap-0.5">
@@ -794,6 +833,42 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                           >
                             إكمال
                           </Button>
+                        ) : null}
+                        {statusNeedsReview(task.status) ? (
+                          canApprove ? (
+                            <>
+                              <Button
+                                type="button"
+                                size="sm"
+                                className="h-8 rounded-full px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                onClick={() =>
+                                  updateTaskStatus(task.id, "completed")
+                                }
+                                title="اعتماد وإنجاز المهمة"
+                              >
+                                اعتماد
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 rounded-full px-2.5 text-xs text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                                onClick={() =>
+                                  updateTaskStatus(task.id, "in_progress")
+                                }
+                                title="طلب تعديلات على المهمة"
+                              >
+                                طلب تعديلات
+                              </Button>
+                            </>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="h-8 rounded-full px-2.5 text-xs border-purple-300 bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300"
+                            >
+                              بانتظار الاعتماد
+                            </Badge>
+                          )
                         ) : null}
 
                         <Button

@@ -7,21 +7,46 @@ const verifyToken = require("../utils/verifyToken");
 const { cacheMiddleware } = require("../middleware/performanceOptimization");
 
 const MANAGE_GOALS_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"];
+const MANAGE_TASKS_ADMIN_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"];
 
 // Apply authentication middleware to all routes
 router.use(verifyToken.authenticateToken);
 
 // ==================== Templates Routes (MUST be before /:id) ====================
 router.get("/templates", taskController.getTemplates);
-router.post("/templates", taskController.createTemplate);
-router.put("/templates/:id", taskController.updateTemplate);
-router.delete("/templates/:id", taskController.deleteTemplate);
+router.post(
+  "/templates",
+  verifyToken.requireRole(MANAGE_TASKS_ADMIN_ROLES),
+  taskController.createTemplate,
+);
+router.put(
+  "/templates/:id",
+  verifyToken.requireRole(MANAGE_TASKS_ADMIN_ROLES),
+  taskController.updateTemplate,
+);
+router.delete(
+  "/templates/:id",
+  verifyToken.requireRole(MANAGE_TASKS_ADMIN_ROLES),
+  taskController.deleteTemplate,
+);
 
 // ==================== Categories Routes (MUST be before /:id) ====================
 router.get("/categories/list", taskController.getCategories);
-router.post("/categories", taskController.createCategory);
-router.put("/categories/:id", taskController.updateCategory);
-router.delete("/categories/:id", taskController.deleteCategory);
+router.post(
+  "/categories",
+  verifyToken.requireRole(MANAGE_TASKS_ADMIN_ROLES),
+  taskController.createCategory,
+);
+router.put(
+  "/categories/:id",
+  verifyToken.requireRole(MANAGE_TASKS_ADMIN_ROLES),
+  taskController.updateCategory,
+);
+router.delete(
+  "/categories/:id",
+  verifyToken.requireRole(MANAGE_TASKS_ADMIN_ROLES),
+  taskController.deleteCategory,
+);
 
 // ==================== Integrations Routes (MUST be before /:id) ====================
 router.get(

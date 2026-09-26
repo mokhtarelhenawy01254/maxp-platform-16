@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeftIcon,
+  ArrowPathIcon,
   CalendarIcon,
+  CheckCircleIcon,
   CheckIcon,
   ClockIcon,
   EyeIcon,
@@ -147,6 +149,8 @@ interface TaskRunningTimer {
 const STATUS_OPTIONS = [
   { value: "PENDING", label: "في الانتظار" },
   { value: "IN_PROGRESS", label: "قيد التنفيذ" },
+  { value: "IN_REVIEW", label: "بانتظار الاعتماد" },
+  { value: "ON_HOLD", label: "معلّقة" },
   { value: "COMPLETED", label: "مكتمل" },
   { value: "CANCELLED", label: "ملغي" },
 ];
@@ -421,6 +425,10 @@ const getStatusBadgeClassName = (status: string) => {
       return "border-transparent bg-amber-500/12 text-amber-700 dark:bg-amber-500/18 dark:text-amber-300";
     case "IN_PROGRESS":
       return "border-transparent bg-primary/12 text-primary dark:bg-primary/18 dark:text-primary";
+    case "IN_REVIEW":
+      return "border-transparent bg-purple-500/12 text-purple-700 dark:bg-purple-500/18 dark:text-purple-300";
+    case "ON_HOLD":
+      return "border-transparent bg-amber-500/12 text-amber-700 dark:bg-amber-500/18 dark:text-amber-300";
     case "COMPLETED":
       return "border-transparent bg-emerald-500/12 text-emerald-700 dark:bg-emerald-500/18 dark:text-emerald-300";
     case "CANCELLED":
@@ -553,6 +561,7 @@ const TaskDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const activeCompanyId = user?.companyId ?? null;
+  const isApprover = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"].includes(user?.role || "");
 
   const [task, setTask] = useState<TaskDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1264,6 +1273,36 @@ const TaskDetailsPage: React.FC = () => {
                   )}
                 </Button>
               ) : null}
+
+              {task.status === "IN_REVIEW" && (
+                isApprover ? (
+                  <>
+                    <Button
+                      type="button"
+                      className="h-11 justify-center rounded-2xl text-sm sm:h-10 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      onClick={() => void updateTask({ status: "COMPLETED" })}
+                      title="اعتماد وإنجاز المهمة"
+                    >
+                      <CheckCircleIcon className="size-4" />
+                      اعتماد
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 justify-center rounded-2xl text-sm sm:h-10 text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                      onClick={() => void updateTask({ status: "IN_PROGRESS" })}
+                      title="طلب تعديلات على المهمة"
+                    >
+                      <ArrowPathIcon className="size-4" />
+                      طلب تعديلات
+                    </Button>
+                  </>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                    بانتظار الاعتماد
+                  </span>
+                )
+              )}
 
               <Button
                 type="button"

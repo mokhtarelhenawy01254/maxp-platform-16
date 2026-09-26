@@ -551,6 +551,11 @@ const buildTaskSummaryInclude = () => ({
       },
     },
   },
+  task_dependencies_task_dependencies_taskIdTotasks: {
+    select: {
+      dependsOnId: true,
+    },
+  },
 });
 
 const formatTaskSummary = (task) => ({
@@ -595,7 +600,13 @@ const formatTaskSummary = (task) => ({
       ? 0
       : Number(task.metricCurrentValue),
   tags: parseStringArray(task.tags),
-  dependencies: parseStringArray(task.dependencies),
+  dependencies: (() => {
+    const tableDeps = (task.task_dependencies_task_dependencies_taskIdTotasks || []).map(
+      (d) => d.dependsOnId
+    );
+    const jsonDeps = parseStringArray(task.dependencies);
+    return Array.from(new Set([...tableDeps, ...jsonDeps]));
+  })(),
   createdAt: task.createdAt,
   updatedAt: task.updatedAt,
 });
@@ -1552,7 +1563,7 @@ const taskController = {
           previousTask: existingTask,
         });
 
-        if (normalizedStatus === "COMPLETED" && task?.isRecurring) {
+        if ((normalizedStatus === "COMPLETED" || (normalizedStatus === "IN_REVIEW" && isAssigneeOnly)) && task?.isRecurring) {
           recurringTaskService.handleTaskCompletion(task, req.user?.userId).catch((err) => {
             console.error("[taskController] Failed to spawn recurring task in legacy branch:", err);
           });
@@ -1761,7 +1772,7 @@ const taskController = {
         previousTask: existingTask,
       });
 
-      if (normalizedStatus === "COMPLETED" && task?.isRecurring) {
+      if ((normalizedStatus === "COMPLETED" || (normalizedStatus === "IN_REVIEW" && isAssigneeOnly)) && task?.isRecurring) {
         recurringTaskService.handleTaskCompletion(task, req.user?.userId).catch((err) => {
           console.error("[taskController] Failed to spawn recurring task:", err);
         });
@@ -1827,6 +1838,21 @@ const taskController = {
         return res.status(404).json({
           success: false,
           error: "المهمة غير موجودة",
+        });
+      }
+
+      const currentUserId = req.user?.userId || req.user?.id;
+      const isManagerOrAdmin = [
+        "SUPER_ADMIN",
+        "COMPANY_ADMIN",
+        "OWNER",
+        "MANAGER",
+      ].includes(req.user?.role);
+
+      if (!isManagerOrAdmin && existingTask.createdBy !== currentUserId) {
+        return res.status(403).json({
+          success: false,
+          error: "ليس لديك صلاحية حذف هذه المهمة (ليست من إنشائك ولست مديراً)",
         });
       }
 
@@ -4481,6 +4507,18 @@ const taskController = {
           },
         },
       });
+
+      // Keep Task.dependencies JSON column in sync
+      const allDeps = await getSharedPrismaClient().taskDependency.findMany({
+        where: { taskId, companyId },
+        select: { dependsOnId: true },
+      });
+      const depIds = allDeps.map((d) => d.dependsOnId);
+      await getSharedPrismaClient().task.updateMany({
+        where: { id: taskId, companyId },
+        data: { dependencies: JSON.stringify(depIds) },
+      });
+
       const formatted = {
         ...dependency,
         task: dependency.task || dependency.tasks_task_dependencies_taskIdTotasks,
@@ -4499,10 +4537,30 @@ const taskController = {
       const companyId = req.user.companyId;
       const { dependencyId } = req.params;
 
-      await getSharedPrismaClient().taskDependency.deleteMany({
+      const existing = await getSharedPrismaClient().taskDependency.findFirst({
         where: { id: dependencyId, companyId },
       });
-      res.json({ success: true, message: "تم حذف التبعية" });
+
+      if (existing) {
+        const { taskId } = existing;
+        await getSharedPrismaClient().taskDependency.deleteMany({
+          where: { id: dependencyId, companyId },
+        });
+
+        const allDeps = await getSharedPrismaClient().taskDependency.findMany({
+          where: { taskId, companyId },
+          select: { dependsOnId: true },
+        });
+        const depIds = allDeps.map((d) => d.dependsOnId);
+        await getSharedPrismaClient().task.updateMany({
+          where: { id: taskId, companyId },
+          data: { dependencies: depIds.length > 0 ? JSON.stringify(depIds) : null },
+        });
+
+        return res.json({ success: true, message: "تم حذف التبعية" });
+      }
+
+      res.status(404).json({ success: false, error: "التبعية غير موجودة" });
     } catch (error) {
       console.error("Error removing dependency:", error);
       res.status(500).json({ success: false, error: "فشل في حذف التبعية" });

@@ -553,18 +553,38 @@ const taskExternalController = {
 
       const actorUserId = actingUserId;
 
+      // Check whether acting user is assignee-only (non-manager/admin)
+      const actingUser = await prisma.user.findFirst({
+        where: { id: actorUserId, companyId },
+        select: { id: true, role: true }
+      });
+
+      const isManagerOrAdmin = actingUser && [
+        'SUPER_ADMIN',
+        'COMPANY_ADMIN',
+        'OWNER',
+        'MANAGER'
+      ].includes(String(actingUser.role || '').toUpperCase());
+
+      const isAssigneeOnly = !isManagerOrAdmin && currentTask.createdBy !== actorUserId && currentTask.assignedTo === actorUserId;
+
+      let effectiveStatus = normalizedStatus;
+      if (isAssigneeOnly && normalizedStatus === 'COMPLETED') {
+        effectiveStatus = 'IN_REVIEW';
+      }
+
       const nextProgress = progress !== undefined
         ? Number(progress) || 0
-        : normalizedStatus === 'COMPLETED'
+        : effectiveStatus === 'COMPLETED' || effectiveStatus === 'IN_REVIEW'
           ? 100
           : currentTask.progress;
 
       const updatedTask = await prisma.task.update({
         where: { id },
         data: {
-          status: normalizedStatus,
+          status: effectiveStatus,
           progress: nextProgress,
-          completedDate: normalizedStatus === 'COMPLETED' ? new Date() : null
+          completedDate: effectiveStatus === 'COMPLETED' ? new Date() : null
         },
         include: {
           project: {
@@ -586,7 +606,7 @@ const taskExternalController = {
         action: 'external_status_update',
         field: 'status',
         oldValue: currentTask.status,
-        newValue: normalizedStatus,
+        newValue: effectiveStatus,
         description: `Task status updated by external integration: ${integrationName}`
       });
 
@@ -596,7 +616,7 @@ const taskExternalController = {
         actorUserId,
         type: 'status_changed',
         title: 'تحديث خارجي لحالة المهمة',
-        message: `تم تحديث حالة المهمة "${updatedTask.title}" إلى ${taskNotificationService.helpers.normalizeStatusLabel(normalizedStatus)} من خلال ${integrationName}`,
+        message: `تم تحديث حالة المهمة "${updatedTask.title}" إلى ${taskNotificationService.helpers.normalizeStatusLabel(effectiveStatus)} من خلال ${integrationName}`,
         includeAssignee: true,
         includeCreator: true,
         includeWatchers: true,
@@ -605,7 +625,7 @@ const taskExternalController = {
           taskTitle: updatedTask.title,
           variables: taskNotificationService.helpers.buildTaskVariables(updatedTask, {
             oldStatus: taskNotificationService.helpers.normalizeStatusLabel(currentTask.status),
-            newStatus: taskNotificationService.helpers.normalizeStatusLabel(normalizedStatus)
+            newStatus: taskNotificationService.helpers.normalizeStatusLabel(effectiveStatus)
           })
         },
         logActivity: true,
