@@ -20,6 +20,7 @@ const DIRECT_ALLOWED_URL_PATTERNS = [
   /^http:\/\/mokhtarelhenawy\.online\//i,
   /^https:\/\/(?:[^/]+\.)?fbcdn\.net\//i,
   /^https:\/\/(?:[^/]+\.)?fbsbx\.com\//i,
+  /^https:\/\/(?:[^/]+\.)?facebook\.com\//i,
   /^https:\/\/files\.easy-orders\.net\//i,
   /^https:\/\/images\.unsplash\.com\//i,
   /^https:\/\/lh3\.googleusercontent\.com\/aida-public\//i,
@@ -222,10 +223,12 @@ const getFacebookFriendlyHeaders = (targetUrl) => {
   }
 
   const isFacebookCdn =
-    hostname.includes("fbcdn.net") || hostname.includes("fbsbx.com");
+    hostname.includes("fbcdn.net") ||
+    hostname.includes("fbsbx.com") ||
+    hostname.includes("facebook.com");
   const isAudioOrVideo =
     /\.(mp3|m4a|aac|ogg|oga|opus|wav|webm|weba|mp4)(\?.*)?$/i.test(targetUrl) ||
-    /audio|voice|audioclip/i.test(targetUrl);
+    /audio|voice|audioclip|file_stream\.php/i.test(targetUrl);
   const acceptHeader = isAudioOrVideo ? "*/*" : DEFAULT_ACCEPT_HEADER;
 
   return {
@@ -412,11 +415,48 @@ const sendLocalFileResponse = async (req, res, filePath, transformOptions) => {
   }
 };
 
+const detectMediaContentType = (buffer, fallbackContentType = "") => {
+  if (!buffer || buffer.length < 4) return fallbackContentType;
+  // MP4 / M4A (ftyp box at offset 4)
+  if (buffer.length >= 8 && buffer.toString("ascii", 4, 8) === "ftyp") {
+    return "audio/mp4";
+  }
+  // ID3v2 for MP3
+  if (buffer.toString("ascii", 0, 3) === "ID3") {
+    return "audio/mpeg";
+  }
+  // MP3 frame sync (0xFF followed by 0xFB, 0xF3, 0xF2, 0xE0-0xFF)
+  if (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0) {
+    if ((buffer[1] & 0xf6) === 0xf0) {
+      return "audio/aac";
+    }
+    return "audio/mpeg";
+  }
+  // OggS (Ogg container / Opus / Vorbis)
+  if (buffer.toString("ascii", 0, 4) === "OggS") {
+    return "audio/ogg";
+  }
+  // RIFF .... WAVE
+  if (buffer.toString("ascii", 0, 4) === "RIFF" && buffer.length >= 12 && buffer.toString("ascii", 8, 12) === "WAVE") {
+    return "audio/wav";
+  }
+  // WebM / Matroska
+  if (buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3) {
+    return "audio/webm";
+  }
+  return fallbackContentType;
+};
+
 const sendRemoteResponse = async (req, res, response, transformOptions) => {
   let contentType = response.headers.get("content-type") || "";
   const cacheControl = response.headers.get("cache-control");
 
   const targetUrl = req.query.url ? String(req.query.url).toLowerCase() : "";
+  const isAudioRequested =
+    req.query.media === "audio" ||
+    req.query.type === "audio" ||
+    /audioclip|audio|voice|file_stream\.php/i.test(targetUrl);
+
   if (
     !contentType ||
     contentType === "application/octet-stream" ||
@@ -430,33 +470,55 @@ const sendRemoteResponse = async (req, res, response, transformOptions) => {
     else if (/\.(wav)(\?.*)?$/i.test(targetUrl)) contentType = "audio/wav";
     else if (/\.(webm|weba)(\?.*)?$/i.test(targetUrl)) contentType = "audio/webm";
     else if (/\.(mp4)(\?.*)?$/i.test(targetUrl)) contentType = "video/mp4";
-    else if (/audioclip|audio|voice/i.test(targetUrl)) contentType = "audio/mp4";
+    else if (isAudioRequested) contentType = "audio/mp4";
     else if (!contentType) contentType = "image/jpeg";
   }
 
-  const shouldTransform =
-    transformOptions?.shouldTransform && isTransformableContentType(contentType);
-
-  res.setHeader(
-    "Content-Type",
-    shouldTransform ? `image/${transformOptions.format}` : contentType,
-  );
   res.setHeader(
     "Cache-Control",
-    shouldTransform
-      ? "public, max-age=604800, stale-while-revalidate=2592000"
-      : cacheControl || "public, max-age=3600, stale-while-revalidate=86400",
+    cacheControl || "public, max-age=3600, stale-while-revalidate=86400",
   );
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
   res.setHeader("Accept-Ranges", "bytes");
 
   if ((req.method || "").toUpperCase() === "HEAD") {
+    res.setHeader("Content-Type", contentType);
     return res.status(200).end();
   }
 
   const buffer = await response.arrayBuffer();
   const responseBuffer = Buffer.from(buffer);
+
+  // Inspect payload magic bytes to detect actual audio types (M4A/AAC/MP3/OGG)
+  const detectedAudioType = detectMediaContentType(responseBuffer);
+  if (detectedAudioType) {
+    contentType = detectedAudioType;
+  } else if (
+    isAudioRequested &&
+    (!contentType ||
+      contentType === "application/octet-stream" ||
+      contentType === "binary/octet-stream" ||
+      contentType.startsWith("text/") ||
+      contentType.startsWith("image/"))
+  ) {
+    contentType = "audio/mp4";
+  }
+
+  const isAudioOrVideoBuffer =
+    contentType.startsWith("audio/") ||
+    contentType.startsWith("video/") ||
+    Boolean(detectedAudioType);
+
+  const shouldTransform =
+    !isAudioOrVideoBuffer &&
+    transformOptions?.shouldTransform &&
+    isTransformableContentType(contentType);
+
+  res.setHeader(
+    "Content-Type",
+    shouldTransform ? `image/${transformOptions.format}` : contentType,
+  );
 
   if (!shouldTransform) {
     return sendBufferWithRange(req, res, responseBuffer, contentType, 200);

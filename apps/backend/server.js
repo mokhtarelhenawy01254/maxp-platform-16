@@ -340,6 +340,7 @@ const orderWebhookRoutes = require("./routes/orderWebhookRoutes");
 const orderWorkflowRoutes = require("./routes/orderWorkflowRoutes");
 const scheduledOrderRoutes = require("./routes/scheduledOrderRoutes");
 const orderConfirmationRoutes = require("./routes/orderConfirmationRoutes");
+const voiceCallRoutes = require("./routes/voiceCallRoutes");
 const ownerRoutes = require("./routes/ownerRoutes");
 const orderStatusRoutes = require("./routes/orderStatusRoutes");
 const orderStatusRuleRoutes = require("./routes/orderStatusRuleRoutes");
@@ -899,6 +900,7 @@ app.use("/api/v1/agent-workspace", agentWorkspaceRoutes);
 app.use("/api/v1/order-workflow", orderWorkflowRoutes);
 app.use("/api/v1/orders-workflow", orderWorkflowRoutes);
 app.use("/api/v1/order-confirmation", orderConfirmationRoutes);
+app.use("/api/v1/voice", voiceCallRoutes);
 
 app.use("/api/v1/order-status", orderStatusRoutes);
 app.use("/api/v1/order-status-rules", orderStatusRuleRoutes);

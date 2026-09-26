@@ -45,11 +45,15 @@ class StockAndTargetAlertService {
           continue;
         }
 
-        // 1. Check order target milestone
-        const targetAlert = await this._evaluateOrderTargets(company, targetConfig, recipientPhone);
-        if (targetAlert) targetAlertsSent++;
+        // 1. Check daily order target milestone
+        const dailyTargetAlert = await this._evaluateDailyOrderTargets(company, targetConfig, recipientPhone);
+        if (dailyTargetAlert) targetAlertsSent++;
 
-        // 2. Check low stock items
+        // 2. Check weekly order target milestone
+        const weeklyTargetAlert = await this._evaluateWeeklyOrderTargets(company, targetConfig, recipientPhone);
+        if (weeklyTargetAlert) targetAlertsSent++;
+
+        // 3. Check low stock items
         const stockAlert = await this._evaluateStockLevels(company, targetConfig, recipientPhone);
         if (stockAlert) stockAlertsSent++;
       }
@@ -60,7 +64,22 @@ class StockAndTargetAlertService {
     return { checkedCompanies, targetAlertsSent, stockAlertsSent };
   }
 
+  getWeekStartDate(now = new Date()) {
+    const date = new Date(now);
+    // Saturday as week start in Egypt / MENA retail calendar
+    const day = date.getDay(); // 0: Sun, 1: Mon, ..., 6: Sat
+    const diff = (day + 1) % 7;
+    date.setDate(date.getDate() - diff);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  // Alias for backward compatibility
   async _evaluateOrderTargets(company, targetConfig, recipientPhone) {
+    return this._evaluateDailyOrderTargets(company, targetConfig, recipientPhone);
+  }
+
+  async _evaluateDailyOrderTargets(company, targetConfig, recipientPhone) {
     const dailyTarget = Number(targetConfig.daily_orders) || 0;
     if (dailyTarget <= 0) return false;
 
@@ -120,6 +139,68 @@ class StockAndTargetAlertService {
     return false;
   }
 
+  async _evaluateWeeklyOrderTargets(company, targetConfig, recipientPhone) {
+    const weeklyTarget = Number(targetConfig.weekly_orders) || 0;
+    if (weeklyTarget <= 0) return false;
+
+    const now = new Date();
+    const weekStartDate = this.getWeekStartDate(now);
+    const weekDateKey = weekStartDate.toISOString().slice(0, 10);
+    const lastNotifiedWeekKey = targetConfig.last_notified_weekly_target_date;
+    let notifiedWeeklyMilestones = targetConfig.notified_weekly_milestones || [];
+
+    // Reset milestones if new week
+    if (lastNotifiedWeekKey !== weekDateKey) {
+      notifiedWeeklyMilestones = [];
+    }
+
+    const weekOrdersCount = await safeQuery((prisma) =>
+      prisma.order.count({
+        where: {
+          companyId: company.id,
+          createdAt: { gte: weekStartDate },
+          status: { not: "CANCELLED" },
+        },
+      }),
+    );
+
+    const pct = Math.round((weekOrdersCount / weeklyTarget) * 100);
+    let milestoneToTrigger = null;
+
+    if (weekOrdersCount >= weeklyTarget && !notifiedWeeklyMilestones.includes("100%")) {
+      milestoneToTrigger = "100%";
+    } else if (weekOrdersCount >= Math.floor(weeklyTarget * 0.8) && !notifiedWeeklyMilestones.includes("80%")) {
+      milestoneToTrigger = "80%";
+    } else if (weekOrdersCount >= Math.floor(weeklyTarget * 0.5) && !notifiedWeeklyMilestones.includes("50%")) {
+      milestoneToTrigger = "50%";
+    }
+
+    if (!milestoneToTrigger) return false;
+
+    const remainingOrders = Math.max(0, weeklyTarget - weekOrdersCount);
+
+    // Compose alert message
+    const message = this._formatWeeklyTargetAlertMessage({
+      storeName: company.name,
+      milestone: milestoneToTrigger,
+      actualOrders: weekOrdersCount,
+      targetOrders: weeklyTarget,
+      percentage: pct,
+      remainingOrders,
+    });
+
+    const sent = await this._sendWhatsApp(company.id, recipientPhone, message);
+    if (sent) {
+      notifiedWeeklyMilestones.push(milestoneToTrigger);
+      await this._persistTargetMeta(company.id, {
+        last_notified_weekly_target_date: weekDateKey,
+        notified_weekly_milestones: notifiedWeeklyMilestones,
+      });
+      return true;
+    }
+    return false;
+  }
+
   async _evaluateStockLevels(company, targetConfig, recipientPhone) {
     const threshold = Number(targetConfig.min_stock_threshold) || 5;
     const now = new Date();
@@ -156,6 +237,7 @@ class StockAndTargetAlertService {
         where: {
           product: { companyId: company.id, deletedAt: null, isActive: true },
           isActive: true,
+          trackInventory: true,
           stock: { lte: threshold },
         },
         select: {
@@ -222,6 +304,13 @@ class StockAndTargetAlertService {
       return `مرحباً، متجر ${storeName}.\n\nتم تحقيق تارجت اليوم بنجاح بنسبة 100%!\n\n- إجمالي الأوردرات المحققة: ${actualOrders}\n- الهدف المستهدف: ${targetOrders}\n- نسبة الإنجاز: ${percentage}%\n\nاستمروا في التقدم لمضاعفة النتائج حتى نهاية اليوم.`;
     }
     return `مرحباً، متجر ${storeName}.\n\nتحديث أداء المبيعات: تم الوصول إلى ${milestone} من تارجت اليوم.\n\n- الأوردرات الحالية: ${actualOrders} من ${targetOrders}\n- نسبة الإنجاز: ${percentage}%\n- المتبقي لتحقيق الهدف: ${Math.max(0, targetOrders - actualOrders)} أوردر.`;
+  }
+
+  _formatWeeklyTargetAlertMessage({ storeName, milestone, actualOrders, targetOrders, percentage, remainingOrders }) {
+    if (milestone === "100%") {
+      return `مرحباً، متجر ${storeName}.\n\nتم تحقيق تارجت الأسبوع بنجاح بنسبة 100%!\n\n- إجمالي أوردرات الأسبوع المحققة: ${actualOrders}\n- الهدف الأسبوعي المستهدف: ${targetOrders}\n- نسبة الإنجاز: ${percentage}%\n\nاستمروا في التقدم لمضاعفة النتائج حتى نهاية الأسبوع.`;
+    }
+    return `مرحباً، متجر ${storeName}.\n\nتحديث أداء المبيعات الأسبوعي: تم الوصول إلى ${milestone} من تارجت الأسبوع.\n\n- الأوردرات المحققة هذا الأسبوع: ${actualOrders} من ${targetOrders}\n- نسبة الإنجاز الأسبوعي: ${percentage}%\n- المتبقي لتحقيق الهدف الأسبوعي: ${remainingOrders} أوردر.`;
   }
 
   _formatStockAlertMessage({ storeName, totalLowItems, items, threshold }) {

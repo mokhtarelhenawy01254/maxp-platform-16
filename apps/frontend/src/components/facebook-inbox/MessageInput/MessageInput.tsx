@@ -10,7 +10,9 @@ import {
   ShoppingBagIcon,
   BoltIcon,
 } from "@heroicons/react/24/outline";
+import { Mic, Trash2, Loader2 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
+import { useAudioRecorder } from "../../../hooks/useAudioRecorder";
 import QuickReplyDropdown, {
   QuickReply,
 } from "../QuickReplyDropdown/QuickReplyDropdown";
@@ -66,6 +68,106 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Voice recording integration
+  const {
+    status: recordingStatus,
+    startRecording,
+    stopRecording,
+    mediaBlobUrl,
+    clearBlobUrl,
+    error: recordingError,
+  } = useAudioRecorder();
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isSubmittingVoiceRef = useRef(false);
+
+  const handleStartVoiceRecording = () => {
+    setShowMobileTools(false);
+    setShowEmojiPicker(false);
+    setShowQuickReplies(false);
+    setIsRecording(true);
+    setRecordingSeconds(0);
+    startRecording();
+  };
+
+  const handleCancelVoiceRecording = () => {
+    setIsRecording(false);
+    stopRecording();
+    clearBlobUrl();
+    setRecordingSeconds(0);
+    isSubmittingVoiceRef.current = false;
+  };
+
+  const handleStopAndSendVoice = () => {
+    isSubmittingVoiceRef.current = true;
+    stopRecording();
+  };
+
+  useEffect(() => {
+    if (isRecording && recordingStatus === "recording") {
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+    } else if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    };
+  }, [isRecording, recordingStatus]);
+
+  useEffect(() => {
+    if (!isSubmittingVoiceRef.current || !mediaBlobUrl || recordingStatus !== "stopped") {
+      return;
+    }
+
+    isSubmittingVoiceRef.current = false;
+    setIsRecording(false);
+
+    const submitVoiceBlob = async () => {
+      try {
+        const response = await fetch(mediaBlobUrl);
+        const blob = await response.blob();
+        if (blob.size < 500) {
+          console.warn("Audio recording too small or empty, skipping send:", blob.size);
+          return;
+        }
+
+        const ext = blob.type.includes("mp4")
+          ? "m4a"
+          : blob.type.includes("ogg")
+            ? "ogg"
+            : "webm";
+        const file = new File(
+          [blob],
+          `voice-${Date.now()}.${ext}`,
+          { type: blob.type || "audio/mp4" },
+        );
+
+        if (onSendFile) {
+          onSendFile(file);
+        }
+      } catch (err) {
+        console.error("Failed to process voice note recording:", err);
+      } finally {
+        clearBlobUrl();
+        setRecordingSeconds(0);
+      }
+    };
+
+    submitVoiceBlob();
+  }, [clearBlobUrl, mediaBlobUrl, onSendFile, recordingStatus]);
+
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
 
   const isBusy = sending || isSending;
   const handleSendAction = onSendMessage || onSend;
@@ -317,11 +419,61 @@ const MessageInput: React.FC<MessageInputProps> = ({
           type="file"
           className="hidden"
           onChange={handleFileSelect}
-          accept="image/*,.pdf,.doc,.docx,.txt"
+          accept="image/*,audio/*,.pdf,.doc,.docx,.txt"
         />
 
-        {/* Mobile Tools Plus Button & Popover (hidden on sm+) */}
-        <div className="relative flex-shrink-0 sm:hidden" ref={mobileMenuRef}>
+        {isRecording ? (
+          <div className="flex w-full items-center gap-2 rounded-xl bg-red-500/10 px-3 py-1.5 border border-red-500/30">
+            {/* Cancel Button */}
+            <button
+              type="button"
+              onClick={handleCancelVoiceRecording}
+              className="p-1.5 sm:p-2 rounded-full text-red-500 hover:bg-red-500/20 active:scale-95 transition-all flex items-center justify-center"
+              title="إلغاء التسجيل"
+              aria-label="إلغاء التسجيل"
+            >
+              <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+
+            {/* Recording pulse & time */}
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-red-500"></span>
+              </span>
+              <Mic className="w-4 h-4 text-red-500 animate-pulse flex-shrink-0" />
+              <span className="text-xs sm:text-sm font-bold text-red-600 dark:text-red-400 tabular-nums">
+                {formatRecordingTime(recordingSeconds)}
+              </span>
+              <span className="text-xs text-muted-foreground truncate hidden sm:inline">
+                {recordingStatus === "recording" ? "جاري تسجيل صوتي..." : "جاري المعالجة..."}
+              </span>
+              {recordingError && (
+                <span className="text-xs text-red-500 truncate">
+                  يرجى السماح بالميكروفون
+                </span>
+              )}
+            </div>
+
+            {/* Send Voice Button */}
+            <button
+              type="button"
+              onClick={handleStopAndSendVoice}
+              disabled={recordingStatus === "acquiring_media" || recordingSeconds === 0}
+              className="business-chip-button flex h-[34px] sm:h-[38px] items-center gap-1.5 rounded-xl px-3 sm:px-4 text-xs sm:text-sm font-semibold text-white shadow-sm transition-transform active:scale-95 disabled:opacity-50"
+              style={{
+                background: "var(--color-primary, #3b82f6)",
+              }}
+              title="إرسال الفويس"
+            >
+              <PaperAirplaneIcon className="h-4 w-4 rtl:-scale-x-100" />
+              <span>إرسال</span>
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Mobile Tools Plus Button & Popover (hidden on sm+) */}
+            <div className="relative flex-shrink-0 sm:hidden" ref={mobileMenuRef}>
           <button
             type="button"
             onClick={() => setShowMobileTools((prev) => !prev)}
@@ -418,6 +570,24 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   </button>
                 )}
 
+                {/* Voice Note Recording */}
+                {onSendFile && (
+                  <button
+                    type="button"
+                    onClick={handleStartVoiceRecording}
+                    disabled={uploadingFile}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15 disabled:opacity-50"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-rose-500/20 text-rose-400">
+                      <Mic className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">تسجيل صوتي</span>
+                      <span className="text-[10px] text-muted-foreground truncate">تسجيل رسالة صوتية</span>
+                    </div>
+                  </button>
+                )}
+
                 {/* File Upload */}
                 {onSendFile && (
                   <button
@@ -434,7 +604,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
                       <span className="font-semibold text-xs truncate">إرفاق ملف</span>
-                      <span className="text-[10px] text-muted-foreground truncate">صور أو مستندات</span>
+                      <span className="text-[10px] text-muted-foreground truncate">صور أو مستندات أو صوت</span>
                     </div>
                   </button>
                 )}
@@ -466,6 +636,22 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
         {/* Desktop Tools Row (visible on sm+) */}
         <div className="hidden sm:flex flex-shrink-0 items-center gap-1 sm:gap-1.5 business-chat-composer-tools">
+          {/* Voice Record Button (Desktop) */}
+          {onSendFile && (
+            <div className="relative flex-shrink-0">
+              <button
+                type="button"
+                onClick={handleStartVoiceRecording}
+                disabled={uploadingFile || isBusy}
+                className="business-icon-button rounded-xl p-1.5 transition-colors sm:p-2 text-muted-foreground hover:text-primary"
+                title="تسجيل رسالة صوتية"
+                aria-label="تسجيل رسالة صوتية"
+              >
+                <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
+            </div>
+          )}
+
           {/* File Upload */}
           {onSendFile && (
             <div className="relative flex-shrink-0">
@@ -623,32 +809,51 @@ const MessageInput: React.FC<MessageInputProps> = ({
           )}
         </div>
 
-        {/* Send Button - Compact icon on mobile, full button on desktop */}
-        <button
-          type="submit"
-          disabled={!message.trim() || isBusy || uploadingFile}
-          className="business-chat-send-button business-chip-button relative z-10 flex h-[38px] w-[38px] sm:h-[40px] sm:w-auto flex-shrink-0 items-center justify-center gap-1.5 rounded-xl px-0 sm:px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 sm:text-base shadow-sm transition-transform active:scale-95"
-          style={{
-            background:
-              "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
-            borderColor: "transparent",
-            color: "white",
-          }}
-          title="إرسال"
-        >
-          {isBusy ? (
-            <>
-              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent border-white sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">جاري الإرسال...</span>
-            </>
-          ) : (
-            <>
-              <PaperAirplaneIcon className="h-4 w-4 sm:h-5 sm:w-5 rtl:-scale-x-100" />
-              <span className="hidden md:inline">إرسال</span>
-            </>
-          )}
-        </button>
-      </form>
+        {/* Send or Mic Button */}
+        {message.trim() || !onSendFile ? (
+          <button
+            type="submit"
+            disabled={!message.trim() || isBusy || uploadingFile}
+            className="business-chat-send-button business-chip-button relative z-10 flex h-[38px] w-[38px] sm:h-[40px] sm:w-auto flex-shrink-0 items-center justify-center gap-1.5 rounded-xl px-0 sm:px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 sm:text-base shadow-sm transition-transform active:scale-95"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+              borderColor: "transparent",
+              color: "white",
+            }}
+            title="إرسال"
+            aria-label="إرسال الرسالة"
+          >
+            {isBusy ? (
+              <>
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent border-white sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">جاري الإرسال...</span>
+              </>
+            ) : (
+              <>
+                <PaperAirplaneIcon className="h-4 w-4 sm:h-5 sm:w-5 rtl:-scale-x-100" />
+                <span className="hidden md:inline">إرسال</span>
+              </>
+            )}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleStartVoiceRecording}
+            disabled={isBusy || uploadingFile}
+            className="business-chip-button relative z-10 flex h-[38px] w-[38px] sm:h-[40px] sm:w-[40px] flex-shrink-0 items-center justify-center rounded-xl transition-transform active:scale-95 shadow-sm text-primary hover:text-primary-foreground hover:bg-primary"
+            style={{
+              background: "color-mix(in srgb, var(--color-primary, #3b82f6) 12%, transparent)",
+            }}
+            title="تسجيل رسالة صوتية"
+            aria-label="تسجيل رسالة صوتية"
+          >
+            <Mic className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+          </button>
+        )}
+      </>
+    )}
+  </form>
 
       {/* Floating Emoji Picker Popover */}
       {showEmojiPicker && (

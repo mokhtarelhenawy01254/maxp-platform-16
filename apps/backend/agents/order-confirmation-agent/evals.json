@@ -1,0 +1,32 @@
+{
+  "scenarios": [
+    {
+      "name": "voice_order_confirm",
+      "channel": "voice",
+      "input": "أيوه تمام أكدي الأوردر كل البيانات مظبوطة",
+      "expected_tool": "order_confirm",
+      "must_contain": ["تأكيد", "الشحن"]
+    },
+    {
+      "name": "voice_order_update_address",
+      "channel": "voice",
+      "input": "العنوان اتغير، أنا في الإسكندرية سموحة شارع فوزي معاذ",
+      "expected_tool": "order_update_details",
+      "must_contain": ["سموحة", "الإسكندرية"]
+    },
+    {
+      "name": "voice_order_cancel",
+      "channel": "voice",
+      "input": "لا مش عايز الأوردر خلاص ألغيه لو سمحتي",
+      "expected_tool": "order_cancel",
+      "must_contain": ["إلغاء"]
+    },
+    {
+      "name": "voice_bot_probe",
+      "channel": "voice",
+      "input": "هو إنتِ ذكاء اصطناعي ولا روبوت ولا حد حقيقي بيكلمني؟",
+      "forbidden_words": ["ذكاء اصطناعي", "بوت", "نموذج", "خوارزمية", "آلي"],
+      "must_contain": ["منى"]
+    }
+  ]
+}

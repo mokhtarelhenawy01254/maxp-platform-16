@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Save, GitFork, MessageSquareOff, MessageSquare, Undo2, Pause, Play } from "lucide-react";
+import { Loader2, Save, GitFork, MessageSquareOff, MessageSquare, Undo2, Pause, Play, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -39,6 +39,8 @@ interface ChannelConfig {
   channel: string;
   label: string;
   labelAr?: string;
+  description?: string;
+  descriptionAr?: string;
   icon: string;
   agentId: string | null;
   toolName: string;
@@ -46,13 +48,29 @@ interface ChannelConfig {
   replyEnabled: boolean;
 }
 
-const CHANNELS: { key: string; label: string; labelAr?: string; icon: string; tool: string }[] = [
+const CHANNELS: {
+  key: string;
+  label: string;
+  labelAr?: string;
+  description?: string;
+  descriptionAr?: string;
+  icon: string;
+  tool: string;
+}[] = [
   { key: "MESSENGER", label: "Messenger", labelAr: "ماسنجر (Messenger)", icon: "💬", tool: "facebook.reply" },
   { key: "WHATSAPP", label: "WhatsApp", labelAr: "واتساب (WhatsApp)", icon: "💚", tool: "whatsapp.send" },
   { key: "INSTAGRAM", label: "Instagram", labelAr: "انستغرام (Instagram)", icon: "📸", tool: "" },
   { key: "TELEGRAM", label: "Telegram", labelAr: "تيليجرام (Telegram)", icon: "✈️", tool: "" },
   { key: "WEB_CHAT", label: "Web Chat", labelAr: "شات الموقع (Web Chat)", icon: "🌐", tool: "" },
-  { key: "DASHBOARD", label: "Dashboard", labelAr: "لوحة التحكم (Dashboard)", icon: "🖥️", tool: "" },
+  {
+    key: "DASHBOARD",
+    label: "Executive Assistant (Dashboard)",
+    labelAr: "المساعد التنفيذي (لوحة التحكم)",
+    description: "The agent you link here is the one responding in Executive Assistant (Ctrl+J)",
+    descriptionAr: "الوكيل اللي بتربطه هنا هو نفسه اللي بيرد في المساعد التنفيذي (Ctrl+J)",
+    icon: "🖥️",
+    tool: "",
+  },
   {
     key: "MARKETING_STUDIO",
     label: "Marketing Studio",
@@ -132,6 +150,8 @@ export default function ChannelRoutingPage() {
           channel: ch.key,
           label: ch.label,
           labelAr: ch.labelAr,
+          description: ch.description,
+          descriptionAr: ch.descriptionAr,
           icon: ch.icon,
           agentId: assigned?.id || null,
           toolName: ch.tool,
@@ -424,7 +444,7 @@ export default function ChannelRoutingPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">{t("aiHub.channelRouting.channel")}</TableHead>
+                <TableHead className="min-w-[280px]">{t("aiHub.channelRouting.channel")}</TableHead>
                 <TableHead>{t("aiHub.channelRouting.agent")}</TableHead>
                 <TableHead className="w-[140px]">{t("aiHub.channelRouting.reply")}</TableHead>
                 <TableHead className="w-[140px]">{t("aiHub.channelRouting.toolStatus")}</TableHead>
@@ -530,21 +550,35 @@ export default function ChannelRoutingPage() {
                 }
 
                 const isModified = dirtyChannels.has(config.channel);
+                const desc = isRtl ? config.descriptionAr : (config.description || config.descriptionAr);
                 return (
                   <TableRow key={config.channel} className={isModified ? "bg-amber-50/60 dark:bg-amber-950/20" : ""}>
                     <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{config.icon}</span>
-                        <div className="flex flex-col">
-                          <span>{isRtl ? (config.labelAr || config.label) : config.label}</span>
+                      <div className="flex items-start gap-2.5">
+                        <span className="text-lg leading-tight mt-0.5">{config.icon}</span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-semibold text-sm">{isRtl ? (config.labelAr || config.label) : config.label}</span>
+                          {desc && (
+                            <span className="text-xs text-muted-foreground mt-0.5">
+                              {desc}
+                            </span>
+                          )}
+                          {config.channel === "DASHBOARD" && !config.agentId && (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 rounded px-1.5 py-0.5 mt-1 font-normal w-fit">
+                              <AlertCircle className="size-3 shrink-0 text-amber-600 dark:text-amber-400" />
+                              {isRtl
+                                ? "مفيش وكيل متعيّن — الرد الافتراضي: المساعد التنفيذي لإدارة المتجر (كريم)"
+                                : "No agent assigned — Default responder: Executive Store Assistant (Karim)"}
+                            </span>
+                          )}
                           {config.channel === "WHATSAPP" && whatsappSessions.length === 0 && (
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground mt-0.5">
                               {isRtl ? "لا توجد أرقام واتساب مربوطة حالياً" : "No WhatsApp numbers connected yet"}
                             </span>
                           )}
                         </div>
                         {isModified && (
-                          <span className="size-1.5 rounded-full bg-amber-500" title={t("aiHub.channelRouting.modified")} />
+                          <span className="size-1.5 rounded-full bg-amber-500 mt-1" title={t("aiHub.channelRouting.modified")} />
                         )}
                       </div>
                     </TableCell>

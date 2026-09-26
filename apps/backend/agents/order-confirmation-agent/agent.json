@@ -47,8 +47,16 @@
     "order-confirmation"
   ],
   "channels": [
-    "whatsapp"
+    "whatsapp",
+    "voice"
   ],
+  "voiceSettings": {
+    "supportedDialects": ["egyptian", "saudi", "gulf"],
+    "voiceProvider": "vapi",
+    "voiceModel": "elevenlabs/eleven_multilingual_v2",
+    "maxCallDurationSeconds": 180,
+    "silenceTimeoutSeconds": 15
+  },
   "humanApproval": {
     "mode": "NEVER"
   },

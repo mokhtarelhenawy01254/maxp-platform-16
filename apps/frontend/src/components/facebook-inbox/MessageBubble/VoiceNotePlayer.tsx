@@ -22,10 +22,21 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  // Normalize media URL: clean any legacy /webhooks/uploads/ to /uploads/
+  // Normalize media URL: clean any legacy /webhooks/uploads/ to /uploads/ and ensure proxy has media=audio
   const cleanSrc = React.useMemo(() => {
     if (!src) return "";
-    return src.replace(/\/webhooks\/uploads\//g, "/uploads/");
+    let normalized = src.replace(/\/webhooks\/uploads\//g, "/uploads/").trim();
+    if (
+      typeof window !== "undefined" &&
+      window.location.protocol === "https:" &&
+      normalized.startsWith("http://")
+    ) {
+      normalized = normalized.replace("http://", "https://");
+    }
+    if (normalized.includes("/api/proxy-image") && !normalized.includes("media=")) {
+      normalized += (normalized.includes("?") ? "&" : "?") + "media=audio&type=audio";
+    }
+    return normalized;
   }, [src]);
 
   // Format seconds to mm:ss
@@ -35,6 +46,22 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
+
+  const isRtl =
+    typeof document !== "undefined" &&
+    (document.documentElement.getAttribute("dir") === "rtl" ||
+      document.dir === "rtl" ||
+      document.body?.getAttribute("dir") === "rtl");
+
+  // Reset playback and error state when src changes
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setHasError(false);
+    if (audioRef.current && cleanSrc) {
+      audioRef.current.load();
+    }
+  }, [cleanSrc]);
 
   // Stop this audio when another audio starts playing elsewhere in the inbox
   useEffect(() => {
@@ -71,9 +98,9 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
     };
   }, []);
 
-  const handlePlayPause = useCallback(async () => {
+  const handlePlayPause = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !cleanSrc) return;
 
     if (isPlaying) {
       audio.pause();
@@ -99,25 +126,28 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
       setCurrentTime(0);
     }
 
-    try {
-      setIsLoading(true);
-      await audio.play();
-      setIsPlaying(true);
-    } catch (err) {
-      console.warn("Audio play error, attempting reload:", err);
-      try {
-        audio.load();
-        await audio.play();
-        setIsPlaying(true);
-      } catch (fallbackErr) {
-        console.error("Audio playback failed completely:", fallbackErr);
-        setHasError(true);
-        setIsPlaying(false);
-      }
-    } finally {
-      setIsLoading(false);
+    setIsLoading(true);
+
+    // Execute play synchronously within the user gesture callback for iOS Safari & Android Chrome
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setIsPlaying(true);
+          setIsLoading(false);
+        })
+        .catch((err) => {
+          console.warn("Audio play rejected:", err);
+          setIsLoading(false);
+          setIsPlaying(false);
+          if (err.name === "NotAllowedError") {
+            // Autoplay / user gesture policy prevented play; do not flag permanent error
+            return;
+          }
+          setHasError(true);
+        });
     }
-  }, [isPlaying, messageId]);
+  }, [isPlaying, messageId, cleanSrc]);
 
   const handleTimeUpdate = () => {
     if (!audioRef.current) return;
@@ -143,11 +173,10 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
   const handleSeek = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     const bar = progressBarRef.current;
     const audio = audioRef.current;
-    if (!bar || !audio || !duration) return;
+    if (!bar || !audio) return;
 
     const rect = bar.getBoundingClientRect();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const isRtl = document.dir === "rtl" || document.documentElement.dir === "rtl";
+    const clientX = "touches" in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
 
     let clickRatio = (clientX - rect.left) / rect.width;
     if (isRtl) {
@@ -155,9 +184,11 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
     }
     clickRatio = Math.max(0, Math.min(1, clickRatio));
 
-    const newTime = clickRatio * duration;
-    audio.currentTime = newTime;
-    setCurrentTime(newTime);
+    if (duration > 0 && isFinite(duration)) {
+      const newTime = clickRatio * duration;
+      audio.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
   };
 
   const cyclePlaybackRate = () => {
@@ -170,7 +201,7 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
 
   const handleRetry = () => {
     setHasError(false);
-    if (audioRef.current) {
+    if (audioRef.current && cleanSrc) {
       audioRef.current.load();
       handlePlayPause();
     }
@@ -191,36 +222,40 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
           : "rgba(255, 255, 255, 0.15)",
       }}
     >
-      <audio
-        ref={audioRef}
-        src={cleanSrc}
-        preload="metadata"
-        playsInline
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={handleEnded}
-        onError={() => {
-          setIsLoading(false);
-          setIsPlaying(false);
-          setHasError(true);
-        }}
-        onWaiting={() => setIsLoading(true)}
-        onPlaying={() => {
-          setIsLoading(false);
-          setIsPlaying(true);
-        }}
-        onPause={() => setIsPlaying(false)}
-        className="hidden"
-      />
+      {cleanSrc && (
+        <audio
+          ref={audioRef}
+          src={cleanSrc}
+          preload="metadata"
+          playsInline
+          crossOrigin="anonymous"
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={handleEnded}
+          onError={() => {
+            if (!cleanSrc) return;
+            setIsLoading(false);
+            setIsPlaying(false);
+            setHasError(true);
+          }}
+          onWaiting={() => setIsLoading(true)}
+          onPlaying={() => {
+            setIsLoading(false);
+            setIsPlaying(true);
+          }}
+          onPause={() => setIsPlaying(false)}
+          className="hidden"
+        />
+      )}
 
       <div className="flex items-center gap-2.5">
         {/* Play / Pause Button with active scale */}
         <button
           type="button"
           onClick={handlePlayPause}
-          disabled={isLoading && !isPlaying}
+          disabled={(isLoading && !isPlaying) || !cleanSrc}
           aria-label={isPlaying ? "إيقاف مؤقت" : "تشغيل الصوت"}
-          className="relative flex size-10 flex-shrink-0 items-center justify-center rounded-full shadow-sm transition-transform active:scale-90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+          className="relative flex size-10 flex-shrink-0 items-center justify-center rounded-full shadow-sm transition-transform active:scale-90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-50"
           style={{
             background: isCustomer
               ? "var(--color-primary, #3b82f6)"
@@ -244,6 +279,7 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
             ref={progressBarRef}
             onClick={handleSeek}
             onTouchStart={handleSeek}
+            onTouchMove={handleSeek}
             className="group relative h-2.5 w-full cursor-pointer rounded-full bg-black/15 dark:bg-white/20 transition-all hover:h-3"
             title="انقر للتمرير"
           >
@@ -260,7 +296,7 @@ export const VoiceNotePlayer: React.FC<VoiceNotePlayerProps> = ({
             <div
               className="absolute top-1/2 -translate-y-1/2 size-3.5 rounded-full shadow-md transition-transform scale-90 group-hover:scale-125"
               style={{
-                [document.dir === "rtl" ? "right" : "left"]: `calc(${progressPercentage}% - 6px)`,
+                [isRtl ? "right" : "left"]: `calc(${progressPercentage}% - 6px)`,
                 background: isCustomer
                   ? "var(--color-primary, #2563eb)"
                   : "#ffffff",

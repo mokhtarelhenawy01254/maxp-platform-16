@@ -545,9 +545,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
         ? getDirectMediaUrl("audio", message.fileUrl, message.content)
         : "",
     ])[0] || "";
-    const audioMediaUrl = rawAudioMediaUrl
-      ? getInboxMessageMediaUrl(message.id, rawAudioMediaUrl)
-      : "";
+    const audioMediaUrl =
+      (rawAudioMediaUrl
+        ? getInboxMessageMediaUrl(message.id, rawAudioMediaUrl, { media: "audio" })
+        : isAudioMessage && message.id
+          ? getInboxMessageMediaUrl(message.id, null, { media: "audio" })
+          : "") || "";
     const rawFileMediaUrl = uniqueUrls([
       ...attachments.map((attachment) =>
         getAttachmentMediaUrl(attachment, "file"),

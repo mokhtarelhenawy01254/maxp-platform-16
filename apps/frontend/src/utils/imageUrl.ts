@@ -13,7 +13,8 @@ const OPTIMIZABLE_UPLOAD_IMAGE_EXTENSIONS = new Set([
 ]);
 const PROXYABLE_REMOTE_IMAGE_PATTERNS = [
   /^https:\/\/(?:[^/]+\.)?fbcdn\.net\//i,
-  /^https:\/\/platform-lookaside\.fbsbx\.com\//i,
+  /^https:\/\/(?:[^/]+\.)?fbsbx\.com\//i,
+  /^https:\/\/(?:[^/]+\.)?facebook\.com\/(?:file_stream|audioclip|video)/i,
   /^https:\/\/files\.easy-orders\.net\//i,
   /^https:\/\/images\.unsplash\.com\//i,
   /^https:\/\/lh3\.googleusercontent\.com\/aida-public\//i,
@@ -39,6 +40,7 @@ interface ProxyImageOptions {
   customerId?: string | null;
   attachmentIndex?: number | null;
   attachmentId?: string | null;
+  media?: "audio" | "image" | "video" | "file";
   width?: number;
   quality?: number;
   format?: "webp";
@@ -264,6 +266,11 @@ export const buildProxyImageUrl = (
     params.set("attachmentId", options.attachmentId);
   }
 
+  if (options?.media) {
+    params.set("media", options.media);
+    params.set("type", options.media);
+  }
+
   if (options?.width) {
     params.set("w", String(sanitizePositiveInteger(options.width, options.width)));
   }
@@ -434,6 +441,7 @@ export const getInboxMessageMediaUrl = (
   options?: {
     attachmentIndex?: number | null;
     attachmentId?: string | null;
+    media?: "audio" | "image" | "video" | "file";
   },
 ): string => {
   if (rawUrl && typeof rawUrl === "string") {
@@ -443,6 +451,7 @@ export const getInboxMessageMediaUrl = (
         messageId,
         attachmentIndex: options?.attachmentIndex,
         attachmentId: options?.attachmentId,
+        media: options?.media,
       });
     }
   }
@@ -454,6 +463,7 @@ export const getInboxMessageMediaUrl = (
       messageId,
       attachmentIndex: options?.attachmentIndex,
       attachmentId: options?.attachmentId,
+      media: options?.media,
     });
   }
 
@@ -462,6 +472,7 @@ export const getInboxMessageMediaUrl = (
       messageId,
       attachmentIndex: options?.attachmentIndex,
       attachmentId: options?.attachmentId,
+      media: options?.media,
     });
   }
 
