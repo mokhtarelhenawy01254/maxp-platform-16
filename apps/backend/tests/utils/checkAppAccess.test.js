@@ -206,5 +206,64 @@ describe("checkAppAccess middleware", () => {
     );
     expect(next).not.toHaveBeenCalled();
   });
+
+  describe("SEC-A3: paid modules subscription checks", () => {
+    const paidModuleSlugs = [
+      "treasury-expenses",
+      "hr-core",
+      "academy-app",
+      "radiology-app",
+      "booking-app",
+    ];
+
+    test.each(paidModuleSlugs)(
+      "blocks access with 403 when company does not have active subscription for %s",
+      async (slug) => {
+        const req = { user: { companyId: "company-unsubscribed" } };
+        const res = createResponse();
+        const next = jest.fn();
+
+        mockPrisma.marketplaceApp.findMany.mockResolvedValue([
+          { id: `app-${slug}`, slug, name: `Module ${slug}` },
+        ]);
+        // Company has no active subscription for this app
+        mockPrisma.companyApp.findUnique.mockResolvedValue(null);
+
+        await checkAppAccess(slug)(req, res, next);
+
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: false,
+            needsActivation: true,
+          })
+        );
+        expect(next).not.toHaveBeenCalled();
+      }
+    );
+
+    test.each(paidModuleSlugs)(
+      "grants access when company has active subscription for %s",
+      async (slug) => {
+        const req = { user: { companyId: "company-subscribed" } };
+        const res = createResponse();
+        const next = jest.fn();
+
+        mockPrisma.marketplaceApp.findMany.mockResolvedValue([
+          { id: `app-${slug}`, slug, name: `Module ${slug}` },
+        ]);
+        mockPrisma.companyApp.findUnique.mockResolvedValue({
+          id: `comp-app-${slug}`,
+          status: "ACTIVE",
+        });
+
+        await checkAppAccess(slug)(req, res, next);
+
+        expect(next).toHaveBeenCalled();
+        expect(req.marketplaceApp).toBeDefined();
+        expect(req.marketplaceApp.slug).toBe(slug);
+      }
+    );
+  });
 });
 

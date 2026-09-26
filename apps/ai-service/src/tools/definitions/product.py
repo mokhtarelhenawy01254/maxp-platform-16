@@ -161,7 +161,7 @@ class ProductTopSellingInput(BaseModel):
 
 
 class ProductUpdatePriceInput(BaseModel):
-    product_id: str = Field(description="Product ID")
+    product_id: str = Field(description="Product CUID (e.g. cmu5iix000...). MUST be a valid CUID obtained from product_search, NOT the product name.")
     new_price: float = Field(description="New price")
     reason: str | None = Field(default=None, description="Reason for price change")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
@@ -281,12 +281,41 @@ async def product_top_selling(input_data: ProductTopSellingInput) -> dict[str, A
     )
 
 
+async def _resolve_product_cuid(company_id: str, identifier: str) -> str | None:
+    if not identifier or not company_id:
+        return None
+    clean = str(identifier).strip()
+    import re
+    if re.match(r"^c[a-z0-9]{20,}$", clean):
+        return clean
+    try:
+        from src.tools.repositories.product_search_repository import ProductSearchRepository
+        import src.db.session as _db_mod
+        async with _db_mod.async_session() as sess:
+            repo = ProductSearchRepository(sess)
+            matches = await repo.search_products(company_id=company_id, query=clean, limit=1)
+            if matches and matches[0].get("id"):
+                return str(matches[0]["id"])
+    except Exception as e:
+        logging.warning("resolve_product_cuid_failed: %s", str(e))
+    return None
+
+
 async def product_update_price(input_data: ProductUpdatePriceInput) -> dict[str, Any]:
-    return _write_result("product.updatePrice", {
-        "productId": input_data.product_id,
-        "newPrice": input_data.new_price,
-        "reason": input_data.reason,
-    }, input_data.company_id or "")
+    company_id = input_data.company_id or ""
+    product_id = input_data.product_id
+    if not company_id or not product_id:
+        return {"success": False, "error": "Missing company_id or product_id"}
+
+    resolved_id = await _resolve_product_cuid(company_id, product_id)
+    if resolved_id:
+        product_id = resolved_id
+
+    from src.tools.repositories.product_repository import ProductRepository
+    import src.db.session as _db_mod
+    async with _db_mod.async_session() as sess:
+        repo = ProductRepository(sess)
+        return await repo.update_product_price(product_id, company_id, input_data.new_price)
 
 
 async def product_performance(input_data: ProductPerformanceInput) -> dict[str, Any]:

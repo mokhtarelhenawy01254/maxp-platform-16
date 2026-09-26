@@ -16,6 +16,10 @@ class DelegateTaskInput(BaseModel):
     task_goal: str = Field(
         description="Clear, actionable question or sub-task to execute (e.g. 'افحص المخزون المتاح لكوتشي Dash مقاسات 41-45', 'استخرج أسعار سنيكرز المنافسين في السوق')"
     )
+    delegator_role: str | None = Field(
+        default=None,
+        description="Role or title of the delegating agent (e.g. 'المساعد التنفيذي', 'مدير المتجر')",
+    )
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
@@ -26,18 +30,19 @@ async def delegate_task(input_data: DelegateTaskInput) -> dict[str, Any]:
     """
     company_id = input_data.company_id or ""
     if not company_id:
-        return {"success": False, "error": "company_id is required"}
+        return {"success": False, "status": "DELEGATION_FAILED", "action": "HANDLE_LOCALLY", "error": "company_id is required"}
 
     target_role = (input_data.target_role or "").strip().upper()
     if not target_role:
-        return {"success": False, "error": "target_role is required"}
+        return {"success": False, "status": "DELEGATION_FAILED", "action": "HANDLE_LOCALLY", "error": "target_role is required"}
 
     try:
         from src.services.agent_manager_service import get_agent_manager_service
         manager = get_agent_manager_service()
 
+        delegator_title = (input_data.delegator_role or "").strip() or "المساعد التنفيذي"
         thread_id = f"subtask_{target_role.lower()}_{int(time.time())}"
-        message = f"[مهمة مفوضة من وكيل الميديا باير]\nالهدف المطلوب تنفيذه بدقة: {input_data.task_goal}"
+        message = f"[مهمة مفوضة من {delegator_title}]\nالهدف المطلوب تنفيذه بدقة: {input_data.task_goal}"
 
         result = await manager.run_agent_task(
             company_id=company_id,
@@ -47,14 +52,22 @@ async def delegate_task(input_data: DelegateTaskInput) -> dict[str, Any]:
         )
 
         if not result.get("success"):
+            err = result.get("error", "فشل تشغيل الوكيل المتخصص")
             return {
                 "success": False,
+                "status": "DELEGATION_FAILED",
+                "action": "HANDLE_LOCALLY",
                 "target_role": target_role,
-                "error": result.get("error", "فشل تشغيل الوكيل المتخصص"),
+                "error": err,
+                "instructions": (
+                    f"الوكيل المتخصص ({target_role}) غير متاح حاليًا ({err}). "
+                    "يجب تنفيذ المهمة محليًا بالأدوات المتوفرة لديك واستخراج الأرقام الحقيقية مباشرة دون اختراع أو ردود ترحيبية فارغة."
+                ),
             }
 
         return {
             "success": True,
+            "status": "success",
             "target_role": target_role,
             "agent_name": result.get("agent_name", target_role),
             "task_goal": input_data.task_goal,
@@ -64,14 +77,23 @@ async def delegate_task(input_data: DelegateTaskInput) -> dict[str, Any]:
         logger.error("delegate_task execution error", error=str(exc))
         return {
             "success": False,
+            "status": "DELEGATION_FAILED",
+            "action": "HANDLE_LOCALLY",
             "target_role": target_role,
             "error": str(exc),
+            "instructions": (
+                f"تعذر التفويض للوكيل ({target_role}). "
+                "يجب تنفيذ المهمة محليًا بالأدوات المتوفرة لديك واستخراج الأرقام الحقيقية مباشرة دون اختراع."
+            ),
         }
 
 
 def _format_delegate_task(result: dict) -> str:
     if not result.get("success"):
-        return f"تعذر تفويض المهمة لوكيل [{result.get('target_role', '')}]: {result.get('error', 'خطأ غير معروف')}"
+        return (
+            f"تعذر تفويض المهمة لوكيل [{result.get('target_role', '')}]: {result.get('error', 'غير متاح')}.\n"
+            f"الإجراء: مطلوب التنفيذ محليًا فورًا ({result.get('action', 'HANDLE_LOCALLY')}) باستخدام أدواتك المتاحة وإظهار الأرقام الفعلية للتاجر."
+        )
 
     role = result.get("target_role", "")
     agent_name = result.get("agent_name", role)

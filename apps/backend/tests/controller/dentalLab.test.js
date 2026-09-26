@@ -1565,8 +1565,109 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
 
       expect(res.statusCode).toBe(400);
       expect(res.payload.success).toBe(false);
-      expect(res.payload.error).toContain('مسجل بالفعل لمستخدم آخر على المنصة');
+    });
+
+    test('updateTechnician rejects password modification for existing technician account (SEC-A1)', async () => {
+      const prisma = createPrisma();
+      prisma.dentalTechnician.findFirst.mockResolvedValue({
+        id: 'tech-1',
+        companyId: 'company-1',
+        name: 'أحمد علي',
+        userId: 'user-existing-1',
+      });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateTechnician(
+        req({
+          params: { id: 'tech-1' },
+          body: {
+            password: 'maliciousPassword123',
+          },
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.success).toBe(false);
+      expect(res.payload.error).toContain('لا يمكن تعديل كلمة مرور مستخدم قائم من خلال إدارة الفنيين');
       expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(prisma.dentalTechnician.update).not.toHaveBeenCalled();
+    });
+
+    test('updateTechnician rejects linking userId from another company (SEC-A1)', async () => {
+      const prisma = createPrisma();
+      prisma.dentalTechnician.findFirst.mockResolvedValue({
+        id: 'tech-1',
+        companyId: 'company-1',
+        name: 'أحمد علي',
+        userId: null,
+      });
+      prisma.userCompany.findFirst.mockResolvedValue(null);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateTechnician(
+        req({
+          params: { id: 'tech-1' },
+          body: {
+            userId: 'user-foreign-999',
+          },
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(403);
+      expect(res.payload.success).toBe(false);
+      expect(res.payload.error).toContain('المستخدم المحدد غير مسجل في هذه الشركة');
+    });
+  });
+
+  describe('case attachment security (SEC-A2)', () => {
+    test('uploadCaseAttachment rejects HTML files with 400', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst.mockResolvedValue({ id: 'case-1', companyId: 'company-1' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.uploadCaseAttachment(
+        req({
+          params: { id: 'case-1' },
+          body: { kind: 'SCAN' },
+          files: [
+            { originalname: 'malicious.html', mimetype: 'text/html', path: '/tmp/malicious.html', size: 100 },
+          ],
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.success).toBe(false);
+      expect(res.payload.error).toContain('رفع ملفات HTML أو SVG غير مسموح لدواعي أمنية');
+      expect(prisma.dentalCaseAttachment.create).not.toHaveBeenCalled();
+    });
+
+    test('uploadCaseAttachment rejects SVG files with 400', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst.mockResolvedValue({ id: 'case-1', companyId: 'company-1' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.uploadCaseAttachment(
+        req({
+          params: { id: 'case-1' },
+          body: { kind: 'PHOTO' },
+          files: [
+            { originalname: 'xss.svg', mimetype: 'image/svg+xml', path: '/tmp/xss.svg', size: 100 },
+          ],
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(400);
+      expect(res.payload.success).toBe(false);
+      expect(res.payload.error).toContain('رفع ملفات HTML أو SVG غير مسموح لدواعي أمنية');
+      expect(prisma.dentalCaseAttachment.create).not.toHaveBeenCalled();
     });
   });
 

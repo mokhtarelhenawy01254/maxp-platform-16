@@ -986,7 +986,7 @@ const updateTechnician = async (req, res) => {
       if (data.userId) {
         const uc = await prisma.userCompany.findFirst({ where: { userId: data.userId, companyId } });
         if (!uc) {
-          return res.status(400).json({ success: false, error: 'المستخدم المحدد غير مسجل في هذه الشركة' });
+          return res.status(403).json({ success: false, error: 'المستخدم المحدد غير مسجل في هذه الشركة' });
         }
       }
     }
@@ -1021,9 +1021,15 @@ const updateTechnician = async (req, res) => {
     if (!targetUserId && email) {
       const existingUser = await prisma.user.findFirst({ where: { email } });
       if (existingUser) {
+        if (password) {
+          return res.status(400).json({
+            success: false,
+            error: 'لا يمكن تعديل كلمة مرور مستخدم قائم من خلال إدارة الفنيين، يجب تعديلها من إعدادات المستخدمين أو ملف المستخدم الشخصي',
+          });
+        }
         const uc = await prisma.userCompany.findFirst({ where: { userId: existingUser.id, companyId } });
         if (!uc) {
-          return res.status(400).json({
+          return res.status(403).json({
             success: false,
             error: 'هذا البريد الإلكتروني مسجل بالفعل لمستخدم في شركة أخرى ولا يمكن ربطه',
           });
@@ -3125,26 +3131,24 @@ const uploadCaseAttachment = async (req, res) => {
       }
     }
 
-    // التعرف التلقائي على ملفات HTML (Exocad 3D Web Viewer) كـ DESIGN_REVIEW
-    const isHtmlFile = (f) => {
+    // SEC-A2: منع رفع ملفات HTML أو SVG منعاً قاطعاً لحماية النظام من ثغرات XSS المخزنة
+    const isBannedFile = (f) => {
       const ext = path.extname(f.originalname || f.filename || '').toLowerCase();
       const mime = String(f.mimetype || '').toLowerCase();
-      return ext === '.html' || ext === '.htm' || mime === 'text/html';
+      return (
+        ext === '.html' ||
+        ext === '.htm' ||
+        ext === '.svg' ||
+        ext === '.shtml' ||
+        ext === '.xhtml' ||
+        mime === 'text/html' ||
+        mime === 'image/svg+xml'
+      );
     };
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      if (isHtmlFile(f) && perFileKinds[i] !== 'DESIGN_REVIEW') {
-        perFileKinds[i] = 'DESIGN_REVIEW';
-      }
-    }
-
-    // رفع مراجعة التصميم (HTML من exocad) لفريق عمل المعمل المصرح لهم
-    if (perFileKinds.includes('DESIGN_REVIEW')) {
-      const teamRoles = await require('../services/dentalRoles').loadTeamRoles(companyId);
-      const role = resolveDentalRole(req.user, teamRoles);
-      if (!['OWNER', 'MANAGER', 'TECHNICIAN', 'RECEPTION'].includes(role)) {
-        for (const f of files) { if (f && f.path) fs.unlink(f.path, () => {}); }
-        return res.status(403).json({ success: false, error: 'غير مصرح برفع مراجعة التصميم' });
+    for (const f of files) {
+      if (isBannedFile(f)) {
+        for (const ff of files) { if (ff && ff.path) fs.unlink(ff.path, () => {}); }
+        return res.status(400).json({ success: false, error: 'رفع ملفات HTML أو SVG غير مسموح لدواعي أمنية' });
       }
     }
 

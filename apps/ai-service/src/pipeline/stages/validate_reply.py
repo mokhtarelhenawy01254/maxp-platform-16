@@ -52,17 +52,92 @@ _HALLUCINATION_FALLBACK = (
 )
 
 
+_TOOL_CREATION_PATTERNS = [
+    re.compile(r"عملت(?:لك)?\s+(?:الأداة|أداة)", re.IGNORECASE),
+    re.compile(r"أنشأت\s+(?:الأداة|أداة)", re.IGNORECASE),
+    re.compile(r"خلّيتها\s+شغالة\s+ودائمة", re.IGNORECASE),
+    re.compile(r"أداة\s+جديدة", re.IGNORECASE),
+    re.compile(r"تم\s+إنشاء\s+(?:الأداة|أداة)", re.IGNORECASE),
+    re.compile(r"أداة\s+تجيبلك", re.IGNORECASE),
+    re.compile(r"عملت(?:لك)?\s+(?:المهارة|مهارة)", re.IGNORECASE),
+    re.compile(r"أنشأت\s+(?:المهارة|مهارة)", re.IGNORECASE),
+]
+
+_TOOL_CREATION_FALLBACK = (
+    "مش قادر أعمل أداة جديدة بنفسي لأن ده بيحتاج كود وتطوير برمجي، "
+    "لكن أقدر أساعدك باستخدام الأدوات المتاحة حاليًا (زي فحص المنتجات والأسعار والمنافسين) "
+    "أو تسجيل مهارة/قاعدة تشغيلية محددة."
+)
+
+_SCHEDULING_PATTERNS = [
+    re.compile(r"من\s+بكرة(?:\s+الصبح)?(?:\s+الساعة)?", re.IGNORECASE),
+    re.compile(r"هتلاقي\s+الملخص\s+جاهز", re.IGNORECASE),
+    re.compile(r"جدولت(?:لك)?", re.IGNORECASE),
+    re.compile(r"تمت?\s+الجدولة", re.IGNORECASE),
+    re.compile(r"كل\s+يوم(?:\s+الساعة|\s+الصبح|\s+\d+)", re.IGNORECASE),
+    re.compile(r"سأقوم\s+بإرسال.*يومياً", re.IGNORECASE),
+    re.compile(r"هبعتلك\s+كل\s+يوم", re.IGNORECASE),
+    re.compile(r"جدولة\s+المهمة", re.IGNORECASE),
+]
+
+_SCHEDULING_FALLBACK = (
+    "مش قادر أجدول المهمة دي بشكل تلقائي حاليًا، "
+    "لكن تقدر تطلب مني الملخص ده في أي وقت تحتاجه أو تضبط تذكير تشغيلي."
+)
+
+
+def _enforce_honesty_gate(text: str, executed_tools: list[dict[str, Any]]) -> str:
+    """Enforce grounding honesty (BUG-4 / OWASP LLM06 / cases.json H1 & H2):
+    1. Tool creation claims without a successful manage_agent_skill tool call
+       are replaced with an explicit refusal explaining that tools require code.
+    2. Scheduling promises without a successful scheduler_create_job tool call
+       are replaced with an explicit refusal without making future promises.
+    """
+    if not text:
+        return text
+
+    # Check tool creation claims
+    has_tool_claim = any(p.search(text) for p in _TOOL_CREATION_PATTERNS)
+    if has_tool_claim:
+        has_real_creation = any(
+            isinstance(item, dict)
+            and item.get("tool") in ("manage_agent_skill", "record_learned_rule")
+            and item.get("status") == "success"
+            for item in (executed_tools or [])
+        )
+        if not has_real_creation:
+            logger.warning("honesty_gate.blocked_unsupported_tool_creation_claim", text=text[:100])
+            return _TOOL_CREATION_FALLBACK
+
+    # Check scheduling claims
+    has_sched_claim = any(p.search(text) for p in _SCHEDULING_PATTERNS)
+    if has_sched_claim:
+        has_real_schedule = any(
+            isinstance(item, dict)
+            and item.get("tool") == "scheduler_create_job"
+            and item.get("status") == "success"
+            for item in (executed_tools or [])
+        )
+        if not has_real_schedule:
+            logger.warning("honesty_gate.blocked_unsupported_scheduling_claim", text=text[:100])
+            return _SCHEDULING_FALLBACK
+
+    return text
+
+
 def _has_hallucinated_success_claim(text: str, executed_tools: list[dict[str, Any]]) -> bool:
     """Return True if the reply claims a state-changing action succeeded,
     but no such tool was actually executed with a successful result.
 
     This is a string-based check (no LLM call) — fast and deterministic.
     """
-    if not text or not executed_tools:
+    if not text:
         return False
     text_lower = text.lower()
     if not any(phrase in text_lower for phrase in _HALLUCINATION_PHRASES):
         return False
+    if not executed_tools:
+        return True
     # Did any state-changing tool succeed?
     for item in executed_tools:
         if not isinstance(item, dict):
@@ -717,6 +792,7 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
     # the LLM was bypassed — fall back to a one-shot prompt that asks the main model
     # to call the right tool and respond honestly based on the actual result.
     if not reply and ctx.final_reply:
+        ctx.final_reply = _enforce_honesty_gate(ctx.final_reply or "", ctx.executed_tools or [])
         if _has_hallucinated_success_claim(
             ctx.final_reply or "", ctx.executed_tools or []
         ):
@@ -838,7 +914,7 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
 
             validated = AgentResponse(**response_data)
             ctx.response_contract = validated
-            ctx.final_reply = validated.reply
+            ctx.final_reply = _enforce_honesty_gate(validated.reply, ctx.executed_tools or [])
 
             # ── Anti-hallucination guard (runs BEFORE self-review) ──
             # If the LLM claims a state-changing action succeeded but no
@@ -985,7 +1061,18 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
 
     # Anti-AI slop: strip markdown asterisks, robotic bullets, and marketing emojis from final customer reply
     if ctx.final_reply:
-        txt = ctx.final_reply
+        txt = _enforce_honesty_gate(ctx.final_reply, ctx.executed_tools or [])
+
+        # Policy Engine check: if an action was blocked by policy, explain clearly
+        try:
+            for item in (ctx.executed_tools or []):
+                if isinstance(item, dict) and item.get("status") == "blocked_by_policy":
+                    err_msg = item.get("error", "مخالفة لقواعد وسياسات المتجر")
+                    txt = f"تم إيقاف الإجراء بناءً على سياسات المتجر: {err_msg}"
+                    break
+        except Exception:
+            pass
+
         txt = re.sub(r"\*\*([^*]+)\*\*", r"\1", txt)
         txt = re.sub(r"(?<!\w)\*([^*]+)\*(?!\w)", r"\1", txt)
         txt = re.sub(r"^\s*[-*•]\s+", "", txt, flags=re.MULTILINE)

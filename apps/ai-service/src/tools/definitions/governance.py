@@ -48,6 +48,71 @@ class MessageBroadcastInput(BaseModel):
 
 
 async def scheduler_create_job(input_data: SchedulerCreateJobInput) -> dict[str, Any]:
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "company_id is required"}
+
+    desc = (input_data.description or "").strip()
+    if not desc:
+        return {"success": False, "error": "description is required"}
+
+    import re
+    import json
+    import time
+    import uuid
+    from sqlalchemy import text
+
+    hour = 8
+    lower = desc.lower()
+    hour_match = re.search(r"الساعة\s+(\d{1,2})", lower)
+    if hour_match:
+        h = int(hour_match.group(1))
+        if 0 <= h <= 23:
+            hour = h
+    elif "9" in lower:
+        hour = 9
+
+    cron_expr = f"0 {hour} * * *"
+    task_type = input_data.task_type or "SALES"
+    job_id = f"cron_{int(time.time())}_{uuid.uuid4().hex[:6]}"
+    metadata = json.dumps({
+        "cronExpression": cron_expr,
+        "taskType": task_type,
+        "runCount": 0,
+        "status": "ACTIVE",
+        "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }, ensure_ascii=False)
+
+    try:
+        if _db_mod.async_session is not None:
+            async with _db_mod.async_session() as sess:
+                await sess.execute(text("""
+                    INSERT INTO company_skills (id, "companyId", name, description, instructions, tools, channels, priority, enabled, metadata, "createdAt", "updatedAt")
+                    VALUES (:id, :cid, :name, :desc, :inst, '[]', '[]', 0, true, :meta, NOW(), NOW())
+                """), {
+                    "id": job_id,
+                    "cid": company_id,
+                    "name": f"[CRON] {desc[:100]}",
+                    "desc": desc,
+                    "inst": desc,
+                    "meta": metadata,
+                })
+                await sess.commit()
+
+            return {
+                "success": True,
+                "status": "EXECUTED",
+                "job": {
+                    "id": job_id,
+                    "description": desc,
+                    "cronExpression": cron_expr,
+                    "taskType": task_type,
+                    "status": "ACTIVE",
+                },
+            }
+    except Exception as e:
+        logger.error("scheduler_create_job_db_failed", error=str(e))
+
     return _write_result("scheduler.create_job", {
         "description": input_data.description,
         "taskType": input_data.task_type,

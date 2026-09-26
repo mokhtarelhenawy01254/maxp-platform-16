@@ -367,4 +367,5 @@ roles:
     - manage_agent_skill
     - update_agent_identity
     - agent_spawn
+    - scheduler_create_job
 

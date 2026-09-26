@@ -130,7 +130,6 @@ WRITE_TOOL_NAMES: set[str] = {
     "discount_create",
     "discount_create_draft",
     "competitor_generate_report",
-    "scheduler_create_job",
     "knowledge_create_faq",
     "knowledge_create_policy",
     "facebook_ad_create_draft",
@@ -147,6 +146,11 @@ WRITE_TOOL_NAMES: set[str] = {
     "conversion_tool_toggle",
     "conversion_tool_set_threshold",
     "payment_methods_configure",
+    # Agent self-modification & tool governance (OWASP LLM06 / ASI03)
+    "manage_agent_skill",
+    "record_learned_rule",
+    "update_agent_identity",
+    "unlock_advanced_tools",
 }
 
 DIRECT_WRITE_TOOL_NAMES: set[str] = {
@@ -159,6 +163,7 @@ DIRECT_WRITE_TOOL_NAMES: set[str] = {
     "order_update_details",
     "shipping_zone_set",
     "order_target_settings",
+    "scheduler_create_job",
 }
 
 

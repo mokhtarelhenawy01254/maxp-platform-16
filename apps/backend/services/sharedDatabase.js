@@ -6,6 +6,7 @@
 
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
+require('../utils/patchPrismaDecimal');
 const tenantContext = require('./tenantContext');
 const companyCacheService = require('./companyCacheService');
 const { ensureLocalPostgres } = require('./ensureLocalPostgres');

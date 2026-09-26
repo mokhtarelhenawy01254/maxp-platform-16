@@ -72,23 +72,26 @@ class SalesRepository(BaseRepository):
         first = today_row.first()
         today = dict(first._mapping) if first else {}
 
-        pending_row = await self._session.execute(text("""
+        pending_res = await self._session.execute(text("""
             SELECT COUNT(*)::int AS cnt
             FROM orders
             WHERE "companyId" = :cid AND status = 'PENDING'
         """), {"cid": company_id})
-        pending_total = pending_row.first().cnt if pending_row.first() else 0
+        p_row = pending_res.first()
+        pending_total = p_row.cnt if p_row else 0
 
-        low_stock_row = await self._session.execute(text("""
-            SELECT COUNT(*)::int AS cnt
-            FROM products
-            WHERE "companyId" = :cid
-              AND "deletedAt" IS NULL
-              AND "isActive" = TRUE
-              AND "trackInventory" = TRUE
-              AND stock <= 5
+        low_stock_res = await self._session.execute(text("""
+            SELECT COUNT(DISTINCT p.id)::int AS cnt
+            FROM products p
+            LEFT JOIN product_variants pv ON pv."productId" = p.id AND pv."isActive" = TRUE AND pv."trackInventory" = TRUE
+            WHERE p."companyId" = :cid
+              AND p."deletedAt" IS NULL
+              AND p."isActive" = TRUE
+              AND p."trackInventory" = TRUE
+              AND (p.stock <= 5 OR (pv.id IS NOT NULL AND pv.stock <= 5))
         """), {"cid": company_id})
-        low_stock_cnt = low_stock_row.first().cnt if low_stock_row.first() else 0
+        l_row = low_stock_res.first()
+        low_stock_cnt = l_row.cnt if l_row else 0
 
         return {
             "todayOrders": today.get("total", 0),

@@ -28,7 +28,9 @@ async def record_learned_rule(input_data: RecordLearnedRuleInput) -> dict[str, A
         return {"success": False, "error": "company_id is required"}
 
     from src.skills.learner import autonomous_skill_learner
-    return await autonomous_skill_learner.record_universal_rule(
+    from src.tools.repositories.audit_repository import log_agent_audit_event
+
+    res = await autonomous_skill_learner.record_universal_rule(
         company_id=company_id,
         rule_category=input_data.rule_category,
         rule_title=input_data.rule_title,
@@ -36,6 +38,18 @@ async def record_learned_rule(input_data: RecordLearnedRuleInput) -> dict[str, A
         supporting_evidence=input_data.supporting_evidence,
         trigger_keywords=input_data.trigger_keywords,
     )
+
+    if res.get("success"):
+        await log_agent_audit_event(
+            company_id=company_id,
+            action="LEARNED_RULE_RECORDED",
+            description=f"تم تسجيل وتثبيت قاعدة تشغيلية في الذاكرة: '{input_data.rule_title}' (فئة: {input_data.rule_category})",
+            category="AI_AGENT",
+            severity="INFO",
+            metadata={"rule_title": input_data.rule_title, "category": input_data.rule_category},
+        )
+
+    return res
 
 
 def _format_record_learned_rule(result: dict) -> str:
@@ -63,12 +77,16 @@ class ManageAgentSkillInput(BaseModel):
         default=None,
         description="Unique skill ID slug (e.g. 'bundle_pricing_expert', 'black_friday_campaigns'). Auto-generated if omitted on create.",
     )
-    name: str = Field(description="Human-readable display name of the skill (e.g. 'مهارة تسعير الباقات والعروض')")
+    name: str | None = Field(
+        default=None,
+        description="Human-readable display name of the skill (e.g. 'مهارة تسعير الباقات والعروض')",
+    )
     description: str = Field(
         default="",
         description="Concise summary of what the skill does (Hermes style: max 60 chars ending with a period)",
     )
-    instructions: str = Field(
+    instructions: str | None = Field(
+        default=None,
         description="Detailed operational instructions, step-by-step workflow, and rules for this skill",
     )
     trigger_phrases: str | None = Field(
@@ -98,16 +116,22 @@ async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any
     from src.db.session import async_session
     from src.db.models.skill import Skill
     from src.skills.integration import register_tenant_skill_in_cache
+    from src.tools.repositories.audit_repository import log_agent_audit_event
     from sqlalchemy import select
+    import hashlib
     import re
 
     action = (input_data.action or "create").strip().lower()
 
     async with async_session() as session:
         target_id = input_data.skill_id
+        skill_name = (input_data.name or "").strip()
         if not target_id:
-            slug = re.sub(r'[^a-zA-Z0-9_]+', '_', input_data.name.lower()).strip('_')
-            target_id = f"custom_{slug}_{company_id[:8]}" if slug else f"custom_skill_{int(datetime.now().timestamp())}_{company_id[:8]}"
+            slug = re.sub(r'[^\w\-]+', '_', skill_name, flags=re.UNICODE).strip('_').lower()
+            if not slug:
+                hash_part = hashlib.md5((skill_name or "skill").encode()).hexdigest()[:8]
+                slug = f"skill_{hash_part}"
+            target_id = f"custom_{slug}_{company_id[:8]}"
 
         stmt = select(Skill).where(Skill.id == target_id, Skill.company_id == company_id)
         res = await session.execute(stmt)
@@ -129,7 +153,11 @@ async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any
                 }
             }
 
-        desc = input_data.description.strip() or input_data.name
+        instructions_clean = (input_data.instructions or "").strip()
+        if not skill_name or not instructions_clean:
+            return {"success": False, "error": "Parameter 'name' and 'instructions' are required for create/update"}
+
+        desc = input_data.description.strip() or skill_name
         if len(desc) > 59:
             desc = desc[:58]
         if not desc.endswith("."):
@@ -142,17 +170,17 @@ async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any
             skill = Skill(
                 id=target_id,
                 company_id=company_id,
-                name=input_data.name.strip(),
+                name=skill_name,
                 version="1.0.0",
                 description=desc,
                 trigger_phrases=triggers,
-                instructions=input_data.instructions.strip(),
-                content=input_data.instructions.strip(),
+                instructions=instructions_clean,
+                content=instructions_clean,
                 allowed_tools=tools,
                 channels=["facebook", "whatsapp", "dashboard"],
                 priority=10,
                 enabled=True,
-                requires_human_approval=False,
+                requires_human_approval=True,
                 skill_metadata={
                     "source": "AGENT_CREATED_SKILL",
                     "created_at": datetime.now(timezone.utc).isoformat(),
@@ -160,11 +188,11 @@ async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any
             )
             session.add(skill)
         else:
-            skill.name = input_data.name.strip()
+            skill.name = skill_name
             skill.description = desc
             skill.trigger_phrases = triggers
-            skill.instructions = input_data.instructions.strip()
-            skill.content = input_data.instructions.strip()
+            skill.instructions = instructions_clean
+            skill.content = instructions_clean
             if tools:
                 skill.allowed_tools = tools
             meta = dict(skill.skill_metadata or {})
@@ -172,6 +200,15 @@ async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any
             skill.skill_metadata = meta
 
         await session.commit()
+
+        await log_agent_audit_event(
+            company_id=company_id,
+            action=f"AGENT_SKILL_{action.upper()}",
+            description=f"تم حفظ مهارة مخصصة للمتجر: '{skill_name}' (ID: {target_id})",
+            category="AI_AGENT",
+            severity="MEDIUM",
+            metadata={"skill_id": target_id, "name": skill_name, "action": action},
+        )
 
         # Also ensure skill is attached to the active agent in ai.agents if present
         if target_id:
@@ -315,6 +352,16 @@ async def update_agent_identity(input_data: UpdateAgentIdentityInput) -> dict[st
 
         session.add(target_agent)
         await session.commit()
+
+        from src.tools.repositories.audit_repository import log_agent_audit_event
+        await log_agent_audit_event(
+            company_id=company_id,
+            action="AGENT_IDENTITY_UPDATED",
+            description=f"تم تحديث هوية واسم الوكيل إلى: '{full_display_name}' (الدور: {target_agent.role})",
+            category="AI_AGENT",
+            severity="MEDIUM",
+            metadata={"agent_id": target_agent.id, "new_name": full_display_name, "role": target_agent.role},
+        )
 
         logger.info("agent_identity_updated", company_id=company_id, agent_id=target_agent.id, old_name=old_name, new_name=full_display_name)
 

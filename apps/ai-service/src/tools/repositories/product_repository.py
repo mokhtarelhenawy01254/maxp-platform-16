@@ -9,6 +9,36 @@ from src.tools.repositories.base import BaseRepository
 
 
 class ProductRepository(BaseRepository):
+    async def update_product_price(self, product_id: str, company_id: str, new_price: float) -> dict[str, Any]:
+        row = await self._session.execute(text("""
+            UPDATE products
+            SET price = :new_price, "updatedAt" = NOW()
+            WHERE id = :pid AND "companyId" = :cid
+            RETURNING id, name, price
+        """), {"pid": product_id, "cid": company_id, "new_price": new_price})
+        updated = row.first()
+        await self._session.commit()
+        if not updated:
+            return {"success": False, "error": f"Product '{product_id}' not found for company '{company_id}'"}
+
+        try:
+            await self._session.execute(text("""
+                UPDATE ai.product_embeddings
+                SET price = :new_price, updated_at = NOW()
+                WHERE product_id = :pid AND company_id = :cid
+            """), {"pid": product_id, "cid": company_id, "new_price": new_price})
+            await self._session.commit()
+        except Exception:
+            pass
+
+        return {
+            "success": True,
+            "productId": updated.id,
+            "name": updated.name,
+            "newPrice": float(updated.price),
+            "message": f"تم تحديث سعر المنتج '{updated.name}' إلى {updated.price} بنجاح.",
+        }
+
     async def get_product(self, product_id: str, company_id: str) -> dict[str, Any] | None:
         row = await self._session.execute(text("""
             SELECT id, name, price, images

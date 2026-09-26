@@ -470,4 +470,57 @@ describe('dentalLabWave2', () => {
       }
     });
   });
+
+  describe('dentalStageTemplateService auto-seed', () => {
+    const {
+      seedDefaultStageTemplatesForWorkType,
+      getStageTemplatesForWorkType,
+      resolveRoleForStageName,
+    } = require('../../services/dentalStageTemplateService');
+
+    test('auto-seeding a new work type ensures every stage requiredRole is specialized and NOT GENERAL_TECHNICIAN', async () => {
+      const createdRows = [];
+      const prisma = createPrisma({
+        workTypeStageTemplate: {
+          findMany: jest.fn().mockResolvedValue([]),
+          create: jest.fn().mockImplementation(({ data }) => {
+            const row = { id: `st-${createdRows.length + 1}`, ...data };
+            createdRows.push(row);
+            return Promise.resolve(row);
+          }),
+        },
+      });
+
+      const seeded = await seedDefaultStageTemplatesForWorkType(prisma, 'company-1', 'wt-new-zircon');
+      expect(seeded.length).toBe(5);
+
+      // Verify each stage has a specialized role and none is GENERAL_TECHNICIAN
+      const roles = seeded.map((s) => s.requiredRole);
+      for (const role of roles) {
+        expect(role).toBeDefined();
+        expect(role).not.toBe('GENERAL_TECHNICIAN');
+      }
+
+      expect(roles).toEqual([
+        'RECEPTION_LOGISTICS',
+        'CAD_DESIGNER',
+        'CERAMIST',
+        'QC_INSPECTOR',
+        'RECEPTION_LOGISTICS',
+      ]);
+    });
+
+    test('resolves legacy production stage names to correct specialized roles', () => {
+      expect(resolveRoleForStageName('designer')).toBe('CAD_DESIGNER');
+      expect(resolveRoleForStageName('cad cam .printer')).toBe('CERAMIST');
+      expect(resolveRoleForStageName('finish')).toBe('FINISHING_POLISHING');
+      expect(resolveRoleForStageName('مراجعه')).toBe('QC_INSPECTOR');
+      expect(resolveRoleForStageName('خروج')).toBe('RECEPTION_LOGISTICS');
+      expect(resolveRoleForStageName('الاستلام')).toBe('RECEPTION_LOGISTICS');
+      expect(resolveRoleForStageName('التصميم')).toBe('CAD_DESIGNER');
+      expect(resolveRoleForStageName('التصنيع')).toBe('CERAMIST');
+      expect(resolveRoleForStageName('مراجعة الجودة')).toBe('QC_INSPECTOR');
+      expect(resolveRoleForStageName('التسليم')).toBe('RECEPTION_LOGISTICS');
+    });
+  });
 });

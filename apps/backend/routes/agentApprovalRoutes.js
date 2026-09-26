@@ -22,7 +22,7 @@ function isAiServiceEnabled(companyId) {
 
 router.get('/', async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.headers['x-company-id'] || req.query.companyId;
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
     const status = req.query.status || 'pending';
     const result = await aiSdkClient.listApprovals({ companyId, status });
@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
 
 router.post('/:id/approve', async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.headers['x-company-id'] || req.body?.companyId;
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
     await aiSdkClient.resumeWorkflow({
       companyId,
@@ -54,7 +54,7 @@ router.post('/:id/approve', async (req, res) => {
 
 router.post('/:id/reject', async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.headers['x-company-id'] || req.body?.companyId;
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
     await aiSdkClient.resumeWorkflow({
       companyId,

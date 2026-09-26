@@ -406,7 +406,9 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
                   <div className="flex items-center gap-2.5 text-slate-500 dark:text-slate-400 text-xs py-3 pr-8">
                     <span className="h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
                     <span>جاري فحص مؤشرات المنظومة وتوليد القرار التشغيلي…</span>
-                    <span className="font-mono text-[9px] text-slate-400 dark:text-slate-500 mr-auto">DeepSeek-V3</span>
+                    {telemetry?.model && (
+                      <span className="font-mono text-[9px] text-slate-400 dark:text-slate-500 mr-auto">{telemetry.model}</span>
+                    )}
                   </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -419,7 +421,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
                 attachedImages={attachedImages}
                 onRemoveImage={(idx) => setAttachedImages((prev) => prev.filter((_, i) => i !== idx))}
                 onFileUpload={handleFileUpload}
-                onSendMessage={handleSendMessage}
+                onSendMessage={() => handleSendMessage()}
                 onRewind={handleRewind}
                 canRewind={messages.length > 0 && !loading}
                 telemetry={telemetry}

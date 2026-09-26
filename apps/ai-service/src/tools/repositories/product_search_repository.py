@@ -81,18 +81,37 @@ class ProductSearchRepository(BaseRepository):
         return [dict(r._mapping) for r in rows]
 
     async def get_low_stock_products(
-        self, company_id: str, threshold: int = 5, limit: int = 10
+        self, company_id: str, threshold: int = 5, limit: int = 20
     ) -> list[dict[str, Any]]:
-        """List low-stock or out-of-stock products."""
+        """List low-stock or out-of-stock products, checking both parent stock and variants."""
         sql = text("""
-            SELECT id, name, sku, stock, price
-            FROM products
-            WHERE "companyId" = :company_id
-              AND "deletedAt" IS NULL
-              AND "isActive" = TRUE
-              AND "trackInventory" = TRUE
-              AND stock <= :threshold
-            ORDER BY stock ASC
+            SELECT 
+                p.id, p.name, p.sku, p.stock, p.price,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', pv.id,
+                            'name', pv.name,
+                            'sku', pv.sku,
+                            'stock', pv.stock
+                        )
+                    ) FILTER (WHERE pv.id IS NOT NULL AND pv.stock <= :threshold),
+                    '[]'::json
+                ) AS low_variants,
+                MIN(pv.stock) AS min_variant_stock,
+                COUNT(pv.id) FILTER (WHERE pv.stock <= :threshold) AS low_variant_count
+            FROM products p
+            LEFT JOIN product_variants pv 
+                ON pv."productId" = p.id 
+               AND pv."isActive" = TRUE 
+               AND pv."trackInventory" = TRUE
+            WHERE p."companyId" = :company_id
+              AND p."deletedAt" IS NULL
+              AND p."isActive" = TRUE
+              AND p."trackInventory" = TRUE
+            GROUP BY p.id, p.name, p.sku, p.stock, p.price
+            HAVING p.stock <= :threshold OR COUNT(pv.id) FILTER (WHERE pv.stock <= :threshold) > 0
+            ORDER BY LEAST(p.stock, COALESCE(MIN(pv.stock), p.stock)) ASC
             LIMIT :limit
         """)
         rows = await self._session.execute(sql, {

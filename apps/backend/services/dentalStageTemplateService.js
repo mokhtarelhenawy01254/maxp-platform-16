@@ -51,7 +51,7 @@ const DEFAULT_STAGE_ROLES = {
   // Legacy mixed/English stage names found in legacy settings
   'designer': 'CAD_DESIGNER',
   'design': 'CAD_DESIGNER',
-  'cad cam .printer': 'CAD_DESIGNER',
+  'cad cam .printer': 'CERAMIST',
   'cad/cam': 'CAD_DESIGNER',
   'finish': 'FINISHING_POLISHING',
   'qc': 'QC_INSPECTOR',

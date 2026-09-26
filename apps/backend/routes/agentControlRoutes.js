@@ -129,19 +129,54 @@ router.get('/skills/company', async (req, res) => {
       where: { companyId },
       orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
     });
+
+    let aiSkills = [];
+    try {
+      aiSkills = await prisma.$queryRaw`
+        SELECT id, name, description, instructions, 
+               "allowed_tools"::text AS tools, 
+               channels::text AS channels, 
+               priority, enabled, "created_at" AS "createdAt"
+        FROM ai.skills 
+        WHERE company_id = ${companyId}
+        ORDER BY priority DESC, created_at ASC
+      `;
+    } catch (e) {
+      console.warn('[agentControl] Could not query ai.skills:', e.message);
+    }
+
+    const existingIds = new Set(rows.map((r) => r.id));
+    const combined = rows.map((s) => ({
+      id: s.id,
+      name: s.name,
+      description: s.description || '',
+      instructions: s.instructions,
+      tools: parseJson(s.tools, []),
+      channels: parseJson(s.channels, []),
+      priority: s.priority,
+      enabled: s.enabled,
+      createdAt: s.createdAt,
+    }));
+
+    for (const s of aiSkills) {
+      if (!existingIds.has(s.id)) {
+        combined.push({
+          id: s.id,
+          name: s.name,
+          description: s.description || '',
+          instructions: s.instructions,
+          tools: parseJson(s.tools, []),
+          channels: parseJson(s.channels, []),
+          priority: s.priority,
+          enabled: s.enabled,
+          createdAt: s.createdAt,
+        });
+      }
+    }
+
     return res.json({
       success: true,
-      skills: rows.map((s) => ({
-        id: s.id,
-        name: s.name,
-        description: s.description || '',
-        instructions: s.instructions,
-        tools: parseJson(s.tools, []),
-        channels: parseJson(s.channels, []),
-        priority: s.priority,
-        enabled: s.enabled,
-        createdAt: s.createdAt,
-      })),
+      skills: combined,
     });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
@@ -190,10 +225,23 @@ router.delete('/skills/:id', async (req, res) => {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
     const prisma = getSharedPrismaClient();
-    const deleted = await prisma.companySkill.deleteMany({
-      where: { id: req.params.id, companyId },
-    });
-    if (deleted.count === 0) return res.status(404).json({ success: false, error: 'Skill not found' });
+    let deletedCount = 0;
+    try {
+      const deleted = await prisma.companySkill.deleteMany({
+        where: { id: req.params.id, companyId },
+      });
+      deletedCount += deleted.count;
+    } catch (_) {}
+
+    try {
+      const deletedAi = await prisma.$executeRaw`
+        DELETE FROM ai.skills 
+        WHERE id = ${req.params.id} AND company_id = ${companyId}
+      `;
+      deletedCount += Number(deletedAi || 0);
+    } catch (_) {}
+
+    if (deletedCount === 0) return res.status(404).json({ success: false, error: 'Skill not found' });
     return res.json({ success: true });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
@@ -464,9 +512,56 @@ router.put('/settings', async (req, res) => {
 });
 
 router.get('/audit-trail', async (req, res) => {
-  const companyId = getCompanyId(req);
-  if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-  return res.json({ success: true, logs: [], summary: {} });
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const prisma = getSharedPrismaClient();
+    const limit = Math.min(Number(req.query.limit) || 50, 100);
+
+    let logs = [];
+    try {
+      logs = await prisma.activityLog.findMany({
+        where: { companyId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      });
+    } catch (_) {
+      try {
+        logs = await prisma.$queryRaw`
+          SELECT id, "companyId", action, category, description, severity, "isSuccess", "createdAt", metadata
+          FROM activity_logs
+          WHERE "companyId" = ${companyId}
+          ORDER BY "createdAt" DESC
+          LIMIT ${limit}
+        `;
+      } catch (err) {
+        console.warn('[agentControl] Could not query activity_logs:', err.message);
+      }
+    }
+
+    const formatted = (logs || []).map((l) => ({
+      id: l.id,
+      action: l.action,
+      category: l.category || 'AI_AGENT',
+      description: l.description,
+      severity: l.severity || 'INFO',
+      isSuccess: l.isSuccess !== false,
+      createdAt: l.createdAt,
+      metadata: typeof l.metadata === 'string' ? parseJson(l.metadata, {}) : (l.metadata || {}),
+    }));
+
+    return res.json({
+      success: true,
+      logs: formatted,
+      count: formatted.length,
+      summary: {
+        total: formatted.length,
+        aiAgentEvents: formatted.filter((l) => l.category === 'AI_AGENT').length,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 module.exports = router;

@@ -18,8 +18,7 @@ const storage = multer.diskStorage({
 });
 
 // قائمة أنواع الملفات المسموحة — ملفات الحالات (صور/مقاسات/نماذج 3D/مستندات) فقط.
-// HTML مسموح فقط لملفات مراجعة التصميم (exocad webview) ويُفرض ذلك في الـ controller،
-// ويُقدَّم دائماً عبر مسار معزول (CSP مقفل + iframe sandbox).
+// منع قاطع لأي ملفات تنفيذية أو قابلة للحقن (HTML, SVG, Scripts) لمنع ثغرات XSS (SEC-A2).
 const ALLOWED_MIMES = new Set([
   'image/jpeg',
   'image/png',
@@ -30,7 +29,6 @@ const ALLOWED_MIMES = new Set([
   'application/zip',
   'application/octet-stream',
   'text/plain',
-  'text/html',
   'model/stl',
   'model/ply',
 ]);
@@ -39,12 +37,23 @@ const ALLOWED_EXTENSIONS = new Set([
   '.jpg', '.jpeg', '.png', '.webp', '.gif',
   '.pdf', '.json', '.zip', '.txt',
   '.stl', '.ply', '.dxf', '.dcm',
-  '.html',
 ]);
 
+const BANNED_EXTENSIONS = new Set(['.html', '.htm', '.svg', '.shtml', '.xhtml', '.xml', '.js', '.mjs', '.php']);
+const BANNED_MIMES = new Set(['text/html', 'image/svg+xml', 'application/xhtml+xml', 'application/xml', 'text/xml', 'application/javascript']);
+
 function dentalLabFileFilter(_req, file, cb) {
-  const mimeOk = ALLOWED_MIMES.has(String(file.mimetype || '').toLowerCase());
+  const mime = String(file.mimetype || '').toLowerCase();
   const ext = path.extname(file.originalname || '').toLowerCase();
+
+  // Strict SEC-A2 rejection
+  if (BANNED_EXTENSIONS.has(ext) || BANNED_MIMES.has(mime)) {
+    const error = new Error('رفع ملفات HTML أو SVG غير مسموح لدواعي أمنية');
+    error.code = 'DENTAL_FILE_TYPE';
+    return cb(error, false);
+  }
+
+  const mimeOk = ALLOWED_MIMES.has(mime);
   const extOk = ALLOWED_EXTENSIONS.has(ext);
   if (mimeOk || extOk) return cb(null, true);
   const error = new Error('نوع الملف غير مسموح');

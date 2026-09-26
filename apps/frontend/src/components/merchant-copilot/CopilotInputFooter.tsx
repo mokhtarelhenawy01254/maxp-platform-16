@@ -109,14 +109,16 @@ export const CopilotInputFooter: React.FC<CopilotInputFooterProps> = ({
               </button>
             )}
 
-            <span className="font-mono text-[9px] text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-800 border border-slate-300/60 dark:border-slate-700/60 px-2 py-0.5 rounded-md">
-              DeepSeek-V3
-            </span>
+            {telemetry?.model && (
+              <span className="font-mono text-[9px] text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-800 border border-slate-300/60 dark:border-slate-700/60 px-2 py-0.5 rounded-md">
+                {telemetry.model}
+              </span>
+            )}
           </div>
 
           <button
             type="button"
-            onClick={onSendMessage}
+            onClick={() => onSendMessage()}
             disabled={!canSubmit}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.97] text-white font-bold text-xs shadow-xs transition-all duration-150 disabled:opacity-40 disabled:pointer-events-none"
             aria-label="إرسال الطلب"
@@ -143,9 +145,9 @@ export const CopilotInputFooter: React.FC<CopilotInputFooterProps> = ({
 
         {telemetry && (
           <span className="tabular-nums flex items-center gap-1.5 text-slate-500">
-            <span>{telemetry.model || 'DeepSeek-V3'}</span>
-            <span>·</span>
-            <span>{telemetry.latency_ms}ms</span>
+            {telemetry.model && <span>{telemetry.model}</span>}
+            {telemetry.model && telemetry.latency_ms ? <span>·</span> : null}
+            {telemetry.latency_ms ? <span>{telemetry.latency_ms}ms</span> : null}
           </span>
         )}
       </div>

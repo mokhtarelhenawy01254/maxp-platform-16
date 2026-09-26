@@ -113,6 +113,7 @@ def _map_product(p: dict[str, Any]) -> dict[str, Any]:
     size_variants = _aggregate_variants(variants, _VARIANT_SIZE_ALIASES)
     color_variants = _aggregate_variants(variants, _VARIANT_COLOR_ALIASES)
     return {
+        "id": p.get("id"),
         "name": p.get("name"),
         "sku": p.get("sku"),
         "price": p.get("price"),
@@ -224,13 +225,34 @@ async def low_stock_products(
     mapped = []
     for p in data:
         stock = p.get("stock", 0)
-        mapped.append({
+        low_vars = p.get("low_variants")
+        if isinstance(low_vars, str):
+            import json
+            try:
+                low_vars = json.loads(low_vars)
+            except Exception:
+                low_vars = []
+        elif not isinstance(low_vars, list):
+            low_vars = []
+
+        min_v = p.get("min_variant_stock")
+        effective_stock = min_v if (min_v is not None and min_v < stock) else stock
+        status = "OUT_OF_STOCK" if effective_stock <= 0 else "LOW_STOCK"
+        item = {
+            "id": p.get("id"),
             "name": p.get("name"),
             "sku": p.get("sku"),
-            "stockRemaining": stock,
+            "stockRemaining": effective_stock,
+            "totalStock": stock,
             "price": str(p.get("price", 0)),
-            "status": "OUT_OF_STOCK" if stock == 0 else "LOW_STOCK",
-        })
+            "status": status,
+        }
+        if low_vars:
+            item["lowStockVariants"] = [
+                {"name": v.get("name"), "stock": v.get("stock"), "sku": v.get("sku")}
+                for v in low_vars
+            ]
+        mapped.append(item)
 
     return {"count": len(mapped), "products": mapped}
 

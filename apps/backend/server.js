@@ -8,6 +8,7 @@ const dotenv = require("dotenv");
 const v8 = require("v8");
 const helmet = require("helmet");
 const { buildMemoryPressureSnapshot } = require("./services/memoryPressureMonitorService");
+require("./utils/patchPrismaDecimal");
 
 // Setup ffmpeg-static path before any WhatsApp or child process starts
 try {
@@ -1062,6 +1063,7 @@ app.use("/api/v1/tasks", taskRoutes);
 app.use("/api/v1/dev-tasks", devTaskRoutes);
 app.use("/api/v1/agent", agentControlRoutes);
 app.use("/api/v1/agent/approvals", agentApprovalRoutes);
+app.use("/api/v1/agent-approvals", agentApprovalRoutes);
 app.use("/api/v1/agent-manager", agentManagerRoutes);
 app.use("/api/v1/ai/chat", aiAgentChatRoutes);
 app.use("/api/v1/ai/knowledge-questions", knowledgeQuestionRoutes);

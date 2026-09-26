@@ -44,8 +44,60 @@ async def _execute_one_tool(ctx: PipelineContext, registry: Any, tc: dict) -> di
     # payload — the chat endpoint turns it into an approval draft the merchant
     # confirms (execution happens only via approval_service._execute_action).
     approval_mode = getattr(tool, "approval_mode", "never_require")
+    if func_name == "manage_agent_skill" and arguments.get("action") == "get":
+        approval_mode = "never_require"
+
     if approval_mode == "always_require":
         logger.info("tool_blocked_for_approval", name=func_name, company_id=ctx.company_id)
+        if func_name in ("product_update_price", "product.updatePrice"):
+            pid = arguments.get("product_id") or arguments.get("productId")
+            if pid and not re.match(r"^c[a-z0-9]{20,}$", str(pid)):
+                try:
+                    from src.tools.definitions.product import _resolve_product_cuid
+                    resolved = await _resolve_product_cuid(ctx.company_id, str(pid))
+                    if resolved:
+                        arguments["product_id"] = resolved
+                        if "productId" in arguments:
+                            arguments["productId"] = resolved
+                except Exception as ex:
+                    logger.warning("cuid_resolution_error", error=str(ex))
+
+            # Policy Engine verification (deterministic business rules)
+            try:
+                from src.policy.engine import policy_engine
+                new_price = float(arguments.get("new_price") or arguments.get("price") or 0)
+                if new_price > 0:
+                    val_res = policy_engine.validate_action(ctx.company_id or "", {
+                        "type": "UPDATE_PRICE",
+                        "params": {"newPrice": new_price, "productId": arguments.get("product_id")},
+                    })
+                    if not val_res.allowed:
+                        err_msg = "; ".join(v.message for v in val_res.violations)
+                        logger.warning("policy_engine_blocked_price_change", error=err_msg)
+                        return {
+                            "tool": func_name,
+                            "status": "blocked_by_policy",
+                            "error": err_msg,
+                            "result": {"success": False, "error": err_msg},
+                        }
+            except Exception as pe_err:
+                logger.debug("policy_engine_check_skipped", error=str(pe_err))
+
+        # Log pending approval in audit trail
+        if ctx.company_id:
+            try:
+                from src.tools.repositories.audit_repository import log_agent_audit_event
+                await log_agent_audit_event(
+                    company_id=ctx.company_id,
+                    action=f"{func_name.upper()}_REQUESTED",
+                    description=f"إجراء حساس ينتظر موافقة التاجر: {func_name}",
+                    category="AI_AGENT",
+                    severity="LOW",
+                    metadata={"tool": func_name, "arguments": {k: str(v)[:150] for k, v in arguments.items() if k != "company_id"}},
+                )
+            except Exception:
+                pass
+
         awaiting = {
             "status": "awaiting_approval",
             "action_type": func_name,
@@ -62,7 +114,10 @@ async def _execute_one_tool(ctx: PipelineContext, registry: Any, tc: dict) -> di
     try:
         validated = tool.input_model(**arguments)
         result = await tool.func(validated)
-        return {"tool": func_name, "status": "success", "result": result}
+        tool_status = "success"
+        if isinstance(result, dict) and (result.get("success") is False or result.get("status") in ("DELEGATION_FAILED", "failed", "error")):
+            tool_status = "failed"
+        return {"tool": func_name, "status": tool_status, "result": result}
     except ValidationError as e:
         error_details = []
         for err in e.errors():
@@ -687,7 +742,11 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                             # {"error": "Failed"} makes the model apologize.
                             result_content = res_item.get("result", {})
                         else:
-                            result_content = {"error": res_item.get("error", "Failed")}
+                            res_val = res_item.get("result")
+                            if isinstance(res_val, dict) and res_val:
+                                result_content = res_val
+                            else:
+                                result_content = {"error": res_item.get("error", "Failed")}
                         # Hermes Duplicate Result Stubbing
                         tc_name = tc.get("function", {}).get("name", "")
                         tc_args = tc.get("function", {}).get("arguments", {})

@@ -77,12 +77,11 @@ router.get('/design-review/:name', async (req, res) => {
       return res.status(404).json({ success: false, error: 'الملف غير موجود' });
     }
     const filePath = path.join(dentalLabDir, name);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'الملف غير موجود' });
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(attachment.fileName || name)}"`);
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob:; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; media-src blob:; worker-src 'none'; object-src 'none'; sandbox allow-scripts");
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'none'; style-src 'none'; object-src 'none'; sandbox");
     res.setHeader('Cache-Control', 'no-store');
     res.sendFile(filePath);
   } catch (error) {
