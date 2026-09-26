@@ -108,6 +108,19 @@ def _aggregate_variants(
     return result
 
 
+def _clean_html_description(desc: str | None) -> str:
+    if not desc or not isinstance(desc, str):
+        return ""
+    # Convert block tags / line breaks to newlines
+    clean = re.sub(r"<(?:p|div|br|li|h[1-6])[^>]*>", "\n", desc, flags=re.IGNORECASE)
+    # Strip remaining HTML tags
+    clean = re.sub(r"<[^>]+>", " ", clean)
+    # Collapse multiple spaces and newlines
+    clean = re.sub(r"[ \t]+", " ", clean)
+    clean = re.sub(r"\n\s*\n+", "\n", clean).strip()
+    return clean[:800]
+
+
 def _map_product(p: dict[str, Any]) -> dict[str, Any]:
     variants = p.get("productVariants") or p.get("_variants") or []
     size_variants = _aggregate_variants(variants, _VARIANT_SIZE_ALIASES)
@@ -122,6 +135,7 @@ def _map_product(p: dict[str, Any]) -> dict[str, Any]:
         "status": _availability_status(p),
         "categoryName": p.get("categoryName"),
         "featured": bool(p.get("isFeatured")),
+        "description": _clean_html_description(p.get("description")),
         "images": _parse_images(p),
         "availableSizes": size_variants,
         "availableColors": color_variants,

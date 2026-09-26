@@ -24,7 +24,7 @@ import {
 import { getPdpQuickOrderSettingsFromDesignTokens } from "../utils/pdpQuickOrderSettings";
 import { EGYPT_GOVERNORATES, getGovernorateByName } from "../../constants/egyptGovernorates";
 import { useIpGovernorateDetection } from "../hooks/useIpGovernorateDetection";
-import { getCompanyId, storefrontApi } from "../../utils/storefrontApi";
+import { getCartId, getCompanyId, storefrontApi } from "../../utils/storefrontApi";
 import { persistPurchaseTracking } from "../utils/purchaseTrackingStorage";
 import type { CartItem } from "../store/useCartStore";
 import type { Product } from "../hooks/useProducts";

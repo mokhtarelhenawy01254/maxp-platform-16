@@ -89,6 +89,7 @@ export interface DeliveryRun {
   settledBy?: string | null;
   treasuryAccountId?: string | null;
   treasuryTransactionId?: string | null;
+  mobileToken?: string | null;
   createdAt: string;
   courier?: {
     id: string;
@@ -132,14 +133,29 @@ const courierService = {
   getDeliveryRuns: (params?: { courierId?: string; status?: string; dateFrom?: string; dateTo?: string; search?: string; page?: number; limit?: number }): Promise<{ success: boolean; data: DeliveryRun[]; pagination: { total: number; page: number; limit: number; pages: number } }> =>
     api.get('/couriers/runs', { params }).then((r) => r.data),
 
-  getDeliveryRun: (id: string): Promise<{ success: boolean; data: DeliveryRun }> =>
-    api.get<{ success: boolean; data: DeliveryRun }>(`/couriers/runs/${id}`).then((r) => r.data),
+  getDeliveryRun: (id: string, token?: string): Promise<{ success: boolean; data: DeliveryRun }> => {
+    const requestConfig: any = {};
+    if (token) {
+      requestConfig.headers = { Authorization: `Bearer ${token}` };
+      requestConfig.params = { token };
+    }
+    return api.get<{ success: boolean; data: DeliveryRun }>(`/couriers/runs/${id}`, requestConfig).then((r) => r.data);
+  },
+
+  getRunShareLink: (id: string): Promise<{ success: boolean; data: { runId: string; runNumber: string; mobileToken: string; shareUrl: string; courierPhone?: string; courierName?: string } }> =>
+    api.get(`/couriers/runs/${id}/share-link`).then((r) => r.data),
 
   createDeliveryRun: (payload: { courierId: string; shipmentIds?: string[]; orderIds?: string[]; notes?: string }): Promise<{ success: boolean; data: DeliveryRun }> =>
     api.post<{ success: boolean; data: DeliveryRun }>('/couriers/runs', payload).then((r) => r.data),
 
-  updateShipmentStatus: (runId: string, shipmentId: string, payload: { status: string; collectedAmount?: number; deliveryNotes?: string }): Promise<{ success: boolean; data: any }> =>
-    api.patch(`/couriers/runs/${runId}/shipments/${shipmentId}`, payload).then((r) => r.data),
+  updateShipmentStatus: (runId: string, shipmentId: string, payload: { status: string; collectedAmount?: number; deliveryNotes?: string }, token?: string): Promise<{ success: boolean; data: any }> => {
+    const requestConfig: any = {};
+    if (token) {
+      requestConfig.headers = { Authorization: `Bearer ${token}` };
+      requestConfig.params = { token };
+    }
+    return api.patch(`/couriers/runs/${runId}/shipments/${shipmentId}`, payload, requestConfig).then((r) => r.data);
+  },
 
   settleDeliveryRun: (runId: string, payload: { treasuryAccountId?: string; actualCashReceived: number; notes?: string }): Promise<{ success: boolean; data: any; message: string }> =>
     api.post(`/couriers/runs/${runId}/settle`, payload).then((r) => r.data),

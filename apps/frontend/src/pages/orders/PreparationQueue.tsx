@@ -153,7 +153,7 @@ const PreparationQueue: React.FC = () => {
           ? user.activeApps
           : [];
 
-    const allowedSlugs = ['internal-courier-fleet', 'order-shipping-turbo'];
+    const allowedSlugs = ['internal-courier-fleet'];
     return allowedSlugs.some((slug) => {
       const target = slug.toLowerCase();
       return activeApps.some((a) => {

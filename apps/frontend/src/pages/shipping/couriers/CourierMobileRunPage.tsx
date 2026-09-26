@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   PhoneIcon,
@@ -9,13 +9,16 @@ import {
   ClockIcon,
   ArrowPathIcon,
   ChatBubbleLeftRightIcon,
-  CubeIcon
+  CubeIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import courierService, { DeliveryRun, DeliveryRunItem } from '../../../services/courierService';
 import { useCurrency } from '../../../hooks/useCurrency';
 
 const CourierMobileRunPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') || undefined;
   const { formatPrice } = useCurrency();
 
   const [run, setRun] = useState<DeliveryRun | null>(null);
@@ -28,12 +31,13 @@ const CourierMobileRunPage: React.FC = () => {
   const [collectedAmount, setCollectedAmount] = useState<number>(0);
   const [deliveryNotes, setDeliveryNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
+  const [viewingWaybillShipment, setViewingWaybillShipment] = useState<DeliveryRunItem | null>(null);
 
   const fetchRun = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const res = await courierService.getDeliveryRun(id);
+      const res = await courierService.getDeliveryRun(id, token);
       if (res.success && res.data) {
         setRun(res.data);
       }
@@ -42,7 +46,7 @@ const CourierMobileRunPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, token]);
 
   useEffect(() => {
     fetchRun();
@@ -64,7 +68,7 @@ const CourierMobileRunPage: React.FC = () => {
         status: actionType,
         collectedAmount: actionType === 'DELIVERED' ? collectedAmount : 0,
         deliveryNotes: deliveryNotes || undefined
-      });
+      }, token);
 
       toast.success(
         actionType === 'DELIVERED'
