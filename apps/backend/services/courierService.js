@@ -482,13 +482,12 @@ async function getDeliveryRunById(companyId, runId) {
               total: true,
               shipping: true,
               status: true,
-              items: {
+              orderItems: {
                 select: {
                   id: true,
-                  name: true,
+                  productName: true,
                   quantity: true,
-                  price: true,
-                  variantTitle: true
+                  price: true
                 }
               }
             }
@@ -525,7 +524,21 @@ async function getDeliveryRunById(companyId, runId) {
     courier: {
       ...run.courier,
       commissionAmount: normalizeAmount(run.courier?.commissionAmount)
-    }
+    },
+    shipments: (run.shipments || []).map((s) => ({
+      ...s,
+      order: s.order
+        ? {
+            ...s.order,
+            items: (s.order.orderItems || []).map((item) => ({
+              id: item.id,
+              name: item.productName || 'منتج',
+              quantity: item.quantity,
+              price: normalizeAmount(item.price)
+            }))
+          }
+        : null
+    }))
   };
 }
 
