@@ -317,6 +317,20 @@ const syncFacebookMessages = async (req, res) => {
                 let messageType = 'TEXT';
                 let content = fbMessage.message || '';
 
+                const syncedAttachmentsData = (fbMessage.attachments?.data && Array.isArray(fbMessage.attachments.data))
+                    ? fbMessage.attachments.data.map((att, idx) => {
+                        const attType = (att.type || (att.image_data ? 'image' : (att.mime_type?.startsWith('image/') ? 'image' : 'file'))).toLowerCase();
+                        const url = att.image_data?.url || att.file_url || att.url || att.payload?.url || att.image?.url || '';
+                        return {
+                            id: att.id || null,
+                            type: attType,
+                            url: url,
+                            name: att.name || null,
+                            attachmentIndex: idx
+                        };
+                    }).filter(a => a.url)
+                    : [];
+
                 // Check for attachments first (includes images, files, and template messages with buttons)
                 if (fbMessage.attachments && fbMessage.attachments.data && fbMessage.attachments.data.length > 0) {
                     const attachment = fbMessage.attachments.data[0];
@@ -568,6 +582,7 @@ const syncFacebookMessages = async (req, res) => {
                     conversationId: conversationId,
                     isFromCustomer: finalIsFromCustomer,
                     isRead: false, // Mark as unread for old messages
+                    attachments: syncedAttachmentsData.length > 0 ? JSON.stringify(syncedAttachmentsData) : null,
                     metadata: JSON.stringify({
                         platform: 'facebook',
                         source: 'graph_api_sync',

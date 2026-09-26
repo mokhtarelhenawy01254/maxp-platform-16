@@ -507,6 +507,15 @@ async function getStandardConversationMessages(req, res, companyId, id, skip, ta
                 mediaUrl: replyTo.mediaUrl || null
             } : null;
 
+            const normalizedAttachments = Array.isArray(attachments)
+                ? attachments.map((att, idx) => ({
+                    ...att,
+                    attachmentIndex: idx,
+                    url: att.url || att.payload?.url || att.image_data?.url || att.file_url || null,
+                    type: att.type || (att.image_data ? 'image' : 'file')
+                }))
+                : [];
+
             return {
                 id: msg.id,
                 platform: conversation.channel?.toLowerCase() || 'facebook',
@@ -515,8 +524,9 @@ async function getStandardConversationMessages(req, res, companyId, id, skip, ta
                 isFromCustomer: msg.isFromCustomer,
                 timestamp: msg.createdAt,
                 status: msg.isRead ? 'read' : 'delivered',
-                mediaUrl: attachments[0]?.url || metadata.attachmentUrl || null,
-                mediaType: attachments[0]?.type || metadata.attachmentType || null,
+                attachments: normalizedAttachments,
+                mediaUrl: normalizedAttachments[0]?.url || attachments[0]?.url || metadata.attachmentUrl || null,
+                mediaType: normalizedAttachments[0]?.type || attachments[0]?.type || metadata.attachmentType || null,
                 mediaFileName: attachments[0]?.name || null,
                 quotedMessage: quotedMessage,
                 isAIResponse: metadata.isAIResponse || (!msg.isFromCustomer && !msg.senderId) || false,

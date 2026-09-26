@@ -83,6 +83,7 @@ const extractMessageMediaUrl = (msg) => {
 
 // Simple in-memory storage for tracking processed messages
 const processedMessages = new Map();
+const inFlightMessages = new Set(); // 🆕 Track in-flight messages without blocking retries on crash
 const processedComments = new Map(); // 🆕 Track processed comments
 let lastWebhookPageId = null;
 
@@ -324,140 +325,105 @@ const postWebhook = async (req, res) => {
           // Process messaging events (existing code)
           if (entry.messaging && entry.messaging.length > 0) {
             try {
-              // ⚡ Process messages in parallel for better performance
-              const messagePromises = entry.messaging.map(async (webhookEvent) => {
-                try {
+              // ⚡ Group messages by senderId for FIFO sequence integrity per customer
+              // This guarantees message 1 completes before message 2 starts for the same user,
+              // preventing duplicate conversation creation and flipped timestamp ordering.
+              const messagesBySender = new Map();
+              for (const webhookEvent of entry.messaging) {
+                const senderKey = webhookEvent.sender?.id || 'unknown';
+                if (!messagesBySender.has(senderKey)) {
+                  messagesBySender.set(senderKey, []);
+                }
+                messagesBySender.get(senderKey).push(webhookEvent);
+              }
 
-                  // 🆕 Handle read receipts (message_reads)
-                  if (webhookEvent.read?.watermark) {
-                    await handleReadReceipt(webhookEvent, entry.id);
-                    return;
-                  }
-
-                  // Check if this is an echo message (sent from the page itself)
-                  const isEchoMessage = webhookEvent.message?.is_echo === true;
-                  const senderId = webhookEvent.sender?.id;
-                  const recipientId = webhookEvent.message?.from?.id || webhookEvent.recipient?.id || entry.id;
-
-                  // NEW: Store the page ID that received this message
-                  // This is critical for replying correctly
-                  const receivingPageId = entry.id;
-
-                  // Debug logging
-                  if (webhookEvent.message) {
-                  }
-
-                  // ✅ Handle echo messages (replies from page)
-                  if (isEchoMessage) {
-                    await handlePageReply(webhookEvent, receivingPageId);
-                    return;
-                  } else {
-                  }
-
-                  // 🆕 Extract postId from referral (fast - no API calls)
-                  if (webhookEvent.referral) {
-
-                    let postId = null;
-                    // Extract post_id from different possible locations
-                    if (webhookEvent.referral.ads_context_data?.post_id) {
-                      postId = webhookEvent.referral.ads_context_data.post_id;
-                    } else if (webhookEvent.referral.post_id) {
-                      postId = webhookEvent.referral.post_id;
-                    } else if (webhookEvent.referral.post_ref) {
-                      postId = webhookEvent.referral.post_ref;
-                    } else if (webhookEvent.referral.ad_ref) {
-                      postId = webhookEvent.referral.ad_ref;
-                    } else if (webhookEvent.referral.ad_id) {
-                      // For ads, we can use ad_id as fallback
-                      postId = webhookEvent.referral.ad_id;
-                    } else {
+              const senderPromises = Array.from(messagesBySender.values()).map(async (senderEvents) => {
+                for (const webhookEvent of senderEvents) {
+                  try {
+                    // 🆕 Handle read receipts (message_reads)
+                    if (webhookEvent.read?.watermark) {
+                      await handleReadReceipt(webhookEvent, entry.id);
+                      continue;
                     }
 
-                    // Attach postId to webhookEvent for use in handleMessage
-                    if (postId) {
-                      webhookEvent._extractedPostId = postId;
-                    } else {
-                    }
-                  } else {
-                    // Check if this message has a message object (to confirm it's being processed)
-                    if (webhookEvent.message) {
-                      // Don't log every regular message, just silently process
-                    }
-                  }
+                    // Check if this is an echo message (sent from the page itself)
+                    const isEchoMessage = webhookEvent.message?.is_echo === true;
+                    const senderId = webhookEvent.sender?.id;
+                    const receivingPageId = entry.id;
 
-                  // Handle postback events (button clicks, persistent menu, etc.)
-                  // Route the payload through the same text pipeline so rules/flows can match on it.
-                  if (webhookEvent.postback) {
-                    const payload = webhookEvent.postback?.payload;
-                    if (payload && typeof payload === 'string') {
-                      webhookEvent._isPostback = true;
-                      webhookEvent._postbackPayload = payload;
-                      webhookEvent.message = {
-                        text: payload,
-                        mid: `postback_${webhookEvent.timestamp || Date.now()}_${senderId}`,
-                      };
-                    } else {
-                      return;
+                    // ✅ Handle echo messages (replies from page)
+                    if (isEchoMessage) {
+                      await handlePageReply(webhookEvent, receivingPageId);
+                      continue;
                     }
-                  }
 
-                  // 🎯 Customer message
-                  //console.log(`📨 [MSG] ${webhookEvent.message?.mid?.slice(-8)} from ${senderId}`);
-
-                  // Check for text message or referral (even without message text)
-                  // Referral can come without message text (OPEN_THREAD event)
-                  if (webhookEvent.referral) {
-                    // Process referral event (even if no message text)
-                    // If there's a message, process it normally
-                    if (webhookEvent.message && webhookEvent.message.text) {
-                      await handleMessage(webhookEvent, receivingPageId);
-                    } else if (webhookEvent.message) {
-                      // Non-text message (images, files, etc.)
-                      const messageId = webhookEvent.message.mid;
-                      if (processedMessages.has(messageId)) {
-                        return;
+                    // 🆕 Extract postId from referral (fast - no API calls)
+                    if (webhookEvent.referral) {
+                      let postId = null;
+                      if (webhookEvent.referral.ads_context_data?.post_id) {
+                        postId = webhookEvent.referral.ads_context_data.post_id;
+                      } else if (webhookEvent.referral.post_id) {
+                        postId = webhookEvent.referral.post_id;
+                      } else if (webhookEvent.referral.post_ref) {
+                        postId = webhookEvent.referral.post_ref;
+                      } else if (webhookEvent.referral.ad_ref) {
+                        postId = webhookEvent.referral.ad_ref;
+                      } else if (webhookEvent.referral.ad_id) {
+                        postId = webhookEvent.referral.ad_id;
                       }
-                      processedMessages.set(messageId, Date.now());
-                      await handleMessage(webhookEvent, receivingPageId);
-                    } else {
-                      // Referral without message - still process to create conversation (Check for mid if present)
-                      const messageId = webhookEvent.message?.mid;
-                      if (messageId && processedMessages.has(messageId)) {
-                        return;
+
+                      if (postId) {
+                        webhookEvent._extractedPostId = postId;
                       }
-                      if (messageId) processedMessages.set(messageId, Date.now());
+                    }
 
+                    // Handle postback events (button clicks, persistent menu, etc.)
+                    if (webhookEvent.postback) {
+                      const payload = webhookEvent.postback?.payload;
+                      if (payload && typeof payload === 'string') {
+                        webhookEvent._isPostback = true;
+                        webhookEvent._postbackPayload = payload;
+                        webhookEvent.message = {
+                          text: payload,
+                          mid: `postback_${webhookEvent.timestamp || Date.now()}_${senderId}`,
+                        };
+                      } else {
+                        continue;
+                      }
+                    }
+
+                    // Deduplication check
+                    const messageId = webhookEvent.message?.mid;
+                    if (messageId) {
+                      if (processedMessages.has(messageId) || inFlightMessages.has(messageId)) {
+                        continue;
+                      }
+                      inFlightMessages.add(messageId);
+                    }
+
+                    try {
                       await handleMessage(webhookEvent, receivingPageId);
+                      if (messageId) {
+                        processedMessages.set(messageId, Date.now());
+                      }
+                    } finally {
+                      if (messageId) {
+                        inFlightMessages.delete(messageId);
+                      }
                     }
-                  } else if (webhookEvent.message && webhookEvent.message.text) {
-                    const messageId = webhookEvent.message.mid;
-                    if (messageId && processedMessages.has(messageId)) {
-                      // console.log(`🚫 [WEBHOOK] Skipping duplicate text message: ${messageId.slice(-8)}`);
-                      return;
-                    }
-                    if (messageId) processedMessages.set(messageId, Date.now());
-
-                    await handleMessage(webhookEvent, receivingPageId);
-                  } else if (webhookEvent.message) {
-                    // Non-text message (images, files, etc.)
-                    const messageId = webhookEvent.message.mid;
-                    if (processedMessages.has(messageId)) {
-                      return;
-                    }
-                    processedMessages.set(messageId, Date.now());
-                    await handleMessage(webhookEvent, receivingPageId);
+                  } catch (msgError) {
+                    console.error('❌ [WEBHOOK] Error processing message event:', msgError.message);
                   }
-                } catch (msgError) {
-                  //console.error('❌ [WEBHOOK] Error processing message event:', msgError.message);
                 }
               });
 
               // ⚡ RUN IN BACKGROUND: We do NOT await this in the main handler to avoid Facebook timeouts (5s limit)
               // The 200 OK has already been sent, so we can process without blocking the connection
-              Promise.all(messagePromises).catch(err => {
+              Promise.all(senderPromises).catch(err => {
                 console.error('❌ [WEBHOOK] Background processing failed:', err.message);
               });
             } catch (messagingError) {
+              console.error('❌ [WEBHOOK] Messaging grouping error:', messagingError.message);
             }
           }
 

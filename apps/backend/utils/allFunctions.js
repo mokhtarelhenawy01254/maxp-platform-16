@@ -1508,7 +1508,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
       });
       console.log(`⏱️ [TIMING-${messageId.slice(-8)}] [${Date.now() - conversationStartTime}ms] 💬 [HANDLE] ${conversation ? 'Found' : 'Will create'} conversation for customer ${customer.id}`);
 
-      const timestamp = new Date();
+      const timestamp = webhookEvent.timestamp ? new Date(webhookEvent.timestamp) : new Date();
 
       if (conversation && conversation.status === 'RESOLVED') {
         // Update metadata with page information when reactivating conversation
@@ -1602,6 +1602,22 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
       let isNewConversation = false;
       if (!conversation) {
+        // Double-check to prevent race condition when multiple messages arrive concurrently
+        conversation = await safeQuery(async () => {
+          const { getSharedPrismaClientAsync } = require('../services/sharedDatabase');
+          const prisma = await getSharedPrismaClientAsync();
+          if (!prisma) return null;
+          return await prisma.conversation.findFirst({
+            where: {
+              customerId: customer.id,
+              channel: 'FACEBOOK'
+            },
+            orderBy: { updatedAt: 'desc' }
+          });
+        });
+      }
+
+      if (!conversation) {
         // Create metadata with page information and post reference
         const conversationMetadata = {
           platform: 'facebook',
@@ -1652,11 +1668,13 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         // حفظ جميع المرفقات
         attachmentsData = attachments;
 
-        // Normalize Facebook attachment format for AI service
-        attachmentsData = attachmentsData.map(a => ({
+        // Normalize Facebook attachment format for AI service and UI rendering
+        attachmentsData = attachmentsData.map((a, idx) => ({
+          id: a.id || null,
           type: a.type || 'image',
           url: a.payload?.url || a.url || a.payload?.sticker_id || '',
-          detail: 'high'
+          detail: 'high',
+          attachmentIndex: idx
         })).filter(a => a.url);
 
         // 📎 [MEDIA-ARCHIVE] SKILL 8.9.14: Meta/CDN media URLs are signed and
@@ -3881,9 +3899,11 @@ async function handleTikTokMessage(inbound, companyId) {
 }
 
 function resolveInboundMessageText(webhookEvent) {
+  // User-visible text should take precedence for readable human chat display
+  const visibleText = webhookEvent?.message?.text || null;
   const quickReplyPayload = webhookEvent?.message?.quick_reply?.payload || null;
   const postbackPayload = webhookEvent?._isPostback ? webhookEvent._postbackPayload : null;
-  return quickReplyPayload || postbackPayload || webhookEvent?.message?.text || null;
+  return visibleText || quickReplyPayload || postbackPayload || null;
 }
 
 module.exports = {

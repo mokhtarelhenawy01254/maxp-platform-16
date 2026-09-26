@@ -19,7 +19,7 @@ const axios = require('axios');
 const UPLOADS_ROOT = path.resolve(__dirname, '..', 'uploads');
 const CHAT_MEDIA_DIR = path.join(UPLOADS_ROOT, 'chat-media');
 const MAX_BYTES = 20 * 1024 * 1024;
-const DOWNLOAD_TIMEOUT_MS = 10000;
+const DOWNLOAD_TIMEOUT_MS = 4000;
 
 const EXT_BY_MIME = {
     'image/jpeg': '.jpg',
@@ -106,23 +106,31 @@ async function archiveExternalMedia(rawUrl) {
  * with `url` swapped to the local public URL when archiving succeeded.
  */
 async function archiveAttachments(attachmentsData, limit = 4) {
-    const originals = [];
-    let archivedCount = 0;
-    const out = [];
-    for (const att of (attachmentsData || []).slice(0, limit)) {
-        if (!att || !att.url || !isExternalHttpUrl(att.url)) {
-            out.push(att);
-            continue;
-        }
-        const archived = await archiveExternalMedia(att.url);
-        if (archived) {
-            originals.push({ original: att.url, local: archived.publicUrl });
-            out.push({ ...att, url: archived.publicUrl });
-            archivedCount += 1;
-        } else {
-            out.push(att);
-        }
-    }
+    const items = (attachmentsData || []).slice(0, limit);
+    const results = await Promise.all(
+        items.map(async (att) => {
+            if (!att || !att.url || !isExternalHttpUrl(att.url)) {
+                return { att, original: null, archived: false };
+            }
+            try {
+                const archived = await archiveExternalMedia(att.url);
+                if (archived) {
+                    return {
+                        att: { ...att, url: archived.publicUrl },
+                        original: { original: att.url, local: archived.publicUrl },
+                        archived: true
+                    };
+                }
+            } catch (err) {
+                // Keep original URL on archive error
+            }
+            return { att, original: null, archived: false };
+        })
+    );
+
+    const originals = results.filter((r) => r.original).map((r) => r.original);
+    const out = results.map((r) => r.att);
+    const archivedCount = results.filter((r) => r.archived).length;
     return { attachments: out, originals, archivedCount };
 }
 

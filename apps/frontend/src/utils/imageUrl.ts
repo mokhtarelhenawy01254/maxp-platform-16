@@ -37,6 +37,8 @@ interface ResponsiveUploadImageOptions extends OptimizedUploadImageOptions {
 interface ProxyImageOptions {
   messageId?: string | null;
   customerId?: string | null;
+  attachmentIndex?: number | null;
+  attachmentId?: string | null;
   width?: number;
   quality?: number;
   format?: "webp";
@@ -254,6 +256,14 @@ export const buildProxyImageUrl = (
     params.set("customerId", options.customerId);
   }
 
+  if (options?.attachmentIndex !== undefined && options?.attachmentIndex !== null) {
+    params.set("attachmentIndex", String(options.attachmentIndex));
+  }
+
+  if (options?.attachmentId) {
+    params.set("attachmentId", options.attachmentId);
+  }
+
   if (options?.width) {
     params.set("w", String(sanitizePositiveInteger(options.width, options.width)));
   }
@@ -417,15 +427,27 @@ export const getImageUrl = (
 export const getInboxMessageMediaUrl = (
   messageId: string | null | undefined,
   rawUrl: string | null | undefined,
+  options?: {
+    attachmentIndex?: number | null;
+    attachmentId?: string | null;
+  },
 ): string => {
   const normalized = getImageUrl(rawUrl);
 
   if (normalized && shouldProxyRemoteImageUrl(normalized)) {
-    return buildProxyImageUrl(normalized, { messageId });
+    return buildProxyImageUrl(normalized, {
+      messageId,
+      attachmentIndex: options?.attachmentIndex,
+      attachmentId: options?.attachmentId,
+    });
   }
 
   if (!normalized && messageId) {
-    return buildProxyImageUrl(null, { messageId });
+    return buildProxyImageUrl(null, {
+      messageId,
+      attachmentIndex: options?.attachmentIndex,
+      attachmentId: options?.attachmentId,
+    });
   }
 
   if (normalized && normalized.includes("/uploads/") && !normalized.includes("?")) {

@@ -463,7 +463,20 @@ const mapFacebookAttachment = (fbMessage, attachment, accessToken) => {
 const mapFacebookMessage = (fbMessage, { psid, pageId, accessToken, conversationId }) => {
   let messageType = 'TEXT';
   let content = fbMessage.message || '';
-  const attachment = fbMessage.attachments?.data?.[0] || null;
+  const attachmentsList = Array.isArray(fbMessage.attachments?.data) ? fbMessage.attachments.data : [];
+  const attachment = attachmentsList[0] || null;
+
+  const attachmentsData = attachmentsList.map((att, idx) => {
+    const mapped = mapFacebookAttachment(fbMessage, att, accessToken);
+    const url = att.image_data?.url || att.file_url || att.url || att.payload?.url || att.image?.url || '';
+    return {
+      id: att.id || null,
+      type: mapped.type.toLowerCase(),
+      url,
+      name: att.name || null,
+      attachmentIndex: idx
+    };
+  }).filter(a => a.url);
 
   if (attachment) {
     const mapped = mapFacebookAttachment(fbMessage, attachment, accessToken);
@@ -492,6 +505,7 @@ const mapFacebookMessage = (fbMessage, { psid, pageId, accessToken, conversation
     conversationId,
     isFromCustomer,
     isRead: false,
+    attachments: attachmentsData.length > 0 ? JSON.stringify(attachmentsData) : null,
     metadata: JSON.stringify({
       platform: 'facebook',
       source: 'agent_inbox_graph_pull',

@@ -504,9 +504,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
     ]);
     const imageMediaUrls =
       rawImageMediaUrls.length > 0
-        ? rawImageMediaUrls.map((url) => getInboxMessageMediaUrl(message.id, url))
+        ? rawImageMediaUrls.map((url, index) =>
+            getInboxMessageMediaUrl(message.id, url, { attachmentIndex: index })
+          )
         : isImageMessage
-          ? [getInboxMessageMediaUrl(message.id, null)]
+          ? [getInboxMessageMediaUrl(message.id, null, { attachmentIndex: 0 })]
           : [];
     const rawVideoMediaUrl = uniqueUrls([
       ...attachments.map((attachment) =>
@@ -843,7 +845,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                         }
                       } catch {}
                       if (message.id) {
-                        target.src = buildProxyImageUrl(null, { messageId: message.id });
+                        target.src = buildProxyImageUrl(null, {
+                          messageId: message.id,
+                          attachmentIndex: index,
+                        });
                       }
                     }}
                   />

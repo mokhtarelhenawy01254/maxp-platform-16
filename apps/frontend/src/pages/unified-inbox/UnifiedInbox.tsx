@@ -41,6 +41,7 @@ import StatusDropdown from "../../components/facebook-inbox/StatusDropdown/Statu
 import type { ConversationStatus } from "../../types/inbox.types";
 import PostsManagement from "../comments/PostsManagement";
 import AssignmentDropdown from "../../components/facebook-inbox/AssignmentDropdown/AssignmentDropdown";
+import { buildProxyImageUrl, getImageUrl } from "../../utils/imageUrl";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📋 Types
@@ -85,6 +86,7 @@ interface UnifiedMessage {
   mediaUrl: string | null;
   mediaType: string | null;
   mediaFileName: string | null;
+  attachments?: Array<{ url?: string; type?: string; name?: string; attachmentIndex?: number }> | null;
   quotedMessage: { id: string; content: string } | null;
   sender: string;
   senderAvatar?: string | null;
@@ -1918,8 +1920,41 @@ const UnifiedInbox: React.FC = () => {
                                 </div>
                               )}
 
-                              {/* Media from mediaUrl */}
-                              {msg.mediaUrl && (() => {
+                              {/* Media from attachments or mediaUrl */}
+                              {Array.isArray(msg.attachments) && msg.attachments.length > 1 ? (
+                                <div className="mb-2 flex flex-col gap-2">
+                                  {msg.attachments.map((att, idx) => {
+                                    const attUrl = att.url || "";
+                                    const isAttImage =
+                                      att.type?.toLowerCase().includes("image") ||
+                                      /\.(jpe?g|png|webp|gif)/i.test(attUrl);
+                                    if (isAttImage && attUrl) {
+                                      return (
+                                        <img
+                                          key={`${attUrl}-${idx}`}
+                                          src={attUrl}
+                                          alt=""
+                                          loading="lazy"
+                                          className="rounded-lg max-w-full mb-1 cursor-pointer hover:opacity-90"
+                                          style={{ maxHeight: "300px" }}
+                                          onError={(e) => {
+                                            const target = e.currentTarget as HTMLImageElement;
+                                            if (target.dataset.retried) return;
+                                            target.dataset.retried = "true";
+                                            if (msg.id) {
+                                              target.src = buildProxyImageUrl(null, {
+                                                messageId: msg.id,
+                                                attachmentIndex: att.attachmentIndex ?? idx,
+                                              });
+                                            }
+                                          }}
+                                        />
+                                      );
+                                    }
+                                    return null;
+                                  })}
+                                </div>
+                              ) : msg.mediaUrl ? (() => {
                                 const isImage = msg.type === "image" || msg.mediaType?.includes("image");
                                 const isVideo = msg.type === "video" || msg.mediaType?.includes("video");
                                 const isAudio = msg.type === "audio" || msg.mediaType?.includes("audio");
@@ -1930,6 +1965,17 @@ const UnifiedInbox: React.FC = () => {
                                       src={msg.mediaUrl}
                                       alt=""
                                       className="rounded-lg max-w-full mb-1.5 cursor-pointer hover:opacity-90"
+                                      onError={(e) => {
+                                        const target = e.currentTarget as HTMLImageElement;
+                                        if (target.dataset.retried) return;
+                                        target.dataset.retried = "true";
+                                        if (msg.id) {
+                                          target.src = buildProxyImageUrl(null, {
+                                            messageId: msg.id,
+                                            attachmentIndex: 0,
+                                          });
+                                        }
+                                      }}
                                     />
                                   );
                                 }
@@ -1976,7 +2022,7 @@ const UnifiedInbox: React.FC = () => {
                                     <span className="text-xs shrink-0" style={{ color: "var(--color-muted-foreground)" }}>⬇️</span>
                                   </a>
                                 );
-                              })()}
+                              })() : null}
 
                               {/* Media from content URL */}
                               {(() => {
