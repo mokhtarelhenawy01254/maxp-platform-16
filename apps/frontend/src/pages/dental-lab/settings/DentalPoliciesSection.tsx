@@ -126,7 +126,7 @@ export default function DentalPoliciesSection() {
   const handleRunEscalation = async () => {
     setRunningEscalation(true);
     try {
-      const res = await apiClient.post('/dental-lab/policies/escalation/run');
+      const res = await apiClient.post('/dental-lab/escalation/run');
       alert(`تم فحص الحالات المتأخرة بنجاح (${res.data?.data?.escalatedCount || 0} مرحلة تم تصعيدها)`);
     } catch (err: any) {
       alert(err?.response?.data?.error || 'فشل تشغيل فحص التصعيد');
