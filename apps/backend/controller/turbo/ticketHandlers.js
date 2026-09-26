@@ -99,16 +99,18 @@ const addTicket = async (req, res) => {
     const companyId = targetCompanyId || resolveCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, error: 'Company ID is required', message: 'يرجى اختيار شركة أولاً' });
     const ticketContent = content || description || '';
-    if (!ticketContent.trim()) return res.status(400).json({ success: false, error: 'Content/Description is required' });
+    if (!ticketContent.trim()) return res.status(400).json({ success: false, error: 'Content/Description is required', message: 'يرجى كتابة تفاصيل التذكرة' });
     let finalCategoryId = categoryId || category_id;
     if (!finalCategoryId) {
       if (type === 1) finalCategoryId = inquiryTypeId || inquiry_type_id || type;
       else if (type === 2) finalCategoryId = complaintTypeId || complaint_type_id || type;
       else finalCategoryId = type || 3;
     }
-    if (!finalCategoryId) return res.status(400).json({ success: false, error: 'Category ID is required' });
+    if (!finalCategoryId) return res.status(400).json({ success: false, error: 'Category ID is required', message: 'يرجى اختيار تصنيف التذكرة' });
+
+    const imageFile = req.file || (Array.isArray(req.files) ? (req.files.find(f => /image|media|file|attachment|screenshot/i.test(f.fieldname)) || req.files[0]) : null);
     const turboService = new TurboService(null, companyId);
-    const result = await turboService.addTicket(ticketContent.trim(), finalCategoryId, code, media, priority, relatedTo || related_to, req.file);
+    const result = await turboService.addTicket(ticketContent.trim(), finalCategoryId, code, media, priority, relatedTo || related_to, imageFile);
     if (!result.success) return res.status(400).json({ success: false, error: result.error, message: result.message || result.error });
     res.json({ success: true, data: result, ticketId: result.ticketId, message: result.message });
   } catch (error) {
@@ -554,10 +556,18 @@ const getTicketLog = async (req, res) => {
 const replyToTicket = async (req, res) => {
   try {
     const { id } = req.params;
-    const { message, companyId: targetCompanyId } = req.body;
-    const imageFile = req.file;
-    if (!id) return res.status(400).json({ success: false, error: 'Ticket ID is required' });
-    if (!message || !message.trim()) return res.status(400).json({ success: false, error: 'Message is required' });
+    const { message, content, companyId: targetCompanyId } = req.body;
+    const imageFile = req.file || (Array.isArray(req.files) ? (req.files.find(f => /image|media|file|attachment|screenshot/i.test(f.fieldname)) || req.files[0]) : null);
+    if (!id) return res.status(400).json({ success: false, error: 'Ticket ID is required', message: 'معرف التذكرة مطلوب' });
+
+    let finalMessage = (message || content || '').trim();
+    if (!finalMessage) {
+      if (imageFile) {
+        finalMessage = 'مرفق صورة / لقطة شاشة';
+      } else {
+        return res.status(400).json({ success: false, error: 'Message or image is required', message: 'يرجى كتابة رد أو إرفاق صورة' });
+      }
+    }
 
     const currentCompanyId = targetCompanyId || resolveCompanyId(req);
     const accessibleCompanies = await resolveAccessibleTurboCompanies(req);
@@ -572,32 +582,48 @@ const replyToTicket = async (req, res) => {
     });
 
     let imageData = null;
-    if (imageFile?.buffer) imageData = { buffer: imageFile.buffer, originalname: imageFile.originalname || 'image.jpg', mimetype: imageFile.mimetype || 'image/jpeg', size: imageFile.size };
+    if (imageFile?.buffer) {
+      imageData = {
+        buffer: imageFile.buffer,
+        originalname: imageFile.originalname || 'screenshot.png',
+        mimetype: imageFile.mimetype || 'image/png',
+        size: imageFile.size
+      };
+    }
 
     let successResult = null;
     let successfulCompanyId = null;
+    let lastErrorMessage = null;
 
     for (const comp of companiesToTry) {
       try {
         const turboService = new TurboService(null, comp.id);
-        const result = await turboService.replyToTicket(id, message.trim(), imageData);
+        const result = await turboService.replyToTicket(id, finalMessage, imageData);
         if (result && result.success) {
           successResult = result;
           successfulCompanyId = comp.id;
           await redisCacheService.del(`turbo:ticket:${comp.id}:${id}`).catch(() => {});
           break;
+        } else if (result && !result.success) {
+          lastErrorMessage = result.message || result.error;
         }
-      } catch {}
+      } catch (tryErr) {
+        lastErrorMessage = tryErr.message;
+      }
     }
 
     if (!successResult) {
-      return res.status(400).json({ success: false, error: 'فشل إرسال الرد على التذكرة في Turbo' });
+      return res.status(400).json({
+        success: false,
+        error: lastErrorMessage || 'فشل إرسال الرد على التذكرة في Turbo',
+        message: lastErrorMessage || 'فشل إرسال الرد على التذكرة في Turbo'
+      });
     }
 
     res.json({ success: true, data: successResult, message: 'تم إرسال الرد بنجاح' });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error replying to ticket:', error);
-    res.status(400).json({ success: false, error: error.message || 'Failed to reply to ticket' });
+    res.status(400).json({ success: false, error: error.message || 'Failed to reply to ticket', message: error.message || 'فشل في إرسال الرد' });
   }
 };
 

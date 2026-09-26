@@ -317,10 +317,7 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
         formData.append("related_to", relatedTo);
         if (trimmedCode) formData.append("code", trimmedCode);
         formData.append("image", imageFile);
-        formData.append("media[0]", imageFile);
-        res = await apiClient.post<any>("/turbo/tickets", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        res = await apiClient.post<any>("/turbo/tickets", formData);
       } else {
         res = await apiClient.post<any>("/turbo/tickets", payload);
       }
@@ -361,19 +358,20 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   // 5. Send Reply to Active Ticket
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyContent.trim() || !selectedTicketId) return;
+    if ((!replyContent.trim() && !replyImage) || !selectedTicketId) return;
 
     setSendingReply(true);
     try {
       let res;
       if (replyImage) {
         const formData = new FormData();
-        formData.append("message", replyContent.trim());
+        const text = replyContent.trim() || "مرفق لقطة شاشة / صورة";
+        formData.append("message", text);
+        formData.append("content", text);
         formData.append("image", replyImage);
         res = await apiClient.post<any>(
           `/turbo/tickets/${selectedTicketId}/reply`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
+          formData
         );
       } else {
         res = await apiClient.post<any>(
@@ -814,12 +812,35 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
                     type="text"
                     value={replyContent}
                     onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder="اكتب رداً على التذكرة هنا..."
+                    onPaste={(e) => {
+                      const items = e.clipboardData?.items;
+                      if (!items) return;
+                      for (let i = 0; i < items.length; i++) {
+                        if (items[i].type && items[i].type.startsWith("image/")) {
+                          const blob = items[i].getAsFile();
+                          if (blob) {
+                            e.preventDefault();
+                            const ext = blob.type.split("/")[1] || "png";
+                            const file = new File([blob], `screenshot_${Date.now()}.${ext}`, {
+                              type: blob.type || "image/png",
+                            });
+                            setReplyImage(file);
+                            toast.success("تم لصق لقطة الشاشة بنجاح!");
+                            return;
+                          }
+                        }
+                      }
+                    }}
+                    placeholder={
+                      replyImage
+                        ? "اكتب تعليقاً على الصورة (اختياري) أو اضغط رد..."
+                        : "اكتب رداً على التذكرة، أو الصق لقطة الشاشة (Ctrl+V)..."
+                    }
                     className="flex-1 text-xs rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-zinc-900 dark:text-white focus-visible:ring-2 focus-visible:ring-primary outline-hidden"
                   />
                   <label
                     className="p-2 rounded-xl border border-zinc-300 dark:border-zinc-700 text-zinc-500 hover:text-primary cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition"
-                    title="إرفاق صورة"
+                    title="إرفاق صورة أو لقطة شاشة"
                   >
                     <PhotoIcon className="h-4 w-4" />
                     <input
@@ -835,7 +856,7 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
                   </label>
                   <button
                     type="submit"
-                    disabled={sendingReply || !replyContent.trim()}
+                    disabled={sendingReply || (!replyContent.trim() && !replyImage)}
                     className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white transition disabled:opacity-50 active:scale-97 shadow-xs"
                   >
                     <PaperAirplaneIcon className="h-3.5 w-3.5" />

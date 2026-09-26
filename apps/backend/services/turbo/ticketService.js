@@ -46,8 +46,9 @@ class TicketService {
           filename: imageFile.originalname || 'image.jpg',
           contentType: imageFile.mimetype || 'image/jpeg',
         });
+        const uploadTimeout = Math.max(Number(this._client.timeout) || 5000, 25000);
         const requestHeaders = { ...formData.getHeaders() };
-        const response = await axios.post(`${this._client.baseUrl}/tickets/create`, formData, { headers: requestHeaders, timeout: this._client.timeout, maxContentLength: Infinity, maxBodyLength: Infinity });
+        const response = await axios.post(`${this._client.baseUrl}/tickets/create`, formData, { headers: requestHeaders, timeout: uploadTimeout, maxContentLength: Infinity, maxBodyLength: Infinity });
         const result = response.data;
         const isFailed = result.success === 0 || result.success === false || result.error === true || result.error === 1;
         if (isFailed) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
@@ -70,7 +71,9 @@ class TicketService {
       return { success: true, ticketId: result.ticket_id || result.id || result.data?.id || result.code, message: result.message || 'تم إضافة التذكرة بنجاح', data: result };
     } catch (error) {
       handleError(error, 'Create Ticket');
-      return { success: false, error: error.message, message: 'فشل في إضافة التذكرة' };
+      const { getTurboErrorMessage, translateTurboErrorToArabic } = require('../../utils/turbo/errorHandler');
+      const rawError = getTurboErrorMessage(error) || error.message || 'فشل في إضافة التذكرة';
+      return { success: false, error: rawError, message: translateTurboErrorToArabic(rawError) };
     }
   }
 
@@ -182,29 +185,33 @@ class TicketService {
     try {
       const apiKey = await this._client.getApiKey();
       const mainClientCode = await this._client.getMainClientCode();
-      const formData = new FormData();
-      formData.append('ticket_id', String(ticketId));
-      formData.append('content', message);
-      formData.append('message', message);
-      formData.append('authentication_key', apiKey);
-      if (imageFile?.buffer) {
-        formData.append('media[0]', imageFile.buffer, {
-          filename: imageFile.originalname || 'image.jpg',
-          contentType: imageFile.mimetype || 'image/jpeg'
-        });
-        formData.append('image', imageFile.buffer, {
-          filename: imageFile.originalname || 'image.jpg',
-          contentType: imageFile.mimetype || 'image/jpeg'
-        });
-      }
-      const requestHeaders = { ...formData.getHeaders() };
+      const uploadTimeout = Math.max(Number(this._client.timeout) || 5000, 25000);
+
+      const createReplyFormData = () => {
+        const fd = new FormData();
+        fd.append('ticket_id', String(ticketId));
+        fd.append('content', message);
+        fd.append('message', message);
+        fd.append('authentication_key', apiKey);
+        if (mainClientCode) fd.append('main_client_code', String(mainClientCode));
+        if (imageFile?.buffer) {
+          const filename = imageFile.originalname || 'image.jpg';
+          const contentType = imageFile.mimetype || 'image/jpeg';
+          fd.append('media[0]', imageFile.buffer, { filename, contentType });
+          fd.append('image', imageFile.buffer, { filename, contentType });
+        }
+        return fd;
+      };
+
+      const primaryFormData = createReplyFormData();
+      const requestHeaders = { ...primaryFormData.getHeaders() };
 
       // Primary: Modern message-store endpoint from Postman doc
       try {
         const response = await axios.post(
           `${this._client.baseUrl}/tickets/${ticketId}/message-store?authentication_key=${encodeURIComponent(apiKey)}&main_client_code=${mainClientCode || 37321}`,
-          formData,
-          { headers: requestHeaders, timeout: this._client.timeout, maxContentLength: Infinity, maxBodyLength: Infinity }
+          primaryFormData,
+          { headers: requestHeaders, timeout: uploadTimeout, maxContentLength: Infinity, maxBodyLength: Infinity }
         );
         const result = response.data;
         if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
@@ -212,10 +219,12 @@ class TicketService {
       } catch (storeErr) {
         // Fallback to legacy /tickets/reply if message-store returns 404
         if (storeErr.response?.status === 404) {
+          const fallbackFormData = createReplyFormData();
+          const fallbackHeaders = { ...fallbackFormData.getHeaders() };
           const response = await axios.post(
             `${this._client.baseUrl}/tickets/reply`,
-            formData,
-            { headers: requestHeaders, timeout: this._client.timeout, maxContentLength: Infinity, maxBodyLength: Infinity }
+            fallbackFormData,
+            { headers: fallbackHeaders, timeout: uploadTimeout, maxContentLength: Infinity, maxBodyLength: Infinity }
           );
           const result = response.data;
           if (result.success === 0 || result.success === false) throw new Error(`Turbo API error: ${result.error_msg || result.message || 'Unknown error'}`);
@@ -225,7 +234,9 @@ class TicketService {
       }
     } catch (error) {
       handleError(error, 'Reply Ticket');
-      return { success: false, error: error.message, message: 'فشل في إرسال الرد' };
+      const { getTurboErrorMessage, translateTurboErrorToArabic } = require('../../utils/turbo/errorHandler');
+      const rawError = getTurboErrorMessage(error) || error.message || 'فشل في إرسال الرد';
+      return { success: false, error: rawError, message: translateTurboErrorToArabic(rawError) };
     }
   }
 

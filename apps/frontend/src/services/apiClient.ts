@@ -134,6 +134,17 @@ class ApiClient {
           config.headers["X-Platform"] = "capacitor";
         }
 
+        // When sending FormData, delete any manually passed Content-Type header
+        // so the browser automatically sets 'multipart/form-data; boundary=----...'
+        // Explicitly passing 'Content-Type: multipart/form-data' strips the boundary,
+        // which causes backend multipart parsers (multer) to reject uploads.
+        if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+          if (config.headers) {
+            delete config.headers["Content-Type"];
+            delete config.headers["content-type"];
+          }
+        }
+
         // Add subdomain to headers for company isolation (from current URL)
         const hostname =
           typeof window !== "undefined" ? window.location.hostname : "";

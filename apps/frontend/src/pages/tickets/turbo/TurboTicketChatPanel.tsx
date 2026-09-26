@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 // Turbo ticket chat panel with strict hook ordering and responsive UX
 import {
   PaperAirplaneIcon,
@@ -38,6 +38,54 @@ interface TurboTicketChatPanelProps {
   onBackToList?: () => void;
   onOpenLogs: () => void;
 }
+
+// استخراج كافة روابط الصور والمرفقات من التذكرة أو الرد أياً كان شكلها في استجابة Turbo
+const extractMediaUrls = (item: any): string[] => {
+  const urls: string[] = [];
+  if (!item) return urls;
+
+  const normalizeUrl = (raw: any): string | null => {
+    if (!raw) return null;
+    let s = String(raw).trim();
+    if (!s) return null;
+    if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("blob:") || s.startsWith("data:")) {
+      return s;
+    }
+    if (s.startsWith("/")) {
+      return `https://backoffice.turbo-eg.com${s}`;
+    }
+    return `https://backoffice.turbo-eg.com/${s}`;
+  };
+
+  const addUrl = (val: any) => {
+    if (!val) return;
+    if (typeof val === "string") {
+      const u = normalizeUrl(val);
+      if (u && !urls.includes(u)) urls.push(u);
+    } else if (typeof val === "object") {
+      const u = normalizeUrl(val.url || val.file_url || val.path || val.media_url || val.src);
+      if (u && !urls.includes(u)) urls.push(u);
+    }
+  };
+
+  addUrl(item.image);
+  addUrl(item.media_url);
+  addUrl(item.file);
+  addUrl(item.file_url);
+  addUrl(item.attachment);
+  addUrl(item.attachment_url);
+
+  const mediaList = Array.isArray(item.media)
+    ? item.media
+    : Array.isArray(item.attachments)
+    ? item.attachments
+    : Array.isArray(item.images)
+    ? item.images
+    : [];
+
+  mediaList.forEach(addUrl);
+  return urls;
+};
 
 const getStatusBadge = (status: any) => {
   let val = "";
@@ -104,6 +152,8 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
   const { user } = useAuth();
   const [replyText, setReplyText] = useState("");
   const [replyImage, setReplyImage] = useState<File | null>(null);
+  const [replyImagePreview, setReplyImagePreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [sending, setSending] = useState(false);
   const [ratingScore, setRatingScore] = useState<number | null>(null);
   const [submittingRating, setSubmittingRating] = useState(false);
@@ -115,6 +165,80 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
   const [manualMatchedOrder, setManualMatchedOrder] = useState<any | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Generate and cleanup object URL for reply image preview
+  useEffect(() => {
+    if (!replyImage) {
+      setReplyImagePreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(replyImage);
+    setReplyImagePreview(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [replyImage]);
+
+  // Handle screenshot paste (Ctrl+V) from clipboard
+  const handlePaste = useCallback((e: React.ClipboardEvent | ClipboardEvent) => {
+    const items = (e as any).clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type && items[i].type.startsWith("image/")) {
+        const blob = items[i].getAsFile();
+        if (blob) {
+          e.preventDefault();
+          const ext = blob.type.split("/")[1] || "png";
+          const file = new File([blob], `screenshot_${Date.now()}.${ext}`, {
+            type: blob.type || "image/png",
+          });
+          setReplyImage(file);
+          toast.success("تم لصق لقطة الشاشة بنجاح! جاهزة للإرسال.");
+          return;
+        }
+      }
+    }
+  }, []);
+
+  // Global window paste listener for screenshots while viewing ticket
+  useEffect(() => {
+    const onGlobalPaste = (e: ClipboardEvent) => {
+      const activeEl = document.activeElement as HTMLElement;
+      if (activeEl && activeEl.tagName === "INPUT" && activeEl.getAttribute("placeholder")?.includes("1042")) {
+        return;
+      }
+      handlePaste(e);
+    };
+    window.addEventListener("paste", onGlobalPaste);
+    return () => window.removeEventListener("paste", onGlobalPaste);
+  }, [handlePaste]);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      if (file.type && file.type.startsWith("image/")) {
+        setReplyImage(file);
+        toast.success("تم إرفاق الصورة بنجاح");
+      } else {
+        toast.error("يرجى إرفاق ملف صورة صالح (PNG, JPG, WEBP)");
+      }
+    }
+  };
 
   useEffect(() => {
     if (ticket) {
@@ -353,40 +477,38 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
 
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!replyText.trim() && !replyImage) || sending || !ticket.id) return;
+    if ((!replyText.trim() && !replyImage) || sending || !ticket?.id) return;
 
     try {
       setSending(true);
       const formData = new FormData();
-      formData.append("message", replyText.trim());
-      formData.append("content", replyText.trim());
+      const text = replyText.trim() || (replyImage ? "مرفق لقطة شاشة / صورة" : "");
+      formData.append("message", text);
+      formData.append("content", text);
       formData.append("ticket_id", String(ticket.id));
 
       if (replyImage) {
         formData.append("image", replyImage);
-        formData.append("media[0]", replyImage);
       }
 
       const res = await apiClient.post<any>(
         `/turbo/tickets/${ticket.id}/reply`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        formData
       );
 
       if (res.data?.success) {
-        toast.success("تم إرسال الرد بنجاح لتربو");
+        toast.success("تم إرسال الرد والمرفق بنجاح لشركة الشحن");
         setReplyText("");
         setReplyImage(null);
         onRefreshTicket();
       } else {
-        toast.error(res.data?.message || "فشل إرسال الرد");
+        toast.error(res.data?.message || res.data?.error || "فشل إرسال الرد");
       }
     } catch (err: any) {
       toast.error(
         err?.response?.data?.error ||
           err?.response?.data?.message ||
+          err?.message ||
           "حدث خطأ أثناء إرسال الرد"
       );
     } finally {
@@ -516,7 +638,25 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
       {/* Main Workspace: Chat Feed + Collapsible Order Details Sidebar */}
       <div className="flex-1 flex min-h-0 overflow-hidden relative">
         {/* Left Column: Messages Thread & Input Bar */}
-        <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden">
+        <div
+          className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden relative"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {/* Drag & Drop Visual Backdrop Overlay */}
+          {isDragging && (
+            <div className="absolute inset-0 z-40 bg-zinc-900/80 backdrop-blur-xs flex flex-col items-center justify-center gap-3 p-4 text-center pointer-events-none animate-fadeIn">
+              <div className="p-4 rounded-2xl bg-white/10 border-2 border-dashed border-white text-white shadow-xl">
+                <PhotoIcon className="h-10 w-10 animate-bounce text-emerald-400" />
+              </div>
+              <div>
+                <p className="font-bold text-base text-white">أفلت الصورة أو لقطة الشاشة هنا</p>
+                <p className="text-xs text-zinc-300 mt-1">سيتم إرفاقها بالتذكرة فوراً وتجهيزها للإرسال</p>
+              </div>
+            </div>
+          )}
+
           {/* Messages Thread Feed */}
           <div
             className="flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-3.5 min-h-0 touch-pan-y"
@@ -546,6 +686,7 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
                   "المسؤول";
               }
               const byText = `${storeName} - ${creatorClean}`;
+              const initialMediaUrls = extractMediaUrls(ticket);
 
               return (
                 <div className="p-3 sm:p-3.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xs">
@@ -571,41 +712,27 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
                   </p>
 
                   {/* Initial Ticket Attachment if present */}
-                  {(ticket.attachment || (ticket.attachments && ticket.attachments.length > 0)) && (
+                  {initialMediaUrls.length > 0 && (
                     <div className="mt-2.5 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
-                      <p className="text-[11px] text-zinc-400 mb-1.5">مرفقات التذكرة:</p>
+                      <p className="text-[11px] text-zinc-400 mb-1.5 font-medium">
+                        مرفقات التذكرة ({initialMediaUrls.length}):
+                      </p>
                       <div className="flex flex-wrap gap-2">
-                        {ticket.attachment && (
+                        {initialMediaUrls.map((url, attIdx) => (
                           <button
+                            key={attIdx}
                             type="button"
-                            onClick={() => setPreviewImage(ticket.attachment!)}
-                            className="group relative rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 max-w-[160px] max-h-[120px] focus:outline-hidden"
+                            onClick={() => setPreviewImage(url)}
+                            className="group relative rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 max-w-[160px] max-h-[120px] focus:outline-hidden bg-zinc-950/20"
+                            title="تكبير المرفق"
                           >
                             <img
-                              src={ticket.attachment}
-                              alt="مرفق التذكرة"
+                              src={url}
+                              alt={`مرفق ${attIdx + 1}`}
                               className="object-cover w-full h-full group-hover:scale-105 transition"
                             />
                           </button>
-                        )}
-                        {ticket.attachments?.map((att, attIdx) => {
-                          const url = att.file_url || att.url;
-                          if (!url || url === ticket.attachment) return null;
-                          return (
-                            <button
-                              key={att.id || attIdx}
-                              type="button"
-                              onClick={() => setPreviewImage(url)}
-                              className="group relative rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 max-w-[160px] max-h-[120px] focus:outline-hidden"
-                            >
-                              <img
-                                src={url}
-                                alt={`مرفق ${attIdx + 1}`}
-                                className="object-cover w-full h-full group-hover:scale-105 transition"
-                              />
-                            </button>
-                          );
-                        })}
+                        ))}
                       </div>
                     </div>
                   )}
@@ -626,12 +753,7 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
                   ? user?.company?.name?.trim() || "المتجر"
                   : "تربو";
                 const textContent = msg.content || msg.message || "";
-                const imageUrl =
-                  msg.image ||
-                  msg.media_url ||
-                  msg.file ||
-                  (msg as any).file_url ||
-                  (msg as any).attachment;
+                const msgMediaUrls = extractMediaUrls(msg);
 
                 return (
                   <div
@@ -663,16 +785,21 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
                           : "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800 rounded-bl-xs"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap break-words">{textContent}</p>
+                      {textContent && (
+                        <p className="whitespace-pre-wrap break-words">{textContent}</p>
+                      )}
 
-                      {imageUrl && (
-                        <div className="mt-2">
-                          <img
-                            src={imageUrl}
-                            alt="مرفق التذكرة"
-                            onClick={() => setPreviewImage(imageUrl)}
-                            className="max-h-48 rounded-lg cursor-pointer hover:opacity-90 transition border border-white/20"
-                          />
+                      {msgMediaUrls.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {msgMediaUrls.map((url, uIdx) => (
+                            <img
+                              key={uIdx}
+                              src={url}
+                              alt="مرفق التذكرة"
+                              onClick={() => setPreviewImage(url)}
+                              className="max-h-48 rounded-lg cursor-pointer hover:opacity-90 transition border border-white/20 object-contain bg-zinc-950/20"
+                            />
+                          ))}
                         </div>
                       )}
                     </div>
@@ -686,15 +813,36 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
           {/* Input Bar with Safe Area Bottom Padding */}
           <footer className="p-2.5 sm:p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 z-20 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg sm:shadow-none">
             {replyImage && (
-              <div className="flex items-center gap-2 mb-2 p-1.5 px-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs w-fit">
-                <PhotoIcon className="h-4 w-4 text-zinc-500" />
-                <span className="truncate max-w-[200px] text-zinc-700 dark:text-zinc-300">
-                  {replyImage.name}
-                </span>
+              <div className="flex items-center gap-3 mb-2 p-2 px-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/80 text-xs w-fit shadow-xs">
+                {replyImagePreview ? (
+                  <img
+                    src={replyImagePreview}
+                    alt="معاينة المرفق"
+                    onClick={() => setPreviewImage(replyImagePreview)}
+                    className="w-10 h-10 object-cover rounded-lg border border-zinc-300 dark:border-zinc-700 cursor-pointer hover:opacity-80 transition shrink-0"
+                    title="تكبير الصورة"
+                  />
+                ) : (
+                  <PhotoIcon className="h-6 w-6 text-zinc-500 shrink-0" />
+                )}
+                <div className="min-w-0 pr-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200 truncate max-w-[180px]">
+                      {replyImage.name}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-mono">
+                      ({(replyImage.size / 1024).toFixed(0)} KB)
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    جاهزة للإرسال مع الرد
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={() => setReplyImage(null)}
-                  className="text-rose-500 hover:text-rose-600 p-0.5 rounded"
+                  className="text-zinc-400 hover:text-rose-500 p-1 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
+                  title="إلغاء المرفق"
                 >
                   <XMarkIcon className="h-4 w-4" />
                 </button>
@@ -702,7 +850,10 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
             )}
 
             <form onSubmit={handleSendReply} className="flex items-center gap-1.5 sm:gap-2">
-              <label className="p-2 sm:p-2.5 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition active:scale-95 shrink-0" title="إرفاق صورة">
+              <label
+                className="p-2 sm:p-2.5 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition active:scale-95 shrink-0"
+                title="إرفاق صورة أو لقطة شاشة"
+              >
                 <PhotoIcon className="h-5 w-5" />
                 <input
                   type="file"
@@ -721,7 +872,12 @@ export const TurboTicketChatPanel: React.FC<TurboTicketChatPanelProps> = ({
                 type="text"
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                placeholder="اكتب ردك لخدمة عملاء وعمليات تربو..."
+                onPaste={handlePaste}
+                placeholder={
+                  replyImage
+                    ? "اكتب تعليقاً على الصورة (اختياري) أو اضغط إرسال..."
+                    : "اكتب ردك، أو الصق لقطة الشاشة مباشرة (Ctrl+V)..."
+                }
                 disabled={sending}
                 className="flex-1 min-w-0 px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:border-zinc-400 dark:focus:border-zinc-600 transition"
               />

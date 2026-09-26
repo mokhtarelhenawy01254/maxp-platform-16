@@ -31,8 +31,41 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
   const [content, setContent] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [imageFile]);
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type && items[i].type.startsWith("image/")) {
+        const blob = items[i].getAsFile();
+        if (blob) {
+          e.preventDefault();
+          const ext = blob.type.split("/")[1] || "png";
+          const file = new File([blob], `screenshot_${Date.now()}.${ext}`, {
+            type: blob.type || "image/png",
+          });
+          setImageFile(file);
+          toast.success("تم لصق لقطة الشاشة بنجاح!");
+          return;
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     if (isOpen && accounts && accounts.length > 0) {
@@ -141,10 +174,7 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
         const formData = new FormData();
         Object.entries(payload).forEach(([k, v]) => formData.append(k, String(v)));
         formData.append("image", imageFile);
-        formData.append("media[0]", imageFile);
-        res = await apiClient.post<any>("/turbo/tickets", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        res = await apiClient.post<any>("/turbo/tickets", formData);
       } else {
         res = await apiClient.post<any>("/turbo/tickets", payload);
       }
@@ -278,29 +308,63 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-              تفاصيل المشكلة أو الاستفسار *
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                تفاصيل المشكلة أو الاستفسار *
+              </label>
+              <span className="text-[10px] text-zinc-400">
+                يدعم لصق لقطة الشاشة مباشرة (Ctrl+V)
+              </span>
+            </div>
             <textarea
               rows={4}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="اكتب كل التفاصيل والملاحظات المطلوب من عمليات تربو متابعتها..."
+              onPaste={handlePaste}
+              placeholder="اكتب كل التفاصيل والملاحظات المطلوب متابعتها، ويمكنك لصق لقطة الشاشة هنا مباشرة (Ctrl+V)..."
               className="w-full text-xs rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2.5 text-zinc-900 dark:text-white focus:outline-hidden focus:border-zinc-500 resize-none"
             />
           </div>
 
           {/* Image Attachment */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-              صورة أو إيصال (اختياري)
-            </label>
-            <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1.5 px-3 py-2 border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-500 rounded-xl text-xs cursor-pointer text-zinc-600 dark:text-zinc-400 transition">
-                <PhotoIcon className="h-4 w-4" />
-                <span className="truncate max-w-[200px]">
-                  {imageFile ? imageFile.name : "اختر صورة للمرفق"}
-                </span>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                صورة أو لقطة شاشة (اختياري)
+              </label>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                {imageFile ? "جاهزة للإرسال" : ""}
+              </span>
+            </div>
+
+            {imageFile && imagePreview ? (
+              <div className="flex items-center gap-3 p-2.5 px-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-xs shadow-xs">
+                <img
+                  src={imagePreview}
+                  alt="معاينة المرفق"
+                  className="w-12 h-12 object-cover rounded-lg border border-zinc-300 dark:border-zinc-700 shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+                    {imageFile.name}
+                  </p>
+                  <p className="text-[10px] text-zinc-400 font-mono">
+                    ({(imageFile.size / 1024).toFixed(0)} KB)
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setImageFile(null)}
+                  className="text-zinc-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
+                  title="إلغاء المرفق"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-500 rounded-xl text-xs cursor-pointer text-zinc-600 dark:text-zinc-400 transition bg-zinc-50/50 dark:bg-zinc-800/40">
+                <PhotoIcon className="h-4 w-4 text-zinc-400" />
+                <span>اختر صورة أو اسحبها هنا، أو الصق لقطة الشاشة (Ctrl+V)</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -312,16 +376,7 @@ export const TurboNewTicketModal: React.FC<TurboNewTicketModalProps> = ({
                   className="hidden"
                 />
               </label>
-              {imageFile && (
-                <button
-                  type="button"
-                  onClick={() => setImageFile(null)}
-                  className="text-xs text-rose-500 hover:underline"
-                >
-                  إلغاء المرفق
-                </button>
-              )}
-            </div>
+            )}
           </div>
 
           {/* Footer Actions */}

@@ -18,13 +18,31 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     // السماح بصور فقط
-    if (file.mimetype.startsWith('image/')) {
+    if (file.mimetype && file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
       cb(new Error('Only image files are allowed'), false);
     }
   }
 });
+
+// ميدلوير مرن وآمن لرفع الصور والمرفقات بدون أخطاء Unexpected field
+const safeImageUpload = (req, res, next) => {
+  upload.any()(req, res, (err) => {
+    if (err) {
+      console.warn('⚠️ [TURBO-UPLOAD] Multer upload warning:', err.message);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ success: false, error: 'حجم الصورة كبير جداً (الحد الأقصى 10 ميجابايت)', message: 'حجم الصورة كبير جداً (الحد الأقصى 10 ميجابايت)' });
+      }
+      return res.status(400).json({ success: false, error: err.message || 'فشل في رفع الصورة', message: err.message || 'فشل في رفع الصورة' });
+    }
+    // Backward compatibility: set req.file to the first image found
+    if (!req.file && Array.isArray(req.files) && req.files.length > 0) {
+      req.file = req.files.find(f => /image|media|file|attachment|screenshot/i.test(f.fieldname)) || req.files[0];
+    }
+    next();
+  });
+};
 
 /**
  * Public Routes (No Authentication Required)
@@ -140,7 +158,7 @@ router.put('/orders/:orderId/shipment', verifyToken.authenticateToken, checkAppA
  * POST /api/turbo/tickets
  * إضافة تذكرة دعم إلى Turbo
  */
-router.post('/tickets', verifyToken.authenticateToken, upload.single('image'), checkAppAccess('order-shipping-turbo'), turboController.addTicket);
+router.post('/tickets', verifyToken.authenticateToken, safeImageUpload, checkAppAccess('order-shipping-turbo'), turboController.addTicket);
 
 /**
  * GET /api/turbo/inquiries-types
@@ -199,8 +217,8 @@ router.get('/tickets/:id/log', verifyToken.authenticateToken, checkAppAccess('or
  * الرد على تذكرة في Turbo
  * يجب أن يأتي قبل /tickets/:id لتجنب التطابق الخاطئ
  */
-router.post('/tickets/:id/reply', verifyToken.authenticateToken, upload.single('image'), checkAppAccess('order-shipping-turbo'), turboController.replyToTicket);
-router.post('/tickets/:id/message-store', verifyToken.authenticateToken, upload.single('image'), checkAppAccess('order-shipping-turbo'), turboController.replyToTicket);
+router.post('/tickets/:id/reply', verifyToken.authenticateToken, safeImageUpload, checkAppAccess('order-shipping-turbo'), turboController.replyToTicket);
+router.post('/tickets/:id/message-store', verifyToken.authenticateToken, safeImageUpload, checkAppAccess('order-shipping-turbo'), turboController.replyToTicket);
 
 /**
  * POST /api/turbo/tickets/:id/rate

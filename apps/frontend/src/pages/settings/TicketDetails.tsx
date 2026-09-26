@@ -212,8 +212,10 @@ const TicketDetails: React.FC = () => {
       setSendingReply(true);
 
       // إنشاء FormData
+      const text = replyMessage.trim() || (replyImage ? "مرفق لقطة شاشة / صورة" : "");
       const formData = new FormData();
-      formData.append("message", replyMessage);
+      formData.append("message", text);
+      formData.append("content", text);
 
       // إضافة الصورة إذا كانت موجودة
       if (replyImage) {
@@ -222,12 +224,7 @@ const TicketDetails: React.FC = () => {
 
       const response = await apiClient.post<any>(
         `/turbo/tickets/${ticketId}/reply`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        },
+        formData
       );
 
       if (response.data.success) {
@@ -526,9 +523,32 @@ const TicketDetails: React.FC = () => {
                 id="replyMessage"
                 value={replyMessage}
                 onChange={(e) => setReplyMessage(e.target.value)}
+                onPaste={(e) => {
+                  const items = e.clipboardData?.items;
+                  if (!items) return;
+                  for (let i = 0; i < items.length; i++) {
+                    if (items[i].type && items[i].type.startsWith("image/")) {
+                      const blob = items[i].getAsFile();
+                      if (blob) {
+                        e.preventDefault();
+                        const ext = blob.type.split("/")[1] || "png";
+                        const file = new File([blob], `screenshot_${Date.now()}.${ext}`, {
+                          type: blob.type || "image/png",
+                        });
+                        setReplyImage(file);
+                        toast.success("تم لصق لقطة الشاشة بنجاح!");
+                        return;
+                      }
+                    }
+                  }
+                }}
                 rows={4}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                placeholder="اكتب رسالتك هنا..."
+                placeholder={
+                  replyImage
+                    ? "اكتب تعليقاً على الصورة (اختياري) أو اضغط إرسال..."
+                    : "اكتب رسالتك هنا، أو الصق لقطة الشاشة مباشرة (Ctrl+V)..."
+                }
                 disabled={sendingReply}
               />
             </div>
