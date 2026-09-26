@@ -23,9 +23,15 @@ def _load_cases():
 
 @pytest.fixture(autouse=True)
 def _register_skills():
+    reg = get_skill_registry()
+    old_skills = dict(reg._skills)
+    old_tools = dict(reg._tools)
+    old_groups = {k: set(v) for k, v in reg._groups.items()}
     register_all_skills()
     yield
-    get_skill_registry().clear()
+    reg._skills = old_skills
+    reg._tools = old_tools
+    reg._groups = old_groups
 
 
 def _make_ctx(message: str) -> PipelineContext:
