@@ -126,10 +126,17 @@ async function runE2EVerification() {
     // -------------------------------------------------------------------------
     // STEP 5: Create Order & Assign to Delivery Run (Manifest)
     // -------------------------------------------------------------------------
-    console.log('\n📋 [STEP 5] Creating Order & Dispatching Delivery Run:');
+    const customerRecord = await prisma.customer.create({
+      data: {
+        firstName: 'محمود',
+        lastName: 'عبد العزيز',
+        phone: '01234567890',
+        company: { connect: { id: testCompanyAId } }
+      }
+    });
+
     const testOrder = await prisma.order.create({
       data: {
-        companyId: testCompanyAId,
         orderNumber: `ORD-${timestamp}-901`,
         customerName: 'محمود عبد العزيز',
         customerPhone: '01234567890',
@@ -139,7 +146,9 @@ async function runE2EVerification() {
         total: 750.00,
         subtotal: 700.00,
         shipping: 50.00,
-        status: 'READY_TO_SHIP'
+        status: 'READY_TO_SHIP',
+        company: { connect: { id: testCompanyAId } },
+        customer: { connect: { id: customerRecord.id } }
       }
     });
     console.log(`   ✅ Test Order Created: ${testOrder.orderNumber}, Total COD: ${testOrder.total} EGP`);
@@ -194,12 +203,12 @@ async function runE2EVerification() {
     // Create dedicated Treasury Account for Company A
     const treasuryAccount = await prisma.treasuryAccount.create({
       data: {
-        companyId: testCompanyAId,
         name: 'خزينة النقدية الرئيسية (تجريبي)',
         type: 'CASH',
         balance: 0.00,
         currency: 'EGP',
-        isActive: true
+        isActive: true,
+        company: { connect: { id: testCompanyAId } }
       }
     });
     console.log(`   ✅ Initial Treasury Account Balance: ${treasuryAccount.balance} EGP`);
