@@ -563,7 +563,7 @@ const AGENT_ICONS = {
   CEO: '👔', SUPPORT: '🎧', SALES: '🤝', SMART_SELLER: '🛒',
   MARKETING: '📢', ORDER: '📦', INVENTORY: '📊', COMPETITOR: '🔍',
   FACEBOOK_SALES_SUPPORT: '💬', SAS_SALES: '🛍️', SALES_REP: '🛒',
-  ORDER_CONFIRMATION: '✅', SHIPPING: '🚚',
+  ORDER_CONFIRMATION: '✅', SHIPPING: '🚚', STOCK_TARGET_MONITOR: '📈',
 };
 
 const AGENT_INDUSTRIES = {
@@ -574,6 +574,7 @@ const AGENT_INDUSTRIES = {
   'order-agent': ['طلبات', 'تجارة إلكترونية', 'مطاعم'],
   'order-confirmation-agent': ['طلبات', 'تجارة إلكترونية', 'تأكيد الطلبات', 'شحن'],
   'shipping-agent': ['شحن', 'لوجستيات', 'تتبع الشحنات', 'تذاكر الشحن', 'تجارة إلكترونية'],
+  'stock-target-monitor-agent': ['مخزون', 'مبيعات', 'متابعة أهداف', 'تجزئة', 'تجارة إلكترونية'],
   'inventory-pricing-agent': ['مخزون', 'تجارة إلكترونية', 'تجزئة'],
   'manager-ceo': ['إدارة', 'ريادة أعمال'],
   'competitor-analysis': ['أبحاث سوق', 'تحليل تنافسي'],
