@@ -33,8 +33,8 @@ class AuditRepository(BaseRepository):
         log_id = f"log_{uuid.uuid4().hex[:16]}"
         meta_str = json.dumps(metadata or {}, ensure_ascii=False)
         await self._session.execute(text("""
-            INSERT INTO activity_logs (id, "companyId", action, category, description, severity, "isSuccess", "createdAt", metadata, "userId")
-            VALUES (:id, :cid, :act, :cat, :desc, :sev, true, NOW(), :meta, :uid)
+            INSERT INTO activity_logs (id, "companyId", action, category, description, severity, "isSuccess", "createdAt", "updatedAt", metadata, "userId")
+            VALUES (:id, :cid, :act, :cat, :desc, :sev, true, NOW(), NOW(), :meta, :uid)
         """), {
             "id": log_id,
             "cid": company_id,
@@ -70,5 +70,11 @@ async def log_agent_audit_event(
                 severity=severity,
                 metadata=metadata,
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        import structlog
+        structlog.get_logger(__name__).warning(
+            "failed_to_log_agent_audit_event",
+            error=str(exc),
+            company_id=company_id,
+            action=action,
+        )
