@@ -977,6 +977,7 @@ class BaseAgent:
             attachments=attachments,
             external_memory_context=self._build_external_memory_context(task),
         )
+        ctx.model_selection = getattr(task_llm_client, "model_selection", None) or ({"model": self.model, "source": "primary"} if self.model else None)
         # Pre-populate native_tools from _resolve_tools so the pipeline
         # always sees the effective tool set (resolves CORE_TOOLS fallback).
         try:
@@ -1364,7 +1365,8 @@ class BaseAgent:
         # ponytail: model returned no reply text but tools ran — pass tool data for validation upstream
         if not reply and executed:
             pass  # let upstream handle empty reply instead of fabricating one
-        pipeline_trace = _build_pipeline_trace(ctx, self._last_model_selection)
+        effective_model_selection = getattr(ctx, "model_selection", None) or self._last_model_selection
+        pipeline_trace = _build_pipeline_trace(ctx, effective_model_selection)
         return {
             "agent_id": self.id,
             "role": self.role,
@@ -1389,7 +1391,7 @@ class BaseAgent:
                 "thread_id": ctx.thread_id,
                 "draft_id": (ctx.early_return or {}).get("draft_id"),
             },
-            "model_selection": self._last_model_selection,
+            "model_selection": effective_model_selection,
             "task": task,
             "run_id": run_id,
         }

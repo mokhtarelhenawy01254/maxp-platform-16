@@ -563,16 +563,19 @@ const AGENT_ICONS = {
   CEO: '👔', SUPPORT: '🎧', SALES: '🤝', SMART_SELLER: '🛒',
   MARKETING: '📢', ORDER: '📦', INVENTORY: '📊', COMPETITOR: '🔍',
   FACEBOOK_SALES_SUPPORT: '💬', SAS_SALES: '🛍️', SALES_REP: '🛒',
-  ORDER_CONFIRMATION: '✅', SHIPPING: '🚚', STOCK_TARGET_MONITOR: '📈',
+  ORDER_CONFIRMATION: '✅', VOICE_ORDER_CONFIRMATION: '📞', SHIPPING: '🚚', STOCK_TARGET_MONITOR: '📈',
+  BROWSER_COPILOT: '🌐',
 };
 
 const AGENT_INDUSTRIES = {
+  'browser-copilot-agent': ['مساعد المتصفح', 'تجارة إلكترونية', 'عمليات المتجر', 'دعم فني'],
   'support-agent': ['خدمة عملاء', 'تجارة إلكترونية', 'خدمات'],
   'sales-agent': ['مبيعات', 'تجارة إلكترونية', 'عقارات'],
   'smart-seller-agent': ['تجارة إلكترونية', 'تجزئة'],
   'marketing-agent': ['تسويق', 'إعلانات', 'علامات تجارية'],
   'order-agent': ['طلبات', 'تجارة إلكترونية', 'مطاعم'],
-  'order-confirmation-agent': ['طلبات', 'تجارة إلكترونية', 'تأكيد الطلبات', 'شحن'],
+  'order-confirmation-agent': ['طلبات', 'تجارة إلكترونية', 'تأكيد الطلبات', 'واتساب', 'شحن'],
+  'voice-order-confirmation-agent': ['مكالمات صوتية', 'طلبات', 'تجارة إلكترونية', 'تأكيد الطلبات', 'شحن'],
   'shipping-agent': ['شحن', 'لوجستيات', 'تتبع الشحنات', 'تذاكر الشحن', 'تجارة إلكترونية'],
   'stock-target-monitor-agent': ['مخزون', 'مبيعات', 'متابعة أهداف', 'تجزئة', 'تجارة إلكترونية'],
   'inventory-pricing-agent': ['مخزون', 'تجارة إلكترونية', 'تجزئة'],
@@ -583,15 +586,73 @@ const AGENT_INDUSTRIES = {
   'sas-sales-agent': ['مبيعات', 'تجارة إلكترونية', 'فيس بوك'],
 };
 
+function getDiskAgentTemplates() {
+  const agentsDir = path.resolve(__dirname, '../agents');
+  if (!fs.existsSync(agentsDir)) return [];
+  const list = [];
+  try {
+    const entries = fs.readdirSync(agentsDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith('_')) continue;
+      const manifestPath = path.join(agentsDir, entry.name, 'agent.json');
+      if (!fs.existsSync(manifestPath)) continue;
+      try {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        const soulPath = path.join(agentsDir, entry.name, 'SOUL.md');
+        const soulText = fs.existsSync(soulPath) ? fs.readFileSync(soulPath, 'utf8') : '';
+        list.push({
+          slug: manifest.slug || entry.name,
+          name: manifest.name || entry.name,
+          role: manifest.role || 'AGENT',
+          version: manifest.version || '1.0.0',
+          allowed_tools: manifest.allowedTools || [],
+          allowed_skills: manifest.allowedSkills || [],
+          channels: manifest.channels || [],
+          budget: manifest.budget || {},
+          persona_meta: manifest.personaMeta || {},
+          instructions_soul: soulText,
+          is_active: manifest.isActive !== false,
+          companies_count: 0,
+        });
+      } catch (manifestErr) {
+        // ignore single parse error
+      }
+    }
+  } catch (err) {
+    console.warn('[SA-AGENTS] Could not read agentsDir:', err.message);
+  }
+  return list;
+}
+
 // GET /agents/marketplace — enriched listing for the template marketplace
 router.get("/agents/marketplace", async (req, res) => {
   try {
-    const result = await aiServiceAdminClient.listAgentTemplates({ all: 'true' });
+    let result = [];
+    try {
+      result = await aiServiceAdminClient.listAgentTemplates({ all: 'true' });
+    } catch (apiErr) {
+      console.warn('[SA-AGENTS] aiService listAgentTemplates fallback to disk:', apiErr.message);
+    }
+    const dbTemplates = Array.isArray(result) ? result : [];
+    const dbSlugs = new Set(dbTemplates.map(t => t.slug));
+
+    // Merge any missing disk templates (like newly added voice or confirmation agents)
+    const diskTemplates = getDiskAgentTemplates();
+    const merged = [...dbTemplates];
+    for (const dt of diskTemplates) {
+      if (!dbSlugs.has(dt.slug)) {
+        merged.push(dt);
+      }
+    }
+
     return res.json({
       success: true,
-      templates: Array.isArray(result) ? result.map(a => ({
-        slug: a.slug, name: a.name, role: a.role, version: a.version,
-        icon: AGENT_ICONS[a.role] || '🤖',
+      templates: merged.map(a => ({
+        slug: a.slug,
+        name: a.name,
+        role: a.role,
+        version: a.version,
+        icon: AGENT_ICONS[a.role] || (a.channels?.includes('voice') ? '📞' : '🤖'),
         description: a.role || '',
         personaMeta: a.persona_meta || {},
         soulPreview: a.instructions_soul?.split('\n').slice(0, 3).join('\n').substring(0, 200) || '',
@@ -599,14 +660,77 @@ router.get("/agents/marketplace", async (req, res) => {
         skillsCount: a.allowed_skills?.length || 0,
         channels: a.channels || [],
         budget: a.budget || {},
-        industries: AGENT_INDUSTRIES[a.slug] || [],
+        industries: AGENT_INDUSTRIES[a.slug] || ['تجارة إلكترونية'],
         isActive: a.is_active !== false,
         companiesCount: a.companies_count || 0,
-      })) : [],
+      })),
     });
   } catch (error) {
     console.error('[SA-AGENTS] GET marketplace error:', error.message);
     return res.status(500).json({ success: false, error: 'فشل تحميل سوق القوالب' });
+  }
+});
+
+// POST /agents/sync-templates — sync filesystem templates to ai-service and database
+router.post("/agents/sync-templates", async (req, res) => {
+  try {
+    const diskTemplates = getDiskAgentTemplates();
+    const synced = [];
+    const errors = [];
+
+    for (const dt of diskTemplates) {
+      try {
+        const agentFolder = path.resolve(__dirname, '../agents', dt.slug);
+        const readMd = (name) => {
+          if (!name) return '';
+          const p = path.join(agentFolder, name);
+          return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
+        };
+
+        const payload = {
+          slug: dt.slug,
+          role: dt.role,
+          name: dt.name,
+          version: dt.version,
+          model_policy: dt.model_policy || { default: "deepseek-flash" },
+          allowed_tools: dt.allowed_tools || [],
+          allowed_skills: dt.allowed_skills || [],
+          channels: dt.channels || [],
+          guardrails: dt.guardrails || {},
+          persona_meta: dt.persona_meta || {},
+          instructions_soul: readMd('SOUL.md'),
+          instructions_agents: readMd('AGENTS.md'),
+          instructions_tools: readMd('TOOLS.md'),
+          instructions_persona: readMd('PERSONA.md'),
+          is_active: dt.is_active !== false,
+        };
+
+        try {
+          await aiServiceAdminClient.createAgentTemplate(payload);
+          synced.push(dt.slug);
+        } catch (postErr) {
+          try {
+            await aiServiceAdminClient.updateAgentTemplate(dt.slug, payload);
+            synced.push(dt.slug);
+          } catch (putErr) {
+            errors.push({ slug: dt.slug, error: putErr.message });
+          }
+        }
+      } catch (err) {
+        errors.push({ slug: dt.slug, error: err.message });
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `تمت مزامنة ${synced.length} قالب بنجاح`,
+      syncedCount: synced.length,
+      syncedSlugs: synced,
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch (error) {
+    console.error('[SA-AGENTS] POST sync-templates error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل مزامنة القوالب' });
   }
 });
 
@@ -762,7 +886,31 @@ router.post("/agents/:slug/company/:agentId/reconcile", async (req, res) => {
 // GET /agents/:id — get agent template with expanded details
 router.get("/agents/:id", async (req, res) => {
   try {
-    const result = await aiServiceAdminClient.getAgentTemplate(req.params.id);
+    let result = null;
+    try {
+      result = await aiServiceAdminClient.getAgentTemplate(req.params.id);
+    } catch (e) {
+      // fallback to disk if ai-service is unreachable or template not in DB
+    }
+    if (!result) {
+      const diskList = getDiskAgentTemplates();
+      const match = diskList.find(d => d.slug === req.params.id);
+      if (match) {
+        const agentFolder = path.resolve(__dirname, '../agents', match.slug);
+        const readMd = (name) => {
+          if (!name) return '';
+          const p = path.join(agentFolder, name);
+          return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
+        };
+        result = {
+          ...match,
+          instructions_soul: readMd('SOUL.md'),
+          instructions_agents: readMd('AGENTS.md'),
+          instructions_tools: readMd('TOOLS.md'),
+          instructions_persona: readMd('PERSONA.md'),
+        };
+      }
+    }
     if (!result) return res.status(404).json({ success: false, error: 'الوكيل غير موجود' });
     return res.json({ success: true, agent: result });
   } catch (error) {

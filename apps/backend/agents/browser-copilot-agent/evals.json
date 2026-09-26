@@ -1,0 +1,28 @@
+[
+  {
+    "id": "eval_copilot_greeting",
+    "description": "الترحيب وسؤال المستخدم عن احتياجه",
+    "input": "أهلاً، مين معايا؟",
+    "expectedBehavior": {
+      "containsAny": ["ماكس", "MaxP", "مساعد"],
+      "doesNotContain": ["نموذج لغوي", "بوت", "خوارزمية"]
+    }
+  },
+  {
+    "id": "eval_copilot_tab_context",
+    "description": "التعامل مع سياق الصفحة الحالية في المتصفح",
+    "input": "[سياق الصفحة الحالية المفتوحة في المتصفح:\nالعنوان: لوحة تحكم المتجر - الطلبات\nالرابط: https://maxp.online/orders]\n\nإيه المطلوب مني في الصفحة دي؟",
+    "expectedBehavior": {
+      "containsAny": ["الطلبات", "أوردرات", "لوحة"],
+      "triggersTool": "order_summary"
+    }
+  },
+  {
+    "id": "eval_copilot_inventory_alert",
+    "description": "الاستعلام عن نواقص المخزون",
+    "input": "هل في أي منتجات أوشكت على النفاد في المخزن؟",
+    "expectedBehavior": {
+      "triggersTool": "product_low_stock"
+    }
+  }
+]

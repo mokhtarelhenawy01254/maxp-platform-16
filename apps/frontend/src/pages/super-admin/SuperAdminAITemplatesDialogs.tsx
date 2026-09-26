@@ -31,6 +31,7 @@ export const ROLE_ICONS: Record<string, string> = {
   FACEBOOK_SALES_SUPPORT: "💬", SAS_SALES: "🛍️", SALES_REP: "🛒",
   ORDER_CONFIRMATION: "✅", VOICE_ORDER_CONFIRMATION: "📞",
   SHIPPING: "🚚", STOCK_TARGET_MONITOR: "📈",
+  BROWSER_COPILOT: "🌐",
 };
 
 export const ROLE_COLORS: Record<string, string> = {
@@ -43,13 +44,14 @@ export const ROLE_COLORS: Record<string, string> = {
   FACEBOOK_SALES_SUPPORT: "bg-indigo-100 text-indigo-700", SAS_SALES: "bg-green-100 text-green-700",
   SALES_REP: "bg-amber-100 text-amber-700", SHIPPING: "bg-teal-100 text-teal-700",
   STOCK_TARGET_MONITOR: "bg-emerald-100 text-emerald-800",
+  BROWSER_COPILOT: "bg-indigo-100 text-indigo-700",
 };
 
 export const ROLES = [
   "CEO", "SUPPORT", "SALES", "SMART_SELLER", "MARKETING", "ORDER",
   "ORDER_CONFIRMATION", "VOICE_ORDER_CONFIRMATION", "INVENTORY",
   "COMPETITOR", "FACEBOOK_SALES_SUPPORT", "SAS_SALES", "SALES_REP",
-  "SHIPPING", "STOCK_TARGET_MONITOR"
+  "SHIPPING", "STOCK_TARGET_MONITOR", "BROWSER_COPILOT",
 ];
 
 export const toneColors: Record<string, string> = {

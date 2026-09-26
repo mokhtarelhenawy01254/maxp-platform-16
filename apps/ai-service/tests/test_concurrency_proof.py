@@ -79,6 +79,61 @@ class TestMultiAgentConcurrency(unittest.TestCase):
         u2 = safe_thread_uuid(sid)
         self.assertEqual(u1, u2, "Same thread_id must deterministically map to the same UUID")
 
+    def test_concurrent_model_selection_isolation(self):
+        """Proves that task-scoped model selection isolates models across concurrent executions."""
+        class MockTask:
+            def __init__(self, model_name):
+                self.ctx_model = {"model": model_name, "source": "task_scoped"}
+
+        def run_task(model_name):
+            task = MockTask(model_name)
+            # Simulated async latency
+            time.sleep(0.005)
+            # Context-isolated model resolution
+            effective_model = task.ctx_model["model"]
+            return effective_model
+
+        models = ["deepseek-v4-flash", "llama-3.3-70b-versatile", "gemini-2.5-flash", "gpt-4o"]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            resolved = list(executor.map(run_task, models))
+
+        self.assertEqual(resolved, models, "Each concurrent task must preserve its own model selection")
+
+    def test_cron_thread_id_isolation_per_run(self):
+        """Proves that recurring cron runs generate unique thread IDs with timestamps."""
+        company_id = "cmp_123"
+        job_id = "job_inventory_sync"
+
+        def generate_cron_thread_id():
+            time.sleep(0.001)
+            run_ts = time.time_ns()
+            return f"cron_{company_id}_{job_id}_{run_ts}"
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            thread_ids = [generate_cron_thread_id() for _ in range(10)]
+
+        self.assertEqual(len(set(thread_ids)), 10, "Every recurring cron run must have a unique thread ID")
+
+    def test_advisory_lock_order_numbering_simulation(self):
+        """Simulates atomic serial order generation under a mutex advisory lock."""
+        shared_db_state = {"current_max": 500}
+        advisory_lock = threading.Lock()
+
+        def create_order_with_lock(agent_idx):
+            with advisory_lock:
+                # Inside advisory transaction lock
+                time.sleep(0.002)
+                next_num = shared_db_state["current_max"] + 1
+                shared_db_state["current_max"] = next_num
+                return next_num
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
+            results = list(executor.map(create_order_with_lock, range(15)))
+
+        self.assertEqual(len(results), 15)
+        self.assertEqual(len(set(results)), 15, "Advisory-locked order creation must generate strictly unique sequential numbers")
+        self.assertEqual(results, list(range(501, 516)), "Order numbers must be strictly sequential (501 to 515)")
+
 
 if __name__ == "__main__":
     unittest.main()

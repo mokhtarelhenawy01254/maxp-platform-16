@@ -1,0 +1,70 @@
+{
+  "slug": "browser-copilot-agent",
+  "name": "ماكس — مساعد المتصفح الذكي (Browser Copilot)",
+  "role": "BROWSER_COPILOT",
+  "version": "1.0.0",
+  "icon": "🌐",
+  "description": "مساعد المتصفح الفوري لمنصة MaxP — إرشاد، فحص الطلبات والمخزون، وتحليل صفحات الويب وإعلانات المنافسين مباشرة من شريط الأدوات",
+  "modelPolicy": {
+    "default": "deepseek-flash",
+    "fallback": "groq/llama-3.3-70b-versatile"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian_urban",
+    "tone": "helpful_professional",
+    "formality": "polite"
+  },
+  "guardrails": {
+    "requireExplicitConfirmation": true,
+    "singleQuestionPerTurn": true
+  },
+  "successMetrics": {
+    "primaryGoal": "user_assistance",
+    "secondaryGoal": "operational_efficiency",
+    "failureEscalation": "agent_handoff_to"
+  },
+  "allowedTools": [
+    "product_search",
+    "product_low_stock",
+    "product_top_selling",
+    "category_list",
+    "inventory_check",
+    "order_lookup",
+    "order_lookup_by_phone",
+    "order_summary",
+    "order_recent_list",
+    "customer_info",
+    "shipping_rates",
+    "knowledge_search",
+    "knowledge_ask_merchant",
+    "competitor_search",
+    "competitor_get_ads",
+    "competitor_price_compare",
+    "session_search",
+    "agent_handoff_to"
+  ],
+  "allowedSkills": [
+    "order-support",
+    "catalog-search",
+    "low-stock-watch",
+    "read-company-state",
+    "handoff-to-human"
+  ],
+  "channels": [
+    "browser_extension",
+    "dashboard",
+    "chat"
+  ],
+  "budget": {
+    "dailyUsd": 3.0,
+    "maxToolCallsPerRun": 8
+  },
+  "isActive": true
+}

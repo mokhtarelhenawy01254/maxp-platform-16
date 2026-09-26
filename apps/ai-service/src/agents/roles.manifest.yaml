@@ -4,6 +4,24 @@
 version: "1.0.0"
 
 roles:
+  BROWSER_COPILOT:
+    label: "مساعد المتصفح الذكي"
+    domain: "BROWSER_COPILOT"
+    playbook_id: "browser_copilot_playbook"
+    playbook_title: "كتيب مساعد المتصفح والعمليات السريعة"
+    judge_profile: "support"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["SUPPORT", "STORE_OPS", "ORDERS", "INVENTORY"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
   STORE_MANAGER:
     label: "مدير المتجر التنفيذي"
     domain: "STORE_OPS"
@@ -81,6 +99,24 @@ roles:
     domain: "OPERATIONS"
     playbook_id: "order_confirmation_playbook"
     playbook_title: "كتيب تأكيد الطلبات والمتابعة"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["ORDERS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  VOICE_ORDER_CONFIRMATION:
+    label: "المكالمات الصوتية لتأكيد الطلبات"
+    domain: "OPERATIONS"
+    playbook_id: "order_confirmation_playbook"
+    playbook_title: "كتيب المكالمات الصوتية لتأكيد الطلبات"
     judge_profile: "merchant_ops"
     capabilities:
       episodic_memory: true
@@ -363,3 +399,22 @@ roles:
     memory_policy:
       retain_days: 120
       auto_embed: true
+
+  HR_ASSISTANT:
+    label: "مستشارة شؤون الموظفين والدعم الإداري"
+    domain: "HR"
+    playbook_id: "hr_assistant_playbook"
+    playbook_title: "كتيب الاستفسارات والإجراءات الإدارية لشؤون الموظفين"
+    judge_profile: "hr_operations"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["HR", "ATTENDANCE", "LEAVES", "PERMISSIONS", "PAYROLL_INQUIRY", "ADVANCES"]
+      forbidden_prefixes: ["facebook_", "order_", "product_", "shipping_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+

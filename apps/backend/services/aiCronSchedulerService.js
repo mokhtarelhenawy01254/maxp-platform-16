@@ -295,11 +295,12 @@ class AiCronSchedulerService {
     let reply = '';
 
     try {
+      const runTimestamp = Date.now();
       const response = await aiServiceAdminClient.chatWithAgent({
         companyId,
         agentId: '',
         message: job.description,
-        threadId: `cron_${companyId}_${job.id}`,
+        threadId: `cron_${companyId}_${job.id}_${runTimestamp}`,
       });
 
       status = response && response.success !== false ? 'SUCCESS' : 'FAILED';

@@ -3,6 +3,26 @@
 # Keys are role names (uppercase), values are lists of tool names.
 
 roles:
+  BROWSER_COPILOT:
+    - product_search
+    - product_low_stock
+    - product_top_selling
+    - category_list
+    - inventory_check
+    - order_lookup
+    - order_lookup_by_phone
+    - order_summary
+    - order_recent_list
+    - customer_info
+    - shipping_rates
+    - knowledge_search
+    - knowledge_ask_merchant
+    - competitor_search
+    - competitor_get_ads
+    - competitor_price_compare
+    - session_search
+    - agent_handoff_to
+
   SUPPORT:
     - product_search
     - order_lookup
@@ -45,6 +65,19 @@ roles:
     - search_area_by_text
     - customer_info
     - whatsapp_send
+    - agent_handoff_to
+
+  VOICE_ORDER_CONFIRMATION:
+    - order_lookup
+    - order_lookup_by_phone
+    - order_confirm
+    - order_update_details
+    - order_cancel
+    - shipping_rates
+    - shipping_company_governorates
+    - shipping_company_areas
+    - search_area_by_text
+    - customer_info
     - agent_handoff_to
 
   SALES:
@@ -347,4 +380,19 @@ roles:
     - update_agent_identity
     - agent_spawn
     - scheduler_create_job
+
+  HR_ASSISTANT:
+    - hr_my_profile
+    - hr_my_attendance
+    - hr_leave_balance
+    - hr_leave_request_create
+    - hr_permission_request_create
+    - hr_requests_status
+    - hr_payslip_inquiry
+    - hr_attendance_today
+    - hr_my_advances
+    - hr_advance_request_create
+    - knowledge_search
+    - agent_handoff_to
+
 

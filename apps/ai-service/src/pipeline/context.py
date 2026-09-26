@@ -68,3 +68,6 @@ class PipelineContext:
     # Skill enforcement (per-turn)
     tool_call_index: int = 0
     active_skill_context: dict[str, Any] | None = None
+
+    # Task-scoped model selection (isolated per concurrent request)
+    model_selection: dict[str, Any] | None = None
