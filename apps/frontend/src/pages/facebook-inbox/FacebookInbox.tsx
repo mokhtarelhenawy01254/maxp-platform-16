@@ -3240,18 +3240,18 @@ const getApiError = (error: unknown): ApiErrorLike => {
         )}
       </div>
 
-      {!isConnected && hasConnectionGracePeriodPassed && (
+      {typeof navigator !== "undefined" && !navigator.onLine && (
         <div
-          className="fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg business-page-panel"
+          className="fixed bottom-4 right-4 z-50 px-3.5 py-1.5 rounded-lg shadow-lg text-xs font-medium"
           style={{
             background:
-              "color-mix(in srgb, var(--business-warning) 12%, var(--color-card, #ffffff))",
-            borderColor:
-              "color-mix(in srgb, var(--business-warning) 24%, transparent)",
+              "color-mix(in srgb, var(--business-warning) 14%, var(--color-card, #ffffff))",
+            border:
+              "1px solid color-mix(in srgb, var(--business-warning) 30%, transparent)",
             color: "var(--business-warning)",
           }}
         >
-              {t("facebookInbox.disconnected")}
+          {t("facebookInbox.disconnected", "⚠️ لا يوجد اتصال بالإنترنت")}
         </div>
       )}
 

@@ -175,7 +175,7 @@ const isAllowedDirectUrl = (targetUrl) => {
     return true;
   }
 
-  return /\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(targetUrl);
+  return /\.(jpg|jpeg|png|webp|gif|svg|mp3|m4a|aac|ogg|oga|opus|wav|webm|weba|mp4)(\?.*)?$/i.test(targetUrl);
 };
 
 const isFacebookExpiringMediaUrl = (targetUrl) => {
@@ -223,10 +223,14 @@ const getFacebookFriendlyHeaders = (targetUrl) => {
 
   const isFacebookCdn =
     hostname.includes("fbcdn.net") || hostname.includes("fbsbx.com");
+  const isAudioOrVideo =
+    /\.(mp3|m4a|aac|ogg|oga|opus|wav|webm|weba|mp4)(\?.*)?$/i.test(targetUrl) ||
+    /audio|voice|audioclip/i.test(targetUrl);
+  const acceptHeader = isAudioOrVideo ? "*/*" : DEFAULT_ACCEPT_HEADER;
 
   return {
     "User-Agent": DEFAULT_USER_AGENT,
-    Accept: DEFAULT_ACCEPT_HEADER,
+    Accept: acceptHeader,
     "Accept-Language": "en-US,en;q=0.9",
     ...(isFacebookCdn ? { Referer: "https://www.facebook.com/" } : {}),
   };
@@ -302,6 +306,42 @@ const resolveLocalUploadFilePath = (targetUrl) => {
   return null;
 };
 
+const sendBufferWithRange = (req, res, buffer, contentType, statusCode = 200) => {
+  res.setHeader("Accept-Ranges", "bytes");
+  res.setHeader("Content-Type", contentType);
+
+  const totalLength = buffer.length;
+  const rangeHeader = req.headers.range;
+
+  if (rangeHeader && typeof rangeHeader === "string" && rangeHeader.startsWith("bytes=")) {
+    const rangeParts = rangeHeader.replace(/bytes=/, "").split("-");
+    let start = parseInt(rangeParts[0], 10);
+    let end = rangeParts[1] ? parseInt(rangeParts[1], 10) : totalLength - 1;
+
+    if (isNaN(start)) {
+      start = totalLength - end;
+      end = totalLength - 1;
+    }
+    if (isNaN(end) || end >= totalLength) {
+      end = totalLength - 1;
+    }
+
+    if (start >= totalLength || start > end) {
+      res.setHeader("Content-Range", `bytes */${totalLength}`);
+      return res.status(416).end();
+    }
+
+    const chunkLength = end - start + 1;
+    res.status(206);
+    res.setHeader("Content-Range", `bytes ${start}-${end}/${totalLength}`);
+    res.setHeader("Content-Length", String(chunkLength));
+    return res.send(buffer.subarray(start, end + 1));
+  }
+
+  res.setHeader("Content-Length", String(totalLength));
+  return res.status(statusCode).send(buffer);
+};
+
 const sendLocalFileResponse = async (req, res, filePath, transformOptions) => {
   const ext = path.extname(filePath).toLowerCase();
   const mimeMap = {
@@ -312,6 +352,16 @@ const sendLocalFileResponse = async (req, res, filePath, transformOptions) => {
     ".gif": "image/gif",
     ".svg": "image/svg+xml",
     ".avif": "image/avif",
+    ".mp3": "audio/mpeg",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
+    ".ogg": "audio/ogg",
+    ".oga": "audio/ogg",
+    ".opus": "audio/opus",
+    ".wav": "audio/wav",
+    ".webm": "audio/webm",
+    ".weba": "audio/webm",
+    ".mp4": "video/mp4",
   };
   const originalContentType = mimeMap[ext] || "application/octet-stream";
   const shouldTransform =
@@ -329,6 +379,7 @@ const sendLocalFileResponse = async (req, res, filePath, transformOptions) => {
   );
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  res.setHeader("Accept-Ranges", "bytes");
 
   if ((req.method || "").toUpperCase() === "HEAD") {
     return res.status(200).end();
@@ -337,8 +388,7 @@ const sendLocalFileResponse = async (req, res, filePath, transformOptions) => {
   const responseBuffer = await fs.promises.readFile(filePath);
 
   if (!shouldTransform) {
-    res.setHeader("Content-Length", String(responseBuffer.length));
-    return res.status(200).send(responseBuffer);
+    return sendBufferWithRange(req, res, responseBuffer, originalContentType, 200);
   }
 
   try {
@@ -346,23 +396,44 @@ const sendLocalFileResponse = async (req, res, filePath, transformOptions) => {
       responseBuffer,
       transformOptions,
     );
-    res.setHeader("Content-Length", String(transformedBuffer.length));
-    return res.status(200).send(transformedBuffer);
+    return sendBufferWithRange(
+      req,
+      res,
+      transformedBuffer,
+      `image/${transformOptions.format}`,
+      200,
+    );
   } catch (error) {
     console.warn("⚠️ [IMAGE-PROXY] Local file transform failed, serving original:", {
       filePath,
       message: error?.message,
     });
-    res.setHeader("Content-Type", originalContentType);
-    res.setHeader("Content-Length", String(responseBuffer.length));
-    return res.status(200).send(responseBuffer);
+    return sendBufferWithRange(req, res, responseBuffer, originalContentType, 200);
   }
 };
 
 const sendRemoteResponse = async (req, res, response, transformOptions) => {
-  const contentType = response.headers.get("content-type") || "image/jpeg";
-  const contentLength = response.headers.get("content-length");
+  let contentType = response.headers.get("content-type") || "";
   const cacheControl = response.headers.get("cache-control");
+
+  const targetUrl = req.query.url ? String(req.query.url).toLowerCase() : "";
+  if (
+    !contentType ||
+    contentType === "application/octet-stream" ||
+    contentType === "binary/octet-stream" ||
+    contentType.startsWith("text/")
+  ) {
+    if (/\.(mp3)(\?.*)?$/i.test(targetUrl)) contentType = "audio/mpeg";
+    else if (/\.(m4a)(\?.*)?$/i.test(targetUrl)) contentType = "audio/mp4";
+    else if (/\.(aac)(\?.*)?$/i.test(targetUrl)) contentType = "audio/aac";
+    else if (/\.(ogg|oga|opus)(\?.*)?$/i.test(targetUrl)) contentType = "audio/ogg";
+    else if (/\.(wav)(\?.*)?$/i.test(targetUrl)) contentType = "audio/wav";
+    else if (/\.(webm|weba)(\?.*)?$/i.test(targetUrl)) contentType = "audio/webm";
+    else if (/\.(mp4)(\?.*)?$/i.test(targetUrl)) contentType = "video/mp4";
+    else if (/audioclip|audio|voice/i.test(targetUrl)) contentType = "audio/mp4";
+    else if (!contentType) contentType = "image/jpeg";
+  }
+
   const shouldTransform =
     transformOptions?.shouldTransform && isTransformableContentType(contentType);
 
@@ -378,10 +449,7 @@ const sendRemoteResponse = async (req, res, response, transformOptions) => {
   );
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-
-  if (contentLength && !shouldTransform) {
-    res.setHeader("Content-Length", contentLength);
-  }
+  res.setHeader("Accept-Ranges", "bytes");
 
   if ((req.method || "").toUpperCase() === "HEAD") {
     return res.status(200).end();
@@ -391,7 +459,7 @@ const sendRemoteResponse = async (req, res, response, transformOptions) => {
   const responseBuffer = Buffer.from(buffer);
 
   if (!shouldTransform) {
-    return res.send(responseBuffer);
+    return sendBufferWithRange(req, res, responseBuffer, contentType, 200);
   }
 
   try {
@@ -399,8 +467,13 @@ const sendRemoteResponse = async (req, res, response, transformOptions) => {
       responseBuffer,
       transformOptions,
     );
-    res.setHeader("Content-Length", String(transformedBuffer.length));
-    return res.status(200).send(transformedBuffer);
+    return sendBufferWithRange(
+      req,
+      res,
+      transformedBuffer,
+      `image/${transformOptions.format}`,
+      200,
+    );
   } catch (error) {
     console.warn("⚠️ [IMAGE-PROXY] Image transform failed, serving original:", {
       contentType,
@@ -408,13 +481,7 @@ const sendRemoteResponse = async (req, res, response, transformOptions) => {
       format: transformOptions.format,
       message: error?.message,
     });
-    res.setHeader("Content-Type", contentType);
-    res.setHeader(
-      "Cache-Control",
-      cacheControl || "public, max-age=3600, stale-while-revalidate=86400",
-    );
-    res.removeHeader("Content-Length");
-    return res.send(responseBuffer);
+    return sendBufferWithRange(req, res, responseBuffer, contentType, 200);
   }
 };
 

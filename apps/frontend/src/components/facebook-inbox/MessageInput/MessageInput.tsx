@@ -627,7 +627,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         <button
           type="submit"
           disabled={!message.trim() || isBusy || uploadingFile}
-          className="business-chat-send-button business-chip-button flex h-[38px] w-[38px] sm:h-[40px] sm:w-auto flex-shrink-0 items-center justify-center gap-1.5 rounded-xl px-0 sm:px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 sm:text-base shadow-sm transition-transform active:scale-95"
+          className="business-chat-send-button business-chip-button relative z-10 flex h-[38px] w-[38px] sm:h-[40px] sm:w-auto flex-shrink-0 items-center justify-center gap-1.5 rounded-xl px-0 sm:px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 sm:text-base shadow-sm transition-transform active:scale-95"
           style={{
             background:
               "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
