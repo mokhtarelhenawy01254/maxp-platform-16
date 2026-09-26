@@ -928,7 +928,17 @@ const createTechnician = async (req, res) => {
     const workingDays = Array.isArray(body.workingDays)
       ? body.workingDays.map((d) => parseInt(d, 10)).filter((d) => !isNaN(d) && d >= 0 && d <= 6)
       : (Array.isArray(body.workDays) ? body.workDays.map((d) => parseInt(d, 10)).filter((d) => !isNaN(d) && d >= 0 && d <= 6) : undefined);
-    const vacations = Array.isArray(body.vacations) ? body.vacations : undefined;
+    let vacations = undefined;
+    if (Array.isArray(body.vacations)) {
+      vacations = body.vacations
+        .filter((v) => v && typeof v.startDate === 'string' && typeof v.endDate === 'string' && v.startDate.trim() && v.endDate.trim())
+        .map((v) => ({
+          startDate: String(v.startDate).trim().slice(0, 10),
+          endDate: String(v.endDate).trim().slice(0, 10),
+          reason: v.reason ? String(v.reason).trim() : '',
+        }))
+        .filter((v) => v.startDate <= v.endDate);
+    }
     const dailyCap = Number.isInteger(parseInt(body.dailyCap, 10)) ? Math.max(0, parseInt(body.dailyCap, 10)) : 0;
     let backupTechnicianId = null;
     if (body.backupTechnicianId) {
@@ -1035,7 +1045,18 @@ const updateTechnician = async (req, res) => {
       }
     }
     if ('vacations' in body) {
-      data.vacations = Array.isArray(body.vacations) ? body.vacations : null;
+      if (Array.isArray(body.vacations)) {
+        data.vacations = body.vacations
+          .filter((v) => v && typeof v.startDate === 'string' && typeof v.endDate === 'string' && v.startDate.trim() && v.endDate.trim())
+          .map((v) => ({
+            startDate: String(v.startDate).trim().slice(0, 10),
+            endDate: String(v.endDate).trim().slice(0, 10),
+            reason: v.reason ? String(v.reason).trim() : '',
+          }))
+          .filter((v) => v.startDate <= v.endDate);
+      } else {
+        data.vacations = null;
+      }
     }
     if ('isActive' in data) data.isActive = normalizeBool(data.isActive, true);
 
@@ -1125,7 +1146,20 @@ const updateTechnician = async (req, res) => {
         ? body.workingDays
         : (Array.isArray(body.workDays) ? body.workDays : null);
     }
-    if ('vacations' in body) data.vacations = Array.isArray(body.vacations) ? body.vacations : null;
+    if ('vacations' in body) {
+      if (Array.isArray(body.vacations)) {
+        data.vacations = body.vacations
+          .filter((v) => v && typeof v.startDate === 'string' && typeof v.endDate === 'string' && v.startDate.trim() && v.endDate.trim())
+          .map((v) => ({
+            startDate: String(v.startDate).trim().slice(0, 10),
+            endDate: String(v.endDate).trim().slice(0, 10),
+            reason: v.reason ? String(v.reason).trim() : '',
+          }))
+          .filter((v) => v.startDate <= v.endDate);
+      } else {
+        data.vacations = null;
+      }
+    }
     if ('dailyCap' in body) data.dailyCap = Math.max(0, parseInt(body.dailyCap, 10) || 0);
     if ('backupTechnicianId' in body) data.backupTechnicianId = body.backupTechnicianId ? String(body.backupTechnicianId) : null;
 

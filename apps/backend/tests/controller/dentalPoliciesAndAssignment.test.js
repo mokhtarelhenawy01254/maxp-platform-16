@@ -14,6 +14,7 @@ const {
 const dentalLabController = require('../../controller/dentalLabController');
 const {
   getLabPolicies,
+  isTechnicianOnDuty,
   selectTechnicianForAssignment,
   runGlobalDentalEscalation,
   runEscalationCheck,
@@ -436,4 +437,137 @@ describe('Dental Lab Policies, Strategies, and Automation Tests', () => {
       );
     });
   });
+
+  describe('8. Technician Exceptional Vacations & Scheduling', () => {
+    test('isTechnicianOnDuty marks technician off-duty during vacation period', () => {
+      const tech = {
+        id: 'tech-vac-1',
+        workingDays: [0, 1, 2, 3, 4, 5, 6],
+        vacations: [
+          {
+            startDate: '2026-10-01',
+            endDate: '2026-10-05',
+            reason: 'راحة سنوية',
+          },
+        ],
+      };
+
+      // Inside vacation window: 2026-10-03
+      const checkInside = isTechnicianOnDuty(tech, new Date('2026-10-03T12:00:00Z'));
+      expect(checkInside.onDuty).toBe(false);
+      expect(checkInside.reason).toContain('إجازة استثنائية: راحة سنوية');
+
+      // Boundary vacation start: 2026-10-01
+      const checkStart = isTechnicianOnDuty(tech, new Date('2026-10-01T08:00:00Z'));
+      expect(checkStart.onDuty).toBe(false);
+
+      // Boundary vacation end: 2026-10-05
+      const checkEnd = isTechnicianOnDuty(tech, new Date('2026-10-05T18:00:00Z'));
+      expect(checkEnd.onDuty).toBe(false);
+
+      // Outside vacation window: 2026-10-06
+      const checkOutside = isTechnicianOnDuty(tech, new Date('2026-10-06T10:00:00Z'));
+      expect(checkOutside.onDuty).toBe(true);
+      expect(checkOutside.reason).toBe('متاح للعمل');
+    });
+
+    test('selectTechnicianForAssignment skips technician on vacation when respectSchedule is true', async () => {
+      const targetDate = new Date('2026-10-03T10:00:00Z');
+      const mockPrisma = {
+        dentalSetting: {
+          findFirst: jest.fn().mockResolvedValue({
+            key: 'labPolicies',
+            value: JSON.stringify({
+              assignment: {
+                mode: 'AUTO',
+                strategy: 'LEAST_LOADED',
+                respectSchedule: true,
+              },
+            }),
+          }),
+          findMany: jest.fn().mockResolvedValue([]),
+        },
+        dentalTechnician: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              id: 'tech-on-vacation',
+              companyId: 'comp-1',
+              name: 'Vacation Tech',
+              role: 'CAD_DESIGNER',
+              workingDays: [0, 1, 2, 3, 4, 5, 6],
+              vacations: [{ startDate: '2026-10-01', endDate: '2026-10-05', reason: 'مؤتمر' }],
+              isActive: true,
+            },
+            {
+              id: 'tech-available',
+              companyId: 'comp-1',
+              name: 'Available Tech',
+              role: 'CAD_DESIGNER',
+              workingDays: [0, 1, 2, 3, 4, 5, 6],
+              vacations: [],
+              isActive: true,
+            },
+          ]),
+        },
+        dentalCaseStage: {
+          count: jest.fn().mockResolvedValue(0),
+        },
+        dentalCaseAssignment: {
+          count: jest.fn().mockResolvedValue(0),
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      const result = await selectTechnicianForAssignment(mockPrisma, 'comp-1', {
+        requiredRole: 'CAD_DESIGNER',
+        date: targetDate,
+      });
+
+      expect(result.selectedTechnician).not.toBeNull();
+      expect(result.selectedTechnician.id).toBe('tech-available');
+      expect(result.offDuty.some((c) => c.tech.id === 'tech-on-vacation' && c.reason.includes('إجازة استثنائية'))).toBe(true);
+    });
+
+    test('updateTechnician sanitizes vacations payload and filters invalid date ranges', async () => {
+      const mockPrisma = {
+        dentalTechnician: {
+          findFirst: jest.fn().mockResolvedValue({ id: 'tech-1', companyId: 'comp-1' }),
+          update: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'tech-1', companyId: 'comp-1', ...data })),
+        },
+      };
+      getSharedPrismaClient.mockReturnValue(mockPrisma);
+
+      const req = {
+        user: { companyId: 'comp-1', role: 'ADMIN' },
+        params: { id: 'tech-1' },
+        body: {
+          name: 'Ahmed Tech',
+          vacations: [
+            { startDate: '2026-10-01T12:00:00Z', endDate: '2026-10-05T00:00:00Z', reason: 'سفر ' },
+            { startDate: '2026-11-10', endDate: '2026-11-05', reason: 'تاريخ معكوس - يجب استبعاده' },
+            { startDate: '', endDate: '2026-12-01', reason: 'بداية فارغة' },
+          ],
+        },
+      };
+      const res = createResponse();
+
+      await dentalLabController.updateTechnician(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(mockPrisma.dentalTechnician.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            vacations: [
+              {
+                startDate: '2026-10-01',
+                endDate: '2026-10-05',
+                reason: 'سفر',
+              },
+            ],
+          }),
+        })
+      );
+    });
+  });
 });
+

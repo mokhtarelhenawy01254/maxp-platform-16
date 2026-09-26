@@ -93,6 +93,12 @@ export interface DentalWorkType {
   createdAt?: string;
 }
 
+export interface DentalTechnicianVacation {
+  startDate: string;
+  endDate: string;
+  reason?: string;
+}
+
 export interface DentalTechnician {
   id: string;
   name: string;
@@ -106,7 +112,7 @@ export interface DentalTechnician {
   dailyCap?: number | null;
   backupTechnicianId?: string | null;
   backupTechnicianName?: string | null;
-  vacations?: any[] | null;
+  vacations?: DentalTechnicianVacation[] | null;
   isActive: boolean;
   createdAt?: string;
   completedStages?: number;
@@ -127,6 +133,35 @@ export const DAYS_OF_WEEK = [
   { day: 4, label: "الخميس", short: "خميس" },
   { day: 5, label: "الجمعة", short: "جمعة" },
 ];
+
+export function isTechnicianOnVacation(
+  tech: { vacations?: DentalTechnicianVacation[] | null },
+  date: Date = new Date()
+): { onVacation: boolean; vacation?: DentalTechnicianVacation; upcomingCount: number } {
+  if (!Array.isArray(tech?.vacations) || tech.vacations.length === 0) {
+    return { onVacation: false, upcomingCount: 0 };
+  }
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  const dateStr = `${y}-${m}-${d}`;
+
+  let onVacation = false;
+  let activeVacation: DentalTechnicianVacation | undefined;
+  let upcomingCount = 0;
+
+  for (const v of tech.vacations) {
+    if (v && v.startDate && v.endDate) {
+      if (dateStr >= v.startDate && dateStr <= v.endDate) {
+        onVacation = true;
+        activeVacation = v;
+      } else if (v.startDate > dateStr) {
+        upcomingCount++;
+      }
+    }
+  }
+  return { onVacation, vacation: activeVacation, upcomingCount };
+}
 
 export interface WorkTypeStageTemplateItem {
   id?: string;

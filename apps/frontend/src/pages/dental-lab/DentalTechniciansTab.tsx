@@ -2,14 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Lock, Mail, Pencil, Plus, RefreshCw, Search, ShieldCheck, Sparkles, Trash2, Users, Wallet, Receipt, Printer, X as XMarkIcon } from "lucide-react";
+import { Loader2, Lock, Mail, Palmtree, Pencil, Plus, RefreshCw, Search, ShieldCheck, Sparkles, Trash2, Users, Wallet, Receipt, Printer, X as XMarkIcon } from "lucide-react";
 import {
   DentalTechnician, DentalTechnicianRole, DentalTechnicianPayout, TechnicianPayoutType, TechnicianPayoutSummary,
   fetchTechnicians, createTechnician, updateTechnician, deleteTechnician,
   fetchTechnicianPayouts, createTechnicianPayout, deleteTechnicianPayout,
   fetchTeam, TeamMember,
   ROLE_CONFIG, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, fmtMoney, fmtDate,
-  DAYS_OF_WEEK,
+  DAYS_OF_WEEK, DentalTechnicianVacation, isTechnicianOnVacation,
 } from "./shared";
 
 interface TechnicianForm {
@@ -24,6 +24,7 @@ interface TechnicianForm {
   workingDays: number[];
   dailyCap: string;
   backupTechnicianId: string;
+  vacations: DentalTechnicianVacation[];
   isActive: boolean;
 }
 
@@ -87,6 +88,7 @@ export default function DentalTechniciansTab() {
       workingDays: [6, 0, 1, 2, 3, 4], // السبت إلى الخميس افتراضياً
       dailyCap: "0",
       backupTechnicianId: "",
+      vacations: [],
       isActive: true,
     });
   };
@@ -106,6 +108,13 @@ export default function DentalTechniciansTab() {
       workingDays: Array.isArray(x.workingDays) && x.workingDays.length > 0 ? x.workingDays : [6, 0, 1, 2, 3, 4],
       dailyCap: x.dailyCap != null ? String(x.dailyCap) : "0",
       backupTechnicianId: x.backupTechnicianId || "",
+      vacations: Array.isArray(x.vacations)
+        ? x.vacations.map(v => ({
+            startDate: v.startDate ? String(v.startDate).slice(0, 10) : "",
+            endDate: v.endDate ? String(v.endDate).slice(0, 10) : "",
+            reason: v.reason || "",
+          }))
+        : [],
       isActive: x.isActive,
     });
   };
@@ -128,6 +137,26 @@ export default function DentalTechniciansTab() {
       return;
     }
 
+    const cleanVacations: DentalTechnicianVacation[] = [];
+    for (const v of modal.vacations) {
+      const s = (v.startDate || "").trim();
+      const e = (v.endDate || "").trim();
+      if (!s && !e) continue;
+      if (!s || !e) {
+        setError("يرجى تحديد تاريخ البداية وتاريخ النهاية لكل إجازة مسجلة");
+        return;
+      }
+      if (s > e) {
+        setError(`تاريخ بداية الإجازة (${s}) يجب ألا يكون بعد تاريخ النهاية (${e})`);
+        return;
+      }
+      cleanVacations.push({
+        startDate: s,
+        endDate: e,
+        reason: (v.reason || "").trim() || undefined,
+      });
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -141,6 +170,7 @@ export default function DentalTechniciansTab() {
         workingDays: modal.workingDays,
         dailyCap: Math.max(0, parseInt(modal.dailyCap, 10) || 0),
         backupTechnicianId: modal.backupTechnicianId.trim() || null,
+        vacations: cleanVacations,
       };
       if (modal.id) {
         await updateTechnician(modal.id, { ...payload, isActive: modal.isActive });
@@ -307,6 +337,32 @@ export default function DentalTechniciansTab() {
                       <div className="text-[11px] text-gray-400 mt-0.5 font-mono">
                         {x.dailyCap && x.dailyCap > 0 ? `سقف: ${x.dailyCap} /يوم` : "سقف مفتوح"}
                       </div>
+                      {(() => {
+                        const vac = isTechnicianOnVacation(x);
+                        if (vac.onVacation && vac.vacation) {
+                          return (
+                            <div
+                              className="inline-flex items-center gap-1 mt-1 text-[11px] font-medium text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded px-1.5 py-0.5"
+                              title={vac.vacation.reason ? `السبب: ${vac.vacation.reason}` : `في إجازة حتى ${vac.vacation.endDate}`}
+                            >
+                              <Palmtree className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                              <span className="font-mono">في إجازة حتى {vac.vacation.endDate}</span>
+                            </div>
+                          );
+                        }
+                        if (vac.upcomingCount > 0) {
+                          return (
+                            <div
+                              className="inline-flex items-center gap-1 mt-0.5 text-[10px] text-amber-700/90 dark:text-amber-400/90 font-mono"
+                              title={`${vac.upcomingCount} فترة إجازة قادمة مسجلة`}
+                            >
+                              <Palmtree className="w-2.5 h-2.5 shrink-0" />
+                              <span>{vac.upcomingCount} إجازة مجدولة</span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </td>
                     <td className="py-3 px-3 text-xs">
                       {x.backupTechnicianName || (x.backupTechnicianId && rows.find(r => r.id === x.backupTechnicianId)?.name) ? (
@@ -501,6 +557,111 @@ export default function DentalTechniciansTab() {
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
                   إذا لم يتم اختيار أي يوم، يُعتبر الفني متاحاً طوال أيام الأسبوع حسب سياسة المعمل.
                 </p>
+              </div>
+
+              {/* Exceptional Vacations Section (الإجازات الاستثنائية والتفرغ) */}
+              <div className="sm:col-span-2 border-t dark:border-gray-700/80 pt-4 mt-2">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <Palmtree className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                      الإجازات الاستثنائية والتفرغ (Exceptional Vacations)
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const today = new Date().toISOString().split("T")[0];
+                      setModal({
+                        ...modal,
+                        vacations: [
+                          ...modal.vacations,
+                          { startDate: today, endDate: today, reason: "" },
+                        ],
+                      });
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-200 dark:border-amber-800 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>إضافة فترة إجازة</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
+                  يتم استبعاد الفني آلياً من التوزيع الذكي والمحرك خلال فترات الإجازة المحددة لحماية سلاسة العمل.
+                </p>
+
+                {modal.vacations.length === 0 ? (
+                  <div className="p-3 text-center border border-dashed rounded-lg border-gray-200 dark:border-gray-700/80 text-xs text-gray-400 dark:text-gray-500">
+                    لا توجد إجازات استثنائية مسجلة حالياً (الفني متاح للعمل حسب جدوله الأسبوعي).
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {modal.vacations.map((vac, idx) => (
+                      <div
+                        key={idx}
+                        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700/80 bg-gray-50/60 dark:bg-gray-800/40"
+                      >
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400 block mb-0.5">من تاريخ *</span>
+                            <input
+                              type="date"
+                              className={`${inputCls} py-1 text-xs`}
+                              value={vac.startDate}
+                              onChange={e => {
+                                const next = [...modal.vacations];
+                                next[idx] = { ...next[idx], startDate: e.target.value };
+                                setModal({ ...modal, vacations: next });
+                              }}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400 block mb-0.5">إلى تاريخ *</span>
+                            <input
+                              type="date"
+                              className={`${inputCls} py-1 text-xs`}
+                              value={vac.endDate}
+                              onChange={e => {
+                                const next = [...modal.vacations];
+                                next[idx] = { ...next[idx], endDate: e.target.value };
+                                setModal({ ...modal, vacations: next });
+                              }}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="flex-[1.5]">
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 block mb-0.5">السبب / ملاحظات</span>
+                          <input
+                            type="text"
+                            className={`${inputCls} py-1 text-xs`}
+                            placeholder="سبب الإجازة (اختياري، مثلاً: راحة مرضية، سفر، ظرف عائلي)"
+                            value={vac.reason || ""}
+                            onChange={e => {
+                              const next = [...modal.vacations];
+                              next[idx] = { ...next[idx], reason: e.target.value };
+                              setModal({ ...modal, vacations: next });
+                            }}
+                          />
+                        </div>
+                        <div className="sm:self-end flex justify-end pb-0.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = modal.vacations.filter((_, i) => i !== idx);
+                              setModal({ ...modal, vacations: next });
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
+                            title="حذف هذه الإجازة"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Direct User Account Section (معايير 2026 لإنشاء الحساب المباشر) */}
