@@ -16,6 +16,19 @@ from src.db.models.checkpoint import Checkpoint as CheckpointModel
 logger = structlog.get_logger(__name__)
 
 
+_MAXP_NAMESPACE = uuid.UUID("e4b0113c-411a-4d24-912f-6825a0720448")
+
+def _safe_thread_uuid(thread_id: str | uuid.UUID | None) -> uuid.UUID:
+    if not thread_id:
+        return uuid.UUID(int=0)
+    if isinstance(thread_id, uuid.UUID):
+        return thread_id
+    try:
+        return uuid.UUID(str(thread_id))
+    except ValueError:
+        return uuid.uuid5(_MAXP_NAMESPACE, str(thread_id))
+
+
 class PostgresCheckpointStorage(CheckpointStorage):
     """Checkpoint storage backed by PostgreSQL ai.checkpoints table."""
 
@@ -32,10 +45,7 @@ class PostgresCheckpointStorage(CheckpointStorage):
         state_dict = checkpoint.to_dict()
         workflow_state = state_dict.get("state") or {}
         thread_id = workflow_state.get("thread_id") or "unknown"
-        try:
-            thread_uuid = uuid.UUID(str(thread_id))
-        except ValueError:
-            thread_uuid = uuid.UUID(int=0)
+        thread_uuid = _safe_thread_uuid(thread_id)
         encoded_state = encode_checkpoint_value(state_dict)
 
         if existing:
@@ -72,10 +82,7 @@ class PostgresCheckpointStorage(CheckpointStorage):
     ) -> WorkflowCheckpoint | None:
         stmt = select(CheckpointModel).order_by(CheckpointModel.created_at.desc())
         if thread_id:
-            try:
-                stmt = stmt.where(CheckpointModel.thread_id == uuid.UUID(str(thread_id)))
-            except ValueError:
-                return None
+            stmt = stmt.where(CheckpointModel.thread_id == _safe_thread_uuid(thread_id))
         result = await self._session.execute(stmt)
         for cp in result.scalars().all():
             checkpoint = WorkflowCheckpoint.from_dict(decode_checkpoint_value(cp.state))

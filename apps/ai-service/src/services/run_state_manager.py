@@ -9,6 +9,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.models.checkpoint import Checkpoint
 
 
+_MAXP_NAMESPACE = uuid.UUID("e4b0113c-411a-4d24-912f-6825a0720448")
+
+def _safe_thread_uuid(thread_id: str | uuid.UUID | None) -> uuid.UUID:
+    if not thread_id:
+        return uuid.UUID(int=0)
+    if isinstance(thread_id, uuid.UUID):
+        return thread_id
+    try:
+        return uuid.UUID(str(thread_id))
+    except ValueError:
+        return uuid.uuid5(_MAXP_NAMESPACE, str(thread_id))
+
+
 class RunStateManager:
     """
     Manages the persistence of agent execution states using the Checkpoint model.
@@ -23,8 +36,8 @@ class RunStateManager:
         Persists the current agent state. 
         Returns the state_id of the saved checkpoint.
         """
-        # Normalize thread_id to UUID
-        t_id = uuid.UUID(str(thread_id)) if isinstance(thread_id, str) else thread_id
+        # Normalize thread_id to UUID safely
+        t_id = _safe_thread_uuid(thread_id)
 
         checkpoint = Checkpoint(
             thread_id=t_id,
@@ -39,7 +52,7 @@ class RunStateManager:
 
     async def load_state(self, thread_id: str | uuid.UUID, state_id: str) -> dict[str, Any] | None:
         """Loads a specific state by its ID."""
-        t_id = uuid.UUID(str(thread_id)) if isinstance(thread_id, str) else thread_id
+        t_id = _safe_thread_uuid(thread_id)
 
         stmt = select(Checkpoint).where(
             Checkpoint.thread_id == t_id,
@@ -52,7 +65,7 @@ class RunStateManager:
 
     async def get_latest_state(self, thread_id: str | uuid.UUID) -> tuple[str, dict[str, Any]] | None:
         """Retrieves the most recent checkpoint for the given thread."""
-        t_id = uuid.UUID(str(thread_id)) if isinstance(thread_id, str) else thread_id
+        t_id = _safe_thread_uuid(thread_id)
 
         stmt = select(Checkpoint).where(
             Checkpoint.thread_id == t_id

@@ -313,6 +313,12 @@ class OrderRepository(BaseRepository):
         import uuid
         order_id = str(uuid.uuid4())
 
+        # Transaction-scoped advisory lock prevents duplicate order numbers during parallel agent creation
+        await self._session.execute(
+            text("SELECT pg_advisory_xact_lock(hashtext('order_seq:' || :cid))"),
+            {"cid": company_id}
+        )
+
         # Use regex filter to skip non-integer orderNumbers like "ORD-000862-984"
         num_row = await self._session.execute(text("""
             SELECT COALESCE(MAX(CASE WHEN "orderNumber" ~ '^[0-9]+$' THEN CAST("orderNumber" AS integer) ELSE 0 END), 0) + 1 AS next_num
@@ -351,16 +357,26 @@ class OrderRepository(BaseRepository):
                 name_parts = (customer_name or "").strip().split(" ", 1)
                 first_name = name_parts[0] if name_parts[0] else "عميل"
                 last_name = name_parts[1] if len(name_parts) > 1 else ""
-                await self._session.execute(text("""
-                    INSERT INTO customers (id, "firstName", "lastName", phone, status, "companyId", "createdAt", "updatedAt")
-                    VALUES (:id, :fname, :lname, :phone, 'ACTIVE', :cid, NOW(), NOW())
-                """), {
-                    "id": customer_id,
-                    "fname": first_name,
-                    "lname": last_name,
-                    "phone": customer_phone,
-                    "cid": company_id,
-                })
+                try:
+                    await self._session.execute(text("""
+                        INSERT INTO customers (id, "firstName", "lastName", phone, status, "companyId", "createdAt", "updatedAt")
+                        VALUES (:id, :fname, :lname, :phone, 'ACTIVE', :cid, NOW(), NOW())
+                    """), {
+                        "id": customer_id,
+                        "fname": first_name,
+                        "lname": last_name,
+                        "phone": customer_phone,
+                        "cid": company_id,
+                    })
+                except Exception:
+                    cust_retry = await self._session.execute(text("""
+                        SELECT id FROM customers
+                        WHERE "companyId" = :cid AND phone = :phone
+                        LIMIT 1
+                    """), {"cid": company_id, "phone": customer_phone})
+                    matched = cust_retry.first()
+                    if matched:
+                        customer_id = matched.id
 
         await self._session.execute(text("""
             INSERT INTO orders (id, "orderNumber", "customerId", "customerName", "customerPhone",

@@ -256,12 +256,11 @@ class MarketingCopilotSessionService {
       `, companyId, sessionId);
 
       let currentTitle = existing && existing[0]?.title ? existing[0].title : 'جلسة جديدة';
-      if (!existing || existing.length === 0) {
-        await this.prisma.$executeRawUnsafe(`
-          INSERT INTO public.facebook_ads_ai_chat_sessions (id, "companyId", title, status, "updatedAt")
-          VALUES ($1, $2, $3, 'ACTIVE', CURRENT_TIMESTAMP)
-        `, sessionId, companyId, currentTitle);
-      }
+      await this.prisma.$executeRawUnsafe(`
+        INSERT INTO public.facebook_ads_ai_chat_sessions (id, "companyId", title, status, "updatedAt")
+        VALUES ($1, $2, $3, 'ACTIVE', CURRENT_TIMESTAMP)
+        ON CONFLICT (id) DO UPDATE SET "updatedAt" = CURRENT_TIMESTAMP
+      `, sessionId, companyId, currentTitle);
 
       const msgId = msg.id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
       const role = msg.sender === 'user' ? 'user' : 'agent';

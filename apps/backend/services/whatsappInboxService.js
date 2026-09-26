@@ -1107,6 +1107,8 @@ class WhatsAppInboxService {
     const prisma = getSharedPrismaClient();
 
     const updated = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${companyId}:${sessionId}`}))`;
+
       const conversation = await tx.conversation.findUnique({
         where: { id: conversationId }
       });
@@ -1114,8 +1116,6 @@ class WhatsAppInboxService {
       if (!conversation || conversation.companyId !== companyId) {
         throw new Error('Conversation not found');
       }
-
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${companyId}:${sessionId}`}))`;
 
       const metadata = buildConversationMetadata(conversation.metadata, {
         whatsappSessionId: sessionId,
