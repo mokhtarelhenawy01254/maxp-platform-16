@@ -929,7 +929,7 @@ function KioskScannerModal({ technicians, onClose, onScanned }: KioskScannerModa
 
 export default function DentalCasesTab() {
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [cases, setCases] = useState<DentalLabCase[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -966,6 +966,87 @@ export default function DentalCasesTab() {
   const [layoutMode, setLayoutMode] = useState<"TABLE" | "KANBAN">(() => {
     return (searchParams.get("layout") || "").toUpperCase() === "KANBAN" ? "KANBAN" : "TABLE";
   });
+
+  // URL searchParams two-way filter sync helper
+  const applyFilter = useCallback(
+    (key: string, value: string, resetOthers = false) => {
+      setSearchParams(prev => {
+        if (resetOthers) {
+          const next = new URLSearchParams();
+          if (value) next.set(key, value);
+          const currentLayout = prev.get("layout");
+          if (currentLayout) next.set("layout", currentLayout);
+          return next;
+        }
+        const next = new URLSearchParams(prev);
+        if (value) {
+          next.set(key, value);
+        } else {
+          next.delete(key);
+        }
+        return next;
+      });
+    },
+    [setSearchParams]
+  );
+
+  const clearFilter = useCallback(
+    (key: string) => {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.delete(key);
+        return next;
+      });
+    },
+    [setSearchParams]
+  );
+
+  const clearAllFilters = useCallback(() => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams();
+      const currentLayout = prev.get("layout");
+      if (currentLayout) next.set("layout", currentLayout);
+      return next;
+    });
+  }, [setSearchParams]);
+
+  // Sync state when URL searchParams changes (e.g. navigation, clicking filtered links, back/forward)
+  useEffect(() => {
+    const qStatus = searchParams.get("status") || "";
+    const qDoctorId = searchParams.get("doctorId") || "";
+    const qWorkTypeId = searchParams.get("workTypeId") || "";
+    const qPriority = searchParams.get("priority") || "";
+    const qPaymentStatus = searchParams.get("paymentStatus") || "";
+    const qTechnicianId = searchParams.get("technicianId") || "";
+    const qDateRange = searchParams.get("dateRange") || (searchParams.get("filter") === "received_today" ? "received_today" : "ALL");
+    const qDate = searchParams.get("date") || "";
+    const qDateField = (searchParams.get("dateField") as "dueDate") || "receivedDate";
+    const qSearch = searchParams.get("search") || "";
+    const qTab = (searchParams.get("tab") || "").toUpperCase();
+    const qOverdue = searchParams.get("overdue") === "true";
+    const qTrash = searchParams.get("trash") === "true";
+    const qLayout = (searchParams.get("layout") || "").toUpperCase();
+
+    setStatus(prev => (prev !== qStatus ? qStatus : prev));
+    setDoctorId(prev => (prev !== qDoctorId ? qDoctorId : prev));
+    setWorkTypeId(prev => (prev !== qWorkTypeId ? qWorkTypeId : prev));
+    setPriority(prev => (prev !== qPriority ? qPriority : prev));
+    setPaymentStatus(prev => (prev !== qPaymentStatus ? qPaymentStatus : prev));
+    setTechnicianId(prev => (prev !== qTechnicianId ? qTechnicianId : prev));
+    setDateRangePreset(prev => (prev !== qDateRange ? qDateRange : prev));
+    setAgendaDate(prev => (prev !== qDate ? qDate : prev));
+    setAgendaField(prev => (prev !== qDateField ? qDateField : prev));
+    setSearch(prev => (prev !== qSearch ? qSearch : prev));
+    setSearchInput(prev => (prev !== qSearch ? qSearch : prev));
+    setPage(1);
+
+    if (qTab === "OVERDUE" || qOverdue) setViewMode("OVERDUE");
+    else if (qTab === "TRASH" || qTrash) setViewMode("TRASH");
+    else if (qTab === "ACTIVE") setViewMode("ACTIVE");
+
+    if (qLayout === "KANBAN") setLayoutMode("KANBAN");
+    else if (qLayout === "TABLE") setLayoutMode("TABLE");
+  }, [searchParams]);
   const pageSize = 20;
 
   const [doctors, setDoctors] = useState<DentalLabDoctor[]>([]);
@@ -1371,18 +1452,7 @@ export default function DentalCasesTab() {
   ].filter(Boolean).length;
 
   const resetFilters = () => {
-    setStatus("");
-    setDoctorId("");
-    setWorkTypeId("");
-    setPriority("");
-    setPaymentStatus("");
-    setTechnicianId("");
-    setDateRangePreset("ALL");
-    setAgendaDate("");
-    setAgendaField("receivedDate");
-    setSearchInput("");
-    setSearch("");
-    setPage(1);
+    clearAllFilters();
   };
 
   const filterCls = "border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100";
@@ -1565,7 +1635,7 @@ export default function DentalCasesTab() {
             <select
               className={`${filterCls} text-xs`}
               value={status}
-              onChange={e => { setStatus(e.target.value); setPage(1); }}
+              onChange={e => applyFilter("status", e.target.value)}
               title="فلترة بحالة المرحلة"
             >
               <option value="">{t("dentalLab.cases.allStatuses")}</option>
@@ -1576,7 +1646,7 @@ export default function DentalCasesTab() {
           <select
             className={`${filterCls} text-xs`}
             value={doctorId}
-            onChange={e => { setDoctorId(e.target.value); setPage(1); }}
+            onChange={e => applyFilter("doctorId", e.target.value)}
             title="فلترة بالطبيب"
           >
             <option value="">{t("dentalLab.cases.allDoctors")}</option>
@@ -1586,7 +1656,7 @@ export default function DentalCasesTab() {
           <select
             className={`${filterCls} text-xs`}
             value={workTypeId}
-            onChange={e => { setWorkTypeId(e.target.value); setPage(1); }}
+            onChange={e => applyFilter("workTypeId", e.target.value)}
             title="فلترة بنوع الشغل"
           >
             <option value="">كل أنواع الشغل</option>
@@ -1596,7 +1666,7 @@ export default function DentalCasesTab() {
           <select
             className={`${filterCls} text-xs`}
             value={priority}
-            onChange={e => { setPriority(e.target.value); setPage(1); }}
+            onChange={e => applyFilter("priority", e.target.value)}
             title="فلترة بدرجة الأولوية"
           >
             <option value="">كل الأولويات</option>
@@ -1608,7 +1678,7 @@ export default function DentalCasesTab() {
           <select
             className={`${filterCls} text-xs`}
             value={technicianId}
-            onChange={e => { setTechnicianId(e.target.value); setPage(1); }}
+            onChange={e => applyFilter("technicianId", e.target.value)}
             title="فلترة بالفني المسند"
           >
             <option value="">كل الفنيين</option>
@@ -1620,7 +1690,7 @@ export default function DentalCasesTab() {
           <select
             className={`${filterCls} text-xs`}
             value={paymentStatus}
-            onChange={e => { setPaymentStatus(e.target.value); setPage(1); }}
+            onChange={e => applyFilter("paymentStatus", e.target.value)}
             title="فلترة بحالة السداد"
           >
             <option value="">كل حالات السداد</option>
@@ -1725,7 +1795,7 @@ export default function DentalCasesTab() {
             />
             {searchInput && (
               <button
-                onClick={() => { setSearchInput(""); setSearch(""); setPage(1); }}
+                onClick={() => { setSearchInput(""); setSearch(""); applyFilter("search", ""); setPage(1); }}
                 className="absolute left-2.5 top-2.5 text-gray-400 hover:text-gray-600"
                 title="مسح البحث"
               >
@@ -1735,6 +1805,141 @@ export default function DentalCasesTab() {
           </div>
         </div>
       </div>
+
+      {/* Active Filter Indicators Bar (معايير 2026 لتصفية الحالات السريعة) */}
+      {(status || doctorId || workTypeId || technicianId || priority || paymentStatus || search || (dateRangePreset && dateRangePreset !== "ALL") || agendaDate) && (
+        <div className="flex flex-wrap items-center gap-2 p-2.5 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/50 rounded-xl text-xs transition-all">
+          <span className="font-semibold text-blue-950 dark:text-blue-200 flex items-center gap-1.5 shrink-0">
+            <Filter className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span>تصفية مخصصة ({total} حالة معروضة):</span>
+          </span>
+
+          {doctorId && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-medium shadow-2xs">
+              <Stethoscope className="w-3.5 h-3.5 text-blue-500" />
+              <span>الطبيب: {doctors.find(d => d.id === doctorId)?.name || doctorId}</span>
+              {doctors.some(d => d.id === doctorId) && (
+                <Link
+                  to={`/dental-lab/doctors/${doctorId}`}
+                  className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                  title="فتح الملف الشامل والمالي للطبيب"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => applyFilter("doctorId", "")}
+                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
+                title="إلغاء فلترة الطبيب"
+              >
+                <XMarkIcon className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          )}
+
+          {workTypeId && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 font-medium shadow-2xs">
+              <Layers className="w-3.5 h-3.5 text-indigo-500" />
+              <span>نوع الشغل: {workTypes.find(w => w.id === workTypeId)?.name || workTypeId}</span>
+              <button
+                type="button"
+                onClick={() => applyFilter("workTypeId", "")}
+                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
+                title="إلغاء فلترة نوع الشغل"
+              >
+                <XMarkIcon className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          )}
+
+          {technicianId && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-medium shadow-2xs">
+              <Users className="w-3.5 h-3.5 text-purple-500" />
+              <span>الفني: {technicians.find(t => t.id === technicianId)?.name || technicianId}</span>
+              <button
+                type="button"
+                onClick={() => applyFilter("technicianId", "")}
+                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
+                title="إلغاء فلترة الفني"
+              >
+                <XMarkIcon className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          )}
+
+          {status && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-medium shadow-2xs">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span>الحالة: {CASE_STATUS_MAP[status]?.label || status}</span>
+              <button
+                type="button"
+                onClick={() => applyFilter("status", "")}
+                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
+                title="إلغاء فلترة الحالة"
+              >
+                <XMarkIcon className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          )}
+
+          {priority && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 font-medium shadow-2xs">
+              <span>الأولوية: {priority === "URGENT" ? "مستعجل" : priority === "STAT" ? "طارئ" : "عادي"}</span>
+              <button
+                type="button"
+                onClick={() => applyFilter("priority", "")}
+                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
+                title="إلغاء فلترة الأولوية"
+              >
+                <XMarkIcon className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          )}
+
+          {paymentStatus && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium shadow-2xs">
+              <span>السداد: {paymentStatus === "PAID" ? "مسدد" : paymentStatus === "PARTIAL" ? "جزئي" : "غير مسدد"}</span>
+              <button
+                type="button"
+                onClick={() => applyFilter("paymentStatus", "")}
+                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
+                title="إلغاء فلترة السداد"
+              >
+                <XMarkIcon className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          )}
+
+          {search && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium shadow-2xs">
+              <Search className="w-3 h-3 text-gray-400" />
+              <span>بحث: "{search}"</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearch("");
+                  applyFilter("search", "");
+                }}
+                className="text-gray-400 hover:text-red-600 transition-colors mr-0.5"
+                title="إلغاء البحث"
+              >
+                <XMarkIcon className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={clearAllFilters}
+            className="text-red-600 dark:text-red-400 hover:underline font-semibold text-xs mr-auto flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+          >
+            <FilterX className="w-3.5 h-3.5" />
+            <span>إلغاء كل الفلاتر</span>
+          </button>
+        </div>
+      )}
 
       {loading && !cases ? (
         <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
@@ -1814,35 +2019,111 @@ export default function DentalCasesTab() {
                         {c.patientName}
                         {c.patientPhone ? <span className="block text-xs text-gray-400" dir="ltr">{c.patientPhone}</span> : null}
                       </td>
-                      <td className="py-3 px-4">{c.doctorName || "—"}</td>
-                      <td className="py-3 px-4">{c.workTypeName || "—"}</td>
+                      <td className="py-3 px-4 font-medium">
+                        {c.doctorName ? (
+                          <div className="flex items-center gap-1.5 group/doc">
+                            <Link
+                              to={c.doctorId ? `/dental-lab/cases?doctorId=${c.doctorId}` : `/dental-lab/cases?search=${encodeURIComponent(c.doctorName)}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (c.doctorId) applyFilter("doctorId", c.doctorId, true);
+                                else applyFilter("search", c.doctorName || "", true);
+                              }}
+                              className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline cursor-pointer inline-flex items-center gap-1 transition-colors"
+                              title={`عرض كل حالات د. ${c.doctorName} فقط`}
+                            >
+                              <Stethoscope className="w-3.5 h-3.5 text-blue-500 shrink-0 opacity-70 group-hover/doc:opacity-100" />
+                              <span>{c.doctorName}</span>
+                            </Link>
+                            {c.doctorId && (
+                              <Link
+                                to={`/dental-lab/doctors/${c.doctorId}`}
+                                className="opacity-0 group-hover/doc:opacity-100 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-opacity p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                                title="فتح الملف الشامل والمالي للطبيب"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </Link>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {c.workTypeName ? (
+                          <Link
+                            to={c.workTypeId ? `/dental-lab/cases?workTypeId=${c.workTypeId}` : `/dental-lab/cases?search=${encodeURIComponent(c.workTypeName)}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (c.workTypeId) applyFilter("workTypeId", c.workTypeId, true);
+                              else applyFilter("search", c.workTypeName || "", true);
+                            }}
+                            className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline cursor-pointer inline-flex items-center gap-1 transition-colors group/wt"
+                            title={`عرض كل حالات نوع الشغل: ${c.workTypeName} فقط`}
+                          >
+                            <Layers className="w-3.5 h-3.5 text-indigo-500 shrink-0 opacity-70 group-hover/wt:opacity-100" />
+                            <span>{c.workTypeName}</span>
+                          </Link>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500">—</span>
+                        )}
+                      </td>
                       <td className="py-3 px-4">{statusBadge(PRIORITY_CONFIG, c.priority)}</td>
                       <td className="py-3 px-4">
                         {c.assignments && c.assignments.length > 0 ? (
                           <div className="flex flex-wrap gap-1 items-center max-w-[170px]">
-                            {c.assignments.map((a) => (
-                              <span
-                                key={a.id}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
-                                title={`الدور: ${ROLE_CONFIG[a.role]?.label || a.role}`}
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                                <span>{a.technician?.name || a.technicianId}</span>
-                              </span>
-                            ))}
+                            {c.assignments.map((a) => {
+                              const techName = a.technician?.name || a.technicianId;
+                              const targetTechId = a.technicianId;
+                              return (
+                                <Link
+                                  key={a.id}
+                                  to={`/dental-lab/cases?technicianId=${targetTechId}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    applyFilter("technicianId", targetTechId, true);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60 hover:border-purple-300 transition-colors cursor-pointer group/tech"
+                                  title={`عرض كل حالات الفني: ${techName} فقط (${ROLE_CONFIG[a.role]?.label || a.role})`}
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500 group-hover/tech:scale-125 transition-transform" />
+                                  <span>{techName}</span>
+                                </Link>
+                              );
+                            })}
                           </div>
                         ) : (c.stages && c.stages.some((s) => s.assigneeName || (s.assignees && s.assignees.length > 0))) ? (
                           <div className="flex flex-wrap gap-1 items-center max-w-[170px]">
-                            {c.stages.filter((s) => s.assigneeName || (s.assignees && s.assignees.length > 0)).map((s) => (
-                              <span
-                                key={s.id || s.name}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-                                title={`فني المرحلة: ${s.name}`}
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                <span>{s.assigneeName || s.assignees?.[0]?.technician?.name}</span>
-                              </span>
-                            ))}
+                            {c.stages.filter((s) => s.assigneeName || (s.assignees && s.assignees.length > 0)).map((s) => {
+                              const sTechId = s.assigneeId || s.assignees?.[0]?.technicianId;
+                              const sTechName = s.assigneeName || s.assignees?.[0]?.technician?.name;
+                              if (!sTechId && !sTechName) return null;
+                              return sTechId ? (
+                                <Link
+                                  key={s.id || s.name}
+                                  to={`/dental-lab/cases?technicianId=${sTechId}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    applyFilter("technicianId", sTechId, true);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer"
+                                  title={`عرض كل حالات فني المرحلة: ${sTechName} فقط (${s.name})`}
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                  <span>{sTechName}</span>
+                                </Link>
+                              ) : (
+                                <span
+                                  key={s.id || s.name}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                                  title={`فني المرحلة: ${s.name}`}
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                  <span>{sTechName}</span>
+                                </span>
+                              );
+                            })}
                           </div>
                         ) : (
                           <span className="text-xs text-gray-400 dark:text-gray-500">غير مسند</span>
@@ -1855,7 +2136,17 @@ export default function DentalCasesTab() {
                               🗑️ محذوفة
                             </span>
                           ) : (
-                            statusBadge(CASE_STATUS_MAP, c.status)
+                            <Link
+                              to={`/dental-lab/cases?status=${c.status}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                applyFilter("status", c.status, true);
+                              }}
+                              className="cursor-pointer hover:opacity-85 hover:scale-105 transition-all inline-block"
+                              title={`عرض كل حالات مرحلة: ${CASE_STATUS_MAP[c.status]?.label || c.status} فقط`}
+                            >
+                              {statusBadge(CASE_STATUS_MAP, c.status)}
+                            </Link>
                           )}
                           {overdue && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800 animate-pulse whitespace-nowrap">
@@ -1958,7 +2249,17 @@ export default function DentalCasesTab() {
                   <div className="p-3.5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 rounded-t-2xl">
                     <div className="flex items-center gap-2">
                       <span className={`w-2.5 h-2.5 rounded-full ${st.dotColor}`} />
-                      <span className="font-bold text-sm text-gray-900 dark:text-gray-100">{st.label}</span>
+                      <Link
+                        to={`/dental-lab/cases?status=${st.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          applyFilter("status", st.id, true);
+                        }}
+                        className="font-bold text-sm text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 hover:underline cursor-pointer"
+                        title={`عرض كل حالات مرحلة "${st.label}" فقط`}
+                      >
+                        {st.label}
+                      </Link>
                     </div>
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-mono">
                       {stageCases.length}
@@ -2006,22 +2307,75 @@ export default function DentalCasesTab() {
                                   <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                                 </Link>
                               </div>
-                              {statusBadge(PRIORITY_CONFIG, c.priority)}
+                              <Link
+                                to={`/dental-lab/cases?status=${c.status}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  applyFilter("status", c.status, true);
+                                }}
+                                title={`عرض كل حالات مرحلة: ${CASE_STATUS_MAP[c.status]?.label || c.status} فقط`}
+                              >
+                                {statusBadge(PRIORITY_CONFIG, c.priority)}
+                              </Link>
                             </div>
 
                             <div>
                               <div className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">
                                 {c.patientName}
                               </div>
-                              <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                د. {c.doctorName || "طبيب غير محدد"}
-                              </div>
+                              {c.doctorName ? (
+                                <div className="flex items-center gap-1 group/doc mt-0.5">
+                                  <Link
+                                    to={c.doctorId ? `/dental-lab/cases?doctorId=${c.doctorId}` : `/dental-lab/cases?search=${encodeURIComponent(c.doctorName)}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (c.doctorId) applyFilter("doctorId", c.doctorId, true);
+                                      else applyFilter("search", c.doctorName || "", true);
+                                    }}
+                                    className="text-[11px] text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:underline truncate flex items-center gap-1"
+                                    title={`عرض كل حالات د. ${c.doctorName} فقط`}
+                                  >
+                                    <Stethoscope className="w-3 h-3 text-blue-500 shrink-0 opacity-70 group-hover/doc:opacity-100" />
+                                    <span>د. {c.doctorName}</span>
+                                  </Link>
+                                  {c.doctorId && (
+                                    <Link
+                                      to={`/dental-lab/doctors/${c.doctorId}`}
+                                      className="opacity-0 group-hover/doc:opacity-100 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-opacity p-0.5"
+                                      title="الملف الشامل للطبيب"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <ExternalLink className="w-2.5 h-2.5" />
+                                    </Link>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="text-[11px] text-gray-400 truncate mt-0.5">
+                                  د. طبيب غير محدد
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex items-center justify-between gap-2 text-[11px] bg-gray-50 dark:bg-gray-800/80 p-2 rounded-lg border border-gray-100 dark:border-gray-700/50">
-                              <span className="font-medium text-gray-700 dark:text-gray-300 truncate">
-                                {c.workTypeName || "نوع الشغل غير محدد"}
-                              </span>
+                              {c.workTypeName ? (
+                                <Link
+                                  to={c.workTypeId ? `/dental-lab/cases?workTypeId=${c.workTypeId}` : `/dental-lab/cases?search=${encodeURIComponent(c.workTypeName)}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (c.workTypeId) applyFilter("workTypeId", c.workTypeId, true);
+                                    else applyFilter("search", c.workTypeName || "", true);
+                                  }}
+                                  className="font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate flex items-center gap-1"
+                                  title={`عرض كل حالات نوع الشغل: ${c.workTypeName} فقط`}
+                                >
+                                  <Layers className="w-3 h-3 text-indigo-500 shrink-0" />
+                                  <span>{c.workTypeName}</span>
+                                </Link>
+                              ) : (
+                                <span className="font-medium text-gray-500 truncate">
+                                  نوع الشغل غير محدد
+                                </span>
+                              )}
                               {c.teeth && (
                                 <span className="shrink-0 px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-[10px] font-bold font-mono">
                                   🦷 {c.teeth}
@@ -2033,15 +2387,24 @@ export default function DentalCasesTab() {
                               <span className="text-gray-400 text-[10px]">الفني:</span>
                               {c.assignments && c.assignments.length > 0 ? (
                                 <div className="flex flex-wrap gap-1 justify-end max-w-[170px] items-center">
-                                  {c.assignments.map(a => (
-                                    <span
-                                      key={a.id}
-                                      className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 truncate max-w-[100px]"
-                                      title={a.technician?.name || a.technicianId}
-                                    >
-                                      {a.technician?.name || a.technicianId}
-                                    </span>
-                                  ))}
+                                  {c.assignments.map(a => {
+                                    const techName = a.technician?.name || a.technicianId;
+                                    const targetTechId = a.technicianId;
+                                    return (
+                                      <Link
+                                        key={a.id}
+                                        to={`/dental-lab/cases?technicianId=${targetTechId}`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          applyFilter("technicianId", targetTechId, true);
+                                        }}
+                                        className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/60 truncate max-w-[100px] cursor-pointer"
+                                        title={`عرض كل حالات الفني: ${techName} فقط`}
+                                      >
+                                        {techName}
+                                      </Link>
+                                    );
+                                  })}
                                   <button
                                     onClick={() => setAssignCaseData(c)}
                                     className="p-0.5 text-purple-600 hover:text-purple-800 hover:bg-purple-100 dark:hover:bg-purple-950/40 rounded transition"

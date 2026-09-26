@@ -6,7 +6,7 @@ import DentalModelViewer from "./DentalModelViewer";
 import OdontogramChart from "./OdontogramChart";
 import {
   AlertTriangle, ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Box, Calendar, CheckCircle2, CreditCard, Download, ExternalLink, Eye, FileDown, FileText, Globe, History,
-  Image as ImageIcon, Loader2, Package, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Trash2, Upload, UploadCloud, UserCheck, Users, UserPlus, X as XMarkIcon, XCircle,
+  Image as ImageIcon, Layers, Loader2, Package, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Stethoscope, Trash2, Upload, UploadCloud, UserCheck, Users, UserPlus, X as XMarkIcon, XCircle,
 } from "lucide-react";
 import {
   CASE_STATUSES, CASE_STATUS_MAP, PRIORITY_CONFIG, PAYMENT_STATUS_MAP, ROLE_CONFIG, STAGE_STATUS_MAP,
@@ -1381,13 +1381,23 @@ export default function DentalCaseDetailPage() {
       value: (
         <div className="flex items-center gap-1.5 flex-wrap">
           {c.doctorId ? (
-            <Link 
-              to={`/dental-lab/doctors/${c.doctorId}`} 
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1 font-medium transition-colors"
-            >
-              {c.doctor?.name || c.doctorName || "—"}
-              <ExternalLink className="w-3 h-3 opacity-70" />
-            </Link>
+            <>
+              <Link 
+                to={`/dental-lab/cases?doctorId=${c.doctorId}`} 
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1 font-medium transition-colors"
+                title={`عرض كل حالات د. ${c.doctor?.name || c.doctorName || ""}`}
+              >
+                <Stethoscope className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                <span>{c.doctor?.name || c.doctorName || "—"}</span>
+              </Link>
+              <Link
+                to={`/dental-lab/doctors/${c.doctorId}`}
+                className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                title="الملف الشامل والمالي للطبيب"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+            </>
           ) : (
             <span>{c.doctorName || "—"}</span>
           )}
@@ -1404,11 +1414,12 @@ export default function DentalCaseDetailPage() {
       value: (
         <div className="flex items-center gap-1.5 flex-wrap">
           <Link 
-            to="/dental-lab/work-types" 
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1 font-medium transition-colors"
+            to={c.workTypeId ? `/dental-lab/cases?workTypeId=${c.workTypeId}` : `/dental-lab/cases?search=${encodeURIComponent(c.workTypeName || "")}`} 
+            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:underline inline-flex items-center gap-1 font-medium transition-colors"
+            title={`عرض كل حالات نوع الشغل: ${c.workType?.name || c.workTypeName || ""}`}
           >
-            {c.workType?.name || c.workTypeName || "—"}
-            <ExternalLink className="w-3 h-3 opacity-70" />
+            <Layers className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span>{c.workType?.name || c.workTypeName || "—"}</span>
           </Link>
           {c.workType && c.workTypeName && c.workType.name !== c.workTypeName && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20" title="نوع العمل وقت إنشاء الحالة">
@@ -1466,7 +1477,13 @@ export default function DentalCaseDetailPage() {
               🗑️ سلة المهملات
             </span>
           ) : (
-            badge(CASE_STATUS_MAP, c.status)
+            <Link
+              to={`/dental-lab/cases?status=${c.status}`}
+              className="hover:opacity-85 hover:scale-105 transition-all inline-block cursor-pointer"
+              title={`عرض كل حالات مرحلة "${CASE_STATUS_MAP[c.status]?.label || c.status}"`}
+            >
+              {badge(CASE_STATUS_MAP, c.status)}
+            </Link>
           )}
           {badge(PRIORITY_CONFIG, c.priority)}
           {c.isTryIn && (
@@ -1909,7 +1926,15 @@ export default function DentalCaseDetailPage() {
                 {(c.assignments ?? []).map(a => (
                   <div key={a.id} className="border dark:border-gray-700 rounded-lg p-3 flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-sm">{a.technician?.name || a.technicianId}</p>
+                      <p className="font-medium text-sm">
+                        <Link
+                          to={`/dental-lab/cases?technicianId=${a.technicianId}`}
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
+                          title={`عرض كل حالات الفني ${a.technician?.name || a.technicianId}`}
+                        >
+                          {a.technician?.name || a.technicianId}
+                        </Link>
+                      </p>
                       <p className="text-xs text-gray-400">{t("dentalLab.technicians.role")}: {ROLE_CONFIG[a.role]?.label ?? a.role}</p>
                     </div>
                     <span className="text-xs text-gray-400">{fmtDate(a.assignedAt)}</span>

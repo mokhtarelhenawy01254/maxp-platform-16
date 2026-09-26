@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Loader2, Lock, Mail, Pencil, Plus, RefreshCw, Search, ShieldCheck, Sparkles, Trash2, Users, Wallet, Receipt, Printer, X as XMarkIcon } from "lucide-react";
@@ -272,7 +273,15 @@ export default function DentalTechniciansTab() {
               <tbody>
                 {rows.map(x => (
                   <tr key={x.id} className="border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="py-3 px-3 font-medium text-gray-900 dark:text-gray-100">{x.name}</td>
+                    <td className="py-3 px-3 font-medium text-gray-900 dark:text-gray-100">
+                      <Link
+                        to={`/dental-lab/cases?technicianId=${x.id}`}
+                        className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline cursor-pointer"
+                        title="عرض كل حالات هذا الفني فقط"
+                      >
+                        {x.name}
+                      </Link>
+                    </td>
                     <td className="py-3 px-3 text-gray-500 dark:text-gray-400" dir="ltr">{x.phone || "—"}</td>
                     <td className="py-3 px-3">{roleBadge(x.role)}</td>
                     <td className="py-3 px-3">

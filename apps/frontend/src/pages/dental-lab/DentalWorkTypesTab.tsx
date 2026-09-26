@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -270,7 +271,13 @@ export default function DentalWorkTypesTab() {
                   return (
                     <tr key={w.id} className="border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="py-3 px-4 font-semibold text-gray-900 dark:text-gray-100">
-                        {w.name}
+                        <Link
+                          to={`/dental-lab/cases?workTypeId=${w.id}`}
+                          className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline cursor-pointer"
+                          title="عرض كل حالات هذا النوع فقط"
+                        >
+                          {w.name}
+                        </Link>
                         {w.instructions && (
                           <span className="block text-[11px] text-gray-400 font-normal truncate max-w-xs" title={w.instructions}>
                             📝 {w.instructions}
