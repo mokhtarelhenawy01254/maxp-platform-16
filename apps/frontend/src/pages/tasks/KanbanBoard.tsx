@@ -311,8 +311,11 @@ const KanbanBoard: React.FC = () => {
     );
   };
 
-  const isOverdue = (dueDate: string | null) => {
+  // A closed task can never be overdue — keep this in sync with Tasks.tsx isOverdue().
+  const isOverdue = (dueDate: string | null, status?: string | null) => {
     if (!dueDate) return false;
+    const normalized = String(status || "").toLowerCase();
+    if (normalized === "completed" || normalized === "cancelled") return false;
     return new Date(dueDate) < new Date();
   };
 
@@ -446,7 +449,7 @@ const KanbanBoard: React.FC = () => {
                       {getPriorityBadge(task.priority)}
                       {task.dueDate && (
                         <span
-                          className={`text-xs flex items-center ${isOverdue(task.dueDate) ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"}`}
+                          className={`text-xs flex items-center ${isOverdue(task.dueDate, task.status) ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"}`}
                         >
                           <CalendarIcon className="h-3 w-3 ml-1" />
                           {new Date(task.dueDate).toLocaleDateString("ar-EG")}

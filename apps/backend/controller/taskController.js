@@ -15,6 +15,23 @@ const normalizeStatus = (status) => {
   return status.toUpperCase();
 };
 
+// Task.status is the uppercase `Task_status` enum while the UI sends lowercase
+// values ("in_review"). An unknown value makes Prisma throw and 500s the whole
+// list, so normalise the filter and drop anything that is not a real status.
+const TASK_STATUS_VALUES = [
+  "PENDING",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "CANCELLED",
+  "ON_HOLD",
+  "IN_REVIEW",
+];
+
+const normalizeStatusFilter = (status) => {
+  const normalized = normalizeStatus(status);
+  return TASK_STATUS_VALUES.includes(normalized) ? normalized : null;
+};
+
 // Helper function to convert priority to uppercase
 const normalizePriority = (priority) => {
   if (!priority) return "MEDIUM";
@@ -721,7 +738,7 @@ const taskController = {
       const where = {
         companyId,
         ...(projectId && { projectId }),
-        ...(status && { status }),
+        ...(normalizeStatusFilter(status) && { status: normalizeStatusFilter(status) }),
         ...(priority && { priority }),
         ...(assignedTo && { assignedTo }),
       };
@@ -734,14 +751,30 @@ const taskController = {
         ];
       }
 
+      // Honour the sortBy/sortOrder the client already sends. The UI exposes sorting
+      // (taskWorkspaceSettings.defaultSortBy) but this endpoint ignored it and always
+      // returned createdAt desc. Column names are whitelisted, never interpolated.
+      const rawSortBy = Array.isArray(sortBy) ? sortBy[0] : sortBy;
+      const rawSortOrder = Array.isArray(sortOrder) ? sortOrder[0] : sortOrder;
+      const sortableColumns = {
+        createdAt: "createdAt",
+        updatedAt: "updatedAt",
+        dueDate: "dueDate",
+        priority: "priority",
+        status: "status",
+        title: "title",
+      };
+      const orderBy = {
+        [sortableColumns[rawSortBy] || "createdAt"]:
+          String(rawSortOrder || "").toLowerCase() === "asc" ? "asc" : "desc",
+      };
+
       // Get tasks with project and user information
       const [tasks, totalTasks] = await Promise.all([
         getSharedPrismaClient().task.findMany({
           where,
           include: buildTaskSummaryInclude(),
-          orderBy: {
-            createdAt: "desc",
-          },
+          orderBy,
           skip,
           take: parsedLimit,
         }),
@@ -1975,7 +2008,7 @@ const taskController = {
       const where = {
         companyId,
         ...(projectId && { projectId }),
-        ...(status && { status }),
+        ...(normalizeStatusFilter(status) && { status: normalizeStatusFilter(status) }),
         ...(priority && { priority }),
       };
 
@@ -2082,7 +2115,7 @@ const taskController = {
         companyId,
         createdBy: userId,
         ...(projectId && { projectId }),
-        ...(status && { status }),
+        ...(normalizeStatusFilter(status) && { status: normalizeStatusFilter(status) }),
         ...(priority && { priority }),
         ...(assignedTo && { assignedTo }),
       };

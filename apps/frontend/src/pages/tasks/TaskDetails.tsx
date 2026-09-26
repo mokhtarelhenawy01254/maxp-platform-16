@@ -1104,7 +1104,8 @@ const TaskDetailsPage: React.FC = () => {
   const isOverdue =
     Boolean(task.dueDate) &&
     new Date(task.dueDate as string) < new Date() &&
-    task.status !== "COMPLETED";
+    task.status !== "COMPLETED" &&
+    task.status !== "CANCELLED";
   const isTaskClosed =
     task.status === "COMPLETED" || task.status === "CANCELLED";
   const taskDescription = task.description?.trim()
