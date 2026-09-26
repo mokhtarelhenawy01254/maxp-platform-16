@@ -76,8 +76,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         from src.agents.role_registry import validate_all
         validation_errors = validate_all()
         if validation_errors:
-            structlog.get_logger().error("role_registry_startup_check_failed", errors=validation_errors)
-            if not os.getenv("PYTEST_CURRENT_TEST"):
+            log = structlog.get_logger()
+            log.error(
+                "role_registry_startup_check_failed",
+                errors=validation_errors,
+                strict_mode=os.getenv("ROLE_REGISTRY_STRICT", "0"),
+            )
+            strict_mode = os.getenv("ROLE_REGISTRY_STRICT", "").strip().lower() in ("1", "true", "yes")
+            if strict_mode:
                 raise RuntimeError(f"Role Registry startup validation failed: {validation_errors}")
         await init_db()
 

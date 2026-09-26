@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.agents.role_registry import (
     RoleSpec,
@@ -263,3 +263,46 @@ def test_validate_all_catches_missing_role(monkeypatch):
 
     errors = validate_all()
     assert any("STORE_MANAGER" in e for e in errors), "Expected validate_all to flag missing STORE_MANAGER"
+
+
+@pytest.mark.asyncio
+async def test_startup_validation_non_fatal_by_default(monkeypatch):
+    """Without ROLE_REGISTRY_STRICT, startup logs errors but does NOT crash the service."""
+    from src.main import create_app
+
+    monkeypatch.delenv("ROLE_REGISTRY_STRICT", raising=False)
+    with patch("src.agents.role_registry.validate_all", return_value=["Simulated manifest error: role missing"]), \
+         patch("src.main.init_db", new_callable=AsyncMock), \
+         patch("src.main.redis_client.connect", new_callable=AsyncMock), \
+         patch("src.main.redis_client.disconnect", new_callable=AsyncMock), \
+         patch("src.main.close_db", new_callable=AsyncMock), \
+         patch("src.main.structlog.get_logger") as mock_logger:
+
+        mock_log = MagicMock()
+        mock_logger.return_value = mock_log
+
+        app = create_app()
+        # Entering lifespan - should proceed without raising
+        async with app.router.lifespan_context(app):
+            pass
+
+        # Verify error was logged with key details
+        mock_log.error.assert_called()
+        error_calls = [c for c in mock_log.error.call_args_list if "role_registry_startup_check_failed" in str(c)]
+        assert len(error_calls) > 0, "Expected role_registry_startup_check_failed error log"
+
+
+@pytest.mark.asyncio
+async def test_startup_validation_fatal_when_strict(monkeypatch):
+    """With ROLE_REGISTRY_STRICT=1, startup raises RuntimeError on validation errors."""
+    from src.main import create_app
+
+    monkeypatch.setenv("ROLE_REGISTRY_STRICT", "1")
+    with patch("src.agents.role_registry.validate_all", return_value=["Simulated manifest error: role missing"]), \
+         patch("src.main.init_db", new_callable=AsyncMock):
+
+        app = create_app()
+        with pytest.raises(RuntimeError, match="Role Registry startup validation failed"):
+            async with app.router.lifespan_context(app):
+                pass
+
