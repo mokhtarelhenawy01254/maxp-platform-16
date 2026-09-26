@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "MaxP Copilot — مساعد المنصة الذكي",
+  "version": "1.0.0",
+  "description": "مساعد الذكاء الاصطناعي السريع لمنصة MaxP — إرشاد، إجابة استفسارات، ووصول فوري للطلبات والمخزون من أي صفحة",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "MaxP Copilot",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://maxp.online/*",
+    "http://localhost:*/*"
+  ]
+}

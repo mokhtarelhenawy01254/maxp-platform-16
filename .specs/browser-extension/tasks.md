@@ -1,0 +1,27 @@
+# Tasks Checklist: MaxP AI Browser Extension (Popup Copilot)
+
+- [x] Task 1: Initialize `apps/browser-extension` structure with `package.json`, `tsconfig.json`, `vite.config.ts`, `tailwind.config.js`, and `manifest.json`.
+  - Validation: Verify file creation and syntax integrity. (PASSED)
+- [x] Task 2: Implement types and service adapters:
+  - `src/types/extension.ts`: Schema definitions for messages, agent presets, tab context.
+  - `src/services/chrome.ts`: Storage & active tab bridge with fallback for browser dev mode.
+  - `src/services/api.ts`: MaxP backend client (auth, sessions, agent messaging).
+  - Validation: Type checking passes without compiler errors. (PASSED)
+- [x] Task 3: Build modular UI components:
+  - `src/components/Header.tsx`: Single-surface header, status dot, agent selector, settings button.
+  - `src/components/QuickActions.tsx`: One-click prompts (نواقص المخزون، ملخص الطلبات، شروحات المنصة).
+  - `src/components/ChatList.tsx`: Single-depth chat stream with markdown tables/code rendering.
+  - `src/components/ChatInput.tsx`: Composer with tab context toggle and send trigger.
+  - `src/components/LoginView.tsx`: Clean login form and token manager.
+  - `src/components/SettingsModal.tsx`: Server URL switcher and active agent selection.
+  - `src/App.tsx`: Main state coordinator and error boundary.
+  - Validation: Verify each component is under 300 lines, adhering to OLED/graphite theme. (PASSED)
+- [x] Task 4: Add extension icons and HTML entry point:
+  - `index.html`: Popup container with fixed 380x580 viewport and typography setup.
+  - `assets/icon.svg` & generated icons.
+  - Validation: Verify assets exist and resolve correctly in manifest. (PASSED)
+- [x] Task 5: Build production bundle and verify unpacked load:
+  - Run `npm install` and `npm run build` in `apps/browser-extension`.
+  - Validation: Verify `dist/manifest.json` and static bundles build cleanly. (PASSED)
+- [x] Task 6: Commit and push changes according to Git rules.
+  - Validation: Run `git status`, `git add`, `git commit`, and `git push origin main`. (READY)
