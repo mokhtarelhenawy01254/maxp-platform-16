@@ -199,10 +199,12 @@ async function updateCourier(companyId, courierId, data) {
   if (data.notes !== undefined) updateData.notes = data.notes?.trim() || null;
   if (data.userId !== undefined) updateData.userId = data.userId || null;
 
-  return prisma.courier.updateMany({
+  await prisma.courier.updateMany({
     where: { id: courierId, companyId },
     data: updateData
   });
+
+  return getCourierById(companyId, courierId);
 }
 
 /**
@@ -446,7 +448,7 @@ async function listDeliveryRuns(companyId, { courierId, status, dateFrom, dateTo
     totalCODExpected: normalizeAmount(run.totalCODExpected),
     totalCODCollected: normalizeAmount(run.totalCODCollected),
     deliveredCount: run.shipments.filter((s) => DELIVERED_STATUSES.includes(s.status)).length,
-    returnedCount: run.shipments.filter((s) => ['RETURNED', 'FAILED', 'CANCELLED'].length).length,
+    returnedCount: run.shipments.filter((s) => ['RETURNED', 'FAILED', 'CANCELLED'].includes(s.status)).length,
     pendingCount: run.shipments.filter((s) => !DELIVERED_STATUSES.includes(s.status) && !['RETURNED', 'FAILED', 'CANCELLED'].includes(s.status)).length
   }));
 
