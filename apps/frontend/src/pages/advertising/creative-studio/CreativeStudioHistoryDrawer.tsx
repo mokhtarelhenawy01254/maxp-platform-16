@@ -47,9 +47,11 @@ export const CreativeStudioHistoryDrawer: React.FC<CreativeStudioHistoryDrawerPr
     try {
       setLoading(true);
       const res = await apiClient.get<{ success?: boolean; data?: HistoryImageItem[] }>("/ai-image/history");
-      if (res.data?.success && Array.isArray(res.data.data)) {
-        setImages(res.data.data);
-        onHistoryChange?.(res.data.data.length);
+      const payload = res.data?.data ?? res.data;
+      const list = Array.isArray(payload) ? payload : (payload?.items || payload?.history || payload?.images || []);
+      if (Array.isArray(list)) {
+        setImages(list);
+        onHistoryChange?.(list.length);
       }
     } catch {
       toast.error("تعذر تحميل سجل الصور المولدة");

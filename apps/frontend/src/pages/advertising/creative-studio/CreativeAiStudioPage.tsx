@@ -141,8 +141,10 @@ const CreativeAiStudioPage: React.FC = () => {
     apiClient
       .get<{ success?: boolean; data?: any[] }>("/ai-image/history")
       .then((res) => {
-        if (res.data?.success && Array.isArray(res.data.data)) {
-          setHistoryCount(res.data.data.length);
+        const payload = res.data?.data ?? res.data;
+        const list = Array.isArray(payload) ? payload : (payload?.items || payload?.history || payload?.images || []);
+        if (Array.isArray(list)) {
+          setHistoryCount(list.length);
         }
       })
       .catch(() => {});

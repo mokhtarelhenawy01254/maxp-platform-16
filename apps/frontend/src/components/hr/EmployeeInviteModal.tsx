@@ -115,8 +115,16 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
   const fetchDepartments = async () => {
     try {
       const res = await api.get("/hr/departments");
-      if (res.data?.success && Array.isArray(res.data.data)) {
-        setLocalDepartments(res.data.data);
+      const d = res.data;
+      const list = Array.isArray(d?.departments)
+        ? d.departments
+        : (Array.isArray(d?.data)
+            ? d.data
+            : (Array.isArray(d?.data?.departments)
+                ? d.data.departments
+                : (d?.data?.items || d?.items || [])));
+      if (Array.isArray(list)) {
+        setLocalDepartments(list);
       }
     } catch {
       // Ignored
@@ -127,8 +135,16 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
     try {
       setLoadingPositions(true);
       const res = await api.get("/hr/positions");
-      if (res.data?.success && Array.isArray(res.data.data)) {
-        setPositions(res.data.data);
+      const d = res.data;
+      const list = Array.isArray(d?.positions)
+        ? d.positions
+        : (Array.isArray(d?.data)
+            ? d.data
+            : (Array.isArray(d?.data?.positions)
+                ? d.data.positions
+                : (d?.data?.items || d?.items || [])));
+      if (Array.isArray(list)) {
+        setPositions(list);
       }
     } catch {
       // Non-critical if positions list fails
@@ -143,8 +159,16 @@ export const EmployeeInviteModal: React.FC<EmployeeInviteModalProps> = ({
       const res = await api.get("/hr/employee-invitations", {
         params: { status: "PENDING" },
       });
-      if (res.data?.success && Array.isArray(res.data.data?.invitations)) {
-        setInvitations(res.data.data.invitations);
+      const d = res.data;
+      const list = Array.isArray(d?.data?.invitations)
+        ? d.data.invitations
+        : (Array.isArray(d?.invitations)
+            ? d.invitations
+            : (Array.isArray(d?.data)
+                ? d.data
+                : (d?.data?.items || d?.items || [])));
+      if (Array.isArray(list)) {
+        setInvitations(list);
       }
     } catch {
       // Ignored

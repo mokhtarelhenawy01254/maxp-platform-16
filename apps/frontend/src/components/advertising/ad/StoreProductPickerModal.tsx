@@ -43,11 +43,9 @@ export const StoreProductPickerModal: React.FC<StoreProductPickerModalProps> = (
       const res = await apiClient.get("/products", {
         params: { limit: 30, search: query.trim() || undefined },
       });
-      if (res.data?.success && Array.isArray(res.data?.data)) {
-        setProducts(res.data.data);
-      } else if (Array.isArray(res.data)) {
-        setProducts(res.data);
-      }
+      const payload = res.data?.data ?? res.data;
+      const list = Array.isArray(payload) ? payload : (payload?.items || payload?.products || payload?.data || []);
+      setProducts(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error("Failed to fetch store products for ad:", err);
     } finally {

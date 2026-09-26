@@ -162,9 +162,22 @@ const CustomerPointsCenter: React.FC = () => {
         apiClient.get("/hr/customer-loyalty/tiers"),
       ]);
 
-      const nextRecords: CustomerLoyaltyRecord[] = customersRes.data.data || [];
-      const nextPrograms: CustomerLoyaltyProgram[] = programsRes.data.data || [];
-      const nextTiers: CustomerLoyaltyTier[] = tiersRes.data.data || [];
+      const extractArray = <T,>(res: any, fallbackKey?: string): T[] => {
+        const payload = res?.data?.data ?? res?.data;
+        if (!payload) return [];
+        if (Array.isArray(payload)) return payload;
+        if (fallbackKey && Array.isArray(payload[fallbackKey])) return payload[fallbackKey];
+        if (Array.isArray(payload.items)) return payload.items;
+        if (Array.isArray(payload.records)) return payload.records;
+        if (Array.isArray(payload.customers)) return payload.customers;
+        if (Array.isArray(payload.programs)) return payload.programs;
+        if (Array.isArray(payload.tiers)) return payload.tiers;
+        return [];
+      };
+
+      const nextRecords: CustomerLoyaltyRecord[] = extractArray<CustomerLoyaltyRecord>(customersRes, "records");
+      const nextPrograms: CustomerLoyaltyProgram[] = extractArray<CustomerLoyaltyProgram>(programsRes, "programs");
+      const nextTiers: CustomerLoyaltyTier[] = extractArray<CustomerLoyaltyTier>(tiersRes, "tiers");
 
       setRecords(nextRecords);
       setPrograms(nextPrograms);
@@ -192,9 +205,11 @@ const CustomerPointsCenter: React.FC = () => {
     try {
       // جلب جميع العملاء بما فيهم الذين ليس لديهم طلبات بعد
       const res = await apiClient.get("/customers?limit=200&hasOrders=false");
-      // API يرجع: { success: true, data: [...] } وليس { data: { customers: [...] } }
-      const list = Array.isArray(res.data.data) ? res.data.data : [];
-      setAllSystemCustomers(list);
+      const payload = res.data?.data ?? res.data;
+      const list = Array.isArray(payload)
+        ? payload
+        : (payload?.customers || payload?.items || payload?.data || []);
+      setAllSystemCustomers(Array.isArray(list) ? list : []);
     } catch (error) {
       console.error("Error fetching system customers", error);
     }

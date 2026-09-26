@@ -60,14 +60,14 @@ export default function CreateServiceOrderModal({
     setLoadingServices(true);
     try {
       const res: any = await apiClient.get('/services');
-      if (res.data?.success && Array.isArray(res.data.data)) {
-        const active = res.data.data.filter((s: any) => s.isActive);
-        setServices(active);
-        if (active.length > 0 && !selectedServiceId) {
-          setSelectedServiceId(active[0].id);
-          if (active[0].price) {
-            setTotalAmount(String(active[0].price));
-          }
+      const payload = res.data?.data ?? res.data;
+      const rawList = Array.isArray(payload) ? payload : (payload?.services || payload?.items || payload?.data || []);
+      const active = (Array.isArray(rawList) ? rawList : []).filter((s: any) => s.isActive);
+      setServices(active);
+      if (active.length > 0 && !selectedServiceId) {
+        setSelectedServiceId(active[0].id);
+        if (active[0].price) {
+          setTotalAmount(String(active[0].price));
         }
       }
     } catch (err: any) {
@@ -81,8 +81,10 @@ export default function CreateServiceOrderModal({
   const fetchTeamMembers = async () => {
     try {
       const res: any = await apiClient.get('/service-orders/team-members');
-      if (res.data?.success && Array.isArray(res.data.data)) {
-        setTeamMembers(res.data.data);
+      const payload = res.data?.data ?? res.data;
+      const list = Array.isArray(payload) ? payload : (payload?.members || payload?.items || payload?.data || []);
+      if (Array.isArray(list)) {
+        setTeamMembers(list);
       }
     } catch (e) {}
   };
