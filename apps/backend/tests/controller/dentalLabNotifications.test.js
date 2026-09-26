@@ -34,6 +34,27 @@ const createPrisma = (overrides = {}) => {
     dentalLabDoctor: {
       findFirst: jest.fn(),
     },
+    dentalSetting: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn().mockResolvedValue(null),
+      findUnique: jest.fn().mockResolvedValue(null),
+      upsert: jest.fn(),
+    },
+    workTypeStageTemplate: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn().mockResolvedValue(null),
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+      count: jest.fn().mockResolvedValue(0),
+    },
+    financialPosting: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn().mockResolvedValue(null),
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest.fn(),
+      count: jest.fn().mockResolvedValue(0),
+    },
     $transaction: jest.fn((fn) => fn(prisma)),
     ...overrides,
   };

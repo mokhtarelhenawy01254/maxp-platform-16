@@ -115,7 +115,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
 
   // Send message
   const handleSendMessage = async (textToSend?: string) => {
-    const text = (textToSend || inputValue).trim();
+    const text = (typeof textToSend === 'string' ? textToSend : inputValue).trim();
     if ((!text && attachedImages.length === 0) || loading) return;
 
     let targetSessionId = activeSessionId;
@@ -157,52 +157,62 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
 
       // Extract action cards if tools require approval or return structured action proposals
       const detectedActionCards: ActionCardData[] = [];
+      const mapActionType = (raw: string): ActionCardData['actionType'] => {
+        const norm = (raw || '').toLowerCase().replace(/[.-]/g, '_');
+        if (norm.includes('price')) return 'price_update';
+        if (norm.includes('cancel')) return 'order_cancel';
+        if (norm.includes('confirm')) return 'order_confirm';
+        if (norm.includes('discount')) return 'discount_create';
+        if (norm.includes('inventory')) return 'inventory_adjust';
+        if (norm.includes('shipping')) return 'shipping_update';
+        if (norm.includes('learned_rule') || norm.includes('rule')) return 'learned_rule';
+        if (norm.includes('agent_skill') || norm.includes('skill')) return 'agent_skill';
+        if (norm.includes('agent_spawn') || norm.includes('spawn')) return 'agent_spawn';
+        return 'generic';
+      };
+
       for (const tc of toolCalls) {
+        const toolName = tc.tool || tc.name || tc.action_type || '';
         const isAwaiting =
+          tc.status === 'awaiting_approval' ||
           tc.status === 'pending_approval' ||
-          tc.output?.status === 'PENDING_APPROVAL' ||
           tc.output?.status === 'awaiting_approval' ||
+          tc.output?.status === 'PENDING_APPROVAL' ||
+          Boolean(tc.draft_id) ||
           tc.arguments?.requireConfirmation ||
-          tc.name?.includes('price') ||
-          tc.name?.includes('cancel') ||
-          tc.name?.includes('discount') ||
-          tc.name?.includes('learned_rule') ||
-          tc.name?.includes('agent_skill') ||
-          tc.name?.includes('agent_spawn') ||
-          tc.name?.includes('agent.spawn');
+          toolName.includes('price') ||
+          toolName.includes('cancel') ||
+          toolName.includes('discount') ||
+          toolName.includes('learned_rule') ||
+          toolName.includes('agent_skill') ||
+          toolName.includes('agent_spawn') ||
+          toolName.includes('agent.spawn');
 
         if (isAwaiting) {
+          const cardId = tc.draft_id || tc.id || `action-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+          const rawParams = tc.action_args || tc.output?.action_args || tc.arguments || {};
+          const summaryText =
+            tc.message ||
+            tc.output?.summary ||
+            tc.output?.message ||
+            rawParams?.reason ||
+            rawParams?.rule_title ||
+            rawParams?.name ||
+            'إجراء تشغيلي ينتظر اعتمادك النهائي لتطبيقه.';
+
           detectedActionCards.push({
-            id: tc.id || `action-${Date.now()}`,
-            toolCallId: tc.id,
-            title: tc.name,
-            actionType: tc.name?.includes('price')
-              ? 'price_update'
-              : tc.name?.includes('cancel')
-              ? 'order_cancel'
-              : tc.name?.includes('discount')
-              ? 'discount_create'
-              : tc.name?.includes('learned_rule')
-              ? 'learned_rule'
-              : tc.name?.includes('agent_skill')
-              ? 'agent_skill'
-              : (tc.name?.includes('agent_spawn') || tc.name?.includes('agent.spawn'))
-              ? 'agent_spawn'
-              : 'generic',
-            summary:
-              tc.output?.summary ||
-              tc.output?.message ||
-              tc.output?.action_args?.rule_title ||
-              tc.output?.action_args?.name ||
-              tc.arguments?.rule_title ||
-              tc.arguments?.name ||
-              'إجراء تشغيلي ينتظر اعتمادك النهائي لتطبيقه.',
-            parameters: tc.output?.action_args || tc.arguments || {},
+            id: cardId,
+            toolCallId: tc.draft_id || tc.id,
+            title: toolName || 'إجراء بانتظار الاعتماد',
+            actionType: mapActionType(tc.action_type || toolName),
+            summary: summaryText,
+            parameters: rawParams,
             status: 'pending',
           });
         }
       }
 
+      const rawModel = res.data?.modelSelection?.model || res.data?.model || undefined;
       const assistantMsg: CopilotMessage = {
         id: `asst-${Date.now()}`,
         sender: 'assistant',
@@ -211,14 +221,14 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
         toolCalls,
         actionCards: detectedActionCards.length > 0 ? detectedActionCards : undefined,
         telemetry: {
-          model: res.data?.modelSelection?.model || 'DeepSeek-V3',
+          model: rawModel,
           latency_ms: Date.now() - startTime,
         },
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
       setTelemetry({
-        model: assistantMsg.telemetry?.model,
+        model: rawModel,
         latency_ms: assistantMsg.telemetry?.latency_ms,
       });
     } catch (err: any) {
