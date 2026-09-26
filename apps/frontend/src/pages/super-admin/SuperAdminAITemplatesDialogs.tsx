@@ -16,6 +16,7 @@ import { Brain, Plus, Trash2, Send, CheckCircle, Copy, Save } from "lucide-react
 const CHANNEL_OPTIONS: MultiSelectOption[] = [
   { value: "dashboard", label: "لوحة التحكم" },
   { value: "whatsapp", label: "واتساب" },
+  { value: "voice", label: "مكالمات صوتية" },
   { value: "messenger", label: "ماسنجر" },
   { value: "facebook", label: "فيسبوك" },
   { value: "chat", label: "محادثة" },
@@ -28,19 +29,28 @@ export const ROLE_ICONS: Record<string, string> = {
   CEO: "👔", SUPPORT: "🎧", SALES: "🤝", SMART_SELLER: "🛒",
   MARKETING: "📢", ORDER: "📦", INVENTORY: "📊", COMPETITOR: "🔍",
   FACEBOOK_SALES_SUPPORT: "💬", SAS_SALES: "🛍️", SALES_REP: "🛒",
-  SHIPPING: "🚚",
+  ORDER_CONFIRMATION: "✅", VOICE_ORDER_CONFIRMATION: "📞",
+  SHIPPING: "🚚", STOCK_TARGET_MONITOR: "📈",
 };
 
 export const ROLE_COLORS: Record<string, string> = {
   CEO: "bg-blue-100 text-blue-700", SUPPORT: "bg-emerald-100 text-emerald-700",
   SALES: "bg-amber-100 text-amber-700", SMART_SELLER: "bg-violet-100 text-violet-700",
   MARKETING: "bg-pink-100 text-pink-700", ORDER: "bg-cyan-100 text-cyan-700",
+  ORDER_CONFIRMATION: "bg-emerald-100 text-emerald-700",
+  VOICE_ORDER_CONFIRMATION: "bg-purple-100 text-purple-700",
   INVENTORY: "bg-slate-100 text-slate-700", COMPETITOR: "bg-red-100 text-red-700",
   FACEBOOK_SALES_SUPPORT: "bg-indigo-100 text-indigo-700", SAS_SALES: "bg-green-100 text-green-700",
   SALES_REP: "bg-amber-100 text-amber-700", SHIPPING: "bg-teal-100 text-teal-700",
+  STOCK_TARGET_MONITOR: "bg-emerald-100 text-emerald-800",
 };
 
-export const ROLES = ["CEO", "SUPPORT", "SALES", "SMART_SELLER", "MARKETING", "ORDER", "INVENTORY", "COMPETITOR", "FACEBOOK_SALES_SUPPORT", "SAS_SALES", "SALES_REP", "SHIPPING"];
+export const ROLES = [
+  "CEO", "SUPPORT", "SALES", "SMART_SELLER", "MARKETING", "ORDER",
+  "ORDER_CONFIRMATION", "VOICE_ORDER_CONFIRMATION", "INVENTORY",
+  "COMPETITOR", "FACEBOOK_SALES_SUPPORT", "SAS_SALES", "SALES_REP",
+  "SHIPPING", "STOCK_TARGET_MONITOR"
+];
 
 export const toneColors: Record<string, string> = {
   empathetic: "text-pink-600 bg-pink-50", persuasive: "text-amber-600 bg-amber-50",
