@@ -31,7 +31,8 @@ export default function DentalDryRunModal({ open, onClose }: DryRunModalProps) {
       setLoadingCases(true);
       apiClient.get('/dental-lab/cases?limit=25')
         .then((res) => {
-          const list = Array.isArray(res.data?.data) ? res.data.data : [];
+          const payload = res.data?.data;
+          const list = Array.isArray(payload) ? payload : (payload?.items || []);
           setCases(list);
           if (list.length > 0) setSelectedCaseId(list[0].id);
         })
