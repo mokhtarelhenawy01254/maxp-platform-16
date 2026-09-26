@@ -1,4 +1,6 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
+const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../utils/jwtSecret');
 
 const DELIVERED_STATUSES = ['DELIVERED', 'COMPLETED', 'REMITTED'];
 
@@ -499,8 +501,25 @@ async function getDeliveryRunById(companyId, runId) {
 
   if (!run) return null;
 
+  let mobileToken = null;
+  try {
+    mobileToken = jwt.sign(
+      {
+        role: 'COURIER',
+        courierId: run.courierId,
+        runId: run.id,
+        companyId: run.companyId
+      },
+      getJwtSecret(),
+      { expiresIn: '30d' }
+    );
+  } catch (err) {
+    console.warn('⚠️ Could not sign mobileToken:', err?.message);
+  }
+
   return {
     ...run,
+    mobileToken,
     totalCODExpected: normalizeAmount(run.totalCODExpected),
     totalCODCollected: normalizeAmount(run.totalCODCollected),
     courier: {

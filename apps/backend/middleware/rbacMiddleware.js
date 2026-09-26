@@ -165,6 +165,16 @@ const PERMISSIONS = {
   'orders.shipping.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
   'orders.shipping.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
 
+  // Internal Courier Fleet
+  'courier.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'OPERATIONS', 'WAREHOUSE', 'COURIER'],
+  'courier.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'OPERATIONS'],
+  'courier.runs.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'OPERATIONS', 'WAREHOUSE', 'COURIER'],
+  'courier.runs.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'OPERATIONS', 'WAREHOUSE', 'COURIER'],
+  'courier.settlement.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'OPERATIONS', 'ACCOUNTANT'],
+  'courier.settlement.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'ACCOUNTANT'],
+  'courier.settings.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'],
+  'courier.settings.manage': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'],
+
   // Orders — Turbo Tickets
   'orders.tickets.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
   'orders.tickets.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],

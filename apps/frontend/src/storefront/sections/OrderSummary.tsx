@@ -679,15 +679,24 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
   const walletPaymentSettings = (storefrontSettings?.storefront?.settings?.['walletPaymentSettings'] as
     | { enabled?: boolean; walletNumber?: string; discountEnabled?: boolean; discountPercent?: number; showDiscountBadge?: boolean }
     | undefined) || null;
-  const dbEnabledMethods =
-    storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods;
+  const dbEnabledMethods = useMemo(() => {
+    const raw =
+      storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods ??
+      (storefrontSettings?.storefront?.settings as any)?.enabledPaymentMethods ??
+      (storefrontSettings as any)?.storefrontSettings?.enabledPaymentMethods ??
+      (storefrontSettings as any)?.enabledPaymentMethods;
+    if (Array.isArray(raw)) return raw.map(String);
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.map(String);
+      } catch {}
+    }
+    return ['cod'];
+  }, [storefrontSettings]);
   const isWalletActiveInSettings =
     walletPaymentSettings?.enabled !== false &&
-    (
-      Array.isArray(dbEnabledMethods)
-        ? dbEnabledMethods.includes('wallet')
-        : walletPaymentSettings?.enabled === true
-    );
+    dbEnabledMethods.includes('wallet');
   const isWalletAvailable =
     Boolean(walletPaymentSettings?.walletNumber) && isWalletActiveInSettings;
   const walletDiscountEnabled = Boolean(walletPaymentSettings?.discountEnabled);

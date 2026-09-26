@@ -265,6 +265,8 @@ export const useInboxConversations = () => {
               assignedToName: conv.assignedToName || null,
               tags: conv.tags || [],
               priority: conv.priority || false,
+              aiEnabled: conv.aiEnabled !== false,
+              aiPausedUntil: conv.aiPausedUntil || (metadata as any)?.aiPausedUntil || null,
               snoozedUntil: conv.snoozedUntil
                 ? safeDate(conv.snoozedUntil)
                 : metadata?.snoozedUntil
@@ -598,6 +600,20 @@ export const useInboxConversations = () => {
     [selectedConversation?.id],
   );
 
+  const updateConversationInList = useCallback(
+    (conversationId: string, updates: Partial<InboxConversation>) => {
+      setSelectedConversation((prev) =>
+        prev && prev.id === conversationId ? { ...prev, ...updates } : prev,
+      );
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === conversationId ? { ...conv, ...updates } : conv,
+        ),
+      );
+    },
+    [],
+  );
+
   // 🆕 Add a single conversation to the list (for URL loading)
   const addConversationToList = useCallback(
     (conversation: InboxConversation) => {
@@ -664,6 +680,7 @@ export const useInboxConversations = () => {
     hasMoreConversations,
     loadMoreConversations,
     updateSelectedConversation,
+    updateConversationInList,
     selectedIds,
     toggleSelection,
     selectAll,

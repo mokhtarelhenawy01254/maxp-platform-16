@@ -15,7 +15,11 @@ import {
 
 export const ProductDeliveryReturnsPage: React.FC = () => {
   const { t } = useTranslation();
-  const [range, setRange] = useState<PeriodRange | null>(null);
+  const [range, setRange] = useState<PeriodRange | null>(() => ({
+    period: '30',
+    startDate: '',
+    endDate: ''
+  }));
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState('totalShipped');
@@ -48,7 +52,8 @@ export const ProductDeliveryReturnsPage: React.FC = () => {
     staleTime: 30_000
   });
 
-  const reportData = query.data?.data;
+  const rawData: any = query.data;
+  const reportData = rawData?.data?.summary ? rawData.data : (rawData?.summary ? rawData : rawData?.data);
   const summary: ProductDeliveryReturnsSummary = reportData?.summary ?? {
     totalProductsCount: 0,
     totalShippedQuantity: 0,
@@ -66,7 +71,7 @@ export const ProductDeliveryReturnsPage: React.FC = () => {
     warningCount: 0,
     healthyCount: 0
   };
-  const products = reportData?.products ?? [];
+  const products: ProductDeliveryReturnsItem[] = Array.isArray(reportData?.products) ? reportData.products : [];
 
   const handleSortChange = (col: string) => {
     if (sortBy === col) {
@@ -146,7 +151,7 @@ export const ProductDeliveryReturnsPage: React.FC = () => {
 
         {/* Controls */}
         <div className="flex flex-wrap items-center gap-2.5">
-          <PeriodSelector onChange={setRange} />
+          <PeriodSelector onRangeChange={setRange} onChange={setRange} />
           <button
             onClick={handleExportCsv}
             disabled={!products.length}

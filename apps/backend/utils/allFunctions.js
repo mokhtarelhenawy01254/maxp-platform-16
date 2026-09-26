@@ -2385,18 +2385,32 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                   where: { id: first.conversationId },
                   select: { aiEnabled: true, metadata: true }
                 });
-                if (conversation && conversation.aiEnabled === false) {
-                  console.log(`🤖 [AI-AUTOREPLY] AI auto-reply disabled for conversation ${first.conversationId}`);
-                  return;
-                }
                 if (conversation?.metadata) {
                   try {
                     const convMeta = typeof conversation.metadata === 'string' ? JSON.parse(conversation.metadata) : conversation.metadata;
-                    if (convMeta?.aiPausedUntil && new Date(convMeta.aiPausedUntil) > new Date()) {
-                      console.log(`🤖 [AI-AUTOREPLY] AI agent is paused until ${convMeta.aiPausedUntil} due to human handover on conversation ${first.conversationId}`);
-                      return;
+                    if (convMeta?.aiPausedUntil) {
+                      if (new Date(convMeta.aiPausedUntil) > new Date()) {
+                        console.log(`🤖 [AI-AUTOREPLY] AI agent is paused until ${convMeta.aiPausedUntil} due to human handover on conversation ${first.conversationId}`);
+                        return;
+                      } else {
+                        // Handover pause expired: auto-resume AI
+                        console.log(`🤖 [AI-AUTOREPLY] Handover pause expired for conversation ${first.conversationId}. Auto-resuming AI.`);
+                        delete convMeta.aiPausedUntil;
+                        await prisma.conversation.update({
+                          where: { id: first.conversationId },
+                          data: {
+                            aiEnabled: true,
+                            metadata: JSON.stringify(convMeta)
+                          }
+                        });
+                        conversation.aiEnabled = true;
+                      }
                     }
                   } catch (e) {}
+                }
+                if (conversation && conversation.aiEnabled === false) {
+                  console.log(`🤖 [AI-AUTOREPLY] AI auto-reply disabled for conversation ${first.conversationId}`);
+                  return;
                 }
               }
 

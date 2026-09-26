@@ -80,6 +80,8 @@ export interface InboxConversation {
   assignedToAvatar?: string;
   tags: string[];
   priority: boolean;
+  aiEnabled?: boolean;
+  aiPausedUntil?: string | null;
   snoozedUntil: Date | null;
   archived: boolean;
   muted: boolean;

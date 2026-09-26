@@ -656,9 +656,6 @@ export const getSidebarConfig = (
                 { to: '/orders/shipments', icon: Truck, label: isEn ? 'Shipments & Delivery Logs' : 'سجلات الشحنات والتوصيل', requiredPermissions: ['orders.turbo.view', 'orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'commerce-advanced', ...STORE_APP_SLUGS]) },
                 { to: '/tickets', icon: Ticket, label: isEn ? 'Shipping Tickets & Chat' : 'تذاكر ودعم الشحن (Turbo)', requiredPermissions: ['orders.turbo.view', 'orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'commerce-advanced', ...STORE_APP_SLUGS]) },
                 { to: '/shipping-companies', icon: Building, label: t('sidebar.shippingCompanies'), requiredPermissions: ['orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'commerce-advanced', ...STORE_APP_SLUGS]) },
-                { to: '/shipping/couriers', icon: Truck, label: isEn ? 'Internal Couriers Fleet' : 'أسطول المناديب الداخلي', requiredPermissions: ['orders.shipping.view'], hidden: !isAnyAppActive(['internal-courier-fleet', 'order-shipping-turbo']) },
-                { to: '/shipping/delivery-runs', icon: MapPin, label: isEn ? 'Delivery Runs & Manifests' : 'رحلات التوزيع والمانيفست', requiredPermissions: ['orders.shipping.view'], hidden: !isAnyAppActive(['internal-courier-fleet', 'order-shipping-turbo']) },
-                { to: '/shipping/courier-settlements', icon: Banknote, label: isEn ? 'Courier EOD Settlements' : 'تسويات وتوريد المناديب', requiredPermissions: ['orders.shipping.view'], hidden: !isAnyAppActive(['internal-courier-fleet', 'order-shipping-turbo']) },
                 { to: '/shipping-settlement', icon: Banknote, label: t('sidebar.shippingSettlement'), requiredPermissions: ['orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'commerce-advanced', ...STORE_APP_SLUGS]) },
                 { to: '/returns', icon: CheckCircle2, label: t('sidebar.returnReviews'), requiredPermissions: ['orders.returns.view'], hidden: !isAnyAppActive(['returns-settings', 'store-pro']) },
                 { to: '/orders/bulk', icon: ListOrdered, label: t('sidebar.bulkOrders'), requiredPermissions: ['bulkOrders.view', 'orders.bulk.create'], hidden: !isAppActive('bulk-orders') },
@@ -675,6 +672,21 @@ export const getSidebarConfig = (
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isStoreActive()
+        },
+
+        // 3️⃣.2 أسطول المناديب والتوصيل الداخلي (قسم مستقل شامل معزول تماماً)
+        {
+            id: 'internal-courier-fleet',
+            title: isEn ? 'Internal Courier Fleet' : 'أسطول المناديب والتوصيل الداخلي',
+            icon: Truck,
+            items: [
+                { to: '/shipping/couriers', icon: Truck, label: isEn ? 'Courier Fleet Management' : 'إدارة أسطول المناديب', requiredPermissions: ['orders.shipping.view', 'courier.view'] },
+                { to: '/shipping/delivery-runs', icon: MapPin, label: isEn ? 'Delivery Runs & Manifests' : 'رحلات التوزيع والمانيفست', requiredPermissions: ['orders.shipping.view', 'courier.runs.view'] },
+                { to: '/shipping/courier-settlements', icon: Banknote, label: isEn ? 'Courier Settlements & Remittance' : 'تسويات وتوريد المناديب', requiredPermissions: ['orders.shipping.view', 'courier.settlement.view'] },
+                { to: '/marketplace/apps/internal-courier-fleet/settings', icon: Cog, label: isEn ? 'Fleet Settings' : 'إعدادات أسطول التوصيل', requiredPermissions: ['orders.shipping.view', 'courier.settings.view'] },
+            ],
+            // 🔒 إخفاء القسم بالكامل إذا كان التطبيق غير مفعل في الماركت بليس
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('internal-courier-fleet')
         },
 
         // 3️⃣.5 إحصائيات الطلبات

@@ -209,15 +209,24 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
 
   const walletPaymentSettings =
     (storefrontSettings?.storefront?.settings as any)?.walletPaymentSettings || null;
-  const dbEnabledMethods =
-    storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods;
+  const dbEnabledMethods = useMemo(() => {
+    const raw =
+      storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods ??
+      (storefrontSettings?.storefront?.settings as any)?.enabledPaymentMethods ??
+      (storefrontSettings as any)?.storefrontSettings?.enabledPaymentMethods ??
+      (storefrontSettings as any)?.enabledPaymentMethods;
+    if (Array.isArray(raw)) return raw.map(String);
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.map(String);
+      } catch {}
+    }
+    return ['cod'];
+  }, [storefrontSettings]);
   const isWalletActiveInSettings =
     walletPaymentSettings?.enabled !== false &&
-    (
-      Array.isArray(dbEnabledMethods)
-        ? dbEnabledMethods.includes('wallet')
-        : walletPaymentSettings?.enabled === true
-    );
+    dbEnabledMethods.includes('wallet');
   const walletEnabled =
     Boolean(walletPaymentSettings?.walletNumber?.trim()) && isWalletActiveInSettings;
   const walletDiscountEnabled = Boolean(walletPaymentSettings?.discountEnabled);

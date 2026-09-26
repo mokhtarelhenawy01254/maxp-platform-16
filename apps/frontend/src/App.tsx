@@ -6760,7 +6760,7 @@ const AppContent = () => {
                   path="/shipping/couriers"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={SHIPPING_APP_ACCESS_SLUGS}>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet']}>
                         <CourierManagementPage />
                       </AppAccessRoute>
                     </Layout>
@@ -6770,7 +6770,7 @@ const AppContent = () => {
                   path="/shipping/delivery-runs"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={SHIPPING_APP_ACCESS_SLUGS}>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet']}>
                         <DeliveryRunsPage />
                       </AppAccessRoute>
                     </Layout>
@@ -6780,7 +6780,7 @@ const AppContent = () => {
                   path="/shipping/courier-settlements"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={SHIPPING_APP_ACCESS_SLUGS}>
+                      <AppAccessRoute requiredAppSlugs={['internal-courier-fleet']}>
                         <CourierSettlementPage />
                       </AppAccessRoute>
                     </Layout>

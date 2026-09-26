@@ -10,6 +10,7 @@ import {
   ListBulletIcon,
   EllipsisVerticalIcon,
   ExclamationTriangleIcon,
+  ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { ViewMode } from "./ProductsTypes";
 
