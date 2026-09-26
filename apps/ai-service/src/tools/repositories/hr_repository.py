@@ -102,11 +102,14 @@ class HrRepository(BaseRepository):
         self,
         company_id: str,
         employee_id: str,
+        user_id: str | None = None,
     ) -> dict[str, Any] | None:
         """Fetch leave balance and count taken leave days for the current year."""
         res_emp = await self._session.execute(
             text("""
                 SELECT
+                    id,
+                    "userId",
                     "annualLeaveBalance",
                     "sickLeaveBalance"
                 FROM hr_employees
@@ -119,6 +122,8 @@ class HrRepository(BaseRepository):
         if not emp_row:
             return None
 
+        effective_uid = user_id or emp_row.get("userId") or ""
+
         # Count approved leaves in current year
         res_leaves = await self._session.execute(
             text("""
@@ -127,12 +132,12 @@ class HrRepository(BaseRepository):
                     COALESCE(SUM("totalDays"), 0) AS taken_days
                 FROM hr_leave_requests
                 WHERE "companyId" = :cid
-                  AND "employeeEmployeeLeavesId" = :eid
+                  AND ("employeeEmployeeLeavesId" = :eid OR ("userId" IS NOT NULL AND "userId" = :uid))
                   AND status = 'APPROVED'
                   AND EXTRACT(YEAR FROM "startDate") = EXTRACT(YEAR FROM CURRENT_DATE)
                 GROUP BY type
             """),
-            {"cid": company_id, "eid": employee_id},
+            {"cid": company_id, "eid": employee_id, "uid": effective_uid},
         )
         taken_map = {row["leave_type"]: int(row["taken_days"]) for row in res_leaves.mappings().all()}
 
@@ -176,8 +181,8 @@ class HrRepository(BaseRepository):
                     reason, status, "createdAt", "updatedAt"
                 ) VALUES (
                     :id, :cid, :uid, :eid,
-                    CAST(:type AS "HrLeaveRequestType"), :s_date, :e_date, :days,
-                    :reason, 'PENDING', NOW(), NOW()
+                    CAST(:type AS hr_leave_requests_type), :s_date, :e_date, :days,
+                    :reason, CAST('PENDING' AS hr_leave_requests_status), NOW(), NOW()
                 )
             """),
             {
@@ -230,7 +235,7 @@ class HrRepository(BaseRepository):
                 ) VALUES (
                     :id, :cid, :eid,
                     CAST(:type AS "HrPermissionType"), :p_date, :s_time, :e_time,
-                    :hours, :reason, 'PENDING', NOW(), NOW()
+                    :hours, :reason, CAST('PENDING' AS "HrPermissionStatus"), NOW(), NOW()
                 )
             """),
             {
@@ -260,6 +265,7 @@ class HrRepository(BaseRepository):
         self,
         company_id: str,
         employee_id: str,
+        user_id: str | None = None,
         limit: int = 5,
     ) -> dict[str, Any]:
         """Fetch pending and recent leave/permission requests."""
@@ -268,11 +274,11 @@ class HrRepository(BaseRepository):
                 SELECT
                     id, type::text AS type, "startDate", "endDate", "totalDays", status::text AS status, "createdAt"
                 FROM hr_leave_requests
-                WHERE "companyId" = :cid AND "employeeEmployeeLeavesId" = :eid
+                WHERE "companyId" = :cid AND ("employeeEmployeeLeavesId" = :eid OR ("userId" IS NOT NULL AND "userId" = :uid))
                 ORDER BY "createdAt" DESC
                 LIMIT :limit
             """),
-            {"cid": company_id, "eid": employee_id, "limit": limit},
+            {"cid": company_id, "eid": employee_id, "uid": user_id or "", "limit": limit},
         )
         permissions = await self._session.execute(
             text("""
@@ -350,4 +356,78 @@ class HrRepository(BaseRepository):
             "late": int(row["late_count"] or 0),
             "absent": int(row["absent_count"] or 0),
             "on_leave": int(row["leave_count"] or 0),
+        }
+
+    async def get_my_advances(
+        self,
+        company_id: str,
+        user_id: str,
+        employee_id: str | None = None,
+        limit: int = 5,
+    ) -> list[dict[str, Any]]:
+        """Fetch employee advance requests."""
+        query = """
+            SELECT
+                id, amount, reason, "repaymentType", "installmentsCount",
+                "monthlyAmount", "remainingBalance", "isPaidOff", status,
+                "createdAt"
+            FROM hr_advance_requests
+            WHERE "companyId" = :cid
+              AND ("userId" = :uid OR ("employeeRelId" IS NOT NULL AND "employeeRelId" = :eid))
+            ORDER BY "createdAt" DESC
+            LIMIT :limit
+        """
+        res = await self._session.execute(
+            text(query),
+            {"cid": company_id, "uid": user_id, "eid": employee_id or "", "limit": limit},
+        )
+        return [dict(r) for r in res.mappings().all()]
+
+    async def create_advance_request(
+        self,
+        company_id: str,
+        user_id: str,
+        employee_id: str,
+        amount: float,
+        reason: str,
+        installments_count: int = 1,
+    ) -> dict[str, Any]:
+        """Create a new salary advance request."""
+        req_id = str(uuid.uuid4())
+        inst_count = max(1, int(installments_count or 1))
+        monthly_amt = round(float(amount) / inst_count, 2)
+
+        query = """
+            INSERT INTO hr_advance_requests (
+                id, "companyId", "userId", "employeeRelId",
+                amount, reason, "repaymentType", "installmentsCount",
+                "monthlyAmount", "remainingBalance", "isPaidOff", status,
+                "createdAt", "updatedAt"
+            ) VALUES (
+                :id, :cid, :uid, :eid,
+                :amount, :reason, 'SALARY_DEDUCTION', :inst_count,
+                :monthly_amt, :amount, false, 'PENDING',
+                NOW(), NOW()
+            )
+        """
+        await self._session.execute(
+            text(query),
+            {
+                "id": req_id,
+                "cid": company_id,
+                "uid": user_id,
+                "eid": employee_id,
+                "amount": Decimal(str(amount)),
+                "reason": reason or "",
+                "inst_count": inst_count,
+                "monthly_amt": Decimal(str(monthly_amt)),
+            },
+        )
+        await self._session.commit()
+        return {
+            "request_id": req_id,
+            "amount": amount,
+            "installments_count": inst_count,
+            "monthly_amount": monthly_amt,
+            "status": "PENDING",
         }

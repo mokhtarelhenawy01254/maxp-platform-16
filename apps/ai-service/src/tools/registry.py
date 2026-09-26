@@ -86,6 +86,7 @@ ADVANCED_TOOL_NAMES: set[str] = {
     "hr_leave_balance",
     "hr_requests_status",
     "hr_payslip_inquiry",
+    "hr_my_advances",
     "facebook_ad_analyze_product",
     "facebook_ad_get_decision",
     "facebook_ad_record_learned_rule",
@@ -147,6 +148,7 @@ WRITE_TOOL_NAMES: set[str] = {
     "hotel_cancel_reservation",
     "hr_leave_request_create",
     "hr_permission_request_create",
+    "hr_advance_request_create",
     # Storefront management
     "conversion_tool_toggle",
     "conversion_tool_set_threshold",
@@ -257,6 +259,8 @@ agent_spawn_tool = _registry.resolve("agent_spawn")
 agent_handoff_to_tool = _registry.resolve("agent_handoff_to")
 audit_read_tool = _registry.resolve("audit_read")
 hr_attendance_today_tool = _registry.resolve("hr_attendance_today")
+hr_my_advances_tool = _registry.resolve("hr_my_advances")
+hr_advance_request_create_tool = _registry.resolve("hr_advance_request_create")
 unlock_advanced_tools_tool = _registry.resolve("unlock_advanced_tools")
 # Promotion / Offer tools
 offers_list_active_tool = _registry.resolve("offers_list_active")

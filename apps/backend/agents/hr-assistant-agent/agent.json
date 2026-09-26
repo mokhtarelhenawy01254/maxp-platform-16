@@ -33,6 +33,8 @@
     "hr_requests_status",
     "hr_payslip_inquiry",
     "hr_attendance_today",
+    "hr_my_advances",
+    "hr_advance_request_create",
     "knowledge_search",
     "agent_handoff_to"
   ],
@@ -46,7 +48,8 @@
     "mode": "ON_WRITE",
     "requiredTools": [
       "hr_leave_request_create",
-      "hr_permission_request_create"
+      "hr_permission_request_create",
+      "hr_advance_request_create"
     ]
   },
   "budget": {

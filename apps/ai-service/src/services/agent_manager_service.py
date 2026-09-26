@@ -18,6 +18,7 @@ DEFAULT_DEPARTMENTS = [
     {"key": "inventory", "name": "Inventory & Pricing", "description": "Stock, prices and products", "sort_order": 30},
     {"key": "marketing", "name": "Marketing", "description": "Campaigns and advertisements", "sort_order": 40},
     {"key": "operations", "name": "Operations", "description": "Shipping, operations and follow-up", "sort_order": 50},
+    {"key": "hr", "name": "Human Resources", "description": "Employee affairs and internal inquiries", "sort_order": 60},
 ]
 
 DEPARTMENT_ROLE_MAP: dict[str, list[str]] = {
@@ -27,6 +28,7 @@ DEPARTMENT_ROLE_MAP: dict[str, list[str]] = {
     "inventory": ["INVENTORY", "PRICING"],
     "marketing": ["MARKETING"],
     "operations": ["SHIPPING"],
+    "hr": ["HR_ASSISTANT"],
 }
 
 

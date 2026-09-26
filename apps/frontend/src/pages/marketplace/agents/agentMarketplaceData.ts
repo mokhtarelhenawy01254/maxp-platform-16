@@ -20,7 +20,8 @@ export type AgentCategory =
   | "sales"
   | "operations"
   | "healthcare"
-  | "executive";
+  | "executive"
+  | "hr";
 
 export interface AgentTelemetry {
   engine: string;
@@ -68,6 +69,7 @@ export const AGENT_CATEGORIES: Array<{ id: AgentCategory; label: string; count?:
   { id: "operations", label: "العمليات والمخزون والشحن" },
   { id: "healthcare", label: "العيادات والقطاع الطبي" },
   { id: "executive", label: "الإدارة والرادار التنافسي" },
+  { id: "hr", label: "الموارد البشرية وشؤون الموظفين" },
 ];
 
 export const AGENT_LISTINGS: AgentListing[] = [
@@ -159,6 +161,53 @@ export const AGENT_LISTINGS: AgentListing[] = [
         { step: "03: إرسال التأكيد", action: "whatsapp.send_template(template='order_confirm_v2')", type: "tool" },
         { step: "04: معالجة الرد", action: "العميل أكد بالضغط على زر «تأكيد الطلب»، تحديث الحالة إلى 'CONFIRMED'", type: "thought" },
         { step: "05: إنشاء بوليصة الشحن", action: "shipping.turbo_create_waybill(tracking_code='TRB-98321')", type: "tool" },
+      ],
+    },
+  },
+
+  // ── 2b. Voice Order Confirmation Agent (PRO) ───────────────
+  {
+    id: "agent_voice_order_confirm",
+    slug: "voice-order-confirmation-agent",
+    name: "منى الشناوي",
+    position: "مسؤولة المكالمات الصوتية الذكية لتأكيد الطلبات (AI Voice Agent)",
+    category: "operations",
+    tier: "pro",
+    priceMonthly: 450,
+    currency: "ج.م",
+    featured: true,
+    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    summary: "إجراء مكالمات هاتفية آلية ذكية بصوت مصري طبيعي لتأكيد الطلبات الواردة فوراً، وتحديث العنوان وتعديل الكميات في أقل من دقيقة.",
+    tools: [
+      "order_confirm",
+      "order_update_details",
+      "order_cancel",
+      "voice_call_trigger",
+    ],
+    skills: ["voice-telephony", "realtime-speech", "egyptian-dialect", "order-routing"],
+    telemetry: {
+      engine: "Vapi / Flash 2.5",
+      fallbackEngine: "DeepSeek-V3",
+      p95Latency: "0.52s",
+      taskPrecision: "99.6%",
+      governance: "human_in_loop",
+      contextWindow: "32k Tokens",
+    },
+    dossier: {
+      bio: "وكيل اتصال هاتفي فائق الذكاء يتحدث بالعامية المصرية الطبيعية الودودة مع العملاء لتأكيد الطلبات، مراجعة العنوان، وإلغاء أو تعديل الطلبات في 40 ثانية.",
+      persona: "ودودة، سريعة البديهة، لبقة، ومباشرة — لا تتأخر في الاستجابة وتتعامل مع المقاطعة الصوتية باحترافية.",
+      dialect: "العامية المصرية المهذبة والمألوفة لنطق الأسعار والعناوين.",
+      boundaries: [
+        "إجراء المكالمات داخل أوقات العمل المعتمدة فقط (10:00 صباحاً - 10:00 مساءً).",
+        "عدم تعديل الأسعار أو الخصومات دون اعتماد من لوحة التحكم.",
+        "تسجيل نتيجة كل مكالمة والتسجيل الصوتي في سجل المكالمات مباشرة.",
+      ],
+      executionStream: [
+        { step: "01: رصد الطلب", action: "orders.fetch_pending(order_id='#49201')", type: "tool" },
+        { step: "02: فحص الوقت والهاتف", action: "التأكد من توقيت العمل وتحويل الرقم المصري إلى E.164 (+2010xxxxxxxx)", type: "thought" },
+        { step: "03: بدء المكالمة", action: "voice_call_trigger(customer_phone='+2010xxxxxxxx', order_id='#49201')", type: "tool" },
+        { step: "04: تأكيد العميل", action: "العميل أكد استلام الطلب وتعديل المقاس إلى L", type: "thought" },
+        { step: "05: تحديث الطلب", action: "order_confirm(order_id='#49201', notes='تم التأكيد هاتفياً')", type: "tool" },
       ],
     },
   },
@@ -572,6 +621,58 @@ export const AGENT_LISTINGS: AgentListing[] = [
       ],
     },
   },
+  // ── HR Assistant Agent (PRO) ──────────────────────────
+  {
+    id: "agent_hr_assistant",
+    slug: "hr-assistant-agent",
+    name: "مروة عاصم",
+    position: "مستشارة شؤون الموظفين والدعم الإداري الداخلي (HR Operations Specialist)",
+    category: "hr",
+    tier: "pro",
+    priceMonthly: 350,
+    currency: "ج.م",
+    featured: true,
+    avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+    summary: "متابعة استفسارات الموظفين، أرصدة الإجازات، تسجيل طلبات الأذونات والسلف، استعلامات الرواتب الآمنة، وتطبيق لوائح العمل الداخلية.",
+    tools: [
+      "hr_my_profile",
+      "hr_my_attendance",
+      "hr_leave_balance",
+      "hr_leave_request_create",
+      "hr_permission_request_create",
+      "hr_requests_status",
+      "hr_payslip_inquiry",
+      "hr_attendance_today",
+      "hr_my_advances",
+      "hr_advance_request_create",
+      "knowledge_search",
+    ],
+    skills: ["hr-self-service", "leave-management", "payroll-inquiry", "attendance-tracker"],
+    telemetry: {
+      engine: "DeepSeek-V3",
+      fallbackEngine: "Llama 3.3 70B",
+      p95Latency: "0.74s",
+      taskPrecision: "99.7%",
+      governance: "human_in_loop",
+      contextWindow: "128k Tokens",
+    },
+    dossier: {
+      bio: "أخصائية موارد بشرية ذات خلفية تنظيمية وإدارية قوية. تركز على راحة الموظف وحفظ سرية بياناته الشخصية والمالية، مع الالتزام التام بنظام التأكيد الصريح قبل تسجيل أي طلب.",
+      persona: "مهذبة، دافئة، ودقيقة جداً — لا تخمن أي رقم وتستعلم مباشرة من السجلات الرسمية.",
+      dialect: "العربية المصرية المهنية الحضرية الراقية.",
+      boundaries: [
+        "خصوصية صارمة: لا يمكن لأي موظف الاطلاع على رواتب أو سجلات زميل آخر تحت أي ظرف.",
+        "تأكيد صريح إلزامي: عرض ملخص الطلب والموافقة الكتابية الصريحة قبل تسجيل أي إجازة أو إذن أو سلفة.",
+        "لا تصدر قرارات جزائية أو خصومات استثنائية تلقائياً دون تصعيد للإدارة البشرية.",
+      ],
+      executionStream: [
+        { step: "01: استكشاف الرصيد", action: "hr_leave_balance(employee_id='emp_441') → متبقي 14 يوم سنوي", type: "tool" },
+        { step: "02: جمع البيانات", action: "تأكيد نوع الإجازة من 2026-10-01 حتى 2026-10-03 (3 أيام)", type: "thought" },
+        { step: "03: طلب التأكيد", action: "عرض ملخص الإجازة للموظف لطلب موافقته الصريحة", type: "output" },
+        { step: "04: التسجيل والتوثيق", action: "hr_leave_request_create(leave_type='ANNUAL', start_date='2026-10-01', end_date='2026-10-03')", type: "tool" },
+      ],
+    },
+  },
 ];
 
 /**
@@ -612,6 +713,42 @@ export interface SandboxSample {
 
 export function getAgentSamplePrompts(slug: string): SandboxSample[] {
   switch (slug) {
+    case "voice-order-confirmation-agent":
+      return [
+        {
+          label: "مكالمة تأكيد طلب جديد",
+          prompt: "أهلاً يا فندم، معاك منى من خدمة عملاء المتجر بخصوص طلبك رقم #49201 بمبلغ 650 جنيه؟",
+          toolUsed: "order_confirm(order_id='#49201')",
+          response: "أيوه يا فندم تمام معاكي.. أيوة أنا طلبت وعايز أأكد الأوردر بنفس العنوان المكتوب.",
+        },
+        {
+          label: "تعديل العنوان أثناء المكالمة",
+          prompt: "ممكن تعدلي العنوان لأني نقلت الشقة رقم 5 عمارة النور شارع البحرين مصر الجديدة؟",
+          toolUsed: "order_update_details(order_id='#49201', address='عمارة النور ش البحرين مصر الجديدة')",
+          response: "تمام يا فندم، عدلت العنوان عندي على السيستم فوراً. إجمالي الطلب 650 جنيه شامل الشحن وهيتم التوصيل خلال يومين عمل بإذن الله.",
+        },
+      ];
+    case "hr-assistant-agent":
+      return [
+        {
+          label: "استعلام رصيد الإجازات",
+          prompt: "عايز أعرف رصيد إجازاتي المتبقي كام يوم سنوي وعارض؟",
+          toolUsed: "hr_leave_balance(user_id='emp_441')",
+          response: "أهلاً بحضرتك يا فندم. رصيدك الحالي وفقاً لسجلات شؤون الموظفين:\n- إجازة سنوية: متبقي 14 يوم (من أصل 21 يوم)\n- إجازة عارضة: متبقي 3 أيام (من أصل 6 أيام)\nهل تود تسجيل طلب إجازة لأيام محددة؟",
+        },
+        {
+          label: "طلب إذن انصراف مبكر",
+          prompt: "عايز أقدم إذن خروج ساعتين بدري يوم الخميس القادم لظرف عائلي",
+          toolUsed: "hr_permission_request_create(permission_date='2026-10-01', duration_hours=2, reason='ظرف عائلي')",
+          response: "تم تجهيز ملخص طلب الإذن:\n- التاريخ: الخميس 2026-10-01\n- المدة: ساعتان (انصراف مبكر)\n- السبب: ظرف عائلي\n- رصيد الأذونات المتبقي لك هذا الشهر: إذن إضافي واحد بعد هذا الطلب.\nهل تؤكد إرسال الطلب لمديرك المباشر للاعتماد؟",
+        },
+        {
+          label: "استعلام سلفة الراتب",
+          prompt: "عايز استعلم عن سجل السلف وهل متاح أطلب سلفة 2000 ج.م؟",
+          toolUsed: "hr_my_advances(user_id='emp_441')",
+          response: "فحصت سجل السلف لحضرتك: لا توجد أقساط سلف جارية حالياً. الحد الأقصى للسلفة وفقاً للائحة هو 50% من الراتب الأساسي (بحد أقصى 3,000 ج.م). طلب سلفة بمبلغ 2,000 ج.م متاح، وسيتم جدولتها للخصم على قسطين بعد تأكيدك وموافقة الإدارة المالية.",
+        },
+      ];
     case "store-manager-agent":
       return [
         {

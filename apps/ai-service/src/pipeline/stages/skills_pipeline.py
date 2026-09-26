@@ -40,6 +40,10 @@ async def _execute_one_tool(ctx: PipelineContext, registry: Any, tc: dict) -> di
     if ctx.company_id and "company_id" not in arguments:
         arguments = {**arguments, "company_id": ctx.company_id}
 
+    effective_user_id = ctx.customer_id if (ctx.customer_id and ctx.customer_id != "anonymous") else None
+    if effective_user_id and "user_id" not in arguments:
+        arguments = {**arguments, "user_id": str(effective_user_id)}
+
     # Approval gate: write tools (approval_mode='always_require') must NEVER
     # execute directly in the chat pipeline. Return the structured awaiting
     # payload — the chat endpoint turns it into an approval draft the merchant

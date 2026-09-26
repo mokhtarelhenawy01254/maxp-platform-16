@@ -54,6 +54,10 @@ CATEGORY_DOMAIN_ALIASES: dict[str, str] = {
     "مدير المتجر": "STORE_OPS",
     "عام": "GENERAL",
     "قواعد عامة": "GENERAL",
+    "الموارد البشرية": "HR",
+    "شؤون الموظفين": "HR",
+    "HR": "HR",
+    "HR_ASSISTANT": "HR",
 }
 
 

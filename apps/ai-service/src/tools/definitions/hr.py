@@ -150,7 +150,11 @@ async def hr_leave_balance(input_data: HrLeaveBalanceInput) -> dict[str, Any]:
         if not emp:
             return {"error": "لم يتم العثور على سجل الموظف"}
 
-        balance = await repo.get_leave_balance(company_id, employee_id=emp["id"])
+        balance = await repo.get_leave_balance(
+            company_id,
+            employee_id=emp["id"],
+            user_id=emp.get("userId") or input_data.user_id,
+        )
 
     if not balance:
         return {"error": "تعذر استخراج بيانات رصيد الإجازات"}
@@ -328,7 +332,12 @@ async def hr_requests_status(input_data: HrRequestsStatusInput) -> dict[str, Any
         if not emp:
             return {"error": "لم يتم العثور على سجل الموظف"}
 
-        result = await repo.get_requests_status(company_id, employee_id=emp["id"], limit=input_data.limit)
+        result = await repo.get_requests_status(
+            company_id,
+            employee_id=emp["id"],
+            user_id=emp.get("userId") or input_data.user_id,
+            limit=input_data.limit,
+        )
 
     return result
 
@@ -477,6 +486,116 @@ hr_attendance_today_tool = FunctionTool(
 )
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# 9. Advances (سلف الموظفين)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class HrMyAdvancesInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    user_id: str | None = Field(default=None, description="User ID of the employee (auto-injected)")
+    employee_id: str | None = Field(default=None, description="Employee ID if known")
+    limit: int = Field(default=5, description="عدد الطلبات الأخيرة")
+
+
+async def hr_my_advances(input_data: HrMyAdvancesInput) -> dict[str, Any]:
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"error": "معرف الشركة غير متوفر"}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = HrRepository(sess)
+        emp = await repo.get_employee(company_id, user_id=input_data.user_id, employee_id=input_data.employee_id)
+        eid = emp["id"] if emp else ""
+        uid = (emp.get("userId") if emp else None) or input_data.user_id or ""
+        advances = await repo.get_my_advances(company_id, user_id=uid, employee_id=eid, limit=input_data.limit)
+
+    return {"advances": advances}
+
+
+def _format_hr_my_advances(res: dict[str, Any]) -> str:
+    if res.get("error"):
+        return f"تنبيه: {res['error']}"
+
+    advances = res.get("advances") or []
+    if not advances:
+        return "لا توجد طلبات سلف مالية مسجلة لحسابك حالياً."
+
+    lines = ["سجل طلبات السلف المالية:"]
+    for adv in advances:
+        dt = str(adv.get("createdAt") or "")[:10]
+        amt = float(adv.get("amount") or 0)
+        rem = float(adv.get("remainingBalance") or 0)
+        status = adv.get("status") or "PENDING"
+        lines.append(f"- طلب بتاريخ {dt}: مبلغ {amt:,.2f} ج.م (المتبقي: {rem:,.2f}) -> الحالة: {status}")
+
+    return "\n".join(lines)
+
+
+hr_my_advances_tool = FunctionTool(
+    name="hr_my_advances",
+    description="استعلام الموظف عن سجل وحالة طلبات السلف المالية المقدمة والمبالغ المتبقية لسدادها.",
+    func=hr_my_advances,
+    input_model=HrMyAdvancesInput,
+    format_result=_format_hr_my_advances,
+)
+
+
+class HrAdvanceRequestCreateInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    user_id: str | None = Field(default=None, description="User ID of the employee (auto-injected)")
+    employee_id: str | None = Field(default=None, description="Employee ID if known")
+    amount: float = Field(..., description="مبلغ السلفة المطلوب بالجنيه")
+    reason: str = Field(..., description="سبب طلب السلفة بوضوح")
+    installments_count: int = Field(default=1, description="عدد أقساط السداد الشهرية (افتراضياً 1)")
+
+
+async def hr_advance_request_create(input_data: HrAdvanceRequestCreateInput) -> dict[str, Any]:
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"error": "معرف الشركة غير متوفر"}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = HrRepository(sess)
+        emp = await repo.get_employee(company_id, user_id=input_data.user_id, employee_id=input_data.employee_id)
+        if not emp:
+            return {"error": "لم يتم العثور على سجل الموظف لربط طلب السلفة به"}
+
+        uid = emp.get("userId") or input_data.user_id or emp["id"]
+        res = await repo.create_advance_request(
+            company_id=company_id,
+            user_id=uid,
+            employee_id=emp["id"],
+            amount=input_data.amount,
+            reason=input_data.reason,
+            installments_count=input_data.installments_count,
+        )
+
+    return res
+
+
+def _format_hr_advance_request_create(res: dict[str, Any]) -> str:
+    if res.get("error"):
+        return f"تعذر تسجيل طلب السلفة: {res['error']}"
+
+    return (
+        f"تم تسجيل طلب السلفة المالية بنجاح.\n"
+        f"- المبلغ: {res.get('amount', 0):,.2f} ج.م\n"
+        f"- عدد الأقساط: {res.get('installments_count', 1)} شهر (القسط الشهري: {res.get('monthly_amount', 0):,.2f} ج.م)\n"
+        f"- الحالة: معلق (PENDING) وبانتظار اعتماد الإدارة المالية."
+    )
+
+
+hr_advance_request_create_tool = FunctionTool(
+    name="hr_advance_request_create",
+    description="إنشاء ورفع طلب سلفة مالية جديد للموظف بعد استيفاء المبلغ، سبب الطلب، وعدد أقساط السداد والتأكيد الصريح.",
+    func=hr_advance_request_create,
+    input_model=HrAdvanceRequestCreateInput,
+    format_result=_format_hr_advance_request_create,
+)
+
+
 __all_tools__ = [
     hr_my_profile_tool,
     hr_my_attendance_tool,
@@ -486,4 +605,6 @@ __all_tools__ = [
     hr_requests_status_tool,
     hr_payslip_inquiry_tool,
     hr_attendance_today_tool,
+    hr_my_advances_tool,
+    hr_advance_request_create_tool,
 ]

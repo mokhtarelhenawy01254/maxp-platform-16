@@ -201,6 +201,14 @@ class ToolGateway:
         try:
             model_data = {k.replace("-", "_"): v for k, v in input_data.items()}
             model_data["company_id"] = company_id
+            if "user_id" not in model_data or not model_data["user_id"]:
+                uid = None
+                if ctx and hasattr(ctx, "metadata") and isinstance(ctx.metadata, dict):
+                    uid = ctx.metadata.get("user_id") or ctx.metadata.get("customer_id")
+                if not uid and ctx and hasattr(ctx, "agent_context") and hasattr(ctx.agent_context, "metadata"):
+                    uid = ctx.agent_context.metadata.get("user_id") or ctx.agent_context.metadata.get("customer_id")
+                if uid and uid != "anonymous":
+                    model_data["user_id"] = str(uid)
             tool_input = tool.input_model(**model_data)
 
             import inspect

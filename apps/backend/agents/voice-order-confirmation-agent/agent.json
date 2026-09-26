@@ -1,0 +1,65 @@
+{
+  "slug": "voice-order-confirmation-agent",
+  "name": "منى — مسؤولة المكالمات الهاتفية لتأكيد الطلبات",
+  "role": "VOICE_ORDER_CONFIRMATION",
+  "version": "1.0.0",
+  "icon": "📞",
+  "modelPolicy": {
+    "default": "deepseek-flash",
+    "fallback": "groq/openai/gpt-oss-120b"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian",
+    "tone": "friendly",
+    "formality": "semi-formal"
+  },
+  "guardrails": {
+    "requireExplicitConfirmation": true,
+    "singleQuestionPerTurn": true,
+    "maxCallDurationSeconds": 90
+  },
+  "successMetrics": {
+    "primaryGoal": "order_confirm",
+    "secondaryGoal": "customer_satisfaction",
+    "failureEscalation": "agent.handoff"
+  },
+  "allowedTools": [
+    "order_lookup",
+    "order_lookup_by_phone",
+    "order_confirm",
+    "order_update_details",
+    "order_cancel",
+    "shipping_company_governorates",
+    "shipping_company_areas",
+    "search_area_by_text",
+    "customer_info",
+    "agent_handoff_to"
+  ],
+  "allowedSkills": [
+    "order-confirmation"
+  ],
+  "channels": [
+    "voice"
+  ],
+  "voiceSettings": {
+    "supportedDialects": ["egyptian", "saudi", "gulf"],
+    "voiceProvider": "vapi",
+    "voiceModel": "elevenlabs/eleven_multilingual_v2",
+    "maxCallDurationSeconds": 120,
+    "silenceTimeoutSeconds": 12
+  },
+  "humanApproval": {
+    "mode": "NEVER"
+  },
+  "budget": {
+    "dailyUsd": 3,
+    "maxToolCallsPerRun": 6
+  }
+}

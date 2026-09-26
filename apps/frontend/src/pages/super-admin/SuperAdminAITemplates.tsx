@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "../../components/ui/alert";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { Checkbox } from "../../components/ui/checkbox";
 import { apiClient } from "../../services/apiClient";
-import { Bot, Search, Eye, Pencil, Copy, Send, Trash2, ChevronDown, ChevronUp, Plus, Layers, ExternalLink, CheckSquare, CheckCheck, X } from "lucide-react";
+import { Bot, Search, Eye, Pencil, Copy, Send, Trash2, ChevronDown, ChevronUp, Plus, Layers, ExternalLink, CheckSquare, CheckCheck, X, RefreshCw } from "lucide-react";
 import {
   CreateDialog, EditDialog, PreviewDialog, ApplyDialog, DeleteDialog, DuplicateDialog,
   ROLE_ICONS, ROLE_COLORS, toneColors, TemplateItem,
@@ -34,6 +34,7 @@ const SuperAdminAITemplates: React.FC = () => {
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [defaultSlug, setDefaultSlug] = useState<string | null>(null);
   const [defaultUpdating, setDefaultUpdating] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<TemplateItem | null>(null);
@@ -41,6 +42,20 @@ const SuperAdminAITemplates: React.FC = () => {
   const [applyTarget, setApplyTarget] = useState<TemplateItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TemplateItem | null>(null);
   const [duplicateTarget, setDuplicateTarget] = useState<TemplateItem | null>(null);
+
+  const handleSyncTemplates = async () => {
+    try {
+      setSyncing(true);
+      const { data } = await apiClient.post("/super-admin/agents/sync-templates");
+      if (data.success) {
+        await fetchTemplates();
+      }
+    } catch {
+      setError("فشل مزامنة القوالب مع ملفات النظام");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const fetchTemplates = async () => {
     try { setLoading(true); const { data } = await apiClient.get("/super-admin/agents/marketplace"); if (data.success) setTemplates(data.templates); }
@@ -126,7 +141,13 @@ const SuperAdminAITemplates: React.FC = () => {
           <p className="text-sm font-bold">قوالب الذكاء الاصطناعي</p>
           <p className="text-xs text-muted-foreground">إدارة ونشر قوالب وكلاء AI — {stats.total} قالب</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} size="sm"><Plus className="size-4 ml-1" /> قالب جديد</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleSyncTemplates} disabled={syncing}>
+            <RefreshCw className={`size-3.5 ml-1 ${syncing ? "animate-spin" : ""}`} />
+            مزامنة القوالب
+          </Button>
+          <Button onClick={() => setShowCreate(true)} size="sm"><Plus className="size-4 ml-1" /> قالب جديد</Button>
+        </div>
       </div>
 
       {/* Stats bar */}
