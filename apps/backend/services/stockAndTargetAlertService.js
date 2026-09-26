@@ -1,4 +1,4 @@
-const { getSharedPrismaClient, safeQuery } = require("./sharedDatabase");
+const sharedDb = require("./sharedDatabase");
 const WhatsAppNotificationService = require("./whatsapp/WhatsAppNotificationService");
 
 /**
@@ -14,7 +14,7 @@ class StockAndTargetAlertService {
     let stockAlertsSent = 0;
 
     try {
-      const companies = await safeQuery((prisma) =>
+      const companies = await sharedDb.safeQuery((prisma) =>
         prisma.company.findMany({
           where: { isActive: true },
           select: {
@@ -95,7 +95,7 @@ class StockAndTargetAlertService {
 
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 
-    const todayOrdersCount = await safeQuery((prisma) =>
+    const todayOrdersCount = await sharedDb.safeQuery((prisma) =>
       prisma.order.count({
         where: {
           companyId: company.id,
@@ -154,7 +154,7 @@ class StockAndTargetAlertService {
       notifiedWeeklyMilestones = [];
     }
 
-    const weekOrdersCount = await safeQuery((prisma) =>
+    const weekOrdersCount = await sharedDb.safeQuery((prisma) =>
       prisma.order.count({
         where: {
           companyId: company.id,
@@ -212,7 +212,7 @@ class StockAndTargetAlertService {
     }
 
     // Scan products
-    const lowStockProducts = await safeQuery((prisma) =>
+    const lowStockProducts = await sharedDb.safeQuery((prisma) =>
       prisma.product.findMany({
         where: {
           companyId: company.id,
@@ -232,7 +232,7 @@ class StockAndTargetAlertService {
     );
 
     // Scan variants
-    const lowStockVariants = await safeQuery((prisma) =>
+    const lowStockVariants = await sharedDb.safeQuery((prisma) =>
       prisma.productVariant.findMany({
         where: {
           product: { companyId: company.id, deletedAt: null, isActive: true },
@@ -342,7 +342,7 @@ class StockAndTargetAlertService {
 
   async _persistTargetMeta(companyId, metaUpdates) {
     try {
-      const comp = await safeQuery((prisma) =>
+      const comp = await sharedDb.safeQuery((prisma) =>
         prisma.company.findUnique({
           where: { id: companyId },
           select: { settings: true },
@@ -354,7 +354,7 @@ class StockAndTargetAlertService {
         ...metaUpdates,
       };
 
-      await safeQuery((prisma) =>
+      await sharedDb.safeQuery((prisma) =>
         prisma.company.update({
           where: { id: companyId },
           data: { settings: JSON.stringify(settings) },

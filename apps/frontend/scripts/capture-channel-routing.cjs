@@ -30,8 +30,9 @@ const server = http.createServer((req, res) => {
   }
 });
 
-server.listen(4173, async () => {
-  console.log("Static server running on http://localhost:4173");
+server.listen(0, async () => {
+  const port = server.address().port;
+  console.log(`Static server running on http://localhost:${port}`);
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -133,8 +134,8 @@ server.listen(4173, async () => {
   });
 
   try {
-    console.log("Navigating to http://localhost:4173/admin/ai-hub?tab=routing...");
-    await page.goto("http://localhost:4173/admin/ai-hub?tab=routing", { waitUntil: "networkidle", timeout: 15000 });
+    console.log(`Navigating to http://localhost:${port}/admin/ai-hub?tab=routing...`);
+    await page.goto(`http://localhost:${port}/admin/ai-hub?tab=routing`, { waitUntil: "domcontentloaded", timeout: 20000 });
 
     // Wait for the table to appear
     await page.waitForSelector("table", { timeout: 10000 });
@@ -155,6 +156,32 @@ server.listen(4173, async () => {
       const tableScreenshotPath = path.join(artifactDir, "channel_routing_table_focus.png");
       await tableElement.screenshot({ path: tableScreenshotPath });
       console.log(`Saved focused table screenshot to: ${tableScreenshotPath}`);
+
+      // Now click the dropdown for the DASHBOARD row to assign Karim
+      const rows = await page.$$("table tbody tr");
+      if (rows.length >= 6) {
+        const dashboardRow = rows[5];
+        const selectTrigger = await dashboardRow.$("[data-slot='select-trigger']");
+        if (selectTrigger) {
+          await selectTrigger.click();
+          await page.waitForTimeout(500);
+          // Click on Karim option
+          const option = await page.$("[data-slot='select-item']:has-text('كريم - مساعد الإدارة')");
+          if (option) {
+            await option.click();
+            await page.waitForTimeout(500);
+            console.log("Selected agent 'كريم - مساعد الإدارة' for DASHBOARD channel");
+
+            const assignedScreenshotPath = path.join(artifactDir, "channel_routing_assigned_focus.png");
+            await tableElement.screenshot({ path: assignedScreenshotPath });
+            console.log(`Saved assigned table screenshot to: ${assignedScreenshotPath}`);
+          } else {
+            console.log("Option Karim not found");
+          }
+        } else {
+          console.log("selectTrigger not found");
+        }
+      }
     }
 
     console.log("SUCCESS: All screenshots captured on isolated test environment.");
