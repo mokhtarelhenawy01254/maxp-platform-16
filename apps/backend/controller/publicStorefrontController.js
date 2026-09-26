@@ -391,13 +391,28 @@ const buildStorefrontConfig = ({
   if (!Array.isArray(parsedEnabledMethods)) parsedEnabledMethods = ['cod'];
 
   let runtimeWalletSettings = storefrontSettings?.walletPaymentSettings || null;
+  if (typeof runtimeWalletSettings === 'string') {
+    try {
+      runtimeWalletSettings = JSON.parse(runtimeWalletSettings);
+    } catch {
+      runtimeWalletSettings = null;
+    }
+  }
   if (runtimeWalletSettings && typeof runtimeWalletSettings === 'object') {
-    const isWalletActive = parsedEnabledMethods.includes('wallet') && runtimeWalletSettings.enabled !== false;
+    const hasWalletNumber = Boolean(
+      runtimeWalletSettings.walletNumber &&
+      String(runtimeWalletSettings.walletNumber).trim()
+    );
+    const isWalletActive =
+      (parsedEnabledMethods.includes('wallet') || hasWalletNumber) &&
+      runtimeWalletSettings.enabled !== false;
     runtimeWalletSettings = {
       ...runtimeWalletSettings,
       enabled: isWalletActive,
     };
-    if (!isWalletActive && parsedEnabledMethods.includes('wallet')) {
+    if (isWalletActive && !parsedEnabledMethods.includes('wallet')) {
+      parsedEnabledMethods.push('wallet');
+    } else if (!isWalletActive && parsedEnabledMethods.includes('wallet')) {
       parsedEnabledMethods = parsedEnabledMethods.filter((m) => m !== 'wallet');
     }
   } else {

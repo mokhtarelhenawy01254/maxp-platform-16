@@ -1031,6 +1031,24 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
           </div>
         ) : null}
 
+        {walletDiscountEnabled && walletDiscountPercent > 0 && showWalletDiscountBadge ? (
+          paymentMethod === 'card' || (paymentMethod === 'wallet' && walletEnabled) ? (
+            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-300 bg-emerald-100/70 p-3 text-xs font-semibold text-emerald-900 dark:border-emerald-700/60 dark:bg-emerald-950/40 dark:text-emerald-200">
+              <span className="text-base shrink-0">🎉</span>
+              <span>
+                تم تطبيق خصم الدفع الإلكتروني ({walletDiscountPercent}%) بنجاح! وفّرت {formatStorefrontCurrency(walletDiscount, currency)}.
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 text-xs text-emerald-900 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-200">
+              <span className="text-base shrink-0">🎁</span>
+              <span className="leading-relaxed">
+                <strong>عرض خاص:</strong> اختر الدفع بالبطاقة أو المحفظة الإلكترونية واحصل على <strong>خصم {walletDiscountPercent}%</strong> فوراً على إجمالي طلبك!
+              </span>
+            </div>
+          )
+        ) : null}
+
         <div className={methodStackClassName}>
           {methodOptions.map((method) => (
             <button
@@ -1082,7 +1100,10 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
                     ) : null}
                   </div>
                   <p className="text-xs text-muted-foreground">{method.desc}</p>
-                  {walletDiscountActive && showWalletDiscountBadge && (method.id === 'wallet' || method.id === 'card') ? (
+                  {walletDiscountEnabled &&
+                  walletDiscountPercent > 0 &&
+                  showWalletDiscountBadge &&
+                  (method.id === 'card' || (method.id === 'wallet' && walletEnabled)) ? (
                     <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
                       🎁 خصم {walletDiscountPercent}% {method.id === 'wallet' ? 'عند الدفع بالمحفظة' : 'عند الدفع بالبطاقة'}
                     </p>

@@ -1953,6 +1953,7 @@ const PaymentGatewaySettingsSection: React.FC<{
   const [testMessage, setTestMessage] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [showSecretKey, setShowSecretKey] = useState(false);
+  const [togglingMethod, setTogglingMethod] = useState<string | null>(null);
 
   const isConfigured = gatewayConfig.merchantId && gatewayConfig.apiKey && gatewayConfig.secretKey;
 
@@ -1997,12 +1998,44 @@ const PaymentGatewaySettingsSection: React.FC<{
     setGatewayConfig((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleMethodToggle = (method: string) => {
-    setEnabledMethods((prev) =>
-      prev.includes(method)
-        ? prev.filter((m) => m !== method)
-        : [...prev, method]
-    );
+  const handleMethodToggle = async (method: string) => {
+    const isCurrentlyOn = enabledMethods.includes(method);
+    const nextMethods = isCurrentlyOn
+      ? enabledMethods.filter((m) => m !== method)
+      : Array.from(new Set([...enabledMethods, method]));
+
+    setEnabledMethods(nextMethods);
+    setTogglingMethod(method);
+
+    try {
+      const result = await storefrontSettingsService.updateSettings({
+        enabledPaymentMethods: JSON.stringify(nextMethods),
+      });
+      if (result?.data) {
+        onChange(result.data);
+      }
+      const isNowActive = nextMethods.includes(method);
+      const methodLabel =
+        method === "cod"
+          ? "الدفع عند الاستلام"
+          : method === "card"
+          ? "بطاقة ائتمان / خصم"
+          : method;
+      toast.success(
+        isNowActive
+          ? `تم تفعيل ${methodLabel} بنجاح`
+          : `تم إيقاف ${methodLabel} بنجاح`
+      );
+    } catch (error: any) {
+      setEnabledMethods(enabledMethods);
+      console.error("[PAYMENT-SETTINGS] Failed to toggle method:", error);
+      toast.error(
+        "حدث خطأ أثناء تعديل طريقة الدفع: " +
+          (error?.message || error?.response?.data?.message || "خطأ غير معروف")
+      );
+    } finally {
+      setTogglingMethod(null);
+    }
   };
 
   const handleDelete = async () => {
@@ -2037,35 +2070,36 @@ const PaymentGatewaySettingsSection: React.FC<{
   };
 
   const handleSave = async () => {
-    const updatedSettings = {
-      paymentGatewayConfig: {
-        merchantId: gatewayConfig.merchantId,
-        apiKey: gatewayConfig.apiKey,
-        secretKey: gatewayConfig.secretKey,
-        mode: gatewayConfig.mode,
-      },
+    const hasAnyCred = Boolean(
+      gatewayConfig.merchantId.trim() ||
+      gatewayConfig.apiKey.trim() ||
+      gatewayConfig.secretKey.trim()
+    );
+
+    const updatedSettings: Record<string, unknown> = {
       enabledPaymentMethods: JSON.stringify(enabledMethods),
     };
 
-    console.log('[SAVE] Sending settings:', { ...updatedSettings, paymentGatewayConfig: '***MASKED***' });
+    if (hasAnyCred) {
+      updatedSettings.paymentGatewayConfig = {
+        merchantId: gatewayConfig.merchantId.trim(),
+        apiKey: gatewayConfig.apiKey.trim(),
+        secretKey: gatewayConfig.secretKey.trim(),
+        mode: gatewayConfig.mode,
+      };
+    }
 
     try {
       const result = await storefrontSettingsService.updateSettings(updatedSettings);
-      console.log('[SAVE] Result:', result);
-      // Update parent state with server response, but preserve the local
-      // gatewayConfig values (the server returns masked keys which would
-      // overwrite our real values via the useEffect).
       if (result?.data) {
         onChange({
           ...result.data,
-          // Keep the un-masked config we just sent so the useEffect
-          // doesn't replace our local state with masked tokens.
-          paymentGatewayConfig: updatedSettings.paymentGatewayConfig,
+          paymentGatewayConfig: (updatedSettings.paymentGatewayConfig as any) || result.data.paymentGatewayConfig,
         });
         setIsEditing(false);
       }
-      tToast.success("StoreSettings.success_save_ccce");
-    } catch (error) {
+      toast.success("تم حفظ إعدادات بوابة الدفع بنجاح");
+    } catch (error: any) {
       console.error("[SAVE] Failed to save payment gateway settings:", error);
       toast.error("حدث خطأ أثناء الحفظ: " + (error?.message || error?.response?.data?.message || "Unknown error"));
     }
@@ -2168,17 +2202,18 @@ const PaymentGatewaySettingsSection: React.FC<{
       <div className="flex flex-col gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-800/50 dark:bg-indigo-950/20 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-gray-900 dark:text-white">
-            تفعيل الدفع عند الاستلام (الكاشير)
+            تفعيل الدفع عند الاستلام (كاش)
           </p>
           <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-            اظهر خيار «الدفع عند الاستلام» للعملاء أثناء إتمام الطلب.
+            إظهار خيار «الدفع نقدًا عند الاستلام» للعملاء أثناء إتمام الطلب في المتجر.
           </p>
         </div>
         <button
           type="button"
           onClick={() => handleMethodToggle("cod")}
+          disabled={loading || togglingMethod === "cod"}
           aria-pressed={enabledMethods.includes("cod")}
-          className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all select-none ${
+          className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all select-none disabled:opacity-60 ${
             enabledMethods.includes("cod")
               ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 shadow-sm shadow-emerald-600/10"
               : "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:bg-gray-50 dark:hover:border-gray-500 dark:hover:bg-gray-700/40"
@@ -2195,7 +2230,7 @@ const PaymentGatewaySettingsSection: React.FC<{
               }`}
             />
           </span>
-          <span>الكاشير (الدفع عند الاستلام)</span>
+          <span>الدفع عند الاستلام</span>
           <span
             className={`text-xs font-bold ${
               enabledMethods.includes("cod")
@@ -2203,7 +2238,11 @@ const PaymentGatewaySettingsSection: React.FC<{
                 : "text-gray-400"
             }`}
           >
-            {enabledMethods.includes("cod") ? "مفعّل" : "غير مفعّل"}
+            {togglingMethod === "cod"
+              ? "جارٍ التحديث..."
+              : enabledMethods.includes("cod")
+              ? "مفعّل"
+              : "غير مفعّل"}
           </span>
         </button>
       </div>
@@ -2389,8 +2428,9 @@ const PaymentGatewaySettingsSection: React.FC<{
                 key={method}
                 type="button"
                 onClick={() => handleMethodToggle(method)}
+                disabled={loading || togglingMethod === method}
                 aria-pressed={isOn}
-                className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all select-none ${
+                className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all select-none disabled:opacity-60 ${
                   isOn
                     ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 shadow-sm shadow-emerald-600/10"
                     : "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:bg-gray-50 dark:hover:border-gray-500 dark:hover:bg-gray-700/40"
@@ -2415,7 +2455,11 @@ const PaymentGatewaySettingsSection: React.FC<{
                       : "text-gray-400"
                   }`}
                 >
-                  {isOn ? "مفعّل" : "غير مفعّل"}
+                  {togglingMethod === method
+                    ? "جارٍ التحديث..."
+                    : isOn
+                    ? "مفعّل"
+                    : "غير مفعّل"}
                 </span>
               </button>
             );

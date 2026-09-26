@@ -2185,7 +2185,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     >
                       {prefersArabicCopy ? "الدفع بالمحفظة" : "Wallet payment"}
                     </button>
-                    {walletDiscountActive && walletPaymentSettings?.showDiscountBadge !== false ? (
+                    {walletDiscountEnabled && walletDiscountPercent > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
                       <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
                         🎁 {prefersArabicCopy
                           ? `خصم ${walletDiscountPercent}%`
@@ -2194,6 +2194,14 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     ) : null}
                   </div>
                 </div>
+
+                {walletDiscountEnabled && walletDiscountPercent > 0 && paymentMethod === "cod" ? (
+                  <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                    💡 {prefersArabicCopy
+                      ? `وفّر ${walletDiscountPercent}% فوراً عند اختيار الدفع بالمحفظة الإلكترونية`
+                      : `Save ${walletDiscountPercent}% instantly by choosing wallet payment`}
+                  </p>
+                ) : null}
 
                 {paymentMethod === "wallet" ? (
                   <div className="space-y-3 border-t border-emerald-200 pt-3 dark:border-emerald-800/60">

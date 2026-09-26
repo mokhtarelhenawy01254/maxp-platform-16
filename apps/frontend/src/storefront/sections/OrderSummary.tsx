@@ -1532,6 +1532,16 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                 -{formatStorefrontCurrency(walletDiscount, currency)}
               </span>
             </div>
+          ) : walletDiscount === 0 && walletDiscountEnabled && walletDiscountPercent > 0 && walletPaymentSettings?.showDiscountBadge !== false && (Number(subtotal) || 0) > 0 ? (
+            <div className="flex items-center justify-between rounded-lg bg-emerald-50/80 px-2.5 py-1.5 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800/40">
+              <span className="flex items-center gap-1 font-medium">
+                <span>🎁</span>
+                <span>خصم {walletDiscountPercent}% بالدفع الإلكتروني</span>
+              </span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                وفر {formatStorefrontCurrency(((Number(subtotal) || 0) * walletDiscountPercent) / 100, currency)}
+              </span>
+            </div>
           ) : null}
           <div
             className={`flex justify-between border-t pt-3 text-[1.05rem] font-bold text-foreground ${
