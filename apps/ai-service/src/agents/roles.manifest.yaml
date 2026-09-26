@@ -1,0 +1,365 @@
+# Single Source of Truth for MaxP Agent Roles
+# Generated in compliance with SPEC_ROLE_REGISTRY.md (2026-09-26)
+
+version: "1.0.0"
+
+roles:
+  STORE_MANAGER:
+    label: "مدير المتجر التنفيذي"
+    domain: "STORE_OPS"
+    playbook_id: "store_ops_playbook"
+    playbook_title: "كتيب إدارة وعمليات المتجر"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["STORE_OPS", "INVENTORY", "ORDERS", "DISCOUNTS", "MARKETING"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  MEDIA_BUYER:
+    label: "ميديا باير وخبير الإعلانات"
+    domain: "MEDIA_BUYER"
+    playbook_id: "media_buyer_playbook"
+    playbook_title: "كتيب استراتيجيات إعلانات المتجر"
+    judge_profile: "media_buyer"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["ADS", "CAMPAIGNS", "AUDIENCES"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  SUPPORT:
+    label: "خدمة العملاء والدعم الفني"
+    domain: "SUPPORT"
+    playbook_id: "support_playbook"
+    playbook_title: "كتيب خدمة العملاء والاستفسارات"
+    judge_profile: "support"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["SUPPORT"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 30
+      auto_embed: true
+
+  ORDER:
+    label: "مسؤول الطلبات والشحن"
+    domain: "OPERATIONS"
+    playbook_id: "order_playbook"
+    playbook_title: "كتيب إدارة الطلبات والشحن"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["ORDERS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  ORDER_CONFIRMATION:
+    label: "تأكيد ومتابعة الطلبات"
+    domain: "OPERATIONS"
+    playbook_id: "order_confirmation_playbook"
+    playbook_title: "كتيب تأكيد الطلبات والمتابعة"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["ORDERS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  SALES:
+    label: "مسؤول المبيعات"
+    domain: "SALES"
+    playbook_id: "sales_playbook"
+    playbook_title: "كتيب مبيعات وإغلاق الصفقات"
+    judge_profile: "sales"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["SALES", "DISCOUNTS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  INVENTORY:
+    label: "مسؤول المخزون والمنتجات"
+    domain: "INVENTORY"
+    playbook_id: "inventory_playbook"
+    playbook_title: "كتيب إدارة وحركة المخزون"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["INVENTORY"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  PRODUCT_CREATOR:
+    label: "منشئ ومعدل المنتجات"
+    domain: "PRODUCT"
+    playbook_id: "product_creator_playbook"
+    playbook_title: "كتيب إنشاء وإدراج المنتجات"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["PRODUCTS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  MARKETING:
+    label: "مسؤول التسويق والحملات"
+    domain: "MARKETING"
+    playbook_id: "marketing_playbook"
+    playbook_title: "كتيب التسويق والعروض الترويجية"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["MARKETING", "CAMPAIGNS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  FACEBOOK_SALES_SUPPORT:
+    label: "دعم ومبيعات فيسبوك"
+    domain: "SALES"
+    playbook_id: "facebook_sales_playbook"
+    playbook_title: "كتيب مبيعات ودعم فيسبوك"
+    judge_profile: "sales"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["SALES", "SUPPORT"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  SAS_SALES:
+    label: "مبيعات برمجيات وخدمات"
+    domain: "SALES"
+    playbook_id: "sas_sales_playbook"
+    playbook_title: "كتيب مبيعات الاشتراكات والخدمات"
+    judge_profile: "sales"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["SALES"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  COMPETITOR:
+    label: "محلل المنافسين والأسعار"
+    domain: "COMPETITOR"
+    playbook_id: "competitor_playbook"
+    playbook_title: "كتيب مراقبة المنافسين وتحليل السوق"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["COMPETITORS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  SMART_SELLER:
+    label: "البائع الذكي وإدارة الفرص"
+    domain: "SALES"
+    playbook_id: "smart_seller_playbook"
+    playbook_title: "كتيب استراتيجيات البيع الذكي وتوقع الشراء"
+    judge_profile: "sales"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["SALES", "LEADS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  SALES_REP:
+    label: "مندوب المبيعات الميداني"
+    domain: "SALES"
+    playbook_id: "sales_rep_playbook"
+    playbook_title: "كتيب متابعة العملاء والمندوبين"
+    judge_profile: "sales"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["SALES"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  MEDICAL_CENTER:
+    label: "مساعد المركز الطبي والعيادات"
+    domain: "CLINIC"
+    playbook_id: "medical_center_playbook"
+    playbook_title: "كتيب العيادات والمواعيد الطبية"
+    judge_profile: "clinic"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["CLINIC", "BOOKINGS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  PHYSIOTHERAPY:
+    label: "مساعد العلاج الطبيعي والتأهيل"
+    domain: "CLINIC"
+    playbook_id: "physiotherapy_playbook"
+    playbook_title: "كتيب جلسات العلاج الطبيعي والتأهيل"
+    judge_profile: "clinic"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["CLINIC", "BOOKINGS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  EDUCATION_CENTER:
+    label: "مساعد المركز التعليمي والدورات"
+    domain: "EDUCATION"
+    playbook_id: "education_center_playbook"
+    playbook_title: "كتيب المراكز التعليمية وتسجيل الطلاب"
+    judge_profile: "support"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["EDUCATION", "BOOKINGS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  HOTEL:
+    label: "مساعد حجوزات الفنادق والضيافة"
+    domain: "HOTEL"
+    playbook_id: "hotel_playbook"
+    playbook_title: "كتيب حجوزات الفنادق والضيافة"
+    judge_profile: "support"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["HOTEL", "RESERVATIONS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  MEDICAL_CENTER_MANAGER:
+    label: "مدير المركز الطبي والعمليات"
+    domain: "CLINIC"
+    playbook_id: "medical_center_manager_playbook"
+    playbook_title: "كتيب إدارة المركز الطبي والعمليات"
+    judge_profile: "clinic"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["CLINIC", "OPERATIONS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  CEO:
+    label: "المساعد التنفيذي والإداري"
+    domain: "EXECUTIVE"
+    playbook_id: "ceo_playbook"
+    playbook_title: "كتيب القرارات التنفيذية العليا"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["EXECUTIVE", "ANALYTICS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 120
+      auto_embed: true

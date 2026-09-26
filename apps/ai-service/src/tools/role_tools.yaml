@@ -118,8 +118,12 @@ roles:
     - facebook_ad_publish_draft
     - facebook_ad_get_decision
     - facebook_ad_record_learned_rule
+    - record_learned_rule
+    - manage_agent_skill
+    - update_agent_identity
     - orders_campaign_attribution_report
     - competitor_get_ads
+    - competitor_search
     - sales_revenue
     - company_snapshot
     - audit_read
@@ -127,12 +131,12 @@ roles:
     - session_search
     - delegate_task
     - manage_todo
+    - agent_handoff_to
     - facebook_ad_update_status
     - facebook_ad_update_budget
     - facebook_ad_search_targeting
     - facebook_ad_inspect_targeting
-    - manage_agent_skill
-    - update_agent_identity
+
 
 
   FACEBOOK_SALES_SUPPORT:
@@ -273,31 +277,6 @@ roles:
     - agent_handoff_to
     - knowledge_search
 
-  MEDIA_BUYER:
-    - product_search
-    - inventory_check
-    - facebook_ad_account_info
-    - facebook_ad_analyze_product
-    - facebook_ad_create_full_draft
-    - facebook_ad_publish_draft
-    - facebook_ad_get_decision
-    - facebook_ad_record_learned_rule
-    - record_learned_rule
-    - manage_agent_skill
-    - orders_campaign_attribution_report
-    - competitor_get_ads
-    - competitor_search
-    - sales_revenue
-    - company_snapshot
-    - audit_read
-    - generate_social_image
-    - session_search
-    - delegate_task
-    - agent_handoff_to
-    - facebook_ad_update_status
-    - facebook_ad_update_budget
-    - facebook_ad_search_targeting
-    - facebook_ad_inspect_targeting
 
 
   CEO:
