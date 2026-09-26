@@ -182,6 +182,50 @@ async def test_retrieve_episodic_memory_skips_when_external_embeddings_disabled(
 
 
 @pytest.mark.asyncio
+async def test_retrieve_episodic_memory_resolves_merchant_identity():
+    """When customer_id is empty, merchant channel resolves merchant_{company_id} and retrieves memories."""
+    ctx = _make_ctx(
+        customer_id="",
+        company_id="co_merchant_1",
+        channel="merchant",
+        session=AsyncMock(),
+    )
+
+    mock_memories = [
+        {"id": "m1", "content": "Merchant changed default discount to 10%", "similarity": 0.88},
+    ]
+
+    with patch("src.pipeline.stages.retrieve_episodic.episodic_memory_service") as mock_svc:
+        mock_svc.search_similar = AsyncMock(return_value=mock_memories)
+        result = await retrieve_episodic_memory(ctx)
+
+    assert len(result.episodic_memories) >= 1
+    assert result.episodic_memories[0]["content"] == "Merchant changed default discount to 10%"
+    # Ensure search_similar was called with resolved merchant entity
+    first_call_args = mock_svc.search_similar.call_args_list[0]
+    assert first_call_args.kwargs.get("customer_id") == "merchant_co_merchant_1"
+
+
+@pytest.mark.asyncio
+async def test_retrieve_episodic_memory_uses_explicit_user_id_from_context():
+    """Explicit merchant_id / user_id in external_memory_context is prioritized over fallback."""
+    ctx = _make_ctx(
+        customer_id="",
+        company_id="co_merchant_1",
+        channel="copilot",
+        session=AsyncMock(),
+        external_memory_context={"merchant_id": "usr_owner_99"},
+    )
+
+    with patch("src.pipeline.stages.retrieve_episodic.episodic_memory_service") as mock_svc:
+        mock_svc.search_similar = AsyncMock(return_value=[])
+        await retrieve_episodic_memory(ctx)
+
+    first_call_args = mock_svc.search_similar.call_args_list[0]
+    assert first_call_args.kwargs.get("customer_id") == "usr_owner_99"
+
+
+@pytest.mark.asyncio
 async def test_episodic_memories_injected_in_system_prompt():
     """Episodic memories should appear as <relevant_memories> in system prompt."""
     ctx = _make_ctx(
