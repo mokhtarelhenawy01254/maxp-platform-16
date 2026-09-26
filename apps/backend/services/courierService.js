@@ -282,18 +282,22 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
   let targetShipmentIds = Array.isArray(shipmentIds) ? [...shipmentIds] : [];
 
   if (Array.isArray(orderIds) && orderIds.length > 0) {
-    // Find or create shipments for these orders
-    for (const orderId of orderIds) {
-      let shipment = await prisma.shipment.findFirst({
-        where: { companyId, orderId }
+    // Find or create shipments for these orders (supports both cuid and orderNumber)
+    for (const orderRef of orderIds) {
+      if (!orderRef) continue;
+      const order = await prisma.order.findFirst({
+        where: {
+          companyId,
+          OR: [{ id: String(orderRef) }, { orderNumber: String(orderRef) }]
+        }
       });
 
-      if (!shipment) {
-        const order = await prisma.order.findFirst({
-          where: { id: orderId, companyId }
+      if (order) {
+        let shipment = await prisma.shipment.findFirst({
+          where: { companyId, orderId: order.id }
         });
 
-        if (order) {
+        if (!shipment) {
           shipment = await prisma.shipment.create({
             data: {
               companyId,
@@ -307,10 +311,10 @@ async function createDeliveryRun(companyId, { courierId, shipmentIds, orderIds, 
             }
           });
         }
-      }
 
-      if (shipment && !targetShipmentIds.includes(shipment.id)) {
-        targetShipmentIds.push(shipment.id);
+        if (shipment && !targetShipmentIds.includes(shipment.id)) {
+          targetShipmentIds.push(shipment.id);
+        }
       }
     }
   }
@@ -583,9 +587,24 @@ async function updateDeliveryRunShipment(companyId, { shipmentId, status, collec
     });
 
     if (shipment.orderId) {
+      let orderStatus = 'OUT_FOR_DELIVERY';
+      let customStatusCode = null;
+
+      if (updateData.status === 'DELIVERED') {
+        orderStatus = 'DELIVERED';
+      } else if (updateData.status === 'RETURNED') {
+        orderStatus = 'RETURNED';
+      } else if (updateData.status === 'DELAYED') {
+        orderStatus = 'OUT_FOR_DELIVERY';
+        customStatusCode = 'DELAYED_WITH_CAPTAIN';
+      }
+
       await tx.order.update({
         where: { id: shipment.orderId },
-        data: { status: updateData.status }
+        data: {
+          status: orderStatus,
+          ...(customStatusCode ? { customStatusCode } : {})
+        }
       });
     }
 
@@ -689,6 +708,18 @@ async function settleDeliveryRun(companyId, runId, { treasuryAccountId, actualCa
           settledBy: userId || null
         }
       });
+
+      // Update corresponding orders paymentStatus to PAID
+      const deliveredOrderIds = run.shipments
+        .filter((s) => DELIVERED_STATUSES.includes(s.status) && s.orderId)
+        .map((s) => s.orderId);
+
+      if (deliveredOrderIds.length > 0) {
+        await tx.order.updateMany({
+          where: { id: { in: deliveredOrderIds } },
+          data: { paymentStatus: 'COMPLETED' }
+        });
+      }
     }
 
     // 3. Mark delivery run as SETTLED

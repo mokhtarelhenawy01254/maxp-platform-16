@@ -153,13 +153,13 @@ async function runE2EVerification() {
     });
     console.log(`   ✅ Test Order Created: ${testOrder.orderNumber}, Total COD: ${testOrder.total} EGP`);
 
-    // Create Delivery Run
+    // Create Delivery Run by orderNumber (testing orderNumber lookup resilience)
     const run = await courierService.createDeliveryRun(testCompanyAId, {
       courierId: courier.id,
-      orderIds: [testOrder.id],
+      orderIds: [testOrder.orderNumber],
       notes: 'مأمورية شرق القاهرة الصباحية'
     });
-    console.log(`   ✅ Delivery Run Created: RunNumber=${run.runNumber}, TotalShipments=${run.totalShipments}, ExpectedCOD=${run.totalCODExpected} EGP`);
+    console.log(`   ✅ Delivery Run Created by orderNumber: RunNumber=${run.runNumber}, TotalShipments=${run.totalShipments}, ExpectedCOD=${run.totalCODExpected} EGP`);
 
     // Verify courier status became ON_DUTY
     const updatedCourier = await courierService.getCourierById(testCompanyAId, courier.id);
@@ -177,6 +177,17 @@ async function runE2EVerification() {
 
     const targetShipment = runDetails.shipments[0];
     console.log(`   📦 Shipment in Run: ID=${targetShipment.id}, Status=${targetShipment.status}`);
+
+    // Test intermediate field DELAYED status handling (OrderStatus enum safety check)
+    console.log('   ⏳ Testing intermediate DELAYED field status...');
+    const delayedShipment = await courierService.updateDeliveryRunShipment(testCompanyAId, {
+      shipmentId: targetShipment.id,
+      status: 'DELAYED',
+      deliveryNotes: 'العميل طلب التأجيل إلى المساء لعدم تواجده بالمنزل'
+    });
+    console.log(`   ✅ Shipment Delayed Status: ${delayedShipment.status}`);
+    const orderWhileDelayed = await prisma.order.findUnique({ where: { id: testOrder.id } });
+    console.log(`   ✅ Order Status while delayed: ${orderWhileDelayed.status}, CustomCode: ${orderWhileDelayed.customStatusCode} (Safe OrderStatus enum compliance)`);
 
     // Courier records successful delivery and cash collection
     console.log('   🚚 Updating shipment status from mobile: DELIVERED, Collected: 750.00 EGP');
@@ -226,6 +237,13 @@ async function runE2EVerification() {
     console.log(`   💵 Updated Treasury Account Balance: ${updatedTreasury.balance} EGP (Expected: 750.00 EGP)`);
     if (Number(updatedTreasury.balance) !== 750.00) {
       throw new Error(`Treasury balance mismatch: expected 750, got ${updatedTreasury.balance}`);
+    }
+
+    // Verify Order PaymentStatus updated to COMPLETED
+    const orderAfterSettlement = await prisma.order.findUnique({ where: { id: testOrder.id } });
+    console.log(`   💳 Order Payment Status: ${orderAfterSettlement.paymentStatus} (Expected: COMPLETED)`);
+    if (orderAfterSettlement.paymentStatus !== 'COMPLETED') {
+      throw new Error(`Order payment status mismatch: expected COMPLETED, got ${orderAfterSettlement.paymentStatus}`);
     }
 
     // Verify Treasury Transaction record

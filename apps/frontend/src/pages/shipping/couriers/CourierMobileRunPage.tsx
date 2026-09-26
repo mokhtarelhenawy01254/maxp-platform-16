@@ -52,6 +52,16 @@ const CourierMobileRunPage: React.FC = () => {
     fetchRun();
   }, [fetchRun]);
 
+  const formatWhatsAppUrl = (phoneNumber: string, text?: string) => {
+    let clean = phoneNumber.replace(/[^0-9]/g, '');
+    if (clean.startsWith('00')) clean = clean.substring(2);
+    if (clean.startsWith('01') && clean.length === 11) {
+      clean = `2${clean}`;
+    }
+    const query = text ? `?text=${encodeURIComponent(text)}` : '';
+    return `https://wa.me/${clean}${query}`;
+  };
+
   const handleOpenAction = (shipment: DeliveryRunItem, type: 'DELIVERED' | 'DELAYED' | 'RETURNED') => {
     setSelectedShipment(shipment);
     setActionType(type);
@@ -62,12 +72,17 @@ const CourierMobileRunPage: React.FC = () => {
   const handleConfirmAction = async () => {
     if (!run || !selectedShipment || !actionType) return;
 
+    if (actionType !== 'DELIVERED' && !deliveryNotes?.trim()) {
+      toast.error('يرجى توضيح سبب التأجيل أو الرفض أولاً');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await courierService.updateShipmentStatus(run.id, selectedShipment.id, {
         status: actionType,
         collectedAmount: actionType === 'DELIVERED' ? collectedAmount : 0,
-        deliveryNotes: deliveryNotes || undefined
+        deliveryNotes: deliveryNotes?.trim() || undefined
       }, token);
 
       toast.success(
@@ -194,9 +209,19 @@ const CourierMobileRunPage: React.FC = () => {
                 {/* Header: Order & COD */}
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                   <div>
-                    <span className="font-mono font-bold text-xs text-slate-800 dark:text-slate-200">
-                      {s.order?.orderNumber}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-xs text-slate-800 dark:text-slate-200">
+                        {s.order?.orderNumber}
+                      </span>
+                      <button
+                        onClick={() => setViewingWaybillShipment(s)}
+                        title="عرض تفاصيل البوليصة"
+                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition"
+                      >
+                        <DocumentTextIcon className="w-3 h-3" />
+                        بوليصة
+                      </button>
+                    </div>
                     <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 mt-0.5">
                       {s.order?.customerName}
                     </h4>
@@ -238,7 +263,7 @@ const CourierMobileRunPage: React.FC = () => {
                   )}
                   {phone ? (
                     <a
-                      href={`https://wa.me/${phone.replace(/[^0-9]/g, '')}`}
+                      href={formatWhatsAppUrl(phone, `مرحباً ${s.order?.customerName || ''}، أنا كابتن ${run.courier?.name || ''} ومعي طلبك رقم ${s.order?.orderNumber || ''}`)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-1 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-400 active:scale-95"
@@ -369,6 +394,73 @@ const CourierMobileRunPage: React.FC = () => {
                 {submitting ? 'جاري الحفظ...' : 'تأكيد وحفظ'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Parcel Waybill Modal */}
+      {viewingWaybillShipment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">بوليصة شحن الكابتن</span>
+                <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                  {viewingWaybillShipment.order?.orderNumber}
+                </h3>
+              </div>
+              <button onClick={() => setViewingWaybillShipment(null)} className="text-slate-400 p-1">
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-1">
+                <div className="text-slate-400 text-[11px]">المستلم</div>
+                <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                  {viewingWaybillShipment.order?.customerName}
+                </div>
+                <div className="font-mono text-xs text-slate-500" dir="ltr">
+                  {viewingWaybillShipment.order?.customerPhone}
+                </div>
+                <div className="mt-1 text-slate-600 dark:text-slate-300">
+                  {viewingWaybillShipment.order?.customerAddress || viewingWaybillShipment.destinationAddress || 'العنوان غير مدون'}
+                </div>
+              </div>
+
+              {viewingWaybillShipment.order?.items && viewingWaybillShipment.order.items.length > 0 && (
+                <div>
+                  <div className="font-medium text-slate-400 text-[11px] mb-1">القطع المطلوب تسليمها:</div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-1">
+                    {viewingWaybillShipment.order.items.map((it) => (
+                      <div key={it.id} className="flex justify-between text-xs">
+                        <span>{it.quantity}x {it.name}</span>
+                        <span className="font-mono font-medium">{formatPrice(it.price * it.quantity)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3 rounded-xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 flex justify-between items-center">
+                <div>
+                  <div className="text-[10px] opacity-80">المبلغ المطلوب تحصيله (COD)</div>
+                  <div className="text-xl font-bold tabular-nums">
+                    {formatPrice(viewingWaybillShipment.order?.total || 0)}
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold border border-current px-2 py-0.5 rounded">
+                  كاش عند الاستلام
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setViewingWaybillShipment(null)}
+              className="w-full py-2.5 text-xs font-semibold border border-slate-200 dark:border-slate-700 rounded-xl"
+            >
+              إغلاق
+            </button>
           </div>
         </div>
       )}

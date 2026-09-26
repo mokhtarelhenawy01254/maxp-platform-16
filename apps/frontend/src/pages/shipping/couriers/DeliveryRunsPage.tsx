@@ -117,6 +117,11 @@ const DeliveryRunsPage: React.FC = () => {
     }
   };
 
+  // Ready-to-ship quick select orders
+  const [readyOrders, setReadyOrders] = useState<any[]>([]);
+  const [loadingReadyOrders, setLoadingReadyOrders] = useState(false);
+  const [selectedReadyOrderNumbers, setSelectedReadyOrderNumbers] = useState<string[]>([]);
+
   const handleShareWhatsApp = async (run: DeliveryRun) => {
     try {
       let token = run.mobileToken;
@@ -126,7 +131,9 @@ const DeliveryRunsPage: React.FC = () => {
       }
       const origin = window.location.origin;
       const url = `${origin}/courier/run/${run.id}${token ? `?token=${token}` : ''}`;
-      const phone = run.courier?.phone ? run.courier.phone.replace(/[^0-9]/g, '') : '';
+      let phone = run.courier?.phone ? run.courier.phone.replace(/[^0-9]/g, '') : '';
+      if (phone.startsWith('00')) phone = phone.substring(2);
+      if (phone.startsWith('01') && phone.length === 11) phone = `2${phone}`;
       const text = encodeURIComponent(
         `مرحباً يا كابتن ${run.courier?.name || ''}، تفضل رابط مأمورية التوصيل الخاصة بك:\n${url}`
       );
@@ -136,11 +143,41 @@ const DeliveryRunsPage: React.FC = () => {
     }
   };
 
+  const loadReadyOrders = async () => {
+    setLoadingReadyOrders(true);
+    try {
+      const res = await api.get('/orders', {
+        params: { status: 'READY_TO_SHIP', limit: 25 }
+      });
+      const list = Array.isArray(res?.data?.orders)
+        ? res.data.orders
+        : Array.isArray(res?.data?.data)
+        ? res.data.data
+        : [];
+      setReadyOrders(list);
+    } catch {
+      // ignore silently
+    } finally {
+      setLoadingReadyOrders(false);
+    }
+  };
+
   const handleOpenCreateRun = () => {
     loadCouriersForDispatch();
+    loadReadyOrders();
     setOrderNumbersInput('');
+    setSelectedReadyOrderNumbers([]);
     setDispatchNotes('');
     setIsCreateModalOpen(true);
+  };
+
+  const toggleReadyOrder = (orderNum: string) => {
+    setSelectedReadyOrderNumbers((prev) => {
+      const next = prev.includes(orderNum)
+        ? prev.filter((n) => n !== orderNum)
+        : [...prev, orderNum];
+      return next;
+    });
   };
 
   const handleConfirmCreateRun = async () => {
@@ -148,37 +185,24 @@ const DeliveryRunsPage: React.FC = () => {
       toast.error('يرجى اختيار مندوب التوصيل');
       return;
     }
-    const cleanNumbers = orderNumbersInput
+
+    const typedNumbers = orderNumbersInput
       .split(/[\n,]/)
       .map((s) => s.trim())
       .filter(Boolean);
 
-    if (cleanNumbers.length === 0) {
-      toast.error('يرجى إدخال أرقام الطلبات أو معرفات الشحنات المراد إسنادها');
+    const allOrderRefs = Array.from(new Set([...selectedReadyOrderNumbers, ...typedNumbers]));
+
+    if (allOrderRefs.length === 0) {
+      toast.error('يرجى اختيار أو إدخال أرقام الطلبات المراد إسنادها');
       return;
     }
 
     setSubmittingDispatch(true);
     try {
-      // Look up orders matching order numbers
-      const ordersRes = await api.get('/orders', {
-        params: { search: cleanNumbers.join(' ') }
-      });
-      const foundOrders = Array.isArray(ordersRes?.data?.orders)
-        ? ordersRes.data.orders
-        : Array.isArray(ordersRes?.data?.data)
-        ? ordersRes.data.data
-        : [];
-
-      const matchedIds = foundOrders
-        .filter((o: any) => cleanNumbers.includes(o.orderNumber) || cleanNumbers.includes(o.id))
-        .map((o: any) => o.id);
-
-      const finalOrderIds = matchedIds.length > 0 ? matchedIds : cleanNumbers;
-
       const res = await courierService.createDeliveryRun({
         courierId: selectedCourierId,
-        orderIds: finalOrderIds,
+        orderIds: allOrderRefs,
         notes: dispatchNotes || undefined
       });
 
@@ -666,13 +690,57 @@ const DeliveryRunsPage: React.FC = () => {
                 </select>
               </div>
 
+              {/* Quick Select from Ready Orders */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-medium">الطلبات الجاهزة للشحن (اختر للإسناد السريع):</label>
+                  {readyOrders.length > 0 && (
+                    <span className="text-[11px] text-slate-400">
+                      محدد: {selectedReadyOrderNumbers.length} من {readyOrders.length}
+                    </span>
+                  )}
+                </div>
+
+                {loadingReadyOrders ? (
+                  <div className="py-2 text-center text-xs text-slate-400 animate-pulse">
+                    جارٍ تحميل الطلبات الجاهزة...
+                  </div>
+                ) : readyOrders.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    {readyOrders.map((ord: any) => {
+                      const isSelected = selectedReadyOrderNumbers.includes(ord.orderNumber);
+                      return (
+                        <button
+                          key={ord.id}
+                          type="button"
+                          onClick={() => toggleReadyOrder(ord.orderNumber)}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition active:scale-95 ${
+                            isSelected
+                              ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
+                              : 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-slate-400'
+                          }`}
+                        >
+                          <span className="font-mono font-semibold">{ord.orderNumber}</span>
+                          <span className="text-[11px] opacity-75 truncate max-w-[100px]">{ord.customerName}</span>
+                          <span className="font-bold tabular-nums text-[11px]">({formatPrice(ord.total || 0)})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    لا توجد طلبات معلقة بحالة READY_TO_SHIP حالياً. يمكنك كتابة أرقام الطلبات يدوياً بالأسفل.
+                  </p>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-medium mb-1">
-                  أرقام الطلبات أو معرفات الشحنات (مفصولة بفاصلة أو سطر جديد) *
+                  أو كتابة / لصق أرقام طلبات يدوياً (مفصولة بفاصلة أو سطر جديد):
                 </label>
                 <textarea
-                  rows={4}
-                  placeholder="مثال:&#10;ORD-1001&#10;ORD-1002&#10;ORD-1003"
+                  rows={3}
+                  placeholder="مثال:&#10;ORD-1001&#10;ORD-1002"
                   value={orderNumbersInput}
                   onChange={(e) => setOrderNumbersInput(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs focus:outline-none"
