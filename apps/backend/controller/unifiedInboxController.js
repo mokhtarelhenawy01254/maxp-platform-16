@@ -720,6 +720,52 @@ const sendUnifiedMessage = async (req, res) => {
                 message = await WhatsAppMessageHandler.sendDocument(sessionId, jid, mediaUrl, { caption: content || '' });
             }
 
+            // 🛡️ Auto-pause AI on WhatsApp conversation due to human staff reply
+            try {
+                const contact = await prisma.whatsAppContact.findFirst({
+                    where: { sessionId, jid }
+                });
+                if (contact?.customerId) {
+                    const waConvs = await prisma.conversation.findMany({
+                        where: { customerId: contact.customerId, channel: 'WHATSAPP', companyId }
+                    });
+                    const socketService = require('../services/socketService');
+                    const io = socketService.getIO();
+                    for (const waConv of waConvs) {
+                        let meta = {};
+                        try {
+                            meta = typeof waConv.metadata === 'string' ? JSON.parse(waConv.metadata) : (waConv.metadata || {});
+                        } catch (e) { meta = {}; }
+
+                        const pauseHours = 2;
+                        meta.aiPausedUntil = new Date(Date.now() + pauseHours * 60 * 60 * 1000).toISOString();
+                        meta.lastHumanReplyAt = new Date().toISOString();
+                        meta.lastHumanSenderId = userId;
+                        meta.lastHumanSenderName = req.user?.firstName || 'موظف';
+
+                        await prisma.conversation.update({
+                            where: { id: waConv.id },
+                            data: {
+                                aiEnabled: false,
+                                metadata: JSON.stringify(meta),
+                                updatedAt: new Date()
+                            }
+                        });
+
+                        if (io) {
+                            io.to(`company_${companyId}`).emit('conversation:ai_status_changed', {
+                                conversationId: waConv.id,
+                                channel: 'WHATSAPP',
+                                aiEnabled: false,
+                                aiPausedUntil: meta.aiPausedUntil
+                            });
+                        }
+                    }
+                }
+            } catch (waPauseErr) {
+                console.warn('⚠️ [UNIFIED] Error auto-pausing AI for WhatsApp:', waPauseErr.message);
+            }
+
             return res.json({
                 success: true,
                 data: {
@@ -769,16 +815,42 @@ const sendUnifiedMessage = async (req, res) => {
             data: messageData
         });
 
-        // Update conversation
+        // Update conversation and auto-pause AI on human staff manual reply
+        let convMeta = {};
+        try {
+            convMeta = typeof conversation.metadata === 'string' ? JSON.parse(conversation.metadata) : (conversation.metadata || {});
+        } catch (e) { convMeta = {}; }
+
+        const pauseHours = 2;
+        convMeta.aiPausedUntil = new Date(Date.now() + pauseHours * 60 * 60 * 1000).toISOString();
+        convMeta.lastHumanReplyAt = new Date().toISOString();
+        convMeta.lastHumanSenderId = userId;
+        convMeta.lastHumanSenderName = req.user?.firstName || 'موظف';
+
         await prisma.conversation.update({
             where: { id },
             data: {
+                aiEnabled: false,
+                metadata: JSON.stringify(convMeta),
                 lastMessageAt: new Date(),
                 lastMessagePreview: !isMedia ? content.substring(0, 100) : (type.toLowerCase() === 'image' ? '📷 صورة' : `📎 ${mediaFileName || 'ملف'}`),
                 lastMessageIsFromCustomer: false,
                 updatedAt: new Date()
             }
         });
+
+        try {
+            const socketService = require('../services/socketService');
+            const io = socketService.getIO();
+            if (io) {
+                io.to(`company_${companyId}`).emit('conversation:ai_status_changed', {
+                    conversationId: id,
+                    channel: conversation.channel,
+                    aiEnabled: false,
+                    aiPausedUntil: convMeta.aiPausedUntil
+                });
+            }
+        } catch (sockErr) {}
 
         // Route to platform-specific API for actual delivery
         if (conversation.channel === 'FACEBOOK') {
@@ -1446,10 +1518,35 @@ const updateUnifiedConversation = async (req, res) => {
             }
 
             if (aiEnabled !== undefined && contact.customerId) {
-                await prisma.conversation.updateMany({
-                    where: { customerId: contact.customerId, channel: 'WHATSAPP', companyId },
-                    data: { aiEnabled: Boolean(aiEnabled) }
+                const waConvs = await prisma.conversation.findMany({
+                    where: { customerId: contact.customerId, channel: 'WHATSAPP', companyId }
                 });
+                for (const waConv of waConvs) {
+                    let meta = {};
+                    try { meta = typeof waConv.metadata === 'string' ? JSON.parse(waConv.metadata) : (waConv.metadata || {}); } catch (e) {}
+                    if (aiEnabled === true) {
+                        delete meta.aiPausedUntil;
+                    }
+                    await prisma.conversation.update({
+                        where: { id: waConv.id },
+                        data: {
+                            aiEnabled: Boolean(aiEnabled),
+                            metadata: JSON.stringify(meta),
+                            updatedAt: new Date()
+                        }
+                    });
+                }
+                try {
+                    const socketService = require('../services/socketService');
+                    const io = socketService.getIO();
+                    if (io) {
+                        io.to(`company_${companyId}`).emit('conversation:ai_status_changed', {
+                            conversationId: id,
+                            channel: 'WHATSAPP',
+                            aiEnabled: Boolean(aiEnabled)
+                        });
+                    }
+                } catch (e) {}
             }
 
             return res.json({ success: true, data: { id, status: status || 'active', aiEnabled } });
@@ -1468,13 +1565,35 @@ const updateUnifiedConversation = async (req, res) => {
         if (status) updateData.status = status.toUpperCase();
         if (assignedTo !== undefined) updateData.assignedTo = assignedTo;
         if (isPinned !== undefined) updateData.isPinned = isPinned;
-        if (aiEnabled !== undefined) updateData.aiEnabled = Boolean(aiEnabled);
+        if (aiEnabled !== undefined) {
+            updateData.aiEnabled = Boolean(aiEnabled);
+            if (aiEnabled === true) {
+                let meta = {};
+                try { meta = typeof conversation.metadata === 'string' ? JSON.parse(conversation.metadata) : (conversation.metadata || {}); } catch (e) {}
+                delete meta.aiPausedUntil;
+                updateData.metadata = JSON.stringify(meta);
+            }
+        }
         updateData.updatedAt = new Date();
 
         const updated = await prisma.conversation.update({
             where: { id },
             data: updateData
         });
+
+        if (aiEnabled !== undefined) {
+            try {
+                const socketService = require('../services/socketService');
+                const io = socketService.getIO();
+                if (io) {
+                    io.to(`company_${companyId}`).emit('conversation:ai_status_changed', {
+                        conversationId: updated.id,
+                        channel: updated.channel,
+                        aiEnabled: Boolean(aiEnabled)
+                    });
+                }
+            } catch (e) {}
+        }
 
         res.json({
             success: true,

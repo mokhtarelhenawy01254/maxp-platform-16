@@ -1095,11 +1095,24 @@ async function handlePageReply(webhookEvent, pageId = null) {
           return await prisma.conversation.update({
             where: { id: conversation.id },
             data: {
+              aiEnabled: false,
               metadata: JSON.stringify(convMetadata)
             }
           });
         }, 3);
         console.log(`🛡️ [HUMAN-HANDOVER] AI agent paused for ${pauseDurationHours}h on conversation ${conversation.id} due to staff reply`);
+
+        if (facebookPage?.companyId) {
+          const io = socketService.getIO();
+          if (io) {
+            io.to(`company_${facebookPage.companyId}`).emit('conversation:ai_status_changed', {
+              conversationId: conversation.id,
+              channel: 'FACEBOOK',
+              aiEnabled: false,
+              aiPausedUntil: convMetadata.aiPausedUntil
+            });
+          }
+        }
       } catch (e) {
         console.warn(`⚠️ [HUMAN-HANDOVER] Failed to update conversation pause metadata:`, e.message);
       }

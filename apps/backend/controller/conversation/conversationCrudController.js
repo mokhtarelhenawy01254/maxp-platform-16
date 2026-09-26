@@ -559,14 +559,19 @@ const updateConversation = async (req, res) => {
             updateData.aiEnabled = Boolean(aiEnabled);
         }
 
-        // Update metadata if tab is provided
-        if (tab !== undefined) {
+        // Update metadata if tab is provided or aiEnabled is toggled
+        if (tab !== undefined || aiEnabled !== undefined) {
             let metadata = {};
             try {
                 metadata = conversation.metadata ? JSON.parse(conversation.metadata) : {};
             } catch (e) { }
 
-            metadata.tab = tab;
+            if (tab !== undefined) {
+                metadata.tab = tab;
+            }
+            if (aiEnabled === true) {
+                delete metadata.aiPausedUntil;
+            }
             updateData.metadata = JSON.stringify(metadata);
         }
 
@@ -597,6 +602,19 @@ const updateConversation = async (req, res) => {
                 }
             }
         });
+
+        if (aiEnabled !== undefined) {
+            try {
+                const io = socketService.getIO();
+                if (io) {
+                    io.to(`company_${companyId}`).emit('conversation:ai_status_changed', {
+                        conversationId: updated.id,
+                        channel: updated.channel,
+                        aiEnabled: Boolean(aiEnabled)
+                    });
+                }
+            } catch (e) {}
+        }
 
         // Helper to parse metadata
         let meta = {};
