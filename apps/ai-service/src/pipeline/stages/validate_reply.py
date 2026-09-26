@@ -85,6 +85,17 @@ _SCHEDULING_FALLBACK = (
     "لكن تقدر تطلب مني الملخص ده في أي وقت تحتاجه أو تضبط تذكير تشغيلي."
 )
 
+_DATA_AUDIT_PATTERNS = [
+    re.compile(r"راجعت\s+(?:البيانات|التقارير|المبيعات|الأرقام|الحسابات)(?:\s+بالكامل)?", re.IGNORECASE),
+    re.compile(r"فحصت\s+(?:البيانات|التقارير|المبيعات|الأرقام|السجلات|السيستم)", re.IGNORECASE),
+    re.compile(r"بناءً\s+على\s+فحص(?:ي)?\s+(?:للبيانات|للتقارير|للمبيعات|للسجلات)", re.IGNORECASE),
+]
+
+_DATA_AUDIT_FALLBACK = (
+    "محتاج أفحص بيانات وتقارير المتجر بالأدوات المتاحة الأول عشان أقدر أديك صورة دقيقة. "
+    "تحب أفحص المبيعات أو المنتجات دلوقتي؟"
+)
+
 
 def _enforce_honesty_gate(text: str, executed_tools: list[dict[str, Any]]) -> str:
     """Enforce grounding honesty (BUG-4 / OWASP LLM06 / cases.json H1 & H2):
@@ -92,6 +103,8 @@ def _enforce_honesty_gate(text: str, executed_tools: list[dict[str, Any]]) -> st
        are replaced with an explicit refusal explaining that tools require code.
     2. Scheduling promises without a successful scheduler_create_job tool call
        are replaced with an explicit refusal without making future promises.
+    3. Claims of having audited store data/reports when zero tools were executed
+       are replaced with an honest prompt asking to inspect data first.
     """
     if not text:
         return text
@@ -121,6 +134,18 @@ def _enforce_honesty_gate(text: str, executed_tools: list[dict[str, Any]]) -> st
         if not has_real_schedule:
             logger.warning("honesty_gate.blocked_unsupported_scheduling_claim", text=text[:100])
             return _SCHEDULING_FALLBACK
+
+    # Check data audit claims without tools executed
+    has_data_claim = any(p.search(text) for p in _DATA_AUDIT_PATTERNS)
+    if has_data_claim:
+        has_real_data_tool = any(
+            isinstance(item, dict)
+            and item.get("status") == "success"
+            for item in (executed_tools or [])
+        )
+        if not has_real_data_tool:
+            logger.warning("honesty_gate.blocked_unsupported_data_audit_claim", text=text[:100])
+            return _DATA_AUDIT_FALLBACK
 
     return text
 
@@ -292,10 +317,35 @@ async def _raw_llm_call_with_tools(ctx: PipelineContext, messages: list[dict]) -
 
 
 def _strip_internal_tags(text: str) -> str:
+    # 1. Thought & internal reasoning tags (including DeepSeek <think> & Claude <antThinking>)
     text = re.sub(r"<thought\b[^>]*>.*?</thought>", "", text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r"</?thought\b[^>]*>", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"<think\b[^>]*>.*?</think>", "", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"</?think\b[^>]*>", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"<antThinking\b[^>]*>.*?</antThinking>", "", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"</?antThinking\b[^>]*>", "", text, flags=re.IGNORECASE)
     text = re.sub(r"<function\b[^>]*>.*?</function>", "", text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r"</?function\b[^>]*>", "", text, flags=re.IGNORECASE)
+
+    # 2. Internal scaffolding / approval directive leakage
+    text = re.sub(
+        r"الإجراء\s+حساس\s+واترفع\s+للاعتماد(?:\s*[-—]\s*مفيش\s+أي\s+خطأ\s+حصل)?(?:\.|\s)*",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"ردّ?\s+على\s+التاجر\s+بالشكل\s+ده\s+بالظبط\s*[:：]?\s*",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"ممنوع\s+منعًا\s+باتًا\s*[:：].*?(?:\n|$)",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
     return text.strip()
 
 
@@ -458,6 +508,95 @@ async def _log_review(
         logger.warning("self_review.log_failed", error=str(e))
 
 
+JUDGE_PROFILES: dict[str, dict[str, str]] = {
+    "merchant_ops": {
+        "title": "إدارة وعمليات المتاجر والشركات (Merchant Ops)",
+        "harmful": (
+            "- اختراع أسعار منتجات أو خصومات أو هوامش ربح غير مطابقة لبيانات الأدوات\n"
+            "- تأكيد تعديل أسعار أو تغيير كميات مخزون أو إنشاء كوبونات دون استدعاء الأدوات المختصة\n"
+            "- ادعاء فحص تقارير مبيعات أو تحليلات أداء دون وجود دليل من الأدوات\n"
+            "- تأكيد شحن أو إلغاء طلبات تجارية لم تتم فعلياً"
+        ),
+        "permitted": (
+            "- تقديم مقترحات تشغيلية وحلول تسعير وتخفيض للمراجعة والاعتماد\n"
+            "- تلخيص مؤشرات الأداء وتقديم نصائح إدارة المخزون والمبيعات\n"
+            "- الترحيب المهني والتواصل كمدير عمليات متجر محترف وحاسم"
+        ),
+    },
+    "sales": {
+        "title": "المبيعات وإغلاق الصفقات (Sales & Conversion)",
+        "harmful": (
+            "- اختراع أسعار أو خصومات خاصة غير موجودة في بيانات الأدوات\n"
+            "- تقديم وعود بمواصفات أو مميزات غير موجودة في بيانات المنتجات\n"
+            "- تأكيد طلب أو حجز أو شحن منتج لم يتم إنشاؤه عبر الأدوات"
+        ),
+        "permitted": (
+            "- الإقناع الذكي وإبراز مزايا المنتج لحث العميل على الشراء\n"
+            "- اقتراح منتجات أو مقاسات أو ألوان بديلة متوفرة في المتجر\n"
+            "- الترحيب اللطيف، متابعة اهتمام العميل، وإظهار الاهتمام الشخصي"
+        ),
+    },
+    "media_buyer": {
+        "title": "إعلانات المنصات والتسويق الرقمي (Media Buyer)",
+        "harmful": (
+            "- اختراع أرقام ميزانيات أو نسب عائد إعلاني (ROAS) أو تكلفة نقرة وهمية\n"
+            "- ادعاء إطلاق أو تعديل حملات إعلانية دون الرجوع للأدوات المختصة"
+        ),
+        "permitted": (
+            "- شرح الاستراتيجيات الإعلانية والزوايا التسويقية واقتراح تحسينات للحملات\n"
+            "- صياغة نصوص إعلانية جذابة ومقترحات استهداف جماهير جديدة"
+        ),
+    },
+    "clinic": {
+        "title": "العيادات والمراكز الطبية (Clinic & Healthcare)",
+        "harmful": (
+            "- اختراع أسعار كشوفات أو خدمات غير موجودة في بيانات الأدوات\n"
+            "- ذكر أسماء أطباء أو تخصصات أو فروع وهمية\n"
+            "- تأكيد حجز كشف أو موعد طبي لم يتم فعلياً"
+        ),
+        "permitted": (
+            "- اقتراح الدفع نقداً والحصول على فاتورة لتقديمها لشركة التأمين\n"
+            "- شرح مواعيد العمل وإجراءات الحجز العامة وطرق الوصول للعيادة\n"
+            "- التعاطف مع المريض والترحيب اللطيف المريح"
+        ),
+    },
+    "support": {
+        "title": "خدمة العملاء والدعم الفني (Customer Support)",
+        "harmful": (
+            "- وعود باسترداد أموال أو تعويضات دون مراجعة حالة الطلب وقوانين المتجر\n"
+            "- ذكر أرقام تتبع شحنات أو حالات تسليم وهمية\n"
+            "- اختراع سياسات استبدال أو استرجاع مخالفة للكتيب وقوانين التاجر"
+        ),
+        "permitted": (
+            "- التعاطف الصادق مع مشكلة العميل والاعتذار عن أي تأخير أو خطأ\n"
+            "- شرح سياسة الاستبدال والاسترجاع وخطوات المتابعة بأسلوب بشري ودود\n"
+            "- طمأنة العميل والوعد بالمتابعة السريعة لحل مشكلته"
+        ),
+    },
+}
+
+
+def _resolve_judge_profile(ctx: PipelineContext) -> tuple[str, dict[str, str]]:
+    """Resolve role-specific judge profile from Role Registry."""
+    try:
+        from src.agents.role_registry import get_role
+
+        agent = ctx.agent
+        role_hint = (
+            getattr(agent, "role", None)
+            or getattr(agent, "template_slug", None)
+            or getattr(agent, "slug", None)
+            or getattr(getattr(agent, "config", None), "role", None)
+            or "STORE_MANAGER"
+        )
+        spec = get_role(str(role_hint))
+        profile_key = spec.judge_profile if spec else "merchant_ops"
+    except Exception:
+        profile_key = "merchant_ops"
+
+    return profile_key, JUDGE_PROFILES.get(profile_key, JUDGE_PROFILES["merchant_ops"])
+
+
 async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
     """LLM-as-Judge: review reply quality, merchant rules, accuracy, tone.
     Returns None if approved, or a corrected reply string.
@@ -485,6 +624,7 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
 
     # 1. Agent identity & instructions
     agent_identity = _extract_agent_identity(ctx)
+    profile_key, profile_data = _resolve_judge_profile(ctx)
 
     # 2. Conversation history
     conversation_context = _extract_conversation_context(ctx, max_turns=5)
@@ -520,6 +660,16 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
         "═══════════════════════════════════════\n"
         f"{agent_identity}\n\n"
         "═══════════════════════════════════════\n"
+        f"🎯 معايير تحكيم التخصص ({profile_data['title']}):\n"
+        "═══════════════════════════════════════\n\n"
+        "🔴 تخيلات ضارة (يجب الرفض والتصحيح):\n"
+        "═══════════════════════════════════════\n"
+        f"{profile_data['harmful']}\n\n"
+        "🟢 بداهة خدمية وبشرية (مسموح بها ويجب الحفاظ عليها):\n"
+        "═══════════════════════════════════════\n"
+        f"{profile_data['permitted']}\n"
+        "⚠️ هذه ليست هلوسة! هذه مبادرات احترافية طبيعية تلائم تخصص هذا الوكيل.\n\n"
+        "═══════════════════════════════════════\n"
         "💬 سياق المحادثة (آخر الرسائل):\n"
         "═══════════════════════════════════════\n"
         f"{conversation_context}\n\n"
@@ -531,23 +681,6 @@ async def _self_review(ctx: PipelineContext, reply: str) -> str | None:
         "⚖️ قوانين التاجر النشطة:\n"
         "═══════════════════════════════════════\n"
         f"{rules_text}\n\n"
-        "═══════════════════════════════════════\n"
-        "🔴 تخيلات ضارة (يجب الرفض والتصحيح):\n"
-        "═══════════════════════════════════════\n"
-        "- اختراع أسعار أو خصومات أو عروض غير موجودة في بيانات الأدوات\n"
-        "- ذكر فروع أو عناوين أو أرقام تليفونات وهمية\n"
-        "- ذكر خدمات أو منتجات لا يقدمها المركز/الشركة\n"
-        "- ذكر أسماء أطباء أو موظفين غير موجودين\n"
-        "- تأكيد حجز أو طلب لم يتم فعلياً\n\n"
-        "🟢 بداهة خدمية بشرية (مسموح بها ويجب الحفاظ عليها):\n"
-        "═══════════════════════════════════════\n"
-        "- اقتراح الدفع نقداً والحصول على فاتورة لتقديمها لشركة التأمين (بداهة خدمية عامة)\n"
-        "- الترحيب اللطيف والاعتذار عن التأخير أو الإزعاج\n"
-        "- اقتراح بدائل منطقية عامة (مثل: 'يمكنك زيارتنا في أي وقت خلال ساعات العمل')\n"
-        "- التعاطف مع العميل وإظهار الاهتمام الشخصي\n"
-        "- شرح إجراءات عامة معروفة (مثل: آلية التأمين، طريقة الحجز)\n"
-        "- استخدام تعبيرات ودية طبيعية تضيف دفئاً بشرياً\n"
-        "⚠️ هذه ليست هلوسة! هذه مبادرات يفعلها أي موظف استقبال بشري محترف.\n\n"
         "═══════════════════════════════════════\n"
         "معايير المراجعة (راجع كل نقطة):\n"
         "═══════════════════════════════════════\n"

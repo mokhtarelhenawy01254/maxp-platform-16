@@ -477,3 +477,94 @@ class TestCodeQuality:
             f"Guardrails module should exist at {guardrails_path.resolve()}"
         assert (guardrails_path / "input.py").exists()
         assert (guardrails_path / "output.py").exists()
+
+
+# =============================================================================
+# Section 9: Judge Profiles & Honesty Gate Tests
+# =============================================================================
+
+class TestJudgeProfiles:
+    """اختبار بروفايلات المدقق حسب الدور (Role-Specific Judge Profiles)"""
+
+    def test_all_judge_profiles_defined(self):
+        from src.pipeline.stages.validate_reply import JUDGE_PROFILES
+
+        required_profiles = {"merchant_ops", "sales", "media_buyer", "clinic", "support"}
+        assert required_profiles.issubset(set(JUDGE_PROFILES.keys()))
+
+        for key in required_profiles:
+            profile = JUDGE_PROFILES[key]
+            assert "title" in profile and len(profile["title"]) > 0
+            assert "harmful" in profile and len(profile["harmful"]) > 0
+            assert "permitted" in profile and len(profile["permitted"]) > 0
+
+    def test_resolve_judge_profile_for_roles(self):
+        from src.pipeline.stages.validate_reply import _resolve_judge_profile
+
+        role_expectations = {
+            "STORE_MANAGER": "merchant_ops",
+            "MEDIA_BUYER": "media_buyer",
+            "SALES": "sales",
+            "MEDICAL_CENTER": "clinic",
+            "SUPPORT": "support",
+        }
+
+        for role_name, expected_profile in role_expectations.items():
+            ctx = PipelineContext(message="test", thread_id="t", company_id="c", customer_id="u")
+            mock_agent = MagicMock()
+            mock_agent.role = role_name
+            mock_agent.template_slug = None
+            mock_agent.slug = None
+            ctx.agent = mock_agent
+
+            profile_key, profile_data = _resolve_judge_profile(ctx)
+            assert profile_key == expected_profile
+            assert profile_data["title"] is not None
+
+    def test_resolve_judge_profile_fallback(self):
+        from src.pipeline.stages.validate_reply import _resolve_judge_profile
+
+        ctx = PipelineContext(message="test", thread_id="t", company_id="c", customer_id="u")
+        ctx.agent = None
+
+        profile_key, profile_data = _resolve_judge_profile(ctx)
+        assert profile_key == "merchant_ops"
+
+
+class TestHonestyAndLeakage:
+    """اختبار بوابة الصدق ومكافحة تسريب التعليمات الداخلية"""
+
+    def test_data_audit_blocked_without_executed_tools(self):
+        from src.pipeline.stages.validate_reply import _enforce_honesty_gate, _DATA_AUDIT_FALLBACK
+
+        claimed = "راجعت البيانات بالكامل وجميع المؤشرات ممتازة"
+        result = _enforce_honesty_gate(claimed, executed_tools=[])
+        assert result == _DATA_AUDIT_FALLBACK
+
+    def test_data_audit_allowed_when_tools_succeeded(self):
+        from src.pipeline.stages.validate_reply import _enforce_honesty_gate
+
+        claimed = "راجعت البيانات بالكامل وجميع المؤشرات ممتازة"
+        tools = [{"tool": "report_analytics", "status": "success", "result": {"sales": 1000}}]
+        result = _enforce_honesty_gate(claimed, executed_tools=tools)
+        assert result == claimed
+
+    def test_strip_internal_tags_removes_think_and_scaffolding(self):
+        from src.pipeline.stages.validate_reply import _strip_internal_tags
+
+        raw = (
+            "<think>Analyzing user request...</think>"
+            "الإجراء حساس واترفع للاعتماد — مفيش أي خطأ حصل. "
+            "ردّ على التاجر بالشكل ده بالظبط: "
+            "التعديل جاهز ومستني موافقتك. "
+            "ممنوع منعًا باتًا: ادعاء أن الإجراء اتنفذ"
+        )
+        cleaned = _strip_internal_tags(raw)
+        assert "<think>" not in cleaned
+        assert "</think>" not in cleaned
+        assert "Analyzing user request" not in cleaned
+        assert "الإجراء حساس واترفع للاعتماد" not in cleaned
+        assert "ردّ على التاجر بالشكل ده بالظبط" not in cleaned
+        assert "ممنوع منعًا باتًا" not in cleaned
+        assert "التعديل جاهز ومستني موافقتك" in cleaned
+
