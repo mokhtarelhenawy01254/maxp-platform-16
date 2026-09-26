@@ -161,6 +161,8 @@ class ToolGateway:
             skill_requires_approval
             or getattr(tool, "approval_mode", "never_require") == "always_require"
         )
+        if tool.name == "manage_agent_skill" and (input_data or {}).get("action") == "get":
+            requires_approval = False
 
         allowed_tool_names = canonical_tool_set(allowed_tools)
         if allowed_tools is not None and agent_role and tool.name not in allowed_tool_names:
@@ -174,7 +176,8 @@ class ToolGateway:
                 "error": f"Agent role '{agent_role}' is not permitted to use '{tool_name}'",
             }
 
-        if requires_approval and not approval_granted:
+        is_approved = approval_granted or bool((input_data or {}).get("approved"))
+        if requires_approval and not is_approved:
             self._log.info(
                 "tool requires approval, routing to draft",
                 tool_name=tool_name,

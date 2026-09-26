@@ -232,6 +232,8 @@ class ApprovalService:
         try:
             model_data = {k.replace("-", "_"): v for k, v in approval.action_args.items()}
             model_data["company_id"] = approval.company_id
+            if hasattr(tool, "input_model") and "approved" in getattr(tool.input_model, "model_fields", {}):
+                model_data["approved"] = True
             tool_input = tool.input_model(**model_data)
             result = await tool.func(tool_input)
 

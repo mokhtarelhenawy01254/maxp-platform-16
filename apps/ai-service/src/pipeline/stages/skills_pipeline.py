@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from decimal import Decimal
 from typing import Any
 
@@ -43,11 +44,15 @@ async def _execute_one_tool(ctx: PipelineContext, registry: Any, tc: dict) -> di
     # execute directly in the chat pipeline. Return the structured awaiting
     # payload — the chat endpoint turns it into an approval draft the merchant
     # confirms (execution happens only via approval_service._execute_action).
-    approval_mode = getattr(tool, "approval_mode", "never_require")
+    from src.tools.registry import WRITE_TOOL_NAMES
+    is_write_approval = (
+        func_name in WRITE_TOOL_NAMES
+        or getattr(tool, "approval_mode", "never_require") == "always_require"
+    )
     if func_name == "manage_agent_skill" and arguments.get("action") == "get":
-        approval_mode = "never_require"
+        is_write_approval = False
 
-    if approval_mode == "always_require":
+    if is_write_approval and not arguments.get("approved"):
         logger.info("tool_blocked_for_approval", name=func_name, company_id=ctx.company_id)
         if func_name in ("product_update_price", "product.updatePrice"):
             pid = arguments.get("product_id") or arguments.get("productId")

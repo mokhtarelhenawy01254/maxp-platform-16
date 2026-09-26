@@ -440,7 +440,7 @@ class AutonomousSkillLearner:
                     channels=["facebook", "whatsapp", "dashboard"],
                     priority=10,  # High priority to take precedence over generic instructions
                     enabled=True,
-                    requires_human_approval=False,
+                    requires_human_approval=True,
                     max_tool_count=5,
                     skill_metadata={
                         "source": "AUTONOMOUS_LEARNED",

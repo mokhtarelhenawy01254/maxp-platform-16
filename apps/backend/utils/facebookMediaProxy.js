@@ -27,7 +27,13 @@ const isFacebookProtectedMediaUrl = (value) => {
     }
 };
 
-const buildProxyImageUrl = ({ url, messageId, customerId }) => {
+const buildProxyImageUrl = ({
+    url,
+    messageId,
+    customerId,
+    attachmentIndex,
+    attachmentId
+}) => {
     const params = new URLSearchParams();
 
     if (typeof url === 'string' && url.trim()) {
@@ -42,6 +48,14 @@ const buildProxyImageUrl = ({ url, messageId, customerId }) => {
         params.set('customerId', customerId);
     }
 
+    if (typeof attachmentIndex === 'number' || (typeof attachmentIndex === 'string' && attachmentIndex !== '')) {
+        params.set('attachmentIndex', String(attachmentIndex));
+    }
+
+    if (typeof attachmentId === 'string' && attachmentId.trim()) {
+        params.set('attachmentId', attachmentId.trim());
+    }
+
     const queryString = params.toString();
     return queryString ? `${PROXY_IMAGE_ROUTE}?${queryString}` : PROXY_IMAGE_ROUTE;
 };
@@ -54,7 +68,9 @@ const proxyFacebookMediaUrl = (value, options = {}) => {
     return buildProxyImageUrl({
         url: value,
         messageId: options.messageId,
-        customerId: options.customerId
+        customerId: options.customerId,
+        attachmentIndex: options.attachmentIndex,
+        attachmentId: options.attachmentId
     });
 };
 
@@ -78,7 +94,19 @@ const proxyFacebookMediaDeep = (value, options = {}) => {
     }
 
     if (Array.isArray(value)) {
-        return value.map((item) => proxyFacebookMediaDeep(item, options));
+        return value.map((item, index) => {
+            const itemAttachmentIndex = (item && typeof item === 'object' && item.attachmentIndex !== undefined)
+                ? item.attachmentIndex
+                : index;
+            const itemAttachmentId = (item && typeof item === 'object')
+                ? (item.id || item.attachmentId || options.attachmentId)
+                : options.attachmentId;
+            return proxyFacebookMediaDeep(item, {
+                ...options,
+                attachmentIndex: itemAttachmentIndex,
+                attachmentId: itemAttachmentId
+            });
+        });
     }
 
     if (isPlainObject(value)) {

@@ -19,6 +19,7 @@ class RecordLearnedRuleInput(BaseModel):
     rule_instructions: str = Field(description="Actionable operational instruction to remember and apply in future turns or tasks")
     supporting_evidence: dict[str, Any] | None = Field(default=None, description="Optional metrics, customer dialogue snippet, or context that proved this rule works")
     trigger_keywords: str | None = Field(default=None, description="Optional comma-separated keywords that should trigger this rule")
+    approved: bool = Field(default=False, description="Whether merchant approval was granted")
 
 
 async def record_learned_rule(input_data: RecordLearnedRuleInput) -> dict[str, Any]:
@@ -27,8 +28,39 @@ async def record_learned_rule(input_data: RecordLearnedRuleInput) -> dict[str, A
     if not company_id:
         return {"success": False, "error": "company_id is required"}
 
-    from src.skills.learner import autonomous_skill_learner
     from src.tools.repositories.audit_repository import log_agent_audit_event
+
+    if not input_data.approved:
+        if company_id:
+            await log_agent_audit_event(
+                company_id=company_id,
+                action="LEARNED_RULE_REQUESTED",
+                description=f"طلب تسجيل وتثبيت قاعدة تشغيلية في الذاكرة ينتظر موافقة التاجر: '{input_data.rule_title}' (فئة: {input_data.rule_category})",
+                category="AI_AGENT",
+                severity="LOW",
+                metadata={
+                    "rule_title": input_data.rule_title,
+                    "category": input_data.rule_category,
+                    "instructions": input_data.rule_instructions,
+                },
+            )
+        return {
+            "status": "awaiting_approval",
+            "action_type": "record_learned_rule",
+            "action_args": {
+                "company_id": company_id,
+                "rule_category": input_data.rule_category,
+                "rule_title": input_data.rule_title,
+                "rule_instructions": input_data.rule_instructions,
+                "supporting_evidence": input_data.supporting_evidence,
+                "trigger_keywords": input_data.trigger_keywords,
+                "approved": True,
+            },
+            "company_id": company_id,
+            "message": f"طلب حفظ وتثبيت القاعدة «{input_data.rule_title}» في كتيب استراتيجيات المتجر مستني اعتمادك. اضغط اعتماد لتطبيقها.",
+        }
+
+    from src.skills.learner import autonomous_skill_learner
 
     res = await autonomous_skill_learner.record_universal_rule(
         company_id=company_id,
@@ -53,6 +85,8 @@ async def record_learned_rule(input_data: RecordLearnedRuleInput) -> dict[str, A
 
 
 def _format_record_learned_rule(result: dict) -> str:
+    if result.get("status") == "awaiting_approval":
+        return result.get("message", "طلب حفظ القاعدة بانتظار الاعتماد.")
     if not result.get("success"):
         return f"تعذر تسجيل القاعدة: {result.get('error', 'خطأ غير معروف')}"
     return f"تم حفظ وتثبيت القاعدة '{result.get('rule_title', '')}' في كتيب استراتيجيات المتجر بنجاح."
@@ -71,7 +105,7 @@ class ManageAgentSkillInput(BaseModel):
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
     action: str = Field(
         default="create",
-        description="Action: 'create' a new skill, 'update' an existing skill, or 'get' skill details",
+        description="Action: 'create' a new skill, 'update' an existing skill, 'delete' or 'revert' a skill, or 'get' skill details",
     )
     skill_id: str | None = Field(
         default=None,
@@ -105,10 +139,11 @@ class ManageAgentSkillInput(BaseModel):
         default=None,
         description="Optional agent role (e.g. 'MEDIA_BUYER', 'CUSTOMER_SUPPORT') to locate the target agent.",
     )
+    approved: bool = Field(default=False, description="Whether merchant approval was granted")
 
 
 async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any]:
-    """Hermes Dynamic Skill Management: create or update a custom, persistent skill for the merchant."""
+    """Hermes Dynamic Skill Management: create, update, delete, or revert a custom, persistent skill for the merchant."""
     company_id = input_data.company_id or ""
     if not company_id:
         return {"success": False, "error": "company_id is required"}
@@ -153,6 +188,119 @@ async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any
                 }
             }
 
+        previous_state = None
+        if skill:
+            previous_state = {
+                "name": skill.name,
+                "description": skill.description,
+                "instructions": skill.instructions,
+                "allowed_tools": skill.allowed_tools,
+                "enabled": skill.enabled,
+            }
+
+        # Approval gate for state mutations (create, update, delete, revert)
+        if not input_data.approved:
+            action_labels = {
+                "create": "إنشاء",
+                "update": "تعديل",
+                "delete": "حذف",
+                "revert": "استرجاع",
+            }
+            action_label = action_labels.get(action, "إدارة")
+            display_title = skill_name or (skill.name if skill else target_id)
+            if company_id:
+                await log_agent_audit_event(
+                    company_id=company_id,
+                    action=f"AGENT_SKILL_{action.upper()}_REQUESTED",
+                    description=f"طلب {action_label} لمهارة '{display_title}' ينتظر موافقة التاجر (ID: {target_id})",
+                    category="AI_AGENT",
+                    severity="MEDIUM",
+                    metadata={
+                        "skill_id": target_id,
+                        "name": display_title,
+                        "action": action,
+                        "previous_state": previous_state,
+                    },
+                )
+
+            return {
+                "status": "awaiting_approval",
+                "action_type": "manage_agent_skill",
+                "action_args": {
+                    "company_id": company_id,
+                    "action": action,
+                    "skill_id": target_id,
+                    "name": skill_name or (skill.name if skill else ""),
+                    "description": input_data.description,
+                    "instructions": input_data.instructions,
+                    "trigger_phrases": input_data.trigger_phrases,
+                    "allowed_tools": input_data.allowed_tools,
+                    "agent_id": input_data.agent_id,
+                    "role": input_data.role,
+                    "previous_state": previous_state,
+                    "approved": True,
+                },
+                "company_id": company_id,
+                "message": (
+                    f"طلب {action_label} لمهارة «{display_title}» مستني اعتمادك. اضغط اعتماد لتطبيق التغيير."
+                ),
+            }
+
+        # Execution when approved
+        if action == "delete":
+            if not skill:
+                return {"success": False, "error": f"Skill '{target_id}' not found to delete"}
+            skill.enabled = False
+            meta = dict(skill.skill_metadata or {})
+            meta["deleted_at"] = datetime.now(timezone.utc).isoformat()
+            skill.skill_metadata = meta
+            await session.commit()
+            await log_agent_audit_event(
+                company_id=company_id,
+                action="AGENT_SKILL_DELETED",
+                description=f"تم تعطيل وحذف مهارة المتجر: '{skill.name}' (ID: {target_id})",
+                category="AI_AGENT",
+                severity="MEDIUM",
+                metadata={"skill_id": target_id, "previous_state": previous_state},
+            )
+            return {"success": True, "action": "delete", "message": f"تم تعطيل وحذف مهارة '{skill.name}' بنجاح."}
+
+        if action == "revert":
+            if not skill:
+                return {"success": False, "error": f"Skill '{target_id}' not found to revert"}
+            meta = dict(skill.skill_metadata or {})
+            revisions = list(meta.get("revisions") or [])
+            if not revisions:
+                return {"success": False, "error": f"No previous revisions found for skill '{target_id}' to revert"}
+            last_rev = revisions.pop()
+            skill.name = last_rev.get("name", skill.name)
+            skill.description = last_rev.get("description", skill.description)
+            skill.instructions = last_rev.get("instructions", skill.instructions)
+            skill.content = last_rev.get("instructions", skill.content)
+            if "allowed_tools" in last_rev:
+                skill.allowed_tools = last_rev["allowed_tools"]
+            meta["revisions"] = revisions
+            meta["last_reverted_at"] = datetime.now(timezone.utc).isoformat()
+            skill.skill_metadata = meta
+            await session.commit()
+            await log_agent_audit_event(
+                company_id=company_id,
+                action="AGENT_SKILL_REVERTED",
+                description=f"تم استرجاع الإصدار السابق لمهارة المتجر: '{skill.name}' (ID: {target_id})",
+                category="AI_AGENT",
+                severity="MEDIUM",
+                metadata={"skill_id": target_id, "restored_revision": last_rev},
+            )
+            return {
+                "success": True,
+                "action": "revert",
+                "skill": {
+                    "id": skill.id,
+                    "name": skill.name,
+                    "message": f"تم استرجاع الإصدار السابق لمهارة '{skill.name}' بنجاح.",
+                }
+            }
+
         instructions_clean = (input_data.instructions or "").strip()
         if not skill_name or not instructions_clean:
             return {"success": False, "error": "Parameter 'name' and 'instructions' are required for create/update"}
@@ -184,10 +332,23 @@ async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any
                 skill_metadata={
                     "source": "AGENT_CREATED_SKILL",
                     "created_at": datetime.now(timezone.utc).isoformat(),
+                    "revisions": [],
                 },
             )
             session.add(skill)
         else:
+            meta = dict(skill.skill_metadata or {})
+            revisions = list(meta.get("revisions") or [])
+            revisions.append({
+                "name": skill.name,
+                "description": skill.description,
+                "instructions": skill.instructions,
+                "allowed_tools": skill.allowed_tools,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+            meta["revisions"] = revisions[-10:]
+            meta["last_updated_at"] = datetime.now(timezone.utc).isoformat()
+            skill.skill_metadata = meta
             skill.name = skill_name
             skill.description = desc
             skill.trigger_phrases = triggers
@@ -195,19 +356,16 @@ async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any
             skill.content = instructions_clean
             if tools:
                 skill.allowed_tools = tools
-            meta = dict(skill.skill_metadata or {})
-            meta["last_updated_at"] = datetime.now(timezone.utc).isoformat()
-            skill.skill_metadata = meta
 
         await session.commit()
 
         await log_agent_audit_event(
             company_id=company_id,
-            action=f"AGENT_SKILL_{action.upper()}",
-            description=f"تم حفظ مهارة مخصصة للمتجر: '{skill_name}' (ID: {target_id})",
+            action=f"AGENT_SKILL_{action.upper()}_COMPLETED",
+            description=f"تم حفظ وتفعيل مهارة مخصصة للمتجر: '{skill_name}' (ID: {target_id})",
             category="AI_AGENT",
             severity="MEDIUM",
-            metadata={"skill_id": target_id, "name": skill_name, "action": action},
+            metadata={"skill_id": target_id, "name": skill_name, "action": action, "previous_state": previous_state},
         )
 
         # Also ensure skill is attached to the active agent in ai.agents if present
@@ -267,16 +425,19 @@ async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any
 
 
 def _format_manage_agent_skill(result: dict) -> str:
+    if result.get("status") == "awaiting_approval":
+        return result.get("message", "طلب إدارة المهارة بانتظار الاعتماد.")
     if not result.get("success"):
         return f"تعذر حفظ المهارة: {result.get('error', 'خطأ غير معروف')}"
     skill = result.get("skill") or {}
     s_name = skill.get("name") or result.get("name") or "المهارة"
-    return f"تم إنشاء وتفعيل مهارة '{s_name}' بنجاح في نظام المتجر الدائم."
+    act = result.get("action", "إنشاء وتفعيل")
+    return f"تم {act} مهارة '{s_name}' بنجاح في نظام المتجر الدائم."
 
 
 manage_agent_skill_tool = FunctionTool(
     name="manage_agent_skill",
-    description="Create, update, or retrieve a custom operational skill for the merchant (Hermes Dynamic Skill Creation).",
+    description="Create, update, delete, or retrieve a custom operational skill for the merchant (Hermes Dynamic Skill Creation).",
     func=manage_agent_skill,
     input_model=ManageAgentSkillInput,
     format_result=_format_manage_agent_skill,
@@ -290,6 +451,8 @@ class UpdateAgentIdentityInput(BaseModel):
     role: str | None = Field(default=None, description="Agent role (e.g. 'MEDIA_BUYER', 'CUSTOMER_SUPPORT'). If agent_id is omitted, updates the active agent for this role.")
     title: str | None = Field(default=None, description="Optional professional title (e.g. 'خبير إعلانات فيسبوك', 'مدير خدمة العملاء')")
     description: str | None = Field(default=None, description="Optional updated description for the agent profile")
+    action: str = Field(default="update", description="Action: 'update' to apply new identity, 'revert' to restore previous identity")
+    approved: bool = Field(default=False, description="Whether merchant approval was granted")
 
 
 async def update_agent_identity(input_data: UpdateAgentIdentityInput) -> dict[str, Any]:
@@ -300,6 +463,7 @@ async def update_agent_identity(input_data: UpdateAgentIdentityInput) -> dict[st
 
     from src.db.session import async_session
     from src.db.models.agent import Agent as AgentModel
+    from src.tools.repositories.audit_repository import log_agent_audit_event
     from sqlalchemy import select
 
     new_name = input_data.name.strip()
@@ -309,6 +473,8 @@ async def update_agent_identity(input_data: UpdateAgentIdentityInput) -> dict[st
     full_display_name = new_name
     if input_data.title and input_data.title.strip() and "—" not in new_name and "-" not in new_name:
         full_display_name = f"{new_name} — {input_data.title.strip()}"
+
+    action = (input_data.action or "update").strip().lower()
 
     async with async_session() as session:
         target_agent = None
@@ -341,26 +507,116 @@ async def update_agent_identity(input_data: UpdateAgentIdentityInput) -> dict[st
             return {"success": False, "error": f"No active agent found for company '{company_id}' to update"}
 
         old_name = target_agent.name
+        old_desc = target_agent.description
+        previous_state = {"name": old_name, "description": old_desc}
+
+        # Approval gate for identity update/revert
+        if not input_data.approved:
+            if company_id:
+                action_text = "استرجاع الهوية السابقة" if action == "revert" else f"تغيير اسم وهوية الوكيل من '{old_name}' إلى '{full_display_name}'"
+                await log_agent_audit_event(
+                    company_id=company_id,
+                    action="AGENT_IDENTITY_UPDATE_REQUESTED",
+                    description=f"طلب {action_text} ينتظر موافقة التاجر (الدور: {target_agent.role})",
+                    category="AI_AGENT",
+                    severity="MEDIUM",
+                    metadata={
+                        "agent_id": target_agent.id,
+                        "old_name": old_name,
+                        "new_name": full_display_name,
+                        "role": target_agent.role,
+                        "action": action,
+                        "previous_state": previous_state,
+                    },
+                )
+
+            return {
+                "status": "awaiting_approval",
+                "action_type": "update_agent_identity",
+                "action_args": {
+                    "company_id": company_id,
+                    "agent_id": target_agent.id,
+                    "name": new_name,
+                    "title": input_data.title,
+                    "description": input_data.description,
+                    "role": target_agent.role,
+                    "action": action,
+                    "previous_name": old_name,
+                    "previous_state": previous_state,
+                    "approved": True,
+                },
+                "company_id": company_id,
+                "message": (
+                    f"طلب تغيير اسم وهوية المساعد إلى «{full_display_name}» مستني اعتمادك. اضغط اعتماد لتثبيت الهوية."
+                ),
+            }
+
+        # Execution when approved
+        persona_meta = dict(target_agent.persona_meta or {})
+        history = list(persona_meta.get("identity_history") or [])
+
+        if action == "revert":
+            if not history:
+                return {"success": False, "error": f"No previous identity history found for agent '{target_agent.id}' to revert"}
+            last_id = history.pop()
+            restored_name = last_id.get("name", target_agent.name)
+            target_agent.name = restored_name
+            if "description" in last_id:
+                target_agent.description = last_id["description"]
+            persona_meta["identity_history"] = history
+            persona_meta["agent_name"] = restored_name.split(" — ")[0]
+            persona_meta["display_name"] = restored_name
+            target_agent.persona_meta = persona_meta
+            session.add(target_agent)
+            await session.commit()
+
+            await log_agent_audit_event(
+                company_id=company_id,
+                action="AGENT_IDENTITY_REVERTED",
+                description=f"تم التراجع واسترجاع اسم وهوية الوكيل السابقة: '{restored_name}' (الدور: {target_agent.role})",
+                category="AI_AGENT",
+                severity="MEDIUM",
+                metadata={"agent_id": target_agent.id, "restored_identity": last_id},
+            )
+
+            return {
+                "success": True,
+                "agent_id": target_agent.id,
+                "name": restored_name,
+                "role": target_agent.role,
+                "message": f"تم التراجع واسترجاع اسم الوكيل إلى '{restored_name}' بنجاح.",
+            }
+
+        # Save previous identity in history for future reversibility
+        history.append({
+            "name": old_name,
+            "description": old_desc,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        persona_meta["identity_history"] = history[-10:]
+        persona_meta["agent_name"] = new_name
+        persona_meta["display_name"] = full_display_name
         target_agent.name = full_display_name
         if input_data.description:
             target_agent.description = input_data.description.strip()
-
-        persona_meta = dict(target_agent.persona_meta or {})
-        persona_meta["agent_name"] = new_name
-        persona_meta["display_name"] = full_display_name
         target_agent.persona_meta = persona_meta
 
         session.add(target_agent)
         await session.commit()
 
-        from src.tools.repositories.audit_repository import log_agent_audit_event
         await log_agent_audit_event(
             company_id=company_id,
             action="AGENT_IDENTITY_UPDATED",
             description=f"تم تحديث هوية واسم الوكيل إلى: '{full_display_name}' (الدور: {target_agent.role})",
             category="AI_AGENT",
             severity="MEDIUM",
-            metadata={"agent_id": target_agent.id, "new_name": full_display_name, "role": target_agent.role},
+            metadata={
+                "agent_id": target_agent.id,
+                "old_name": old_name,
+                "new_name": full_display_name,
+                "role": target_agent.role,
+                "previous_state": previous_state,
+            },
         )
 
         logger.info("agent_identity_updated", company_id=company_id, agent_id=target_agent.id, old_name=old_name, new_name=full_display_name)
@@ -376,6 +632,8 @@ async def update_agent_identity(input_data: UpdateAgentIdentityInput) -> dict[st
 
 
 def _format_update_agent_identity(result: dict) -> str:
+    if result.get("status") == "awaiting_approval":
+        return result.get("message", "طلب تحديث هوية الوكيل بانتظار الاعتماد.")
     if not result.get("success"):
         return f"تعذر تحديث اسم الوكيل: {result.get('error', 'خطأ غير معروف')}"
     return f"تم تحديث وتثبيت اسمي الرسمي في النظام وقاعدة البيانات إلى '{result.get('name', '')}' بنجاح."

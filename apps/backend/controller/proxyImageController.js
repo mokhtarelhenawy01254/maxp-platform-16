@@ -462,10 +462,23 @@ const extractRemoteFailureDetails = async (response) => {
   }
 };
 
-const getMessageMediaUrlFromPayload = (payload) => {
-  const attachment = payload?.attachments?.data?.[0];
-  if (!attachment) {
+const getMessageMediaUrlFromPayload = (payload, targetIndex = null, targetAttachmentId = null) => {
+  const attachmentsList = payload?.attachments?.data;
+  if (!Array.isArray(attachmentsList) || attachmentsList.length === 0) {
     return null;
+  }
+
+  let attachment = null;
+  if (targetAttachmentId) {
+    attachment = attachmentsList.find(
+      (a) => String(a.id || "").trim() === String(targetAttachmentId).trim()
+    );
+  }
+  if (!attachment && Number.isInteger(targetIndex) && targetIndex >= 0 && targetIndex < attachmentsList.length) {
+    attachment = attachmentsList[targetIndex];
+  }
+  if (!attachment) {
+    attachment = attachmentsList[0];
   }
 
   return (
@@ -479,26 +492,45 @@ const getMessageMediaUrlFromPayload = (payload) => {
   );
 };
 
-const getStoredMessageMediaUrl = (message) => {
+const getStoredMessageMediaUrl = (message, targetIndex = null, targetAttachmentId = null) => {
   if (!message) {
     return null;
   }
 
-  if (isAllowedDirectUrl(message.content)) {
-    return message.content;
-  }
-
   const attachments = parseJsonSafely(message.attachments, null);
   if (Array.isArray(attachments) && attachments.length > 0) {
-    return (
-      attachments[0]?.image_data?.url ||
-      attachments[0]?.file_url ||
-      attachments[0]?.url ||
-      attachments[0]?.payload?.url ||
-      attachments[0]?.payload?.image_url ||
-      attachments[0]?.image?.url ||
+    let attachment = null;
+    if (targetAttachmentId) {
+      attachment = attachments.find(
+        (a) =>
+          String(a?.id || a?.attachmentId || "").trim() ===
+          String(targetAttachmentId).trim()
+      );
+    }
+    if (!attachment && Number.isInteger(targetIndex) && targetIndex >= 0 && targetIndex < attachments.length) {
+      attachment = attachments[targetIndex];
+    }
+    if (!attachment) {
+      attachment = attachments[0];
+    }
+
+    const resolvedUrl = (
+      attachment?.image_data?.url ||
+      attachment?.file_url ||
+      attachment?.url ||
+      attachment?.payload?.url ||
+      attachment?.payload?.image_url ||
+      attachment?.image?.url ||
       null
     );
+
+    if (resolvedUrl) {
+      return resolvedUrl;
+    }
+  }
+
+  if (isAllowedDirectUrl(message.content)) {
+    return message.content;
   }
 
   return null;
@@ -630,7 +662,12 @@ const findPageTokenForConversation = async (prisma, conversation) => {
   return page?.pageAccessToken || null;
 };
 
-const resolveFreshMessageMediaUrl = async (prisma, messageId) => {
+const resolveFreshMessageMediaUrl = async (
+  prisma,
+  messageId,
+  targetIndex = null,
+  targetAttachmentId = null,
+) => {
   if (!messageId) {
     return null;
   }
@@ -651,7 +688,11 @@ const resolveFreshMessageMediaUrl = async (prisma, messageId) => {
     return null;
   }
 
-  const storedMediaUrl = getStoredMessageMediaUrl(message);
+  const storedMediaUrl = getStoredMessageMediaUrl(
+    message,
+    targetIndex,
+    targetAttachmentId,
+  );
   const metadata = parseJsonSafely(message.metadata, {});
   const facebookMessageId = metadata?.facebookMessageId;
   if (!facebookMessageId) {
@@ -694,7 +735,15 @@ const resolveFreshMessageMediaUrl = async (prisma, messageId) => {
   }
 
   const graphPayload = await graphResponse.json();
-  return getMessageMediaUrlFromPayload(graphPayload) || storedMediaUrl || null;
+  return (
+    getMessageMediaUrlFromPayload(
+      graphPayload,
+      targetIndex,
+      targetAttachmentId,
+    ) ||
+    storedMediaUrl ||
+    null
+  );
 };
 
 const resolveFreshCustomerAvatarUrl = async (prisma, customerId) => {
@@ -914,6 +963,17 @@ const proxyImage = async (req, res) => {
       req.query.whatsAppMessageId.trim()
         ? req.query.whatsAppMessageId.trim()
         : "";
+    const attachmentIndexParam = req.query.index ?? req.query.attachmentIndex;
+    const attachmentIndex =
+      attachmentIndexParam !== undefined &&
+      attachmentIndexParam !== null &&
+      attachmentIndexParam !== ""
+        ? parseInt(String(attachmentIndexParam), 10)
+        : null;
+    const attachmentId =
+      typeof req.query.attachmentId === "string" && req.query.attachmentId.trim()
+        ? req.query.attachmentId.trim()
+        : "";
     const transformOptions = normalizeImageTransformOptions(req.query);
     const isAvatarRequest = Boolean(
       (customerId && !messageId) ||
@@ -953,7 +1013,14 @@ const proxyImage = async (req, res) => {
     addCandidateUrl(targetUrl);
 
     if (messageId) {
-      addCandidateUrl(await resolveFreshMessageMediaUrl(prisma, messageId));
+      addCandidateUrl(
+        await resolveFreshMessageMediaUrl(
+          prisma,
+          messageId,
+          attachmentIndex,
+          attachmentId,
+        ),
+      );
     }
 
     if (customerId) {
