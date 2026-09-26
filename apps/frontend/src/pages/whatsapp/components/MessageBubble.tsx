@@ -33,6 +33,7 @@ import LinkifiedText from "../../../components/common/LinkifiedText";
 import { Message } from "../../../hooks/useWhatsAppQueries";
 import { buildWhatsAppMediaUrl } from "../utils/mediaUrl";
 import WhatsAppReactionSelector from "./WhatsAppReactionSelector";
+import { VoiceNotePlayer } from "../../../components/facebook-inbox/MessageBubble/VoiceNotePlayer";
 
 interface MessageBubbleProps {
   message: Message;
@@ -421,7 +422,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
             );
           case "AUDIO":
           case "VOICE":
-            return <audio src={fullMediaUrl} controls className="min-w-[12rem] max-w-full sm:min-w-[14rem]" />;
+            return (
+              <VoiceNotePlayer
+                src={fullMediaUrl}
+                messageId={message.id}
+                isCustomer={!isMe}
+              />
+            );
           case "DOCUMENT":
           case "FILE":
             return (

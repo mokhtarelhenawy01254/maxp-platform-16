@@ -15,6 +15,7 @@ import {
   getInboxMessageMediaUrl,
 } from "../../../utils/imageUrl";
 import { apiClient } from "../../../services/apiClient";
+import { VoiceNotePlayer } from "./VoiceNotePlayer";
 
 interface ReplyReference {
   senderName?: string;
@@ -882,12 +883,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
             {/* Audio message */}
             {hasAudioMessage && audioMediaUrl && (
               <div className="mb-2">
-                <audio
+                <VoiceNotePlayer
                   src={audioMediaUrl}
-                  controls
-                  preload="metadata"
-                  playsInline
-                  className="w-full min-w-[200px]"
+                  messageId={message.id}
+                  isCustomer={isCustomer}
                 />
               </div>
             )}

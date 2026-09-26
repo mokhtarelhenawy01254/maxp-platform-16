@@ -38,11 +38,12 @@ const ACCEPTED_PREFIXES = ['image/', 'video/', 'audio/'];
 
 const isExternalHttpUrl = (url) => /^https?:\/\//i.test(String(url || '').trim());
 
-const publicBaseUrl = () =>
-    (process.env.WEBHOOK_BASE_URL
-        || process.env.PUBLIC_BASE_URL
-        || 'https://maxp.online'
-    ).replace(/\/+$/, '');
+const publicBaseUrl = () => {
+    const raw = process.env.PUBLIC_BASE_URL
+        || (process.env.WEBHOOK_BASE_URL ? process.env.WEBHOOK_BASE_URL.replace(/\/webhooks\/?$/i, '') : '')
+        || 'https://maxp.online';
+    return raw.replace(/\/+$/, '');
+};
 
 const extFor = (contentType, url) => {
     if (EXT_BY_MIME[contentType]) return EXT_BY_MIME[contentType];

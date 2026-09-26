@@ -343,8 +343,12 @@ export const getImageUrl = (
 ): string | null => {
   // التحقق من أن المسار نص
   if (typeof relativePath !== "string") return null;
-  const trimmedPath = relativePath.trim();
+  let trimmedPath = relativePath.trim();
   if (!trimmedPath) return null;
+
+  if (trimmedPath.includes("/webhooks/uploads/")) {
+    trimmedPath = trimmedPath.replace(/\/webhooks\/uploads\//g, "/uploads/");
+  }
 
   if (
     trimmedPath.startsWith("data:") ||
@@ -432,6 +436,17 @@ export const getInboxMessageMediaUrl = (
     attachmentId?: string | null;
   },
 ): string => {
+  if (rawUrl && typeof rawUrl === "string") {
+    const trimmed = rawUrl.trim();
+    if (trimmed.startsWith("meta-media:")) {
+      return buildProxyImageUrl(trimmed, {
+        messageId,
+        attachmentIndex: options?.attachmentIndex,
+        attachmentId: options?.attachmentId,
+      });
+    }
+  }
+
   const normalized = getImageUrl(rawUrl);
 
   if (normalized && shouldProxyRemoteImageUrl(normalized)) {
