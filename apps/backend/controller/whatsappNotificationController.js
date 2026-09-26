@@ -103,7 +103,8 @@ async function updateNotificationSettings(req, res) {
 async function getTemplates(req, res) {
   try {
     const { companyId } = req.user;
-    const { category, eventType } = req.query;
+    const { category, eventType, includeOrders, metaOnly } = req.query;
+    const shouldIncludeOrders = includeOrders === 'true' || category === 'ORDERS' || category === 'META';
 
     const ORDER_TAB_EVENT_TYPES = [
       'CART_ABANDONED_1H',
@@ -114,17 +115,32 @@ async function getTemplates(req, res) {
     ];
 
     const where = { companyId };
-    if (category) where.category = category;
+    if (category && category !== 'ALL' && category !== 'META') where.category = category;
     if (eventType) where.eventType = eventType;
-    else where.eventType = { notIn: ORDER_TAB_EVENT_TYPES };
+    else if (!shouldIncludeOrders) where.eventType = { notIn: ORDER_TAB_EVENT_TYPES };
+
+    if (metaOnly === 'true' || category === 'META') {
+      where.OR = [
+        { metaTemplateName: { not: null } },
+        { channel: 'META_CLOUD' }
+      ];
+    }
 
     const templates = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
       where: {
         ...where,
-        ...(category ? {} : { category: { not: 'ORDERS' } })
+        ...(shouldIncludeOrders || category ? {} : { category: { not: 'ORDERS' } })
       },
       orderBy: [{ category: 'asc' }, { eventType: 'asc' }]
     }));
+
+    // لو الطلب يخص قوالب ميتا فقط، لا نضيف قوالب افتراضية وهمية غير معتمدة
+    if (metaOnly === 'true' || category === 'META') {
+      return res.json({
+        success: true,
+        templates
+      });
+    }
 
     const defaultTemplates = WhatsAppNotificationService.DEFAULT_TEMPLATES;
     // نتخطى القالب الافتراضي فقط لو فيه قالب "عادي" فعلي (BAILEYS/AUTO) للحدث.
@@ -141,10 +157,10 @@ async function getTemplates(req, res) {
     for (const [evtType, template] of Object.entries(defaultTemplates)) {
       if (hasRegularForEvent(evtType)) continue;
       if (eventType && evtType !== eventType) continue;
-      if (!eventType && ORDER_TAB_EVENT_TYPES.includes(evtType)) continue;
+      if (!eventType && !shouldIncludeOrders && ORDER_TAB_EVENT_TYPES.includes(evtType)) continue;
       const templateCategory = getCategoryForEvent(evtType);
-      if (!category && templateCategory === 'ORDERS') continue;
-      if (category && templateCategory !== category) continue;
+      if (!category && !shouldIncludeOrders && templateCategory === 'ORDERS') continue;
+      if (category && category !== 'ALL' && templateCategory !== category) continue;
       allTemplates.push({
         id: null,
         eventType: evtType,
@@ -1417,6 +1433,108 @@ async function publishTemplateToMeta(req, res) {
 }
 
 /**
+ * إرسال قوالب الطلبات الجاهزة غير المرفوعة لميتا دفعة واحدة (لأول مرة للمتجر الجديد أو غير المربوط).
+ * POST /templates/batch-publish-meta { sessionId, templateIds? }
+ */
+async function batchPublishOrderTemplatesToMeta(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { sessionId, templateIds } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId مطلوب' });
+    }
+
+    const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+      where: { id: sessionId, companyId, provider: 'META_CLOUD' }
+    });
+    if (!session) {
+      return res.status(400).json({ error: 'جلسة ميتا غير موجودة' });
+    }
+
+    const where = {
+      companyId,
+      metaTemplateName: { not: null },
+      OR: [
+        { metaTemplateStatus: null },
+        { metaTemplateStatus: 'DRAFT' },
+        { metaTemplateStatus: '' }
+      ]
+    };
+
+    if (Array.isArray(templateIds) && templateIds.length > 0) {
+      where.id = { in: templateIds };
+    }
+
+    const unsubmittedTemplates = await getSharedPrismaClient().whatsAppNotificationTemplate.findMany({
+      where
+    });
+
+    if (unsubmittedTemplates.length === 0) {
+      return res.json({
+        success: true,
+        message: 'لا توجد قوالب جديدة غير مرسلة لميتا',
+        submittedCount: 0,
+        results: []
+      });
+    }
+
+    const results = [];
+    let submittedCount = 0;
+
+    for (const tpl of unsubmittedTemplates) {
+      try {
+        const catOverride = tpl.category === 'ABANDONED_CART' ? 'MARKETING' : 'UTILITY';
+        const { result, metaName, metaCategory, built, variableOrder } =
+          await createMetaTemplateFromLocal(sessionId, tpl, catOverride);
+
+        await getSharedPrismaClient().whatsAppNotificationTemplate.update({
+          where: { id: tpl.id },
+          data: {
+            metaTemplateName: metaName,
+            metaTemplateId: result?.id || tpl.metaTemplateId,
+            metaTemplateLanguage: 'ar',
+            metaTemplateStatus: 'PENDING',
+            variables: variableOrder || tpl.variables,
+            updatedAt: new Date()
+          }
+        });
+
+        results.push({
+          id: tpl.id,
+          name: tpl.name,
+          metaTemplateName: metaName,
+          status: 'PENDING',
+          success: true
+        });
+        submittedCount++;
+        // فاصل زمني بسيط لتفادي Meta rate limits
+        await new Promise(r => setTimeout(r, 300));
+      } catch (err) {
+        console.warn(`⚠️ [BATCH-PUBLISH-META] Failed for ${tpl.name}:`, err?.message || err);
+        results.push({
+          id: tpl.id,
+          name: tpl.name,
+          error: err?.message || 'فشل الإرسال إلى ميتا',
+          success: false
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      submittedCount,
+      totalCount: unsubmittedTemplates.length,
+      message: `تم إرسال ${submittedCount} من أصل ${unsubmittedTemplates.length} قوالب إلى Meta للمراجعة بنجاح`,
+      results
+    });
+  } catch (error) {
+    console.error('❌ Error batch publishing to Meta:', error);
+    res.status(500).json({ error: error.message || 'فشل إرسال القوالب إلى Meta' });
+  }
+}
+
+/**
  * إعادة إرسال قالب إلى ميتا للمراجعة بعد التعديل.
  *
  * حسب وثائق ميتا (2026): "Only templates with an APPROVED, REJECTED, or PAUSED
@@ -1897,6 +2015,7 @@ module.exports = {
   getCustomerPreferences,
   updateCustomerPreferences,
   publishTemplateToMeta,
+  batchPublishOrderTemplatesToMeta,
   resubmitMetaTemplate,
   syncTemplateStatuses,
   listAvailableMetaTemplates,

@@ -299,6 +299,7 @@ const WhatsAppMetaTemplates: React.FC<{
 
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [librarySearch, setLibrarySearch] = useState("");
+  const [libraryDomainFilter, setLibraryDomainFilter] = useState<"ALL" | "ORDERS" | "LOYALTY" | "CART" | "MARKETING" | "AUTH">("ALL");
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [templateHistory, setTemplateHistory] = useState<TemplateHistoryEntry[]>([]);
@@ -671,15 +672,29 @@ const WhatsAppMetaTemplates: React.FC<{
   }, [selectedSessionId, withCompanyConfig]);
 
   const filteredLibrary = useMemo(() => {
-    if (!librarySearch) return templateLibrary;
-    const q = librarySearch.toLowerCase();
-    return templateLibrary.filter(t =>
-      t.name.includes(q) ||
-      t.description.includes(q) ||
-      t.tags.some(tag => tag.includes(q)) ||
-      t.category.toLowerCase().includes(q)
-    );
-  }, [librarySearch]);
+    return templateLibrary.filter((t) => {
+      if (libraryDomainFilter === "ORDERS") {
+        if (!t.tags.some((tag) => ["order", "delivery", "tracking", "created", "shipped", "confirmed", "processing"].includes(tag))) return false;
+      } else if (libraryDomainFilter === "LOYALTY") {
+        if (!t.tags.some((tag) => ["loyalty", "points", "cashback", "wallet", "vip"].includes(tag))) return false;
+      } else if (libraryDomainFilter === "CART") {
+        if (!t.tags.some((tag) => ["cart", "abandoned"].includes(tag))) return false;
+      } else if (libraryDomainFilter === "MARKETING") {
+        if (t.category !== "MARKETING") return false;
+      } else if (libraryDomainFilter === "AUTH") {
+        if (t.category !== "AUTHENTICATION" && !t.tags.includes("auth")) return false;
+      }
+
+      if (!librarySearch) return true;
+      const q = librarySearch.toLowerCase();
+      return (
+        t.name.includes(q) ||
+        t.description.includes(q) ||
+        t.tags.some((tag) => tag.includes(q)) ||
+        t.category.toLowerCase().includes(q)
+      );
+    });
+  }, [librarySearch, libraryDomainFilter]);
 
   const libraryByCategory = useMemo(() => {
     const groups: Record<string, typeof templateLibrary> = {};
@@ -2207,6 +2222,29 @@ const WhatsAppMetaTemplates: React.FC<{
                 <XCircle className="size-4" />
               </button>
             )}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 pt-2">
+            {[
+              { id: "ALL", label: "الكل" },
+              { id: "ORDERS", label: "دورة الطلبات" },
+              { id: "LOYALTY", label: "الولاء والمكافآت" },
+              { id: "CART", label: "السلات المتروكة" },
+              { id: "MARKETING", label: "تسويق وعروض" },
+              { id: "AUTH", label: "المصادقة و OTP" },
+            ].map((pill) => (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => setLibraryDomainFilter(pill.id as any)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                  libraryDomainFilter === pill.id
+                    ? "bg-[color:var(--color-primary)] text-white shadow-sm"
+                    : "border border-[color:var(--shell-control-border)] bg-[var(--color-muted)] text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)]"
+                }`}
+              >
+                {pill.label}
+              </button>
+            ))}
           </div>
           <div className="mt-4 max-h-[420px] space-y-6 overflow-y-auto">
             {filteredLibrary.length === 0 ? (

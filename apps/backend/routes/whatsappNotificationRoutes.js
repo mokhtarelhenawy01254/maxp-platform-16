@@ -31,6 +31,9 @@ router.get('/templates/meta-available', verifyToken.authenticateToken, whatsappN
 // مصير الإشعار المتوقع لكل قالب (قبل /templates/:id — مش :id)
 router.get('/templates/delivery-preview', verifyToken.authenticateToken, whatsappNotificationController.getTemplatesDeliveryPreview);
 
+// إرسال قوالب الطلبات الجاهزة دفعة واحدة إلى ميتا (قبل /templates/:id)
+router.post('/templates/batch-publish-meta', verifyToken.authenticateToken, whatsappNotificationController.batchPublishOrderTemplatesToMeta);
+
 // ربط قالب محلي بقالب ميتا معتمد موجود
 router.post('/templates/:id/bind-meta', verifyToken.authenticateToken, whatsappNotificationController.bindMetaTemplate);
 

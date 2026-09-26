@@ -101,6 +101,15 @@ async function findNotificationTemplateForEvent(companyId, eventType, sessionPro
   const isApprovedLink = (t) =>
     Boolean(t?.metaTemplateName) && String(t?.metaTemplateStatus || '').toUpperCase() === 'APPROVED';
 
+  // 0) لو الجلسة BAILEYS: فضّل القالب العادي أولاً لأن Baileys لا يرسل قوالب Meta Cloud
+  if (String(sessionProvider || '').toUpperCase() === 'BAILEYS') {
+    const regularForBaileys = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+      where: { companyId, eventType, isActive: true, channel: { not: 'META_CLOUD' } },
+      orderBy: DETERMINISTIC_ORDER
+    }));
+    if (regularForBaileys) return regularForBaileys;
+  }
+
   // 1) سجل META_CLOUD مربوط بقالب معتمد — النموذج الجديد (قناة مفصولة).
   const metaCloudTemplate = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
     where: {
@@ -142,12 +151,19 @@ async function findNotificationTemplateForEvent(companyId, eventType, sessionPro
   }));
   if (isApprovedLink(anyMeta)) return anyMeta;
 
-  // 4) fallback: أي قالب عادي للحدث.
+  // 4) fallback: أي قالب عادي للحدث (ليس META_CLOUD).
   const regularTemplate = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
-    where: { companyId, eventType, isActive: true },
+    where: { companyId, eventType, isActive: true, channel: { not: 'META_CLOUD' } },
     orderBy: DETERMINISTIC_ORDER
   }));
   if (regularTemplate) return regularTemplate;
+
+  // 5) ملاذ أخير: أي قالب نشط للحدث
+  const anyTemplate = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+    where: { companyId, eventType, isActive: true },
+    orderBy: DETERMINISTIC_ORDER
+  }));
+  if (anyTemplate) return anyTemplate;
 
   return null;
 }

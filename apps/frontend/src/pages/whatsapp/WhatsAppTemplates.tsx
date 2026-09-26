@@ -481,12 +481,25 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [templateSearch, setTemplateSearch] = useState("");
   const [templateCategory, setTemplateCategory] = useState(defaultCategory);
+  const [metaSubCategory, setMetaSubCategory] = useState<string>("ALL");
   const [templateForm, setTemplateForm] =
     useState<TemplateFormState>(() => createEmptyTemplateForm(superAdminMode));
 
   const [metaSessions, setMetaSessions] = useState<{ id: string; name: string; metaDisplayPhoneNumber?: string }[]>([]);
   const [selectedMetaSession, setSelectedMetaSession] = useState("");
   const [publishingId, setPublishingId] = useState<string | null>(null);
+
+  // إحصائيات قوالب ميتا بحسب التصنيفات
+  const metaCategoryCounts = useMemo(() => {
+    const metaList = templates.filter(
+      (t) => Boolean(t.metaTemplateName) || String(t.channel || "").toUpperCase() === "META_CLOUD",
+    );
+    const counts: Record<string, number> = { ALL: metaList.length };
+    for (const t of metaList) {
+      counts[t.category] = (counts[t.category] || 0) + 1;
+    }
+    return counts;
+  }, [templates]);
 
   const dialogEventEntries = useMemo(() => {
     const allowed = templateForm.category ? CATEGORY_EVENT_MAP[templateForm.category] : null;
@@ -549,7 +562,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
     try {
       const response = await apiClient.get(
         "/whatsapp-notifications/templates",
-        withCompanyConfig(),
+        withCompanyConfig({ params: { includeOrders: true } }),
       );
       setTemplates((response as any).data.templates || []);
     } catch (error) {
@@ -755,6 +768,30 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
 
   const filteredTemplates = useMemo(() => {
     return templates.filter((template) => {
+      // إذا كنا في تبويبة قوالب ميتا
+      if (templateCategory === "META") {
+        const isMeta = Boolean(template.metaTemplateName) || String(template.channel || "").toUpperCase() === "META_CLOUD";
+        if (!isMeta) return false;
+
+        if (metaSubCategory !== "ALL" && template.category !== metaSubCategory) {
+          return false;
+        }
+
+        const matchSearch =
+          templateSearch.trim() === "" ||
+          (template.name &&
+            template.name.toLowerCase().includes(templateSearch.toLowerCase())) ||
+          (template.metaTemplateName &&
+            template.metaTemplateName.toLowerCase().includes(templateSearch.toLowerCase())) ||
+          (template.eventType &&
+            template.eventType.toLowerCase().includes(templateSearch.toLowerCase())) ||
+          (template.content &&
+            template.content.toLowerCase().includes(templateSearch.toLowerCase()));
+
+        return matchSearch;
+      }
+
+      // في التبويبات العادية: نستبعد الطلبات من هذه الصفحة لأنها تُدار من صفحة قوالب الحالات
       if (template.category === "ORDERS") return false;
 
       const matchSearch =
@@ -771,7 +808,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
 
       return matchSearch && matchCategory;
     });
-  }, [templates, templateSearch, templateCategory]);
+  }, [templates, templateSearch, templateCategory, metaSubCategory]);
 
   if (loading) {
     return (
@@ -892,6 +929,18 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                   >
                     {i18n.language === "ar" ? "جميع التصنيفات" : "All categories"}
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="META"
+                    className="rounded-full px-4 py-2 font-medium data-[state=active]:bg-sky-600 data-[state=active]:text-white data-[state=active]:shadow-md dark:data-[state=active]:bg-sky-500"
+                  >
+                    <Cloud className="size-3.5 ml-1.5 inline" />
+                    {i18n.language === "ar" ? "قوالب ميتا" : "Meta Templates"}
+                    {metaCategoryCounts.ALL > 0 && (
+                      <span className="mr-1.5 rounded-full bg-sky-500/20 px-1.5 py-0.2 text-[10px] font-semibold tabular-nums text-sky-800 dark:text-sky-200">
+                        {metaCategoryCounts.ALL}
+                      </span>
+                    )}
+                  </TabsTrigger>
                   {availableCategoryEntries.map(([key, label]) => (
                     <TabsTrigger
                       key={key}
@@ -903,6 +952,44 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                   ))}
                 </TabsList>
               </Tabs>
+
+              {/* التقسيم الفرعي لقوالب ميتا عند تفعيل تبويبة قوالب ميتا */}
+              {templateCategory === "META" && (
+                <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-sky-500/20 bg-sky-500/[0.04] p-2.5 backdrop-blur-sm dark:border-sky-500/30 dark:bg-sky-500/10">
+                  <span className="text-xs font-semibold text-sky-800 dark:text-sky-300 ml-2">
+                    {i18n.language === "ar" ? "أقسام قوالب ميتا:" : "Meta Categories:"}
+                  </span>
+                  {[
+                    { id: "ALL", label: "الكل", count: metaCategoryCounts.ALL || 0 },
+                    { id: "ORDERS", label: "الطلبات", count: metaCategoryCounts.ORDERS || 0 },
+                    { id: "CUSTOMER", label: "العملاء والولاء", count: metaCategoryCounts.CUSTOMER || 0 },
+                    { id: "MARKETING", label: "التسويق", count: metaCategoryCounts.MARKETING || 0 },
+                    { id: "ABANDONED_CART", label: "سلات متروكة", count: metaCategoryCounts.ABANDONED_CART || 0 },
+                    { id: "PRODUCTS", label: "المنتجات", count: metaCategoryCounts.PRODUCTS || 0 },
+                    { id: "SYSTEM", label: "النظام", count: metaCategoryCounts.SYSTEM || 0 },
+                  ].map((sub) => (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => setMetaSubCategory(sub.id)}
+                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                        metaSubCategory === sub.id
+                          ? "bg-sky-600 text-white shadow-sm dark:bg-sky-500"
+                          : "border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)]"
+                      }`}
+                    >
+                      {sub.label}
+                      {sub.count > 0 && (
+                        <span className={`text-[10px] rounded-full px-1.5 py-0.2 tabular-nums ${
+                          metaSubCategory === sub.id ? "bg-white/20 text-white" : "bg-[var(--color-muted)] text-slate-600 dark:text-slate-300"
+                        }`}>
+                          {sub.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Customer Lifecycle & Automation Synergy Banner */}
               {templateCategory === "CUSTOMER" && (
@@ -1061,7 +1148,19 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                       </div>
                     </div>
 
-                    {template.metaTemplateName && template.metaTemplateStatus !== 'APPROVED' ? null : (
+                    {template.category === "ORDERS" ? (
+                      <div className="mt-3 flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 gap-1 text-xs text-sky-700 border-sky-300/70 hover:bg-sky-50 dark:text-sky-300 dark:border-sky-500/40"
+                          onClick={() => navigate("/orders/status-templates")}
+                        >
+                          <ExternalLink className="size-3" />
+                          {i18n.language === "ar" ? "فتح في قوالب الحالات" : "Manage in status templates"}
+                        </Button>
+                      </div>
+                    ) : template.metaTemplateName && template.metaTemplateStatus !== 'APPROVED' ? null : (
                       <div className="mt-3 flex items-center gap-2">
                         {!selectedMetaSession ? (
                           <p className="text-xs text-muted-foreground">

@@ -1,15 +1,240 @@
-﻿/**
- * ≡ƒÜ¿ PRODUCTION-FIX (notifications-fix-plan ┬º2.3):
- * ╪¿╪░╪▒ ┘é┘ê╪º┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪⌐ ┘ü┘è DB + ╪╢┘à╪º┘å ┘é╪º┘ä╪¿ ┘ä┘ä╪¡╪»╪½ ╪º┘ä╪¼╪º╪▒┘è.
- * ┘à╪╡╪»╪▒ ┘é┘ê╪º┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä┘ê╪¡┘è╪» ┘ç┘ê ╪╡┘ü╪¡╪⌐ /orders/status-templates (╪╡┘ü┘ê┘ü DB ┘é╪º╪¿┘ä╪⌐ ┘ä┘ä╪¬╪╣╪»┘è┘ä).
- * ┘à╪│╪¬╪«╪▒╪¼╪⌐ ┘à┘å orderStatusController.seedDefaultOrderTemplates ┘ä╪¬┘Å╪│╪¬╪«╪»┘à ╪»┘ü╪º╪╣┘è╪º┘ï ┘ü┘è
- * sendNotification (╪┤╪▒┘â╪⌐ ╪¼╪»┘è╪»╪⌐ ┘ä┘à ╪¬┘ü╪¬╪¡ ╪º┘ä╪╡┘ü╪¡╪⌐ ╪¿╪╣╪» ┘â╪º┘å╪¬ ╪¬┘ü╪┤┘ä ╪¿╪╡┘à╪¬ ╪¿┘Ç no_template).
+/**
+ * 🚨 PRODUCTION-FIX (notifications-fix-plan §2.3 + Meta-Order-Blueprints-2026):
+ * بذر قوالب الطلبات الافتراضية في DB + ضمان قوالب Meta Cloud كاملة ومجهزة للأكونتات الجديدة والقديمة غير المربوطة.
+ * مصدر قوالب الطلبات الوحيد هو صفحة /orders/status-templates.
  */
 const { getSharedPrismaClient } = require('./sharedDatabase');
 
 const DEFAULT_ORDER_TEMPLATE_CONTENT = (statusName) => (
-  `╪ú┘ç┘ä┘ï╪º ╪¿╪¡╪╢╪▒╪¬┘â ≡ƒæï\n╪¬┘à ╪¬╪║┘è┘è╪▒ ╪¡╪º┘ä╪⌐ ╪╖┘ä╪¿┘â ╪Ñ┘ä┘ë: ${statusName}\n╪┤┘â╪▒┘ï╪º ┘ä╪¬╪╣╪º┘à┘ä┘â ┘à╪╣┘å╪º ≡ƒÖÅ`
+  `أهلاً بحضرتك 👋\nتم تغيير حالة طلبك إلى: ${statusName}\nشكراً لتعاملك معنا 🙏`
 );
+
+const META_ORDER_BLUEPRINTS = {
+  ORDER_CREATED: {
+    metaTemplateName: 'order_created',
+    name: 'تأكيد طلب جديد',
+    content: 'أهلًا بحضرتك يا {{customerName}} 👋\nطلبك رقم {{orderNumber}} مستعد للتأكيد:\n\n📦 محتويات الطلب:\n{{orderItems}}\n\n💰 الإجمالي: {{total}} {{currency}}\n\nلو كل البيانات مظبوطة اضغط لتأكيد الطلب للبدء في التجهيز فوراً 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تأكيد الطلب' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' },
+      { position: 3, name: 'orderItems' },
+      { position: 4, name: 'total' },
+      { position: 5, name: 'currency' }
+    ]
+  },
+  CONFIRMED: {
+    metaTemplateName: 'order_confirmed',
+    name: 'تم تأكيد الطلب',
+    content: 'أهلًا بحضرتك يا {{customerName}} ✨\nتم تأكيد طلبك رقم {{orderNumber}} بنجاح.\n\n📦 تفاصيل الطلب:\n{{orderItems}}\n\n💰 الإجمالي: {{total}} {{currency}}\n\nالطلب هيوصلك خلال 2 إلى 4 أيام عمل، وأول ما يخرج للشحن هنبلغ حضرتك فوراً 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تفاصيل الطلب' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' },
+      { position: 3, name: 'orderItems' },
+      { position: 4, name: 'total' },
+      { position: 5, name: 'currency' }
+    ]
+  },
+  ORDER_CONFIRMED: {
+    metaTemplateName: 'order_confirmed',
+    name: 'تم تأكيد الطلب',
+    content: 'أهلًا بحضرتك يا {{customerName}} ✨\nتم تأكيد طلبك رقم {{orderNumber}} بنجاح.\n\n📦 تفاصيل الطلب:\n{{orderItems}}\n\n💰 الإجمالي: {{total}} {{currency}}\n\nالطلب هيوصلك خلال 2 إلى 4 أيام عمل، وأول ما يخرج للشحن هنبلغ حضرتك فوراً 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تفاصيل الطلب' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' },
+      { position: 3, name: 'orderItems' },
+      { position: 4, name: 'total' },
+      { position: 5, name: 'currency' }
+    ]
+  },
+  PROCESSING: {
+    metaTemplateName: 'order_processing',
+    name: 'جاري تجهيز الطلب',
+    content: 'أهلًا بحضرتك يا {{customerName}} 👋\nطلبك رقم {{orderNumber}} قيد التجهيز في المخزن حالياً.\n\n📦 المنتجات:\n{{orderItems}}\n\nسنقوم بإشعارك فور تسليم الشحنة لشركة الشحن 🚚',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تتبع الطلب' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' },
+      { position: 3, name: 'orderItems' }
+    ]
+  },
+  ORDER_PROCESSING: {
+    metaTemplateName: 'order_processing',
+    name: 'جاري تجهيز الطلب',
+    content: 'أهلًا بحضرتك يا {{customerName}} 👋\nطلبك رقم {{orderNumber}} قيد التجهيز في المخزن حالياً.\n\n📦 المنتجات:\n{{orderItems}}\n\nسنقوم بإشعارك فور تسليم الشحنة لشركة الشحن 🚚',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تتبع الطلب' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' },
+      { position: 3, name: 'orderItems' }
+    ]
+  },
+  SHIPPED: {
+    metaTemplateName: 'order_shipped',
+    name: 'تم شحن الطلب',
+    content: 'أهلًا بحضرتك يا {{customerName}} 👋\nتم شحن طلبك رقم {{orderNumber}} وهو الآن في الطريق إليك 🚚\n\nالشحنة ستصلك خلال يومين عمل.\nإذا احتجت أي استفسار أو متابعة، تواصل معنا فوراً ويسعدنا مساعدتك 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تتبع الشحنة' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' }
+    ]
+  },
+  ORDER_SHIPPED: {
+    metaTemplateName: 'order_shipped',
+    name: 'تم شحن الطلب',
+    content: 'أهلًا بحضرتك يا {{customerName}} 👋\nتم شحن طلبك رقم {{orderNumber}} وهو الآن في الطريق إليك 🚚\n\nالشحنة ستصلك خلال يومين عمل.\nإذا احتجت أي استفسار أو متابعة، تواصل معنا فوراً ويسعدنا مساعدتك 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تتبع الشحنة' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' }
+    ]
+  },
+  OUT_FOR_DELIVERY: {
+    metaTemplateName: 'order_with_captain',
+    name: 'الطلب مع المندوب للتسليم',
+    content: 'مساء الخير {{customerName}} 👋\nطلبك رقم {{orderNumber}} مع المندوب ومقرر تسليمه لحضرتك على مدار اليوم 🛵\n\nيرجى التواجد لاستلام الشحنة، ولو عندك أي ملاحظة أو استفسار بلغنا فوراً لمساعدتك 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'متابعة التوصيل' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' }
+    ]
+  },
+  ORDER_OUT_FOR_DELIVERY: {
+    metaTemplateName: 'order_with_captain',
+    name: 'الطلب مع المندوب للتسليم',
+    content: 'مساء الخير {{customerName}} 👋\nطلبك رقم {{orderNumber}} مع المندوب ومقرر تسليمه لحضرتك على مدار اليوم 🛵\n\nيرجى التواجد لاستلام الشحنة، ولو عندك أي ملاحظة أو استفسار بلغنا فوراً لمساعدتك 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'متابعة التوصيل' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' }
+    ]
+  },
+  DELIVERED: {
+    metaTemplateName: 'order_delivered',
+    name: 'تم تسليم الطلب',
+    content: 'أهلاً بحضرتك يا {{customerName}} 🌷\nتم تأكيد استلام طلبك رقم {{orderNumber}} بنجاح ✅\n💰 قيمة الطلب: {{total}} {{currency}}\n\nنتمنى أن ينال المنتج إعجابك، ويسعدنا جداً مشاركتنا رأيك وتقييمك لتجربة الشراء ❤️',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تقييم الطلب' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' },
+      { position: 3, name: 'total' },
+      { position: 4, name: 'currency' }
+    ]
+  },
+  ORDER_DELIVERED: {
+    metaTemplateName: 'order_delivered',
+    name: 'تم تسليم الطلب',
+    content: 'أهلاً بحضرتك يا {{customerName}} 🌷\nتم تأكيد استلام طلبك رقم {{orderNumber}} بنجاح ✅\n💰 قيمة الطلب: {{total}} {{currency}}\n\nنتمنى أن ينال المنتج إعجابك، ويسعدنا جداً مشاركتنا رأيك وتقييمك لتجربة الشراء ❤️',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تقييم الطلب' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' },
+      { position: 3, name: 'total' },
+      { position: 4, name: 'currency' }
+    ]
+  },
+  CANCELLED: {
+    metaTemplateName: 'order_cancelled',
+    name: 'إلغاء الطلب',
+    content: 'مساء الخير {{customerName}} 👋\nنود إعلامك بأنه تم إلغاء طلبك رقم {{orderNumber}} بناءً على رغبتك.\n\nإذا كان الإلغاء قد تم عن طريق الخطأ أو ترغب في إعادة تفعيل الطلب، تواصل معنا ويسعدنا دائماً خدمتك 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'إعادة تفعيل الطلب' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' }
+    ]
+  },
+  ORDER_CANCELLED: {
+    metaTemplateName: 'order_cancelled',
+    name: 'إلغاء الطلب',
+    content: 'مساء الخير {{customerName}} 👋\nنود إعلامك بأنه تم إلغاء طلبك رقم {{orderNumber}} بناءً على رغبتك.\n\nإذا كان الإلغاء قد تم عن طريق الخطأ أو ترغب في إعادة تفعيل الطلب، تواصل معنا ويسعدنا دائماً خدمتك 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'إعادة تفعيل الطلب' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' }
+    ]
+  },
+  RETURNED: {
+    metaTemplateName: 'order_returned',
+    name: 'مرتجع الطلب',
+    content: 'مساء الخير {{customerName}} 👋\nأفادت شركة الشحن بوجود مرتجع لطلبك رقم {{orderNumber}}.\n\nحابين نتأكد من حضرتك لو واجهت أي مشكلة أو كان عندك أي ملاحظة لنساعدك ونرتب الاستلام بالشكل الأنسب لك 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تواصل مع الدعم' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' }
+    ]
+  },
+  ORDER_RETURNED: {
+    metaTemplateName: 'order_returned',
+    name: 'مرتجع الطلب',
+    content: 'مساء الخير {{customerName}} 👋\nأفادت شركة الشحن بوجود مرتجع لطلبك رقم {{orderNumber}}.\n\nحابين نتأكد من حضرتك لو واجهت أي مشكلة أو كان عندك أي ملاحظة لنساعدك ونرتب الاستلام بالشكل الأنسب لك 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تواصل مع الدعم' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' }
+    ]
+  },
+  PAYMENT_REMINDER: {
+    metaTemplateName: 'payment_reminder',
+    name: 'تذكير بالدفع',
+    content: 'أهلاً {{customerName}} 👋\nنود تذكيرك بإتمام الدفع لطلبك رقم {{orderNumber}}.\n💰 المبلغ المطلوب: {{total}} {{currency}}\n\nيرجى إتمام عملية الدفع لتأكيد الطلب وبدء الشحن فوراً 🙏',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'الدفع الآن' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' },
+      { position: 3, name: 'total' },
+      { position: 4, name: 'currency' }
+    ]
+  },
+  INCOMPLETE_CART_FIRST_APPEARANCE: {
+    metaTemplateName: 'cart_recovery_discount',
+    name: 'سلة متروكة - استعادة الطلب',
+    category: 'ABANDONED_CART',
+    content: 'أهلاً {{customerName}} 👋\nلاحظنا أنك تركت بعض المنتجات المميزة في سلة التسوق 🛍️\n\nإجمالي السلة: {{cartTotal}} {{currency}}\n\nالمنتجات لا تزال محجوزة لك لفترة محدودة، اضغط أدناه لإتمام طلبك قبل نفاد الكمية! ✨',
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'إتمام الشراء الآن' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'cartTotal' },
+      { position: 3, name: 'currency' }
+    ]
+  }
+};
+
+function resolveMetaBlueprint(eventCode, eventName) {
+  if (META_ORDER_BLUEPRINTS[eventCode]) return META_ORDER_BLUEPRINTS[eventCode];
+  const cleanCode = String(eventCode).toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  return {
+    metaTemplateName: `order_${cleanCode}`.slice(0, 50),
+    name: `قالب ميتا - ${eventName || eventCode}`,
+    category: 'ORDERS',
+    content: `أهلاً بحضرتك يا {{customerName}} 👋\nنود إعلامك بتحديث حالة طلبك رقم {{orderNumber}} إلى: *${eventName || eventCode}*\n\n📦 تفاصيل الطلب:\n{{orderItems}}\n\nشكراً لتعاملك معنا 🙏`,
+    hasButtons: true,
+    buttons: [{ type: 'QUICK_REPLY', text: 'تتبع الطلب' }],
+    variables: [
+      { position: 1, name: 'customerName' },
+      { position: 2, name: 'orderNumber' },
+      { position: 3, name: 'orderItems' }
+    ]
+  };
+}
 
 async function seedDefaultOrderTemplates(companyId, prisma = getSharedPrismaClient()) {
   try {
@@ -18,11 +243,12 @@ async function seedDefaultOrderTemplates(companyId, prisma = getSharedPrismaClie
       select: { id: true, code: true, name: true }
     });
 
-    // ╪ú╪¡╪»╪º╪½ ╪º┘ä╪╖┘ä╪¿╪º╪¬ ╪º┘ä╪Ñ╪╢╪º┘ü┘è╪⌐ ╪║┘è╪▒ ╪º┘ä┘à╪▒╪¬╪¿╪╖╪⌐ ╪¿╪¡╪º┘ä╪⌐ ┘à╪¡╪»╪»╪⌐ (╪¬┘Å╪»╪º╪▒ ┘à┘å ╪╡┘ü╪¡╪⌐ ┘é┘ê╪º┘ä╪¿ ╪º┘ä╪╖┘ä╪¿╪º╪¬)
+    // أحداث الطلبات الإضافية غير المرتبطة بحالة محددة (تُدار من صفحة قوالب الطلبات)
     const extraOrderEvents = [
-      { code: 'ORDER_CREATED', name: '╪╖┘ä╪¿ ╪¼╪»┘è╪»' },
-      { code: 'ORDER_CANCELLED', name: '╪Ñ┘ä╪║╪º╪í ╪º┘ä╪╖┘ä╪¿' },
-      { code: 'PAYMENT_REMINDER', name: '╪¬╪░┘â┘è╪▒ ╪¿╪º┘ä╪»┘ü╪╣' }
+      { code: 'ORDER_CREATED', name: 'طلب جديد' },
+      { code: 'ORDER_CANCELLED', name: 'إلغاء الطلب' },
+      { code: 'PAYMENT_REMINDER', name: 'تذكير بالدفع' },
+      { code: 'INCOMPLETE_CART_FIRST_APPEARANCE', name: 'سلة متروكة - أول ظهور' }
     ];
 
     const allEvents = [
@@ -30,49 +256,91 @@ async function seedDefaultOrderTemplates(companyId, prisma = getSharedPrismaClie
       ...extraOrderEvents
     ];
 
-    const existingTemplates = await prisma.whatsAppNotificationTemplate.findMany({
+    const allExistingTemplates = await prisma.whatsAppNotificationTemplate.findMany({
       where: { companyId, eventType: { in: allEvents.map(e => e.code) } },
-      select: { eventType: true }
+      select: { id: true, eventType: true, channel: true, metaTemplateName: true }
     });
-    const existingEventTypes = new Set(existingTemplates.map(t => t.eventType));
 
-    let created = 0;
+    const existingRegularEventTypes = new Set(
+      allExistingTemplates
+        .filter(t => !t.metaTemplateName && String(t.channel || '').toUpperCase() !== 'META_CLOUD')
+        .map(t => t.eventType)
+    );
+
+    const existingMetaEventTypes = new Set(
+      allExistingTemplates
+        .filter(t => Boolean(t.metaTemplateName) || String(t.channel || '').toUpperCase() === 'META_CLOUD')
+        .map(t => t.eventType)
+    );
+
+    let createdRegular = 0;
+    let createdMeta = 0;
+
     for (const event of allEvents) {
-      if (existingEventTypes.has(event.code)) continue;
-      await prisma.whatsAppNotificationTemplate.create({
-        data: {
-          companyId,
-          eventType: event.code,
-          name: `┘é╪º┘ä╪¿ ${event.name}`,
-          category: 'ORDERS',
-          content: DEFAULT_ORDER_TEMPLATE_CONTENT(event.name),
-          variables: JSON.stringify([
-            { position: 1, name: 'customerName' },
-            { position: 2, name: 'orderNumber' }
-          ]),
-          hasButtons: false,
-          isActive: true
-        }
-      });
-      created++;
+      const bp = resolveMetaBlueprint(event.code, event.name);
+
+      // 1. بذر القالب العادي الافتراضي إذا لم يكن موجوداً
+      if (!existingRegularEventTypes.has(event.code)) {
+        await prisma.whatsAppNotificationTemplate.create({
+          data: {
+            companyId,
+            eventType: event.code,
+            name: `قالب ${event.name}`,
+            category: bp.category || 'ORDERS',
+            content: DEFAULT_ORDER_TEMPLATE_CONTENT(event.name),
+            variables: JSON.stringify([
+              { position: 1, name: 'customerName' },
+              { position: 2, name: 'orderNumber' }
+            ]),
+            hasButtons: false,
+            channel: 'AUTO',
+            isActive: true
+          }
+        });
+        createdRegular++;
+      }
+
+      // 2. بذر قالب ميتا الكامل والجاهز للربط/الإرسال لميتا لأي حساب جديد أو غير مربوط
+      if (!existingMetaEventTypes.has(event.code)) {
+        await prisma.whatsAppNotificationTemplate.create({
+          data: {
+            companyId,
+            eventType: event.code,
+            name: bp.name,
+            category: bp.category || 'ORDERS',
+            content: bp.content,
+            headerFormat: 'TEXT',
+            hasButtons: bp.hasButtons || false,
+            buttons: bp.buttons ? JSON.stringify(bp.buttons) : null,
+            variables: JSON.stringify(bp.variables || []),
+            metaTemplateName: bp.metaTemplateName,
+            metaTemplateLanguage: 'ar',
+            metaTemplateStatus: null, // جاهز محلياً وينتظر الإرسال لميتا
+            channel: 'META_CLOUD',
+            isActive: true,
+            isDefault: false
+          }
+        });
+        createdMeta++;
+      }
     }
 
-    if (created > 0) {
-      console.log(`≡ƒî▒ [ORDER-TEMPLATES] Created ${created} default order template(s) for company ${companyId}`);
+    if (createdRegular > 0 || createdMeta > 0) {
+      console.log(`🌱 [ORDER-TEMPLATES] Seeded for company ${companyId}: regular=${createdRegular}, meta=${createdMeta}`);
     }
-    return created;
+    return createdRegular + createdMeta;
   } catch (error) {
-    console.error('Γ¥î [ORDER-TEMPLATES] Seed failed:', error.message);
+    console.error('❌ [ORDER-TEMPLATES] Seed failed:', error.message);
     return 0;
   }
 }
 
 /**
- * ┘è╪╢┘à┘å ┘ê╪¼┘ê╪» ┘é╪º┘ä╪¿ ┘ä┘ä╪¡╪»╪½ ╪º┘ä╪¼╪º╪▒┘è (┘è┘Å╪│╪¬╪»╪╣┘ë ╪╣┘å╪» ╪║┘è╪º╪¿ ╪º┘ä┘é╪º┘ä╪¿ ┘ä╪ú╪¡╪»╪º╪½ ╪º┘ä╪╖┘ä╪¿╪º╪¬):
- * 1) ┘è╪▓╪▒╪╣ ╪º┘ä╪º┘ü╪¬╪▒╪º╪╢┘è╪º╪¬ ┘ä┘â┘ä ╪º┘ä╪¡╪º┘ä╪º╪¬ ╪º┘ä┘à┘Å╪╣╪▒┘æ┘ü╪⌐ + ╪º┘ä╪ú╪¡╪»╪º╪½ ╪º┘ä┘é┘è╪º╪│┘è╪⌐.
- * 2) ┘ä┘ê ┘à╪º ╪▓╪º┘ä ╪º┘ä╪¡╪»╪½ ╪º┘ä┘à╪¡╪»╪» ╪¿┘ä╪º ┘é╪º┘ä╪¿ (╪¡╪º┘ä╪⌐ ╪║┘è╪▒ ┘à┘Å╪╣╪▒┘æ┘ü╪⌐ ┘ü┘è orderStatusConfig)╪î
- *    ┘è┘å╪┤╪ª ╪╡┘ü╪º┘ï ╪»┘å┘è╪º┘ï ┘é╪º╪¿┘ä╪º┘ï ┘ä┘ä╪¬╪╣╪»┘è┘ä ┘à┘å ╪º┘ä╪╡┘ü╪¡╪⌐.
- * ┘è╪▒╪¼╪╣ ╪╡┘ü ╪º┘ä┘é╪º┘ä╪¿ (DB) ╪ú┘ê null.
+ * يضمن وجود قالب للحدث الجاري (يُستدعى عند غياب القالب لأحداث الطلبات):
+ * 1) يزرع الافتراضيات لكل الحالات المُعرّفة + الأحداث القياسية.
+ * 2) لو ما زال الحدث المحدد بلا قالب (حالة غير مُعرّفة في orderStatusConfig)،
+ *    ينشئ صفاً دنياً قابلاً للتعديل من الصفحة.
+ * يرجع صف القالب (DB) أو null.
  */
 async function ensureOrderTemplate({ companyId, eventType, fallbackEventType, prisma = getSharedPrismaClient() }) {
   await seedDefaultOrderTemplates(companyId, prisma);
@@ -99,7 +367,7 @@ async function ensureOrderTemplate({ companyId, eventType, fallbackEventType, pr
     data: {
       companyId,
       eventType: targetCode,
-      name: `┘é╪º┘ä╪¿ ${targetCode}`,
+      name: `قالب ${targetCode}`,
       category: 'ORDERS',
       content: DEFAULT_ORDER_TEMPLATE_CONTENT(statusName),
       variables: JSON.stringify([
@@ -110,8 +378,14 @@ async function ensureOrderTemplate({ companyId, eventType, fallbackEventType, pr
       isActive: true
     }
   });
-  console.log(`≡ƒî▒ [ORDER-TEMPLATES] Auto-created minimal template for ${companyId}/${targetCode}`);
+  console.log(`🌱 [ORDER-TEMPLATES] Auto-created minimal template for ${companyId}/${targetCode}`);
   return created;
 }
 
-module.exports = { DEFAULT_ORDER_TEMPLATE_CONTENT, seedDefaultOrderTemplates, ensureOrderTemplate };
+module.exports = {
+  DEFAULT_ORDER_TEMPLATE_CONTENT,
+  META_ORDER_BLUEPRINTS,
+  resolveMetaBlueprint,
+  seedDefaultOrderTemplates,
+  ensureOrderTemplate
+};
