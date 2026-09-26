@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import src.db.session as _db_mod
 from src.db.models.skill import Skill
+from src.agents.role_registry import get_role
 
 logger = structlog.get_logger(__name__)
 
@@ -175,22 +176,10 @@ class AutonomousSkillLearner:
         if not company_id:
             return {"success": False, "error": "company_id is required"}
 
-        category_clean = (rule_category or "GENERAL").strip().upper()
-        category_titles = {
-            "CUSTOMER_SUPPORT": "كتيب خدمة العملاء والاستفسارات",
-            "SUPPORT": "كتيب خدمة العملاء والاستفسارات",
-            "SALES": "كتيب مبيعات وإغلاق الصفقات",
-            "SALES_CLOSING": "كتيب مبيعات وإغلاق الصفقات",
-            "INVENTORY": "كتيب إدارة وحركة المخزون",
-            "MEDIA_BUYER": "كتيب استراتيجيات إعلانات المتجر",
-            "OPERATIONS": "كتيب العمليات التشغيلية والتأكيد",
-            "CLINIC": "كتيب العيادات والمواعيد الطبية",
-            "HOTEL": "كتيب حجوزات الفنادق والضيافة",
-            "DENTAL_LAB": "كتيب تشغيل معمل الأسنان",
-            "GENERAL": "كتيب القواعد العامة للمتجر",
-        }
-        skill_name = category_titles.get(category_clean, f"كتيب {category_clean}")
-        skill_id = f"{category_clean.lower()}_playbook_{company_id}"
+        role_spec = get_role(rule_category)
+        canonical_domain = role_spec.domain.upper()
+        skill_name = role_spec.playbook_title or f"كتيب قواعد {canonical_domain}"
+        skill_id = f"{canonical_domain.lower()}_playbook_{company_id}"
 
         rule_line = f"- [{rule_title.strip()}] {rule_instructions.strip()}"
 
@@ -198,12 +187,13 @@ class AutonomousSkillLearner:
             company_id=company_id,
             skill_id=skill_id,
             skill_name=skill_name,
-            skill_type=category_clean,
+            skill_type=canonical_domain,
             new_rule_line=rule_line,
             rule_metadata={
                 "last_distilled_at": self._now_iso(),
                 "title": rule_title,
-                "category": category_clean,
+                "category": canonical_domain,
+                "raw_category": rule_category,
                 "evidence": supporting_evidence or {},
                 "trigger_keywords": trigger_keywords or "",
                 "source": "AGENT_UNIVERSAL_LEARN",

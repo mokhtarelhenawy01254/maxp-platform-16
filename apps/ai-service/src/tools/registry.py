@@ -63,7 +63,6 @@ CORE_TOOL_NAMES: set[str] = {
     "shipping_rates",
     "knowledge_search",
     "agent_handoff_to",
-    "unlock_advanced_tools",
     "knowledge_ask_merchant",
 }
 

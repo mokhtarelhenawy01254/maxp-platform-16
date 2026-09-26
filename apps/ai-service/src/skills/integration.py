@@ -287,17 +287,17 @@ def resolve_skill_context(
     }
 
 
+from src.agents.role_registry import get_role, all_roles
+
 ROLE_DOMAIN_MAP: dict[str, set[str]] = {
-    "SUPPORT": {"CUSTOMER_SUPPORT", "SUPPORT", "GENERAL"},
-    "CUSTOMER_SUPPORT": {"CUSTOMER_SUPPORT", "SUPPORT", "GENERAL"},
-    "SALES": {"SALES", "SALES_CLOSING", "GENERAL"},
-    "MEDIA_BUYER": {"MEDIA_BUYER", "GENERAL"},
-    "INVENTORY": {"INVENTORY", "OPERATIONS", "GENERAL"},
-    "CLINIC": {"CLINIC", "GENERAL"},
-    "HOTEL": {"HOTEL", "GENERAL"},
-    "DENTAL_LAB": {"DENTAL_LAB", "OPERATIONS", "GENERAL"},
-    "OPERATIONS": {"OPERATIONS", "INVENTORY", "GENERAL"},
+    k: {spec.domain, "GENERAL", *[s.upper() for s in spec.approval_policy.get("allowed_scopes", [])]}
+    for k, spec in all_roles().items()
 }
+ROLE_DOMAIN_MAP.update({
+    "CUSTOMER_SUPPORT": {"CUSTOMER_SUPPORT", "SUPPORT", "GENERAL"},
+    "GENERAL": {"GENERAL"},
+})
+
 
 
 def get_skills_block(
@@ -326,7 +326,7 @@ def get_skills_block(
     l1_active_parts: list[str] = []
 
     if company_id:
-        allowed_domains = ROLE_DOMAIN_MAP.get(agent_role.upper(), {agent_role.upper(), "GENERAL"}) if agent_role else None
+        allowed_domains = ROLE_DOMAIN_MAP.get(agent_role.upper(), {get_role(agent_role).domain, "GENERAL"}) if agent_role else None
         tenant_skills = get_tenant_skills_from_cache(company_id)
         lower_user_msg = (user_message or "").lower()
 

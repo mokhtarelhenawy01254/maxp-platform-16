@@ -26,18 +26,15 @@ INJECTION_PATTERNS = [
     re.compile(r"أنا\s+(المدير|المالك|الإدارة)\s+التنفيذي", re.IGNORECASE),
 ]
 
-ROLE_DOMAIN_MAP = {
-    "SUPPORT": "CUSTOMER_SUPPORT",
-    "CUSTOMER_SUPPORT": "CUSTOMER_SUPPORT",
-    "SALES": "SALES",
-    "MEDIA_BUYER": "MEDIA_BUYER",
-    "INVENTORY": "INVENTORY",
-    "CLINIC": "CLINIC",
-    "HOTEL": "HOTEL",
-    "DENTAL_LAB": "DENTAL_LAB",
-    "OPERATIONS": "OPERATIONS",
+from src.agents.role_registry import get_role, all_roles
+
+# Canonical role-domain mapping derived from Role Registry
+ROLE_DOMAIN_MAP = {k: spec.domain for k, spec in all_roles().items()}
+ROLE_DOMAIN_MAP.update({
+    "CUSTOMER_SUPPORT": "SUPPORT",
     "GENERAL": "GENERAL",
-}
+})
+
 
 
 class HermesBackgroundReviewWorker:
@@ -102,7 +99,7 @@ class HermesBackgroundReviewWorker:
             "SUCCESS", "CONFIRMED", "ORDER_CREATED", "ROAS_HIT", "OBJECTION_RESOLVED"
         )
 
-        category = ROLE_DOMAIN_MAP.get(agent_role.upper(), "GENERAL")
+        category = get_role(agent_role).domain
 
         # 3. Hermes Authoring Standard (Description <= 60 chars ending with a period)
         rule_title = meta.get("rule_title") or (

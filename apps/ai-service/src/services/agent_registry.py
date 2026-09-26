@@ -17,6 +17,7 @@ from src.tools.registry import (
     resolve_tools_from_names,
 )
 from src.tools.sdk_gateway import wrap_tools_for_gateway
+from src.agents.role_registry import get_role
 
 logger = structlog.get_logger(__name__)
 
@@ -270,16 +271,21 @@ async def init_registry_from_db(session_factory) -> None:
                         except (json.JSONDecodeError, TypeError):
                             pass
 
+                    role_spec = get_role(db_agent.role)
                     if not tool_names:
-                        tool_names = get_tool_names_for_role(db_agent.role)
+                        tool_names = list(role_spec.tools) if role_spec.tools else get_tool_names_for_role(db_agent.role)
 
-                    # Hermes Self-Learning Protocol: ALWAYS ensure learning & skill tools are available
-                    if "record_learned_rule" not in tool_names:
-                        tool_names.append("record_learned_rule")
-                    if "manage_agent_skill" not in tool_names:
-                        tool_names.append("manage_agent_skill")
-                    if db_agent.role == "MEDIA_BUYER" and "facebook_ad_record_learned_rule" not in tool_names:
-                        tool_names.append("facebook_ad_record_learned_rule")
+                    # Hermes Self-Learning Protocol: ALWAYS ensure learning & skill tools are available if capable
+                    if role_spec.capabilities.get("learning", True):
+                        if "record_learned_rule" not in tool_names:
+                            tool_names.append("record_learned_rule")
+                        if "manage_agent_skill" not in tool_names:
+                            tool_names.append("manage_agent_skill")
+
+                    # Ensure any role-specific tools from manifest are populated
+                    for t in role_spec.tools:
+                        if t not in tool_names:
+                            tool_names.append(t)
 
                     channels: list[str] = db_agent.channels or []
 

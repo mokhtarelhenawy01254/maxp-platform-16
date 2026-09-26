@@ -42,25 +42,31 @@ async def unlock_advanced_tools(
             "scope": "LOCKED",
         }
 
+    from src.agents.role_registry import get_role
+    agent_role = getattr(ctx, "agent_role", None) or "STORE_MANAGER"
+    role_spec = get_role(agent_role)
+    forbidden_prefixes = tuple(role_spec.approval_policy.get("forbidden_prefixes", ["hr_", "payroll_", "internal_"]))
+
     scoped_tools = [
         t for t in ADVANCED_TOOLS 
-        if not t.name.startswith("hr_") and not t.name.startswith("payroll_") and not t.name.startswith("internal_")
+        if not any(t.name.startswith(p) for p in forbidden_prefixes)
     ]
     unlocked_names = [t.name for t in scoped_tools]
+    scope_name = f"{role_spec.domain}_ADVANCED"
 
     if not input_data.approved:
         if company_id:
             await log_agent_audit_event(
                 company_id=company_id,
                 action="ADVANCED_TOOLS_UNLOCK_REQUESTED",
-                description=f"طلب تفعيل الأدوات المتقدمة ينتظر موافقة التاجر (نطاق المساعد التنفيذي: {len(unlocked_names)} أداة تحليل ومنافسين، مستبعد منها HR/Payroll بالكامل). السبب: {input_data.reason}",
+                description=f"طلب تفعيل الأدوات المتقدمة ينتظر موافقة التاجر (نطاق {role_spec.label}: {len(unlocked_names)} أداة تحليل ومنافسين، مستبعد منها HR/Payroll بالكامل). السبب: {input_data.reason}",
                 category="AI_AGENT",
                 severity="MEDIUM",
                 metadata={
                     "reason": input_data.reason,
                     "unlocked_count": len(unlocked_names),
                     "tools": unlocked_names,
-                    "scope": "STORE_MANAGER_ADVANCED",
+                    "scope": scope_name,
                     "excluded_domains": ["HR", "PAYROLL", "INTERNAL"],
                 },
             )

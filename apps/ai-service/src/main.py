@@ -73,6 +73,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         configure_logging(settings.log_level)
+        from src.agents.role_registry import validate_all
+        validation_errors = validate_all()
+        if validation_errors:
+            structlog.get_logger().error("role_registry_startup_check_failed", errors=validation_errors)
+            if not os.getenv("PYTEST_CURRENT_TEST"):
+                raise RuntimeError(f"Role Registry startup validation failed: {validation_errors}")
         await init_db()
 
         # Observability
