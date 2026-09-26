@@ -67,6 +67,7 @@ declare global {
       // Task Comments
       getTaskComments: (taskId: string) => Promise<{ success: boolean; comments: any[]; error?: string }>;
       addTaskComment: (taskId: string, content: string) => Promise<{ success: boolean; comment?: any; error?: string }>;
+      updateTaskComment: (commentId: string, content: string) => Promise<{ success: boolean; comment?: any; error?: string }>;
       deleteTaskComment: (commentId: string) => Promise<{ success: boolean; data?: any; error?: string }>;
 
       // Goals (OKRs)

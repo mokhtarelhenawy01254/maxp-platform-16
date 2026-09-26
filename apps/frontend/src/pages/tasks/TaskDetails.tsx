@@ -220,7 +220,7 @@ const toTaskComment = (value: unknown): TaskComment => {
     createdAt: getString(record.createdAt),
     isEdited: Boolean(record.isEdited),
     userId: getString(record.userId) || undefined,
-    user: toTaskPerson(record.user || record.author),
+    user: toTaskPerson(record.user || record.users || record.author),
   };
 };
 

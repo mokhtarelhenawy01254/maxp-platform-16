@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, Send, Trash2, User, Clock, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, Trash2, Pencil, Check, X, Loader2 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
 
 interface TaskCommentsProps {
@@ -19,6 +19,7 @@ interface CommentItem {
   content: string;
   userId: string;
   createdAt: string;
+  isEdited?: boolean;
   users?: CommentUser;
   replies?: CommentItem[];
 }
@@ -33,6 +34,9 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [updating, setUpdating] = useState(false);
 
   const fetchComments = useCallback(async () => {
     if (!taskId || !window.electronAPI?.getTaskComments) return;
@@ -75,6 +79,28 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({
       setError(err?.message || 'حدث خطأ أثناء الإرسال');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUpdate = async (commentId: string) => {
+    const text = editContent.trim();
+    if (!text || updating || !window.electronAPI?.updateTaskComment) return;
+
+    setUpdating(true);
+    setError(null);
+    try {
+      const res = await window.electronAPI.updateTaskComment(commentId, text);
+      if (res?.success) {
+        setEditingId(null);
+        setEditContent('');
+        fetchComments();
+      } else {
+        setError(res?.error || 'فشل في تعديل التعليق');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'حدث خطأ أثناء التعديل');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -136,35 +162,140 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({
           comments.map((comment) => {
             const authorName = `${comment.users?.firstName || ''} ${comment.users?.lastName || ''}`.trim() || 'مستخدم';
             const initial = authorName.charAt(0).toUpperCase() || 'U';
-            const canDelete = isAdmin || (currentUserId && comment.userId === currentUserId);
+            const canModify = isAdmin || (currentUserId && comment.userId === currentUserId);
 
             return (
-              <div key={comment.id} style={styles.commentItem}>
-                <div style={styles.avatar}>
-                  {comment.users?.avatar ? (
-                    <img src={comment.users.avatar} alt={authorName} style={styles.avatarImg} />
-                  ) : (
-                    <span>{initial}</span>
-                  )}
-                </div>
-
-                <div style={styles.commentBody}>
-                  <div style={styles.commentMeta}>
-                    <span style={styles.authorName}>{authorName}</span>
-                    <span style={styles.timeLabel}>{formatCommentDate(comment.createdAt)}</span>
-                    {canDelete && (
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(comment.id)}
-                        style={styles.deleteBtn}
-                        title="حذف التعليق"
-                      >
-                        <Trash2 size={11} />
-                      </button>
+              <div key={comment.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={styles.commentItem}>
+                  <div style={styles.avatar}>
+                    {comment.users?.avatar ? (
+                      <img src={comment.users.avatar} alt={authorName} style={styles.avatarImg} />
+                    ) : (
+                      <span>{initial}</span>
                     )}
                   </div>
-                  <div style={styles.commentContent}>{comment.content}</div>
+
+                  <div style={styles.commentBody}>
+                    <div style={styles.commentMeta}>
+                      <span style={styles.authorName}>{authorName}</span>
+                      <span style={styles.timeLabel}>{formatCommentDate(comment.createdAt)}</span>
+                      {comment.isEdited && (
+                        <span style={{ fontSize: 9, color: 'var(--text-dim)', fontStyle: 'italic' }}>· معدل</span>
+                      )}
+                      {canModify && (
+                        <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingId(comment.id);
+                              setEditContent(comment.content);
+                            }}
+                            style={styles.deleteBtn}
+                            title="تعديل التعليق"
+                          >
+                            <Pencil size={11} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(comment.id)}
+                            style={styles.deleteBtn}
+                            title="حذف التعليق"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {editingId === comment.id ? (
+                      <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                        <input
+                          type="text"
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleUpdate(comment.id);
+                            if (e.key === 'Escape') setEditingId(null);
+                          }}
+                          style={styles.input}
+                          disabled={updating}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleUpdate(comment.id)}
+                          disabled={updating || !editContent.trim()}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--accent-green, #10b981)',
+                            cursor: 'pointer',
+                            padding: 2,
+                          }}
+                          title="حفظ"
+                        >
+                          {updating ? <Loader2 size={12} className="spin" /> : <Check size={12} />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--text-dim, #94a3b8)',
+                            cursor: 'pointer',
+                            padding: 2,
+                          }}
+                          title="إلغاء"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={styles.commentContent}>{comment.content}</div>
+                    )}
+                  </div>
                 </div>
+
+                {/* Nested Replies */}
+                {Array.isArray(comment.replies) && comment.replies.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingRight: 16 }}>
+                    {comment.replies.map((reply) => {
+                      const replyAuthor = `${reply.users?.firstName || ''} ${reply.users?.lastName || ''}`.trim() || 'مستخدم';
+                      const replyInitial = replyAuthor.charAt(0).toUpperCase() || 'U';
+                      const canDeleteReply = isAdmin || (currentUserId && reply.userId === currentUserId);
+
+                      return (
+                        <div key={reply.id} style={{ ...styles.commentItem, backgroundColor: 'rgba(255, 255, 255, 0.01)' }}>
+                          <div style={{ ...styles.avatar, width: 18, height: 18, fontSize: 9 }}>
+                            {reply.users?.avatar ? (
+                              <img src={reply.users.avatar} alt={replyAuthor} style={styles.avatarImg} />
+                            ) : (
+                              <span>{replyInitial}</span>
+                            )}
+                          </div>
+                          <div style={styles.commentBody}>
+                            <div style={styles.commentMeta}>
+                              <span style={styles.authorName}>{replyAuthor}</span>
+                              <span style={styles.timeLabel}>{formatCommentDate(reply.createdAt)}</span>
+                              {canDeleteReply && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(reply.id)}
+                                  style={{ ...styles.deleteBtn, marginRight: 'auto' }}
+                                  title="حذف الرد"
+                                >
+                                  <Trash2 size={10} />
+                                </button>
+                              )}
+                            </div>
+                            <div style={styles.commentContent}>{reply.content}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })

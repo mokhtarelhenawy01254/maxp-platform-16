@@ -118,6 +118,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('tasks:get-comments', taskId),
   addTaskComment: (taskId: string, content: string) =>
     ipcRenderer.invoke('tasks:add-comment', { taskId, content }),
+  updateTaskComment: (commentId: string, content: string) =>
+    ipcRenderer.invoke('tasks:update-comment', { commentId, content }),
   deleteTaskComment: (commentId: string) =>
     ipcRenderer.invoke('tasks:delete-comment', commentId),
 

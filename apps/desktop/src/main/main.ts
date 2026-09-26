@@ -1143,6 +1143,18 @@ function registerIpcHandlers(): void {
     }
   );
 
+  ipcMain.handle(
+    'tasks:update-comment',
+    async (_, { commentId, content }: { commentId: string; content: string }) => {
+      try {
+        const res = await apiClient.updateTaskComment(commentId, content);
+        return res;
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    }
+  );
+
   ipcMain.handle('tasks:delete-comment', async (_, commentId: string) => {
     try {
       const res = await apiClient.deleteTaskComment(commentId);

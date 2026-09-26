@@ -848,6 +848,23 @@ class MonitorApiClient {
     }
   }
 
+  async updateTaskComment(commentId: string, content: string): Promise<any> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.put(
+        `${base}/api/v1/tasks/comments/${commentId}`,
+        { content },
+        {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        }
+      );
+      return { success: true, comment: res.data?.data ?? res.data };
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.error || err.message };
+    }
+  }
+
   async deleteTaskComment(commentId: string): Promise<any> {
     try {
       const base = this.serverUrl;

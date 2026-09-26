@@ -62,6 +62,22 @@ const parseStringArray = (value) => {
   }
 };
 
+const formatTaskComment = (comment) => {
+  if (!comment) return comment;
+  const author = comment.users || comment.user || null;
+  const rawReplies = comment.other_task_comments || comment.replies || [];
+  return {
+    ...comment,
+    user: author,
+    users: author,
+    replies: rawReplies.map((r) => ({
+      ...r,
+      user: r.users || r.user || null,
+      users: r.users || r.user || null,
+    })),
+  };
+};
+
 const toNumberValue = (value, fallback = null) => {
   if (value === undefined || value === null || value === "") {
     return fallback;
@@ -2537,6 +2553,12 @@ const taskController = {
       const companyId = req.user.companyId;
       const userId = req.user.userId;
 
+      if (!content || !content.trim()) {
+        return res
+          .status(400)
+          .json({ success: false, error: "محتوى التعليق مطلوب" });
+      }
+
       const task = await getSharedPrismaClient().task.findFirst({
         where: { id: taskId, companyId },
       });
@@ -2546,70 +2568,86 @@ const taskController = {
           .json({ success: false, error: "المهمة غير موجودة" });
       }
 
+      const stringifiedMentions = mentions
+        ? (typeof mentions === "string" ? mentions : JSON.stringify(mentions))
+        : null;
+
       const comment = await getSharedPrismaClient().taskComment.create({
         data: {
           taskId,
           userId,
-          content,
+          content: content.trim(),
           parentCommentId: parentCommentId || null,
-          mentions: mentions || [],
+          mentions: stringifiedMentions,
           companyId,
         },
         include: {
-          users: { select: { firstName: true, lastName: true, avatar: true } },
-          replies: {
+          users: { select: { id: true, firstName: true, lastName: true, avatar: true } },
+          other_task_comments: {
             include: {
               users: {
-                select: { firstName: true, lastName: true, avatar: true },
+                select: { id: true, firstName: true, lastName: true, avatar: true },
               },
             },
+            orderBy: { createdAt: "asc" },
           },
         },
       });
 
-      await getSharedPrismaClient().taskActivity.create({
-        data: {
-          taskId,
-          userId,
-          action: "commented",
-          description: "تم إضافة تعليق",
-          companyId,
-        },
-      });
+      try {
+        await getSharedPrismaClient().taskActivity.create({
+          data: {
+            taskId,
+            userId,
+            action: "commented",
+            description: "تم إضافة تعليق",
+            companyId,
+          },
+        });
+      } catch (actErr) {
+        console.warn("[addComment] Failed to log activity:", actErr?.message);
+      }
 
-      const mentionedUserIds = Array.isArray(mentions)
-        ? mentions
-        : parseStringArray(mentions);
+      const formattedComment = formatTaskComment(comment);
 
-      res.json({
+      res.status(201).json({
         success: true,
-        data: comment,
+        data: formattedComment,
+        comment: formattedComment,
         message: "تم إضافة التعليق بنجاح",
       });
 
       // 🔔 ارسال اشعارات للمتابعين أو المسند إليهم والمذكورين (باستثناء صاحب التعليق)
-      await taskNotificationService.notifyTaskStakeholders({
-        companyId,
-        task,
-        actorUserId: userId,
-        type: "comment_added",
-        title: "تعليق جديد على مهمة",
-        message: `${req.user.firstName}: ${content.substring(0, 50)}${content.length > 50 ? "..." : ""}`,
-        includeAssignee: true,
-        includeCreator: true,
-        includeWatchers: true,
-        additionalUserIds: mentionedUserIds,
-        whatsappData: {
-          templateName: "TASK_COMMENTED",
-          taskTitle: task.title,
-          variables: taskNotificationHelpers.buildTaskVariables(task, {
-            commentAuthor: `${req.user.firstName || ""} ${req.user.lastName || ""}`.trim() || "مستخدم",
-            commentExcerpt: content.substring(0, 100),
-          }),
-        },
-        logActivity: true,
-        activityDescription: "تم إرسال إشعار تعليق جديد على المهمة",
-      });
+      try {
+        const mentionedUserIds = Array.isArray(mentions)
+          ? mentions
+          : parseStringArray(mentions);
+
+        await taskNotificationService.notifyTaskStakeholders({
+          companyId,
+          task,
+          actorUserId: userId,
+          type: "comment_added",
+          title: "تعليق جديد على مهمة",
+          message: `${req.user.firstName}: ${content.substring(0, 50)}${content.length > 50 ? "..." : ""}`,
+          includeAssignee: true,
+          includeCreator: true,
+          includeWatchers: true,
+          additionalUserIds: mentionedUserIds,
+          whatsappData: {
+            templateName: "TASK_COMMENTED",
+            taskTitle: task.title,
+            variables: taskNotificationHelpers.buildTaskVariables(task, {
+              commentAuthor: `${req.user.firstName || ""} ${req.user.lastName || ""}`.trim() || "مستخدم",
+              commentExcerpt: content.substring(0, 100),
+            }),
+          },
+          logActivity: true,
+          activityDescription: "تم إرسال إشعار تعليق جديد على المهمة",
+        });
+      } catch (notifyErr) {
+        console.warn("[addComment] Failed to send notification:", notifyErr?.message);
+      }
     } catch (error) {
       console.error("Error adding comment:", error);
       res.status(500).json({ success: false, error: "فشل في إضافة التعليق" });
@@ -2624,11 +2662,11 @@ const taskController = {
       const comments = await getSharedPrismaClient().taskComment.findMany({
         where: { taskId, companyId, parentCommentId: null },
         include: {
-          users: { select: { firstName: true, lastName: true, avatar: true } },
-          replies: {
+          users: { select: { id: true, firstName: true, lastName: true, avatar: true } },
+          other_task_comments: {
             include: {
               users: {
-                select: { firstName: true, lastName: true, avatar: true },
+                select: { id: true, firstName: true, lastName: true, avatar: true },
               },
             },
             orderBy: { createdAt: "asc" },
@@ -2637,7 +2675,13 @@ const taskController = {
         orderBy: { createdAt: "desc" },
       });
 
-      res.json({ success: true, data: comments });
+      const formattedComments = comments.map(formatTaskComment);
+
+      res.status(200).json({
+        success: true,
+        data: formattedComments,
+        comments: formattedComments,
+      });
     } catch (error) {
       console.error("Error fetching comments:", error);
       res.status(500).json({ success: false, error: "فشل في جلب التعليقات" });
@@ -2646,13 +2690,24 @@ const taskController = {
 
   updateComment: async (req, res) => {
     try {
-      const { commentId } = req.params;
+      const commentId = req.params.commentId || req.params.id;
       const { content } = req.body;
       const companyId = req.user.companyId;
       const userId = req.user.userId;
 
+      if (!content || !content.trim()) {
+        return res
+          .status(400)
+          .json({ success: false, error: "محتوى التعليق مطلوب" });
+      }
+
+      const isAdmin = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"].includes(req.user.role);
+      const whereClause = isAdmin
+        ? { id: commentId, companyId }
+        : { id: commentId, companyId, userId };
+
       const comment = await getSharedPrismaClient().taskComment.findFirst({
-        where: { id: commentId, companyId, userId },
+        where: whereClause,
       });
       if (!comment) {
         return res
@@ -2665,15 +2720,25 @@ const taskController = {
 
       const updatedComment = await getSharedPrismaClient().taskComment.update({
         where: { id: commentId },
-        data: { content, isEdited: true, editedAt: new Date() },
+        data: { content: content.trim(), isEdited: true, editedAt: new Date() },
         include: {
-          users: { select: { firstName: true, lastName: true, avatar: true } },
+          users: { select: { id: true, firstName: true, lastName: true, avatar: true } },
+          other_task_comments: {
+            include: {
+              users: {
+                select: { id: true, firstName: true, lastName: true, avatar: true },
+              },
+            },
+          },
         },
       });
 
-      res.json({
+      const formatted = formatTaskComment(updatedComment);
+
+      res.status(200).json({
         success: true,
-        data: updatedComment,
+        data: formatted,
+        comment: formatted,
         message: "تم تعديل التعليق بنجاح",
       });
     } catch (error) {
@@ -2684,12 +2749,17 @@ const taskController = {
 
   deleteComment: async (req, res) => {
     try {
-      const { commentId } = req.params;
+      const commentId = req.params.commentId || req.params.id;
       const companyId = req.user.companyId;
       const userId = req.user.userId;
 
+      const isAdmin = ["SUPER_ADMIN", "COMPANY_ADMIN", "OWNER", "MANAGER"].includes(req.user.role);
+      const whereClause = isAdmin
+        ? { id: commentId, companyId }
+        : { id: commentId, companyId, userId };
+
       const comment = await getSharedPrismaClient().taskComment.findFirst({
-        where: { id: commentId, companyId, userId },
+        where: whereClause,
       });
       if (!comment) {
         return res
@@ -2700,10 +2770,14 @@ const taskController = {
           });
       }
 
+      await getSharedPrismaClient().taskComment.deleteMany({
+        where: { parentCommentId: commentId },
+      });
+
       await getSharedPrismaClient().taskComment.delete({
         where: { id: commentId },
       });
-      res.json({ success: true, message: "تم حذف التعليق بنجاح" });
+      res.status(200).json({ success: true, message: "تم حذف التعليق بنجاح" });
     } catch (error) {
       console.error("Error deleting comment:", error);
       res.status(500).json({ success: false, error: "فشل في حذف التعليق" });
@@ -3768,7 +3842,7 @@ const taskController = {
           parentTask: task.task || null,
           subtasks: task.other_tasks || [],
           subTasks: task.other_tasks || [],
-          comments: task.taskComments || [],
+          comments: (task.taskComments || []).map(formatTaskComment),
           attachments: task.taskAttachments || [],
           activities: task.taskActivities || [],
           timeEntries: timeEntries,

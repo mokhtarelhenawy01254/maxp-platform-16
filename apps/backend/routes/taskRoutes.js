@@ -196,6 +196,8 @@ router.get("/:taskId/comments", taskController.getComments);
 router.post("/:taskId/comments", taskController.addComment);
 router.put("/comments/:commentId", taskController.updateComment);
 router.delete("/comments/:commentId", taskController.deleteComment);
+router.put("/:taskId/comments/:commentId", taskController.updateComment);
+router.delete("/:taskId/comments/:commentId", taskController.deleteComment);
 
 // ==================== Time Tracking Routes ====================
 router.get("/:taskId/time-entries", taskController.getTimeEntries);
