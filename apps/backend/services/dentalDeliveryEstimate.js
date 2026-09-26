@@ -52,10 +52,14 @@ async function estimateLeadDays(prisma, companyId, workTypeId) {
  * يقترح تاريخ استحقاق ذكي مع مراعاة أيام العمل (استثناء الجمعة افتراضياً) والأولوية (URGENT / STAT).
  */
 async function suggestDueDate(prisma, companyId, workTypeId, base = new Date(), options = {}) {
-  let workType = null;
-  if (workTypeId && prisma && prisma.dentalWorkType) {
+  let workType = options?.workType || null;
+  if (!workType && workTypeId && prisma?.dentalWorkType) {
     try {
-      workType = await prisma.dentalWorkType.findFirst({ where: { id: String(workTypeId) } });
+      if (typeof prisma.dentalWorkType.findUnique === 'function') {
+        workType = await prisma.dentalWorkType.findUnique({ where: { id: String(workTypeId) } });
+      } else if (typeof prisma.dentalWorkType.findFirst === 'function') {
+        workType = await prisma.dentalWorkType.findFirst({ where: { id: String(workTypeId) } });
+      }
     } catch (_) {}
   }
 

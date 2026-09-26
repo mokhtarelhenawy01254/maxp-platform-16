@@ -44,9 +44,18 @@ function isTechnicianOnDuty(technician, date = new Date()) {
  */
 async function getLabPolicies(prisma, companyId) {
   try {
-    const settingRow = await prisma.dentalSetting.findFirst({
-      where: { companyId, key: 'labPolicies' },
-    });
+    let settingRow = null;
+    if (prisma?.dentalSetting) {
+      if (typeof prisma.dentalSetting.findFirst === 'function') {
+        settingRow = await prisma.dentalSetting.findFirst({
+          where: { companyId, key: 'labPolicies' },
+        });
+      } else if (typeof prisma.dentalSetting.findUnique === 'function') {
+        settingRow = await prisma.dentalSetting.findUnique({
+          where: { companyId_key: { companyId, key: 'labPolicies' } },
+        });
+      }
+    }
     const p = settingRow?.value || {};
 
     return {
@@ -156,6 +165,13 @@ function calculateExpectedDueDate(leadTimeDays = 5, priority = 'NORMAL', dueDate
 
 /**
  * Select the best technician for a stage or case
+ * Sequence:
+ * 1. Role match: exact match on requiredRole.
+ * 2. Schedule & Cap: on-duty today + under dailyCap.
+ * 3. Strategy / Least load: pick least-loaded technician (by active stages).
+ * 4. Backup: if no primary matches, check configured backupTechnicianId for that role.
+ * 5. Fallback: if still no match, leave UNASSIGNED + fallbackMode=NOTIFY_MANAGER.
+ *    (NEVER lump cases onto an arbitrary supervisor or general technician!)
  */
 async function selectTechnicianForAssignment(prisma, companyId, { requiredRole = null, date = new Date() } = {}) {
   const policies = await getLabPolicies(prisma, companyId);
@@ -174,20 +190,15 @@ async function selectTechnicianForAssignment(prisma, companyId, { requiredRole =
     return { selectedTechnician: null, rationale: 'لا يوجد فنيون نشطون في المعمل', candidates: [] };
   }
 
-  // Filter 1: Schedule & Vacations
-  let eligible = [];
-  const offDuty = [];
-
-  for (const tech of technicians) {
+  // Helper: check duty and daily cap
+  const evaluateTechEligibility = async (tech) => {
     if (respectSchedule) {
       const dutyCheck = isTechnicianOnDuty(tech, date);
       if (!dutyCheck.onDuty) {
-        offDuty.push({ tech, reason: dutyCheck.reason });
-        continue;
+        return { eligible: false, reason: dutyCheck.reason };
       }
     }
 
-    // Filter 2: Daily Cap
     const cap = tech.dailyCap > 0 ? tech.dailyCap : dailyCapPerTechnician;
     if (cap > 0) {
       const startOfDay = new Date(date);
@@ -195,80 +206,112 @@ async function selectTechnicianForAssignment(prisma, companyId, { requiredRole =
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const assignedTodayCount = await prisma.dentalCaseAssignment.count({
-        where: {
-          technicianId: tech.id,
-          assignedAt: { gte: startOfDay, lte: endOfDay },
-        },
-      });
+      let assignedTodayCount = 0;
+      if (prisma?.dentalCaseAssignment && typeof prisma.dentalCaseAssignment.count === 'function') {
+        assignedTodayCount = await prisma.dentalCaseAssignment.count({
+          where: {
+            technicianId: tech.id,
+            assignedAt: { gte: startOfDay, lte: endOfDay },
+          },
+        });
+      }
 
       if (assignedTodayCount >= cap) {
-        offDuty.push({ tech, reason: `تجاوز السقف اليومي (${assignedTodayCount}/${cap})` });
-        continue;
+        return { eligible: false, reason: `تجاوز السقف اليومي (${assignedTodayCount}/${cap})` };
       }
     }
 
-    eligible.push(tech);
+    return { eligible: true, reason: 'متاح للعمل' };
+  };
+
+  const offDuty = [];
+  const eligibleTechs = [];
+
+  for (const tech of technicians) {
+    const evalRes = await evaluateTechEligibility(tech);
+    if (evalRes.eligible) {
+      eligibleTechs.push(tech);
+    } else {
+      offDuty.push({ tech, reason: evalRes.reason });
+    }
   }
 
-  // Guard: If AUTO mode but 0 technicians have configured working schedules or all are off
-  if (eligible.length === 0) {
+  // Helper to compute active load (number of open stages in PENDING or IN_PROGRESS)
+  const scoreCandidates = async (techList, isRoleMatch = true) => {
+    const scores = [];
+    for (const tech of techList) {
+      let activeStagesCount = 0;
+      if (prisma?.dentalCaseStage && typeof prisma.dentalCaseStage.count === 'function') {
+        activeStagesCount = await prisma.dentalCaseStage.count({
+          where: {
+            assigneeId: tech.id,
+            status: { in: ['PENDING', 'IN_PROGRESS'] },
+          },
+        });
+      }
+      scores.push({
+        technician: tech,
+        activeLoad: activeStagesCount,
+        roleMatch: isRoleMatch,
+      });
+    }
+    return scores;
+  };
+
+  const hasSpecificRole = Boolean(requiredRole);
+
+  let candidatePool = [];
+  let isBackupCandidate = false;
+
+  if (hasSpecificRole) {
+    // 1. Role match among eligible technicians
+    const roleMatched = eligibleTechs.filter((t) => t.role === requiredRole);
+    if (roleMatched.length > 0) {
+      candidatePool = await scoreCandidates(roleMatched, true);
+    } else {
+      // 2. No direct role-matched technician on-duty under cap -> Check configured backupTechnicianId
+      const allRoleTechs = technicians.filter((t) => t.role === requiredRole);
+      const backupIds = Array.from(new Set(allRoleTechs.map((t) => t.backupTechnicianId).filter(Boolean)));
+      const backupTechs = eligibleTechs.filter((t) => backupIds.includes(t.id));
+
+      if (backupTechs.length > 0) {
+        candidatePool = await scoreCandidates(backupTechs, false);
+        isBackupCandidate = true;
+      }
+    }
+  } else {
+    // No specific role required -> any eligible technician
+    candidatePool = await scoreCandidates(eligibleTechs, true);
+  }
+
+  // 3. Fallback: If NO matching technician or backup is available -> DO NOT assign to an arbitrary supervisor/technician!
+  if (candidatePool.length === 0) {
+    const roleName = hasSpecificRole ? requiredRole : 'عام';
     return {
       selectedTechnician: null,
-      modeFallback: 'SUGGEST',
-      guardWarning: 'جميع الفنيين في عطلة أو تجاوزوا السقف اليومي، تم الرجوع لوضع الاقتراح اليدوي',
-      rationale: 'لا يوجد فني متاح يطابق جدول العمل اليوم',
+      fallbackMode: 'NOTIFY_MANAGER',
+      unassigned: true,
+      rationale: `لا يوجد فني متاح مطابق للدور المطلوب (${roleName}) ولا يوجد بديل متاح ضمن جدول العمل والسقف اليومي - تم ترك المرحلة غير مسندة وإشعار المشرف`,
       candidates: [],
       offDuty,
     };
   }
 
-  // Filter 3: Role match if specified
-  let roleMatched = eligible;
-  if (requiredRole && requiredRole !== 'GENERAL_TECHNICIAN') {
-    const exact = eligible.filter((t) => t.role === requiredRole);
-    if (exact.length > 0) roleMatched = exact;
-  }
+  // 4. Sort candidates by least loaded (active open stages)
+  candidatePool.sort((a, b) => a.activeLoad - b.activeLoad);
+  const best = candidatePool[0];
 
-  // Count active load for candidates
-  const candidateScores = [];
-  for (const tech of roleMatched) {
-    const activeStagesCount = await prisma.dentalCaseStage.count({
-      where: {
-        assigneeId: tech.id,
-        status: { in: ['PENDING', 'IN_PROGRESS'] },
-      },
-    });
-
-    candidateScores.push({
-      technician: tech,
-      activeLoad: activeStagesCount,
-      roleMatch: tech.role === requiredRole,
-    });
-  }
-
-  // Apply Strategy
-  let best = candidateScores[0];
-  if (strategy === 'LEAST_LOADED' || !strategy) {
-    candidateScores.sort((a, b) => a.activeLoad - b.activeLoad);
-    best = candidateScores[0];
-  } else if (strategy === 'BY_ROLE_MATCH') {
-    candidateScores.sort((a, b) => (b.roleMatch ? 1 : 0) - (a.roleMatch ? 1 : 0) || a.activeLoad - b.activeLoad);
-    best = candidateScores[0];
-  } else {
-    // ROUND_ROBIN or OLDEST_WAITING
-    candidateScores.sort((a, b) => a.activeLoad - b.activeLoad);
-    best = candidateScores[0];
-  }
-
-  const rationale = `الأقل تحميلاً (${best.activeLoad} مراحل نشطة)${best.roleMatch ? `، ومطابق للدور (${best.technician.role})` : ''} ومتاح للعمل اليوم`;
+  const rationale = isBackupCandidate
+    ? `تم اختيار الفني الاحتياطي (${best.technician.name}) لعدم توفر فني أساسي متاح بالدور (${requiredRole})، بأقل تحميل (${best.activeLoad} مراحل نشطة)`
+    : `الأقل تحميلاً (${best.activeLoad} مراحل نشطة)${best.roleMatch && hasSpecificRole ? `، ومطابق للدور (${best.technician.role})` : ''} ومتاح للعمل اليوم`;
 
   return {
     selectedTechnician: best.technician,
     activeLoad: best.activeLoad,
     rationale,
     effectiveMode: mode,
-    candidates: candidateScores.map((c) => ({
+    isBackup: isBackupCandidate,
+    candidates: candidatePool.map((c) => ({
       id: c.technician.id,
       name: c.technician.name,
       role: c.technician.role,
@@ -308,50 +351,55 @@ async function runEscalationCheck(companyId, { userId = 'SYSTEM_ESCALATION' } = 
   const escalated = [];
 
   for (const stage of overdueStages) {
-    // Check backup technician
     const currentAssigneeId = stage.assigneeId;
-    let backupTech = null;
+    const currentAssigneeName = stage.assigneeName || 'غير مسند';
+    const targetRole = stage.requiredRole || null;
 
+    let backupTech = null;
+    let escalationReason = '';
+
+    // Step 1: Check configured backup of the assigned technician
     if (currentAssigneeId) {
       const currentTech = await prisma.dentalTechnician.findUnique({ where: { id: currentAssigneeId } });
       if (currentTech?.backupTechnicianId) {
-        backupTech = await prisma.dentalTechnician.findFirst({
+        const configuredBackup = await prisma.dentalTechnician.findFirst({
           where: { id: currentTech.backupTechnicianId, companyId, isActive: true },
         });
-      }
-      if (!backupTech && currentTech?.role) {
-        // Find another technician with same role
-        const peers = await prisma.dentalTechnician.findMany({
-          where: { companyId, role: currentTech.role, id: { not: currentAssigneeId }, isActive: true },
-        });
-        for (const p of peers) {
-          if (isTechnicianOnDuty(p).onDuty) {
-            backupTech = p;
-            break;
+        if (configuredBackup && isTechnicianOnDuty(configuredBackup).onDuty) {
+          const cap = configuredBackup.dailyCap > 0 ? configuredBackup.dailyCap : policies.assignment.dailyCapPerTechnician;
+          if (cap <= 0) {
+            backupTech = configuredBackup;
+            escalationReason = `الاحتياطي المباشر للفني (${currentTech.name})`;
+          } else {
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+            const countToday = await prisma.dentalCaseAssignment.count({
+              where: { technicianId: configuredBackup.id, assignedAt: { gte: startOfDay } },
+            });
+            if (countToday < cap) {
+              backupTech = configuredBackup;
+              escalationReason = `الاحتياطي المباشر للفني (${currentTech.name})`;
+            }
           }
         }
       }
     }
 
+    // Step 2: If no configured backup, find least-loaded peer in the SAME role
     if (!backupTech) {
-      // Find supervisor or general technician on duty
-      backupTech = await prisma.dentalTechnician.findFirst({
-        where: { companyId, role: { in: ['SUPERVISOR', 'GENERAL_TECHNICIAN'] }, isActive: true },
-      });
+      const roleToSearch = targetRole || (currentAssigneeId ? (await prisma.dentalTechnician.findUnique({ where: { id: currentAssigneeId } }))?.role : null);
+      if (roleToSearch) {
+        const peerResult = await selectTechnicianForAssignment(prisma, companyId, { requiredRole: roleToSearch });
+        if (peerResult.selectedTechnician && peerResult.selectedTechnician.id !== currentAssigneeId) {
+          backupTech = peerResult.selectedTechnician;
+          escalationReason = `فني زميل مطابق لنفس الدور (${roleToSearch}) بأقل تحميل (${peerResult.activeLoad} مراحل)`;
+        }
+      }
     }
 
-    if (backupTech) {
-      // Reassign stage to backup
-      await prisma.dentalCaseStage.update({
-        where: { id: stage.id },
-        data: {
-          assigneeId: backupTech.id,
-          assigneeName: backupTech.name,
-          note: `${stage.note ? stage.note + ' | ' : ''}تم التصعيد تلقائيًا لتجاوز ${hoursThreshold} ساعة إلى ${backupTech.name}`,
-        },
-      });
-
-      // Record in status history
+    // Step 3: If still no backup available: DO NOT dump onto a supervisor!
+    if (!backupTech) {
+      // Record unassigned escalation alert in history for manager attention
       await prisma.dentalCaseStatusHistory.create({
         data: {
           companyId,
@@ -361,7 +409,7 @@ async function runEscalationCheck(companyId, { userId = 'SYSTEM_ESCALATION' } = 
           oldStatus: stage.case.status,
           changedBy: userId,
           userName: 'نظام التصعيد التلقائي',
-          reason: `تصعيد مرحلة (${stage.name}) لتجاوزها ${hoursThreshold} ساعة عمل. تم التحويل من ${stage.assigneeName || 'غير مسند'} إلى ${backupTech.name}`,
+          reason: `تنبيه تصعيد: تجاوزت المرحلة (${stage.name}) سقف ${hoursThreshold} ساعة عمل. تعذر إعادة الإسناد التلقائي لعدم توفر بديل متاح مطابق للدور (${targetRole || 'غير محدد'}) - تم تركها للمشرف للتوزيع اليدوي`,
         },
       });
 
@@ -369,11 +417,52 @@ async function runEscalationCheck(companyId, { userId = 'SYSTEM_ESCALATION' } = 
         stageId: stage.id,
         stageName: stage.name,
         caseNumber: stage.case.caseNumber,
-        oldAssignee: stage.assigneeName,
-        newAssignee: backupTech.name,
+        oldAssignee: currentAssigneeName,
+        oldAssigneeId: currentAssigneeId,
+        newAssignee: null,
+        newAssigneeId: null,
+        unassigned: true,
+        action: 'NOTIFY_MANAGER',
+        reason: 'لا يوجد بديل متاح مطابق للدور',
         hoursOverdue: Math.round((Date.now() - new Date(stage.startedAt).getTime()) / (3600 * 1000)),
       });
+      continue;
     }
+
+    // If backup found: reassign and record history with old and new (name/ID)
+    await prisma.dentalCaseStage.update({
+      where: { id: stage.id },
+      data: {
+        assigneeId: backupTech.id,
+        assigneeName: backupTech.name,
+        note: `${stage.note ? stage.note + ' | ' : ''}تم التصعيد تلقائيًا لتجاوز ${hoursThreshold} ساعة إلى ${backupTech.name} (${escalationReason})`,
+      },
+    });
+
+    await prisma.dentalCaseStatusHistory.create({
+      data: {
+        companyId,
+        caseId: stage.caseId,
+        dimension: 'STAGE',
+        status: stage.case.status,
+        oldStatus: stage.case.status,
+        changedBy: userId,
+        userName: 'نظام التصعيد التلقائي',
+        reason: `تصعيد مرحلة (${stage.name}) لتجاوزها ${hoursThreshold} ساعة عمل. تم التحويل من [${currentAssigneeName}] (معرّف: ${currentAssigneeId || 'غير مسند'}) إلى [${backupTech.name}] (معرّف: ${backupTech.id}) (${escalationReason})`,
+      },
+    });
+
+    escalated.push({
+      stageId: stage.id,
+      stageName: stage.name,
+      caseNumber: stage.case.caseNumber,
+      oldAssignee: currentAssigneeName,
+      oldAssigneeId: currentAssigneeId,
+      newAssignee: backupTech.name,
+      newAssigneeId: backupTech.id,
+      reason: escalationReason,
+      hoursOverdue: Math.round((Date.now() - new Date(stage.startedAt).getTime()) / (3600 * 1000)),
+    });
   }
 
   return {

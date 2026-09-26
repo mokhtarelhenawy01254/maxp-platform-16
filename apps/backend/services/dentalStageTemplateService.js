@@ -41,6 +41,25 @@ async function getStageTemplatesForWorkType(prisma, companyId, workTypeId, categ
     } catch (_) {}
   }
 
+  // If no custom templates exist, auto-seed default templates for this work type
+  if (prisma?.workTypeStageTemplate && typeof prisma.workTypeStageTemplate.create === 'function' && workTypeId) {
+    try {
+      const seeded = await seedDefaultStageTemplatesForWorkType(prisma, companyId, workTypeId, category);
+      if (seeded && seeded.length > 0) {
+        return seeded.map((t) => ({
+          id: t.id,
+          name: t.name,
+          sortOrder: t.sortOrder,
+          requiredRole: t.requiredRole || 'GENERAL_TECHNICIAN',
+          stageWage: Number(t.stageWage) || 0,
+          slaHours: t.slaHours || 24,
+          isRequired: t.isRequired !== false,
+          isDefault: true,
+        }));
+      }
+    } catch (_) {}
+  }
+
   try {
     const { getStageTemplates } = require('../utils/dentalLabHelpers');
     const stageNames = await getStageTemplates(prisma, companyId, category);
@@ -66,6 +85,87 @@ async function getStageTemplatesForWorkType(prisma, companyId, workTypeId, categ
     isRequired: true,
     isDefault: true,
   }));
+}
+
+/**
+ * Auto-seed default stage templates for a single work type
+ */
+async function seedDefaultStageTemplatesForWorkType(prisma, companyId, workTypeId, category = null) {
+  if (!workTypeId) return [];
+
+  // Check if templates already exist
+  const existing = await prisma.workTypeStageTemplate.findMany({
+    where: { workTypeId },
+    orderBy: { sortOrder: 'asc' },
+  });
+  if (existing.length > 0) return existing;
+
+  let defaultStages = [];
+  try {
+    const { getStageTemplates } = require('../utils/dentalLabHelpers');
+    const stageNames = await getStageTemplates(prisma, companyId, category);
+    if (Array.isArray(stageNames) && stageNames.length > 0) {
+      defaultStages = stageNames.map((name, idx) => ({
+        name,
+        sortOrder: idx,
+        requiredRole: DEFAULT_STAGE_ROLES[name] || 'GENERAL_TECHNICIAN',
+        stageWage: 0,
+        slaHours: 24,
+        isRequired: true,
+      }));
+    }
+  } catch (_) {}
+
+  if (defaultStages.length === 0) {
+    defaultStages = DEFAULT_STAGE_NAMES.map((name, idx) => ({
+      name,
+      sortOrder: idx,
+      requiredRole: DEFAULT_STAGE_ROLES[name] || 'GENERAL_TECHNICIAN',
+      stageWage: 0,
+      slaHours: 24,
+      isRequired: true,
+    }));
+  }
+
+  const seeded = [];
+  for (const st of defaultStages) {
+    try {
+      const row = await prisma.workTypeStageTemplate.create({
+        data: {
+          companyId,
+          workTypeId,
+          name: st.name,
+          sortOrder: st.sortOrder,
+          requiredRole: st.requiredRole,
+          stageWage: st.stageWage,
+          slaHours: st.slaHours,
+          isRequired: st.isRequired,
+        },
+      });
+      seeded.push(row);
+    } catch (_) {}
+  }
+  return seeded;
+}
+
+/**
+ * Seed all work types that currently have 0 stage templates
+ */
+async function seedAllMissingWorkTypeStageTemplates(prisma, companyId = null) {
+  const where = companyId ? { companyId, isActive: true } : { isActive: true };
+  const workTypes = await prisma.dentalWorkType.findMany({ where });
+  let seededCount = 0;
+
+  for (const wt of workTypes) {
+    const count = await prisma.workTypeStageTemplate.count({
+      where: { workTypeId: wt.id },
+    });
+    if (count === 0) {
+      await seedDefaultStageTemplatesForWorkType(prisma, wt.companyId, wt.id, wt.category);
+      seededCount++;
+    }
+  }
+  return seededCount;
 }
 
 /**
@@ -131,4 +231,6 @@ module.exports = {
   getStageTemplatesForWorkType,
   setStageTemplatesForWorkType,
   buildCaseStagesFromWorkType,
+  seedDefaultStageTemplatesForWorkType,
+  seedAllMissingWorkTypeStageTemplates,
 };
