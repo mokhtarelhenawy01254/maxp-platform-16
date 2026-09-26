@@ -7,139 +7,216 @@ import {
   RefreshCw,
   Copy,
   Check,
-  Calendar,
-  Layers,
   Activity,
-  Award,
   Users,
-  PieChart,
+  AlertTriangle,
+  Search,
+  ChevronRight,
+  ChevronLeft,
+  Calendar,
+  PauseCircle,
+  XCircle,
 } from 'lucide-react';
 import { audioAlerts } from '../utils/audioAlerts';
 
-interface ReportStats {
-  activeHours: string;
-  clockHours: string;
-  completedTasksCount: number;
-  inProgressTasksCount: number;
-  inReviewTasksCount: number;
+interface TeamMemberOverview {
+  employeeId: string;
+  employeeName: string;
+  departmentName: string;
+  jobTitle: string;
+  status: 'active' | 'idle' | 'offline';
+  totalActiveSeconds: number;
+  totalIdleSeconds: number;
   productivityScore: number;
-  topTasks: { title: string; minutes: number; priority?: string; status?: string }[];
-  activeTeamMembersCount?: number;
+  clockInTime?: string;
+  clockOutTime?: string;
+  checkInMethod?: string;
+  firstActivityTime?: string;
+  lastSeenTime?: string;
+  completedTasksCount: number;
+  createdTasksCount: number;
+  elapsedAttendanceSeconds: number;
+  untrackedSeconds: number;
+  hasMissingClockOut: boolean;
+  activeTask?: {
+    taskId: string;
+    title: string;
+    elapsedSeconds?: number;
+  } | null;
+}
+
+interface AggStats {
+  totalTracked: number;
+  activeNow: number;
+  avgProductivity: number;
+  totalHoursTracked: number;
+  totalTasksCompleted: number;
+  totalTasksCreated: number;
 }
 
 export const SimpleReportTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<'today' | 'yesterday' | 'week'>('today');
-  const [scope, setScope] = useState<'my' | 'team'>('my');
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [stats, setStats] = useState<ReportStats>({
-    activeHours: '0.0',
-    clockHours: '0.0',
-    completedTasksCount: 0,
-    inProgressTasksCount: 0,
-    inReviewTasksCount: 0,
-    productivityScore: 100,
-    topTasks: [],
-    activeTeamMembersCount: 0,
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'idle' | 'offline'>('all');
+  const [teamMembers, setTeamMembers] = useState<TeamMemberOverview[]>([]);
+  const [stats, setStats] = useState<AggStats>({
+    totalTracked: 0,
+    activeNow: 0,
+    avgProductivity: 0,
+    totalHoursTracked: 0,
+    totalTasksCompleted: 0,
+    totalTasksCreated: 0,
   });
   const [isCopied, setIsCopied] = useState(false);
 
-  const getLocalDateStr = (offsetDays = 0) => {
+  const todayStr = (() => {
     const d = new Date();
-    d.setDate(d.getDate() - offsetDays);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
+  const isToday = selectedDate === todayStr;
+
+  const handleDateStep = (offset: number) => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + offset);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (d <= today) {
+      setSelectedDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    }
   };
 
-  const loadReportData = useCallback(async (showSpinner = true) => {
+  const loadData = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
     try {
-      const auth = await window.electronAPI?.getAuthState();
-      if (auth?.user) setCurrentUser(auth.user);
+      const res = await window.electronAPI.getTeamOverview(selectedDate);
+      const rawData = res?.data || res || [];
+      const data = Array.isArray(rawData) ? rawData : [];
 
-      const targetDate = dateRange === 'yesterday' ? getLocalDateStr(1) : undefined;
-      const tasksScope = scope === 'team' ? 'all' : 'my-tasks';
+      const seen = new Set<string>();
+      const formatted: TeamMemberOverview[] = [];
+      let totalActiveSec = 0;
+      let activeCount = 0;
+      let activeProdScore = 0;
+      let activeProdCount = 0;
+      let totalTasks = 0;
+      let totalCreated = 0;
 
-      const [dailyRes, tasksRes, activeTimersRes] = await Promise.all([
-        window.electronAPI?.getDailySummary(targetDate),
-        window.electronAPI?.getTasks(tasksScope),
-        scope === 'team' ? window.electronAPI?.getCompanyActiveTimers() : Promise.resolve(null),
-      ]);
+      for (const item of data) {
+        const empName = item.employee?.firstName
+          ? `${item.employee.firstName} ${item.employee.lastName || ''}`.trim()
+          : item.employeeId;
+        const key = item.employeeId || empName;
+        if (seen.has(key)) continue;
+        seen.add(key);
 
-      const activeSec = Number(dailyRes?.totalActiveSeconds || 0);
-      const clockSec = Number(dailyRes?.totalClockSeconds || activeSec);
-      const activeHrs = (activeSec / 3600).toFixed(1);
-      const clockHrs = (clockSec / 3600).toFixed(1);
-      const score = Math.round(Number(dailyRes?.productivityScore || 92));
+        totalActiveSec += item.totalActiveSeconds || 0;
+        if (item.status === 'active') activeCount++;
+        totalTasks += item.completedTasksCount || 0;
+        totalCreated += item.createdTasksCount || 0;
 
-      const rawTasks = Array.isArray(tasksRes?.tasks) ? tasksRes.tasks : [];
-      const completed = rawTasks.filter((t: any) => String(t.status || '').toUpperCase() === 'COMPLETED').length;
-      const review = rawTasks.filter((t: any) => {
-        const s = String(t.status || '').toUpperCase();
-        return s === 'IN_REVIEW' || s === 'PENDING_REVIEW';
-      }).length;
-      const progress = rawTasks.filter((t: any) => {
-        const s = String(t.status || '').toUpperCase();
-        return s !== 'COMPLETED' && s !== 'IN_REVIEW' && s !== 'PENDING_REVIEW';
-      }).length;
+        if ((item.totalActiveSeconds || 0) > 0 && (item.productivityScore || 0) > 0) {
+          activeProdScore += item.productivityScore;
+          activeProdCount++;
+        }
 
-      // Extract tasks with realistic minutes
-      const top = rawTasks
-        .slice(0, 6)
-        .map((t: any) => {
-          const mins = Number(t.totalDurationMinutes || t.actualMinutes || t.estimatedMinutes || 30);
-          return {
-            title: t.title,
-            minutes: mins,
-            priority: t.priority || 'MEDIUM',
-            status: t.status || 'PENDING',
-          };
+        formatted.push({
+          employeeId: item.employeeId,
+          employeeName: empName,
+          departmentName: item.employee?.department?.name || 'الإدارة العامة',
+          jobTitle: item.employee?.position?.title || 'موظف',
+          status: item.status || 'offline',
+          totalActiveSeconds: item.totalActiveSeconds || 0,
+          totalIdleSeconds: item.totalIdleSeconds || 0,
+          productivityScore: Math.round(item.productivityScore || 0),
+          clockInTime: item.clockInTime,
+          clockOutTime: item.clockOutTime,
+          checkInMethod: item.checkInMethod,
+          firstActivityTime: item.firstActivityTime,
+          lastSeenTime: item.lastSeenTime,
+          completedTasksCount: item.completedTasksCount || 0,
+          createdTasksCount: item.createdTasksCount || 0,
+          elapsedAttendanceSeconds: item.elapsedAttendanceSeconds || 0,
+          untrackedSeconds: item.untrackedSeconds || 0,
+          hasMissingClockOut: item.hasMissingClockOut || false,
+          activeTask: item.activeTask || null,
         });
+      }
 
-      const activeMembers = Array.isArray(activeTimersRes?.activeTimers)
-        ? new Set(activeTimersRes.activeTimers.map((t: any) => t.userId)).size
-        : 0;
-
+      setTeamMembers(formatted);
       setStats({
-        activeHours: activeHrs,
-        clockHours: clockHrs,
-        completedTasksCount: completed,
-        inProgressTasksCount: progress,
-        inReviewTasksCount: review,
-        productivityScore: score > 0 ? score : 92,
-        topTasks: top,
-        activeTeamMembersCount: activeMembers,
+        totalTracked: formatted.length,
+        activeNow: activeCount,
+        avgProductivity: activeProdCount > 0 ? Math.round(activeProdScore / activeProdCount) : 0,
+        totalHoursTracked: Math.round((totalActiveSec / 3600) * 10) / 10,
+        totalTasksCompleted: totalTasks,
+        totalTasksCreated: totalCreated,
       });
     } catch (err) {
       console.warn('[SimpleReportTab] Fetch error:', err);
     } finally {
       if (showSpinner) setLoading(false);
     }
-  }, [dateRange, scope]);
+  }, [selectedDate]);
 
   useEffect(() => {
-    loadReportData(true);
-  }, [loadReportData]);
+    loadData(true);
+    const interval = setInterval(() => loadData(false), 45_000);
+    return () => clearInterval(interval);
+  }, [loadData]);
 
-  const userRole = String(currentUser?.role || '').toUpperCase();
-  const isManagerOrAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER', 'HR_MANAGER'].includes(userRole);
+  const formatSeconds = (sec: number = 0) => {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    return `${h} س ${m} د`;
+  };
 
-  const rangeLabel = dateRange === 'today' ? 'اليوم' : dateRange === 'yesterday' ? 'أمس' : 'الأسبوع الحالي';
+  const formatClockTime = (iso?: string | null) => {
+    if (!iso) return null;
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return null;
+      return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return null;
+    }
+  };
+
+  const filteredMembers = teamMembers.filter((m) => {
+    const q = searchQuery.trim().toLowerCase();
+    const matchSearch = !q ||
+      m.employeeName.toLowerCase().includes(q) ||
+      m.departmentName.toLowerCase().includes(q) ||
+      m.jobTitle.toLowerCase().includes(q);
+    const matchStatus = statusFilter === 'all' || m.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
 
   const handleCopySummary = () => {
-    const text = `ملخص تقرير الإنجاز (${rangeLabel}) — منظومة MaxP:
-• نطاق التقرير: ${scope === 'team' ? 'فريق العمل والشركة' : currentUser?.name || 'التقرير الشخصي'}
-• ساعات العمل المباشرة: ${stats.activeHours} ساعة (من إجمالي ${stats.clockHours} س دوام)
-• المهام المنجزة: ${stats.completedTasksCount} مهمة
-• المهام الجارية: ${stats.inProgressTasksCount} مهمة
-• المهام بانتظار الاعتماد: ${stats.inReviewTasksCount} مهمة
-• معدل الإنتاجية والتركيز: ${stats.productivityScore}%
-${scope === 'team' ? `• الزملاء النشطون حالياً: ${stats.activeTeamMembersCount} زميل` : ''}
-تم الإنجاز عبر MaxP Workspace Desktop Cockpit`;
+    const dateLabel = isToday ? 'اليوم' : selectedDate;
+    const lines = [
+      `ملخص تقرير مراقبة الفريق (${dateLabel}) — منظومة MaxP`,
+      `• إجمالي الموظفين الموثقين: ${stats.totalTracked}`,
+      `• نشط ومتصل حالياً: ${stats.activeNow}`,
+      `• إجمالي ساعات العمل الموثقة: ${stats.totalHoursTracked} ساعة`,
+      `• المهام المنجزة: ${stats.totalTasksCompleted}`,
+      `• المهام المنشأة: ${stats.totalTasksCreated}`,
+      `• متوسط الإنتاجية: ${stats.avgProductivity}%`,
+      ``,
+      `تفاصيل الأعضاء:`,
+    ];
+    filteredMembers.forEach((m) => {
+      const clockIn = formatClockTime(m.clockInTime);
+      lines.push(
+        `  - ${m.employeeName} (${m.departmentName}): عمل فعلي ${formatSeconds(m.totalActiveSeconds)}, إنتاجية ${m.productivityScore}%, ${m.completedTasksCount} منجزة${clockIn ? `, بصمة ${clockIn}` : ''}`
+      );
+    });
+    lines.push(``, `تم إعداد التقرير عبر MaxP Workspace Desktop`);
 
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(lines.join('\n'));
     setIsCopied(true);
     audioAlerts.playTaskComplete();
     setTimeout(() => setIsCopied(false), 2500);
@@ -147,200 +224,216 @@ ${scope === 'team' ? `• الزملاء النشطون حالياً: ${stats.ac
 
   return (
     <div style={styles.container}>
-      {/* Top Header Strip */}
+      {/* Header Strip */}
       <div style={styles.headerStrip}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={styles.headerIconBox}>
             <FileText size={16} color="var(--accent-blue)" />
           </div>
           <div>
-            <div style={styles.headerTitle}>التقرير وملخص الإنتاجية</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={styles.headerTitle}>تقرير وملخص إنتاجية الفريق</span>
+              <span style={styles.liveBadge}>
+                <span style={styles.pulseDot} />
+                <span>{stats.activeNow} نشط الآن</span>
+              </span>
+            </div>
             <div style={styles.headerSubtitle}>
-              مؤشرات إنجاز المهام وساعات العمل الفعلية ({rangeLabel})
+              نفس بيانات ومنطق شاشة المراقبة على الويب (hr/monitor)
             </div>
           </div>
         </div>
 
-        {/* Controls: Range & Scope */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {isManagerOrAdmin && (
-            <div style={styles.segmented}>
-              <button
-                onClick={() => setScope('my')}
-                style={{
-                  ...styles.segBtn,
-                  backgroundColor: scope === 'my' ? 'var(--bg-elevated)' : 'transparent',
-                  color: scope === 'my' ? 'var(--text-primary)' : 'var(--text-muted)',
-                  fontWeight: scope === 'my' ? 600 : 400,
-                }}
-              >
-                تقريري
-              </button>
-              <button
-                onClick={() => setScope('team')}
-                style={{
-                  ...styles.segBtn,
-                  backgroundColor: scope === 'team' ? 'var(--bg-elevated)' : 'transparent',
-                  color: scope === 'team' ? 'var(--text-primary)' : 'var(--text-muted)',
-                  fontWeight: scope === 'team' ? 600 : 400,
-                }}
-              >
-                الفريق والشركة
-              </button>
-            </div>
-          )}
-
-          <div style={styles.segmented}>
-            <button
-              onClick={() => setDateRange('today')}
-              style={{
-                ...styles.segBtn,
-                backgroundColor: dateRange === 'today' ? 'var(--bg-elevated)' : 'transparent',
-                color: dateRange === 'today' ? 'var(--text-primary)' : 'var(--text-muted)',
-                fontWeight: dateRange === 'today' ? 600 : 400,
-              }}
-            >
-              اليوم
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* Date Stepper */}
+          <div style={styles.dateStepper}>
+            <button onClick={() => handleDateStep(-1)} style={styles.stepBtn} title="اليوم السابق">
+              <ChevronRight size={13} />
             </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 6px' }}>
+              <Calendar size={12} color="var(--text-muted)" />
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                style={styles.dateInput}
+              />
+            </div>
             <button
-              onClick={() => setDateRange('yesterday')}
-              style={{
-                ...styles.segBtn,
-                backgroundColor: dateRange === 'yesterday' ? 'var(--bg-elevated)' : 'transparent',
-                color: dateRange === 'yesterday' ? 'var(--text-primary)' : 'var(--text-muted)',
-                fontWeight: dateRange === 'yesterday' ? 600 : 400,
-              }}
+              onClick={() => handleDateStep(1)}
+              disabled={isToday}
+              style={{ ...styles.stepBtn, opacity: isToday ? 0.3 : 1 }}
+              title="اليوم التالي"
             >
-              أمس
+              <ChevronLeft size={13} />
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleCopySummary}
-            style={styles.copyBtn}
-            title="نسخ التقرير بصيغة احترافية للمشاركة"
-          >
-            {isCopied ? <Check size={13} color="var(--accent-green)" /> : <Copy size={13} />}
-            <span>{isCopied ? 'تم النسخ' : 'نسخ التقرير'}</span>
+          <button onClick={handleCopySummary} style={styles.copyBtn} title="نسخ التقرير">
+            {isCopied ? <Check size={12} color="var(--accent-green)" /> : <Copy size={12} />}
+            <span>{isCopied ? 'تم النسخ' : 'نسخ'}</span>
           </button>
 
           <button
-            onClick={() => loadReportData(true)}
+            onClick={() => loadData(true)}
             disabled={loading}
             style={styles.refreshBtn}
-            title="تحديث البيانات"
+            title="تحديث"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
-      {/* Main KPI Bento Grid */}
-      <div style={styles.bentoGrid}>
-        {/* Card 1: Completed Tasks */}
-        <div style={styles.bentoCard}>
-          <div style={styles.cardHeader}>
-            <span style={styles.cardLabel}>المهام المنجزة</span>
-            <CheckCircle2 size={15} color="var(--accent-green)" />
+      {/* KPI Bento Cards */}
+      <div style={styles.kpiGrid}>
+        <div style={styles.kpiCard}>
+          <div style={styles.kpiHeader}>
+            <span style={styles.kpiLabel}>الموظفون الموثقون</span>
+            <Users size={14} color="var(--accent-blue)" />
           </div>
-          <div style={{ ...styles.cardValue, color: 'var(--accent-green)' }}>
-            {stats.completedTasksCount}
-          </div>
-          <div style={styles.cardSub}>
-            مهام مغلقة ومعتمدة بنجاح
-          </div>
+          <div style={styles.kpiValue}>{stats.totalTracked}</div>
         </div>
-
-        {/* Card 2: Active Hours */}
-        <div style={styles.bentoCard}>
-          <div style={styles.cardHeader}>
-            <span style={styles.cardLabel}>ساعات النشاط الفعلي</span>
-            <Clock size={15} color="var(--accent-blue)" />
+        <div style={styles.kpiCard}>
+          <div style={styles.kpiHeader}>
+            <span style={styles.kpiLabel}>نشط ومتصل</span>
+            <Activity size={14} color="#10b981" />
           </div>
-          <div style={{ ...styles.cardValue, color: 'var(--accent-blue)' }}>
-            {stats.activeHours} <span style={{ fontSize: 13, fontWeight: 500 }}>ساعة</span>
-          </div>
-          <div style={styles.cardSub}>
-            من إجمالي {stats.clockHours} س دوام موثق
-          </div>
+          <div style={{ ...styles.kpiValue, color: '#10b981' }}>{stats.activeNow}</div>
         </div>
-
-        {/* Card 3: Active Tasks */}
-        <div style={styles.bentoCard}>
-          <div style={styles.cardHeader}>
-            <span style={styles.cardLabel}>المهام الجارية والمعلقة</span>
-            <Layers size={15} color="#c084fc" />
+        <div style={styles.kpiCard}>
+          <div style={styles.kpiHeader}>
+            <span style={styles.kpiLabel}>متوسط الإنتاجية</span>
+            <TrendingUp size={14} color="#c084fc" />
           </div>
-          <div style={styles.cardValue}>
-            {stats.inProgressTasksCount + stats.inReviewTasksCount}
-          </div>
-          <div style={styles.cardSub}>
-            {stats.inProgressTasksCount} قيد التنفيذ · {stats.inReviewTasksCount} بانتظار الاعتماد
-          </div>
+          <div style={styles.kpiValue}>{stats.avgProductivity}%</div>
         </div>
-
-        {/* Card 4: Productivity Score or Active Members */}
-        <div style={styles.bentoCard}>
-          <div style={styles.cardHeader}>
-            <span style={styles.cardLabel}>
-              {scope === 'team' ? 'الزملاء النشطون الآن' : 'مؤشر الإنتاجية والتركيز'}
-            </span>
-            {scope === 'team' ? (
-              <Users size={15} color="#10b981" />
-            ) : (
-              <Activity size={15} color={stats.productivityScore >= 80 ? 'var(--accent-green)' : '#f59e0b'} />
-            )}
+        <div style={styles.kpiCard}>
+          <div style={styles.kpiHeader}>
+            <span style={styles.kpiLabel}>إجمالي ساعات العمل</span>
+            <Clock size={14} color="#f59e0b" />
           </div>
-          <div
-            style={{
-              ...styles.cardValue,
-              color: scope === 'team' ? '#10b981' : stats.productivityScore >= 80 ? 'var(--accent-green)' : '#f59e0b',
-            }}
-          >
-            {scope === 'team' ? stats.activeTeamMembersCount : `${stats.productivityScore}%`}
-          </div>
-          <div style={styles.cardSub}>
-            {scope === 'team' ? 'أعضاء فريق يعملون على مؤقتات نشطة' : 'محسوب استناداً إلى حركة العمل والأجهزة'}
-          </div>
+          <div style={styles.kpiValue}>{stats.totalHoursTracked} ساعة</div>
         </div>
       </div>
 
-      {/* Breakdown Section: Top Tasks worked on */}
-      <div style={styles.tasksSection}>
-        <div style={styles.sectionTitleRow}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
-            {scope === 'team' ? 'أبرز مهام الفريق قيد المتابعة' : 'أبرز المهام المرتبطة بالتقرير'}
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-            {stats.topTasks.length} مهام مسجلة
-          </span>
+      {/* Filter Bar */}
+      <div style={styles.filterBar}>
+        <div style={styles.searchBox}>
+          <Search size={12} color="var(--text-muted)" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="بحث بالاسم أو القسم…"
+            style={styles.searchInput}
+          />
         </div>
+        <div style={styles.statusChips}>
+          {(['all', 'active', 'idle', 'offline'] as const).map((s) => {
+            const label = s === 'all' ? `الكل (${teamMembers.length})`
+              : s === 'active' ? `نشط (${stats.activeNow})`
+              : s === 'idle' ? 'خامل'
+              : 'غير متصل';
+            return (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                style={{
+                  ...styles.chipBtn,
+                  backgroundColor: statusFilter === s ? 'var(--bg-elevated)' : 'transparent',
+                  color: statusFilter === s ? 'var(--text-primary)' : 'var(--text-muted)',
+                  fontWeight: statusFilter === s ? 600 : 400,
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-        {stats.topTasks.length === 0 ? (
-          <div style={{ padding: '28px 0', textAlign: 'center', fontSize: 12, color: 'var(--text-muted)' }}>
-            لا توجد مهام مسجلة في هذا النطاق الزمني.
-          </div>
+      {/* Team Members List */}
+      <div style={styles.listArea}>
+        {loading && teamMembers.length === 0 ? (
+          <div style={styles.emptyState}>جاري استرداد بيانات النشاط…</div>
+        ) : filteredMembers.length === 0 ? (
+          <div style={styles.emptyState}>لا توجد بيانات مطابقة</div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {stats.topTasks.map((task, i) => (
-              <div key={i} style={styles.taskRow}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-                  <span style={styles.taskIndex}>{i + 1}</span>
-                  <span style={styles.taskTitleText} title={task.title}>
-                    {task.title}
-                  </span>
-                </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {filteredMembers.map((m) => {
+              const clockIn = formatClockTime(m.clockInTime);
+              const firstAct = formatClockTime(m.firstActivityTime);
+              const methodLabel = m.checkInMethod === 'fingerprint' || m.checkInMethod === 'biometric'
+                ? 'بصمة' : m.checkInMethod === 'mobile' ? 'موبايل'
+                : m.checkInMethod === 'web' ? 'ويب' : m.checkInMethod || 'نظام';
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={styles.taskMinChip}>
-                    {task.minutes >= 60
-                      ? `${Math.floor(task.minutes / 60)} س ${task.minutes % 60 > 0 ? `${task.minutes % 60} د` : ''}`
-                      : `${task.minutes} دقيقة`}
-                  </span>
+              return (
+                <div key={m.employeeId} style={styles.memberRow}>
+                  {/* Left: Name + Status */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      ...styles.statusDot,
+                      backgroundColor: m.status === 'active' ? '#10b981' : m.status === 'idle' ? '#f59e0b' : '#71717a',
+                    }} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={styles.memberName}>{m.employeeName}</div>
+                      <div style={styles.memberMeta}>{m.departmentName} · {m.jobTitle}</div>
+                    </div>
+                  </div>
+
+                  {/* Active Task */}
+                  {m.activeTask && (
+                    <div style={styles.activeTaskBadge}>
+                      <span style={styles.taskPulseDot} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 130 }}>
+                        {m.activeTask.title}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Attendance */}
+                  <div style={styles.cellBlock}>
+                    <span style={styles.cellLabel}>البصمة:</span>
+                    <span style={{ ...styles.cellValue, color: clockIn ? 'var(--text-primary)' : '#ef4444' }}>
+                      {clockIn ? `${clockIn} (${methodLabel})` : 'لم يسجل'}
+                    </span>
+                  </div>
+
+                  {/* Active Time */}
+                  <div style={styles.cellBlock}>
+                    <span style={styles.cellLabel}>عمل فعلي:</span>
+                    <span style={styles.cellValue}>{formatSeconds(m.totalActiveSeconds)}</span>
+                  </div>
+
+                  {/* Idle Time */}
+                  <div style={styles.cellBlock}>
+                    <span style={styles.cellLabel}>توقف:</span>
+                    <span style={{ ...styles.cellValue, color: 'var(--text-dim)' }}>{formatSeconds(m.totalIdleSeconds)}</span>
+                  </div>
+
+                  {/* Productivity */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <div style={styles.prodBar}>
+                      <div style={{
+                        height: '100%',
+                        borderRadius: 4,
+                        width: `${Math.min(100, m.productivityScore)}%`,
+                        backgroundColor: m.productivityScore >= 75 ? '#10b981' : m.productivityScore >= 50 ? '#38bdf8' : '#f59e0b',
+                      }} />
+                    </div>
+                    <span style={styles.prodText}>{m.productivityScore}%</span>
+                  </div>
+
+                  {/* Tasks */}
+                  <div style={styles.cellBlock}>
+                    <span style={{ ...styles.cellValue, color: '#10b981', fontWeight: 600 }}>
+                      {m.completedTasksCount} منجزة
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -353,61 +446,90 @@ const styles: Record<string, React.CSSProperties> = {
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
-    overflowY: 'auto',
+    overflow: 'hidden',
     backgroundColor: 'var(--bg-canvas)',
-    padding: '12px 16px',
-    gap: 12,
   },
   headerStrip: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 8,
+    padding: '10px 14px',
     borderBottom: '1px solid var(--border-subtle)',
     flexShrink: 0,
   },
   headerIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 30,
+    height: 30,
+    borderRadius: 7,
     backgroundColor: 'rgba(56, 189, 248, 0.1)',
+    border: '1px solid rgba(56, 189, 248, 0.2)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 700,
     color: 'var(--text-primary)',
-    lineHeight: 1.2,
   },
   headerSubtitle: {
-    fontSize: 11,
+    fontSize: 10,
     color: 'var(--text-muted)',
-    marginTop: 2,
+    marginTop: 1,
   },
-  segmented: {
+  liveBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    padding: '2px 7px',
+    borderRadius: 10,
+    backgroundColor: 'rgba(16,185,129,0.1)',
+    border: '1px solid rgba(16,185,129,0.25)',
+    fontSize: 10,
+    fontWeight: 700,
+    color: '#10b981',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  pulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: '#10b981',
+  },
+  dateStepper: {
     display: 'flex',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    borderRadius: 6,
-    padding: 2,
+    backgroundColor: 'var(--bg-elevated)',
     border: '1px solid var(--border-subtle)',
+    borderRadius: 6,
+    padding: 1,
   },
-  segBtn: {
-    padding: '4px 10px',
-    borderRadius: 5,
+  stepBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 24,
+    height: 24,
     border: 'none',
-    fontSize: 11,
+    borderRadius: 4,
+    backgroundColor: 'transparent',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
+  },
+  dateInput: {
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: 'var(--text-primary)',
+    fontSize: 11,
+    outline: 'none',
+    width: 100,
     fontFamily: 'inherit',
-    transition: 'all 120ms ease',
   },
   copyBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
-    padding: '5px 12px',
+    gap: 4,
+    padding: '4px 10px',
     borderRadius: 6,
     backgroundColor: 'var(--bg-elevated)',
     border: '1px solid var(--border-subtle)',
@@ -416,114 +538,190 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     cursor: 'pointer',
     fontFamily: 'inherit',
-    transition: 'all 120ms ease',
   },
   refreshBtn: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 28,
-    height: 28,
+    width: 26,
+    height: 26,
     borderRadius: 6,
-    border: '1px solid var(--border-default)',
-    backgroundColor: 'var(--bg-card)',
-    color: 'var(--text-dim)',
+    border: '1px solid var(--border-subtle)',
+    backgroundColor: 'var(--bg-elevated)',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
   },
-  bentoGrid: {
+  kpiGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: 10,
+    gap: 8,
+    padding: '10px 14px',
     flexShrink: 0,
   },
-  bentoCard: {
+  kpiCard: {
     backgroundColor: 'var(--bg-surface)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 8,
-    padding: '12px 14px',
+    padding: '10px 12px',
     display: 'flex',
     flexDirection: 'column',
-    gap: 6,
+    gap: 4,
   },
-  cardHeader: {
+  kpiHeader: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  cardLabel: {
-    fontSize: 11,
+  kpiLabel: {
+    fontSize: 10,
     fontWeight: 600,
     color: 'var(--text-muted)',
   },
-  cardValue: {
-    fontSize: 22,
+  kpiValue: {
+    fontSize: 20,
     fontWeight: 800,
     color: 'var(--text-primary)',
     fontVariantNumeric: 'tabular-nums',
+    lineHeight: 1,
+    marginTop: 2,
   },
-  cardSub: {
-    fontSize: 10,
-    color: 'var(--text-dim)',
-    lineHeight: 1.3,
-  },
-  tasksSection: {
-    backgroundColor: 'var(--bg-surface)',
-    border: '1px solid var(--border-subtle)',
-    borderRadius: 8,
-    padding: '12px 14px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 10,
-    flex: 1,
-  },
-  sectionTitleRow: {
+  filterBar: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 6,
+    gap: 10,
+    padding: '6px 14px',
     borderBottom: '1px solid var(--border-subtle)',
+    flexShrink: 0,
   },
-  taskRow: {
+  searchBox: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-    padding: '7px 10px',
+    gap: 6,
     backgroundColor: 'var(--bg-elevated)',
     border: '1px solid var(--border-subtle)',
     borderRadius: 6,
+    padding: '3px 8px',
+    width: 200,
   },
-  taskIndex: {
-    width: 18,
-    height: 18,
-    borderRadius: '50%',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  searchInput: {
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: 'var(--text-primary)',
+    fontSize: 11,
+    outline: 'none',
+    width: '100%',
+    fontFamily: 'inherit',
+  },
+  statusChips: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 2,
+    backgroundColor: 'var(--bg-subtle)',
+    padding: 2,
+    borderRadius: 6,
+    border: '1px solid var(--border-subtle)',
+  },
+  chipBtn: {
+    border: 'none',
+    borderRadius: 4,
+    padding: '3px 8px',
     fontSize: 10,
-    fontWeight: 600,
-    color: 'var(--text-dim)',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 120ms ease',
+  },
+  listArea: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '8px 14px',
+  },
+  emptyState: {
+    textAlign: 'center',
+    padding: '40px 16px',
+    color: 'var(--text-muted)',
+    fontSize: 12,
+  },
+  memberRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: '8px 10px',
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 6,
+    transition: 'all 120ms ease',
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: '50%',
     flexShrink: 0,
   },
-  taskTitleText: {
+  memberName: {
     fontSize: 12,
-    fontWeight: 500,
+    fontWeight: 600,
     color: 'var(--text-primary)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  taskMinChip: {
+  memberMeta: {
+    fontSize: 10,
+    color: 'var(--text-muted)',
+    marginTop: 1,
+  },
+  activeTaskBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '2px 7px',
+    borderRadius: 5,
+    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+    border: '1px solid rgba(56, 189, 248, 0.2)',
+    fontSize: 10,
+    fontWeight: 600,
+    color: '#38bdf8',
+    maxWidth: 160,
+    flexShrink: 0,
+  },
+  taskPulseDot: {
+    width: 5,
+    height: 5,
+    borderRadius: '50%',
+    backgroundColor: '#38bdf8',
+    flexShrink: 0,
+  },
+  cellBlock: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
+  },
+  cellLabel: {
+    fontSize: 10,
+    color: 'var(--text-muted)',
+  },
+  cellValue: {
     fontSize: 11,
     fontWeight: 600,
-    color: 'var(--text-secondary)',
-    backgroundColor: 'var(--bg-subtle)',
-    padding: '2px 8px',
-    borderRadius: 4,
-    border: '1px solid var(--border-subtle)',
+    color: 'var(--text-primary)',
     fontVariantNumeric: 'tabular-nums',
-    flexShrink: 0,
+  },
+  prodBar: {
+    width: 40,
+    height: 4,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
+  },
+  prodText: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+    fontVariantNumeric: 'tabular-nums',
+    width: 30,
+    textAlign: 'left',
   },
 };
 

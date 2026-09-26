@@ -938,6 +938,15 @@ function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('monitor:get-team-overview', async (_, date?: string) => {
+    try {
+      const data = await apiClient.getTeamOverview(date);
+      return { success: true, data };
+    } catch (err: any) {
+      return { success: false, data: [], error: err.message };
+    }
+  });
+
   ipcMain.handle('tasks:add-watcher', async (_, { taskId, userId }) => {
     try {
       const result = await apiClient.addTaskWatcher(taskId, userId);

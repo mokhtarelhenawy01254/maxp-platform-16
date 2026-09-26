@@ -148,6 +148,17 @@ class MonitorApiClient {
     }
   }
 
+  async getTeamOverview(date?: string): Promise<any[]> {
+    try {
+      const params = date ? { date } : {};
+      const res = await this.client.get('/team/overview', { params });
+      return res.data?.data ?? [];
+    } catch (err: any) {
+      console.warn('[API] getTeamOverview failed:', err?.message);
+      return [];
+    }
+  }
+
   async getTimeline(date?: string): Promise<{ apps?: any[]; websites?: any[] } | null> {
     try {
       const params = date ? { date } : {};

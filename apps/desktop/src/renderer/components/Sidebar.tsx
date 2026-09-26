@@ -13,11 +13,10 @@ import {
   Sun,
   Target,
   FileText,
-  Radio,
 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
 
-export type TabId = 'tasks' | 'live-team' | 'goals' | 'reports' | 'cockpit' | 'apps' | 'attendance' | 'system';
+export type TabId = 'tasks' | 'goals' | 'reports' | 'cockpit' | 'apps' | 'attendance' | 'system';
 
 interface SidebarProps {
   activeTab: TabId;
@@ -41,35 +40,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
   const isManager = isAdmin || ['MANAGER', 'HR_MANAGER'].includes(roleStr);
 
-  const [activeTeamCount, setActiveTeamCount] = React.useState<number>(0);
-
-  React.useEffect(() => {
-    if (!isManager) return;
-    const fetchActive = async () => {
-      try {
-        const res = await window.electronAPI?.getCompanyActiveTimers();
-        if (res?.success && Array.isArray(res.activeTimers)) {
-          setActiveTeamCount(res.activeTimers.length);
-        }
-      } catch {}
-    };
-    fetchActive();
-    const interval = setInterval(fetchActive, 4000);
-    return () => clearInterval(interval);
-  }, [isManager]);
-
   const navItems: { id: TabId; label: string; icon: React.ReactNode; badge?: number }[] = isManager
     ? [
         {
           id: 'tasks',
           label: 'المهام والإنتاجية',
           icon: <CheckSquare size={17} />,
-        },
-        {
-          id: 'live-team',
-          label: 'المهام الجارية الآن',
-          icon: <Radio size={17} />,
-          badge: activeTeamCount,
         },
         {
           id: 'goals',
