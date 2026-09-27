@@ -3352,7 +3352,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         fetchSql += ` AND "createdAt" <= $${n}`;
         params.push(whereClause.createdAt.lte);
       }
-      fetchSql += ` ORDER BY "createdAt" DESC LIMIT ${Number(fetchLimit) || 20}`;
+      // 🛡️ لا تقيّد جلب المعرّفات بـ fetchLimit الصفحة (40) حتى لا ينحصر العدّ الكلي
+      // في order.count({ where: whereClause }) على 40 فقط بدل إجمالي الطلبات الحقيقية.
+      fetchSql += ` ORDER BY "createdAt" DESC LIMIT 10000`;
       const rows = await prisma.$queryRawUnsafe(fetchSql, ...params);
       customStatusOrderIds = rows.map(r => r.id);
     }

@@ -10,13 +10,23 @@
  * كان بيتحسب بشكل مختلف في كل صفحة ("مش صورة حقيقية").
  */
 
+const TERMINAL_ORDER_STATUSES = new Set([
+  'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED', 'REFUNDED',
+  'PARTIALLY_RETURNED', 'PARTIALLY_REFUNDED', 'EXCHANGED',
+  'DUPLICATE_ORDER', 'TRASH', 'LOST'
+]);
+
 // تعبير SQL للحالة الفعلية — يستخدم ضد جدول "orders" (بأسماء الأعمدة المقتبسة).
 // 🛡️ (analytics-unify): بيقبل alias للجدول (مثل 'o') عشان استعلامات JOIN التحليلات.
+// 🛡️ استثناء الحالات النهائية (DELIVERED, RETURNED, SHIPPED...): بيانات التجهيز القديمة
+// في metadata.preparationStatus لا تعيد تصنيف الطلبات المنتهية إلى PROCESSING.
 const effectiveOrderStatusSql = (alias = '') => {
   const p = alias ? `${alias}.` : '';
   return `
   CASE
     WHEN ${p}"customStatusCode" IS NOT NULL AND ${p}"customStatusCode" <> '' THEN UPPER(${p}"customStatusCode")
+    WHEN UPPER(${p}"status"::text) IN ('SHIPPED','DELIVERED','CANCELLED','RETURNED','REFUNDED','PARTIALLY_RETURNED','PARTIALLY_REFUNDED','EXCHANGED','DUPLICATE_ORDER','TRASH','LOST')
+    THEN ${p}"status"::text
     WHEN ${p}"metadata"::jsonb->>'preparationStatus' IS NOT NULL AND ${p}"metadata"::jsonb->>'preparationStatus' <> ''
     THEN CASE
       WHEN ${p}"metadata"::jsonb->>'preparationStatus' = 'PENDING_PREPARATION' THEN 'CONFIRMED'
@@ -42,6 +52,10 @@ const getMappedRegularOrderStatus = (preparationStatus) => {
 function computeEffectiveOrderStatus(order) {
   if (!order) return 'PENDING';
   if (order.customStatusCode) return String(order.customStatusCode).toUpperCase();
+  const rawStatus = String(order.status || 'PENDING').toUpperCase();
+  if (TERMINAL_ORDER_STATUSES.has(rawStatus)) {
+    return rawStatus;
+  }
   let meta = order.metadata;
   if (typeof meta === 'string') {
     try {
@@ -51,7 +65,7 @@ function computeEffectiveOrderStatus(order) {
     }
   }
   if (meta?.preparationStatus) return getMappedRegularOrderStatus(meta.preparationStatus);
-  return String(order.status || 'PENDING').toUpperCase();
+  return rawStatus;
 }
 
 /**

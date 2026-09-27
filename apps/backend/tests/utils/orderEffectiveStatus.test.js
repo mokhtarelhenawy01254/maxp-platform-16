@@ -54,6 +54,27 @@ describe('utils/orderEffectiveStatus', () => {
       expect(computeEffectiveOrderStatus({ status: 'PENDING', metadata: '{broken' })).toBe('PENDING');
       expect(computeEffectiveOrderStatus(null)).toBe('PENDING');
     });
+
+    test('terminal statuses (DELIVERED, RETURNED, SHIPPED) are not overridden by stale prep metadata', () => {
+      expect(
+        computeEffectiveOrderStatus({
+          status: 'DELIVERED',
+          metadata: JSON.stringify({ preparationStatus: 'PREPARING' }),
+        })
+      ).toBe('DELIVERED');
+      expect(
+        computeEffectiveOrderStatus({
+          status: 'RETURNED',
+          metadata: JSON.stringify({ preparationStatus: 'PACKAGED' }),
+        })
+      ).toBe('RETURNED');
+      expect(
+        computeEffectiveOrderStatus({
+          status: 'SHIPPED',
+          metadata: JSON.stringify({ preparationStatus: 'READY' }),
+        })
+      ).toBe('SHIPPED');
+    });
   });
 
   describe('getMappedRegularOrderStatus', () => {
