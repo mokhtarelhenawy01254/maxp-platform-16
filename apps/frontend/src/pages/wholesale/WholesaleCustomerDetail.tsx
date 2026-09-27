@@ -128,34 +128,36 @@ export default function WholesaleCustomerDetail() {
 
   return (
     <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold">
-        {isNew ? "إضافة عميل جملة" : "بيانات عميل الجملة"}
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {isNew ? "إضافة عميل جملة" : "بيانات عميل الجملة"}
+        </h1>
+      </div>
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
           {error}
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm font-medium">بحث عن عميل</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">بحث عن عميل</label>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => searchCustomers(e.target.value)}
                 placeholder="ابحث باسم العميل..."
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
               />
               {searchResults.length > 0 && (
-                <div className="mt-1 rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="mt-1 rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
                   {searchResults.map((r) => (
                     <button
                       key={r.id}
                       type="button"
                       onClick={() => selectCustomer(r)}
-                      className="block w-full px-3 py-2 text-right text-sm hover:bg-gray-50"
+                      className="block w-full px-3 py-2 text-right text-sm text-gray-800 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700"
                     >
                       {r.firstName} {r.lastName} {r.phone ? `(${r.phone})` : ""}
                     </button>
@@ -164,39 +166,39 @@ export default function WholesaleCustomerDetail() {
               )}
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">الاسم</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">الاسم</label>
               <input
                 type="text"
                 value={form.customerName}
                 onChange={(e) => setForm({ ...form, customerName: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
                 required
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">الهاتف</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">الهاتف</label>
               <input
                 type="text"
                 value={form.customerPhone || ""}
                 onChange={(e) => setForm({ ...form, customerPhone: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">البريد الإلكتروني</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">البريد الإلكتروني</label>
               <input
                 type="email"
                 value={form.customerEmail || ""}
                 onChange={(e) => setForm({ ...form, customerEmail: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">قائمة الأسعار</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">قائمة الأسعار</label>
               <select
                 value={form.priceListId || ""}
                 onChange={(e) => setForm({ ...form, priceListId: e.target.value || undefined })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="">بدون قائمة</option>
                 {priceLists.map((pl) => (
@@ -205,44 +207,44 @@ export default function WholesaleCustomerDetail() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">الحد الائتماني</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">الحد الائتماني</label>
               <input
                 type="number"
                 value={form.creditLimit}
                 onChange={(e) => setForm({ ...form, creditLimit: parseFloat(e.target.value) || 0 })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
                 step="0.01"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">أيام السداد</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">أيام السداد</label>
               <input
                 type="number"
                 value={form.paymentTermsDays}
                 onChange={(e) => setForm({ ...form, paymentTermsDays: parseInt(e.target.value) || 0 })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
               />
             </div>
             {!isNew && (
               <div>
-                <label className="mb-1 block text-sm font-medium">الرصيد المستحق</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">الرصيد المستحق</label>
                 <input
                   type="text"
                   value={`${Number(form.currentBalance).toFixed(2)} EGP`}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300"
                   disabled
                 />
               </div>
             )}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-6">
               <input
                 type="checkbox"
                 id="isActive"
                 checked={form.isActive}
                 onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary dark:border-gray-600 dark:bg-gray-800"
               />
-              <label htmlFor="isActive" className="text-sm font-medium">نشط</label>
+              <label htmlFor="isActive" className="text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer">نشط</label>
             </div>
           </div>
         </div>
@@ -250,14 +252,14 @@ export default function WholesaleCustomerDetail() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white disabled:opacity-50 hover:bg-primary/90 transition-colors"
           >
             {saving ? "جاري الحفظ..." : "حفظ"}
           </button>
           <button
             type="button"
             onClick={() => navigate("/wholesale/customers")}
-            className="rounded-lg border border-gray-300 px-6 py-2 text-sm font-medium"
+            className="rounded-lg border border-gray-300 bg-white px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             إلغاء
           </button>

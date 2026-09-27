@@ -41,7 +41,7 @@ export default function WholesaleDashboard() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
         {error}
       </div>
     );
@@ -58,13 +58,13 @@ export default function WholesaleDashboard() {
 
   return (
     <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold">لوحة البيع بالجملة</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">لوحة البيع بالجملة</h1>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => (
-          <div key={card.label} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div key={card.label} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <div className={`mb-3 h-2 w-12 rounded ${card.color}`} />
-            <p className="text-sm text-gray-500">{card.label}</p>
-            <p className="mt-1 text-2xl font-bold">{card.value}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{card.label}</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{card.value}</p>
           </div>
         ))}
       </div>

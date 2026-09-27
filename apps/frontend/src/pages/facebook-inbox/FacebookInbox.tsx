@@ -2681,8 +2681,8 @@ const getApiError = (error: unknown): ApiErrorLike => {
                       {selectedConversation.customerName?.charAt(0)?.toUpperCase() || "؟"}
                     </div>
 
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 min-w-0">
                         <h2
                           className="truncate text-lg font-semibold"
                           style={{ color: "var(--color-foreground)" }}
@@ -2691,11 +2691,11 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         </h2>
                         {!isAiActive && (
                           <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex-shrink-0"
+                            className="inline-flex items-center justify-center p-1 rounded-md text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 flex-shrink-0"
                             title={isAiPaused ? t("facebookInbox.aiPausedHandover", "الذكاء الاصطناعي متوقف مؤقتاً بسبب رد يدوي (تدخل بشري)") : t("facebookInbox.aiStoppedManually", "الذكاء الاصطناعي متوقف عن هذه المحادثة (التحكم يدوي)")}
+                            aria-label={t("facebookInbox.humanTakeover", "تدخل بشري")}
                           >
-                            <Bot className="h-3 w-3 opacity-80" />
-                            <span>{t("facebookInbox.humanTakeover", "تدخل بشري")}</span>
+                            <Bot className="h-3.5 w-3.5 opacity-80" />
                           </span>
                         )}
                       </div>
