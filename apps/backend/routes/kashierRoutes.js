@@ -19,7 +19,17 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
       couponCode, cartId, pixelEventId, attribution,
     } = req.body;
 
-    if (!guestPhone || !guestName || !shippingAddress) {
+    const resolvedGuestName = String(guestName || req.body.customerName || req.body.name || '').trim();
+    const resolvedGuestPhone = String(guestPhone || req.body.phone || req.body.phone1 || req.body.mobileNumber || '').trim();
+    const resolvedGuestEmail = String(guestEmail || req.body.email || '').trim();
+    const resolvedShippingAddress = shippingAddress || (req.body.address ? {
+      address: req.body.address,
+      street: req.body.address,
+      city: req.body.city || req.body.governorate || '',
+      governorate: req.body.governorate || req.body.city || '',
+    } : null);
+
+    if (!resolvedGuestPhone || !resolvedGuestName || !resolvedShippingAddress) {
       return res.status(400).json({
         success: false, error: 'جميع الحقول المطلوبة يجب ملؤها (الاسم، الهاتف، العنوان)',
       });
@@ -29,24 +39,24 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
     const companyId = company.id;
 
     // Find or create customer
-    let customer = await findCustomerByPhone(prisma, guestPhone, companyId);
+    let customer = await findCustomerByPhone(prisma, resolvedGuestPhone, companyId);
 
     if (!customer) {
-      const nameParts = (guestName || 'Customer').split(/\s+/).filter(Boolean);
+      const nameParts = (resolvedGuestName || 'Customer').split(/\s+/).filter(Boolean);
       customer = await safeCreateCustomer(
         prisma,
         {
           data: {
             firstName: nameParts[0] || 'Customer',
             lastName: nameParts.slice(1).join(' ') || '',
-            email: guestEmail || '',
-            phone: guestPhone,
-            phoneNormalized: toCanonicalE164(guestPhone),
+            email: resolvedGuestEmail || '',
+            phone: resolvedGuestPhone,
+            phoneNormalized: toCanonicalE164(resolvedGuestPhone),
             companyId,
             status: 'ACTIVE',
           },
         },
-        buildPhoneWhere(guestPhone, companyId)
+        buildPhoneWhere(resolvedGuestPhone, companyId)
       );
     }
 
@@ -121,7 +131,7 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
         amount: orderTotal,
         currency: 'EGP',
         orderId: orderNumber,
-        customer: { email: guestEmail, reference: guestPhone },
+        customer: { email: resolvedGuestEmail, reference: resolvedGuestPhone },
         redirectUrl,
         webhookUrl,
         description: `Payment for order ${orderNumber}`,
@@ -141,13 +151,13 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
         orderNumber,
         customerId: customer.id,
         companyId,
-        customerName: guestName,
-        customerPhone: guestPhone,
-        customerEmail: guestEmail || '',
-        shippingAddress: JSON.stringify(shippingAddress),
-        customerAddress: JSON.stringify(shippingAddress),
-        city: shippingAddress?.city || '',
-        governorate: shippingAddress?.governorate || '',
+        customerName: resolvedGuestName,
+        customerPhone: resolvedGuestPhone,
+        customerEmail: resolvedGuestEmail || '',
+        shippingAddress: JSON.stringify(resolvedShippingAddress),
+        customerAddress: JSON.stringify(resolvedShippingAddress),
+        city: resolvedShippingAddress?.city || '',
+        governorate: resolvedShippingAddress?.governorate || '',
         subtotal: orderSubtotal,
         shipping: orderShipping,
         discount: orderDiscount,

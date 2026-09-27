@@ -1297,9 +1297,11 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       if (paymentMethod === "card" && !marketplacePreviewThemeId) {
         const cartId = getCartId();
         const cardPayload = {
-          guestName: payload.customerName,
-          guestEmail: payload.email || undefined,
-          guestPhone: payload.phone,
+          guestName: payload.guestName || resolvedFullName || fallbackCustomerName,
+          guestEmail: payload.guestEmail || undefined,
+          guestPhone: payload.guestPhone || contactPhone,
+          customerName: payload.guestName || resolvedFullName || fallbackCustomerName,
+          phone: payload.guestPhone || contactPhone,
           shippingAddress: {
             governorate: resolvedGovernorate || undefined,
             city: resolvedGovernorate || undefined,
