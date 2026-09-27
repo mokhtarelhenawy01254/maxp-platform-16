@@ -20,21 +20,34 @@ const getPhoneVariations = (input) => {
     const clean = convertedInput.replace(/\D/g, '');
     if (!clean) return [rawStr];
     const variations = new Set([clean, convertedInput, rawStr]);
+
+    // Handle 11-digit Egyptian numbers (e.g. 01012345678)
     if (clean.startsWith('0') && clean.length === 11) {
         const withoutZero = clean.slice(1);
         variations.add(withoutZero);
         variations.add('+20' + withoutZero);
         variations.add('20' + withoutZero);
+        variations.add('+20 ' + withoutZero);
+        // التنسيقات الشائعة ذات المسافات أو الشرطات (المتجر والـ autofill)
+        variations.add(`${clean.slice(0, 4)} ${clean.slice(4, 7)} ${clean.slice(7)}`);
+        variations.add(`${clean.slice(0, 3)} ${clean.slice(3, 7)} ${clean.slice(7)}`);
+        variations.add(`${clean.slice(0, 4)} ${clean.slice(4)}`);
+        variations.add(`${clean.slice(0, 4)}-${clean.slice(4, 7)}-${clean.slice(7)}`);
     } else if (clean.startsWith('20') && clean.length === 12) {
         const withoutPrefix = clean.slice(2);
         variations.add(withoutPrefix);
         variations.add('0' + withoutPrefix);
         variations.add('+' + clean);
+        variations.add(`0${withoutPrefix.slice(0, 4)} ${withoutPrefix.slice(4, 7)} ${withoutPrefix.slice(7)}`);
+        variations.add(`0${withoutPrefix.slice(0, 3)} ${withoutPrefix.slice(3, 7)} ${withoutPrefix.slice(7)}`);
+        variations.add(`0${withoutPrefix.slice(0, 4)} ${withoutPrefix.slice(4)}`);
     } else if (clean.startsWith('1') && clean.length === 10) {
         const withZero = '0' + clean;
         variations.add(withZero);
         variations.add('+20' + clean);
         variations.add('20' + clean);
+        variations.add(`${withZero.slice(0, 4)} ${withZero.slice(4, 7)} ${withZero.slice(7)}`);
+        variations.add(`${withZero.slice(0, 3)} ${withZero.slice(3, 7)} ${withZero.slice(7)}`);
     } else if (clean.length >= 7) {
         if (clean.startsWith('0')) {
             variations.add(clean.slice(1));
@@ -381,14 +394,34 @@ const bulkSearchOrders = async (req, res) => {
             });
             uniqueMatches = foundInputValues.length;
         } else if (searchType === 'phone') {
+            const extractDigits = (str) => String(str || '')
+                .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632))
+                .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 1776))
+                .replace(/\D/g, '');
+
             const allOrderPhones = mergedOrders.flatMap(o => [
                 o.customer?.phone,
                 o.customerPhone,
                 o.guestPhone
             ]).filter(Boolean);
 
+            const allOrderDigits = allOrderPhones.map(extractDigits).filter(Boolean);
+
             foundInputValues = cleanedValues.filter(searchVal => {
+                const searchDigits = extractDigits(searchVal);
+                if (!searchDigits) return false;
                 const searchVariations = new Set(getPhoneVariations(searchVal));
+                const searchDigitVariations = new Set(Array.from(searchVariations).map(extractDigits).filter(Boolean));
+
+                if (allOrderDigits.includes(searchDigits)) return true;
+
+                for (const dbDigits of allOrderDigits) {
+                    if (searchDigitVariations.has(dbDigits)) return true;
+                    if (dbDigits.length >= 9 && searchDigits.length >= 9) {
+                        if (dbDigits.endsWith(searchDigits) || searchDigits.endsWith(dbDigits)) return true;
+                    }
+                }
+
                 return allOrderPhones.some(dbPhone => {
                     const dbVariations = getPhoneVariations(dbPhone);
                     return dbVariations.some(v => searchVariations.has(v));

@@ -102,14 +102,14 @@ router.get('/campaign-attribution', authenticateToken, checkAppAccess('campaign-
 // حالات الطلب المتاحة للتقرير
 router.get('/statuses', authenticateToken, cacheMiddleware(60000), analyticsController.getAvailableStatuses);
 
-// تقرير ملخص الحالات التجميعي
-router.get('/status-summary', authenticateToken, cacheMiddleware(60000), analyticsController.getStatusSummaryReport);
+// تقرير ملخص الحالات التجميعي (مباشر بلا كاش لضمان التطابق اللحظي مع صفحة الطلبات)
+router.get('/status-summary', authenticateToken, analyticsController.getStatusSummaryReport);
 
 // تفاصيل الطلبات حسب الحالة (drill-down)
-router.get('/status-summary/orders', authenticateToken, cacheMiddleware(60000), analyticsController.getStatusSummaryOrders);
+router.get('/status-summary/orders', authenticateToken, analyticsController.getStatusSummaryOrders);
 
 // تفاصيل القطع حسب الحالة (drill-down)
-router.get('/status-summary/items', authenticateToken, cacheMiddleware(60000), analyticsController.getStatusSummaryItems);
+router.get('/status-summary/items', authenticateToken, analyticsController.getStatusSummaryItems);
 
 // Retention Analytics — RPR / Cohort / RFM (Swan P0)
 router.get('/retention', authenticateToken, cacheMiddleware(60000), retentionAnalyticsController.getRetentionAnalytics);
