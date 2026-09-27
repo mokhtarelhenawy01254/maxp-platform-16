@@ -681,6 +681,19 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       return null;
     }
 
+    const resolvedColor =
+      activeAttributes.Color ||
+      activeAttributes["اللون"] ||
+      activeAttributes["لون"] ||
+      activeAttributes.color ||
+      undefined;
+    const resolvedSize =
+      activeAttributes.Size ||
+      activeAttributes["المقاس"] ||
+      activeAttributes["مقاس"] ||
+      activeAttributes.size ||
+      undefined;
+
     return {
       id:
         activeSelection?.variantId
@@ -694,6 +707,8 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       comparePrice: typeof product.comparePrice === 'number' ? product.comparePrice : undefined,
       quantity,
       imageUrl: activeSelection?.imageUrl || product.imageUrl,
+      productColor: resolvedColor,
+      productSize: resolvedSize,
       attributes: activeAttributes,
       volumeDiscounts: activeDiscounts,
     };

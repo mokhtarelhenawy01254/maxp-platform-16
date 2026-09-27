@@ -73,7 +73,7 @@ export const buildQuantityOfferCartItems = ({
 }: BuildQuantityOfferCartItemsArgs): BuiltQuantityOfferCartItemsResult | null => {
   const effectiveBundleId =
     bundleId || `${product.id}-${quantityOfferSelection.offerId}-${Date.now()}`;
-  const variants = product.productVariants || [];
+  const variants = product.productVariants || (product as any).variants || [];
   const hasVariants = variants.length > 0;
   const selections = Array.isArray(quantityOfferSelection.selections)
     ? quantityOfferSelection.selections
@@ -150,6 +150,21 @@ export const buildQuantityOfferCartItems = ({
     const isSingleStandard =
       treatSingleAsStandard && quantityOfferSelection.offerQuantity === 1;
 
+    const productColor =
+      selectedAttributes.Color ||
+      selectedAttributes["اللون"] ||
+      selectedAttributes["لون"] ||
+      selectedAttributes.color ||
+      (selectedVariant as any).color ||
+      undefined;
+    const productSize =
+      selectedAttributes.Size ||
+      selectedAttributes["المقاس"] ||
+      selectedAttributes["مقاس"] ||
+      selectedAttributes.size ||
+      (selectedVariant as any).size ||
+      undefined;
+
     items.push({
       id: `${effectiveBundleId}-${index + 1}`,
       productId: product.id,
@@ -161,6 +176,8 @@ export const buildQuantityOfferCartItems = ({
       quantity: 1,
       imageUrl:
         (selectedVariant.image as string) || getPrimaryProductImage(product),
+      productColor,
+      productSize,
       attributes: isSingleStandard
         ? selectedAttributes
         : {

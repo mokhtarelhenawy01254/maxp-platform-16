@@ -670,14 +670,18 @@ const OrderDetails: React.FC = () => {
             });
           }
 
-          // Extract from attributeValues
-          if (variantMeta.attributeValues) {
-            if (variantMeta.attributeValues["اللون"] != null && !productColor) {
-              productColor = String(variantMeta.attributeValues["اللون"]);
-            }
-            if (variantMeta.attributeValues["المقاس"] != null && !productSize) {
-              productSize = String(variantMeta.attributeValues["المقاس"]);
-            }
+          // Extract from attributeValues or direct metadata
+          const vAttrs =
+            variantMeta.attributeValues ||
+            (typeof variantMeta.attributes === "object" && !Array.isArray(variantMeta.attributes)
+              ? variantMeta.attributes
+              : null) ||
+            variantMeta;
+          if (vAttrs && typeof vAttrs === "object") {
+            const c = vAttrs["اللون"] ?? vAttrs["لون"] ?? vAttrs["Color"] ?? vAttrs["color"];
+            const s = vAttrs["المقاس"] ?? vAttrs["مقاس"] ?? vAttrs["Size"] ?? vAttrs["size"];
+            if (c != null && !productColor) productColor = String(c);
+            if (s != null && !productSize) productSize = String(s);
           }
         } catch (e) {
           console.error("Error parsing variant metadata:", e);
@@ -692,12 +696,13 @@ const OrderDetails: React.FC = () => {
         if (
           variant.type === "color" &&
           !name.includes("-") &&
-          !name.includes("|")
+          !name.includes("|") &&
+          !name.includes("/")
         ) {
           if (!productColor) productColor = name.trim();
         } else {
-          // Handle both hyphen and pipe separators
-          const parts = name.split(/\s*[-–|]\s*/).filter((p: any) => p.trim());
+          // Handle hyphen, en-dash, pipe, and slash separators
+          const parts = name.split(/\s*[-–|\/]\s*/).filter((p: any) => p.trim());
 
           if (parts.length >= 2) {
             // Assumption: Color is often first, Size is often last

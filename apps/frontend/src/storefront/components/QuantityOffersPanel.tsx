@@ -216,8 +216,8 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
     return ensureSinglePieceQuantityOffer(baseOffers, singlePieceUnitPrice);
   }, [product]);
   const variants = React.useMemo(
-    () => product.productVariants || [],
-    [product.productVariants],
+    () => product.productVariants || (product as any).variants || [],
+    [product.productVariants, (product as any).variants],
   );
   const hasVariants = variants.length > 0;
   const defaultOffer = React.useMemo(
@@ -259,7 +259,15 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
 
     setOfferSelections((current) => {
       const existingSelections = current[activeOffer.id];
-      if (Array.isArray(existingSelections) && existingSelections.length === activeOffer.quantity) {
+      const hasMeaningfulSelection =
+        Array.isArray(existingSelections) &&
+        existingSelections.length === activeOffer.quantity &&
+        (!variants.length ||
+          existingSelections.some(
+            (sel) => Object.keys(sel || {}).length > 0,
+          ));
+
+      if (hasMeaningfulSelection) {
         return current;
       }
 

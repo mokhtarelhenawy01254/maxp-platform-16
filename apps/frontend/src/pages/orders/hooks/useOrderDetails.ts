@@ -419,13 +419,14 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
             }
 
             // Parse Variant Metadata
+            const vObj = item.variant || item.productVariant;
             let variantMetadata: any = {};
-            if (item.variant && item.variant.metadata) {
+            if (vObj && vObj.metadata) {
               try {
                 variantMetadata =
-                  typeof item.variant.metadata === "string"
-                    ? JSON.parse(item.variant.metadata)
-                    : item.variant.metadata;
+                  typeof vObj.metadata === "string"
+                    ? JSON.parse(vObj.metadata)
+                    : vObj.metadata;
               } catch (e) {
                 variantMetadata = {};
               }
@@ -437,23 +438,41 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
               if (item.color) return item.color;
 
               // 2. Metadata
+              if (itemMetadata.productColor) return itemMetadata.productColor;
               if (itemMetadata.color) return itemMetadata.color;
-              if (itemMetadata.attributeValues?.["اللون"])
-                return itemMetadata.attributeValues["اللون"];
-              if (itemMetadata.attributeValues?.["color"])
-                return itemMetadata.attributeValues["color"];
+              if (itemMetadata.Color) return itemMetadata.Color;
+              const itemAttrs =
+                itemMetadata.attributeValues ||
+                (typeof itemMetadata.attributes === "object" && !Array.isArray(itemMetadata.attributes)
+                  ? itemMetadata.attributes
+                  : null);
+              if (itemAttrs) {
+                if (itemAttrs["اللون"]) return itemAttrs["اللون"];
+                if (itemAttrs["لون"]) return itemAttrs["لون"];
+                if (itemAttrs["Color"]) return itemAttrs["Color"];
+                if (itemAttrs["color"]) return itemAttrs["color"];
+              }
 
               // 3. Variant Relation
-              if (item.variant) {
-                if (variantMetadata.attributeValues?.["اللون"])
-                  return variantMetadata.attributeValues["اللون"];
-                if (variantMetadata.attributeValues?.["color"])
-                  return variantMetadata.attributeValues["color"];
+              if (vObj) {
+                const vAttrs =
+                  variantMetadata.attributeValues ||
+                  (typeof variantMetadata.attributes === "object" && !Array.isArray(variantMetadata.attributes)
+                    ? variantMetadata.attributes
+                    : null) ||
+                  variantMetadata;
+                if (vAttrs) {
+                  if (vAttrs["اللون"]) return vAttrs["اللون"];
+                  if (vAttrs["لون"]) return vAttrs["لون"];
+                  if (vAttrs["Color"]) return vAttrs["Color"];
+                  if (vAttrs["color"]) return vAttrs["color"];
+                }
+                if (vObj.color) return vObj.color;
 
-                if (item.variant.name) {
-                  const name = item.variant.name;
-                  if (item.variant.type === "color" && !name.includes("-"))
-                    return name;
+                if (vObj.name) {
+                  const parts = vObj.name.split(/\s*[-–|\/]\s*/);
+                  if (parts.length >= 2 && isNaN(Number(parts[0]))) return parts[0];
+                  if (vObj.type === "color") return vObj.name;
                 }
               }
 
@@ -465,31 +484,51 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
 
             const extractedProductSize = (() => {
               // 1. Direct fields
-              if (item.productSize != null) return toStr(item.productSize);
-              if (item.size != null) return toStr(item.size);
+              if (item.productSize != null && item.productSize !== "") return toStr(item.productSize);
+              if (item.size != null && item.size !== "") return toStr(item.size);
 
               // 2. Metadata
-              if (itemMetadata.size != null) return toStr(itemMetadata.size);
-              if (itemMetadata.attributeValues?.["المقاس"] != null)
-                return toStr(itemMetadata.attributeValues["المقاس"]);
-              if (itemMetadata.attributeValues?.["size"] != null)
-                return toStr(itemMetadata.attributeValues["size"]);
+              if (itemMetadata.productSize != null && itemMetadata.productSize !== "") return toStr(itemMetadata.productSize);
+              if (itemMetadata.size != null && itemMetadata.size !== "") return toStr(itemMetadata.size);
+              if (itemMetadata.Size != null && itemMetadata.Size !== "") return toStr(itemMetadata.Size);
+              const itemAttrs =
+                itemMetadata.attributeValues ||
+                (typeof itemMetadata.attributes === "object" && !Array.isArray(itemMetadata.attributes)
+                  ? itemMetadata.attributes
+                  : null);
+              if (itemAttrs) {
+                if (itemAttrs["المقاس"] != null) return toStr(itemAttrs["المقاس"]);
+                if (itemAttrs["مقاس"] != null) return toStr(itemAttrs["مقاس"]);
+                if (itemAttrs["Size"] != null) return toStr(itemAttrs["Size"]);
+                if (itemAttrs["size"] != null) return toStr(itemAttrs["size"]);
+              }
 
               // 3. Variant Relation
-              if (item.variant) {
-                if (variantMetadata.attributeValues?.["المقاس"] != null)
-                  return toStr(variantMetadata.attributeValues["المقاس"]);
-                if (variantMetadata.attributeValues?.["size"] != null)
-                  return toStr(variantMetadata.attributeValues["size"]);
+              if (vObj) {
+                const vAttrs =
+                  variantMetadata.attributeValues ||
+                  (typeof variantMetadata.attributes === "object" && !Array.isArray(variantMetadata.attributes)
+                    ? variantMetadata.attributes
+                    : null) ||
+                  variantMetadata;
+                if (vAttrs) {
+                  if (vAttrs["المقاس"] != null) return toStr(vAttrs["المقاس"]);
+                  if (vAttrs["مقاس"] != null) return toStr(vAttrs["مقاس"]);
+                  if (vAttrs["Size"] != null) return toStr(vAttrs["Size"]);
+                  if (vAttrs["size"] != null) return toStr(vAttrs["size"]);
+                }
+                if (vObj.size != null) return toStr(vObj.size);
 
-                if (item.variant.name) {
-                  const parts = item.variant.name
-                    .split(/[-/|xX]/)
+                if (vObj.name) {
+                  const parts = vObj.name
+                    .split(/\s*[-–|\/]\s*/)
                     .map((s: any) => s.trim());
                   const sizePart = parts.find((part: string) =>
                     looksLikeSizeValue(part),
                   );
                   if (sizePart) return sizePart;
+                  if (parts.length >= 2) return parts[parts.length - 1];
+                  if (vObj.type === "size") return parts[0];
                 }
               }
 

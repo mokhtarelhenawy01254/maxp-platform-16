@@ -83,7 +83,11 @@ type OrderItemMetadata = {
   images?: unknown;
   stock?: unknown;
   color?: unknown;
+  Color?: unknown;
+  productColor?: unknown;
   size?: unknown;
+  Size?: unknown;
+  productSize?: unknown;
   quantityOffer?: {
     groupId?: unknown;
     offerLabel?: unknown;
@@ -92,7 +96,8 @@ type OrderItemMetadata = {
     freeShipping?: unknown;
   };
   attributeValues?: Record<string, unknown>;
-  attributes?: OrderItemAttributeEntry[];
+  attributes?: OrderItemAttributeEntry[] | Record<string, unknown>;
+  [key: string]: unknown;
 };
 
 type QuantityOfferDisplay = {
@@ -148,44 +153,66 @@ const normalizeVariantBadges = (
   item: OrderItem,
   itemMetadata: OrderItemMetadata,
 ) => {
-  let displayColor = item.productColor;
-  let displaySize = item.productSize;
+  let displayColor = item.productColor || (item as any).color;
+  let displaySize = item.productSize || (item as any).size;
 
   try {
-    if (!displayColor && itemMetadata.color) {
-      displayColor = itemMetadata.color as string;
+    if (!displayColor && (itemMetadata.color || itemMetadata.Color || itemMetadata.productColor)) {
+      displayColor = (itemMetadata.color || itemMetadata.Color || itemMetadata.productColor) as string;
     }
 
-    if (!displaySize && itemMetadata.size) {
-      displaySize = itemMetadata.size as string;
+    if (!displaySize && (itemMetadata.size || itemMetadata.Size || itemMetadata.productSize)) {
+      displaySize = (itemMetadata.size || itemMetadata.Size || itemMetadata.productSize) as string;
     }
 
-    if (itemMetadata.attributeValues) {
-      if (!displayColor && itemMetadata.attributeValues["اللون"]) {
-        displayColor = itemMetadata.attributeValues["اللون"] as string;
+    const attrs =
+      itemMetadata.attributeValues ||
+      (typeof itemMetadata.attributes === "object" && !Array.isArray(itemMetadata.attributes)
+        ? (itemMetadata.attributes as Record<string, unknown>)
+        : null) ||
+      (item as any).attributes;
+
+    if (attrs && typeof attrs === "object") {
+      if (!displayColor) {
+        displayColor = (attrs["اللون"] || attrs["لون"] || attrs["Color"] || attrs["color"]) as string;
       }
-      if (!displaySize && itemMetadata.attributeValues["المقاس"]) {
-        displaySize = itemMetadata.attributeValues["المقاس"] as string;
+      if (!displaySize) {
+        displaySize = (attrs["المقاس"] || attrs["مقاس"] || attrs["Size"] || attrs["size"]) as string;
       }
     }
 
     if (itemMetadata.attributes && Array.isArray(itemMetadata.attributes)) {
       itemMetadata.attributes.forEach((attr) => {
+        const type = String(attr.type || (attr as any).name || (attr as any).key || "").toLowerCase();
+        const val = attr.option || (attr as any).value || (attr as any).displayValue;
         if (
-          attr.type === "color" &&
-          typeof attr.option === "string" &&
+          (type === "color" || type === "colour" || type === "اللون" || type === "لون") &&
+          typeof val === "string" &&
           !displayColor
         ) {
-          displayColor = attr.option;
+          displayColor = val;
         }
         if (
-          attr.type === "size" &&
-          typeof attr.option === "string" &&
+          (type === "size" || type === "المقاس" || type === "مقاس") &&
+          typeof val === "string" &&
           !displaySize
         ) {
-          displaySize = attr.option;
+          displaySize = val;
         }
       });
+    }
+
+    const variantName =
+      (item as any).variantName ||
+      (item as any).productVariant?.name ||
+      (item as any).name ||
+      item.productName;
+    if ((!displayColor || !displaySize) && typeof variantName === "string") {
+      const parts = variantName.split(/\s*[-–|\/]\s*/);
+      if (parts.length >= 2) {
+        if (!displayColor && isNaN(Number(parts[0]))) displayColor = parts[0];
+        if (!displaySize) displaySize = parts[parts.length - 1];
+      }
     }
   } catch (error) {
     console.error("Error parsing variant metadata:", error);

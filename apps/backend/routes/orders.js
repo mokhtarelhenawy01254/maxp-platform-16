@@ -3390,7 +3390,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           orderItems: {
             include: {
               product: { select: { id: true, name: true, images: true, mainImage: true } },
-              productVariant: { select: { id: true, name: true, sku: true, images: true } }
+              productVariant: { select: { id: true, name: true, sku: true, images: true, metadata: true, color: true, size: true } }
             }
           },
           conversation: { select: { id: true, channel: true } },
@@ -3817,7 +3817,65 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
         shippingAddress: shippingAddress,
         items: Array.isArray(order.orderItems) && order.orderItems.length > 0 ? order.orderItems.map(item => {
-          const parsedMetadata = JSON.parse(item.metadata || '{}');
+          let parsedMetadata = {};
+          try {
+            parsedMetadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata || '{}') : (item.metadata || {});
+          } catch (_) {
+            parsedMetadata = {};
+          }
+          const vMeta = (() => {
+            if (!item.productVariant?.metadata) return {};
+            try {
+              return typeof item.productVariant.metadata === 'string' ? JSON.parse(item.productVariant.metadata) : item.productVariant.metadata;
+            } catch (_) { return {}; }
+          })();
+          const vAttrs = vMeta?.attributeValues || vMeta?.attributes || vMeta || {};
+          const metaAttrs = parsedMetadata?.attributeValues || parsedMetadata?.attributes || {};
+
+          let resolvedColor =
+            item.productColor ||
+            parsedMetadata.productColor ||
+            parsedMetadata.color ||
+            parsedMetadata.Color ||
+            metaAttrs.Color ||
+            metaAttrs.color ||
+            metaAttrs['اللون'] ||
+            metaAttrs['لون'] ||
+            vAttrs.Color ||
+            vAttrs.color ||
+            vAttrs['اللون'] ||
+            vAttrs['لون'] ||
+            item.productVariant?.color ||
+            '';
+
+          let resolvedSize =
+            item.productSize ||
+            parsedMetadata.productSize ||
+            parsedMetadata.size ||
+            parsedMetadata.Size ||
+            metaAttrs.Size ||
+            metaAttrs.size ||
+            metaAttrs['المقاس'] ||
+            metaAttrs['مقاس'] ||
+            vAttrs.Size ||
+            vAttrs.size ||
+            vAttrs['المقاس'] ||
+            vAttrs['مقاس'] ||
+            item.productVariant?.size ||
+            '';
+
+          if ((!resolvedColor || !resolvedSize) && item.productVariant?.name) {
+            const vName = item.productVariant.name;
+            const parts = vName.split(/\s*[-–|\/]\s*/).map(p => p.trim());
+            if (parts.length >= 2) {
+              if (!resolvedColor && isNaN(parts[0])) resolvedColor = parts[0];
+              if (!resolvedSize) resolvedSize = parts[parts.length - 1];
+            } else if (parts.length === 1 && !resolvedColor && !resolvedSize) {
+              if (item.productVariant.type === 'color') resolvedColor = parts[0];
+              else if (item.productVariant.type === 'size') resolvedSize = parts[0];
+            }
+          }
+
           const resolvedImg = item.productImage || item.product?.mainImage || (() => {
             if (item.productVariant?.images) {
               try {
@@ -3839,8 +3897,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
             productId: item.productId,
             name: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
             productName: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
-            productColor: item.productColor || parsedMetadata.color || parsedMetadata.productColor || '',
-            productSize: item.productSize || parsedMetadata.size || parsedMetadata.productSize || '',
+            productColor: resolvedColor,
+            productSize: resolvedSize,
+            color: resolvedColor,
+            size: resolvedSize,
             productImage: resolvedImg,
             productSku: item.productSku || item.productVariant?.sku || parsedMetadata.sku || '',
             price: item.price,
@@ -3848,8 +3908,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
             total: item.total,
             metadata: {
               ...parsedMetadata,
-              color: item.productColor || parsedMetadata.color || parsedMetadata.productColor,
-              size: item.productSize || parsedMetadata.size || parsedMetadata.productSize,
+              color: resolvedColor,
+              size: resolvedSize,
               image: resolvedImg
             }
           };
@@ -3973,19 +4033,59 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         paymentStatus: derivePaymentStatusForDisplay(order, metadata),
         paymentMethod: order.paymentMethod?.toLowerCase() || 'cash_on_delivery',
         shippingAddress: shippingAddress,
-        items: Array.isArray(items) ? items.map(item => ({
-          id: item.id || item.productId || '',
-          productId: item.productId || item.id || '',
-          name: item.name || item.productName || '',
-          price: item.price || 0,
-          quantity: item.quantity || 1,
-          total: (item.price || 0) * (item.quantity || 1),
-          sku: item.sku || item.productSku || '',
-          color: item.color || item.productColor || '',
-          size: item.size || item.productSize || '',
-          image: item.image || item.productImage || '',
-          metadata: item.metadata && typeof item.metadata === 'object' ? item.metadata : {}
-        })) : [],
+        items: Array.isArray(items) ? items.map(item => {
+          let itemMeta = {};
+          try {
+            itemMeta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {});
+          } catch (_) {
+            itemMeta = {};
+          }
+          const itemAttrs = itemMeta.attributeValues || itemMeta.attributes || item.attributes || {};
+          const itemColor =
+            item.productColor ||
+            item.color ||
+            itemMeta.productColor ||
+            itemMeta.color ||
+            itemMeta.Color ||
+            itemAttrs.Color ||
+            itemAttrs.color ||
+            itemAttrs['اللون'] ||
+            itemAttrs['لون'] ||
+            '';
+          const itemSize =
+            item.productSize ||
+            item.size ||
+            itemMeta.productSize ||
+            itemMeta.size ||
+            itemMeta.Size ||
+            itemAttrs.Size ||
+            itemAttrs.size ||
+            itemAttrs['المقاس'] ||
+            itemAttrs['مقاس'] ||
+            '';
+          return {
+            id: item.id || item.productId || '',
+            productId: item.productId || item.id || '',
+            name: item.name || item.productName || '',
+            productName: item.name || item.productName || '',
+            price: item.price || 0,
+            quantity: item.quantity || 1,
+            total: (item.price || 0) * (item.quantity || 1),
+            sku: item.sku || item.productSku || '',
+            productSku: item.sku || item.productSku || '',
+            color: itemColor,
+            productColor: itemColor,
+            size: itemSize,
+            productSize: itemSize,
+            image: item.image || item.productImage || '',
+            productImage: item.image || item.productImage || '',
+            metadata: {
+              ...itemMeta,
+              color: itemColor,
+              size: itemSize
+            }
+          };
+        }) : [],
         trackingNumber: order.turboTrackingNumber || twin?.turboTrackingNumber || null,
         turboTrackingNumber: order.turboTrackingNumber || twin?.turboTrackingNumber || null,
         turboShipmentStatus: order.turboShipmentStatus || twin?.turboShipmentStatus || null,
@@ -6351,9 +6451,11 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       const validItems = Array.isArray(items) ? items : [];
       const missingVariantIds = validItems
         .filter(item => {
-          const color = item.productColor || item.color || (item.metadata && item.metadata.color) || '';
-          const size = item.productSize || item.size || (item.metadata && item.metadata.size) || '';
-          const details = item.productDetails || item.details || (item.metadata && item.metadata.details) || '';
+          let itemMeta = {};
+          try { itemMeta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {}); } catch (_) {}
+          const color = item.productColor || item.color || itemMeta.color || itemMeta.Color || itemMeta.productColor || '';
+          const size = item.productSize || item.size || itemMeta.size || itemMeta.Size || itemMeta.productSize || '';
+          const details = item.productDetails || item.details || itemMeta.details || '';
           return (!color || !size || !details) && item.variantId;
         })
         .map(item => item.variantId);
@@ -6362,7 +6464,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       if (missingVariantIds.length > 0) {
         const variants = await getSharedPrismaClient().productVariant.findMany({
           where: { id: { in: missingVariantIds } },
-          select: { id: true, name: true, metadata: true }
+          select: { id: true, name: true, type: true, color: true, size: true, metadata: true }
         });
         variantMap = new Map(variants.map(v => [v.id, v]));
       }
@@ -6424,9 +6526,36 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         paymentMethod: guestOrder.paymentMethod?.toLowerCase() || 'cash_on_delivery',
         shippingAddress: shippingAddress,
         items: validItems.map((item) => {
-          let color = item.productColor || item.color || (item.metadata && item.metadata.color) || '';
-          let size = item.productSize || item.size || (item.metadata && item.metadata.size) || '';
-          let details = item.productDetails || item.details || (item.metadata && item.metadata.details) || '';
+          let itemMeta = {};
+          try {
+            itemMeta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {});
+          } catch (_) {
+            itemMeta = {};
+          }
+          const itemAttrs = itemMeta.attributeValues || itemMeta.attributes || item.attributes || {};
+          let color =
+            item.productColor ||
+            item.color ||
+            itemMeta.productColor ||
+            itemMeta.color ||
+            itemMeta.Color ||
+            itemAttrs.Color ||
+            itemAttrs.color ||
+            itemAttrs['اللون'] ||
+            itemAttrs['لون'] ||
+            '';
+          let size =
+            item.productSize ||
+            item.size ||
+            itemMeta.productSize ||
+            itemMeta.size ||
+            itemMeta.Size ||
+            itemAttrs.Size ||
+            itemAttrs.size ||
+            itemAttrs['المقاس'] ||
+            itemAttrs['مقاس'] ||
+            '';
+          let details = item.productDetails || item.details || itemMeta.details || '';
 
           const variant = (!color || !size || !details) && item.variantId ? variantMap.get(item.variantId) : null;
           if (variant) {
@@ -6439,24 +6568,26 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
                   ? JSON.parse(variant.metadata)
                   : variant.metadata;
 
-                if (metadata && metadata.attributeValues) {
-                  const AR_COLOR = '\u0627\u0644\u0644\u0648\u0646';
-                  const AR_SIZE = '\u0627\u0644\u0645\u0642\u0627\u0633';
-                  const AR_DETAILS = '\u0627\u0644\u062a\u0641\u0627\u0635\u064a\u0644';
-                  if (!color) color = metadata.attributeValues[AR_COLOR] || metadata.attributeValues['color'] || metadata.attributeValues['Color'] || '';
-                  if (!size) size = metadata.attributeValues[AR_SIZE] || metadata.attributeValues['size'] || metadata.attributeValues['Size'] || '';
-                  if (!details) details = metadata.attributeValues[AR_DETAILS] || metadata.attributeValues['details'] || metadata.attributeValues['Details'] || '';
-                }
+                const attrs = metadata?.attributeValues || metadata?.attributes || metadata || {};
+                const AR_COLOR = '\u0627\u0644\u0644\u0648\u0646';
+                const AR_SIZE = '\u0627\u0644\u0645\u0642\u0627\u0633';
+                const AR_DETAILS = '\u062a\u0641\u0627\u0635\u064a\u0644';
+                if (!color) color = attrs[AR_COLOR] || attrs['\u0644\u0648\u0646'] || attrs['color'] || attrs['Color'] || '';
+                if (!size) size = attrs[AR_SIZE] || attrs['\u0645\u0642\u0627\u0633'] || attrs['size'] || attrs['Size'] || '';
+                if (!details) details = attrs[AR_DETAILS] || attrs['details'] || attrs['Details'] || '';
               } catch (e) {
                 // Ignore parse error
               }
             }
 
-            if ((!color || !size) && variant.name && variant.name.includes('-')) {
-              const parts = variant.name.split('-').map(p => p.trim());
+            if ((!color || !size) && variant.name) {
+              const parts = variant.name.split(/\s*[-–|\/]\s*/).map(p => p.trim());
               if (parts.length >= 2) {
                 if (!color && isNaN(parts[0])) color = parts[0];
                 if (!size) size = parts[parts.length - 1];
+              } else if (parts.length === 1 && !color && !size) {
+                if (variant.type === 'color') color = parts[0];
+                else if (variant.type === 'size') size = parts[0];
               }
             }
           }
@@ -6646,15 +6777,77 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
         shippingAddress: shippingAddress,
         items: order.orderItems.map(item => {
-          const parsedMetadata = JSON.parse(item.metadata || '{}');
+          let parsedMetadata = {};
+          try {
+            parsedMetadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata || '{}') : (item.metadata || {});
+          } catch (_) {
+            parsedMetadata = {};
+          }
+          const vMeta = (() => {
+            if (!item.productVariant?.metadata) return {};
+            try {
+              return typeof item.productVariant.metadata === 'string' ? JSON.parse(item.productVariant.metadata) : item.productVariant.metadata;
+            } catch (_) { return {}; }
+          })();
+          const vAttrs = vMeta?.attributeValues || vMeta?.attributes || vMeta || {};
+          const metaAttrs = parsedMetadata?.attributeValues || parsedMetadata?.attributes || {};
+
+          let resolvedColor =
+            item.productColor ||
+            parsedMetadata.productColor ||
+            parsedMetadata.color ||
+            parsedMetadata.Color ||
+            parsedMetadata.originalData?.productColor ||
+            metaAttrs.Color ||
+            metaAttrs.color ||
+            metaAttrs['اللون'] ||
+            metaAttrs['لون'] ||
+            vAttrs.Color ||
+            vAttrs.color ||
+            vAttrs['اللون'] ||
+            vAttrs['لون'] ||
+            item.productVariant?.color ||
+            '';
+
+          let resolvedSize =
+            item.productSize ||
+            parsedMetadata.productSize ||
+            parsedMetadata.size ||
+            parsedMetadata.Size ||
+            parsedMetadata.originalData?.productSize ||
+            metaAttrs.Size ||
+            metaAttrs.size ||
+            metaAttrs['المقاس'] ||
+            metaAttrs['مقاس'] ||
+            vAttrs.Size ||
+            vAttrs.size ||
+            vAttrs['المقاس'] ||
+            vAttrs['مقاس'] ||
+            item.productVariant?.size ||
+            '';
+
+          if ((!resolvedColor || !resolvedSize) && item.productVariant?.name) {
+            const vName = item.productVariant.name;
+            const parts = vName.split(/\s*[-–|\/]\s*/).map(p => p.trim());
+            if (parts.length >= 2) {
+              if (!resolvedColor && isNaN(parts[0])) resolvedColor = parts[0];
+              if (!resolvedSize) resolvedSize = parts[parts.length - 1];
+            } else if (parts.length === 1 && !resolvedColor && !resolvedSize) {
+              if (item.productVariant.type === 'color') resolvedColor = parts[0];
+              else if (item.productVariant.type === 'size') resolvedSize = parts[0];
+            }
+          }
+
           return {
             id: item.id,
             productId: item.productId,
             name: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
             productName: item.productName || item.product?.name || parsedMetadata.productName || 'منتج غير محدد',
             // ✅ FIX: Add productColor, productSize, and productDetails directly for frontend
-            productColor: item.productColor || parsedMetadata.color || parsedMetadata.productColor || parsedMetadata.originalData?.productColor || '',
-            productSize: item.productSize || parsedMetadata.size || parsedMetadata.productSize || parsedMetadata.originalData?.productSize || '',
+            productColor: resolvedColor,
+            productSize: resolvedSize,
+            color: resolvedColor,
+            size: resolvedSize,
             productDetails: item.productDetails || parsedMetadata.details || parsedMetadata.productDetails || '',
             productImage: (() => {
               if (item.productImage) return item.productImage;
@@ -6680,8 +6873,8 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             productSku: item.productSku || item.productVariant?.sku || parsedMetadata.sku || '',
             metadata: {
               ...parsedMetadata,
-              color: item.productColor || parsedMetadata.color || parsedMetadata.productColor,
-              size: item.productSize || parsedMetadata.size || parsedMetadata.productSize,
+              color: resolvedColor,
+              size: resolvedSize,
               details: item.productDetails || parsedMetadata.details || parsedMetadata.productDetails,
               image: item.productImage || item.product?.mainImage || (item.product?.images ? (typeof item.product.images === 'string' ? JSON.parse(item.product.images)[0] : item.product.images[0]) : (parsedMetadata.image || parsedMetadata.productImage))
             }

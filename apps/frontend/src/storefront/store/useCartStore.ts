@@ -60,6 +60,8 @@ export interface CartItem {
   quantity: number;
   imageUrl?: string;
   attributes?: Record<string, string>; // e.g., { Color: "Red", Size: "M" }
+  productColor?: string;
+  productSize?: string;
   volumeDiscounts?: VolumeDiscountTier[];
   quantityOffer?: {
     groupId: string;

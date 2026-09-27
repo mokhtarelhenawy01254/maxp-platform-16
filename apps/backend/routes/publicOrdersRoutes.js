@@ -718,8 +718,8 @@ function buildTrackedOrderItem(item) {
     variantId: item?.variantId || null,
     quantity: item?.quantity,
     price: item?.price,
-    productColor: (item?.productColor || getAttributeValue(attributes, ['color', 'colour', 'اللون'])) ? String(item?.productColor || getAttributeValue(attributes, ['color', 'colour', 'اللون'])) : null,
-    productSize: (item?.productSize || getAttributeValue(attributes, ['size', 'المقاس'])) != null ? String(item?.productSize || getAttributeValue(attributes, ['size', 'المقاس'])) : null,
+    productColor: (item?.productColor || item?.color || getAttributeValue(attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان'])) ? String(item?.productColor || item?.color || getAttributeValue(attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان'])) : null,
+    productSize: (item?.productSize || item?.size || getAttributeValue(attributes, ['size', 'المقاس', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم'])) != null ? String(item?.productSize || item?.size || getAttributeValue(attributes, ['size', 'المقاس', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم'])) : null,
     image: productImage,
     imageUrl: productImage,
     attributes,
@@ -1085,39 +1085,57 @@ router.post('/', async (req, res) => {
         // ✅ ENRICH ITEM with Variant Details (Color, Size, Metadata)
         // This ensures the saved JSON contains all display info
         item.variantName = variant.name;
-        item.metadata = variant.metadata; // Save full metadata
+        // Merge metadata instead of overwriting existing quantityOffer / item metadata
+        const existingItemMeta = typeof item.metadata === 'string'
+          ? safeJsonParse(item.metadata, {})
+          : (item.metadata && typeof item.metadata === 'object' && !Array.isArray(item.metadata) ? item.metadata : {});
+        const variantMetaParsed = typeof variant.metadata === 'string'
+          ? safeJsonParse(variant.metadata, {})
+          : (variant.metadata && typeof variant.metadata === 'object' && !Array.isArray(variant.metadata) ? variant.metadata : {});
+        item.metadata = { ...variantMetaParsed, ...existingItemMeta };
 
         let color =
-          getAttributeValue(item.attributes, ['اللون', 'color']) ||
+          item.productColor ||
+          item.color ||
+          getAttributeValue(item.attributes, ['اللون', 'color', 'Color', 'colour', 'لون', 'ألوان', 'الوان']) ||
           variant.color;
         let size =
-          getAttributeValue(item.attributes, ['المقاس', 'size']) ||
+          item.productSize ||
+          item.size ||
+          getAttributeValue(item.attributes, ['المقاس', 'size', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم']) ||
           variant.size;
 
-        // 1. Try metadata
-        if (variant.metadata) {
+        // 1. Try metadata (checking both direct keys and attributeValues, case-insensitive)
+        if (variant.metadata && (!color || !size)) {
           try {
             const meta = typeof variant.metadata === 'string' ? JSON.parse(variant.metadata) : variant.metadata;
-            if (!color && meta.attributeValues) {
-              color = meta.attributeValues['اللون'] || meta.attributeValues['color'] || meta.attributeValues['Color'];
+            if (meta && typeof meta === 'object') {
+              const metaAttrs = meta.attributeValues || meta;
+              if (!color) {
+                color =
+                  getAttributeValue(metaAttrs, ['اللون', 'color', 'Color', 'colour', 'لون', 'ألوان', 'الوان']) ||
+                  meta.color ||
+                  meta.Color;
+              }
+              if (!size) {
+                size =
+                  getAttributeValue(metaAttrs, ['المقاس', 'size', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم']) ||
+                  meta.size ||
+                  meta.Size;
+              }
             }
-            if (!size && meta.attributeValues) {
-              size = meta.attributeValues['المقاس'] || meta.attributeValues['size'] || meta.attributeValues['Size'];
-            }
-            if (!color) color = meta.color;
-            if (!size) size = meta.size;
           } catch (e) { }
         }
 
-        // 2. Try name parsing (Robust)
+        // 2. Try name parsing (Robust — supports '/', '-', '–', '|', 'x')
         if (variant.name && (!color || !size)) {
           const name = variant.name;
           // If explicit type is color and no separator
-          if (variant.type === 'color' && !name.includes('-') && !name.includes('|')) {
+          if (variant.type === 'color' && !name.includes('-') && !name.includes('|') && !name.includes('/')) {
             if (!color) color = name.trim();
           } else {
-            // Handle separators
-            const parts = name.split(/\s*[-–|]\s*/).filter(p => p.trim());
+            // Handle separators including slash '/'
+            const parts = name.split(/\s*[\/|–-]\s*/).filter(p => p.trim());
             if (parts.length >= 2) {
               const firstPart = parts[0].trim();
               const lastPart = parts[parts.length - 1].trim();
@@ -1206,12 +1224,14 @@ router.post('/', async (req, res) => {
         }
         if (!item.productColor) {
           item.productColor =
-            getAttributeValue(item.attributes, ['اللون', 'color', 'Color', 'colour', 'لون']) ||
+            getAttributeValue(item.attributes, ['اللون', 'color', 'Color', 'colour', 'لون', 'ألوان', 'الوان']) ||
+            item.color ||
             '';
         }
         if (!item.productSize) {
           item.productSize =
-            getAttributeValue(item.attributes, ['المقاس', 'size', 'Size', 'مقاس']) ||
+            getAttributeValue(item.attributes, ['المقاس', 'size', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم']) ||
+            item.size ||
             '';
         }
       }
@@ -2523,22 +2543,31 @@ router.post('/', async (req, res) => {
         const merchantProduct = product?.merchantProducts?.[0];
         let productColor =
           item.productColor ||
-          getAttributeValue(item.attributes, ['color', 'colour', 'اللون', 'Color', 'لون']) ||
+          item.color ||
+          getAttributeValue(item.attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان']) ||
           null;
         let productSize =
           item.productSize ||
-          getAttributeValue(item.attributes, ['size', 'المقاس', 'Size', 'مقاس']) ||
+          item.size ||
+          getAttributeValue(item.attributes, ['size', 'المقاس', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم']) ||
           null;
 
         if ((!productColor || !productSize) && item.variantId) {
           const matchedVariant = product?.productVariants?.find(v => v.id === item.variantId);
           if (matchedVariant) {
             const vAttrs = resolveVariantAttributes(matchedVariant);
-            if (!productColor) productColor = vAttrs.Color || matchedVariant.color || null;
-            if (!productSize) productSize = vAttrs.Size || matchedVariant.size || null;
+            if (!productColor) productColor = vAttrs.Color || vAttrs.color || vAttrs.اللون || matchedVariant.color || null;
+            if (!productSize) productSize = vAttrs.Size || vAttrs.size || vAttrs.المقاس || matchedVariant.size || null;
             if (!productColor && !productSize && matchedVariant.name) {
               if (matchedVariant.type === 'color') productColor = matchedVariant.name;
               else if (matchedVariant.type === 'size') productSize = matchedVariant.name;
+              else {
+                const parts = matchedVariant.name.split(/\s*[-–|\/]\s*/);
+                if (parts.length >= 2) {
+                  productColor = parts[0];
+                  productSize = parts[1];
+                }
+              }
             }
           }
         }
@@ -3598,7 +3627,12 @@ router.post('/:id/accept-offer', async (req, res) => {
       price,
       name,
       imageUrl,
-      originalPrice
+      originalPrice,
+      color,
+      size,
+      productColor,
+      productSize,
+      attributes
     } = req.body || {};
 
     console.log('🎁 [ACCEPT-POST-PURCHASE-OFFER] Request for order:', id, 'company:', company?.id);
@@ -3651,11 +3685,22 @@ router.post('/:id/accept-offer', async (req, res) => {
     let resolvedPrice = Math.max(0, Number(price) || 0);
     let resolvedImage = imageUrl || null;
     let resolvedSku = '';
+    let resolvedColor =
+      productColor ||
+      color ||
+      getAttributeValue(attributes, ['color', 'colour', 'اللون', 'Color', 'لون', 'ألوان', 'الوان']) ||
+      null;
+    let resolvedSize =
+      productSize ||
+      size ||
+      getAttributeValue(attributes, ['size', 'المقاس', 'Size', 'مقاس', 'مقاسات', 'حجم', 'الحجم']) ||
+      null;
+    let resolvedAttributes = attributes && typeof attributes === 'object' ? { ...attributes } : {};
 
     if (productId) {
       const dbProduct = await prisma.product.findFirst({
         where: { id: productId, companyId: company.id },
-        include: { variants: true }
+        include: { productVariants: true }
       });
       if (dbProduct) {
         resolvedName = dbProduct.name;
@@ -3663,19 +3708,42 @@ router.post('/:id/accept-offer', async (req, res) => {
           const firstImg = dbProduct.imageUrl || (Array.isArray(dbProduct.images) && dbProduct.images[0]);
           resolvedImage = typeof firstImg === 'string' ? firstImg : firstImg?.url || null;
         }
-        if (variantId && Array.isArray(dbProduct.variants)) {
-          const matchedVariant = dbProduct.variants.find(v => v.id === variantId);
+        const variantsList = Array.isArray(dbProduct.productVariants) ? dbProduct.productVariants : [];
+        if (variantId && variantsList.length > 0) {
+          const matchedVariant = variantsList.find(v => v.id === variantId);
           if (matchedVariant) {
             resolvedName = `${dbProduct.name} - ${matchedVariant.name || ''}`;
             resolvedSku = matchedVariant.sku || '';
             if (matchedVariant.price && resolvedPrice === 0) {
               resolvedPrice = Number(matchedVariant.price);
             }
+            const vAttrs = resolveVariantAttributes(matchedVariant);
+            if (!resolvedColor) resolvedColor = vAttrs.Color || vAttrs.color || vAttrs.اللون || matchedVariant.color || null;
+            if (!resolvedSize) resolvedSize = vAttrs.Size || vAttrs.size || vAttrs.المقاس || matchedVariant.size || null;
+            if (!resolvedColor && !resolvedSize && matchedVariant.name) {
+              if (matchedVariant.type === 'color') resolvedColor = matchedVariant.name;
+              else if (matchedVariant.type === 'size') resolvedSize = matchedVariant.name;
+              else {
+                const parts = matchedVariant.name.split(/\s*[-–|\/]\s*/);
+                if (parts.length >= 2) {
+                  resolvedColor = parts[0];
+                  resolvedSize = parts[1];
+                }
+              }
+            }
+            resolvedAttributes = { ...vAttrs, ...resolvedAttributes };
           }
         } else if (resolvedPrice === 0 && dbProduct.price) {
           resolvedPrice = Number(dbProduct.price);
         }
       }
+    }
+
+    if (resolvedColor && !resolvedAttributes.Color && !resolvedAttributes.color) {
+      resolvedAttributes.Color = resolvedColor;
+    }
+    if (resolvedSize && !resolvedAttributes.Size && !resolvedAttributes.size) {
+      resolvedAttributes.Size = resolvedSize;
     }
 
     let existingItems = [];
@@ -3698,6 +3766,11 @@ router.post('/:id/accept-offer', async (req, res) => {
       originalPrice: Math.max(0, Number(originalPrice) || resolvedPrice),
       quantity: offerItemQty,
       imageUrl: resolvedImage,
+      productColor: resolvedColor ? String(resolvedColor) : null,
+      productSize: resolvedSize ? String(resolvedSize) : null,
+      color: resolvedColor ? String(resolvedColor) : null,
+      size: resolvedSize ? String(resolvedSize) : null,
+      attributes: resolvedAttributes,
       isPostPurchaseOffer: true,
       addedPostPurchase: true
     };
@@ -3713,6 +3786,8 @@ router.post('/:id/accept-offer', async (req, res) => {
       productId,
       variantId: variantId || null,
       productName: resolvedName,
+      productColor: resolvedColor ? String(resolvedColor) : null,
+      productSize: resolvedSize ? String(resolvedSize) : null,
       offerPrice: resolvedPrice,
       quantity: offerItemQty,
       acceptedAt: new Date().toISOString()
@@ -3727,6 +3802,41 @@ router.post('/:id/accept-offer', async (req, res) => {
         metadata: JSON.stringify(metadata)
       }
     });
+
+    // Also sync to primary order and create orderItem row if primary order exists
+    try {
+      const primaryOrder = await prisma.order.findFirst({
+        where: { orderNumber: order.orderNumber, companyId: company.id }
+      });
+      if (primaryOrder) {
+        await prisma.order.update({
+          where: { id: primaryOrder.id },
+          data: {
+            total: nextTotal,
+            finalTotal: nextFinalTotal,
+            items: JSON.stringify(existingItems)
+          }
+        });
+        await prisma.orderItem.create({
+          data: {
+            orderId: primaryOrder.id,
+            productId: productId || null,
+            variantId: variantId || null,
+            productName: resolvedName,
+            productSku: resolvedSku || null,
+            productColor: resolvedColor ? String(resolvedColor) : null,
+            productSize: resolvedSize ? String(resolvedSize) : null,
+            productImage: resolvedImage || null,
+            price: resolvedPrice,
+            total: Number((resolvedPrice * offerItemQty).toFixed(2)),
+            quantity: offerItemQty,
+            metadata: JSON.stringify({ isPostPurchaseOffer: true, addedPostPurchase: true, attributes: resolvedAttributes || {} })
+          }
+        });
+      }
+    } catch (orderSyncErr) {
+      console.warn('⚠️ [POST-PURCHASE-OFFER] Sync to primary order warning:', orderSyncErr.message);
+    }
 
     // Decrement stock if tracking enabled
     try {

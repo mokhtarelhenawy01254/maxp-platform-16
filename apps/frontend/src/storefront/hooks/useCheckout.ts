@@ -171,27 +171,48 @@ export const buildCheckoutOrderPayload = (
     ...(data.useWallet && data.walletAmount ? { useWallet: true, walletAmount: data.walletAmount } : {}),
     ...(data.walletProof && data.walletProof.imageUrl ? { walletProof: data.walletProof } : {}),
     notes: data.notes || undefined,
-    items: items.map((item) => ({
-      productId: item.productId,
-      ...(item.variantId ? { variantId: item.variantId } : {}),
-      name: item.name,
-      price: item.price,
-      ...(item.basePrice !== undefined ? { basePrice: item.basePrice } : {}),
-      quantity: item.quantity,
-      attributes: item.attributes || {},
-      ...(item.imageUrl ? { image: item.imageUrl, productImage: item.imageUrl } : {}),
-      ...(item.quantityOffer
-        ? {
-            quantityOffer: item.quantityOffer,
-            metadata: {
+    items: items.map((item) => {
+      const resolvedColor =
+        item.productColor ||
+        item.attributes?.Color ||
+        item.attributes?.["اللون"] ||
+        item.attributes?.["لون"] ||
+        item.attributes?.color ||
+        undefined;
+      const resolvedSize =
+        item.productSize ||
+        item.attributes?.Size ||
+        item.attributes?.["المقاس"] ||
+        item.attributes?.["مقاس"] ||
+        item.attributes?.size ||
+        undefined;
+
+      return {
+        productId: item.productId,
+        ...(item.variantId ? { variantId: item.variantId } : {}),
+        name: item.name,
+        price: item.price,
+        ...(item.basePrice !== undefined ? { basePrice: item.basePrice } : {}),
+        quantity: item.quantity,
+        attributes: item.attributes || {},
+        ...(resolvedColor ? { productColor: resolvedColor, color: resolvedColor } : {}),
+        ...(resolvedSize ? { productSize: resolvedSize, size: resolvedSize } : {}),
+        ...(item.imageUrl ? { image: item.imageUrl, productImage: item.imageUrl } : {}),
+        ...(item.quantityOffer
+          ? {
               quantityOffer: item.quantityOffer,
-            },
-          }
-        : {}),
-      ...(Array.isArray(item.volumeDiscounts) && item.volumeDiscounts[0]
-        ? { volumeDiscount: item.volumeDiscounts[0] as Record<string, unknown> }
-        : {}),
-    })),
+              metadata: {
+                quantityOffer: item.quantityOffer,
+                ...(resolvedColor ? { color: resolvedColor, productColor: resolvedColor } : {}),
+                ...(resolvedSize ? { size: resolvedSize, productSize: resolvedSize } : {}),
+              },
+            }
+          : {}),
+        ...(Array.isArray(item.volumeDiscounts) && item.volumeDiscounts[0]
+          ? { volumeDiscount: item.volumeDiscounts[0] as Record<string, unknown> }
+          : {}),
+      };
+    }),
     subtotal: resolvedSubtotal,
     shippingCost: resolvedShippingCost,
     total: resolvedTotal,

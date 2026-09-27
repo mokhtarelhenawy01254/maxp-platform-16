@@ -26,7 +26,9 @@ export interface SimpleOrderForLabel {
     name?: string;
     productName?: string;
     color?: string;
+    productColor?: string;
     size?: string;
+    productSize?: string;
     price?: number | string | null;
     quantity?: number | string | null;
     total?: number | string | null;
@@ -60,17 +62,62 @@ export function toOrderDetailsType(order: SimpleOrderForLabel): OrderDetailsType
     status: String(order.status || ""),
     paymentStatus: (order.paymentStatus as OrderDetailsType["paymentStatus"]) || "PENDING",
     paymentMethod: order.paymentMethod || "CASH",
-    items: (order.items || []).map((item) => ({
-      id: String(item.id),
-      productId: item.productId || "",
-      productName: String(item.productName || item.name || "منتج"),
-      productColor: item.color || "",
-      productSize: item.size || "",
-      productSku: item.sku || item.productSku || (item as any).code || (item as any).barcode || (item as any).variant?.sku || (item as any).product?.sku || null,
-      price: Number(item.price || 0),
-      quantity: Number(item.quantity || 0),
-      total: Number(item.total || 0),
-    })),
+    items: (order.items || []).map((item) => {
+      let meta: any = {};
+      try {
+        meta = typeof item.metadata === "string" ? JSON.parse(item.metadata) : (item.metadata || {});
+      } catch (_) {
+        meta = {};
+      }
+      const metaAttrs =
+        meta?.attributeValues ||
+        (typeof meta?.attributes === "object" && !Array.isArray(meta?.attributes)
+          ? meta?.attributes
+          : null) ||
+        {};
+      const resolvedColor =
+        (item as any).productColor ||
+        item.color ||
+        meta?.productColor ||
+        meta?.color ||
+        meta?.Color ||
+        metaAttrs?.["اللون"] ||
+        metaAttrs?.["لون"] ||
+        metaAttrs?.["Color"] ||
+        metaAttrs?.["color"] ||
+        "";
+      const resolvedSize =
+        (item as any).productSize ||
+        item.size ||
+        meta?.productSize ||
+        meta?.size ||
+        meta?.Size ||
+        metaAttrs?.["المقاس"] ||
+        metaAttrs?.["مقاس"] ||
+        metaAttrs?.["Size"] ||
+        metaAttrs?.["size"] ||
+        "";
+
+      return {
+        id: String(item.id),
+        productId: item.productId || "",
+        productName: String(item.productName || item.name || "منتج"),
+        productColor: resolvedColor,
+        productSize: resolvedSize,
+        productSku:
+          item.sku ||
+          item.productSku ||
+          (item as any).code ||
+          (item as any).barcode ||
+          (item as any).variant?.sku ||
+          (item as any).product?.sku ||
+          null,
+        price: Number(item.price || 0),
+        quantity: Number(item.quantity || 0),
+        total: Number(item.total || 0),
+        metadata: meta,
+      };
+    }),
     subtotal: Number(order.subtotal || 0),
     discount: Number(order.discount || 0),
     tax: Number(order.tax || 0),
