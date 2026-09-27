@@ -2,7 +2,7 @@
 
 import '@testing-library/jest-dom/vitest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import PdpQuickOrderForm from '../sections/PdpQuickOrderForm';
 
@@ -205,5 +205,37 @@ describe('PdpQuickOrderForm wallet payment method visibility', () => {
     expect(screen.getByText(/card|بطاقة بنكية/i)).toBeTruthy();
     // COD button should also be visible
     expect(screen.getByText(/cash on delivery|الدفع عند الاستلام/i)).toBeTruthy();
+  });
+
+  it('updates submit button and shows guidance when card payment method is selected', async () => {
+    mockUseStorefrontSettings.mockReturnValue({
+      settings: {
+        company: { id: 'comp-1', currency: 'EGP', name: 'Test Shop' },
+        storefront: {
+          storefrontFeatures: {
+            enabledPaymentMethods: ['cod', 'card'],
+          },
+          settings: {
+            currency: 'EGP',
+            walletPaymentSettings: null,
+          },
+        },
+      },
+      isLoading: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <PdpQuickOrderForm product={mockProduct as any} />
+      </MemoryRouter>
+    );
+
+    const cardButton = screen.getByText(/card|بطاقة بنكية/i);
+    fireEvent.click(cardButton);
+
+    // The submit button text should clearly invite user to proceed to card payment
+    expect(screen.getByRole('button', { name: /متابعة للدفع بالبطاقة|Proceed to Card Payment/i })).toBeTruthy();
+    // Reassurance badge should be visible
+    expect(screen.getByText(/256-bit SSL|تشفير وحماية مصرفية/i)).toBeTruthy();
   });
 });

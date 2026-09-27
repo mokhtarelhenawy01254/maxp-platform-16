@@ -1121,6 +1121,12 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       setValidationErrors(errors);
       if (minimumOrder.blocked) {
         toast.error(minimumOrder.message);
+      } else if (paymentMethod === "card") {
+        toast.error(
+          prefersArabicCopy
+            ? "يرجى استكمال بيانات التوصيل المطلوبة أولاً للانتقال إلى صفحة الدفع بالبطاقة."
+            : "Please complete required delivery details first to proceed to card payment.",
+        );
       }
       return;
     }
@@ -1586,14 +1592,18 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
           : "Add to cart");
   const submitLabel = isOutOfStock
     ? (prefersArabicCopy ? "نفدت الكمية" : "Out of stock")
-    : configuredSubmitButtonText ||
-      (isSoleaFemmeQuickOrder && prefersArabicCopy
-        ? "تأكيد الطلب"
-        : isKhemetLuxeQuickOrder && prefersArabicCopy
+    : paymentMethod === "card"
+      ? (prefersArabicCopy
+          ? `متابعة للدفع بالبطاقة 💳 (${formatStorefrontCurrency(total, currency)})`
+          : `Proceed to Card Payment 💳 (${formatStorefrontCurrency(total, currency)})`)
+      : configuredSubmitButtonText ||
+        (isSoleaFemmeQuickOrder && prefersArabicCopy
           ? "تأكيد الطلب"
-        : prefersArabicCopy
-          ? "اشتر الآن"
-          : "Buy now");
+          : isKhemetLuxeQuickOrder && prefersArabicCopy
+            ? "تأكيد الطلب"
+          : prefersArabicCopy
+            ? "اشتر الآن"
+            : "Buy now");
   const minimumOrderSubmitLabel = isOutOfStock
     ? (prefersArabicCopy ? "نفدت الكمية" : "Out of stock")
     : minimumOrder.blocked
@@ -2288,15 +2298,19 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                 ) : null}
 
                 {paymentMethod === "card" ? (
-                  <div className="space-y-2 border-t border-emerald-200 pt-3 dark:border-emerald-800/60">
+                  <div className="space-y-2 rounded-xl border border-emerald-300/80 bg-white/80 p-3.5 shadow-xs dark:border-emerald-800/60 dark:bg-emerald-950/40">
                     <p className="text-xs font-bold text-emerald-900 dark:text-emerald-100 flex items-center gap-1.5">
-                      🔒 {prefersArabicCopy ? "دفع إلكتروني آمن بالبطاقة (فيزا / ماستركارد / ميزة)" : "Secure Card Payment"}
+                      🔒 {prefersArabicCopy ? "دفع إلكتروني آمن بالبطاقة (فيزا / ماستركارد / ميزة)" : "Secure Card Payment (Visa / Mastercard / Meeza)"}
                     </p>
-                    <p className="text-[11px] text-emerald-800 dark:text-emerald-200">
+                    <p className="text-[11.5px] leading-relaxed text-emerald-800 dark:text-emerald-200">
                       {prefersArabicCopy
-                        ? "عند الضغط على تأكيد الطلب، سيتم نقلك مباشرة إلى بوابة الدفع لإدخال بيانات البطاقة وإتمام الطلب."
-                        : "Upon submitting, you will be redirected securely to the payment gateway to complete your purchase."}
+                        ? "أكمل بيانات التوصيل بالأعلى أولاً، ثم اضغط على زر «متابعة للدفع بالبطاقة» بالأسفل، وسيتم تحويلك فوراً وبأمان إلى صفحة البنك المعتمدة لإدخال بيانات الكارت وتأكيد العملية."
+                        : "Fill in your delivery details above first, then click 'Proceed to Card Payment' below to securely complete your payment on the verified bank gateway."}
                     </p>
+                    <div className="flex items-center gap-2 pt-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                      <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>{prefersArabicCopy ? "تشفير وحماية مصرفية كاملة 256-bit SSL" : "256-bit SSL Bank-grade Encryption"}</span>
+                    </div>
                   </div>
                 ) : null}
 
@@ -2410,9 +2424,13 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     className={submitButtonClassName}
                   >
                     {isSubmitting
-                      ? prefersArabicCopy
-                        ? "جارٍ إرسال الطلب..."
-                        : "Submitting order..."
+                      ? paymentMethod === "card"
+                        ? prefersArabicCopy
+                          ? "جارٍ التحويل لبوابة الدفع..."
+                          : "Redirecting to payment gateway..."
+                        : prefersArabicCopy
+                          ? "جارٍ إرسال الطلب..."
+                          : "Submitting order..."
                       : minimumOrderSubmitLabel}
                   </button>
                 ) : null}
@@ -2483,9 +2501,13 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                       className={`${submitButtonClassName} min-h-[3.15rem] min-w-[9.75rem] px-5`}
                     >
                       {isSubmitting
-                        ? prefersArabicCopy
-                          ? "جارٍ الإرسال..."
-                          : "Submitting..."
+                        ? paymentMethod === "card"
+                          ? prefersArabicCopy
+                            ? "جارٍ التحويل..."
+                            : "Redirecting..."
+                          : prefersArabicCopy
+                            ? "جارٍ الإرسال..."
+                            : "Submitting..."
                         : minimumOrderSubmitLabel}
                     </button>
                   </div>
