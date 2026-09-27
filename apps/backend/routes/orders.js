@@ -3390,7 +3390,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           orderItems: {
             include: {
               product: { select: { id: true, name: true, images: true, mainImage: true } },
-              productVariant: { select: { id: true, name: true, sku: true, images: true, metadata: true, color: true, size: true } }
+              productVariant: { select: { id: true, name: true, sku: true, images: true, metadata: true } }
             }
           },
           conversation: { select: { id: true, channel: true } },
@@ -6464,7 +6464,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
       if (missingVariantIds.length > 0) {
         const variants = await getSharedPrismaClient().productVariant.findMany({
           where: { id: { in: missingVariantIds } },
-          select: { id: true, name: true, type: true, color: true, size: true, metadata: true }
+          select: { id: true, name: true, type: true, metadata: true }
         });
         variantMap = new Map(variants.map(v => [v.id, v]));
       }
