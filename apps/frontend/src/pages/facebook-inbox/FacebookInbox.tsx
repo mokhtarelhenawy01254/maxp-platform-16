@@ -2682,26 +2682,15 @@ const getApiError = (error: unknown): ApiErrorLike => {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <h2
-                          className="truncate text-lg font-semibold"
-                          style={{ color: "var(--color-foreground)" }}
-                        >
-                          {selectedConversation.customerName}
-                        </h2>
-                        {!isAiActive && (
-                          <span
-                            className="inline-flex items-center justify-center p-1 rounded-md text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 flex-shrink-0"
-                            title={isAiPaused ? t("facebookInbox.aiPausedHandover", "الذكاء الاصطناعي متوقف مؤقتاً بسبب رد يدوي (تدخل بشري)") : t("facebookInbox.aiStoppedManually", "الذكاء الاصطناعي متوقف عن هذه المحادثة (التحكم يدوي)")}
-                            aria-label={t("facebookInbox.humanTakeover", "تدخل بشري")}
-                          >
-                            <Bot className="h-3.5 w-3.5 opacity-80" />
-                          </span>
-                        )}
-                      </div>
+                      <h2
+                        className="truncate text-base sm:text-lg font-semibold leading-tight"
+                        style={{ color: "var(--color-foreground)" }}
+                      >
+                        {selectedConversation.customerName}
+                      </h2>
                       {selectedConversation.pageName && (
                         <p
-                          className="truncate text-xs"
+                          className="truncate text-xs mt-0.5"
                           style={{ color: "var(--color-muted-foreground)" }}
                         >
                           {selectedConversation.pageName}
