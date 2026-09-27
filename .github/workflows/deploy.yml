@@ -272,6 +272,13 @@ jobs:
           HUSKY: '0'
         continue-on-error: false
 
+      # 🛡️ Marketplace Catalog Schema Validation Gate
+      - name: Validate Marketplace Catalog
+        if: steps.diff-check.outputs.cat-changed == 'true'
+        working-directory: ./apps/backend
+        run: node scripts/catalog/validate_marketplace_catalog.js
+        continue-on-error: false
+
       # 🛡️ يمنع أي "icon: X" يستخدم معرّفاً غير مستورد في src/config (كان سبب انهيار الـ dashboard)
       - name: Check Frontend Icon Imports
         if: steps.diff-check.outputs.fe-needed == 'true'
