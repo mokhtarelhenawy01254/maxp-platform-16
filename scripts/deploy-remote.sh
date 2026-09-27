@@ -616,6 +616,15 @@ if [ "${CATALOG_CHANGED:-true}" = "true" ]; then
       exit 1
   }
 
+  echo "🔍 Verifying marketplace catalog drift gate (zero changed entries required)..."
+  NODE_ENV=production timeout 600 npm run catalog:diff -- --fail-on-changed || {
+      echo "❌ Marketplace catalog drift detected (catalog:diff returned changed entries). Deployment aborted."
+      exit 1
+  }
+
+  echo "🧹 Removing deprecated duplicate store-pro app..."
+  NODE_ENV=production timeout 600 node scripts/catalog/remove_store_pro_app.js || echo "⚠️ store-pro cleanup skipped, continuing..."
+
   echo "🧹 Repairing stale required-app references in marketplace apps..."
   NODE_ENV=production timeout 600 node scripts/repair_stale_marketplace_required_apps.js || {
       echo "⚠️ Required-app reference repair had issues, continuing..."
