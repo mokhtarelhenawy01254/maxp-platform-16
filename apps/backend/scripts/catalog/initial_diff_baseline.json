@@ -1,0 +1,969 @@
+{
+  "comparedAt": "2026-09-27T08:07:01.888Z",
+  "catalogMeta": {
+    "schemaVersion": 1,
+    "catalogVersion": "2026-08-12-store-plans-v2",
+    "generatedAt": "2026-08-12T10:04:36.862Z"
+  },
+  "totals": {
+    "catalogApps": 82,
+    "dbApps": 84,
+    "catalogBundles": 7,
+    "dbBundles": 7,
+    "diffEntries": 80
+  },
+  "apps": {
+    "missingInDb": [],
+    "extraInDb": [
+      "order-core",
+      "store-basic"
+    ],
+    "changed": [
+      {
+        "slug": "academy-app",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "ad-budget-planner",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "affiliate-pro",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "agent-workspace",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "ai-chat-basic",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "amazon-affiliate-pro",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "analytics-basic",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "blog-pro",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "booking-app",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "bot-automation",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "break-even",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "broadcast-pro",
+        "changes": [
+          {
+            "field": "category",
+            "catalog": "COMMUNICATION",
+            "db": "MARKETING"
+          },
+          {
+            "field": "monthlyPrice",
+            "catalog": 149,
+            "db": 99
+          },
+          {
+            "field": "yearlyPrice",
+            "catalog": 1490,
+            "db": 990
+          },
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          },
+          {
+            "field": "trialDays",
+            "catalog": 0,
+            "db": 14
+          }
+        ]
+      },
+      {
+        "slug": "bulk-orders",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "bulk-search",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "campaign-calculator",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "clv-calculator",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "cod-deposit",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "commerce-advanced",
+        "changes": [
+          {
+            "field": "yearlyPrice",
+            "catalog": 1799,
+            "db": 1790
+          },
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          },
+          {
+            "field": "trialDays",
+            "catalog": 0,
+            "db": 14
+          }
+        ]
+      },
+      {
+        "slug": "conversion-suite",
+        "changes": [
+          {
+            "field": "category",
+            "catalog": "ECOMMERCE",
+            "db": "ecommerce"
+          },
+          {
+            "field": "monthlyPrice",
+            "catalog": 349,
+            "db": 0
+          },
+          {
+            "field": "yearlyPrice",
+            "catalog": 3499,
+            "db": 0
+          },
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          },
+          {
+            "field": "trialDays",
+            "catalog": 0,
+            "db": 14
+          }
+        ]
+      },
+      {
+        "slug": "coupons-pro",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "crm-lite",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "customer-blocks",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "dental-lab-app",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "discount-impact",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "executable-mindmap",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "facebook-ads-pro",
+        "changes": [
+          {
+            "field": "category",
+            "catalog": "COMMUNICATION",
+            "db": "MARKETING"
+          },
+          {
+            "field": "monthlyPrice",
+            "catalog": 199,
+            "db": 299
+          },
+          {
+            "field": "yearlyPrice",
+            "catalog": 1990,
+            "db": 2999
+          },
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          },
+          {
+            "field": "trialDays",
+            "catalog": 14,
+            "db": 0
+          }
+        ]
+      },
+      {
+        "slug": "facebook-catalog-shop",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "facebook-pages-connect",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "facebook-pixel-capi",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "facebook-post",
+        "changes": [
+          {
+            "field": "category",
+            "catalog": "COMMUNICATION",
+            "db": "MARKETING"
+          },
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "google-tag-manager",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "hr-assets",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "hr-attendance-pro",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "hr-core",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "hr-payroll",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "hr-recruitment",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "instagram-business",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "inventory-pro",
+        "changes": [
+          {
+            "field": "name",
+            "catalog": "المخزون والمستودعات الشامل",
+            "db": "المخزون والمستودعات"
+          },
+          {
+            "field": "description",
+            "catalog": "نظام متكامل لإدارة المخزون والمستودعات المتعددة، تتبع الكميات، التحويلات بين المخازن، الجرد الدوري، ونقاط إعادة الطلب والتنبيهات الذكية.",
+            "db": "نظام إدارة مخزون متقدم مع باركود، تتبع Serial Numbers، وتنبيهات ذكية."
+          },
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "lab-app",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "manual-orders-pro",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "marketing-agency-pro",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "medical-system",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "monthly-pnl",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "multi-warehouse-pro",
+        "changes": [
+          {
+            "field": "description",
+            "catalog": "إدارة المستودعات المتعددة والتحويلات — مدمج الآن بالكامل ضمن تطبيق المخزون والمستودعات الشامل (Inventory Pro).",
+            "db": "إدارة مخزون عبر مستودعات متعددة — تحويلات المخزون بين المستودعات، وتوزيع الكميات لكل فرع."
+          },
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          },
+          {
+            "field": "isActive",
+            "catalog": false,
+            "db": true
+          },
+          {
+            "field": "isPublic",
+            "catalog": false,
+            "db": true
+          }
+        ]
+      },
+      {
+        "slug": "notification-automation",
+        "changes": [
+          {
+            "field": "category",
+            "catalog": "AUTOMATION",
+            "db": "PRODUCTIVITY"
+          },
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "order-accounting-sources",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "order-automation",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "order-confirmation-distribution",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "order-invoicing",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "order-preparation-hold",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "order-shipping-turbo",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "order-source-tracking",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "order-workflow",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "orders-analytics",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "pos-pro",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "pricing-strategy",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "procurement-pro",
+        "changes": [
+          {
+            "field": "name",
+            "catalog": "المشتريات وإدارة الموردين",
+            "db": "Procurement Pro"
+          },
+          {
+            "field": "description",
+            "catalog": "إدارة الموردين، أوامر الشراء، فواتير المشتريات، ومدفوعات وحسابات الموردين مع الربط التلقائي بالمخزون.",
+            "db": "Supplier, purchase order, purchase invoice, and supplier payment workflows."
+          },
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "product-break-even",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "product-presentations",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "profitability-engine",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "quantity-offers-pro",
+        "changes": [
+          {
+            "field": "yearlyPrice",
+            "catalog": 1499,
+            "db": 1490
+          },
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          },
+          {
+            "field": "trialDays",
+            "catalog": 0,
+            "db": 14
+          }
+        ]
+      },
+      {
+        "slug": "quick-status",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "radiology-app",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "refund-rate",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "returns-settings",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "shipping-optimizer",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "status-summary",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "store",
+        "changes": [
+          {
+            "field": "description",
+            "catalog": "متجر إلكتروني كامل: منتجات وطلبات وسلة تسوق ومتجر إلكتروني. مناسب للمشاريع الصغيرة والمتوسطة.",
+            "db": "إدارة الطلبات والمنتجات والمتجر الإلكتروني — كل حاجة المتجر في تطبيق واحد."
+          },
+          {
+            "field": "monthlyPrice",
+            "catalog": 249,
+            "db": 699
+          },
+          {
+            "field": "yearlyPrice",
+            "catalog": 2490,
+            "db": 7689
+          },
+          {
+            "field": "trialDays",
+            "catalog": 14,
+            "db": 0
+          }
+        ]
+      },
+      {
+        "slug": "store-pro",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "telegram-business",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "tiktok-integrations",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "ugc-reviews-pro",
+        "changes": [
+          {
+            "field": "category",
+            "catalog": "ECOMMERCE",
+            "db": "MARKETING"
+          },
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "unified-inbox",
+        "changes": [
+          {
+            "field": "category",
+            "catalog": "COMMUNICATION",
+            "db": "PRODUCTIVITY"
+          },
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "upsell-planner",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "whatsapp-business",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "wholesale-pro",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      },
+      {
+        "slug": "woocommerce-pro",
+        "changes": [
+          {
+            "field": "ppuBillingMethod",
+            "catalog": null,
+            "db": "PER_ORDER"
+          }
+        ]
+      }
+    ]
+  },
+  "bundles": {
+    "missingInDb": [],
+    "extraInDb": [],
+    "changed": [
+      {
+        "slug": "medical-bundle",
+        "changes": [
+          {
+            "field": "appSlugs",
+            "catalog": [
+              "ai-chat-basic",
+              "dental-lab-app",
+              "medical-system",
+              "unified-inbox"
+            ],
+            "db": [
+              "ai-chat-basic",
+              "medical-system",
+              "unified-inbox"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

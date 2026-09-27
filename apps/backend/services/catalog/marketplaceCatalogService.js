@@ -345,6 +345,49 @@ class MarketplaceCatalogService {
       }
     };
   }
+
+  async updateAppFile(slug, updateData) {
+    if (!slug || !updateData || typeof updateData !== "object") {
+      return { success: false, reason: "invalid_arguments" };
+    }
+    const appsFilePath = path.join(this.catalogRoot, "apps.json");
+    try {
+      const apps = await this._readJson(appsFilePath);
+      const appIndex = apps.findIndex((a) => a.slug === slug);
+      if (appIndex === -1) {
+        return { success: false, reason: "app_not_in_catalog" };
+      }
+
+      const app = apps[appIndex];
+      const ALLOWED_UPDATE_FIELDS = [
+        "name", "nameEn", "description", "category", "pricingModel",
+        "monthlyPrice", "yearlyPrice", "unitPrice", "unitName", "ppuBillingMethod",
+        "trialDays", "isActive", "isPublic", "isFeatured", "isPopular",
+        "features", "requiredApps"
+      ];
+
+      let modified = false;
+      ALLOWED_UPDATE_FIELDS.forEach((field) => {
+        if (field in updateData && updateData[field] !== undefined) {
+          if (JSON.stringify(app[field]) !== JSON.stringify(updateData[field])) {
+            app[field] = updateData[field];
+            modified = true;
+          }
+        }
+      });
+
+      if (modified) {
+        app.updatedAt = new Date().toISOString();
+        await fs.writeFile(appsFilePath, JSON.stringify(apps, null, 2) + "\n", "utf8");
+        this.clearCache();
+      }
+
+      return { success: true, modified };
+    } catch (err) {
+      console.warn(`[catalog:updateAppFile] Could not sync app ${slug} to apps.json:`, err.message);
+      return { success: false, reason: "fs_error", error: err.message };
+    }
+  }
 }
 
 const marketplaceCatalogService = new MarketplaceCatalogService();

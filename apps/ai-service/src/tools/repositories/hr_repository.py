@@ -425,6 +425,7 @@ class HrRepository(BaseRepository):
         )
         await self._session.commit()
         return {
+            "success": True,
             "request_id": req_id,
             "amount": amount,
             "installments_count": inst_count,

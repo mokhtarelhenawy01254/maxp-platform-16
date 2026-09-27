@@ -169,10 +169,12 @@ def _format_hr_leave_balance(res: dict[str, Any]) -> str:
     if res.get("error"):
         return f"تنبيه: {res['error']}"
 
+    annual_bal = res.get("annual_balance", res.get("annual_remaining", 0))
+    sick_bal = res.get("sick_balance", res.get("sick_remaining", 0))
     return (
         f"أرصدة إجازات الزميل/ة {res.get('employee_name', '')}:\n"
-        f"- الإجازات السنوية: متبقي {res['annual_balance']} يوم من إجمالي {res['annual_total']} يوم (مستهلك: {res['annual_taken']} يوم).\n"
-        f"- الإجازات المرضية: متبقي {res['sick_balance']} يوم من إجمالي {res['sick_total']} يوم.\n"
+        f"- الإجازات السنوية: متبقي {annual_bal} يوم من إجمالي {res.get('annual_total', 0)} يوم (مستهلك: {res.get('annual_taken', 0)} يوم).\n"
+        f"- الإجازات المرضية: متبقي {sick_bal} يوم من إجمالي {res.get('sick_total', 0)} يوم.\n"
         f"- الإجازات العارضة المستهلكة: {res.get('emergency_taken', 0)} يوم."
     )
 
@@ -510,7 +512,7 @@ async def hr_my_advances(input_data: HrMyAdvancesInput) -> dict[str, Any]:
         uid = (emp.get("userId") if emp else None) or input_data.user_id or ""
         advances = await repo.get_my_advances(company_id, user_id=uid, employee_id=eid, limit=input_data.limit)
 
-    return {"advances": advances}
+    return {"advances": advances, "count": len(advances)}
 
 
 def _format_hr_my_advances(res: dict[str, Any]) -> str:
@@ -555,7 +557,12 @@ async def hr_advance_request_create(input_data: HrAdvanceRequestCreateInput) -> 
     if not company_id:
         return {"error": "معرف الشركة غير متوفر"}
 
+    if (input_data.amount or 0) <= 0:
+        return {"error": "مبلغ السلفة يجب أن يكون أكبر من الصفر"}
+
     sf = _db_mod.async_session
+    if sf is None:
+        return {"error": "قاعدة البيانات غير مهيأة حالياً"}
     async with sf() as sess:
         repo = HrRepository(sess)
         emp = await repo.get_employee(company_id, user_id=input_data.user_id, employee_id=input_data.employee_id)

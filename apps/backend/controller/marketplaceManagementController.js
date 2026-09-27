@@ -604,12 +604,30 @@ exports.updateApp = async (req, res) => {
       });
     });
 
-    try { marketplaceCatalogService?.clearCache?.(); } catch (_) {}
+    // Auto-sync price and metadata changes back to file catalog (apps.json)
+    let catalogSyncResult = null;
+    try {
+      if (typeof marketplaceCatalogService?.updateAppFile === 'function') {
+        catalogSyncResult = await marketplaceCatalogService.updateAppFile(app.slug, updateData);
+        if (catalogSyncResult?.success && catalogSyncResult?.modified) {
+          console.log(`[catalog:auto-sync] Synchronized updates for app ${app.slug} to apps.json`);
+        } else if (!catalogSyncResult?.success && catalogSyncResult?.reason !== 'app_not_in_catalog') {
+          console.warn(`[catalog:auto-sync] ⚠️ Warning: Failed to sync app ${app.slug} to apps.json:`, catalogSyncResult?.error || catalogSyncResult?.reason);
+        }
+      }
+      marketplaceCatalogService?.clearCache?.();
+    } catch (catalogErr) {
+      console.warn(`[catalog:auto-sync] ⚠️ Error syncing to catalog file:`, catalogErr.message);
+    }
 
     res.json({
       success: true,
       message: 'تم تحديث الأداة بنجاح',
-      data: app
+      data: app,
+      catalogSynced: catalogSyncResult?.success ?? false,
+      catalogWarning: (!catalogSyncResult?.success && catalogSyncResult?.reason !== 'app_not_in_catalog')
+        ? 'تم التحديث في قاعدة البيانات ولكن تعذر تحديث ملف الكاتالوج تلقائياً — يرجى تشغيل npm run catalog:export-db'
+        : undefined
     });
   } catch (error) {
     console.error('Error updating app:', error);

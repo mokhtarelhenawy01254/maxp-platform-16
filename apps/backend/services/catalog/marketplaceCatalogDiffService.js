@@ -72,18 +72,24 @@ function sortUnique(values) {
   return Array.from(new Set(values)).sort();
 }
 
+function normalizePpuBillingMethod(app) {
+  const isPpu = (app.pricingModel === "PAY_PER_USE" || (app.unitPrice !== null && app.unitPrice !== undefined && Number(app.unitPrice) > 0));
+  if (!isPpu) return null;
+  return app.ppuBillingMethod || "PER_ORDER";
+}
+
 function normalizeCatalogApp(app) {
   return {
     slug: app.slug,
     name: app.name,
     description: app.description || "",
-    category: app.category || "general",
+    category: (app.category || "general").trim().toUpperCase(),
     pricingModel: app.pricingModel || "SUBSCRIPTION",
     monthlyPrice: toSafeNumber(app.monthlyPrice, 0),
     yearlyPrice: toSafeNumber(app.yearlyPrice, 0),
     unitPrice: app.unitPrice === null ? null : normalizeNull(toSafeNumber(app.unitPrice, 0)),
     unitName: app.unitName || null,
-    ppuBillingMethod: app.ppuBillingMethod || null,
+    ppuBillingMethod: normalizePpuBillingMethod(app),
     trialDays: Math.max(0, Math.floor(toSafeNumber(app.trialDays, 0))),
     isActive: app.isActive !== false,
     isPublic: app.isPublic !== false,
@@ -99,13 +105,13 @@ function normalizeDbApp(app) {
     slug: app.slug,
     name: app.name,
     description: app.description || "",
-    category: app.category || "general",
+    category: (app.category || "general").trim().toUpperCase(),
     pricingModel: app.pricingModel || "SUBSCRIPTION",
     monthlyPrice: toSafeNumber(app.monthlyPrice, 0),
     yearlyPrice: toSafeNumber(app.yearlyPrice, 0),
     unitPrice: app.unitPrice === null ? null : normalizeNull(toSafeNumber(app.unitPrice, 0)),
     unitName: app.unitName || null,
-    ppuBillingMethod: app.ppuBillingMethod || null,
+    ppuBillingMethod: normalizePpuBillingMethod(app),
     trialDays: Math.max(0, Math.floor(toSafeNumber(app.trialDays, 0))),
     isActive: app.isActive !== false,
     isPublic: app.isPublic !== false,

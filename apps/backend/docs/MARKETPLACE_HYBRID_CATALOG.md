@@ -1,63 +1,85 @@
-# Marketplace Hybrid Catalog (Phase 1 + Phase 2)
+# Marketplace Hybrid Catalog & Single Source of Truth Governance
 
-This project now supports a hybrid marketplace catalog architecture:
+This document defines the architectural governance, synchronization protocols, and anti-drift rules for the MaxP Marketplace Hybrid Catalog.
 
-- Catalog source files:
-  - `backend/catalog/marketplace/index.json`
-  - `backend/catalog/marketplace/apps.json`
-  - `backend/catalog/marketplace/bundles.json`
-  - `backend/catalog/marketplace/categories.json`
-- Validation:
-  - `backend/services/catalog/marketplaceCatalogValidator.js`
-- Loader + cache service:
-  - `backend/services/catalog/marketplaceCatalogService.js`
-- Validation command:
-  - `npm run catalog:validate` (from `backend`)
-- Drift diff command:
-  - `npm run catalog:diff` (compare file catalog vs DB snapshot)
-- Safe target sync command:
-  - `npm run catalog:sync-target -- --dry-run` previews catalog apps/bundles missing from DB.
-  - `npm run catalog:sync-target -- --only-missing` inserts missing apps/bundles only; it does not overwrite existing DB rows.
-  - `npm run catalog:sync-target -- --only-missing --fail-on-missing` exits non-zero if any catalog entry remains unresolved after sync.
- - Super Admin diff API:
-   - `GET /api/v1/super-admin/marketplace-management/catalog/diff`
-   - Optional query: `includeDetails=false` to return totals-only payload
-- Feature flag:
-  - `CATALOG_SOURCE=db|file|hybrid`
-  - Default behavior:
-    - production: `db`
-    - development/test when unset: `hybrid`
+---
 
-## Implemented
+## 1. Single Source of Truth Architecture (معمارية مصدر الحقيقة الموحد)
 
-- File catalog schema + validation + hash snapshot cache.
-- Read endpoints now support `file/hybrid` modes:
-  - `GET /api/v1/marketplace/apps`
-  - `GET /api/v1/marketplace/apps/:slug`
-  - `GET /api/v1/marketplace/categories`
-  - `GET /api/v1/marketplace/bundles`
-  - `GET /api/v1/marketplace/bundles/:slug`
-- In `hybrid` mode, runtime DB state is merged into file catalog where applicable:
-  - app install count, rating, review count
-  - installation status for authenticated company (`isInstalled`, `activePricingModel`)
-- Operational/financial flows remain DB-backed (unchanged):
-  - install/uninstall, wallet, transactions, subscriptions, reviews writes
-- Write-flow bridge for file-defined catalog entries:
-  - `POST /api/v1/marketplace/apps/:slug/install` now auto-syncs app definition from file catalog into DB if missing.
-  - `POST /api/v1/marketplace/bundles/:slug/subscribe` now resolves bundle from DB or file catalog and auto-syncs bundle apps into DB before wallet/transaction processing.
-- Test coverage for catalog source modes:
-  - `backend/tests/controller/marketplaceController.hybrid.test.js` covers `file`, `db`, and `hybrid` read behavior.
-- Super Admin visibility:
-  - `frontend/src/pages/super-admin/SubscriptionCenter.tsx` shows catalog drift summary/details from `GET /catalog/diff`.
-- Production deploy safety:
-  - GitHub Actions runs `npm run catalog:sync-target -- --only-missing --fail-on-missing` after Prisma `db push`/seeding and before PM2 restart.
-  - This keeps production `CATALOG_SOURCE=db` from hiding newly shipped file-defined marketplace apps.
-  - Deploy fails before PM2 restart if a broken catalog app/bundle cannot be synced.
-  - After PM2 reload, deploy verifies `GET /api/v1/marketplace/apps?page=1&limit=200` returns the full page (`data.length === pagination.total`).
-- Frontend smoke test coverage:
-  - `frontend/src/pages/super-admin/__tests__/SubscriptionCenter.catalogDiff.test.tsx`
-  - Run: `npx jest --config jest.config.cjs src/pages/super-admin/__tests__/SubscriptionCenter.catalogDiff.test.tsx --runInBand` (from `frontend`)
+To eliminate price divergence, unmonitored drift, and tenant provisioning inconsistencies across environments, the platform defines a strict separation of concerns:
 
-## Next phase
+| Layer | Component | Authority / Responsibility |
+| :--- | :--- | :--- |
+| **Specification Source of Truth**<br>*(مصدر المواصفات والتسعير القياسي)* | **Catalog Files**<br>`apps/backend/catalog/marketplace/apps.json`<br>`apps/backend/catalog/marketplace/bundles.json`<br>`apps/backend/catalog/marketplace/categories.json` | **Definitive Single Source of Truth** for:<br>• App metadata (id, slug, name, nameEn, description, category)<br>• Baseline pricing (`monthlyPrice`, `yearlyPrice`, `unitPrice`, `unitName`, `pricingModel`)<br>• Free trial periods (`trialDays`)<br>• Feature hierarchies and positioning (`positioning`, `features`)<br>• Required dependencies (`requiredApps`)<br><br>*All new environments, tenants, and hybrid/file modes derive baseline pricing and app definitions strictly from here.* |
+| **Operational Runtime State**<br>*(حالة التشغيل الحية)* | **Database**<br>`prisma.marketplaceApp`<br>`prisma.appBundle`<br>`prisma.companyApp` | **Operational Runtime State** for:<br>• Active installations (`installCount`, `company_apps`)<br>• Tenant-specific overrides and active pricing models<br>• Telemetry, reviews, and ratings (`rating`, `reviewCount`)<br>• Financial transactions, subscriptions, and wallet charges |
 
-- Add browser-level E2E (real navigation/login) on top of current component smoke tests.
+---
+
+## 2. The Zero-Drift Invariant (قاعدة منع الانجراف الصارم)
+
+> ⚠️ **STRICT INVARIANT: ممنوع تعديل سعر أو مواصفة تطبيق من غير ما يتكتب في الاثنين**
+> 
+> A price, trial period, or core specification change MUST NEVER exist in the database without being written to `apps.json` (and vice-versa). Divergence between the file catalog and runtime database is treated as a fatal deployment flaw.
+
+### Risks Prevented:
+1. **Tenant Provisioning Drift:** Any new tenant or environment provisioned with `CATALOG_SOURCE=file` or running `catalog:sync-target` receives the catalog price. If `apps.json` has `store` at 249 instead of 699, newly provisioned environments bill 249 while production charges 699.
+2. **Accidental Database Overwrite:** Running `npm run catalog:sync-target` without `--only-missing` triggers an `updateMany` that could overwrite approved live prices with stale file values.
+3. **Silent Accumulation:** Updates made via Super Admin directly in PostgreSQL accumulate without version control or Git visibility.
+
+---
+
+## 3. Tooling & Synchronization Pipeline
+
+### A. Automatic Synchronization in `updateApp` (Controller Level)
+When a Super Admin updates an app via `PUT /api/v1/super-admin/marketplace-management/apps/:id`:
+- `marketplaceManagementController.updateApp` updates the database record.
+- It immediately calls `marketplaceCatalogService.updateAppFile(slug, updateData)` to write the updated pricing/metadata back to `apps.json` on disk.
+- Clears the catalog hash and in-memory cache (`marketplaceCatalogService.clearCache()`).
+- If the filesystem write fails (e.g. read-only container), a prominent warning is returned in the API response instructing the admin to run `npm run catalog:export-db`.
+
+### B. Command: `npm run catalog:export-db`
+- Script: `apps/backend/scripts/catalog/export_db_to_marketplace_catalog.js`
+- Connects to the database and syncs live DB pricing and metadata into `apps/backend/catalog/marketplace/apps.json`.
+- Flags:
+  - `--dry-run`: Previews updates without modifying files.
+  - `--slug=<slug>`: Syncs a single specific app.
+  - `--all`: Exports descriptions and categories in addition to pricing fields.
+
+### C. Command: `npm run catalog:diff`
+- Compares `apps.json` / `bundles.json` against the database snapshot.
+- Flags:
+  - `--json`: Machine-readable output.
+  - `--fail-on-diff`: Exits with code 1 if any differences exist.
+  - `--fail-on-changed`: Exits with code 1 if `apps.changed > 0` or `bundles.changed > 0` or missing entries exist.
+- Normalization:
+  - `ppuBillingMethod` is compared only for Pay-Per-Use apps (`pricingModel === 'PAY_PER_USE'`). For non-PPU apps, PostgreSQL schema defaults (`DEFAULT 'PER_ORDER'`) are ignored to eliminate false positives.
+
+### D. Safe Target Sync: `npm run catalog:sync-target`
+- **MANDATORY FLAG:** Always use `--only-missing`.
+  ```bash
+  npm run catalog:sync-target -- --only-missing --fail-on-missing
+  ```
+- **PROHIBITION:** NEVER execute `npm run catalog:sync-target` without `--only-missing` in production environments.
+
+---
+
+## 4. Hardened CI/CD Deployment Gate
+
+During automated deployments (`.github/workflows/deploy.yml` and `scripts/deploy-remote.sh`):
+1. **Sync Missing:** Runs `npm run catalog:sync-target -- --only-missing --fail-on-missing`.
+2. **Strict Drift Verification:** Runs `npm run catalog:diff -- --fail-on-changed`.
+3. **Failure Condition:** If `apps.changed > 0` or `apps.missingInDb > 0`, the deployment pipeline fails immediately prior to PM2 restart, preventing deployment of unaligned pricing.
+4. **Post-Boot Full Catalog Verification:** Verifies `GET /api/v1/marketplace/apps?page=1&limit=200` returns the complete catalog without pagination truncation.
+
+---
+
+## 5. Standard Approved Pricing (Baseline Reference)
+
+| App Slug | Name (Ar) | Pricing Model | Monthly Price | Yearly Price | Trial Days |
+| :--- | :--- | :--- | :---: | :---: | :---: |
+| `store` | المتجر | PAY_PER_USE (1 ر.س/طلب) | 699 ر.س | 7,689 ر.س | 0 |
+| `whatsapp-business` | WhatsApp Business API | SUBSCRIPTION | 350 ر.س | 3,500 ر.س | 0 |
+| `hr-payroll` | مسير الرواتب والمستحقات | SUBSCRIPTION | 15 ر.س | 150 ر.س | 14 |
+| `hr-recruitment` | نظام التوظيف واستبيانات العمل | SUBSCRIPTION | 149 ر.س | 1,490 ر.س | 14 |
+
+*Note: Duplicate app `store-pro` has been deprecated and permanently deleted. All store features are unified within `store`.*
