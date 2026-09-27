@@ -241,13 +241,13 @@
     "name": "إعلانات فيسبوك وانستجرام",
     "nameEn": "Facebook Ads Pro",
     "description": "إدارة حملات فيسبوك وانستجرام مع AI Optimization وتقارير متقدمة.",
-    "category": "COMMUNICATION",
+    "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 199,
-    "yearlyPrice": 1990,
+    "monthlyPrice": 299,
+    "yearlyPrice": 2999,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [
       "facebook-pages-connect"
     ],
@@ -455,8 +455,8 @@
     "description": "تكامل كامل مع WhatsApp Business API. إرسال واستقبال الرسائل والردود التلقائية.",
     "category": "COMMUNICATION",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 199,
-    "yearlyPrice": 1990,
+    "monthlyPrice": 350,
+    "yearlyPrice": 3500,
     "unitPrice": null,
     "unitName": null,
     "trialDays": 0,
@@ -501,7 +501,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00Z",
-    "updatedAt": "2026-08-11T00:00:00Z"
+    "updatedAt": "2026-09-27T08:13:07.046Z"
   },
   {
     "id": "cat-app-bot-automation",
@@ -677,14 +677,14 @@
     "slug": "store",
     "name": "المتجر",
     "nameEn": "Store",
-    "description": "متجر إلكتروني كامل: منتجات وطلبات وسلة تسوق ومتجر إلكتروني. مناسب للمشاريع الصغيرة والمتوسطة.",
+    "description": "إدارة الطلبات والمنتجات والمتجر الإلكتروني — كل حاجة المتجر في تطبيق واحد.",
     "category": "ECOMMERCE",
     "pricingModel": "PAY_PER_USE",
-    "monthlyPrice": 249,
-    "yearlyPrice": 2490,
+    "monthlyPrice": 699,
+    "yearlyPrice": 7689,
     "unitPrice": 1,
     "unitName": "طلب",
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [],
     "positioning": {
       "audience": "أي متجر عايز يدير منتجاته وطلباته وواجهة بيعه من مكان واحد.",
@@ -727,6 +727,12 @@
         "name": "إدارة الشحن",
         "description": "إدارة الشحن والتوصيل وأسعاره.",
         "access": "PAID"
+      },
+      "unlimitedProducts": {
+        "enabled": true,
+        "name": "منتجات غير محدودة",
+        "description": "منتجات غير محدودة بدون أي سقف.",
+        "access": "PAID"
       }
     },
     "isActive": true,
@@ -738,7 +744,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-08-12T00:00:00.000Z",
+    "updatedAt": "2026-09-27T08:13:07.044Z",
     "ppuBillingMethod": "PER_ORDER"
   },
   {
@@ -793,11 +799,11 @@
     "description": "Urgency bars, PDP conversion components, popups, and theme-ready growth modules for storefronts.",
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 349,
-    "yearlyPrice": 3499,
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "trialDays": 14,
     "requiredApps": [
       "store"
     ],
@@ -846,10 +852,10 @@
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
-    "yearlyPrice": 1499,
+    "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "trialDays": 14,
     "requiredApps": [
       "store"
     ],
@@ -895,7 +901,7 @@
     "name": "تقييمات العملاء",
     "nameEn": "UGC Reviews Pro",
     "description": "Photo and video review blocks designed for product pages and trust-building templates.",
-    "category": "ECOMMERCE",
+    "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
     "yearlyPrice": 1999,
@@ -950,10 +956,10 @@
     "category": "ECOMMERCE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 179,
-    "yearlyPrice": 1799,
+    "yearlyPrice": 1790,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "trialDays": 14,
     "requiredApps": [
       "store"
     ],
@@ -1360,7 +1366,7 @@
     "name": "Unified Inbox",
     "nameEn": "Unified Inbox",
     "description": "صندوق وارد موحد يجمع محادثاتك من كل المنصات في مكان واحد مع إمكانية الرد المباشر.",
-    "category": "COMMUNICATION",
+    "category": "PRODUCTIVITY",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 299,
     "yearlyPrice": 2999,
@@ -1416,7 +1422,7 @@
     "name": "Notification Automation",
     "nameEn": "Notification Automation",
     "description": "Notification center, reminders, alert rules, and operational notification settings.",
-    "category": "AUTOMATION",
+    "category": "PRODUCTIVITY",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 99,
     "yearlyPrice": 990,
@@ -3035,7 +3041,7 @@
     "name": "إنشاء منشور فيسبوك",
     "nameEn": "Facebook Create Post",
     "description": "إنشاء ونشر منشورات فيسبوك مباشرة من المنصة — نصوص، صور، وجدولة النشر على صفحاتك.",
-    "category": "COMMUNICATION",
+    "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 49,
     "yearlyPrice": 490,
@@ -3119,13 +3125,13 @@
     "name": "نظام البث المتقدم",
     "nameEn": "Broadcast Pro",
     "description": "نظام إرسال رسائل جماعية متقدم مع تصنيف العملاء وجدولة الإرسال.",
-    "category": "COMMUNICATION",
+    "category": "MARKETING",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 149,
-    "yearlyPrice": 1490,
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 0,
+    "trialDays": 14,
     "requiredApps": [],
     "positioning": {
       "audience": "فرق التسويق والتواصل التي تريد إرسال حملات للعملاء بشكل جماعي.",
@@ -3686,86 +3692,6 @@
     "updatedAt": "2026-08-10T00:00:00.000Z"
   },
   {
-    "id": "cat-app-store-pro",
-    "slug": "store-pro",
-    "name": "متجر ماكس",
-    "nameEn": "Store Max",
-    "description": "متجر متقدم: منتجات غير محدودة، مخازن متعددة، تقارير متقدمة وميزات احترافية للشركات المتوسطة والكبيرة.",
-    "category": "ECOMMERCE",
-    "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 499,
-    "yearlyPrice": 4990,
-    "unitPrice": null,
-    "unitName": null,
-    "trialDays": 14,
-    "requiredApps": [],
-    "isActive": true,
-    "isPublic": true,
-    "isFeatured": true,
-    "isPopular": false,
-    "icon": "store",
-    "logo": null,
-    "coverImage": null,
-    "engineCompatibility": null,
-    "createdAt": "2026-03-06T00:00:00.000Z",
-    "updatedAt": "2026-08-12T00:00:00.000Z",
-    "positioning": {
-      "audience": "الشركات المتوسطة والكبيرة التي تحتاج مخازن متعددة وتقارير متقدمة.",
-      "surface": "داخل إدارة المخزون والتقارير وتكاملات المتجر.",
-      "outcome": "إدارة أوسع للمخزون والتقارير مع ميزات احترافية."
-    },
-    "features": {
-      "unlimitedProducts": {
-        "enabled": true,
-        "name": "منتجات غير محدودة",
-        "description": "منتجات غير محدودة بدون أي سقف.",
-        "access": "PAID"
-      },
-      "multiWarehouse": {
-        "enabled": true,
-        "name": "مخازن متعددة",
-        "description": "إدارة مخزون عبر مستودعات متعددة.",
-        "access": "PAID"
-      },
-      "realtimeInventory": {
-        "enabled": true,
-        "name": "تتبع المخزون Real-time",
-        "description": "تتبع لحظي لحالة المخزون.",
-        "access": "PAID"
-      },
-      "advancedReports": {
-        "enabled": true,
-        "name": "تقارير متقدمة",
-        "description": "تقارير تحليلية متقدمة للمبيعات والمخزون.",
-        "access": "PAID"
-      },
-      "woocommerce": {
-        "enabled": true,
-        "name": "تكامل مع WooCommerce",
-        "description": "مزامنة المنتجات والطلبات مع WooCommerce.",
-        "access": "PAID"
-      },
-      "suppliers": {
-        "enabled": true,
-        "name": "إدارة الموردين",
-        "description": "إدارة الموردين وعلاقات التوريد.",
-        "access": "PAID"
-      },
-      "purchaseOrders": {
-        "enabled": true,
-        "name": "طلبات الشراء",
-        "description": "إنشاء ومتابعة طلبات الشراء.",
-        "access": "PAID"
-      },
-      "lowStockAlerts": {
-        "enabled": true,
-        "name": "إشعارات نفاد المخزون",
-        "description": "تنبيهات عند نفاد أو اقتراب نفاد المخزون.",
-        "access": "PAID"
-      }
-    }
-  },
-  {
     "id": "cat-app-executable-mindmap",
     "slug": "executable-mindmap",
     "name": "الخرائط الذهنية ومسارات العمل",
@@ -3947,8 +3873,8 @@
     "descriptionEn": "Automated monthly payroll calculation, salary advances, deductions, bonuses, payslips, and tax reporting.",
     "category": "HR",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 99,
-    "yearlyPrice": 990,
+    "monthlyPrice": 15,
+    "yearlyPrice": 150,
     "unitPrice": null,
     "unitName": null,
     "trialDays": 14,
@@ -3995,7 +3921,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-04T00:00:00Z",
-    "updatedAt": "2026-09-04T00:00:00Z"
+    "updatedAt": "2026-09-27T08:13:07.046Z"
   },
   {
     "id": "cat-app-hr-recruitment",
@@ -4006,8 +3932,8 @@
     "descriptionEn": "Job postings, dynamic application forms, candidate pipeline tracking (ATS), and interview scheduling.",
     "category": "HR",
     "pricingModel": "SUBSCRIPTION",
-    "monthlyPrice": 129,
-    "yearlyPrice": 1290,
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
     "trialDays": 14,
@@ -4054,7 +3980,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-09-04T00:00:00Z",
-    "updatedAt": "2026-09-04T00:00:00Z"
+    "updatedAt": "2026-09-27T08:13:07.046Z"
   },
   {
     "id": "cat-app-hr-assets",
