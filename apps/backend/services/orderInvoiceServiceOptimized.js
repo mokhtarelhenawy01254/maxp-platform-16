@@ -425,11 +425,48 @@ async function bulkGenerateInvoicesOptimized(orderIds, userId = null) {
       const existingInvoice = existingInvoicesMap.get(order.id);
       
       if (existingInvoice) {
+        // تحديث إجماليات وبيانات الفاتورة لتطابق الطلب الحالي
+        const orderTotalNum = Number(order.total || 0);
+        const invTotalNum = Number(existingInvoice.totalAmount || 0);
+        const orderSubtotalNum = Number(order.subtotal || 0);
+        const invSubtotalNum = Number(existingInvoice.subtotal || 0);
+
+        if (Math.abs(orderTotalNum - invTotalNum) > 0.01 || Math.abs(orderSubtotalNum - invSubtotalNum) > 0.01) {
+          existingInvoice.subtotal = order.subtotal;
+          existingInvoice.shipping = order.shipping;
+          existingInvoice.discount = order.discount;
+          existingInvoice.tax = order.tax;
+          existingInvoice.totalAmount = order.total;
+
+          prisma.orderInvoice.update({
+            where: { id: existingInvoice.id },
+            data: {
+              subtotal: order.subtotal,
+              shipping: order.shipping,
+              discount: order.discount,
+              tax: order.tax,
+              totalAmount: order.total,
+              customerName: order.customerName || existingInvoice.customerName,
+              customerPhone: order.customerPhone || existingInvoice.customerPhone,
+              customerAddress: order.customerAddress || existingInvoice.customerAddress,
+              city: order.city || existingInvoice.city,
+              governorate: order.governorate || existingInvoice.governorate,
+              notes: order.notes || existingInvoice.notes,
+              updatedAt: new Date()
+            }
+          }).catch(err => console.warn('⚠️ [INVOICE-BATCH-SYNC] Update failed:', err.message));
+        }
+
         // إضافة بيانات الطلب للفاتورة الموجودة مع التأكد من وجود كود المنتج والبيانات المخصصة
         existingInvoice.notes = existingInvoice.notes || order.notes || null;
         existingInvoice.governorate = existingInvoice.governorate || order.governorate || null;
         existingInvoice.order = {
           orderNumber: order.orderNumber,
+          total: order.total,
+          subtotal: order.subtotal,
+          shipping: order.shipping,
+          discount: order.discount,
+          tax: order.tax,
           notes: order.notes || null,
           metadata: order.metadata || null,
           shippingAddress: order.shippingAddress || null,

@@ -29,6 +29,11 @@ interface Invoice {
   notes: string | null;
   order: {
     orderNumber: string;
+    total?: number;
+    subtotal?: number;
+    shipping?: number;
+    discount?: number;
+    tax?: number;
     turboTrackingNumber?: string | null;
     orderItems: Array<{
       productName: string;

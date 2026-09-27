@@ -122,13 +122,18 @@ const BulkSearchPage: React.FC = () => {
           notes,
         });
 
-        const data = response.data;
-        const results_arr = data.data?.results ?? [];
+        const data = response.data as {
+          data?: {
+            results?: Array<Record<string, unknown>>;
+            successCount?: number;
+          };
+        };
+        const results_arr = data?.data?.results ?? [];
         const failedResults = results_arr.filter(
           (r: Record<string, unknown>) => !r.success,
         );
         const failedCount = failedResults.length;
-        const successCount = data.data?.successCount ?? 0;
+        const successCount = data?.data?.successCount ?? 0;
 
         if (successCount > 0) {
           if (failedCount === 0) {
@@ -494,6 +499,11 @@ const BulkSearchPage: React.FC = () => {
                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {stats.ordersCount}
                 </p>
+                {typeof stats.storefrontCount === "number" && stats.storefrontCount > 0 && (
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium block mt-1">
+                    ({stats.storefrontCount} من المتجر)
+                  </span>
+                )}
               </div>
               <Package className="text-blue-400 dark:text-blue-500" size={32} />
             </div>
@@ -683,18 +693,25 @@ const BulkSearchPage: React.FC = () => {
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
-                        {order.orderNumber}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                          {order.orderNumber}
+                        </span>
+                        {(order.isStorefront || order.isGuestOrder || order.sourceType === "storefront" || order.orderSource === "STOREFRONT") && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            متجر
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {order.customer
-                          ? `${order.customer.firstName} ${order.customer.lastName}`
-                          : "-"}
+                          ? `${order.customer.firstName || ""} ${order.customer.lastName || ""}`.trim() || order.customerName || "-"
+                          : order.customerName || "-"}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {order.customer?.email || "-"}
+                        {order.customer?.email || order.customerEmail || "-"}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -702,7 +719,7 @@ const BulkSearchPage: React.FC = () => {
                         className="text-sm text-gray-900 dark:text-gray-100 font-mono"
                         dir="ltr"
                       >
-                        {order.customer?.phone || "-"}
+                        {order.customer?.phone || order.customerPhone || "-"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

@@ -72,6 +72,11 @@ function toInvoiceData(inv: Invoice): InvoiceData {
     metadata: inv.metadata || inv.order?.metadata || null,
     order: {
       orderNumber: inv.order?.orderNumber,
+      total: (inv.order as any)?.total != null ? (inv.order as any).total : inv.totalAmount,
+      subtotal: (inv.order as any)?.subtotal != null ? (inv.order as any).subtotal : inv.subtotal,
+      shipping: (inv.order as any)?.shipping != null ? (inv.order as any).shipping : inv.shipping,
+      discount: (inv.order as any)?.discount != null ? (inv.order as any).discount : inv.discount,
+      tax: (inv.order as any)?.tax != null ? (inv.order as any).tax : inv.tax,
       trackingNumber: (inv.order as any)?.trackingNumber || inv.order?.turboTrackingNumber || null,
       turboTrackingNumber: inv.order?.turboTrackingNumber,
       notes: inv.order?.notes || inv.notes || null,

@@ -37,6 +37,11 @@ interface InvoiceData {
   order?: {
     orderNumber?: string;
     status?: string;
+    total?: number | string;
+    subtotal?: number | string;
+    shipping?: number | string;
+    discount?: number | string;
+    tax?: number | string;
     turboTrackingNumber?: string | null;
     orderItems?: Array<{
       id?: string;

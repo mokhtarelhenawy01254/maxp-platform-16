@@ -86,8 +86,13 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ invoice, onClose }) => {
               totalAmount: invoice.totalAmount as number,
               invoiceNumber: invoice.invoiceNumber as string,
               order: {
-                orderNumber: invoice.order?.orderNumber as string,
-                turboTrackingNumber: invoice.order?.turboTrackingNumber as string | null,
+                orderNumber: (invoice.order as any)?.orderNumber as string,
+                total: (invoice.order as any)?.total,
+                subtotal: (invoice.order as any)?.subtotal,
+                shipping: (invoice.order as any)?.shipping,
+                discount: (invoice.order as any)?.discount,
+                tax: (invoice.order as any)?.tax,
+                turboTrackingNumber: (invoice.order as any)?.turboTrackingNumber as string | null,
                 orderItems: invoice.order?.orderItems as Array<{
                   productName: string;
                   quantity: number;

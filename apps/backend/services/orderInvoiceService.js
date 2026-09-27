@@ -31,6 +31,74 @@ function resolveItemSku(item) {
   return { ...item, productSku };
 }
 
+async function syncInvoiceWithOrder(invoice, prisma) {
+  if (!invoice || !invoice.order) return invoice;
+  const order = invoice.order;
+  const orderTotal = Number(order.total || 0);
+  const invTotal = Number(invoice.totalAmount || 0);
+  const orderSubtotal = Number(order.subtotal || 0);
+  const invSubtotal = Number(invoice.subtotal || 0);
+  const orderShipping = Number(order.shipping || 0);
+  const invShipping = Number(invoice.shipping || 0);
+  const orderDiscount = Number(order.discount || 0);
+  const invDiscount = Number(invoice.discount || 0);
+  const orderTax = Number(order.tax || 0);
+  const invTax = Number(invoice.tax || 0);
+
+  const isDiff =
+    Math.abs(orderTotal - invTotal) > 0.01 ||
+    Math.abs(orderSubtotal - invSubtotal) > 0.01 ||
+    Math.abs(orderShipping - invShipping) > 0.01 ||
+    Math.abs(orderDiscount - invDiscount) > 0.01 ||
+    Math.abs(orderTax - invTax) > 0.01 ||
+    (order.customerName && order.customerName !== invoice.customerName) ||
+    (order.customerPhone && order.customerPhone !== invoice.customerPhone) ||
+    (order.customerAddress && order.customerAddress !== invoice.customerAddress) ||
+    (order.city && order.city !== invoice.city) ||
+    (order.governorate && order.governorate !== invoice.governorate) ||
+    (order.notes && order.notes !== invoice.notes);
+
+  if (isDiff) {
+    invoice.subtotal = order.subtotal;
+    invoice.tax = order.tax;
+    invoice.shipping = order.shipping;
+    invoice.discount = order.discount;
+    invoice.totalAmount = order.total;
+    if (order.customerName) invoice.customerName = order.customerName;
+    if (order.customerPhone) invoice.customerPhone = order.customerPhone;
+    if (order.customerAddress) invoice.customerAddress = order.customerAddress;
+    if (order.city) invoice.city = order.city;
+    if (order.governorate) invoice.governorate = order.governorate;
+    if (order.notes) invoice.notes = order.notes;
+
+    try {
+      await executeWithRetry(async () => {
+        return await prisma.orderInvoice.update({
+          where: { id: invoice.id },
+          data: {
+            subtotal: order.subtotal,
+            tax: order.tax,
+            shipping: order.shipping,
+            discount: order.discount,
+            totalAmount: order.total,
+            customerName: invoice.customerName,
+            customerPhone: invoice.customerPhone,
+            customerAddress: invoice.customerAddress,
+            city: invoice.city,
+            governorate: invoice.governorate,
+            notes: invoice.notes,
+            updatedAt: new Date()
+          }
+        });
+      });
+    } catch (err) {
+      console.warn('⚠️ [INVOICE-SYNC] Background sync failed:', err.message);
+    }
+  }
+
+  return invoice;
+}
+
 async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
   try {
     const prisma = getSharedPrismaClient();
@@ -105,16 +173,21 @@ async function generateInvoiceForOrder(orderIdOrNumber, userId = null) {
       throw new Error('الطلب غير موجود');
     }
 
-    // التحقق من وجود فاتورة سابقة
+    // التحقق من وجود فاتورة سابقة وتحديثها ببيانات الطلب الحالية إن وجدت
     const existingInvoice = await prisma.orderInvoice.findUnique({
       where: { orderId: order.id }
     });
 
     if (existingInvoice) {
+      existingInvoice.order = order;
+      await syncInvoiceWithOrder(existingInvoice, prisma);
+      if (existingInvoice?.order?.orderItems) {
+        existingInvoice.order.orderItems = existingInvoice.order.orderItems.map(resolveItemSku);
+      }
       return {
         success: true,
         invoice: existingInvoice,
-        message: 'الفاتورة موجودة بالفعل'
+        message: 'تم تحديث الفاتورة ببيانات الطلب الحالية'
       };
     }
 
@@ -183,6 +256,10 @@ async function getInvoiceByOrderId(orderId) {
       invoice.order.orderItems = invoice.order.orderItems.map(resolveItemSku);
     }
 
+    if (invoice) {
+      await syncInvoiceWithOrder(invoice, prisma);
+    }
+
     return invoice;
   } catch (error) {
     console.error('Error fetching invoice:', error);
@@ -217,6 +294,10 @@ async function getInvoiceById(invoiceId) {
       invoice.order.orderItems = invoice.order.orderItems.map(resolveItemSku);
     }
 
+    if (invoice) {
+      await syncInvoiceWithOrder(invoice, prisma);
+    }
+
     return invoice;
   } catch (error) {
     console.error('Error fetching invoice:', error);
@@ -249,6 +330,10 @@ async function getInvoiceByNumber(invoiceNumber) {
 
     if (invoice?.order?.orderItems) {
       invoice.order.orderItems = invoice.order.orderItems.map(resolveItemSku);
+    }
+
+    if (invoice) {
+      await syncInvoiceWithOrder(invoice, prisma);
     }
 
     return invoice;

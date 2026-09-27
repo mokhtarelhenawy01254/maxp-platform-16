@@ -4,6 +4,7 @@ const {
   effectiveOrderStatusSql,
   computeEffectiveOrderStatus,
 } = require('../utils/orderEffectiveStatus');
+const { buildDateRangeFilter, EGYPT_TIMEZONE } = require('../utils/dateUtils');
 
 const ANALYTICS_DAY_MS = 24 * 60 * 60 * 1000;
 const DELIVERED_ORDER_STATUSES = new Set(['DELIVERED']);
@@ -5135,23 +5136,19 @@ const getStatusSummaryReport = async (req, res) => {
       return res.status(400).json({ success: false, message: 'لا توجد حالات طلب صالحة للفلترة' });
     }
 
-    const dateFilter = {};
-    if (startDate || endDate) {
-      dateFilter.createdAt = {};
-      if (startDate) dateFilter.createdAt.gte = new Date(startDate);
-      if (endDate) dateFilter.createdAt.lte = new Date(endDate);
-    }
+    const companyTimezone = req.company?.timezone || req.user?.company?.timezone || EGYPT_TIMEZONE;
+    const dateRangeFilter = buildDateRangeFilter(startDate, endDate, companyTimezone);
 
-    // Build date conditions for raw SQL
+    // Build date conditions for raw SQL (Timezone-aware end-of-day alignment)
     const dateConditions = [];
     const queryParams = [String(companyId)];
-    if (startDate) {
+    if (dateRangeFilter.gte) {
       dateConditions.push(`o."createdAt" >= $${queryParams.length + 1}`);
-      queryParams.push(new Date(startDate));
+      queryParams.push(dateRangeFilter.gte);
     }
-    if (endDate) {
+    if (dateRangeFilter.lte) {
       dateConditions.push(`o."createdAt" <= $${queryParams.length + 1}`);
-      queryParams.push(new Date(endDate));
+      queryParams.push(dateRangeFilter.lte);
     }
     const dateClause = dateConditions.length ? dateConditions.join(' AND ') : 'TRUE';
 
@@ -5262,24 +5259,20 @@ const getStatusSummaryOrders = async (req, res) => {
     const limitNum = Math.min(200, Math.max(1, parseInt(limit) || 50));
     const skip = (pageNum - 1) * limitNum;
 
-    const dateFilter = {};
-    if (startDate || endDate) {
-      dateFilter.createdAt = {};
-      if (startDate) dateFilter.createdAt.gte = new Date(startDate);
-      if (endDate) dateFilter.createdAt.lte = new Date(endDate);
-    }
+    const companyTimezone = req.company?.timezone || req.user?.company?.timezone || EGYPT_TIMEZONE;
+    const dateRangeFilter = buildDateRangeFilter(startDate, endDate, companyTimezone);
 
     // Build raw SQL with effective status for orders
     // 🛡️ PRODUCTION-FIX (analytics-unify): تعبير الحالة الفعلية الموحّد (مخصصة ← تجهيز ← enum)
     const oQueryParams = [String(companyId)];
     const oDateConditions = [];
-    if (startDate) {
+    if (dateRangeFilter.gte) {
       oDateConditions.push(`o."createdAt" >= $${oQueryParams.length + 1}`);
-      oQueryParams.push(new Date(startDate));
+      oQueryParams.push(dateRangeFilter.gte);
     }
-    if (endDate) {
+    if (dateRangeFilter.lte) {
       oDateConditions.push(`o."createdAt" <= $${oQueryParams.length + 1}`);
-      oQueryParams.push(new Date(endDate));
+      oQueryParams.push(dateRangeFilter.lte);
     }
     const oDateClause = oDateConditions.length ? oDateConditions.join(' AND ') : 'TRUE';
     const oStatusPlaceholders = filteredStatusCodes.map((_, i) => `$${oQueryParams.length + 1 + i}`).join(', ');
@@ -5410,17 +5403,20 @@ const getStatusSummaryItems = async (req, res) => {
     const limitNum = Math.max(1, parseInt(limit) || 50);
     const skip = (pageNum - 1) * limitNum;
 
+    const companyTimezone = req.company?.timezone || req.user?.company?.timezone || EGYPT_TIMEZONE;
+    const dateRangeFilter = buildDateRangeFilter(startDate, endDate, companyTimezone);
+
     // Build raw SQL with effective status for items
     // 🛡️ PRODUCTION-FIX (analytics-unify): تعبير الحالة الفعلية الموحّد (مخصصة ← تجهيز ← enum)
     const iQueryParams = [String(companyId)];
     const iDateConditions = [];
-    if (startDate) {
+    if (dateRangeFilter.gte) {
       iDateConditions.push(`o."createdAt" >= $${iQueryParams.length + 1}`);
-      iQueryParams.push(new Date(startDate));
+      iQueryParams.push(dateRangeFilter.gte);
     }
-    if (endDate) {
+    if (dateRangeFilter.lte) {
       iDateConditions.push(`o."createdAt" <= $${iQueryParams.length + 1}`);
-      iQueryParams.push(new Date(endDate));
+      iQueryParams.push(dateRangeFilter.lte);
     }
     const iDateClause = iDateConditions.length ? iDateConditions.join(' AND ') : 'TRUE';
     const iStatusPlaceholders = filteredStatusCodes.map((_, i) => `$${iQueryParams.length + 1 + i}`).join(', ');

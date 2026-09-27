@@ -10,6 +10,8 @@ export interface BulkSearchStats {
   found: number;
   notFound: number;
   ordersCount: number;
+  storefrontCount?: number;
+  regularCount?: number;
 }
 
 export interface OrderItem {
@@ -25,7 +27,7 @@ export interface OrderItem {
 }
 
 export interface Customer {
-  id: string;
+  id?: string | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -35,14 +37,25 @@ export interface Customer {
 export interface Order {
   id: string;
   orderNumber: string;
-  customerId: string;
+  customerId?: string | null;
   status: string;
   total: number;
-  currency: string;
+  subtotal?: number;
+  shipping?: number;
+  discount?: number;
+  tax?: number;
+  currency?: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   customer?: Customer;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
   orderItems?: OrderItem[];
+  sourceType?: string;
+  orderSource?: string;
+  isStorefront?: boolean;
+  isGuestOrder?: boolean;
 }
 
 export interface BulkSearchResponse {
@@ -104,6 +117,7 @@ export const bulkSearchService = {
   exportToCSV: (orders: Order[], searchType: string): void => {
     const headers = [
       "Order Number",
+      "Source",
       "Customer Name",
       "Phone",
       "Email",
@@ -114,11 +128,14 @@ export const bulkSearchService = {
     ];
     const rows = orders.map((order) => [
       order.orderNumber,
+      order.isStorefront || order.sourceType === "storefront" || order.orderSource === "STOREFRONT"
+        ? "متجر"
+        : "مسجل",
       order.customer
-        ? `${order.customer.firstName} ${order.customer.lastName}`
-        : "",
-      order.customer?.phone || "",
-      order.customer?.email || "",
+        ? `${order.customer.firstName || ""} ${order.customer.lastName || ""}`.trim() || order.customerName || ""
+        : order.customerName || "",
+      order.customer?.phone || order.customerPhone || "",
+      order.customer?.email || order.customerEmail || "",
       order.status,
       Number(order.total).toFixed(2),
       order.currency || "EGP",
@@ -168,8 +185,12 @@ export const bulkSearchService = {
     try {
       const text = orders
         .map(
-          (order) =>
-            `${order.orderNumber}\t${order.customer?.firstName || ""} ${order.customer?.lastName || ""}\t${order.customer?.phone || ""}\t${order.status}\t${order.total} ${order.currency || "EGP"}`,
+          (order) => {
+            const src = order.isStorefront || order.sourceType === "storefront" || order.orderSource === "STOREFRONT" ? "متجر" : "مسجل";
+            const custName = (order.customer ? `${order.customer.firstName || ""} ${order.customer.lastName || ""}`.trim() : order.customerName) || "";
+            const phone = order.customer?.phone || order.customerPhone || "";
+            return `${order.orderNumber}\t${src}\t${custName}\t${phone}\t${order.status}\t${order.total} ${order.currency || "EGP"}`;
+          },
         )
         .join("\n");
 
@@ -181,3 +202,4 @@ export const bulkSearchService = {
     }
   },
 };
+

@@ -3344,12 +3344,11 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
       const params = [companyId, ...customStatusFilter];
       if (whereClause.createdAt?.gte) {
-        fetchSql += ` AND "createdAt" >= $3`;
+        fetchSql += ` AND "createdAt" >= $${params.length + 1}`;
         params.push(whereClause.createdAt.gte);
       }
       if (whereClause.createdAt?.lte) {
-        const n = params.length + 1;
-        fetchSql += ` AND "createdAt" <= $${n}`;
+        fetchSql += ` AND "createdAt" <= $${params.length + 1}`;
         params.push(whereClause.createdAt.lte);
       }
       // 🛡️ لا تقيّد جلب المعرّفات بـ fetchLimit الصفحة (40) حتى لا ينحصر العدّ الكلي
@@ -8564,6 +8563,19 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
             shipping,
             discount: nextDiscount,
             metadata: JSON.stringify(currentMetadata),
+            updatedAt: new Date()
+          }
+        });
+
+        // Also synchronize existing OrderInvoice if already generated for this order
+        await prisma.orderInvoice.updateMany({
+          where: { orderId: regularOrder.id },
+          data: {
+            subtotal,
+            tax,
+            shipping,
+            discount: nextDiscount,
+            totalAmount: calculatedTotal,
             updatedAt: new Date()
           }
         });

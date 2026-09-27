@@ -159,19 +159,41 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
   const currency = invoice.currency || "EGP";
   
   // Total calculation
-  const discountVal = parseNumber(invoice.discount);
+  const items = page?.chunkItems ?? (invoice.order?.orderItems || []);
+  const calculatedItemsSubtotal = items.length > 0
+    ? items.reduce((sum, item) => sum + getItemTotal(item), 0)
+    : parseNumber(invoice.subtotal);
+
+  const rawOrder = invoice.order as any;
+  const orderSubtotal = rawOrder?.subtotal != null ? parseNumber(rawOrder.subtotal) : null;
+  const orderShipping = rawOrder?.shipping != null ? parseNumber(rawOrder.shipping) : null;
+  const orderDiscount = rawOrder?.discount != null ? parseNumber(rawOrder.discount) : null;
+  const orderTotal = rawOrder?.total != null ? parseNumber(rawOrder.total) : null;
+  const orderTax = rawOrder?.tax != null ? parseNumber(rawOrder.tax) : null;
+
+  const effectiveSubtotal = orderSubtotal != null ? orderSubtotal : calculatedItemsSubtotal;
+  const effectiveShipping = orderShipping != null ? orderShipping : parseNumber(invoice.shipping);
+  const effectiveDiscount = orderDiscount != null ? orderDiscount : parseNumber(invoice.discount);
+  const effectiveTax = orderTax != null ? orderTax : parseNumber(invoice.tax);
+
+  const invoiceSubtotalNum = parseNumber(invoice.subtotal);
+  const isInvoiceSubtotalStale = Math.abs(invoiceSubtotalNum - calculatedItemsSubtotal) > 0.01;
+
+  const discountVal = effectiveDiscount;
   const discountReasonVal =
     invoice.discountReason ||
     (invoice as any).metadata?.discountReason ||
     (invoice.order as any)?.discountReason ||
     (invoice.order as any)?.metadata?.discountReason ||
     null;
-  const totalAmount = invoice.totalAmount != null 
-    ? parseNumber(invoice.totalAmount) 
-    : parseNumber(invoice.subtotal) + parseNumber(invoice.shipping) + parseNumber(invoice.tax) - discountVal;
+
+  const totalAmount = orderTotal != null
+    ? orderTotal
+    : (invoice.totalAmount != null && !isInvoiceSubtotalStale)
+      ? parseNumber(invoice.totalAmount)
+      : Math.max(0, effectiveSubtotal + effectiveShipping + effectiveTax - discountVal);
   
   const addressText = invoice.customerAddress ? formatAddress(invoice.customerAddress) : "";
-  const items = page?.chunkItems ?? (invoice.order?.orderItems || []);
   const customFields = extractOrderCustomFields(invoice);
   const rawNotes = invoice.notes || invoice.order?.notes || "";
   const displayNotes = s.showCustomFields
@@ -402,7 +424,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
            </div>
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
               <div style={{ ...titleStyle, textAlign: "center", marginBottom: "4px" }}>{i18n.t("invoiceContent.shippingCost")}</div>
-             <div style={{ ...valueStyle, textAlign: "center", fontWeight: 700 }}>{fm(parseNumber(invoice.shipping))}</div>
+             <div style={{ ...valueStyle, textAlign: "center", fontWeight: 700 }}>{fm(effectiveShipping)}</div>
            </div>
            {discountVal > 0 && (
              <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 6px" : "8px 10px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
