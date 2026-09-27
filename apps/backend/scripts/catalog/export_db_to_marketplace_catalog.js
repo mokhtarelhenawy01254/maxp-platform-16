@@ -113,8 +113,8 @@ async function main() {
 
     const diffs = [];
     fieldsToCompare.forEach((field) => {
-      let dbVal = dbApp[field];
-      let catVal = catalogApp[field];
+      let dbVal = dbApp[field] !== undefined ? dbApp[field] : null;
+      let catVal = catalogApp[field] !== undefined ? catalogApp[field] : null;
 
       // Normalize numbers
       if (['monthlyPrice', 'yearlyPrice', 'trialDays'].includes(field)) {
@@ -132,6 +132,9 @@ async function main() {
         if (!isPpu) {
           dbVal = null;
           catVal = null;
+        } else {
+          dbVal = dbVal || 'PER_ORDER';
+          catVal = catVal || 'PER_ORDER';
         }
       }
 
