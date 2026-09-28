@@ -102,7 +102,7 @@ async function chatWithAgent({ companyId, agentId, message, threadId, conversati
   };
   if (conversationId) body.conversation_id = conversationId;
   if (customerId) body.customer_id = customerId;
-  if (channel) body.channel = channel;
+  body.channel = channel || 'dashboard';
   if (agentConfig) body.agent_config = agentConfig;
   if (enrichedContext && Object.keys(enrichedContext).length > 0) body.memory_context = enrichedContext;
   if (attachments) body.attachments = attachments;

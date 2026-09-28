@@ -185,6 +185,48 @@ class AgentStudioSessionService {
   }
 
   /**
+   * Get single session by ID with tenant isolation verification.
+   * Distinguishes between not found / deleted vs. forbidden (session belongs to another tenant).
+   */
+  async getSessionWithSecurityCheck(companyId, sessionId) {
+    if (!companyId || !sessionId) {
+      return { status: 'NOT_FOUND', session: null };
+    }
+    await this.ensureTables();
+
+    try {
+      // 1. Check if session exists in DB at all (across any company)
+      const existing = await this.prisma.$queryRawUnsafe(`
+        SELECT id, "companyId", status
+        FROM public.agent_studio_sessions
+        WHERE id = $1
+        LIMIT 1
+      `, sessionId);
+
+      if (!existing || existing.length === 0) {
+        return { status: 'NOT_FOUND', session: null };
+      }
+
+      const row = existing[0];
+      const rowCompanyId = row.companyId || row.companyid;
+      if (rowCompanyId !== companyId) {
+        return { status: 'FORBIDDEN', session: null };
+      }
+
+      if (row.status === 'DELETED') {
+        return { status: 'DELETED', session: null };
+      }
+
+      // Valid and belongs to company: fetch full session and messages
+      const session = await this.getSession(companyId, sessionId);
+      return { status: 'OK', session };
+    } catch (err) {
+      console.error('[AgentStudioSessionService] getSessionWithSecurityCheck error:', err.message);
+      return { status: 'ERROR', session: null, error: err.message };
+    }
+  }
+
+  /**
    * Save or upsert a session and its messages.
    */
   async saveSession(companyId, userId, domain = 'inventory', sessionData) {

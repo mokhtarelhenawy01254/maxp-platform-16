@@ -74,6 +74,7 @@ async function sendMessage(req, res) {
           message,
           threadId: sessionId,
           memoryContext: combinedMemoryContext,
+          channel: req.body?.channel || 'dashboard',
         });
 
         if (agentChatResult && (agentChatResult.reply || agentChatResult.tool_calls || agentChatResult.status === 'ok')) {
@@ -662,7 +663,30 @@ async function getHistory(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    const history = await aiSessionService.getHistory(companyId, userId, req.query?.sessionId, req.user);
+    if (req.query?.sessionId) {
+      const result = await aiSessionService.getHistoryWithCheck(companyId, userId, req.query.sessionId, req.user);
+      if (result.forbidden) {
+        return res.status(403).json({
+          success: false,
+          error: 'لا تملك صلاحية الوصول إلى هذه الجلسة',
+          code: 'FORBIDDEN_SESSION',
+        });
+      }
+      if (result.notFound || !result.session) {
+        return res.status(404).json({
+          success: false,
+          error: 'الجلسة غير متاحة أو تم حذفها',
+          code: 'SESSION_NOT_FOUND',
+        });
+      }
+      return res.json({
+        success: true,
+        session: result.session,
+        messages: result.messages || [],
+      });
+    }
+
+    const history = await aiSessionService.getHistory(companyId, userId, null, req.user);
     return res.json({
       success: true,
       session: history.session || null,

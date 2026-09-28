@@ -26,6 +26,33 @@ async function getHistory(companyId, userId, sessionId, user) {
   }
 }
 
+async function getHistoryWithCheck(companyId, userId, sessionId, user) {
+  try {
+    if (!companyId) return { notFound: true, session: null, messages: [] };
+    if (!sessionId) {
+      const history = await getHistory(companyId, userId, null, user);
+      return { ok: true, session: history.session, messages: history.messages };
+    }
+
+    const check = await agentStudioSessionService.getSessionWithSecurityCheck(companyId, sessionId);
+    if (check.status === 'FORBIDDEN') {
+      return { forbidden: true, session: null, messages: [] };
+    }
+    if (check.status === 'NOT_FOUND' || check.status === 'DELETED' || !check.session) {
+      return { notFound: true, session: null, messages: [] };
+    }
+
+    return {
+      ok: true,
+      session: check.session,
+      messages: check.session.messages || [],
+    };
+  } catch (err) {
+    console.warn('[aiSessionService] getHistoryWithCheck warning:', err.message);
+    return { notFound: true, session: null, messages: [] };
+  }
+}
+
 async function appendMessage(companyId, sessionId, messageData) {
   try {
     return await agentStudioSessionService.appendMessage(companyId, sessionId, messageData, 'copilot');
@@ -86,6 +113,7 @@ async function getAgentStatus(companyId) {
 
 module.exports = {
   getHistory,
+  getHistoryWithCheck,
   appendMessage,
   clearHistory,
   listSessions,

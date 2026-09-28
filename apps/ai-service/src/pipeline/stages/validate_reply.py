@@ -38,12 +38,14 @@ _STATE_CHANGING_TOOLS = {
 }
 
 _HALLUCINATION_PHRASES = [
-    # Arabic success claims
-    "اتأكد", "تم التأكيد", "اتنفذ", "اتعدل", "اتنقل للشحن",
-    "اتنقل", "اتحفظ", "اتلغي", "تم الإلغاء", "اتعمله",
-    "راح للشحن", "اتشحن", "اترد للعميل", "اترجع",
-    "confirmed", "updated", "shipped", "cancelled", "canceled",
-    "saved", "done", "refunded", "تم بنجاح",
+    # Explicit order state-changing claims without an actual order tool execution
+    "تم تأكيد الطلب", "تم تأكيد الأوردر", "اتأكد الطلب", "اتأكد الأوردر", "تم تأكيد حجزك",
+    "اتلغى الطلب", "اتلغي الطلب", "تم إلغاء الطلب", "تم الغاء الطلب", "تم إلغاء الأوردر",
+    "اتشحن الطلب", "تم شحن الطلب", "اتنقل للشحن", "راح للشحن", "خرج للشحن",
+    "اترد للعميل", "اترجع المبلغ", "تم استرجاع المبلغ", "تم استرداد المبلغ",
+    "order confirmed", "order has been confirmed", "order is confirmed",
+    "order cancelled", "order canceled", "order has been cancelled",
+    "order shipped", "order has been shipped",
 ]
 
 _HALLUCINATION_FALLBACK = (

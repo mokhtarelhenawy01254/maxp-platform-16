@@ -398,10 +398,15 @@ class LLMClient:
             else:
                 extra_params["tool_choice"] = tool_choice if tool_choice is not None else "auto"
 
-        logger.info("openai_compat_request", model=self.model, messages=body_messages, extra_params=extra_params)
+        target_model = self.model
+        if (self.provider or "").upper() == "DEEPSEEK" or (self.base_url and "api.deepseek.com" in self.base_url):
+            if target_model.lower() not in ("deepseek-reasoner", "deepseek-r1"):
+                target_model = "deepseek-chat"
+
+        logger.info("openai_compat_request", model=target_model, messages=body_messages, extra_params=extra_params)
 
         response = await client.chat.completions.create(
-            model=self.model,
+            model=target_model,
             messages=body_messages,
             temperature=options.get("temperature"),
             max_tokens=options.get("max_tokens"),
@@ -679,6 +684,8 @@ class LLMClient:
         tc = options.get("thinking_config")
         if tc is not None:
             config_kwargs["thinking_config"] = types.ThinkingConfig(**tc) if isinstance(tc, dict) else tc
+        elif "gemini-2" in self.model.lower():
+            config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
         if system_instruction:
             config_kwargs["system_instruction"] = system_instruction
         if gemini_tools:
