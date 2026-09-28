@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copilot regression suite — بوابة انحدار للمساعد التنفيذي (store-manager-agent).
+"""Copilot regression suite — بوابة انحدار للمساعد التنفيذي (executive-assistant-agent).
 
 يقيس سلوك الوكيل من **جسم الاستجابة الكامل** (reply + toolCalls[].status/result)، مش من نص الرد.
 المرجع: نفس مجلد الملف → copilot_eval_cases.json
@@ -176,7 +176,7 @@ def main() -> int:
     ap.add_argument("--base-url", default=DEFAULT_BASE)
     ap.add_argument("--token", default=os.environ.get("MAXP_TOKEN", ""))
     ap.add_argument("--company", default=os.environ.get("MAXP_COMPANY_ID", ""))
-    ap.add_argument("--agent", default="store-manager-agent")
+    ap.add_argument("--agent", default="executive-assistant-agent")
     ap.add_argument("--case", default="", help="قائمة حالات مفصولة بفاصلة، مثال: H1,H2")
     ap.add_argument("--allow-writes", action="store_true")
     ap.add_argument("--json", default="")

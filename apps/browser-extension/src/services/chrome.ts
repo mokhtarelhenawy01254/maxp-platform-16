@@ -2,7 +2,7 @@ import { TabContext, ExtensionSettings, UserSession } from '../types/extension';
 
 const DEFAULT_SETTINGS: ExtensionSettings = {
   serverUrl: 'https://maxp.online',
-  selectedAgentSlug: 'store-manager-agent',
+  selectedAgentSlug: 'executive-assistant-agent',
   includeTabContextByDefault: true,
 };
 

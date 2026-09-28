@@ -3,7 +3,7 @@
     "suite": "maxp-copilot-evals",
     "version": "1.0",
     "owner": "QA (Hermes) — بوابة انحدار للمساعد التنفيذي",
-    "agent": "store-manager-agent (المساعد التنفيذي / MerchantCopilot)",
+    "agent": "executive-assistant-agent (ماكس — المساعد التنفيذي / MerchantCopilot)",
     "endpoint": "POST /api/v1/ai/chat/message",
     "default_tenant": "Swan",
     "rules": "قراءة/تشخيص على Swan. أي كتابة على Swan تحتاج موافقة صريحة لكل إجراء. الأدوات الخارجة (واتساب/بث) ممنوعة إلا بإذن صريح.",

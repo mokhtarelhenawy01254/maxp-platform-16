@@ -57,7 +57,7 @@ async function sendMessage(req, res) {
     });
 
     let result = null;
-    const targetAgentId = agentId || agentSlug || 'store-manager-agent';
+    const targetAgentId = agentId || agentSlug || 'executive-assistant-agent';
     const combinedMemoryContext = {
       ...(memoryContext || {}),
       ...(memory_context || {}),
@@ -164,7 +164,7 @@ async function sendMessage(req, res) {
         customerId: req.user?.id,
         errorType: error.code || 'AGENT_RUNTIME_FAILURE',
         errorMessage: error.message,
-        agentId: req.body?.agentId || req.body?.agentSlug || 'store-manager-agent',
+        agentId: req.body?.agentId || req.body?.agentSlug || 'executive-assistant-agent',
         userMessage: req.body?.message,
         stack: error.stack,
       }).catch(() => {});

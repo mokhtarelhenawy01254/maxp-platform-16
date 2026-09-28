@@ -167,7 +167,25 @@ async def get_template(slug: str, session: AsyncSession) -> AgentTemplate | None
     result = await session.execute(
         select(AgentTemplate).where(AgentTemplate.slug == slug)
     )
-    return result.scalar_one_or_none()
+    tmpl = result.scalar_one_or_none()
+    if tmpl:
+        return tmpl
+
+    # 2026 Resilient Fallback: If not yet seeded in DB, auto-discover directly from disk contract
+    disk_templates = _discover_templates()
+    match_data = next((d for d in disk_templates if d["slug"] == slug), None)
+    if match_data:
+        try:
+            tmpl = AgentTemplate(**match_data)
+            session.add(tmpl)
+            await session.commit()
+            logger.info("Auto-seeded template from disk on first access", slug=slug)
+            return tmpl
+        except Exception as e:
+            logger.warning("Failed to persist auto-seeded template to DB, returning in-memory instance", slug=slug, error=str(e))
+            return AgentTemplate(**match_data)
+
+    return None
 
 
 async def list_templates(session: AsyncSession, active_only: bool = False) -> list[AgentTemplate]:

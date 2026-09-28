@@ -25,20 +25,6 @@ export const SPECIALIST_AGENTS: SpecialistAgent[] = [
     ],
   },
   {
-    id: 'store-manager-agent',
-    slug: 'store-manager-agent',
-    name: 'كريم — مدير تشغيل المتجر',
-    role: 'STORE_MANAGER',
-    title: 'مدير تشغيل المتجر الإلكتروني',
-    description: 'إدارة المتجر والعمليات اليومية، متابعة المبيعات والمنتجات وربط الدفع والشحن.',
-    badge: 'مدير المتجر',
-    suggestedPrompts: [
-      'أعطني ملخصاً لحالة المتجر والمبيعات اليوم',
-      'ما هي النواقص أو المنتجات التي أوشكت على النفاد في المتجر؟',
-      'فحص إعدادات المتجر وطرق الدفع والشحن',
-    ],
-  },
-  {
     id: 'facebook-media-buyer-agent',
     slug: 'facebook-media-buyer-agent',
     name: 'الميديا باير المحترف',

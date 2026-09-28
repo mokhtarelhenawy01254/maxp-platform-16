@@ -4,16 +4,16 @@ import { chromeStorage } from './chrome';
 
 export const BUILTIN_AGENTS: ExtensionAgent[] = [
   {
-    id: 'store-manager-agent',
-    slug: 'store-manager-agent',
-    name: 'كريم — مدير تشغيل المتجر',
-    role: 'STORE_MANAGER',
-    badge: 'مدير المتجر',
-    description: 'متابعة العمليات اليومية، حالة الطلبات، والربط والمبيعات.',
+    id: 'executive-assistant-agent',
+    slug: 'executive-assistant-agent',
+    name: 'ماكس — المساعد التنفيذي',
+    role: 'EXECUTIVE_ASSISTANT',
+    badge: 'المساعد التنفيذي',
+    description: 'المتابعة التنفيذية الشاملة، مؤشرات الأداء، الأوردرات والمخزون، وتفويض المهام.',
     suggestedPrompts: [
-      'ما هي حالة الطلبات المعلقة اليوم؟',
-      'فحص نواقص المخزون والمنتجات التي أوشكت على النفاد',
-      'ما هي إعدادات الشحن وطرق الدفع الحالية؟',
+      'أعطني ملخصاً تنفيذياً لحالة البيزنس والمبيعات اليوم',
+      'ما هي أهم النواقص أو العمليات المعلقة التي تحتاج تدخلاً فوري؟',
+      'فحص إعدادات المتجر وأدوات التحويل وطرق الدفع والشحن',
     ],
   },
   {
