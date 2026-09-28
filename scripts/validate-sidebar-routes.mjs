@@ -67,7 +67,24 @@ function checkRoute(toPath) {
     }
   }
 
-  // 3. Match against specific parameterized routes (excluding generic wildcards like /* and /settings/*)
+  // 3. Check dedicated sub-app wildcards (micro-frontends/nested routers)
+  const SUB_APP_ROUTERS = [
+    '/merchant-portal',
+    '/admin/booking',
+    '/lab',
+    '/radiology',
+    '/dental-lab',
+    '/dental-portal',
+    '/admin/education',
+    '/admin/hotel',
+  ];
+  for (const prefix of SUB_APP_ROUTERS) {
+    if (cleanPath === prefix || cleanPath.startsWith(prefix + '/')) {
+      return { ok: true, type: `sub-app (${prefix}/*)` };
+    }
+  }
+
+  // 4. Match against specific parameterized routes (excluding generic wildcards like /* and /settings/*)
   for (const r of appRoutesSet) {
     if (r === '/settings/:tab' || r.endsWith('/*') || r === '*') continue;
     if (r.includes(':')) {
