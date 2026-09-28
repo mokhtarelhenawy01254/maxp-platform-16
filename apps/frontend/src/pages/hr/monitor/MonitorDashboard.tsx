@@ -35,7 +35,14 @@ export interface TeamMemberSummary {
   status: 'active' | 'idle' | 'offline';
   totalActiveSeconds: number;
   totalIdleSeconds: number;
+  totalProductiveSeconds?: number;
+  totalUnproductiveSeconds?: number;
   productivityScore: number;
+  activityRatio?: number;
+  lateStartSeconds?: number;
+  lateStartMinutes?: number;
+  weeklyAvgLateStartMinutes?: number;
+  totalClockSeconds?: number;
   lastHeartbeat?: string;
   firstActivityTime?: string;
   lastSeenTime?: string;
@@ -47,6 +54,15 @@ export interface TeamMemberSummary {
   topApp?: string;
   completedTasksCount?: number;
   createdTasksCount?: number;
+  openTasksCount?: number;
+  overdueTasksCount?: number;
+  tasksPerHour?: number;
+  operationalSignal?: {
+    type: 'TASK_OVERLOAD' | 'DISTRACTION' | 'NEGLECT' | 'OFF_DEVICE_WORK' | 'NORMAL';
+    label: string;
+    severity: 'info' | 'warning' | 'critical';
+    reason: string;
+  } | null;
   elapsedAttendanceSeconds?: number;
   untrackedSeconds?: number;
   hasMissingClockOut?: boolean;
@@ -60,7 +76,7 @@ export interface TeamMemberSummary {
   } | null;
 }
 
-type SortField = 'employeeName' | 'totalActiveSeconds' | 'totalIdleSeconds' | 'productivityScore' | 'completedTasksCount';
+type SortField = 'employeeName' | 'totalActiveSeconds' | 'totalIdleSeconds' | 'productivityScore' | 'completedTasksCount' | 'lateStartMinutes' | 'activityRatio' | 'tasksPerHour';
 
 export const MonitorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -80,6 +96,9 @@ export const MonitorDashboard: React.FC = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMemberSummary[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
 
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [dismissedAlertIds, setDismissedAlertIds] = useState<Set<string>>(new Set());
+
   const [archiving, setArchiving] = useState(false);
   const [archiveSuccess, setArchiveSuccess] = useState<string | null>(null);
 
@@ -90,6 +109,8 @@ export const MonitorDashboard: React.FC = () => {
     totalHoursTracked: 0,
     totalTasksCompleted: 0,
     totalTasksCreated: 0,
+    avgWarmupMinutes: 0,
+    avgActivityRatio: 0,
   });
 
   const handleDateStep = (daysOffset: number) => {
@@ -114,6 +135,24 @@ export const MonitorDashboard: React.FC = () => {
     }
   };
 
+  const fetchAlerts = useCallback(async () => {
+    if (!isManagerOrHR) return;
+    try {
+      const res: any = await api.get('/employee-monitor/alerts');
+      const list = res?.data?.data || [];
+      setAlerts(list.filter((a: any) => !a.isRead));
+    } catch {
+      // Non-blocking
+    }
+  }, [isManagerOrHR]);
+
+  const handleDismissAlert = async (alertId: string) => {
+    setDismissedAlertIds((prev) => new Set(prev).add(alertId));
+    try {
+      await api.put(`/employee-monitor/alerts/${alertId}/read`);
+    } catch {}
+  };
+
   const fetchData = useCallback(async () => {
     if (!isManagerOrHR) {
       setLoading(false);
@@ -129,6 +168,10 @@ export const MonitorDashboard: React.FC = () => {
       let activeCount = 0;
       let totalTasks = 0;
       let totalCreated = 0;
+      let totalWarmup = 0;
+      let warmupCount = 0;
+      let totalRatio = 0;
+      let ratioCount = 0;
 
       // Deduplicate on client to prevent repeated employee cards
       const seen = new Set<string>();
@@ -153,6 +196,17 @@ export const MonitorDashboard: React.FC = () => {
           activeProdCount++;
         }
 
+        const lateStartSec = item.lateStartSeconds ?? 0;
+        const lateStartMin = item.lateStartMinutes ?? Math.round(lateStartSec / 60);
+        if (lateStartMin > 0) {
+          totalWarmup += lateStartMin;
+          warmupCount++;
+        }
+        if (typeof item.activityRatio === 'number') {
+          totalRatio += item.activityRatio;
+          ratioCount++;
+        }
+
         formatted.push({
           employeeId: item.employeeId,
           employeeName: empName,
@@ -161,7 +215,18 @@ export const MonitorDashboard: React.FC = () => {
           status: item.status || 'offline',
           totalActiveSeconds: item.totalActiveSeconds || 0,
           totalIdleSeconds: item.totalIdleSeconds || 0,
+          totalProductiveSeconds: item.totalProductiveSeconds || 0,
+          totalUnproductiveSeconds: item.totalUnproductiveSeconds || 0,
           productivityScore: Math.round(item.productivityScore || 0),
+          activityRatio: typeof item.activityRatio === 'number' ? item.activityRatio : undefined,
+          lateStartSeconds: lateStartSec,
+          lateStartMinutes: lateStartMin,
+          weeklyAvgLateStartMinutes: item.weeklyAvgLateStartMinutes ?? lateStartMin,
+          totalClockSeconds: item.totalClockSeconds ?? item.elapsedAttendanceSeconds ?? 0,
+          openTasksCount: item.openTasksCount || 0,
+          overdueTasksCount: item.overdueTasksCount || 0,
+          tasksPerHour: typeof item.tasksPerHour === 'number' ? item.tasksPerHour : 0,
+          operationalSignal: item.operationalSignal || null,
           lastHeartbeat: item.lastActivityTime,
           firstActivityTime: item.firstActivityTime,
           lastSeenTime: item.lastSeenTime,
@@ -188,6 +253,8 @@ export const MonitorDashboard: React.FC = () => {
         totalHoursTracked: Math.round((totalActiveSec / 3600) * 10) / 10,
         totalTasksCompleted: totalTasks,
         totalTasksCreated: totalCreated,
+        avgWarmupMinutes: warmupCount > 0 ? Math.round(totalWarmup / warmupCount) : 0,
+        avgActivityRatio: ratioCount > 0 ? Math.round(totalRatio / ratioCount) : 0,
       });
     } catch (err) {
       console.warn('[MonitorDashboard] Fetch error:', err);
@@ -198,9 +265,13 @@ export const MonitorDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 45_000); // 45s live refresh
+    fetchAlerts();
+    const interval = setInterval(() => {
+      fetchData();
+      fetchAlerts();
+    }, 45_000); // 45s live refresh
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, fetchAlerts]);
 
   const handleTriggerArchive = async () => {
     setArchiving(true);
@@ -407,12 +478,42 @@ export const MonitorDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 4 Bento Operational KPIs */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* Live Operational Alerts Banner */}
+      {alerts.filter((a) => !dismissedAlertIds.has(a.id)).length > 0 && (
+        <div className="space-y-2">
+          {alerts
+            .filter((a) => !dismissedAlertIds.has(a.id))
+            .slice(0, 3)
+            .map((al) => (
+              <div
+                key={al.id}
+                className={`flex items-center justify-between gap-3 rounded-xl border p-3 text-xs shadow-xs transition ${
+                  al.severity === 'critical'
+                    ? 'border-rose-500/40 bg-rose-500/10 text-rose-800 dark:text-rose-300'
+                    : 'border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+                  <span className="font-semibold truncate">{al.message}</span>
+                </div>
+                <button
+                  onClick={() => handleDismissAlert(al.id)}
+                  className="shrink-0 rounded-md border border-border/40 bg-background/80 px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted active:scale-95"
+                >
+                  تمت المراجعة
+                </button>
+              </div>
+            ))}
+        </div>
+      )}
+
+      {/* 6 Bento Operational KPIs */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         {/* KPI 1 */}
-        <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
+        <div className="rounded-xl border border-border/40 bg-card/60 p-3 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>الموظفون الموثقون اليوم</span>
+            <span>الموثقون اليوم</span>
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 ring-1 ring-sky-500/20">
               <Users className="h-3.5 w-3.5" />
             </span>
@@ -420,15 +521,15 @@ export const MonitorDashboard: React.FC = () => {
           <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
             {stats.totalTracked}
           </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">
-            إجمالي الأجهزة التي أرسلت بيانات
+          <div className="mt-1 text-[11px] text-muted-foreground truncate">
+            أجهزة أرسلت بيانات
           </div>
         </div>
 
         {/* KPI 2 */}
-        <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
+        <div className="rounded-xl border border-border/40 bg-card/60 p-3 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>نشط ومتصل حالياً</span>
+            <span>نشط ومتصل الآن</span>
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20">
               <Activity className="h-3.5 w-3.5" />
             </span>
@@ -436,40 +537,82 @@ export const MonitorDashboard: React.FC = () => {
           <div className="mt-2 text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
             {stats.activeNow}
           </div>
-          <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-            تفاعل مباشر خلال آخر 15 دقيقة
+          <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 truncate">
+            تفاعل خلال 15 دقيقة
           </div>
         </div>
 
-        {/* KPI 3 */}
-        <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
+        {/* KPI 3: Warmup Time */}
+        <div className="rounded-xl border border-border/40 bg-card/60 p-3 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>متوسط الإنتاجية اليومية</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 ring-1 ring-purple-500/20">
-              <TrendingUp className="h-3.5 w-3.5" />
-            </span>
-          </div>
-          <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
-            {stats.avgProductivity}%
-          </div>
-          <div className="mt-1 text-[11px] text-purple-600 dark:text-purple-400">
-            مؤشر كفاءة الأعضاء المتفاعلين فعلياً
-          </div>
-        </div>
-
-        {/* KPI 4 */}
-        <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>إجمالي ساعات العمل</span>
+            <span>متوسط وقت التسخين</span>
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/20">
               <Clock className="h-3.5 w-3.5" />
             </span>
           </div>
           <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
-            {stats.totalHoursTracked} ساعة
+            <span
+              className={
+                stats.avgWarmupMinutes <= 15
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : stats.avgWarmupMinutes < 30
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-rose-600 dark:text-rose-400'
+              }
+            >
+              {stats.avgWarmupMinutes} د
+            </span>
           </div>
-          <div className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
-            مجموع الساعات الموثقة للفريق
+          <div className="mt-1 text-[11px] text-muted-foreground truncate">
+            بين البصمة وأول نشاط للجهاز
+          </div>
+        </div>
+
+        {/* KPI 4: Active Ratio */}
+        <div className="rounded-xl border border-border/40 bg-card/60 p-3 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>نسبة النشاط الفعلي</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/20">
+              <TrendingUp className="h-3.5 w-3.5" />
+            </span>
+          </div>
+          <div className="mt-2 text-xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
+            {stats.avgActivityRatio}%
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground truncate">
+            من إجمالي ساعات الدوام
+          </div>
+        </div>
+
+        {/* KPI 5: Productivity Score */}
+        <div className="rounded-xl border border-border/40 bg-card/60 p-3 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>متوسط الإنتاجية</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 ring-1 ring-purple-500/20">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            </span>
+          </div>
+          <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
+            {stats.avgProductivity}%
+          </div>
+          <div className="mt-1 text-[11px] text-purple-600 dark:text-purple-400 truncate">
+            معدل متوازن (نشاط + مهام)
+          </div>
+        </div>
+
+        {/* KPI 6: Tasks and Hours */}
+        <div className="rounded-xl border border-border/40 bg-card/60 p-3 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>المهام وساعات العمل</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 ring-1 ring-sky-500/20">
+              <Laptop className="h-3.5 w-3.5" />
+            </span>
+          </div>
+          <div className="mt-2 text-lg font-bold text-foreground tabular-nums truncate">
+            {stats.totalTasksCompleted} م • {stats.totalHoursTracked} س
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground truncate">
+            مجموع مخرجات وساعات الفريق
           </div>
         </div>
       </div>
@@ -572,14 +715,22 @@ export const MonitorDashboard: React.FC = () => {
                         {renderSortIcon('employeeName')}
                       </div>
                     </th>
-                    <th className="px-4 py-3 font-semibold">الحالة اللحظية</th>
-                    <th className="px-4 py-3 font-semibold">البصمة وأول نشاط للجهاز</th>
+                    <th className="px-4 py-3 font-semibold">الحالة والتشخيص</th>
+                    <th
+                      onClick={() => handleSort('lateStartMinutes')}
+                      className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>البصمة ووقت التسخين</span>
+                        {renderSortIcon('lateStartMinutes')}
+                      </div>
+                    </th>
                     <th
                       onClick={() => handleSort('totalActiveSeconds')}
                       className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
                     >
                       <div className="flex items-center gap-1.5">
-                        <span>وقت العمل الفعلي</span>
+                        <span>العمل الفعلي ونسبة النشاط</span>
                         {renderSortIcon('totalActiveSeconds')}
                       </div>
                     </th>
@@ -588,7 +739,7 @@ export const MonitorDashboard: React.FC = () => {
                       className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
                     >
                       <div className="flex items-center gap-1.5">
-                        <span>وقت التوقف / الاستراحة</span>
+                        <span>التوقف / الخمول</span>
                         {renderSortIcon('totalIdleSeconds')}
                       </div>
                     </th>
@@ -597,7 +748,7 @@ export const MonitorDashboard: React.FC = () => {
                       className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
                     >
                       <div className="flex items-center gap-1.5">
-                        <span>معدل الإنتاجية</span>
+                        <span>الإنتاجية ومعدل المهام</span>
                         {renderSortIcon('productivityScore')}
                       </div>
                     </th>
@@ -606,7 +757,7 @@ export const MonitorDashboard: React.FC = () => {
                       className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
                     >
                       <div className="flex items-center gap-1.5">
-                        <span>المهام (إنجاز / تكليف)</span>
+                        <span>المهام (منجزة / متبقية)</span>
                         {renderSortIcon('completedTasksCount')}
                       </div>
                     </th>
@@ -618,7 +769,6 @@ export const MonitorDashboard: React.FC = () => {
                   {sortedMembers.map((m) => {
                     const inTimeStr = formatClockTime(m.clockInTime);
                     const firstActStr = formatClockTime(m.firstActivityTime);
-                    const deltaMin = getAttendanceActivityDelta(m.clockInTime, m.firstActivityTime);
                     const methodLabel = m.checkInMethod === 'fingerprint' || m.checkInMethod === 'biometric'
                       ? 'بصمة'
                       : m.checkInMethod === 'mobile'
@@ -626,6 +776,9 @@ export const MonitorDashboard: React.FC = () => {
                       : m.checkInMethod === 'web'
                       ? 'ويب'
                       : m.checkInMethod || 'نظام';
+
+                    const warmupMin = m.lateStartMinutes ?? 0;
+                    const weeklyAvg = m.weeklyAvgLateStartMinutes ?? warmupMin;
 
                     return (
                       <tr
@@ -642,38 +795,60 @@ export const MonitorDashboard: React.FC = () => {
                           </div>
                         </td>
 
-                        {/* Status */}
+                        {/* Status + Operational Signal Badge */}
                         <td className="px-4 py-3">
-                          {m.status === 'active' && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
-                              <CheckCircle2 className="h-3 w-3" /> نشط الآن
-                            </span>
-                          )}
-                          {m.status === 'idle' && (
-                            <div className="space-y-0.5">
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 ring-1 ring-inset ring-amber-500/20">
-                                <PauseCircle className="h-3 w-3" /> خامل (الجهاز مفتوح)
+                          <div className="space-y-1">
+                            {m.status === 'active' && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                                <CheckCircle2 className="h-3 w-3" /> نشط الآن
                               </span>
-                              {m.deviceName && (
-                                <div className="text-[10px] text-muted-foreground">{m.deviceName}</div>
-                              )}
-                            </div>
-                          )}
-                          {m.status === 'offline' && (
-                            <div className="space-y-0.5">
-                              <span className="inline-flex items-center gap-1 rounded-full bg-muted dark:bg-zinc-800/80 px-2 py-0.5 text-[11px] font-medium text-muted-foreground dark:text-zinc-400 ring-1 ring-inset ring-border/20">
-                                <XCircle className="h-3 w-3" /> غير متصل (مغلق)
-                              </span>
-                              {m.lastSeenTime && (
-                                <div className="text-[10px] text-muted-foreground tabular-nums">
-                                  آخر اتصال: {formatClockTime(m.lastSeenTime)}
-                                </div>
-                              )}
-                            </div>
-                          )}
+                            )}
+                            {m.status === 'idle' && (
+                              <div className="space-y-0.5">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 ring-1 ring-inset ring-amber-500/20">
+                                  <PauseCircle className="h-3 w-3" /> خامل (مفتوح)
+                                </span>
+                                {m.deviceName && (
+                                  <div className="text-[10px] text-muted-foreground">{m.deviceName}</div>
+                                )}
+                              </div>
+                            )}
+                            {m.status === 'offline' && (
+                              <div className="space-y-0.5">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-muted dark:bg-zinc-800/80 px-2 py-0.5 text-[11px] font-medium text-muted-foreground dark:text-zinc-400 ring-1 ring-inset ring-border/20">
+                                  <XCircle className="h-3 w-3" /> غير متصل
+                                </span>
+                                {m.lastSeenTime && (
+                                  <div className="text-[10px] text-muted-foreground tabular-nums">
+                                    آخر اتصال: {formatClockTime(m.lastSeenTime)}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Operational Signal */}
+                            {m.operationalSignal && m.operationalSignal.type !== 'NORMAL' && (
+                              <div>
+                                <span
+                                  className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                                    m.operationalSignal.type === 'TASK_OVERLOAD'
+                                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:border-transparent dark:bg-indigo-500/15 dark:text-indigo-300'
+                                      : m.operationalSignal.type === 'DISTRACTION'
+                                      ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:border-transparent dark:bg-amber-500/15 dark:text-amber-300'
+                                      : m.operationalSignal.type === 'NEGLECT'
+                                      ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:border-transparent dark:bg-rose-500/15 dark:text-rose-300'
+                                      : 'bg-sky-50 text-sky-700 border border-sky-200 dark:border-transparent dark:bg-sky-500/15 dark:text-sky-300'
+                                  }`}
+                                  title={m.operationalSignal.reason}
+                                >
+                                  {m.operationalSignal.label}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </td>
 
-                        {/* Attendance, Elapsed & First Activity Time */}
+                        {/* Attendance, Elapsed & Warmup Time */}
                         <td className="px-4 py-3">
                           <div className="space-y-1 text-[11px]">
                             <div className="flex items-center gap-1.5 tabular-nums">
@@ -686,17 +861,6 @@ export const MonitorDashboard: React.FC = () => {
                                 <span className="text-rose-600 dark:text-rose-400/80 font-medium">لم يسجل حضوراً</span>
                               )}
                             </div>
-                            {m.elapsedAttendanceSeconds && m.elapsedAttendanceSeconds > 0 ? (
-                              <div className="flex items-center gap-1.5 tabular-nums text-muted-foreground">
-                                <span className="text-muted-foreground">الدوام المنقضي:</span>
-                                <span className="font-medium text-foreground">{formatSeconds(m.elapsedAttendanceSeconds)}</span>
-                                {m.hasMissingClockOut && (
-                                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-normal" title="الموظف لم يسجل بصمة انصراف، فتم تقييد الدوام بحد أقصى ساعات الشفت المقدرة (9 ساعات)">
-                                    (لم ينصرف • شفت 9س)
-                                  </span>
-                                )}
-                              </div>
-                            ) : null}
                             <div className="flex items-center gap-1.5 tabular-nums">
                               <span className="text-muted-foreground">أول نشاط:</span>
                               {firstActStr ? (
@@ -707,41 +871,62 @@ export const MonitorDashboard: React.FC = () => {
                                 <span className="text-muted-foreground font-normal">لا توجد حركة مسجلة</span>
                               )}
                             </div>
-                            {deltaMin !== null && (
-                              <div className="pt-0.5">
-                                {deltaMin > 15 ? (
-                                  <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:border-transparent dark:bg-amber-500/15 dark:text-amber-400">
-                                    تأخر نشاط: +{deltaMin} د
-                                  </span>
-                                ) : deltaMin >= -5 && deltaMin <= 15 ? (
-                                  <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:border-transparent dark:bg-emerald-500/15 dark:text-emerald-400">
-                                    نشاط فوري (متطابق)
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[10px] font-medium bg-sky-50 text-sky-700 border border-sky-200 dark:border-transparent dark:bg-sky-500/15 dark:text-sky-400">
-                                    بدأ قبل البصمة ({Math.abs(deltaMin)} د)
-                                  </span>
+
+                            {/* Warmup Time Chip + Weekly Avg */}
+                            {m.clockInTime && (
+                              <div className="pt-0.5 space-y-0.5">
+                                <span
+                                  className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                                    warmupMin <= 15
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:border-transparent dark:bg-emerald-500/15 dark:text-emerald-400'
+                                      : warmupMin < 30
+                                      ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:border-transparent dark:bg-amber-500/15 dark:text-amber-400'
+                                      : 'bg-rose-50 text-rose-700 border border-rose-200 dark:border-transparent dark:bg-rose-500/15 dark:text-rose-400'
+                                  }`}
+                                  title={`الفارق بين البصمة وبداية استخدام الجهاز: ${warmupMin} دقيقة`}
+                                >
+                                  {warmupMin <= 0 ? 'تسخين فوري (0 د)' : `وقت تسخين: ${warmupMin} د`}
+                                </span>
+                                {weeklyAvg > 0 && (
+                                  <div className="text-[10px] text-muted-foreground tabular-nums">
+                                    متوسط 7 أيام: {weeklyAvg} د
+                                  </div>
                                 )}
                               </div>
                             )}
+
                             {/* Untracked Gap Alert */}
                             {m.untrackedSeconds && m.untrackedSeconds >= 15 * 60 ? (
                               <div className="pt-0.5">
                                 <span
                                   className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200 dark:border-transparent dark:bg-rose-500/15 dark:text-rose-400"
-                                  title="الموظف سجل حضوراً بالبصمة لكن الجهاز كان مغلقاً أو في وضع السكون أو التتبع متوقف طوال هذه المدة"
+                                  title="الموظف سجل حضوراً بالبصمة لكن الجهاز كان متوقفاً أو خارج نطاق العمل"
                                 >
                                   <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
-                                  <span>غير موثق: {formatSeconds(m.untrackedSeconds)} (خارج الجهاز)</span>
+                                  <span>غير موثق: {formatSeconds(m.untrackedSeconds)}</span>
                                 </span>
                               </div>
                             ) : null}
                           </div>
                         </td>
 
-                        {/* Active Time */}
-                        <td className="px-4 py-3 font-medium text-foreground tabular-nums">
-                          {formatSeconds(m.totalActiveSeconds)}
+                        {/* Active Time + Activity Ratio */}
+                        <td className="px-4 py-3 tabular-nums">
+                          <div className="space-y-0.5">
+                            <div className="font-semibold text-foreground">
+                              {formatSeconds(m.totalActiveSeconds)}
+                            </div>
+                            {typeof m.activityRatio === 'number' && (
+                              <div className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">
+                                نسبة النشاط: {m.activityRatio}%
+                              </div>
+                            )}
+                            {m.totalClockSeconds && m.totalClockSeconds > 0 ? (
+                              <div className="text-[10px] text-muted-foreground">
+                                من دوام {formatSeconds(m.totalClockSeconds)}
+                              </div>
+                            ) : null}
+                          </div>
                         </td>
 
                         {/* Idle Time */}
@@ -749,28 +934,35 @@ export const MonitorDashboard: React.FC = () => {
                           {formatSeconds(m.totalIdleSeconds)}
                         </td>
 
-                        {/* Productivity Score Bar */}
+                        {/* Productivity Score + Tasks Per Hour */}
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-800">
-                              <div
-                                className={`h-full rounded-full ${
-                                  m.productivityScore >= 75
-                                    ? 'bg-emerald-500'
-                                    : m.productivityScore >= 50
-                                    ? 'bg-sky-500'
-                                    : 'bg-amber-500'
-                                }`}
-                                style={{ width: `${Math.min(100, m.productivityScore)}%` }}
-                              />
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-800">
+                                <div
+                                  className={`h-full rounded-full ${
+                                    m.productivityScore >= 75
+                                      ? 'bg-emerald-500'
+                                      : m.productivityScore >= 50
+                                      ? 'bg-sky-500'
+                                      : 'bg-amber-500'
+                                  }`}
+                                  style={{ width: `${Math.min(100, m.productivityScore)}%` }}
+                                />
+                              </div>
+                              <span className="font-semibold text-foreground tabular-nums">
+                                {m.productivityScore}%
+                              </span>
                             </div>
-                            <span className="font-semibold text-foreground tabular-nums">
-                              {m.productivityScore}%
-                            </span>
+                            {m.tasksPerHour !== undefined && m.tasksPerHour > 0 && (
+                              <div className="text-[10px] font-medium text-purple-600 dark:text-purple-400 tabular-nums">
+                                {m.tasksPerHour} مهمة/ساعة
+                              </div>
+                            )}
                           </div>
                         </td>
 
-                        {/* Completed & Created Tasks */}
+                        {/* Tasks Partition */}
                         <td className="px-4 py-3 tabular-nums">
                           <div className="flex flex-col gap-1">
                             {m.activeTask && (
@@ -786,10 +978,20 @@ export const MonitorDashboard: React.FC = () => {
                               <CheckCircle2 className="h-3 w-3 shrink-0" />
                               <span>{m.completedTasksCount || 0} منجزة</span>
                             </span>
+                            {m.openTasksCount !== undefined && m.openTasksCount > 0 && (
+                              <span className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400">
+                                {m.openTasksCount} قيد التنفيذ
+                              </span>
+                            )}
+                            {m.overdueTasksCount !== undefined && m.overdueTasksCount > 0 && (
+                              <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                                {m.overdueTasksCount} متأخرة
+                              </span>
+                            )}
                             {(m.createdTasksCount || 0) > 0 && (
                               <span
                                 className="inline-flex items-center gap-1 text-[10px] font-medium text-sky-600 dark:text-sky-400"
-                                title="مهام قام الموظف بإنشائها وتكليفها اليوم"
+                                title="مهام تم إنشاؤها وتكليفها اليوم"
                               >
                                 <ListTodo className="h-2.5 w-2.5 shrink-0" />
                                 <span>{m.createdTasksCount} منشأة</span>
@@ -831,7 +1033,8 @@ export const MonitorDashboard: React.FC = () => {
               {sortedMembers.map((m) => {
                 const inTimeStr = formatClockTime(m.clockInTime);
                 const firstActStr = formatClockTime(m.firstActivityTime);
-                const deltaMin = getAttendanceActivityDelta(m.clockInTime, m.firstActivityTime);
+                const warmupMin = m.lateStartMinutes ?? 0;
+                const weeklyAvg = m.weeklyAvgLateStartMinutes ?? warmupMin;
                 const methodLabel = m.checkInMethod === 'fingerprint' || m.checkInMethod === 'biometric'
                   ? 'بصمة'
                   : m.checkInMethod === 'mobile'
@@ -848,7 +1051,7 @@ export const MonitorDashboard: React.FC = () => {
                         <div className="text-xs text-muted-foreground">{m.departmentName} • {m.jobTitle}</div>
                       </div>
                       {/* Status */}
-                      <div className="text-left">
+                      <div className="text-left space-y-1">
                         {m.status === 'active' && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
                             <CheckCircle2 className="h-2.5 w-2.5" /> نشط الآن
@@ -871,6 +1074,13 @@ export const MonitorDashboard: React.FC = () => {
                             )}
                           </div>
                         )}
+                        {m.operationalSignal && m.operationalSignal.type !== 'NORMAL' && (
+                          <div>
+                            <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
+                              {m.operationalSignal.label}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -882,7 +1092,7 @@ export const MonitorDashboard: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Attendance & First Activity Time Strip */}
+                    {/* Attendance & Warmup Strip */}
                     <div className="rounded-lg border border-border/40 bg-muted/40 dark:bg-zinc-900/50 p-2 text-xs space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground text-[11px]">البصمة الرسمية:</span>
@@ -894,47 +1104,40 @@ export const MonitorDashboard: React.FC = () => {
                           )}
                         </span>
                       </div>
-                      {m.elapsedAttendanceSeconds && m.elapsedAttendanceSeconds > 0 ? (
-                        <div className="flex items-center justify-between text-muted-foreground">
-                          <span className="text-muted-foreground text-[11px]">الدوام المنقضي:</span>
-                          <span className="font-medium text-foreground tabular-nums">
-                            {formatSeconds(m.elapsedAttendanceSeconds)}
-                            {m.hasMissingClockOut && (
-                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-normal mr-1">
-                                (لم ينصرف • 9س)
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      ) : null}
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground text-[11px]">أول نشاط للجهاز:</span>
                         <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
                           {firstActStr || <span className="text-muted-foreground font-normal">لا توجد حركة مسجلة</span>}
                         </span>
                       </div>
-                      {deltaMin !== null && (
-                        <div className="pt-0.5 text-left">
-                          {deltaMin > 15 ? (
-                            <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 dark:border-transparent dark:text-amber-400 dark:bg-amber-500/10 px-1.5 py-0.5 rounded">
-                              تأخر نشاط: +{deltaMin} دقيقة
+                      {m.clockInTime && (
+                        <div className="flex items-center justify-between pt-0.5">
+                          <span className="text-muted-foreground text-[11px]">وقت التسخين:</span>
+                          <div className="flex items-center gap-1.5 tabular-nums">
+                            <span
+                              className={`rounded px-1.5 py-0.2 text-[10px] font-bold ${
+                                warmupMin <= 15
+                                  ? 'text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10'
+                                  : warmupMin < 30
+                                  ? 'text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10'
+                                  : 'text-rose-700 bg-rose-50 dark:text-rose-400 dark:bg-rose-500/15'
+                              }`}
+                            >
+                              {warmupMin <= 0 ? 'فوري (0 د)' : `${warmupMin} دقيقة`}
                             </span>
-                          ) : deltaMin >= -5 && deltaMin <= 15 ? (
-                            <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 dark:border-transparent dark:text-emerald-400 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                              نشاط فوري (متطابق)
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-sky-700 bg-sky-50 border border-sky-200 dark:border-transparent dark:text-sky-400 dark:bg-sky-500/10 px-1.5 py-0.5 rounded">
-                              بدأ قبل البصمة ({Math.abs(deltaMin)} د)
-                            </span>
-                          )}
+                            {weeklyAvg > 0 && (
+                              <span className="text-[10px] text-muted-foreground">
+                                (متوسط 7 أيام: {weeklyAvg} د)
+                              </span>
+                            )}
+                          </div>
                         </div>
                       )}
                       {m.untrackedSeconds && m.untrackedSeconds >= 15 * 60 ? (
                         <div className="pt-0.5 text-left">
                           <span className="inline-flex items-center gap-1 text-[10px] text-rose-700 bg-rose-50 border border-rose-200 dark:border-transparent dark:text-rose-400 dark:bg-rose-500/15 px-1.5 py-0.5 rounded">
                             <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
-                            غير موثق: {formatSeconds(m.untrackedSeconds)} (خارج الجهاز)
+                            غير موثق: {formatSeconds(m.untrackedSeconds)}
                           </span>
                         </div>
                       ) : null}
@@ -943,7 +1146,14 @@ export const MonitorDashboard: React.FC = () => {
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="rounded bg-muted/50 dark:bg-zinc-900/60 p-2">
                         <span className="text-muted-foreground block text-[10px]">عمل فعلي:</span>
-                        <span className="font-semibold text-foreground tabular-nums">{formatSeconds(m.totalActiveSeconds)}</span>
+                        <div className="flex items-baseline justify-between">
+                          <span className="font-semibold text-foreground tabular-nums">{formatSeconds(m.totalActiveSeconds)}</span>
+                          {typeof m.activityRatio === 'number' && (
+                            <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                              {m.activityRatio}% نشاط
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="rounded bg-muted/50 dark:bg-zinc-900/60 p-2">
                         <span className="text-muted-foreground block text-[10px]">توقف وخمول:</span>
@@ -952,10 +1162,13 @@ export const MonitorDashboard: React.FC = () => {
                     </div>
 
                     <div className="flex items-center justify-between text-xs pt-1">
-                      <div className="flex items-center gap-2 tabular-nums">
+                      <div className="flex flex-wrap items-center gap-2 tabular-nums">
                         <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{m.completedTasksCount || 0} منجزة</span>
-                        {(m.createdTasksCount || 0) > 0 && (
-                          <span className="text-sky-600 dark:text-sky-400 font-medium text-[11px]">({m.createdTasksCount} منشأة)</span>
+                        {m.overdueTasksCount !== undefined && m.overdueTasksCount > 0 && (
+                          <span className="text-rose-600 dark:text-rose-400 font-bold text-[10px]">({m.overdueTasksCount} متأخرة)</span>
+                        )}
+                        {m.tasksPerHour !== undefined && m.tasksPerHour > 0 && (
+                          <span className="text-purple-600 dark:text-purple-400 text-[10px] font-medium">({m.tasksPerHour} م/س)</span>
                         )}
                         <span className="text-sky-600 dark:text-sky-400 font-semibold">{m.productivityScore}% إنتاجية</span>
                       </div>
