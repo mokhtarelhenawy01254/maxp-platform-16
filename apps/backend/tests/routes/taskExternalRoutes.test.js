@@ -344,19 +344,19 @@ test('2) Acceptance Criterion 2: Updating title, priority, dueDate, estimatedHou
   assert.strictEqual(getRes.body.data.assignedTo, secondAssignee.id);
 });
 
-test('3) Acceptance Criterion 3: Key without tasks:update scope returns 403', async () => {
+test('3) Acceptance Criterion 3: Key without tasks:write scope returns 403', async () => {
   resetTestState();
 
   const response = await request(app)
     .patch('/api/v1/external/tasks/task-comp1-1')
-    .set('x-api-key', keyPairNoUpdate.rawKey)
+    .set('x-api-key', keyPairReadOnly.rawKey)
     .send({
-      title: 'Attempt without update scope'
+      title: 'Attempt without write scope'
     });
 
   assert.strictEqual(response.statusCode, 403);
   assert.strictEqual(response.body.success, false);
-  assert.match(response.body.message, /tasks:update/);
+  assert.match(response.body.message, /tasks:write/);
 });
 
 test('4) Acceptance Criterion 4: Task from another company with the same key returns 404', async () => {
