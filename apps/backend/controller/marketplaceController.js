@@ -1106,23 +1106,27 @@ exports.getAppDetails = async (req, res) => {
               return await getSharedPrismaClient().companyApp.findFirst({
                 where: {
                   companyId: req.user.companyId,
-                  appId: dbApp.id,
-                  status: { in: ACTIVE_STATUSES }
+                  appId: dbApp.id
                 },
                 select: {
                   activePricingModel: true,
                   status: true,
-                  trialEndsAt: true
+                  trialEndsAt: true,
+                  validUntil: true
                 }
               });
             });
 
             if (installation) {
               const isTrialExpired = installation.status === 'TRIAL' && installation.trialEndsAt && new Date(installation.trialEndsAt) < new Date();
-              if (!isTrialExpired) {
+              const isSubExpired = installation.validUntil && new Date(installation.validUntil) < new Date();
+              const isExpired = isTrialExpired || isSubExpired || installation.status === 'EXPIRED' || installation.status === 'CANCELLED';
+              if (ACTIVE_STATUSES.includes(installation.status) && !isExpired) {
                 isInstalled = true;
                 activePricingModel = installation.activePricingModel || null;
               }
+              app.installedApp = installation;
+              app.isExpired = Boolean(isExpired);
             }
           }
         }
@@ -1182,21 +1186,31 @@ exports.getAppDetails = async (req, res) => {
     // Check installation status if authenticated
     let isInstalled = false;
     let activePricingModel = null;
+    let isExpired = false;
+    let installedApp = null;
 
     if (req.user && req.user.companyId) {
       const installation = await executeWithRetry(async () => {
         return await getSharedPrismaClient().companyApp.findFirst({
           where: {
             companyId: req.user.companyId,
-            appId: app.id,
-            status: { in: ACTIVE_STATUSES }
+            appId: app.id
+          },
+          select: {
+            activePricingModel: true,
+            status: true,
+            trialEndsAt: true,
+            validUntil: true
           }
         });
       });
 
       if (installation) {
+        installedApp = installation;
         const isTrialExpired = installation.status === 'TRIAL' && installation.trialEndsAt && new Date(installation.trialEndsAt) < new Date();
-        if (!isTrialExpired) {
+        const isSubExpired = installation.validUntil && new Date(installation.validUntil) < new Date();
+        isExpired = Boolean(isTrialExpired || isSubExpired || installation.status === 'EXPIRED' || installation.status === 'CANCELLED');
+        if (ACTIVE_STATUSES.includes(installation.status) && !isExpired) {
           isInstalled = true;
           activePricingModel = installation.activePricingModel;
         }
@@ -1208,7 +1222,9 @@ exports.getAppDetails = async (req, res) => {
       data: normalizeMarketplaceAppForApi({
         ...appWithCatalogFeatures,
         isInstalled,
-        activePricingModel
+        activePricingModel,
+        isExpired,
+        installedApp
       })
     });
   } catch (error) {

@@ -682,10 +682,11 @@ export const storefrontApi = {
 
   kashierCheckout: async (payload: Record<string, unknown>) => {
     const { headers } = buildStorefrontRequestContext();
+    headers.set("Content-Type", "application/json");
     const url = buildUrl(getApiBase(), "/payment/kashier/checkout");
     const response = await fetch(url, {
       method: "POST",
-      headers: { ...headers, "Content-Type": "application/json" },
+      headers,
       credentials: "include",
       body: JSON.stringify(payload),
     });

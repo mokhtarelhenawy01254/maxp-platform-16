@@ -87,6 +87,24 @@ export default function AppDetails() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanOption>("PAY_PER_USE");
 
+  const isAccessDenied = Boolean(location.state?.accessDenied);
+  const isExpired =
+    isAccessDenied ||
+    Boolean((app as any)?.isExpired) ||
+    (app as any)?.installedApp?.status === "EXPIRED" ||
+    (app as any)?.installedApp?.status === "CANCELLED" ||
+    ((app as any)?.installedApp?.status === "TRIAL" &&
+      (app as any)?.installedApp?.trialEndsAt &&
+      new Date((app as any).installedApp.trialEndsAt) < new Date());
+
+  useEffect(() => {
+    if (location.state?.accessDenied) {
+      toast.error(
+        `عذراً، يتطلب الوصول إلى هذا القسم اشتراكاً سارياً في تطبيق «${location.state?.appName || app?.name || "التطبيق"}». يرجى تجديد أو تفعيل الاشتراك للمتابعة.`
+      );
+    }
+  }, [location.state, app?.name]);
+
   useEffect(() => { if (slug) fetchAppDetails(); }, [slug]);
 
   useEffect(() => {
@@ -552,6 +570,18 @@ export default function AppDetails() {
                   </>
                 ) : (
                   <>
+                    {!isInstalled && isExpired && (
+                      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">
+                        <div className="flex items-center gap-1.5 font-bold mb-1">
+                          <AlertCircle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                          <span>اشتراكك منتهي — جدّدي للوصول</span>
+                        </div>
+                        <p className="text-[11px] text-amber-700/90 dark:text-amber-300/90 leading-relaxed">
+                          يتطلب هذا التطبيق اشتراكاً سارياً للوصول واستخدام جميع المميزات التشغيلية.
+                        </p>
+                      </div>
+                    )}
+
                     <Button
                       className="w-full gap-2 font-bold"
                       size="sm"
@@ -559,28 +589,10 @@ export default function AppDetails() {
                       onClick={() => handleInstall(selectedPlan)}
                     >
                       {installing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                      تفعيل {isFree ? "التطبيق" : `${planTitles[selectedPlan]} (${planPrices[selectedPlan]})`}
+                      {isExpired
+                        ? `تجديد الاشتراك (${planTitles[selectedPlan]} - ${planPrices[selectedPlan]})`
+                        : `تفعيل ${isFree ? "التطبيق" : `${planTitles[selectedPlan]} (${planPrices[selectedPlan]})`}`}
                     </Button>
-
-                    {(app.mainRoute || getAppDestination(app)) && (
-                      <Button
-                        variant="outline"
-                        className="w-full gap-2 text-xs font-semibold"
-                        size="sm"
-                        onClick={() => {
-                          const dest = app.mainRoute || getAppDestination(app);
-                          if (dest) {
-                            if (dest.startsWith("http://") || dest.startsWith("https://")) {
-                              window.location.href = dest;
-                            } else {
-                              navigate(dest);
-                            }
-                          }
-                        }}
-                      >
-                        <ExternalLink size={14} /> الانتقال إلى الصفحة مباشرة
-                      </Button>
-                    )}
                   </>
                 )}
               </div>

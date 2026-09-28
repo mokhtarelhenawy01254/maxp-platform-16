@@ -32,12 +32,34 @@ export function isInsufficientWalletBalance(error: any): boolean {
  */
 export function extractWalletBalanceError(error: any): WalletErrorDetails {
   const data = error?.response?.data || {};
+  let requiredAmount = data.requiredAmount !== undefined && data.requiredAmount !== null ? Number(data.requiredAmount) : null;
+  let currentBalance = data.currentBalance !== undefined && data.currentBalance !== null ? Number(data.currentBalance) : null;
+  let currency = data.currency || "EGP";
+
+  // Resilient fallback: extract structured metrics from message if backend returned legacy string format
+  const message = typeof data?.message === "string" ? data.message : "";
+  if (requiredAmount === null && message) {
+    const reqMatch = message.match(/المطلوب:\s*([\d.]+)/);
+    if (reqMatch && !isNaN(Number(reqMatch[1]))) {
+      requiredAmount = Number(reqMatch[1]);
+    }
+  }
+  if (currentBalance === null && message) {
+    const balMatch = message.match(/المتوفر:\s*([\d.]+)/);
+    if (balMatch && !isNaN(Number(balMatch[1]))) {
+      currentBalance = Number(balMatch[1]);
+    }
+  }
+  if (message.includes("EGP")) currency = "EGP";
+  else if (message.includes("ج.م")) currency = "EGP";
+  else if (message.includes("USD")) currency = "USD";
+
   return {
     code: data.code || (isInsufficientWalletBalance(error) ? "INSUFFICIENT_WALLET_BALANCE" : undefined),
-    requiredAmount: data.requiredAmount !== undefined ? data.requiredAmount : null,
-    currentBalance: data.currentBalance !== undefined ? data.currentBalance : null,
-    currency: data.currency || "EGP",
-    message: data.message || "رصيد المحفظة غير كافٍ لإتمام العملية",
+    requiredAmount,
+    currentBalance,
+    currency,
+    message: message || "رصيد المحفظة غير كافٍ لإتمام العملية",
   };
 }
 

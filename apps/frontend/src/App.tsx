@@ -3148,9 +3148,11 @@ const AppContent = () => {
                   path="/agency"
                   element={
                     <Layout>
-                      <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
-                        <AgencyDashboard />
-                      </React.Suspense>
+                      <AppAccessRoute requiredAppSlugs={['marketing-agency-pro', 'agency-system']}>
+                        <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                          <AgencyDashboard />
+                        </React.Suspense>
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3158,9 +3160,11 @@ const AppContent = () => {
                   path="/agency/:tab"
                   element={
                     <Layout>
-                      <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
-                        <AgencyDashboard />
-                      </React.Suspense>
+                      <AppAccessRoute requiredAppSlugs={['marketing-agency-pro', 'agency-system']}>
+                        <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                          <AgencyDashboard />
+                        </React.Suspense>
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3492,7 +3496,9 @@ const AppContent = () => {
                   path="/tools/break-even"
                   element={
                     <Layout>
-                      <ProjectBreakEvenCalculator />
+                      <AppAccessRoute requiredAppSlugs={['project-break-even-calculator', 'store-pro']}>
+                        <ProjectBreakEvenCalculator />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3500,7 +3506,9 @@ const AppContent = () => {
                   path="/tools/product-break-even"
                   element={
                     <Layout>
-                      <ProductBreakEvenCalculator />
+                      <AppAccessRoute requiredAppSlugs={['product-break-even-calculator', 'store-pro']}>
+                        <ProductBreakEvenCalculator />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3508,7 +3516,9 @@ const AppContent = () => {
                   path="/tools/profitability-engine"
                   element={
                     <Layout>
-                      <ProfitabilityEngine />
+                      <AppAccessRoute requiredAppSlugs={['profitability-engine', 'store-pro']}>
+                        <ProfitabilityEngine />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3516,7 +3526,9 @@ const AppContent = () => {
                   path="/tools/pricing-strategy"
                   element={
                     <Layout>
-                      <PricingStrategyCalculator />
+                      <AppAccessRoute requiredAppSlugs={['pricing-strategy-calculator', 'store-pro']}>
+                        <PricingStrategyCalculator />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3524,7 +3536,9 @@ const AppContent = () => {
                   path="/tools/ad-budget-planner"
                   element={
                     <Layout>
-                      <AdBudgetPlanner />
+                      <AppAccessRoute requiredAppSlugs={['ad-budget-planner', 'marketing-agency-pro']}>
+                        <AdBudgetPlanner />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3532,7 +3546,9 @@ const AppContent = () => {
                   path="/tools/discount-impact"
                   element={
                     <Layout>
-                      <DiscountImpactCalculator />
+                      <AppAccessRoute requiredAppSlugs={['discount-impact-calculator', 'store-pro']}>
+                        <DiscountImpactCalculator />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3540,7 +3556,9 @@ const AppContent = () => {
                   path="/tools/shipping-optimizer"
                   element={
                     <Layout>
-                      <ShippingOptimizer />
+                      <AppAccessRoute requiredAppSlugs={['shipping-optimizer', 'store-pro']}>
+                        <ShippingOptimizer />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3548,7 +3566,9 @@ const AppContent = () => {
                   path="/tools/monthly-pnl"
                   element={
                     <Layout>
-                      <MonthlyPnLDashboard />
+                      <AppAccessRoute requiredAppSlugs={['monthly-pnl-calculator', 'store-pro']}>
+                        <MonthlyPnLDashboard />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3556,7 +3576,9 @@ const AppContent = () => {
                   path="/tools/clv-calculator"
                   element={
                     <Layout>
-                      <CLVCalculator />
+                      <AppAccessRoute requiredAppSlugs={['clv-calculator', 'store-pro']}>
+                        <CLVCalculator />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3564,7 +3586,9 @@ const AppContent = () => {
                   path="/tools/upsell-planner"
                   element={
                     <Layout>
-                      <UpsellPlanner />
+                      <AppAccessRoute requiredAppSlugs={['upsell-planner', 'store-pro']}>
+                        <UpsellPlanner />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3572,7 +3596,9 @@ const AppContent = () => {
                   path="/tools/refund-rate"
                   element={
                     <Layout>
-                      <RefundRateCalculator />
+                      <AppAccessRoute requiredAppSlugs={['refund-rate-calculator', 'store-pro']}>
+                        <RefundRateCalculator />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3588,7 +3614,9 @@ const AppContent = () => {
                   path="/instagram-inbox"
                   element={
                     <Layout>
-                      <InstagramInbox />
+                      <AppAccessRoute requiredAppSlugs={['instagram-business']}>
+                        <InstagramInbox />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3604,7 +3632,9 @@ const AppContent = () => {
                   path="/unified-inbox"
                   element={
                     <Layout fullWidth>
-                      <UnifiedInbox />
+                      <AppAccessRoute requiredAppSlugs={['unified-inbox', 'whatsapp-business']}>
+                        <UnifiedInbox />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3612,7 +3642,9 @@ const AppContent = () => {
                   path="/unified-inbox/connections"
                   element={
                     <Layout fullWidth>
-                      <PlatformConnections />
+                      <AppAccessRoute requiredAppSlugs={['unified-inbox', 'whatsapp-business']}>
+                        <PlatformConnections />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3620,7 +3652,9 @@ const AppContent = () => {
                   path="/whatsapp/routing"
                   element={
                     <Layout fullWidth>
-                      <InboxPage />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <InboxPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3628,7 +3662,9 @@ const AppContent = () => {
                   path="/whatsapp/routing/:sessionId"
                   element={
                     <Layout fullWidth>
-                      <InboxPage />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <InboxPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3636,7 +3672,9 @@ const AppContent = () => {
                   path="/whatsapp-chat/:conversationId"
                   element={
                     <Layout fullWidth>
-                      <InboxChat />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <InboxChat />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3652,7 +3690,9 @@ const AppContent = () => {
                   path="/settings/whatsapp-numbers"
                   element={
                     <Layout>
-                      <WhatsAppRoutingWorkspace />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppRoutingWorkspace />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3668,7 +3708,9 @@ const AppContent = () => {
                   path="/coupons"
                   element={
                     <Layout>
-                      <Coupons />
+                      <AppAccessRoute requiredAppSlugs={['coupons-pro', 'store-pro', 'store']}>
+                        <Coupons />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3684,7 +3726,9 @@ const AppContent = () => {
                   path="/appointments"
                   element={
                     <Layout>
-                      <Appointments />
+                      <AppAccessRoute requiredAppSlugs={['booking-app', 'service-request-app', 'booking-appointments']}>
+                        <Appointments />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3796,7 +3840,9 @@ const AppContent = () => {
                   path="/pos"
                   element={
                     <Layout>
-                      <PosPage />
+                      <AppAccessRoute requiredAppSlugs={['pos-pro', 'store-pro']}>
+                        <PosPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -3829,7 +3875,9 @@ const AppContent = () => {
                   path="/advertising/google-tag-manager"
                   element={
                     <Layout>
-                      <GoogleTagManagerSettings />
+                      <AppAccessRoute requiredAppSlugs={['google-tag-manager']}>
+                        <GoogleTagManagerSettings />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4651,7 +4699,9 @@ const AppContent = () => {
                   path="/amazon-affiliate/settings"
                   element={
                     <Layout>
-                      <AmazonAffiliateSettings />
+                      <AppAccessRoute requiredAppSlugs={['amazon-affiliate-pro']}>
+                        <AmazonAffiliateSettings />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4659,7 +4709,9 @@ const AppContent = () => {
                   path="/amazon-affiliate/import"
                   element={
                     <Layout>
-                      <AmazonAffiliateImport />
+                      <AppAccessRoute requiredAppSlugs={['amazon-affiliate-pro']}>
+                        <AmazonAffiliateImport />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4667,7 +4719,9 @@ const AppContent = () => {
                   path="/amazon-affiliate/products"
                   element={
                     <Layout>
-                      <AmazonAffiliateProducts />
+                      <AppAccessRoute requiredAppSlugs={['amazon-affiliate-pro']}>
+                        <AmazonAffiliateProducts />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4677,7 +4731,9 @@ const AppContent = () => {
                   path="/affiliates/management/:id"
                   element={
                     <Layout>
-                      <AffiliateProfile />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <AffiliateProfile />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4685,7 +4741,9 @@ const AppContent = () => {
                   path="/affiliates/management"
                   element={
                     <Layout>
-                      <AffiliatesManagement />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <AffiliatesManagement />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4693,7 +4751,9 @@ const AppContent = () => {
                   path="/affiliates/quick-actions"
                   element={
                     <Layout>
-                      <AffiliateQuickActions />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <AffiliateQuickActions />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4701,7 +4761,9 @@ const AppContent = () => {
                   path="/affiliates/settings"
                   element={
                     <Layout>
-                      <AffiliateSystemSettings />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <AffiliateSystemSettings />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4717,7 +4779,9 @@ const AppContent = () => {
                   path="/affiliates/dashboard"
                   element={
                     <Layout>
-                      <AffiliateDashboard />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <AffiliateDashboard />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4725,7 +4789,9 @@ const AppContent = () => {
                   path="/affiliates/orders"
                   element={
                     <Layout>
-                      <AffiliateOrders />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <AffiliateOrders />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4733,7 +4799,9 @@ const AppContent = () => {
                   path="/affiliates/orders/:orderId"
                   element={
                     <Layout>
-                      <AffiliateOrderDetails />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <AffiliateOrderDetails />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4741,7 +4809,9 @@ const AppContent = () => {
                   path="/affiliates/orders/create"
                   element={
                     <Layout>
-                      <ManualOrderPage />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <ManualOrderPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4749,7 +4819,9 @@ const AppContent = () => {
                   path="/affiliates/customers"
                   element={
                     <Layout>
-                      <AffiliateCustomers />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <AffiliateCustomers />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4757,7 +4829,9 @@ const AppContent = () => {
                   path="/affiliates/referrals"
                   element={
                     <Layout>
-                      <AffiliateReferrals />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <AffiliateReferrals />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4765,7 +4839,9 @@ const AppContent = () => {
                   path="/affiliates/products"
                   element={
                     <Layout>
-                      <AffiliateProducts />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <AffiliateProducts />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4773,7 +4849,9 @@ const AppContent = () => {
                   path="/affiliates/commission"
                   element={
                     <Layout>
-                      <AffiliateCommission />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <AffiliateCommission />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4781,7 +4859,9 @@ const AppContent = () => {
                   path="/affiliates/products/visibility"
                   element={
                     <Layout>
-                      <AffiliateProductsVisibility />
+                      <AppAccessRoute requiredAppSlugs={['affiliate-pro']}>
+                        <AffiliateProductsVisibility />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5348,7 +5428,9 @@ const AppContent = () => {
                   path="/wholesale/dashboard"
                   element={
                     <Layout>
-                      <WholesaleDashboard />
+                      <AppAccessRoute requiredAppSlugs={['wholesale-pro']}>
+                        <WholesaleDashboard />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5356,7 +5438,9 @@ const AppContent = () => {
                   path="/wholesale/price-lists"
                   element={
                     <Layout>
-                      <WholesalePriceLists />
+                      <AppAccessRoute requiredAppSlugs={['wholesale-pro']}>
+                        <WholesalePriceLists />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5364,7 +5448,9 @@ const AppContent = () => {
                   path="/wholesale/price-lists/new"
                   element={
                     <Layout>
-                      <WholesalePriceListDetail />
+                      <AppAccessRoute requiredAppSlugs={['wholesale-pro']}>
+                        <WholesalePriceListDetail />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5372,7 +5458,9 @@ const AppContent = () => {
                   path="/wholesale/price-lists/:id"
                   element={
                     <Layout>
-                      <WholesalePriceListDetail />
+                      <AppAccessRoute requiredAppSlugs={['wholesale-pro']}>
+                        <WholesalePriceListDetail />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5380,7 +5468,9 @@ const AppContent = () => {
                   path="/wholesale/customers"
                   element={
                     <Layout>
-                      <WholesaleCustomers />
+                      <AppAccessRoute requiredAppSlugs={['wholesale-pro']}>
+                        <WholesaleCustomers />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5388,7 +5478,9 @@ const AppContent = () => {
                   path="/wholesale/customers/:id"
                   element={
                     <Layout>
-                      <WholesaleCustomerDetail />
+                      <AppAccessRoute requiredAppSlugs={['wholesale-pro']}>
+                        <WholesaleCustomerDetail />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5396,7 +5488,9 @@ const AppContent = () => {
                   path="/wholesale/statements"
                   element={
                     <Layout>
-                      <WholesaleStatements />
+                      <AppAccessRoute requiredAppSlugs={['wholesale-pro']}>
+                        <WholesaleStatements />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5404,7 +5498,9 @@ const AppContent = () => {
                   path="/wholesale/debts"
                   element={
                     <Layout>
-                      <WholesaleDebts />
+                      <AppAccessRoute requiredAppSlugs={['wholesale-pro']}>
+                        <WholesaleDebts />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5645,7 +5741,9 @@ const AppContent = () => {
                   path="/coupons"
                   element={
                     <Layout>
-                      <Coupons />
+                      <AppAccessRoute requiredAppSlugs={['coupons-pro', 'store-pro', 'store']}>
+                        <Coupons />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5653,7 +5751,9 @@ const AppContent = () => {
                   path="/appointments"
                   element={
                     <Layout>
-                      <Appointments />
+                      <AppAccessRoute requiredAppSlugs={['booking-app', 'service-request-app', 'booking-appointments']}>
+                        <Appointments />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5790,7 +5890,9 @@ const AppContent = () => {
                   path="/pos"
                   element={
                     <Layout>
-                      <PosPage />
+                      <AppAccessRoute requiredAppSlugs={['pos-pro', 'store-pro']}>
+                        <PosPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5905,7 +6007,9 @@ const AppContent = () => {
                   path="/coupons"
                   element={
                     <Layout>
-                      <Coupons />
+                      <AppAccessRoute requiredAppSlugs={['coupons-pro', 'store-pro', 'store']}>
+                        <Coupons />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5913,7 +6017,9 @@ const AppContent = () => {
                   path="/appointments"
                   element={
                     <Layout>
-                      <Appointments />
+                      <AppAccessRoute requiredAppSlugs={['booking-app', 'service-request-app', 'booking-appointments']}>
+                        <Appointments />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6018,7 +6124,9 @@ const AppContent = () => {
                   path="/pos"
                   element={
                     <Layout>
-                      <PosPage />
+                      <AppAccessRoute requiredAppSlugs={['pos-pro', 'store-pro']}>
+                        <PosPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6059,7 +6167,9 @@ const AppContent = () => {
                   path="/advertising/google-tag-manager"
                   element={
                     <Layout>
-                      <GoogleTagManagerSettings />
+                      <AppAccessRoute requiredAppSlugs={['google-tag-manager']}>
+                        <GoogleTagManagerSettings />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6851,7 +6961,9 @@ const AppContent = () => {
                   path="/automation/bot-studio"
                   element={
                     <Layout>
-                      <BotStudioPage />
+                      <AppAccessRoute requiredAppSlugs={['bot-automation']}>
+                        <BotStudioPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6959,7 +7071,9 @@ const AppContent = () => {
                   path="/settings/telegram"
                   element={
                     <Layout>
-                      <TelegramSettings />
+                      <AppAccessRoute requiredAppSlugs={['telegram-business', 'telegram-integration']}>
+                        <TelegramSettings />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6967,7 +7081,9 @@ const AppContent = () => {
                   path="/telegram/pro"
                   element={
                     <Layout>
-                      <TelegramConversationsPro />
+                      <AppAccessRoute requiredAppSlugs={['telegram-business', 'telegram-integration']}>
+                        <TelegramConversationsPro />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6975,7 +7091,9 @@ const AppContent = () => {
                   path="/telegram-userbot"
                   element={
                     <Layout>
-                      <TelegramUserbot />
+                      <AppAccessRoute requiredAppSlugs={['telegram-business', 'telegram-integration']}>
+                        <TelegramUserbot />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />{" "}
@@ -6984,7 +7102,9 @@ const AppContent = () => {
                   path="/telegram/auto-reply"
                   element={
                     <Layout>
-                      <TelegramAutoReply />
+                      <AppAccessRoute requiredAppSlugs={['telegram-business', 'telegram-integration']}>
+                        <TelegramAutoReply />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6992,7 +7112,9 @@ const AppContent = () => {
                   path="/telegram/bulk-messages"
                   element={
                     <Layout>
-                      <TelegramBulkMessages />
+                      <AppAccessRoute requiredAppSlugs={['telegram-business', 'telegram-integration']}>
+                        <TelegramBulkMessages />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7000,7 +7122,9 @@ const AppContent = () => {
                   path="/telegram/scheduler"
                   element={
                     <Layout>
-                      <TelegramScheduler />
+                      <AppAccessRoute requiredAppSlugs={['telegram-business', 'telegram-integration']}>
+                        <TelegramScheduler />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7008,7 +7132,9 @@ const AppContent = () => {
                   path="/telegram/campaigns"
                   element={
                     <Layout>
-                      <TelegramCampaigns />
+                      <AppAccessRoute requiredAppSlugs={['telegram-business', 'telegram-integration']}>
+                        <TelegramCampaigns />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7016,7 +7142,9 @@ const AppContent = () => {
                   path="/telegram/groups"
                   element={
                     <Layout>
-                      <TelegramGroups />
+                      <AppAccessRoute requiredAppSlugs={['telegram-business', 'telegram-integration']}>
+                        <TelegramGroups />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7025,7 +7153,9 @@ const AppContent = () => {
                   path="/whatsapp"
                   element={
                     <Layout>
-                      <WhatsAppChat />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppChat />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7033,7 +7163,9 @@ const AppContent = () => {
                   path="/whatsapp/chat"
                   element={
                     <Layout>
-                      <WhatsAppChat />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppChat />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7041,7 +7173,9 @@ const AppContent = () => {
                   path="/whatsapp/settings"
                   element={
                     <Layout>
-                      <WhatsAppSettings />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppSettings />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7049,7 +7183,9 @@ const AppContent = () => {
                   path="/whatsapp/notifications"
                   element={
                     <Layout>
-                      <WhatsAppNotifications />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppNotifications />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7057,7 +7193,9 @@ const AppContent = () => {
                   path="/whatsapp/templates"
                   element={
                     <Layout>
-                      <WhatsAppTemplates />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppTemplates />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7065,7 +7203,9 @@ const AppContent = () => {
                   path="/whatsapp/customer-journey"
                   element={
                     <Layout>
-                      <WhatsAppCustomerJourney />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppCustomerJourney />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7073,7 +7213,9 @@ const AppContent = () => {
                   path="/whatsapp/meta-templates"
                   element={
                     <Layout>
-                      <WhatsAppMetaTemplates />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppMetaTemplates />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7081,7 +7223,9 @@ const AppContent = () => {
                   path="/whatsapp/template-broadcast"
                   element={
                     <Layout>
-                      <WhatsAppTemplateBroadcast />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppTemplateBroadcast />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7089,7 +7233,9 @@ const AppContent = () => {
                   path="/whatsapp/lead-followup"
                   element={
                     <Layout>
-                      <WhatsAppLeadFollowUp />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppLeadFollowUp />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7097,7 +7243,9 @@ const AppContent = () => {
                   path="/whatsapp/cloud-connect"
                   element={
                     <Layout>
-                      <WhatsAppCloudConnect />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppCloudConnect />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7105,7 +7253,9 @@ const AppContent = () => {
                   path="/whatsapp/employee-analytics"
                   element={
                     <Layout>
-                      <WhatsAppEmployeeAnalytics />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppEmployeeAnalytics />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7113,7 +7263,9 @@ const AppContent = () => {
                   path="/whatsapp/conversation-analytics"
                   element={
                     <Layout>
-                      <WhatsAppConversationAnalytics />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppConversationAnalytics />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -7121,7 +7273,9 @@ const AppContent = () => {
                   path="/whatsapp/notification-logs"
                   element={
                     <Layout>
-                      <WhatsAppNotificationLogs />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business', 'whatsapp-cloud-api']}>
+                        <WhatsAppNotificationLogs />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -8144,7 +8298,9 @@ const AppContent = () => {
                   path="/radiology/*"
                   element={
                     <Layout fullWidth>
-                      <RadiologyManagementPage />
+                      <AppAccessRoute requiredAppSlugs={['radiology-app']}>
+                        <RadiologyManagementPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -8152,7 +8308,9 @@ const AppContent = () => {
                   path="/dental-lab/cases/:id"
                   element={
                     <Layout fullWidth>
-                      <DentalCaseDetailPage />
+                      <AppAccessRoute requiredAppSlugs={['dental-lab-app', 'dental-lab']}>
+                        <DentalCaseDetailPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -8160,7 +8318,9 @@ const AppContent = () => {
                   path="/dental-lab/doctors/:id"
                   element={
                     <Layout fullWidth>
-                      <DentalDoctorDetailPage />
+                      <AppAccessRoute requiredAppSlugs={['dental-lab-app', 'dental-lab']}>
+                        <DentalDoctorDetailPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -8168,7 +8328,9 @@ const AppContent = () => {
                   path="/dental-lab/*"
                   element={
                     <Layout fullWidth>
-                      <DentalLabManagementPage />
+                      <AppAccessRoute requiredAppSlugs={['dental-lab-app', 'dental-lab']}>
+                        <DentalLabManagementPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -8179,7 +8341,9 @@ const AppContent = () => {
                   path="/academy/dashboard"
                   element={
                     <Layout fullWidth>
-                      <AcademyDashboardPage />
+                      <AppAccessRoute requiredAppSlugs={['academy-app']}>
+                        <AcademyDashboardPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -8187,7 +8351,9 @@ const AppContent = () => {
                   path="/academy/courses"
                   element={
                     <Layout fullWidth>
-                      <AcademyCoursesPage />
+                      <AppAccessRoute requiredAppSlugs={['academy-app']}>
+                        <AcademyCoursesPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -8195,7 +8361,9 @@ const AppContent = () => {
                   path="/academy/courses/:id"
                   element={
                     <Layout fullWidth>
-                      <AcademyCourseEditorPage />
+                      <AppAccessRoute requiredAppSlugs={['academy-app']}>
+                        <AcademyCourseEditorPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -8203,7 +8371,9 @@ const AppContent = () => {
                   path="/academy/catalog"
                   element={
                     <Layout fullWidth>
-                      <AcademyCatalogPage />
+                      <AppAccessRoute requiredAppSlugs={['academy-app']}>
+                        <AcademyCatalogPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -8211,7 +8381,9 @@ const AppContent = () => {
                   path="/academy/catalog/:courseId"
                   element={
                     <Layout fullWidth>
-                      <AcademyLessonViewerPage />
+                      <AppAccessRoute requiredAppSlugs={['academy-app']}>
+                        <AcademyLessonViewerPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -8219,7 +8391,9 @@ const AppContent = () => {
                   path="/academy/catalog/:courseId/lessons/:lessonId"
                   element={
                     <Layout fullWidth>
-                      <AcademyLessonViewerPage />
+                      <AppAccessRoute requiredAppSlugs={['academy-app']}>
+                        <AcademyLessonViewerPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -8227,7 +8401,9 @@ const AppContent = () => {
                   path="/academy/students"
                   element={
                     <Layout fullWidth>
-                      <AcademyStudentsPage />
+                      <AppAccessRoute requiredAppSlugs={['academy-app']}>
+                        <AcademyStudentsPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -8235,7 +8411,9 @@ const AppContent = () => {
                   path="/academy"
                   element={
                     <Layout fullWidth>
-                      <AcademyDashboardPage />
+                      <AppAccessRoute requiredAppSlugs={['academy-app']}>
+                        <AcademyDashboardPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />

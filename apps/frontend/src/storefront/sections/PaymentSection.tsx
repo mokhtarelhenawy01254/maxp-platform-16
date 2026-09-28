@@ -16,6 +16,7 @@ import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { useCheckoutShippingQuote } from '../hooks/useCheckoutShippingQuote';
 import TierProgressBanner from '../components/TierProgressBanner';
 import { isValidStorefrontPhone } from '../utils/phoneValidation';
+import { toast } from 'sonner';
 
 interface PaymentSectionProps {
   section?: {
@@ -840,19 +841,38 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
     }
   }, [location.pathname, location.search, navigate, orderSuccess, storefrontSettings]);
 
-  const validateForm = useCallback((): string[] => {
+  const validateForm = useCallback((): { errors: string[]; firstInvalidFieldId?: string } => {
     const errors: string[] = [];
-    if (!formData.customerName?.trim()) errors.push('يرجى إدخال الاسم الكامل.');
-    if (!formData.phone?.trim()) errors.push('يرجى إدخال رقم الهاتف.');
-    else if (!isPhoneValid) errors.push('رقم الهاتف غير صحيح. يرجى إدخال رقم هاتف صحيح (مثال: 01xxxxxxxxx أو +201xxxxxxxxx).');
-    if (!formData.address?.trim()) errors.push('يرجى إدخال عنوان الشحن.');
-    if (!trimmedGovernorate) errors.push('يرجى اختيار المحافظة.');
-    if (!isEmailValid) errors.push('صيغة البريد الإلكتروني غير صحيحة. اتركه فارغًا أو أدخل عنوان صحيح.');
-    return errors;
+    let firstInvalidFieldId: string | undefined;
+
+    if (!formData.customerName?.trim()) {
+      errors.push('يرجى إدخال الاسم الكامل.');
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'checkout-customer-name';
+    }
+    if (!formData.phone?.trim()) {
+      errors.push('يرجى إدخال رقم الهاتف.');
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'checkout-phone';
+    } else if (!isPhoneValid) {
+      errors.push('رقم الهاتف غير صحيح. يرجى إدخال رقم هاتف صحيح (مثال: 01xxxxxxxxx أو +201xxxxxxxxx).');
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'checkout-phone';
+    }
+    if (!formData.address?.trim()) {
+      errors.push('يرجى إدخال عنوان الشحن.');
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'checkout-address';
+    }
+    if (!trimmedGovernorate) {
+      errors.push('يرجى اختيار المحافظة.');
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'checkout-governorate';
+    }
+    if (!isEmailValid) {
+      errors.push('صيغة البريد الإلكتروني غير صحيحة. اتركه فارغًا أو أدخل عنوان صحيح.');
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'checkout-email';
+    }
+    return { errors, firstInvalidFieldId };
   }, [formData.customerName, formData.phone, formData.address, trimmedGovernorate, isPhoneValid, isEmailValid]);
 
   const handlePlaceOrder = async () => {
-    const errors = validateForm();
+    const { errors, firstInvalidFieldId } = validateForm();
     if (paymentMethod === 'wallet') {
       if (walletProofUploading) {
         errors.push('جارٍ رفع صورة الإيصال، انتظر قليلًا.');
@@ -862,6 +882,16 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
     }
     if (errors.length > 0) {
       setValidationErrors(errors);
+      toast.error(errors[0]);
+      if (firstInvalidFieldId) {
+        const el = document.getElementById(firstInvalidFieldId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.focus();
+        }
+      } else if (paymentMethod === 'wallet' && !walletProofImageUrl) {
+        walletFileInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
     setValidationErrors([]);
@@ -1198,6 +1228,70 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
           </div>
         ) : null}
 
+        {paymentMethod === 'card' ? (
+          <div
+            className={`space-y-3 rounded-2xl border p-4 text-xs transition-all ${
+              isKhemetLuxe
+                ? 'border-[#d9c8ad] bg-[#fcf8f2] text-[#5c4a32]'
+                : isWomenFashionPayment
+                  ? 'border-[#ead8cf] bg-[#fffaf8] text-[#6d4a46]'
+                  : hasNaturePaymentTone
+                    ? 'border-[#dbe3d4] bg-[#f8fbf7] text-[#3d5538]'
+                    : 'border-border/80 bg-muted/40 text-foreground'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect width="20" height="14" x="2" y="5" rx="2" />
+                  <line x1="2" x2="22" y1="10" y2="10" />
+                </svg>
+              </div>
+              <div className="flex-1 space-y-1">
+                <p className="font-bold text-sm text-foreground">
+                  الدفع الآمن بالبطاقة البنكية (Visa / Mastercard / Meeza)
+                </p>
+                <p className="leading-relaxed opacity-90">
+                  عند الضغط على تأكيد الطلب، سيتم تحويلك مباشرة لصفحة الدفع الآمنة والمشفرة لإدخال بيانات بطاقتك وإتمام العملية بأمان وسرعة.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/40 text-[11px] font-medium opacity-80">
+              <span className="inline-flex items-center gap-1">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                دفع مشفر 256-bit
+              </span>
+              <span>•</span>
+              <span>معتمد من البنك المركزي المصري</span>
+              <span>•</span>
+              <span>حماية كاملة للبيانات</span>
+            </div>
+          </div>
+        ) : null}
+
         {tierProgress?.activeVoucher ? (
           <div className="flex items-start gap-3 rounded-xl border border-emerald-300 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3">
             <span className="text-xl">🎁</span>
@@ -1426,7 +1520,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
           {isSubmitting ? (
             <div className="flex items-center gap-2">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-              {processingText}
+              {paymentMethod === 'card' ? 'جارٍ تحويلك لبوابة الدفع الآمنة...' : processingText}
             </div>
           ) : paymentMethod === 'cod' ? (
             confirmOrderText

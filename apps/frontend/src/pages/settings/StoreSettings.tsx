@@ -2070,24 +2070,33 @@ const PaymentGatewaySettingsSection: React.FC<{
   };
 
   const handleSave = async () => {
-    const hasAnyCred = Boolean(
-      gatewayConfig.merchantId.trim() ||
-      gatewayConfig.apiKey.trim() ||
-      gatewayConfig.secretKey.trim()
-    );
+    const merchantId = gatewayConfig.merchantId.trim();
+    const apiKey = gatewayConfig.apiKey.trim();
+    const secretKey = gatewayConfig.secretKey.trim();
+    const hasAnyCred = Boolean(merchantId || apiKey || secretKey);
+
+    if (hasAnyCred) {
+      if (merchantId.includes("@")) {
+        toast.error("Merchant ID غير صحيح (يبدو أنك أدخلت بريداً إلكترونياً، الـ Merchant ID الخاص بكاشير يكون مثل MID-XXXX-XXX).");
+        return;
+      }
+      if (!merchantId || !apiKey || !secretKey) {
+        toast.error("يرجى إدخال جميع بيانات الاعتماد (Merchant ID و API Key و Secret Key) من لوحة تحكم Kashier، أو مسحها جميعاً للاعتماد على البوابة المركزية.");
+        return;
+      }
+    }
 
     const updatedSettings: Record<string, unknown> = {
       enabledPaymentMethods: JSON.stringify(enabledMethods),
+      paymentGatewayConfig: hasAnyCred
+        ? {
+            merchantId,
+            apiKey,
+            secretKey,
+            mode: gatewayConfig.mode,
+          }
+        : null,
     };
-
-    if (hasAnyCred) {
-      updatedSettings.paymentGatewayConfig = {
-        merchantId: gatewayConfig.merchantId.trim(),
-        apiKey: gatewayConfig.apiKey.trim(),
-        secretKey: gatewayConfig.secretKey.trim(),
-        mode: gatewayConfig.mode,
-      };
-    }
 
     try {
       const result = await storefrontSettingsService.updateSettings(updatedSettings);
