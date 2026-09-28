@@ -1,20 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Users,
   Play,
-  PauseCircle,
-  CheckCircle2,
   Clock,
+  CheckCircle2,
+  Layers,
   Search,
+  ChevronDown,
+  ChevronUp,
+  X,
   Filter,
-  ArrowRight,
 } from 'lucide-react';
 import { TeamMemberTaskSummary } from './TaskReportTypes';
 
 interface TaskReportTeamMatrixProps {
   members: TeamMemberTaskSummary[];
   selectedUserId: string;
-  onSelectMember: (userId: string, status?: string) => void;
+  onSelectMember: (userId: string) => void;
 }
 
 export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
@@ -23,30 +25,59 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
   onSelectMember,
 }) => {
   const [search, setSearch] = useState('');
+  const [showStandby, setShowStandby] = useState(false);
 
-  const filteredMembers = members.filter((m) => {
-    if (!search) return true;
+  // Filter by search query
+  const filtered = useMemo(() => {
+    if (!search) return members;
     const q = search.toLowerCase();
-    return (
-      m.userName.toLowerCase().includes(q) ||
-      (m.departmentName || '').toLowerCase().includes(q) ||
-      (m.jobTitle || '').toLowerCase().includes(q)
+    return members.filter(
+      (m) =>
+        m.userName.toLowerCase().includes(q) ||
+        (m.departmentName || '').toLowerCase().includes(q) ||
+        (m.jobTitle || '').toLowerCase().includes(q)
     );
-  });
+  }, [members, search]);
 
-  const totals = members.reduce(
-    (acc, m) => {
-      acc.inProgress += m.inProgressCount;
-      acc.inReview += m.inReviewCount;
-      acc.completedToday += m.completedTodayCount;
-      acc.pending += m.pendingCount;
-      acc.minutes += m.totalTrackedMinutes;
-      return acc;
-    },
-    { inProgress: 0, inReview: 0, completedToday: 0, pending: 0, minutes: 0 }
-  );
+  // Separate active contributors from standby members (who have 0 active tasks)
+  const { activeMembers, standbyMembers } = useMemo(() => {
+    const active: TeamMemberTaskSummary[] = [];
+    const standby: TeamMemberTaskSummary[] = [];
+
+    filtered.forEach((m) => {
+      const hasActivity =
+        m.inProgressCount > 0 ||
+        m.inReviewCount > 0 ||
+        m.completedTodayCount > 0 ||
+        m.pendingCount > 0 ||
+        m.totalTrackedMinutes > 0;
+
+      if (hasActivity) {
+        active.push(m);
+      } else {
+        standby.push(m);
+      }
+    });
+
+    return { activeMembers: active, standbyMembers: standby };
+  }, [filtered]);
+
+  const totals = useMemo(() => {
+    return members.reduce(
+      (acc, m) => {
+        acc.inProgress += m.inProgressCount;
+        acc.inReview += m.inReviewCount;
+        acc.completedToday += m.completedTodayCount;
+        acc.pending += m.pendingCount;
+        acc.minutes += m.totalTrackedMinutes;
+        return acc;
+      },
+      { inProgress: 0, inReview: 0, completedToday: 0, pending: 0, minutes: 0 }
+    );
+  }, [members]);
 
   const formatMinToH = (mins: number) => {
+    if (!mins || mins === 0) return '—';
     const h = Math.floor(mins / 60);
     const m = mins % 60;
     if (h === 0) return `${m}m`;
@@ -54,69 +85,95 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
   };
 
   return (
-    <div style={styles.container}>
-      {/* Header Strip */}
-      <div style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.titleWrap}>
-            <Users size={14} color="#38bdf8" />
-            <span style={styles.title}>مصفوفة توزيع مهام الفريق والإنتاجية اليومية</span>
-            <span style={styles.countBadge}>{members.length} عضو</span>
-          </div>
-          <span style={styles.subtitle}>
-            تتبع مباشر للمهام الجارية، العالقة في الاعتماد، والمنجزة اليوم لكل شخص
+    <div style={styles.chassis}>
+      {/* Header Bar */}
+      <div style={styles.headerBar}>
+        <div style={styles.headerTitleGroup}>
+          <Users size={13} color="#38bdf8" />
+          <span style={styles.headerTitle}>توزيع أعباء الفريق والإنتاجية</span>
+          <span style={styles.activePill}>
+            {activeMembers.length} نشط من {members.length}
           </span>
         </div>
 
-        <div style={styles.searchWrap}>
-          <Search size={11} color="#64748b" style={styles.searchIcon} />
-          <input
-            type="text"
-            placeholder="بحث بالاسم أو القسم…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={styles.searchInput}
-          />
+        <div style={styles.headerRightGroup}>
+          <div style={styles.searchBox}>
+            <Search size={11} color="#64748b" style={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="بحث بالاسم أو القسم…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={styles.searchInput}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} style={styles.clearSearchBtn}>
+                <X size={10} color="#94a3b8" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Matrix Table */}
-      <div style={styles.tableScroll}>
+      {/* Main Table: Active Contributors First */}
+      <div style={styles.tableWrap}>
         <table style={styles.table}>
           <thead>
             <tr style={styles.thRow}>
-              <th style={{ ...styles.th, width: '28%' }}>الموظف</th>
-              <th style={{ ...styles.th, width: '13%', textAlign: 'center' }}>قيد التنفيذ ⏳</th>
-              <th style={{ ...styles.th, width: '13%', textAlign: 'center' }}>انتظار الاعتماد 🔍</th>
-              <th style={{ ...styles.th, width: '13%', textAlign: 'center' }}>أُنجزت اليوم ✅</th>
-              <th style={{ ...styles.th, width: '11%', textAlign: 'center' }}>معلقة 📌</th>
-              <th style={{ ...styles.th, width: '11%', textAlign: 'left' }}>وقت التايمر</th>
-              <th style={{ ...styles.th, width: '11%', textAlign: 'center' }}>تصفية</th>
+              <th style={{ ...styles.th, width: '32%' }}>الموظف</th>
+              <th style={{ ...styles.th, width: '14%', textAlign: 'center' }}>
+                <span style={styles.thBadge}>
+                  <Play size={9} color="#38bdf8" />
+                  <span>قيد التنفيذ</span>
+                </span>
+              </th>
+              <th style={{ ...styles.th, width: '14%', textAlign: 'center' }}>
+                <span style={styles.thBadge}>
+                  <Clock size={9} color="#eab308" />
+                  <span>انتظار الاعتماد</span>
+                </span>
+              </th>
+              <th style={{ ...styles.th, width: '14%', textAlign: 'center' }}>
+                <span style={styles.thBadge}>
+                  <CheckCircle2 size={9} color="#22c55e" />
+                  <span>أُنجزت اليوم</span>
+                </span>
+              </th>
+              <th style={{ ...styles.th, width: '12%', textAlign: 'center' }}>
+                <span style={styles.thBadge}>
+                  <Layers size={9} color="#94a3b8" />
+                  <span>معلقة</span>
+                </span>
+              </th>
+              <th style={{ ...styles.th, width: '14%', textAlign: 'left' }}>وقت التايمر</th>
             </tr>
           </thead>
           <tbody>
-            {filteredMembers.length === 0 ? (
+            {activeMembers.length === 0 ? (
               <tr>
-                <td colSpan={7} style={styles.emptyTd}>
-                  لا يوجد موظفون يطابقون شروط البحث
+                <td colSpan={6} style={styles.emptyTd}>
+                  لا توجد مهام نشطة حالياً لأعضاء الفريق
                 </td>
               </tr>
             ) : (
-              filteredMembers.map((m) => {
+              activeMembers.map((m) => {
                 const isSelected = selectedUserId === m.userId;
                 const initials = m.userName.slice(0, 2).toUpperCase();
 
                 return (
                   <tr
                     key={m.userId}
+                    onClick={() => onSelectMember(isSelected ? 'all' : m.userId)}
                     style={{
                       ...styles.tr,
                       background: isSelected ? 'rgba(56, 189, 248, 0.08)' : 'transparent',
+                      borderRight: isSelected ? '2px solid #38bdf8' : '2px solid transparent',
                     }}
+                    title="انقر لتصفية جدول المهام بالأسفل لهذا الموظف"
                   >
-                    {/* Member Info */}
+                    {/* Member Details */}
                     <td style={styles.td}>
-                      <div style={styles.memberCell}>
+                      <div style={styles.memberBox}>
                         <div style={styles.avatar}>{initials}</div>
                         <div style={{ minWidth: 0 }}>
                           <div style={styles.memberName} title={m.userName}>
@@ -131,79 +188,58 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
 
                     {/* In Progress */}
                     <td style={{ ...styles.td, textAlign: 'center' }}>
-                      <span
-                        style={{
-                          ...styles.metricChip,
-                          background: m.inProgressCount > 0 ? 'rgba(56, 189, 248, 0.14)' : 'rgba(255, 255, 255, 0.03)',
-                          color: m.inProgressCount > 0 ? '#38bdf8' : '#64748b',
-                          borderColor: m.inProgressCount > 0 ? 'rgba(56, 189, 248, 0.3)' : 'transparent',
-                        }}
-                        onClick={() => onSelectMember(m.userId, 'IN_PROGRESS')}
-                        title="عرض المهام قيد التنفيذ لهذا الموظف"
-                      >
-                        {m.inProgressCount}
-                      </span>
+                      {m.inProgressCount > 0 ? (
+                        <span style={styles.chipInProgress}>
+                          {m.inProgressCount}
+                        </span>
+                      ) : (
+                        <span style={styles.dimDash}>—</span>
+                      )}
                     </td>
 
                     {/* In Review */}
                     <td style={{ ...styles.td, textAlign: 'center' }}>
-                      <span
-                        style={{
-                          ...styles.metricChip,
-                          background: m.inReviewCount > 0 ? 'rgba(234, 179, 8, 0.14)' : 'rgba(255, 255, 255, 0.03)',
-                          color: m.inReviewCount > 0 ? '#eab308' : '#64748b',
-                          borderColor: m.inReviewCount > 0 ? 'rgba(234, 179, 8, 0.3)' : 'transparent',
-                        }}
-                        onClick={() => onSelectMember(m.userId, 'IN_REVIEW')}
-                        title="عرض المهام المعلقة في انتظار الاعتماد لهذا الموظف"
-                      >
-                        {m.inReviewCount}
-                      </span>
+                      {m.inReviewCount > 0 ? (
+                        <span style={styles.chipInReview}>
+                          {m.inReviewCount}
+                        </span>
+                      ) : (
+                        <span style={styles.dimDash}>—</span>
+                      )}
                     </td>
 
                     {/* Completed Today */}
                     <td style={{ ...styles.td, textAlign: 'center' }}>
-                      <span
-                        style={{
-                          ...styles.metricChip,
-                          background: m.completedTodayCount > 0 ? 'rgba(34, 197, 94, 0.14)' : 'rgba(255, 255, 255, 0.03)',
-                          color: m.completedTodayCount > 0 ? '#22c55e' : '#64748b',
-                          borderColor: m.completedTodayCount > 0 ? 'rgba(34, 197, 94, 0.3)' : 'transparent',
-                        }}
-                        onClick={() => onSelectMember(m.userId, 'COMPLETED')}
-                        title="عرض المهام المنجزة اليوم لهذا الموظف"
-                      >
-                        {m.completedTodayCount}
-                      </span>
+                      {m.completedTodayCount > 0 ? (
+                        <span style={styles.chipCompleted}>
+                          {m.completedTodayCount}
+                        </span>
+                      ) : (
+                        <span style={styles.dimDash}>—</span>
+                      )}
                     </td>
 
                     {/* Pending */}
                     <td style={{ ...styles.td, textAlign: 'center' }}>
-                      <span style={{ ...styles.metricChip, color: '#94a3b8' }}>
-                        {m.pendingCount}
-                      </span>
+                      {m.pendingCount > 0 ? (
+                        <span style={styles.chipPending}>
+                          {m.pendingCount}
+                        </span>
+                      ) : (
+                        <span style={styles.dimDash}>—</span>
+                      )}
                     </td>
 
-                    {/* Tracked Stopwatch Minutes */}
+                    {/* Stopwatch Focus Time */}
                     <td style={{ ...styles.td, textAlign: 'left' }}>
-                      <span style={styles.timeNum}>
+                      <span
+                        style={{
+                          ...styles.timeNum,
+                          color: m.totalTrackedMinutes > 0 ? '#f8fafc' : 'rgba(255,255,255,0.2)',
+                        }}
+                      >
                         {formatMinToH(m.totalTrackedMinutes)}
                       </span>
-                    </td>
-
-                    {/* Action Filter Button */}
-                    <td style={{ ...styles.td, textAlign: 'center' }}>
-                      <button
-                        onClick={() => onSelectMember(isSelected ? 'all' : m.userId)}
-                        style={{
-                          ...styles.filterBtn,
-                          background: isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.06)',
-                          color: isSelected ? '#09090b' : '#cbd5e1',
-                        }}
-                        title={isSelected ? 'إلغاء التصفية' : 'تصفية الجدول لمهام هذا الموظف فقط'}
-                      >
-                        {isSelected ? 'محدد' : 'عرض'}
-                      </button>
                     </td>
                   </tr>
                 );
@@ -211,83 +247,114 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
             )}
           </tbody>
 
-          {/* Totals Summary Footer Row */}
+          {/* Totals Summary Footer */}
           <tfoot>
             <tr style={styles.tfRow}>
               <td style={styles.td}>
-                <span style={styles.totalLabel}>إجمالي الفريق ({members.length})</span>
+                <span style={styles.tfLabel}>إجمالي الفريق الموثق</span>
               </td>
               <td style={{ ...styles.td, textAlign: 'center' }}>
-                <span style={{ ...styles.totalValue, color: '#38bdf8' }}>{totals.inProgress}</span>
+                <span style={{ ...styles.tfNum, color: '#38bdf8' }}>{totals.inProgress}</span>
               </td>
               <td style={{ ...styles.td, textAlign: 'center' }}>
-                <span style={{ ...styles.totalValue, color: '#eab308' }}>{totals.inReview}</span>
+                <span style={{ ...styles.tfNum, color: '#eab308' }}>{totals.inReview}</span>
               </td>
               <td style={{ ...styles.td, textAlign: 'center' }}>
-                <span style={{ ...styles.totalValue, color: '#22c55e' }}>{totals.completedToday}</span>
+                <span style={{ ...styles.tfNum, color: '#22c55e' }}>{totals.completedToday}</span>
               </td>
               <td style={{ ...styles.td, textAlign: 'center' }}>
-                <span style={{ ...styles.totalValue, color: '#94a3b8' }}>{totals.pending}</span>
+                <span style={{ ...styles.tfNum, color: '#94a3b8' }}>{totals.pending}</span>
               </td>
               <td style={{ ...styles.td, textAlign: 'left' }}>
-                <span style={{ ...styles.totalValue, color: '#f8fafc' }}>
+                <span style={{ ...styles.tfNum, color: '#f8fafc' }}>
                   {formatMinToH(totals.minutes)}
                 </span>
               </td>
-              <td style={styles.td} />
             </tr>
           </tfoot>
         </table>
       </div>
+
+      {/* Standby Members (Compact Subdued Bar - Zero Screen Waste) */}
+      {standbyMembers.length > 0 && (
+        <div style={styles.standbyStrip}>
+          <div
+            style={styles.standbyToggleBtn}
+            onClick={() => setShowStandby((prev) => !prev)}
+            role="button"
+          >
+            <span style={styles.standbyLabel}>
+              أعضاء بدون مهام نشطة اليوم ({standbyMembers.length})
+            </span>
+            {showStandby ? <ChevronUp size={12} color="#64748b" /> : <ChevronDown size={12} color="#64748b" />}
+          </div>
+
+          {showStandby && (
+            <div style={styles.standbyChipsWrap}>
+              {standbyMembers.map((m) => (
+                <button
+                  key={m.userId}
+                  onClick={() => onSelectMember(selectedUserId === m.userId ? 'all' : m.userId)}
+                  style={{
+                    ...styles.standbyChip,
+                    borderColor: selectedUserId === m.userId ? '#38bdf8' : 'rgba(255,255,255,0.06)',
+                    background: selectedUserId === m.userId ? 'rgba(56, 189, 248, 0.1)' : 'rgba(255,255,255,0.02)',
+                    color: selectedUserId === m.userId ? '#38bdf8' : '#94a3b8',
+                  }}
+                  title="تصفية لعرض سجل هذا الموظف"
+                >
+                  <span style={styles.standbyDot} />
+                  <span>{m.userName}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
 const styles: Record<string, React.CSSProperties> = {
-  container: {
+  chassis: {
     background: '#121214',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 8,
-    marginBottom: 12,
+    marginBottom: 10,
     overflow: 'hidden',
   },
-  header: {
+  headerBar: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '8px 12px',
+    padding: '7px 12px',
     borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-    flexWrap: 'wrap',
-    gap: 8,
+    background: 'rgba(24, 24, 27, 0.4)',
   },
-  headerLeft: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 1,
-  },
-  titleWrap: {
+  headerTitleGroup: {
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
   },
-  title: {
-    fontSize: 12,
+  headerTitle: {
+    fontSize: 11.5,
     fontWeight: 700,
     color: '#f8fafc',
   },
-  countBadge: {
+  activePill: {
     fontSize: 10,
     fontWeight: 600,
     padding: '1px 6px',
     borderRadius: 10,
     background: 'rgba(56, 189, 248, 0.12)',
     color: '#38bdf8',
+    fontVariantNumeric: 'tabular-nums',
   },
-  subtitle: {
-    fontSize: 10.5,
-    color: '#94a3b8',
+  headerRightGroup: {
+    display: 'flex',
+    alignItems: 'center',
   },
-  searchWrap: {
+  searchBox: {
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
@@ -300,15 +367,24 @@ const styles: Record<string, React.CSSProperties> = {
   searchInput: {
     background: '#18181b',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: 6,
+    borderRadius: 5,
     color: '#f8fafc',
-    fontSize: 11,
-    padding: '3px 24px 3px 6px',
+    fontSize: 10.5,
+    padding: '3px 22px 3px 6px',
     fontFamily: 'inherit',
     outline: 'none',
-    width: 150,
+    width: 140,
   },
-  tableScroll: {
+  clearSearchBtn: {
+    position: 'absolute',
+    left: 4,
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: 2,
+    display: 'flex',
+  },
+  tableWrap: {
     overflowX: 'auto',
   },
   table: {
@@ -317,43 +393,49 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11.5,
   },
   thRow: {
-    background: 'rgba(24, 24, 27, 0.5)',
+    background: 'rgba(24, 24, 27, 0.6)',
     borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
   },
   th: {
-    padding: '7px 10px',
+    padding: '6px 10px',
     textAlign: 'right',
     color: '#94a3b8',
     fontWeight: 600,
-    fontSize: 11,
+    fontSize: 10.5,
     whiteSpace: 'nowrap',
+  },
+  thBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
   },
   tr: {
     borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+    cursor: 'pointer',
     transition: 'background 120ms ease',
   },
   td: {
-    padding: '6px 10px',
+    padding: '5px 10px',
     verticalAlign: 'middle',
   },
   emptyTd: {
-    padding: 18,
+    padding: 16,
     textAlign: 'center',
     color: '#64748b',
-    fontSize: 11.5,
+    fontSize: 11,
   },
-  memberCell: {
+  memberBox: {
     display: 'flex',
     alignItems: 'center',
     gap: 7,
   },
   avatar: {
-    width: 22,
-    height: 22,
+    width: 20,
+    height: 20,
     borderRadius: 4,
     background: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
     color: '#ffffff',
-    fontSize: 9.5,
+    fontSize: 9,
     fontWeight: 700,
     display: 'flex',
     alignItems: 'center',
@@ -361,7 +443,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   memberName: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: 600,
     color: '#f1f5f9',
     whiteSpace: 'nowrap',
@@ -370,48 +452,114 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 160,
   },
   memberDept: {
-    fontSize: 9.5,
+    fontSize: 9,
     color: '#64748b',
   },
-  metricChip: {
+  chipInProgress: {
     display: 'inline-block',
-    padding: '2px 8px',
+    padding: '1px 7px',
     borderRadius: 4,
-    border: '1px solid transparent',
-    fontSize: 11,
+    background: 'rgba(56, 189, 248, 0.12)',
+    border: '1px solid rgba(56, 189, 248, 0.25)',
+    color: '#38bdf8',
     fontWeight: 700,
+    fontSize: 10.5,
     fontVariantNumeric: 'tabular-nums',
-    cursor: 'pointer',
-    transition: 'all 120ms ease',
+  },
+  chipInReview: {
+    display: 'inline-block',
+    padding: '1px 7px',
+    borderRadius: 4,
+    background: 'rgba(234, 179, 8, 0.12)',
+    border: '1px solid rgba(234, 179, 8, 0.25)',
+    color: '#eab308',
+    fontWeight: 700,
+    fontSize: 10.5,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  chipCompleted: {
+    display: 'inline-block',
+    padding: '1px 7px',
+    borderRadius: 4,
+    background: 'rgba(34, 197, 94, 0.12)',
+    border: '1px solid rgba(34, 197, 94, 0.25)',
+    color: '#22c55e',
+    fontWeight: 700,
+    fontSize: 10.5,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  chipPending: {
+    display: 'inline-block',
+    padding: '1px 6px',
+    borderRadius: 4,
+    color: '#94a3b8',
+    fontSize: 10.5,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  dimDash: {
+    color: 'rgba(255, 255, 255, 0.18)',
+    fontWeight: 300,
   },
   timeNum: {
     fontVariantNumeric: 'tabular-nums',
     fontWeight: 600,
-    color: '#94a3b8',
     fontSize: 11,
   },
-  filterBtn: {
-    border: 'none',
-    borderRadius: 4,
-    padding: '2px 8px',
+  tfRow: {
+    background: 'rgba(24, 24, 27, 0.6)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+  },
+  tfLabel: {
+    fontSize: 10.5,
+    fontWeight: 700,
+    color: '#94a3b8',
+  },
+  tfNum: {
+    fontSize: 11,
+    fontWeight: 800,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  standbyStrip: {
+    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+    padding: '5px 12px',
+    background: 'rgba(18, 18, 20, 0.5)',
+  },
+  standbyToggleBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    cursor: 'pointer',
+    userSelect: 'none',
+  },
+  standbyLabel: {
     fontSize: 10,
-    fontWeight: 600,
+    color: '#64748b',
+    fontWeight: 500,
+  },
+  standbyChipsWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 5,
+    marginTop: 6,
+    paddingTop: 4,
+  },
+  standbyChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    border: '1px solid',
+    borderRadius: 4,
+    padding: '2px 7px',
+    fontSize: 10,
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 120ms ease',
   },
-  tfRow: {
-    background: 'rgba(24, 24, 27, 0.7)',
-    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-  },
-  totalLabel: {
-    fontSize: 11,
-    fontWeight: 700,
-    color: '#f8fafc',
-  },
-  totalValue: {
-    fontSize: 12,
-    fontWeight: 800,
-    fontVariantNumeric: 'tabular-nums',
+  standbyDot: {
+    width: 4,
+    height: 4,
+    borderRadius: '50%',
+    background: '#64748b',
   },
 };

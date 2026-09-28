@@ -182,11 +182,15 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
   const teamMembersSummary: TeamMemberTaskSummary[] = useMemo(() => {
     const todayStr = new Date().toISOString().slice(0, 10);
     const memberMap: Record<string, TeamMemberTaskSummary> = {};
+    const nameToId: Record<string, string> = {};
 
     users.forEach((u: any) => {
-      const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'عضو فريق';
-      memberMap[u.id] = {
-        userId: u.id,
+      const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name || u.email || 'عضو فريق';
+      const normName = name.toLowerCase().trim();
+      const uid = String(u.id || u.userId || normName);
+
+      memberMap[uid] = {
+        userId: uid,
         userName: name,
         jobTitle: u.jobTitle,
         departmentName: u.department?.name || u.departmentName,
@@ -199,14 +203,28 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         totalTrackedMinutes: 0,
         activeTaskTitle: null,
       };
+      if (normName) {
+        nameToId[normName] = uid;
+      }
     });
 
     reportItems.forEach((t) => {
-      const uid = t.assignedToId || 'unassigned';
-      if (!memberMap[uid]) {
-        memberMap[uid] = {
-          userId: uid,
-          userName: t.assignedToName || 'غير مسندة',
+      const assignedName = (t.assignedToName || '').trim();
+      const normName = assignedName.toLowerCase();
+
+      // Resolve user: ID match first, then normalized name match
+      let targetId = t.assignedToId && memberMap[t.assignedToId] ? t.assignedToId : null;
+      if (!targetId && normName && nameToId[normName]) {
+        targetId = nameToId[normName];
+      }
+      if (!targetId) {
+        targetId = t.assignedToId || (normName ? `name-${normName}` : 'unassigned');
+      }
+
+      if (!memberMap[targetId]) {
+        memberMap[targetId] = {
+          userId: targetId,
+          userName: assignedName || 'غير مسندة',
           inProgressCount: 0,
           inReviewCount: 0,
           completedTodayCount: 0,
@@ -215,9 +233,12 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
           totalTrackedMinutes: 0,
           activeTaskTitle: null,
         };
+        if (normName) {
+          nameToId[normName] = targetId;
+        }
       }
 
-      const m = memberMap[uid];
+      const m = memberMap[targetId];
       m.totalTrackedMinutes += t.actualTrackedMinutes || 0;
 
       if (t.status === 'IN_PROGRESS') {
@@ -240,7 +261,12 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
     return Object.values(memberMap)
       .filter((m) => m.userId !== 'unassigned' || m.totalActiveCount > 0 || m.completedTodayCount > 0)
-      .sort((a, b) => (b.inProgressCount + b.inReviewCount) - (a.inProgressCount + a.inReviewCount));
+      .sort((a, b) => {
+        const aActive = a.inProgressCount + a.inReviewCount + a.completedTodayCount;
+        const bActive = b.inProgressCount + b.inReviewCount + b.completedTodayCount;
+        if (bActive !== aActive) return bActive - aActive;
+        return a.userName.localeCompare(b.userName, 'ar');
+      });
   }, [users, reportItems, filters.dateRange]);
 
   // 1-Click Daily Standup Generator
