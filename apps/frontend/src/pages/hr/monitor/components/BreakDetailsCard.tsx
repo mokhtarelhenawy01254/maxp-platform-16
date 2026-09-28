@@ -71,14 +71,14 @@ export const BreakDetailsCard: React.FC<BreakDetailsCardProps> = ({ breaksSummar
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/30 pb-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-inset ring-amber-500/25">
-            <Coffee className="h-4 w-4" />
+            <Clock className="h-4 w-4" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">
-              سجل وتفاصيل الاستراحات وفترات التوقف (Breaks & Pauses)
+              سجل وتفاصيل فترات التوقف والخمول (Inactivity & Pauses)
             </h3>
             <p className="text-xs text-muted-foreground">
-              حصر فترات التوقف التي تزيد عن 5 دقائق متصلة ومطابقتها مع مواعيد الدوام
+              حصر فترات الخمول والتوقف عن استخدام الجهاز التي تزيد عن 5 دقائق متصلة
             </p>
           </div>
         </div>
@@ -86,13 +86,13 @@ export const BreakDetailsCard: React.FC<BreakDetailsCardProps> = ({ breaksSummar
         {/* Telemetry Chips */}
         <div className="flex items-center gap-2 text-xs">
           <span className="inline-flex items-center gap-1 rounded-md bg-muted dark:bg-zinc-800 px-2.5 py-1 font-medium text-foreground dark:text-zinc-300 ring-1 ring-inset ring-border/40 tabular-nums">
-            <Coffee className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-            <span>{totalCount > 0 ? `أخذ ${totalCount} استراحات اليوم` : 'لا توجد استراحات مجمعة'}</span>
+            <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+            <span>{totalCount > 0 ? `${totalCount} فترات توقف مسجلة اليوم` : 'لا توجد فترات توقف'}</span>
           </span>
           {totalCount > 0 && (
             <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200 dark:border-transparent dark:bg-amber-500/10 dark:text-amber-300 px-2.5 py-1 font-medium tabular-nums">
               <Clock className="h-3.5 w-3.5" />
-              <span>إجمالي المدة: {formatDuration(totalMinutes)}</span>
+              <span>إجمالي وقت التوقف: {formatDuration(totalMinutes)}</span>
             </span>
           )}
         </div>
@@ -105,9 +105,9 @@ export const BreakDetailsCard: React.FC<BreakDetailsCardProps> = ({ breaksSummar
             <thead className="border-b border-border/40 bg-muted/50 dark:bg-zinc-900/60 text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-semibold">#</th>
-                <th className="px-3 py-2 font-semibold">توقيت الاستراحة</th>
+                <th className="px-3 py-2 font-semibold">توقيت التوقف</th>
                 <th className="px-3 py-2 font-semibold">المدة الفعلية</th>
-                <th className="px-3 py-2 font-semibold">التصنيف والسبب المرجح</th>
+                <th className="px-3 py-2 font-semibold">طبيعة التوقف والحالة</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/20">
@@ -143,7 +143,7 @@ export const BreakDetailsCard: React.FC<BreakDetailsCardProps> = ({ breaksSummar
         </div>
       ) : (
         <div className="mt-3 flex items-center justify-center rounded-lg border border-dashed border-border/40 p-4 text-xs text-muted-foreground">
-          لا توجد فترات انقطاع أو استراحات متصلة تزيد عن 5 دقائق مسجلة لهذا اليوم
+          لا توجد فترات خمول أو توقف متصل تزيد عن 5 دقائق مسجلة لهذا اليوم
         </div>
       )}
     </div>

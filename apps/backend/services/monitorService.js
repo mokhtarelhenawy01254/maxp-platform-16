@@ -215,7 +215,7 @@ class MonitorService {
     }
 
     const sorted = [...activities].sort((a, b) => new Date(a.intervalStart).getTime() - new Date(b.intervalStart).getTime());
-    const breaks = [];
+    const rawBreaks = [];
     let currentBreak = null;
 
     for (let i = 0; i < sorted.length; i++) {
@@ -234,7 +234,7 @@ class MonitorService {
           if (currentBreak) {
             const dur = Math.floor((currentBreak.endMs - currentBreak.startMs) / 1000);
             if (dur >= 300) {
-              breaks.push({
+              rawBreaks.push({
                 startMs: currentBreak.startMs,
                 endMs: currentBreak.endMs,
                 durationSeconds: dur,
@@ -243,7 +243,7 @@ class MonitorService {
             }
             currentBreak = null;
           }
-          breaks.push({
+          rawBreaks.push({
             startMs: prevEndMs,
             endMs: startMs,
             durationSeconds: gapSec,
@@ -262,7 +262,7 @@ class MonitorService {
         if (currentBreak) {
           const durationSec = Math.floor((currentBreak.endMs - currentBreak.startMs) / 1000);
           if (durationSec >= 300) {
-            breaks.push({
+            rawBreaks.push({
               startMs: currentBreak.startMs,
               endMs: currentBreak.endMs,
               durationSeconds: durationSec,
@@ -277,7 +277,7 @@ class MonitorService {
     if (currentBreak) {
       const durationSec = Math.floor((currentBreak.endMs - currentBreak.startMs) / 1000);
       if (durationSec >= 300) {
-        breaks.push({
+        rawBreaks.push({
           startMs: currentBreak.startMs,
           endMs: currentBreak.endMs,
           durationSeconds: durationSec,
@@ -286,11 +286,28 @@ class MonitorService {
       }
     }
 
-    const formattedBreaks = breaks.map((b, idx) => {
+    // 🧹 De-fragmentation: دمج فترات التوقف المتتالية إذا كان الفاصل بينهما أقل من 4 دقائق (تجنب تفتيت الخمول)
+    const mergedBreaks = [];
+    for (const b of rawBreaks) {
+      if (mergedBreaks.length === 0) {
+        mergedBreaks.push({ ...b });
+      } else {
+        const last = mergedBreaks[mergedBreaks.length - 1];
+        const gapBetweenBreaksSec = Math.floor((b.startMs - last.endMs) / 1000);
+        if (gapBetweenBreaksSec <= 240) {
+          last.endMs = Math.max(last.endMs, b.endMs);
+          last.durationSeconds = Math.floor((last.endMs - last.startMs) / 1000);
+          if (b.isGap) last.isGap = true;
+        } else {
+          mergedBreaks.push({ ...b });
+        }
+      }
+    }
+
+    const formattedBreaks = mergedBreaks.map((b, idx) => {
       const startDate = new Date(b.startMs);
       const endDate = new Date(b.endMs);
       const durationMinutes = Math.round(b.durationSeconds / 60);
-      const startHour = startDate.getHours();
 
       let reasonType = 'UNLOGGED_INACTIVITY';
       let reasonLabel = 'توقف عن استخدام الجهاز (خمول)';
@@ -298,17 +315,17 @@ class MonitorService {
       if (b.isGap) {
         reasonType = 'DEVICE_DISCONNECTED_OR_POWER_CUT';
         reasonLabel = durationMinutes >= 30
-          ? 'انقطاع اتصال طويل / إغلاق جهاز أو انقطاع كهرباء'
+          ? 'انقطاع اتصال طويل / إغلاق جهاز أو وضع سكون'
           : 'انقطاع اتصال مؤقت بالجهاز / إغلاق أو شبكة';
-      } else if (startHour >= 13 && startHour <= 15) {
-        reasonType = 'SCHEDULED_LUNCH';
-        reasonLabel = 'استراحة غداء وصلاة معتمدة';
-      } else if (durationMinutes >= 60) {
+      } else if (durationMinutes >= 45) {
         reasonType = 'EXTENDED_ABSENCE';
-        reasonLabel = 'انقطاع طويل عن الجهاز';
-      } else if (durationMinutes <= 20) {
+        reasonLabel = 'توقف ممتد عن استخدام الجهاز (غياب عن المكتب)';
+      } else if (durationMinutes <= 15) {
         reasonType = 'SHORT_BREAK';
-        reasonLabel = 'استراحة قصيرة / خمول مؤقت';
+        reasonLabel = 'توقف قصير / خمول مؤقت';
+      } else {
+        reasonType = 'UNLOGGED_INACTIVITY';
+        reasonLabel = 'توقف عن استخدام الجهاز (خمول غير موثق)';
       }
 
       return {
