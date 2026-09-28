@@ -1669,6 +1669,60 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       expect(res.payload.error).toContain('رفع ملفات HTML أو SVG غير مسموح لدواعي أمنية');
       expect(prisma.dentalCaseAttachment.create).not.toHaveBeenCalled();
     });
+
+    test('uploadCaseAttachment accepts Exocad HTML for DESIGN_REVIEW', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst.mockResolvedValue({ id: 'case-1', companyId: 'company-1' });
+      prisma.dentalCaseAttachment.create.mockResolvedValue({
+        id: 'att-1',
+        fileName: 'exocad-webview.html',
+        kind: 'DESIGN_REVIEW',
+      });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.uploadCaseAttachment(
+        req({
+          params: { id: 'case-1' },
+          body: { kind: 'DESIGN_REVIEW' },
+          files: [
+            { originalname: 'exocad-webview.html', filename: 'exocad-webview.html', mimetype: 'text/html', path: '/tmp/exocad-webview.html', size: 1000 },
+          ],
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(prisma.dentalCaseAttachment.create).toHaveBeenCalled();
+    });
+
+    test('uploadCaseAttachment accepts 3D STL files for DESIGN_REVIEW', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst.mockResolvedValue({ id: 'case-1', companyId: 'company-1' });
+      prisma.dentalCaseAttachment.create.mockResolvedValue({
+        id: 'att-2',
+        fileName: 'crown_design.stl',
+        kind: 'DESIGN_REVIEW',
+      });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.uploadCaseAttachment(
+        req({
+          params: { id: 'case-1' },
+          body: { kind: 'DESIGN_REVIEW' },
+          files: [
+            { originalname: 'crown_design.stl', filename: 'crown_design.stl', mimetype: 'model/stl', path: '/tmp/crown_design.stl', size: 5000 },
+          ],
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(prisma.dentalCaseAttachment.create).toHaveBeenCalled();
+    });
   });
 
   describe('company scoping', () => {

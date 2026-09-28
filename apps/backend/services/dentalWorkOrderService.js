@@ -327,15 +327,18 @@ function generateInvoicePdf({ company, invoice, dentalCase, items, workOrderHead
           doc.fontSize(7.5).fillColor('#0f172a');
           let x = margin + contentWidth;
 
-          const rowCols = [
-            { text: String(index + 1), w: colWidths.idx, align: 'center', color: '#64748b' },
-            { text: it.caseNumber || '—', w: colWidths.caseNum, align: 'center', color: '#2563eb' },
-            { text: it.patientName || '—', w: colWidths.patient, align: 'right' },
-            { text: it.workTypeName || '—', w: colWidths.workType, align: 'right', color: '#475569' },
-            { text: String(it.unitsCount || 1), w: colWidths.units, align: 'center' },
-            { text: `${Math.round(it.unitPrice || 0)}`, w: colWidths.unitPrice, align: 'center' },
-            { text: `${Math.round(it.total || 0)} ج.م`, w: colWidths.total, align: 'center', color: '#0f172a' },
-          ];
+            const patientLabel = it.doctorName && it.doctorName !== '—' && it.doctorName !== invoice.doctorName
+              ? `${it.patientName || '—'} (د. ${it.doctorName})`
+              : (it.patientName || '—');
+            const rowCols = [
+              { text: String(index + 1), w: colWidths.idx, align: 'center', color: '#64748b' },
+              { text: it.caseNumber || '—', w: colWidths.caseNum, align: 'center', color: '#2563eb' },
+              { text: patientLabel, w: colWidths.patient, align: 'right' },
+              { text: it.workTypeName || '—', w: colWidths.workType, align: 'right', color: '#475569' },
+              { text: String(it.unitsCount || 1), w: colWidths.units, align: 'center' },
+              { text: `${Math.round(it.unitPrice || 0)}`, w: colWidths.unitPrice, align: 'center' },
+              { text: `${Math.round(it.total || 0)} ج.م`, w: colWidths.total, align: 'center', color: '#0f172a' },
+            ];
 
           rowCols.forEach((col) => {
             x -= col.w;

@@ -684,9 +684,10 @@ export const CASE_STATUS_MAP: Record<string, { label: string; color: string }> =
   {} as Record<string, { label: string; color: string }>,
 );
 
-export const CASE_STATUS_FLOW: DentalCaseStatus[] = ["RECEIVED", "DESIGN", "MANUFACTURING", "OUTSOURCED", "QC", "READY", "DELIVERED", "CLOSED"];
+export const CASE_STATUS_FLOW: DentalCaseStatus[] = ["RECEIVED", "DESIGN", "MANUFACTURING", "QC", "READY", "DELIVERED", "CLOSED"];
 
 export const nextStatusOf = (status: string): DentalCaseStatus | null => {
+  if (status === "OUTSOURCED") return "QC";
   const idx = CASE_STATUS_FLOW.indexOf(status as DentalCaseStatus);
   if (idx < 0) return null;
   return CASE_STATUS_FLOW[idx + 1] ?? null;
@@ -867,10 +868,10 @@ export interface UninvoicedSummaryResult {
   totalAmount: number;
 }
 
-export const fetchUninvoicedSummary = async (): Promise<UninvoicedSummaryResult> =>
-  unwrapEnvelope<UninvoicedSummaryResult>(await apiClient.get("/dental-lab/invoices/uninvoiced-summary"));
+export const fetchUninvoicedSummary = async (includeAll = false): Promise<UninvoicedSummaryResult> =>
+  unwrapEnvelope<UninvoicedSummaryResult>(await apiClient.get("/dental-lab/invoices/uninvoiced-summary", { params: { includeAll } }));
 
-export const batchCreateMonthlyInvoices = async (body?: { doctorIds?: string[]; dueDate?: string; notes?: string; mode?: "PER_CASE" | "CONSOLIDATED" }): Promise<{ createdCount: number; invoicedCasesCount: number }> =>
+export const batchCreateMonthlyInvoices = async (body?: { doctorIds?: string[]; dueDate?: string; notes?: string; mode?: "PER_CASE" | "CONSOLIDATED"; includeAllStatuses?: boolean }): Promise<{ createdCount: number; invoicedCasesCount: number }> =>
   unwrapEnvelope<{ createdCount: number; invoicedCasesCount: number }>(await apiClient.post("/dental-lab/invoices/batch-create", body || {}));
 
 export const fetchMonthlySettlements = async (params?: { period?: string; doctorId?: string }): Promise<{

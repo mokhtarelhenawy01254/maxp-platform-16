@@ -2664,10 +2664,16 @@ const advanceCaseStatus = async (req, res) => {
         return ['RECEIVED', 'DESIGN', 'MANUFACTURING'].includes(from);
       }
       if (from === 'MANUFACTURING') {
-        return to === 'QC' || to === 'OUTSOURCED';
+        return to === 'QC' || to === 'OUTSOURCED' || to === 'READY';
       }
       if (from === 'OUTSOURCED') {
-        return to === 'QC' || to === 'MANUFACTURING';
+        return to === 'QC' || to === 'MANUFACTURING' || to === 'READY';
+      }
+      if (from === 'QC') {
+        return to === 'READY' || to === 'DELIVERED';
+      }
+      if (from === 'READY') {
+        return to === 'DELIVERED' || to === 'CLOSED';
       }
       return to === nextInChain;
     };
@@ -3203,33 +3209,42 @@ const uploadCaseAttachment = async (req, res) => {
       }
     }
 
-    // SEC-A2: منع رفع ملفات HTML أو SVG منعاً قاطعاً لحماية النظام من ثغرات XSS المخزنة
-    const isBannedFile = (f) => {
+    // SEC-A2: منع ملفات SVG أو البرمجيات. ملفات HTML مسموحة حصرياً لمراجعة التصميم 3D (exocad webview)
+    const checkFileSecurity = (f, kind) => {
       const ext = path.extname(f.originalname || f.filename || '').toLowerCase();
       const mime = String(f.mimetype || '').toLowerCase();
-      return (
-        ext === '.html' ||
-        ext === '.htm' ||
-        ext === '.svg' ||
-        ext === '.shtml' ||
-        ext === '.xhtml' ||
-        mime === 'text/html' ||
-        mime === 'image/svg+xml'
-      );
-    };
-    for (const f of files) {
-      if (isBannedFile(f)) {
-        for (const ff of files) { if (ff && ff.path) fs.unlink(ff.path, () => {}); }
-        return res.status(400).json({ success: false, error: 'رفع ملفات HTML أو SVG غير مسموح لدواعي أمنية' });
+      if (ext === '.svg' || mime === 'image/svg+xml' || ext === '.shtml' || ext === '.xhtml') {
+        return { banned: true, error: 'رفع ملفات HTML أو SVG غير مسموح لدواعي أمنية' };
       }
-    }
+      if (ext === '.html' || ext === '.htm' || mime === 'text/html') {
+        if (kind !== 'DESIGN_REVIEW') {
+          return { banned: true, error: 'رفع ملفات HTML أو SVG غير مسموح لدواعي أمنية' };
+        }
+      }
+      return { banned: false };
+    };
 
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       const k = perFileKinds[i];
-      if (k === 'DESIGN_REVIEW' && !isHtmlFile(f)) {
+      const sec = checkFileSecurity(f, k);
+      if (sec.banned) {
         for (const ff of files) { if (ff && ff.path) fs.unlink(ff.path, () => {}); }
-        return res.status(400).json({ success: false, error: 'مراجعة التصميم يجب أن تكون ملف HTML من exocad' });
+        return res.status(400).json({ success: false, error: sec.error });
+      }
+    }
+
+    const isDesignReviewCompatible = (f) => {
+      const ext = path.extname(f.originalname || f.filename || '').toLowerCase();
+      return ['.html', '.htm', '.stl', '.ply', '.obj', '.dcm', '.zip'].includes(ext);
+    };
+
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const k = perFileKinds[i];
+      if (k === 'DESIGN_REVIEW' && !isDesignReviewCompatible(f)) {
+        for (const ff of files) { if (ff && ff.path) fs.unlink(ff.path, () => {}); }
+        return res.status(400).json({ success: false, error: 'مراجعة التصميم يجب أن تكون ملف 3D (STL/PLY/OBJ) أو ملف HTML من exocad' });
       }
     }
 
@@ -3651,11 +3666,16 @@ const getUninvoicedSummary = async (req, res) => {
     if (!companyId) return;
     const prisma = getSharedPrismaClient();
 
+    const includeAll = req.query.includeAll === 'true' || req.query.allStatuses === 'true';
+    const statusFilter = includeAll
+      ? { notIn: ['CLOSED', 'CANCELLED'] }
+      : { in: ['DELIVERED', 'COMPLETED', 'READY'] };
+
     const cases = await prisma.dentalLabCase.findMany({
       where: {
         companyId,
         isDeleted: false,
-        status: { in: ['DELIVERED', 'COMPLETED', 'READY'] },
+        status: statusFilter,
         invoices: { none: {} },
         paymentStatus: { not: 'INVOICED' },
       },
@@ -3669,7 +3689,7 @@ const getUninvoicedSummary = async (req, res) => {
     const byDoctorMap = new Map();
     for (const c of cases) {
       const docId = c.doctorId || 'unknown';
-      const docName = c.doctorName || (c.doctor && c.doctor.name) || 'غير محدد';
+      const docName = (c.doctor && c.doctor.name) || c.doctorName || 'غير محدد';
       const docPhone = c.doctor && c.doctor.phone;
       const clinicName = c.doctor && c.doctor.clinicName;
 
@@ -3693,6 +3713,7 @@ const getUninvoicedSummary = async (req, res) => {
         id: c.id,
         caseNumber: c.caseNumber || c.id.slice(0, 8),
         patientName: c.patientName,
+        doctorName: c.doctorName || docName,
         workTypeName: c.workTypeName || (c.workType && c.workType.name) || '—',
         dueDate: c.dueDate,
         deliveredAt: c.deliveredAt,
@@ -3725,12 +3746,14 @@ const batchCreateMonthlyInvoices = async (req, res) => {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
     const prisma = getSharedPrismaClient();
-    const { doctorIds, dueDate, notes, mode = 'CONSOLIDATED' } = req.body || {};
+    const { doctorIds, dueDate, notes, mode = 'CONSOLIDATED', includeAllStatuses = false } = req.body || {};
 
     const where = {
       companyId,
       isDeleted: false,
-      status: { in: ['DELIVERED', 'COMPLETED', 'READY'] },
+      status: includeAllStatuses
+        ? { notIn: ['CLOSED', 'CANCELLED'] }
+        : { in: ['DELIVERED', 'COMPLETED', 'READY'] },
       invoices: { none: {} },
     };
     if (Array.isArray(doctorIds) && doctorIds.length > 0) {
@@ -3827,6 +3850,7 @@ const batchCreateMonthlyInvoices = async (req, res) => {
           caseId: c.id,
           caseNumber: c.caseNumber || '—',
           patientName: c.patientName || '—',
+          doctorName: c.doctorName || doctorName || '—',
           workTypeName: c.workTypeName || '—',
           unitsCount: c.unitsCount || 1,
           unitPrice: c.unitPrice || (c.unitsCount ? round2(Number(c.total) / c.unitsCount) : Number(c.total)),

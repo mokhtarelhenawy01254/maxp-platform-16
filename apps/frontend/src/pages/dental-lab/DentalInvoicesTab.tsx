@@ -430,7 +430,11 @@ function BatchMonthlyInvoiceModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [selectedDoctorIds, setSelectedDoctorIds] = useState<string[]>(
+  const [includeAllStatuses, setIncludeAllStatuses] = useState(false);
+  const [currentSummary, setCurrentSummary] = useState<UninvoicedSummaryResult>(summary);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+
+  const [selectedDoctorIds, setSelectedDoctorIds] = useState<string[]>(() =>
     summary.doctors.map((d) => d.doctorId).filter((id): id is string => Boolean(id))
   );
   const [mode, setMode] = useState<"PER_CASE" | "CONSOLIDATED">("PER_CASE");
@@ -443,13 +447,27 @@ function BatchMonthlyInvoiceModal({
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const allSelected = summary.doctors.length > 0 && selectedDoctorIds.length === summary.doctors.length;
+  const handleIncludeAllToggle = async (checked: boolean) => {
+    setIncludeAllStatuses(checked);
+    setLoadingSummary(true);
+    try {
+      const res = await fetchUninvoicedSummary(checked);
+      setCurrentSummary(res);
+      setSelectedDoctorIds(res.doctors.map((d) => d.doctorId).filter((id): id is string => Boolean(id)));
+    } catch {
+      toast.error("فشل تحديث ملخص الحالات");
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
+  const allSelected = currentSummary.doctors.length > 0 && selectedDoctorIds.length === currentSummary.doctors.length;
 
   const toggleSelectAll = () => {
     if (allSelected) {
       setSelectedDoctorIds([]);
     } else {
-      setSelectedDoctorIds(summary.doctors.map((d) => d.doctorId).filter((id): id is string => Boolean(id)));
+      setSelectedDoctorIds(currentSummary.doctors.map((d) => d.doctorId).filter((id): id is string => Boolean(id)));
     }
   };
 
@@ -459,11 +477,11 @@ function BatchMonthlyInvoiceModal({
   };
 
   const selectedStats = useMemo(() => {
-    const filtered = summary.doctors.filter((d) => d.doctorId && selectedDoctorIds.includes(d.doctorId));
+    const filtered = currentSummary.doctors.filter((d) => d.doctorId && selectedDoctorIds.includes(d.doctorId));
     const cases = filtered.reduce((sum, d) => sum + d.casesCount, 0);
     const amount = filtered.reduce((sum, d) => sum + d.totalAmount, 0);
     return { doctorsCount: filtered.length, cases, amount };
-  }, [summary, selectedDoctorIds]);
+  }, [currentSummary, selectedDoctorIds]);
 
   const handleRunBatch = async () => {
     if (selectedDoctorIds.length === 0) {
@@ -477,6 +495,7 @@ function BatchMonthlyInvoiceModal({
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         notes: notes.trim() || undefined,
         mode,
+        includeAllStatuses,
       });
       toast.success(`تم إنشاء ${res.createdCount} فاتورة بنجاح لـ ${res.invoicedCasesCount} حالة!`);
       onSaved();
@@ -497,7 +516,7 @@ function BatchMonthlyInvoiceModal({
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-bold">إصدار الفواتير الشهرية المجمعة</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">تجميع الحالات المكتملة والمسلمة وإصدار مطالبات رسمية للأطباء</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">تجميع الحالات المكتملة أو قيد التشغيل وإصدار مطالبات رسمية للأطباء</p>
             </div>
           </div>
           <button onClick={() => !submitting && onClose()} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg dark:text-gray-300">
@@ -506,6 +525,25 @@ function BatchMonthlyInvoiceModal({
         </div>
 
         <div className="space-y-4 max-h-[70vh] overflow-y-auto px-0.5">
+          {/* Include all statuses toggle */}
+          <div className="p-3 bg-blue-50/60 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-900/40 flex items-center justify-between gap-3">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={includeAllStatuses}
+                onChange={(e) => handleIncludeAllToggle(e.target.checked)}
+                disabled={loadingSummary || submitting}
+                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 cursor-pointer"
+              />
+              <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                تضمين كافة الحالات المسجلة (حتى تحت التشغيل والتصميم)
+              </span>
+            </label>
+            <span className="text-[11px] text-gray-500 dark:text-gray-400">
+              {loadingSummary ? "جارٍ التحديث..." : includeAllStatuses ? "شامل جميع الحالات غير المفوترة" : "الحالات الجاهزة/المكتملة فقط"}
+            </span>
+          </div>
+
           {/* Options */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 dark:bg-gray-800/40 p-3 rounded-xl border dark:border-gray-700/50">
             <div>
@@ -541,7 +579,7 @@ function BatchMonthlyInvoiceModal({
 
           {/* Doctor Rows */}
           <div className="border dark:border-gray-700 rounded-xl divide-y dark:divide-gray-700 max-h-56 overflow-y-auto">
-            {summary.doctors.map((doc) => {
+            {currentSummary.doctors.map((doc) => {
               const isSelected = Boolean(doc.doctorId && selectedDoctorIds.includes(doc.doctorId));
               return (
                 <div
@@ -1839,6 +1877,7 @@ function InvoiceDetailModal({
                       <th className="py-2 px-2.5 text-center w-8">م</th>
                       <th className="py-2 px-2.5 whitespace-nowrap">رقم الحالة</th>
                       <th className="py-2 px-2.5 whitespace-nowrap">اسم المريض</th>
+                      <th className="py-2 px-2.5 whitespace-nowrap">الطبيب المعالج</th>
                       <th className="py-2 px-2.5 whitespace-nowrap">نوع التركيبة / الشغل</th>
                       <th className="py-2 px-2.5 text-center whitespace-nowrap">العدد</th>
                       <th className="py-2 px-2.5 whitespace-nowrap">سعر الوحدة</th>
@@ -1851,6 +1890,15 @@ function InvoiceDetailModal({
                         <td className="py-2 px-2.5 text-center text-gray-400 font-mono text-[11px]">{idx + 1}</td>
                         <td className="py-2 px-2.5 font-bold text-blue-600 dark:text-blue-400 font-mono whitespace-nowrap">{item.caseNumber || "—"}</td>
                         <td className="py-2 px-2.5 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">{item.patientName || "—"}</td>
+                        <td className="py-2 px-2.5 text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                          {item.doctorName ? (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                              د. {item.doctorName}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
                         <td className="py-2 px-2.5 text-gray-700 dark:text-gray-300">{item.workTypeName || "—"}</td>
                         <td className="py-2 px-2.5 text-center font-bold text-gray-800 dark:text-gray-200">{item.unitsCount || 1}</td>
                         <td className="py-2 px-2.5 text-gray-600 dark:text-gray-300 font-mono whitespace-nowrap">{fmtMoney(item.unitPrice || 0)}</td>

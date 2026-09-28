@@ -29,18 +29,21 @@ const ALLOWED_MIMES = new Set([
   'application/zip',
   'application/octet-stream',
   'text/plain',
+  'text/html',
   'model/stl',
   'model/ply',
+  'model/obj',
 ]);
 
 const ALLOWED_EXTENSIONS = new Set([
   '.jpg', '.jpeg', '.png', '.webp', '.gif',
   '.pdf', '.json', '.zip', '.txt',
-  '.stl', '.ply', '.dxf', '.dcm',
+  '.stl', '.ply', '.obj', '.dxf', '.dcm',
+  '.html', '.htm',
 ]);
 
-const BANNED_EXTENSIONS = new Set(['.html', '.htm', '.svg', '.shtml', '.xhtml', '.xml', '.js', '.mjs', '.php']);
-const BANNED_MIMES = new Set(['text/html', 'image/svg+xml', 'application/xhtml+xml', 'application/xml', 'text/xml', 'application/javascript']);
+const BANNED_EXTENSIONS = new Set(['.svg', '.shtml', '.xhtml', '.xml', '.js', '.mjs', '.php', '.exe', '.sh', '.bat']);
+const BANNED_MIMES = new Set(['image/svg+xml', 'application/xhtml+xml', 'application/xml', 'text/xml', 'application/javascript']);
 
 function dentalLabFileFilter(_req, file, cb) {
   const mime = String(file.mimetype || '').toLowerCase();
@@ -48,7 +51,7 @@ function dentalLabFileFilter(_req, file, cb) {
 
   // Strict SEC-A2 rejection
   if (BANNED_EXTENSIONS.has(ext) || BANNED_MIMES.has(mime)) {
-    const error = new Error('رفع ملفات HTML أو SVG غير مسموح لدواعي أمنية');
+    const error = new Error('رفع ملفات SVG أو البرمجيات غير مسموح لدواعي أمنية');
     error.code = 'DENTAL_FILE_TYPE';
     return cb(error, false);
   }

@@ -207,6 +207,12 @@ function DoctorCard({
         </div>
       )}
       {doctor.phone && <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 font-mono" dir="ltr">{doctor.phone}</div>}
+      {Array.isArray(doctor.doctors) && doctor.doctors.length > 0 && (
+        <div className="text-[11px] text-blue-600 dark:text-blue-400 flex items-center gap-1 mt-1 font-medium">
+          <Users2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+          <span>يضم {doctor.doctors.length} أطباء بالعيادة</span>
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-1.5 mt-2.5 text-[11px]">
         <div className="bg-gray-50 dark:bg-gray-900/40 rounded p-1.5 text-center">
           <div className="text-gray-400">الرصيد المعلق</div>
@@ -303,6 +309,8 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   // Step 1: Doctor selection & financial check
   const [doctorSearch, setDoctorSearch] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState<DentalLabDoctor | null>(preselectedDoctor || null);
+  const [treatingDoctorName, setTreatingDoctorName] = useState("");
+  const [customDoctorInput, setCustomDoctorInput] = useState(false);
   const [showNewDoctor, setShowNewDoctor] = useState(false);
   const [doctorsLoading, setDoctorsLoading] = useState(false);
   const [bypassCreditCheck, setBypassCreditCheck] = useState(false);
@@ -378,6 +386,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
         const d = JSON.parse(savedDraft);
         if (d && typeof d === "object") {
           if (d.doctor && !preselectedDoctor) setSelectedDoctor(d.doctor);
+          if (d.treatingDoctorName) setTreatingDoctorName(d.treatingDoctorName);
           if (Array.isArray(d.selectedServiceIds) && d.selectedServiceIds.length > 0) setSelectedServiceIds(d.selectedServiceIds);
           if (Array.isArray(d.selectedTeeth)) setSelectedTeeth(d.selectedTeeth);
           if (d.unitsCount) setUnitsCount(d.unitsCount);
@@ -411,6 +420,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
         try {
           const draft = {
             doctor: selectedDoctor,
+            treatingDoctorName,
             selectedServiceIds,
             selectedTeeth,
             unitsCount,
@@ -438,7 +448,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
     }, 500);
     return () => clearTimeout(timer);
   }, [
-    selectedDoctor, selectedServiceIds, selectedTeeth, unitsCount, shade, customShade,
+    selectedDoctor, treatingDoctorName, selectedServiceIds, selectedTeeth, unitsCount, shade, customShade,
     material, impressionType, caseIntent, priceSnapshot, discount, patientName, patientPhone,
     receivedDate, dueDate, priority, notes, selectedTechnicianId, selectedTechnicianRole,
   ]);
@@ -644,7 +654,9 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
     const impressionLabel = IMPRESSION_TYPES.find(i => i.id === impressionType)?.label || impressionType;
     const intentLabel = CASE_INTENTS.find(c => c.id === caseIntent)?.label || caseIntent;
 
+    const effectiveDoctorName = treatingDoctorName.trim() || selectedDoctor.name;
     const metadataParts = [
+      treatingDoctorName.trim() && treatingDoctorName.trim() !== selectedDoctor.name ? `الطبيب المعالج: د. ${treatingDoctorName.trim()}` : null,
       `نوع الطبعة: ${impressionLabel}`,
       `نوع الطلب: ${intentLabel}`,
       extraNames && `خدمات إضافية: ${extraNames}`,
@@ -663,6 +675,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
     try {
       const created = await createCase({
         doctorId: selectedDoctor.id,
+        doctorName: effectiveDoctorName,
         patientName: patientName.trim(),
         patientPhone: patientPhone.trim() || undefined,
         workTypeId: primaryId,
@@ -872,6 +885,60 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                       </label>
                     </div>
                   )}
+
+                  {/* تحديد الطبيب المعالج داخل العيادة / المركز */}
+                  <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800/60">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                        <Stethoscope className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                        <span>الطبيب المعالج داخل العيادة / المركز:</span>
+                      </label>
+                      <span className="text-[10px] text-gray-500">يظهر في كارتة الحالة وتفاصيل الفاتورة</span>
+                    </div>
+
+                    {Array.isArray(selectedDoctor.doctors) && selectedDoctor.doctors.length > 0 && !customDoctorInput ? (
+                      <div className="flex items-center gap-2">
+                        <select
+                          className={`${inputCls} text-xs flex-1`}
+                          value={treatingDoctorName}
+                          onChange={(e) => {
+                            if (e.target.value === "__CUSTOM__") {
+                              setCustomDoctorInput(true);
+                              setTreatingDoctorName("");
+                            } else {
+                              setTreatingDoctorName(e.target.value);
+                            }
+                          }}
+                        >
+                          <option value="">-- {selectedDoctor.name} (الطبيب الرئيسي / الحساب المالي الموحد) --</option>
+                          {selectedDoctor.doctors.map((doc: any, idx: number) => (
+                            <option key={doc.id || idx} value={doc.name}>
+                              {doc.name} {doc.specialty ? `(${doc.specialty})` : ""}
+                            </option>
+                          ))}
+                          <option value="__CUSTOM__">+ كتابة اسم طبيب آخر غير مسجل بالعيادة...</option>
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <input
+                          className={`${inputCls} text-xs flex-1`}
+                          placeholder="اسم الطبيب المعالج (مثال: د. شريف)"
+                          value={treatingDoctorName}
+                          onChange={(e) => setTreatingDoctorName(e.target.value)}
+                        />
+                        {Array.isArray(selectedDoctor.doctors) && selectedDoctor.doctors.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setCustomDoctorInput(false)}
+                            className="px-2 py-1 text-[11px] text-blue-600 dark:text-blue-400 hover:underline shrink-0 font-medium"
+                          >
+                            اختر من أطباء العيادة
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
