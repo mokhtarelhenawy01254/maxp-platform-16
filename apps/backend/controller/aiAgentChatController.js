@@ -10,6 +10,7 @@ const CorrectiveRAGEngine = require('../services/rag/CorrectiveRAGEngine');
 const RagKnowledgeProposalService = require('../services/rag/RagKnowledgeProposalService');
 const RagKnowledgeMaintenanceService = require('../services/rag/RagKnowledgeMaintenanceService');
 const RagKnowledgeEvaluationSchedulerService = require('../services/rag/RagKnowledgeEvaluationSchedulerService');
+const { resolveDefaultCopilotAgent } = require('../utils/resolveDefaultCopilotAgent');
 
 function resolveCompanyId(req) {
   const isSuperAdmin = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'superadmin';
@@ -57,7 +58,7 @@ async function sendMessage(req, res) {
     });
 
     let result = null;
-    const targetAgentId = agentId || agentSlug || 'executive-assistant-agent';
+    const targetAgentId = agentId || agentSlug || await resolveDefaultCopilotAgent(companyId);
     const combinedMemoryContext = {
       ...(memoryContext || {}),
       ...(memory_context || {}),
@@ -791,8 +792,59 @@ async function getStatus(req, res) {
   }
 }
 
+/**
+ * GET /api/v1/ai/chat/default-agent
+ * Returns the resolved default copilot agent slug for the current company.
+ */
+async function getDefaultCopilotAgent(req, res) {
+  try {
+    const companyId = resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+    const slug = await resolveDefaultCopilotAgent(companyId);
+    return res.json({ success: true, defaultAgentSlug: slug });
+  } catch (error) {
+    console.error('[AI-CHAT-CTRL] getDefaultCopilotAgent error:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
+ * PUT /api/v1/ai/chat/default-agent
+ * Sets the default copilot agent slug for the current company.
+ * Body: { agentSlug: string }
+ */
+async function setDefaultCopilotAgent(req, res) {
+  try {
+    const companyId = resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+    const { agentSlug } = req.body || {};
+    if (!agentSlug) {
+      return res.status(400).json({ success: false, error: 'agentSlug is required' });
+    }
+    const { getSharedPrismaClient } = require('../services/sharedDatabase');
+    const prisma = getSharedPrismaClient();
+    await prisma.aiSetting.upsert({
+      where: { companyId },
+      update: { copilotDefaultAgentSlug: agentSlug },
+      create: { companyId, copilotDefaultAgentSlug: agentSlug },
+    });
+    const { invalidateDefaultAgentCache } = require('../utils/resolveDefaultCopilotAgent');
+    invalidateDefaultAgentCache(companyId);
+    return res.json({ success: true, defaultAgentSlug: agentSlug });
+  } catch (error) {
+    console.error('[AI-CHAT-CTRL] setDefaultCopilotAgent error:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 module.exports = {
   sendMessage,
+  getDefaultCopilotAgent,
+  setDefaultCopilotAgent,
   previewRag,
   listRagFailures,
   getRagKnowledgeFaqs,
@@ -815,3 +867,4 @@ module.exports = {
   rewindSession,
   getStatus,
 };
+

@@ -153,6 +153,7 @@ model AiSetting {
   negativeCommentAction      String   @default("hide")
   agentPaused                Boolean  @default(false)
   pauseReason                String?
+  copilotDefaultAgentSlug    String?
   company                    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("ai_settings")

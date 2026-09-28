@@ -24,10 +24,14 @@ const {
   deleteSession,
   rewindSession,
   getStatus,
+  getDefaultCopilotAgent,
+  setDefaultCopilotAgent,
 } = require('../controller/aiAgentChatController');
 
 router.use(verifyToken.authenticateToken);
 
+router.get('/default-agent', getDefaultCopilotAgent);
+router.put('/default-agent', setDefaultCopilotAgent);
 router.post('/message', sendMessage);
 router.post('/rag-preview', previewRag);
 router.get('/rag-failures', listRagFailures);

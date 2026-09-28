@@ -33,6 +33,26 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
 
   const [selectedAgent, setSelectedAgent] = useState<SpecialistAgent>(SPECIALIST_AGENTS[0]!);
   const [showSessionsList, setShowSessionsList] = useState(false);
+
+  // Dynamic default agent resolution from company settings / backend
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await apiClient.get<any>('/ai/chat/default-agent');
+        const slug = res.data?.defaultAgentSlug;
+        if (slug && mounted) {
+          const match = SPECIALIST_AGENTS.find((a) => a.slug === slug);
+          if (match) setSelectedAgent(match);
+        }
+      } catch {
+        // Silently keep default fallback
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
