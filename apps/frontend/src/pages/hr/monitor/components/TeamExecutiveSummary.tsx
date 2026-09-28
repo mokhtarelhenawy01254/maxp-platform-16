@@ -9,6 +9,8 @@ interface TeamExecutiveSummaryProps {
     totalHoursTracked: number;
     totalTasksCompleted?: number;
     totalTasksCreated?: number;
+    avgWarmupMinutes?: number;
+    avgActivityRatio?: number;
   };
   isSuperOrOwner: boolean;
   archiving: boolean;
@@ -40,7 +42,7 @@ export const TeamExecutiveSummary: React.FC<TeamExecutiveSummaryProps> = ({
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              مؤشرات إحصائية دقيقة ومباشرة لساعات العمل الفعلية وإنجاز المهام على مستوى الفريق
+              مؤشرات إحصائية دقيقة ومباشرة لساعات العمل الفعلية ونسبة النشاط ووقت التسخين وإنجاز المهام
             </p>
           </div>
         </div>
@@ -80,6 +82,20 @@ export const TeamExecutiveSummary: React.FC<TeamExecutiveSummaryProps> = ({
             <span className="text-muted-foreground">ساعات العمل الموثقة:</span>
             <span className="font-semibold text-sky-600 dark:text-sky-400 tabular-nums">
               {stats.totalHoursTracked} ساعة عمل
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground">نسبة النشاط من الدوام:</span>
+            <span className="font-semibold text-indigo-600 dark:text-indigo-400 tabular-nums">
+              {stats.avgActivityRatio ?? 0}%
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground">متوسط وقت التسخين:</span>
+            <span className="font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
+              {stats.avgWarmupMinutes ?? 0} دقيقة
             </span>
           </div>
 

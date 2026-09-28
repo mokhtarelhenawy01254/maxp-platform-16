@@ -13,9 +13,11 @@ import { Input } from "@/components/ui/input";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
+import { apiClient } from "../../services/apiClient";
 
 interface AgentSummary {
   id: string;
+  slug?: string;
   name: string;
   role: string;
   status: string;
@@ -133,10 +135,22 @@ export default function ChannelRoutingPage() {
       const pauseResp = await apiFetch<{ paused: boolean; pauseReason: string | null }>("/agent-manager/pause").catch(() => ({ paused: false, pauseReason: null }));
       setAgentPaused(pauseResp.paused === true);
       setPauseReason(pauseResp.pauseReason || "");
+      let defaultCopilotSlug = "executive-assistant-agent";
+      try {
+        const defRes = await apiClient.get<any>("/ai/chat/default-agent");
+        if (defRes.data?.defaultAgentSlug) {
+          defaultCopilotSlug = defRes.data.defaultAgentSlug;
+        }
+      } catch (_) {}
+
       const configs: ChannelConfig[] = CHANNELS.map((ch) => {
         let assigned = activeAgents.find((a) =>
           (a.allowedChannels || []).map((c) => c.toUpperCase()).includes(ch.key)
         );
+        // Fallback default for Dashboard / Copilot: company default copilot agent
+        if (!assigned && ch.key === "DASHBOARD") {
+          assigned = activeAgents.find((a) => a.slug === defaultCopilotSlug || a.id === defaultCopilotSlug || a.role === "EXECUTIVE_ASSISTANT") || activeAgents[0];
+        }
         // Fallback default for Marketing Studio: media buyer agent if not explicitly claimed
         if (!assigned && ch.key === "MARKETING_STUDIO") {
           assigned = activeAgents.find((a) => a.role === "MEDIA_BUYER");
@@ -292,6 +306,16 @@ export default function ChannelRoutingPage() {
               agentMap.set(config.agentId, { ...target, allowedChannels: updated });
             }
           }
+        }
+      }
+
+      // Persist default copilot agent if DASHBOARD routing was set or updated
+      const dashboardConfig = channelConfigs.find((c) => c.channel === "DASHBOARD");
+      if (dashboardConfig?.agentId) {
+        const targetAgent = agents.find((a) => a.id === dashboardConfig.agentId);
+        const resolvedSlug = targetAgent?.slug || (targetAgent?.role ? `${targetAgent.role.toLowerCase().replace(/_/g, '-')}-agent` : dashboardConfig.agentId);
+        if (resolvedSlug) {
+          await apiClient.put("/ai/chat/default-agent", { agentSlug: resolvedSlug }).catch(() => {});
         }
       }
 

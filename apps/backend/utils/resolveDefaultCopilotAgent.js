@@ -51,15 +51,21 @@ async function resolveDefaultCopilotAgent(companyId) {
       if (platformCached && platformCached.expiresAt > Date.now()) {
         resolved = platformCached.slug;
       } else {
-        const sysSetting = await prisma.systemSettings.findFirst({
+        let sysSetting = await prisma.systemSettings.findFirst({
           where: { systemName: 'defaultCopilotAgent' },
         });
+        if (!sysSetting) {
+          sysSetting = await prisma.systemSettings.findFirst({
+            where: { systemName: 'defaultAgentTemplate' },
+          });
+        }
         if (sysSetting?.config) {
           try {
             const parsed = JSON.parse(sysSetting.config);
-            if (parsed.slug) {
-              resolved = parsed.slug;
-              _cache.set('__platform__', { slug: parsed.slug, expiresAt: Date.now() + CACHE_TTL_MS });
+            const foundSlug = parsed.slug || parsed.templateSlug;
+            if (foundSlug) {
+              resolved = foundSlug;
+              _cache.set('__platform__', { slug: foundSlug, expiresAt: Date.now() + CACHE_TTL_MS });
             }
           } catch (_) { /* malformed JSON — skip */ }
         }

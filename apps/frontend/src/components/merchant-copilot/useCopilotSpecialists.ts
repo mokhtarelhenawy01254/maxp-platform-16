@@ -89,10 +89,22 @@ export function useCopilotSpecialists({
     };
   }, [companyId, routeRecommendedSlug]);
 
+  const contextReason = useMemo(() => {
+    if (userHasExplicitlySelectedRef.current) return null;
+    if (!routeRecommendedSlug || selectedAgent.slug !== routeRecommendedSlug) return null;
+    const p = pathname.toLowerCase();
+    if (p.startsWith('/marketing') || p.startsWith('/facebook-ads')) return 'توجيه تلقائي: سياق الإعلانات';
+    if (p.startsWith('/orders') || p.startsWith('/shipping')) return 'توجيه تلقائي: سياق الطلبات والشحن';
+    if (p.startsWith('/inventory') || p.startsWith('/products')) return 'توجيه تلقائي: سياق المخزون والتسعير';
+    if (p.startsWith('/customers') || p.startsWith('/conversations') || p.startsWith('/whatsapp')) return 'توجيه تلقائي: سياق خدمة العملاء';
+    return null;
+  }, [pathname, routeRecommendedSlug, selectedAgent.slug]);
+
   return {
     specialists,
     selectedAgent,
     setSelectedAgent,
     routeRecommendedSlug,
+    contextReason,
   };
 }

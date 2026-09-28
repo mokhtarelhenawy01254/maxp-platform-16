@@ -6,6 +6,7 @@ interface CopilotHeaderProps {
   selectedAgent: SpecialistAgent;
   onSelectAgent: (agent: SpecialistAgent) => void;
   specialists?: SpecialistAgent[];
+  contextReason?: string | null;
   pageContextLabel: string;
   showSessionsList: boolean;
   onToggleSessionsList: () => void;
@@ -17,6 +18,7 @@ export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
   selectedAgent,
   onSelectAgent,
   specialists,
+  contextReason,
   pageContextLabel,
   showSessionsList,
   onToggleSessionsList,
@@ -63,9 +65,15 @@ export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
                 }`}
               />
             </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              <span className="truncate max-w-[200px]">{pageContextLabel}</span>
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+              <span className="truncate max-w-[140px] sm:max-w-[180px]">{pageContextLabel}</span>
+              {contextReason && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200/70 dark:border-indigo-800/70 px-1.5 py-0.2 text-[9px] font-medium text-indigo-700 dark:text-indigo-300">
+                  <span className="h-1 w-1 rounded-full bg-indigo-500 animate-pulse" />
+                  {contextReason}
+                </span>
+              )}
             </div>
           </div>
         </button>

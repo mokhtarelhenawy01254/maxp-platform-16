@@ -159,7 +159,7 @@ async function getAiDailyStandup(req, res) {
 
     // 1. Fetch team overview for date
     const teamOverview = await monitorService.getTeamOverview(companyId, dateStr);
-    const summaries = teamOverview?.summaries || [];
+    const summaries = Array.isArray(teamOverview) ? teamOverview : (teamOverview?.summaries || []);
 
     // 2. Fetch completed tasks for company today
     let completedTasksCount = 0;
@@ -181,26 +181,54 @@ async function getAiDailyStandup(req, res) {
     let totalFocusSeconds = 0;
     let totalBreakSeconds = 0;
     let totalClockSeconds = 0;
+    let totalProductiveSeconds = 0;
+    let totalUnproductiveSeconds = 0;
+    let totalWarmupSeconds = 0;
+    let warmupCount = 0;
+    let totalActivityRatioSum = 0;
+    let activeRatioCount = 0;
     const attentionFlags = [];
 
     for (const s of summaries) {
+      const empName = s.employee?.firstName
+        ? `${s.employee.firstName} ${s.employee.lastName || ''}`.trim()
+        : (s.employeeId || 'عضو الفريق');
+
       totalFocusSeconds += (s.totalProductiveSeconds || 0);
       totalBreakSeconds += (s.totalIdleSeconds || 0);
       totalClockSeconds += (s.totalClockSeconds || 0);
+      totalProductiveSeconds += (s.totalProductiveSeconds || 0);
+      totalUnproductiveSeconds += (s.totalUnproductiveSeconds || 0);
 
-      // Burnout heuristic: working > 9 hours with < 20 min breaks
-      if ((s.totalClockSeconds || 0) > 9 * 3600 && (s.totalIdleSeconds || 0) < 1200) {
-        attentionFlags.push(`الموظف ${s.employeeId || 'عضو الفريق'} يعمل منذ أكثر من 9 ساعات بفرص راحة محدودة.`);
+      if (s.lateStartSeconds > 0) {
+        totalWarmupSeconds += s.lateStartSeconds;
+        warmupCount++;
       }
-      // Low activity on clock: active < 30% of clocked time
-      else if ((s.totalClockSeconds || 0) > 4 * 3600 && (s.totalActiveSeconds || 0) < (s.totalClockSeconds * 0.3)) {
-        attentionFlags.push(`انخفاض وتيرة التفاعل الموثقة لـ ${s.employeeId || 'عضو الفريق'} مقارنة بساعات الحضور.`);
+
+      if (typeof s.activityRatio === 'number') {
+        totalActivityRatioSum += s.activityRatio;
+        activeRatioCount++;
+      }
+
+      // Layer 3 Operational Signals & Alerts
+      if (s.operationalSignal?.type === 'TASK_OVERLOAD') {
+        attentionFlags.push(`إعادة توزيع مهام: ${empName} يواجه تراكم ${s.overdueTasksCount || 0} مهام متأخرة مع انخفاض النشاط الموثق.`);
+      } else if (s.operationalSignal?.type === 'DISTRACTION') {
+        attentionFlags.push(`تنبيه تشتت: ${empName} سجل نشاطاً مرتفعاً على الجهاز دون تسليم مخرجات مهام موثقة.`);
+      } else if (s.operationalSignal?.type === 'NEGLECT') {
+        attentionFlags.push(`تنبيه ضعف فاعلية: ${empName} سجل انخفاضاً حاداً في النشاط (${s.activityRatio || 0}%) مع انعدام المخرجات.`);
+      } else if ((s.lateStartMinutes || 0) >= 30) {
+        attentionFlags.push(`وقت تسخين ممتد: ${empName} تأخر ${s.lateStartMinutes} دقيقة بين البصمة وأول تفاعل فعلي على الجهاز.`);
+      } else if ((s.totalClockSeconds || 0) > 9 * 3600 && (s.totalIdleSeconds || 0) < 1200) {
+        attentionFlags.push(`مؤشر إجهاد: ${empName} يعمل منذ أكثر من 9 ساعات بفرص استراحة محدودة.`);
       }
     }
 
     const avgFocusHours = totalActiveEmployees > 0 
       ? ((totalFocusSeconds / totalActiveEmployees) / 3600).toFixed(1)
       : '0.0';
+    const avgWarmupMinutes = warmupCount > 0 ? Math.round(totalWarmupSeconds / warmupCount / 60) : 0;
+    const avgActivityRatio = activeRatioCount > 0 ? Math.round(totalActivityRatioSum / activeRatioCount) : 0;
 
     // 4. Synthesize crisp Executive Standup
     let headline = 'استقرار تشغيلي وتدفق عمل منضبط';
@@ -211,11 +239,11 @@ async function getAiDailyStandup(req, res) {
       summaryText = `لم يتم رصد أي جلسات عمل نشطة للموظفين بتاريخ ${dateStr}. في انتظار بدء الجلسات الصباحية.`;
     } else {
       if (completedTasksCount > 0) {
-        headline = `إنجاز ${completedTasksCount} مهمة اليوم بنسبة تركيز مستقرة`;
-        summaryText = `حقق الفريق اليوم إنجاز ${completedTasksCount} مهمة مكتملة بمشاركة ${totalActiveEmployees} من أعضاء الفريق النشطين، وبمتوسط ساعات تركيز عميق يبلغ ${avgFocusHours} ساعة لكل موظف.`;
+        headline = `إنجاز ${completedTasksCount} مهمة اليوم بنسبة نشاط ${avgActivityRatio}%`;
+        summaryText = `حقق الفريق اليوم إنجاز ${completedTasksCount} مهمة مكتملة بمشاركة ${totalActiveEmployees} من أعضاء الفريق، وبمتوسط تركيز ${avgFocusHours} ساعة لكل موظف، مع متوسط وقت تسخين ${avgWarmupMinutes} دقيقة.`;
       } else {
-        headline = `نشاط مستمر لـ ${totalActiveEmployees} من أعضاء الفريق`;
-        summaryText = `يتواجد حالياً ${totalActiveEmployees} موظفاً في جلسات العمل المفتوحة بمتوسط ${avgFocusHours} ساعة عمل مركزة. وتجري متابعة استكمال المهام قيد التنفيذ.`;
+        headline = `نشاط مستمر لـ ${totalActiveEmployees} من أعضاء الفريق (نسبة نشاط ${avgActivityRatio}%)`;
+        summaryText = `يتواجد حالياً ${totalActiveEmployees} موظفاً في جلسات العمل المفتوحة بمتوسط ${avgFocusHours} ساعة عمل مركزة ومتوسط وقت تسخين ${avgWarmupMinutes} دقيقة.`;
       }
     }
 
@@ -229,10 +257,14 @@ async function getAiDailyStandup(req, res) {
           activeEmployees: totalActiveEmployees,
           completedTasks: completedTasksCount,
           avgFocusHours,
+          avgWarmupMinutes,
+          avgActivityRatio,
           totalClockHours: (totalClockSeconds / 3600).toFixed(1),
           totalBreakMinutes: Math.round(totalBreakSeconds / 60),
+          totalProductiveHours: (totalProductiveSeconds / 3600).toFixed(1),
+          totalUnproductiveHours: (totalUnproductiveSeconds / 3600).toFixed(1),
         },
-        attentionFlags: attentionFlags.slice(0, 3),
+        attentionFlags: attentionFlags.slice(0, 4),
         generatedAt: new Date().toISOString(),
       }
     });

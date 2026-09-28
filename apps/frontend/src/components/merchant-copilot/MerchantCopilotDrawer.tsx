@@ -36,6 +36,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
     specialists,
     selectedAgent,
     setSelectedAgent,
+    contextReason,
   } = useCopilotSpecialists({
     companyId: context.companyId,
     pathname: context.pathname,
@@ -43,6 +44,21 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
 
   const [showSessionsList, setShowSessionsList] = useState(false);
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
+
+  const handleSelectAgent = useCallback((agent: SpecialistAgent) => {
+    setSelectedAgent(agent);
+    if (messages.length > 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `switch_${Date.now()}`,
+          sender: 'agent',
+          text: `🔄 **تم التبديل إلى ${agent.name}**\n*${agent.description}*`,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    }
+  }, [setSelectedAgent, messages.length]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [telemetry, setTelemetry] = useState<{ model?: string; latency_ms?: number } | null>(null);
@@ -295,8 +311,9 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
           {/* Header */}
           <CopilotHeader
             selectedAgent={selectedAgent}
-            onSelectAgent={setSelectedAgent}
+            onSelectAgent={handleSelectAgent}
             specialists={specialists}
+            contextReason={contextReason}
             pageContextLabel={context.pageTitle || context.pathname}
             showSessionsList={showSessionsList}
             onToggleSessionsList={() => setShowSessionsList((prev) => !prev)}
