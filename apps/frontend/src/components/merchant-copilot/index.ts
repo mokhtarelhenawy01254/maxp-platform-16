@@ -8,3 +8,5 @@ export * from './CopilotInputFooter';
 export * from './CopilotHeader';
 export * from './MerchantCopilotDrawer';
 export * from './MerchantCopilotHost';
+export * from './useCopilotSpecialists';
+

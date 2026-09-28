@@ -1410,7 +1410,7 @@ const taskController = {
   updateTaskStatus: async (req, res) => {
     try {
       const { id } = req.params;
-      const { status, progress } = req.body;
+      const { status, progress, revisionReason } = req.body;
       const companyId = await resolveCompanyContext(req);
 
       const userRole = String(req.user?.role || "").toUpperCase();
@@ -1670,7 +1670,7 @@ const taskController = {
       const isReopening = existingTask.status === "COMPLETED" && normalizedStatus !== "COMPLETED";
       const isSubmittingForReview = normalizedStatus === "IN_REVIEW" && existingTask.status !== "IN_REVIEW";
       const isApproving = existingTask.status === "IN_REVIEW" && normalizedStatus === "COMPLETED";
-      const isReturning = existingTask.status === "IN_REVIEW" && normalizedStatus === "IN_PROGRESS";
+      const isReturning = (existingTask.status === "IN_REVIEW" && normalizedStatus === "IN_PROGRESS") || Boolean(revisionReason);
 
       const nextProgress =
         normalizedStatus === "COMPLETED"
@@ -1684,10 +1684,20 @@ const taskController = {
                 : clampProgress(progress);
       const completedDate = normalizedStatus === "COMPLETED" ? new Date() : null;
 
+      let currentTags = parseStringArray(existingTask.tags);
+      if (isReturning) {
+        if (!currentTags.includes("needs_revision")) {
+          currentTags.push("needs_revision");
+        }
+      } else if (isSubmittingForReview || isApproving) {
+        currentTags = currentTags.filter((t) => t !== "needs_revision");
+      }
+
       const updateData = {
         status: normalizedStatus,
         progress: nextProgress,
         completedDate,
+        tags: JSON.stringify(currentTags),
       };
 
       const updatedTask = await getSharedPrismaClient().task.updateMany({
@@ -1790,7 +1800,68 @@ const taskController = {
         message: successMsg,
       });
 
-      // 🔔 ارسال اشعارات بتغيير الحالة للمسؤول والمراقبين
+      if (isReturning) {
+        try {
+          await getSharedPrismaClient().taskActivity.create({
+            data: {
+              taskId: id,
+              userId: currentUserId,
+              action: "returned_for_revision",
+              field: "status",
+              oldValue: existingTask.status,
+              newValue: normalizedStatus,
+              description: revisionReason ? `طلب تعديلات: ${revisionReason}` : "تمت إعادة المهمة للعمل مع طلب تعديلات",
+              companyId: companyId || existingTask.companyId,
+            },
+          });
+          if (revisionReason && String(revisionReason).trim()) {
+            await getSharedPrismaClient().taskComment.create({
+              data: {
+                taskId: id,
+                userId: currentUserId,
+                content: `⚠️ [طلب تعديلات ومراجعة]: ${String(revisionReason).trim()}`,
+                companyId: companyId || existingTask.companyId,
+              },
+            });
+          }
+        } catch (actErr) {
+          console.warn("[taskController] Failed to record return activity/comment:", actErr.message);
+        }
+      } else if (isSubmittingForReview) {
+        try {
+          await getSharedPrismaClient().taskActivity.create({
+            data: {
+              taskId: id,
+              userId: currentUserId,
+              action: "submitted_for_review",
+              field: "status",
+              oldValue: existingTask.status,
+              newValue: "IN_REVIEW",
+              description: "تم تسليم المهمة للمراجعة والاعتماد",
+              companyId: companyId || existingTask.companyId,
+            },
+          });
+        } catch (actErr) {
+          console.warn("[taskController] Failed to record submit activity:", actErr.message);
+        }
+      } else if (isApproving) {
+        try {
+          await getSharedPrismaClient().taskActivity.create({
+            data: {
+              taskId: id,
+              userId: currentUserId,
+              action: "approved",
+              field: "status",
+              oldValue: existingTask.status,
+              newValue: "COMPLETED",
+              description: "تم اعتماد إنجاز المهمة رسمياً كـ مكتملة",
+              companyId: companyId || existingTask.companyId,
+            },
+          });
+        } catch (actErr) {
+          console.warn("[taskController] Failed to record approval activity:", actErr.message);
+        }
+      }
       await taskNotificationService.notifyTaskStakeholders({
         companyId,
         task,
@@ -3341,16 +3412,46 @@ const taskController = {
       const { taskId } = req.params;
       const companyId = req.user.companyId;
 
-      const activities = await getSharedPrismaClient().taskActivity.findMany({
-        where: { taskId, companyId },
-        include: {
-          users: { select: { firstName: true, lastName: true, avatar: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 50,
+      let activities = [];
+      try {
+        activities = await getSharedPrismaClient().taskActivity.findMany({
+          where: { taskId, companyId },
+          include: {
+            user: { select: { firstName: true, lastName: true, avatar: true, email: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 60,
+        });
+      } catch (e) {
+        activities = await getSharedPrismaClient().taskActivity.findMany({
+          where: { taskId, companyId },
+          include: {
+            users: { select: { firstName: true, lastName: true, avatar: true, email: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 60,
+        });
+      }
+
+      const formatted = (activities || []).map((a) => {
+        const u = a.user || a.users;
+        return {
+          id: a.id,
+          taskId: a.taskId,
+          userId: a.userId,
+          action: a.action,
+          field: a.field,
+          oldValue: a.oldValue,
+          newValue: a.newValue,
+          description: a.description,
+          createdAt: a.createdAt,
+          user: u,
+          userName: u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email : 'مستخدم',
+          userAvatar: u?.avatar || null,
+        };
       });
 
-      res.json({ success: true, data: activities });
+      res.json({ success: true, data: formatted });
     } catch (error) {
       console.error("Error fetching task activities:", error);
       res

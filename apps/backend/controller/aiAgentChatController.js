@@ -811,6 +811,145 @@ async function getDefaultCopilotAgent(req, res) {
 }
 
 /**
+ * GET /api/v1/ai/chat/specialists
+ * Returns dynamically discovered specialists, the company default agent, and route mapping.
+ */
+async function getSpecialists(req, res) {
+  try {
+    const companyId = resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const defaultAgentSlug = await resolveDefaultCopilotAgent(companyId);
+
+    // Baseline curated specialists with rich Arabic metadata & prompts
+    const baseSpecialists = [
+      {
+        id: 'executive-assistant-agent',
+        slug: 'executive-assistant-agent',
+        name: 'ماكس — المساعد التنفيذي',
+        role: 'EXECUTIVE_ASSISTANT',
+        title: 'المساعد التنفيذي للمنصة وإدارة العمليات',
+        description: 'المتابعة التنفيذية الشاملة، مؤشرات الأداء، الأوردرات والمخزون، وتفويض المهام.',
+        badge: 'المساعد التنفيذي',
+        suggestedPrompts: [
+          'أعطني ملخصاً تنفيذياً لحالة البيزنس والمبيعات اليوم',
+          'ما هي أهم النواقص أو العمليات المعلقة التي تحتاج تدخلاً فوري؟',
+          'فحص إعدادات المتجر وأدوات التحويل وطرق الدفع والشحن',
+        ],
+      },
+      {
+        id: 'facebook-media-buyer-agent',
+        slug: 'facebook-media-buyer-agent',
+        name: 'الميديا باير المحترف',
+        role: 'MEDIA_BUYER',
+        title: 'خبير إعلانات ميتا وفيسبوك',
+        description: 'إدارة الميزانيات، صياغة زوايا البيع، مراقبة الـ CPA وقرارات SCALE و KILL.',
+        badge: 'إعلانات وتسويق',
+        suggestedPrompts: [
+          'افحص الحملات الإعلانية الحالية وقارن CPA بهامش الربح',
+          'اقترح 3 زوايا بيع وهوكات إعلانية جديدة للمنتج الأكثر مبيعاً',
+          'اقترح سيناريو فيديو ترويجي 9:16 احترافي يصلح لتوليده بأداة Veo 3.1',
+        ],
+      },
+      {
+        id: 'order-confirmation-agent',
+        slug: 'order-confirmation-agent',
+        name: 'منى — تأكيد الطلبات',
+        role: 'ORDER_CONFIRMATION',
+        title: 'مسؤولة تأكيد ومتابعة الشحن',
+        description: 'متابعة أوردرات الدفع عند الاستلام COD المعلقة، تتبع بوالص بوسطة وتيربو ورفع نسب التسليم.',
+        badge: 'الطلبات والشحن',
+        suggestedPrompts: [
+          'لخص لي كل أوردرات COD المعلقة اليوم التي تحتاج تأكيد شحن فوري',
+          'افحص بوالص الشحن المتأخرة لدى شركات الشحن',
+          'ما هو معدل تسليم الشحنات الفعلي هذا الأسبوع؟',
+        ],
+      },
+      {
+        id: 'inventory-pricing-agent',
+        slug: 'inventory-pricing-agent',
+        name: 'مساعد المخزون والتسعير',
+        role: 'INVENTORY_PRICING',
+        title: 'خبير المستودعات والتسعير',
+        description: 'تحليل المخزون وحساب نقطة التعادل وهوامش الربح وإعادة الطلب في الوقت المناسب.',
+        badge: 'المخزون والتسعير',
+        suggestedPrompts: [
+          'ما هي المنتجات التي أوشكت على النفاد في المخزن؟',
+          'احسب هامش الربح ونقطة التعادل للمنتج الأكثر مبيعاً',
+          'اقترح خطة إعادة تموين للمنتجات السريعة الحركة',
+        ],
+      },
+      {
+        id: 'customer-service-agent',
+        slug: 'customer-service-agent',
+        name: 'سارة — خدمة العملاء',
+        role: 'CUSTOMER_SERVICE',
+        title: 'أخصائية تجربة ورضا العملاء',
+        description: 'متابعة شكاوى واستفسارات العملاء على واتساب وفيسبوك وتحسين تجربة الشراء.',
+        badge: 'خدمة العملاء',
+        suggestedPrompts: [
+          'ما هي أبرز استفسارات وشكاوى العملاء التي تكررت اليوم؟',
+          'لخص لي المحادثات التي تحتاج متابعة بشرية أو تصعيد',
+          'كيف يمكن تحسين معدل رد خدمة العملاء على واتساب؟',
+        ],
+      },
+    ];
+
+    // Merge company-installed templates if available
+    let finalSpecialists = [...baseSpecialists];
+    try {
+      const aiServiceAdminClient = require('../services/aiServiceAdminClient');
+      const templates = await aiServiceAdminClient.listAgentTemplates();
+      if (Array.isArray(templates) && templates.length > 0) {
+        for (const t of templates) {
+          if (!t.slug || finalSpecialists.some((s) => s.slug === t.slug)) continue;
+          if (t.is_active === false) continue;
+          finalSpecialists.push({
+            id: t.slug,
+            slug: t.slug,
+            name: t.name || t.slug,
+            role: t.role || 'SPECIALIST',
+            title: t.name || 'وكيل متخصص',
+            description: (t.persona_meta && t.persona_meta.description) || 'وكيل ذكاء اصطناعي متخصص للعمليات.',
+            badge: t.role || 'متخصص',
+            suggestedPrompts: [
+              `أعطني ملخصاً عن أداء ${t.name || t.slug}`,
+              'ما هي أهم التوصيات والمهام الحالية؟',
+            ],
+          });
+        }
+      }
+    } catch (_) {
+      // Base specialists serve as resilient baseline
+    }
+
+    const routeAgentMap = {
+      '/marketing': 'facebook-media-buyer-agent',
+      '/facebook-ads': 'facebook-media-buyer-agent',
+      '/orders': 'order-confirmation-agent',
+      '/shipping': 'order-confirmation-agent',
+      '/inventory': 'inventory-pricing-agent',
+      '/products': 'inventory-pricing-agent',
+      '/customers': 'customer-service-agent',
+      '/conversations': 'customer-service-agent',
+      '/whatsapp': 'customer-service-agent',
+    };
+
+    return res.json({
+      success: true,
+      defaultAgentSlug,
+      specialists: finalSpecialists,
+      routeAgentMap,
+    });
+  } catch (error) {
+    console.error('[AI-CHAT-CTRL] getSpecialists error:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+/**
  * PUT /api/v1/ai/chat/default-agent
  * Sets the default copilot agent slug for the current company.
  * Body: { agentSlug: string }
@@ -845,6 +984,7 @@ module.exports = {
   sendMessage,
   getDefaultCopilotAgent,
   setDefaultCopilotAgent,
+  getSpecialists,
   previewRag,
   listRagFailures,
   getRagKnowledgeFaqs,

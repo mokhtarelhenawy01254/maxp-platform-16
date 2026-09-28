@@ -348,17 +348,29 @@ class MonitorApiClient {
     return this.authToken;
   }
 
-  async updateTaskStatus(taskId: string, status: string): Promise<any> {
+  async updateTaskStatus(taskId: string, status: string, revisionReason?: string): Promise<any> {
     const base = this.serverUrl;
     const res = await axios.put(
       `${base}/api/v1/tasks/${taskId}/status`,
-      { status: status.toUpperCase() },
+      { status: status.toUpperCase(), revisionReason },
       {
         headers: this.getAuthHeaders(),
         timeout: 10_000,
       }
     );
     return res.data?.data ?? res.data;
+  }
+
+  async getTaskActivities(taskId: string): Promise<any[]> {
+    const base = this.serverUrl;
+    const res = await axios.get(
+      `${base}/api/v1/tasks/${taskId}/activities`,
+      {
+        headers: this.getAuthHeaders(),
+        timeout: 10_000,
+      }
+    );
+    return res.data?.data ?? [];
   }
 
   async updateTask(

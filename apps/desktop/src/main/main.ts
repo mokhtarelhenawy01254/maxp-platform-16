@@ -1017,16 +1017,25 @@ function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle('tasks:update-status', async (_, { taskId, status }) => {
+  ipcMain.handle('tasks:update-status', async (_, { taskId, status, revisionReason }) => {
     try {
-      const task = await apiClient.updateTaskStatus(taskId, status);
-      mainWindow?.webContents.send('tasks:refresh', { action: 'update-status', taskId, status });
+      const task = await apiClient.updateTaskStatus(taskId, status, revisionReason);
+      mainWindow?.webContents.send('tasks:refresh', { action: 'update-status', taskId, status, revisionReason });
       setTimeout(() => {
         pollTaskNotifications().catch(() => {});
       }, 500);
       return { success: true, task };
     } catch (err: any) {
       return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('tasks:get-activities', async (_, { taskId }) => {
+    try {
+      const activities = await apiClient.getTaskActivities(taskId);
+      return { success: true, data: activities };
+    } catch (err: any) {
+      return { success: false, error: err.message, data: [] };
     }
   });
 

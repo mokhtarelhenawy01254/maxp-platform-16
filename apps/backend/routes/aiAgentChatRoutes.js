@@ -26,10 +26,12 @@ const {
   getStatus,
   getDefaultCopilotAgent,
   setDefaultCopilotAgent,
+  getSpecialists,
 } = require('../controller/aiAgentChatController');
 
 router.use(verifyToken.authenticateToken);
 
+router.get('/specialists', getSpecialists);
 router.get('/default-agent', getDefaultCopilotAgent);
 router.put('/default-agent', setDefaultCopilotAgent);
 router.post('/message', sendMessage);

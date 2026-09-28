@@ -5,6 +5,7 @@ import { SPECIALIST_AGENTS, SpecialistAgent } from './specialists';
 interface CopilotHeaderProps {
   selectedAgent: SpecialistAgent;
   onSelectAgent: (agent: SpecialistAgent) => void;
+  specialists?: SpecialistAgent[];
   pageContextLabel: string;
   showSessionsList: boolean;
   onToggleSessionsList: () => void;
@@ -15,6 +16,7 @@ interface CopilotHeaderProps {
 export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
   selectedAgent,
   onSelectAgent,
+  specialists,
   pageContextLabel,
   showSessionsList,
   onToggleSessionsList,
@@ -79,8 +81,8 @@ export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
             <span>تخصص الوكيل التنفيذي</span>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans font-normal">اختر لتغيير الدور</span>
           </div>
-          <div className="space-y-0.5">
-            {SPECIALIST_AGENTS.map((agent) => {
+          <div className="space-y-0.5 max-h-72 overflow-y-auto">
+            {(specialists || SPECIALIST_AGENTS).map((agent) => {
               const isSelected = selectedAgent.id === agent.id;
               return (
                 <button

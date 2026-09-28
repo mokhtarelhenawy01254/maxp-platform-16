@@ -3,7 +3,8 @@ import { ArrowUpRight, Cpu } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { useExecutiveContext } from './useExecutiveContext';
 import { useCopilotCloudSessions } from './useCopilotCloudSessions';
-import { SPECIALIST_AGENTS, SpecialistAgent } from './specialists';
+import { useCopilotSpecialists } from './useCopilotSpecialists';
+import type { SpecialistAgent } from './specialists';
 import { CopilotActionCard } from './CopilotActionCard';
 import { CopilotSessionsModal } from './CopilotSessionsModal';
 import { CopilotInputFooter } from './CopilotInputFooter';
@@ -31,28 +32,16 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
     rewindActiveSession,
   } = useCopilotCloudSessions(context.companyId);
 
-  const [selectedAgent, setSelectedAgent] = useState<SpecialistAgent>(SPECIALIST_AGENTS[0]!);
-  const [showSessionsList, setShowSessionsList] = useState(false);
+  const {
+    specialists,
+    selectedAgent,
+    setSelectedAgent,
+  } = useCopilotSpecialists({
+    companyId: context.companyId,
+    pathname: context.pathname,
+  });
 
-  // Dynamic default agent resolution from company settings / backend
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await apiClient.get<any>('/ai/chat/default-agent');
-        const slug = res.data?.defaultAgentSlug;
-        if (slug && mounted) {
-          const match = SPECIALIST_AGENTS.find((a) => a.slug === slug);
-          if (match) setSelectedAgent(match);
-        }
-      } catch {
-        // Silently keep default fallback
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const [showSessionsList, setShowSessionsList] = useState(false);
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
@@ -307,6 +296,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
           <CopilotHeader
             selectedAgent={selectedAgent}
             onSelectAgent={setSelectedAgent}
+            specialists={specialists}
             pageContextLabel={context.pageTitle || context.pathname}
             showSessionsList={showSessionsList}
             onToggleSessionsList={() => setShowSessionsList((prev) => !prev)}

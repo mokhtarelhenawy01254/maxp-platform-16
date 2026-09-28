@@ -29,11 +29,13 @@ import { audioAlerts } from '../../utils/audioAlerts';
 import { TaskDependencyBadge } from './TaskDependencyBadge';
 import { TaskSubtasks } from './TaskSubtasks';
 import { TaskComments } from './TaskComments';
+import { TaskActivityLog } from './TaskActivityLog';
+import { ReturnForRevisionModal } from './ReturnForRevisionModal';
 
 interface TaskItemCardProps {
   task: any;
   onToggleStatus: (taskId: string, currentStatus: string) => void;
-  onUpdateStatus?: (taskId: string, newStatus: string) => void;
+  onUpdateStatus?: (taskId: string, newStatus: string, revisionReason?: string) => void;
   onOpenImage: (imgUrl: string) => void;
   onEdit?: (task: any) => void;
   serverUrl?: string;
@@ -68,6 +70,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const [expanded, setExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
 
   const handleCopyDescription = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -85,6 +88,20 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const isInProgress = rawStatus === 'IN_PROGRESS';
   const isOnHold = rawStatus === 'ON_HOLD';
   const isPending = !isCompleted && !isInReview && !isInProgress && !isOnHold;
+
+  const parsedTags: string[] = Array.isArray(task.tags)
+    ? task.tags
+    : typeof task.tags === 'string'
+    ? (() => {
+        try {
+          const p = JSON.parse(task.tags);
+          return Array.isArray(p) ? p : [task.tags];
+        } catch {
+          return task.tags.split(',').map((s: string) => s.trim()).filter(Boolean);
+        }
+      })()
+    : [];
+  const isReturnedForRevision = parsedTags.includes('needs_revision') || rawStatus === 'REVISION';
 
   const isMultiRunning = activeTaskIds ? activeTaskIds[task.id] !== undefined : false;
   const isRunning = !isCompleted && !isInReview && (activeTaskId === task.id || isMultiRunning);
@@ -219,14 +236,18 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         display: 'flex',
         flexDirection: 'column',
         borderBottom: '1px solid var(--border-subtle)',
-        borderRight: isUrgent && !isCompleted
+        borderRight: isReturnedForRevision && !isCompleted
+          ? '3px solid #f59e0b'
+          : isUrgent && !isCompleted
           ? '3px solid #ef4444'
           : isRunning
           ? '3px solid #0284c7'
           : isCompleted
           ? '3px solid var(--border-subtle)'
           : '3px solid transparent',
-        backgroundColor: isRunning
+        backgroundColor: isReturnedForRevision && !isCompleted
+          ? 'rgba(245, 158, 11, 0.05)'
+          : isRunning
           ? 'rgba(56, 189, 248, 0.05)'
           : isHovered
           ? 'var(--bg-hover)'
@@ -251,6 +272,8 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               <CheckCircle2 size={16} color="var(--accent-green)" />
             ) : isInReview ? (
               <ClipboardCheck size={15} color="#c084fc" />
+            ) : isReturnedForRevision ? (
+              <RotateCcw size={13} color="#f59e0b" />
             ) : isRunning ? (
               <span style={rowStyles.pulseDotGreen} />
             ) : isInProgress ? (
@@ -276,6 +299,14 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           >
             {task.title}
           </span>
+
+          {/* Distinct Revision Badge for Returned Tasks */}
+          {isReturnedForRevision && !isCompleted && (
+            <span style={rowStyles.revisionBadge} title="مهمة مُعادة للتعديل — انقر لتوسيع ملاحظات المشرف وسجل النشاط">
+              <RotateCcw size={9} color="#f59e0b" />
+              <span>مُعادة للتعديل</span>
+            </span>
+          )}
 
           {/* Sleek Ergonomic Priority Indicators */}
           {isUrgent && !isCompleted && (
@@ -457,13 +488,13 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    audioAlerts.playTaskReopen();
-                    onUpdateStatus?.(task.id, 'IN_PROGRESS');
+                    setIsRevisionModalOpen(true);
                   }}
                   style={rowStyles.returnBtn}
-                  title="طلب تعديلات"
+                  title="طلب تعديلات وإرجاع للموظف مع كتابة الملاحظات"
                 >
                   <RotateCcw size={10} color="#f59e0b" />
+                  <span style={{ fontSize: 10, marginRight: 2, color: '#f59e0b', fontWeight: 600 }}>إرجاع</span>
                 </button>
               </div>
             ) : (
@@ -533,6 +564,21 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
       {/* Expanded Accordion: Description & Dark-Mode Attachments Gallery */}
       {expanded && (
         <div style={rowStyles.expandedPanel}>
+          {/* Revision Alert Banner if task was returned */}
+          {isReturnedForRevision && !isCompleted && (
+            <div style={rowStyles.revisionAlertBanner}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <AlertTriangle size={13} color="#f59e0b" />
+                <span style={{ fontWeight: 600, color: '#f59e0b', fontSize: 11 }}>
+                  تمت إعادة هذه المهمة للتعديل والمراجعة
+                </span>
+              </div>
+              <span style={{ fontSize: 10.5, color: 'var(--text-secondary)' }}>
+                يرجى مراجعة سجل النشاط والتعليقات أدناه لتطبيق التعديلات المطلوبة ثم إعادة التسليم للمراجعة.
+              </span>
+            </div>
+          )}
+
           {task.description && task.description !== task.title && (
             <div style={rowStyles.descBox}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
@@ -557,6 +603,9 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
           {/* Task Comments & Discussions */}
           <TaskComments taskId={task.id} currentUserId={currentUserId} isAdmin={isAdmin} />
+
+          {/* Task Activity & Revision History Log */}
+          <TaskActivityLog taskId={task.id} isTaskReturned={isReturnedForRevision} />
 
           {/* Admin Direct Complete shortcut inside details if needed */}
           {canApprove && !isCompleted && !isInReview && (
@@ -625,6 +674,20 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* Return for Revision Modal */}
+      {isRevisionModalOpen && (
+        <ReturnForRevisionModal
+          isOpen={isRevisionModalOpen}
+          onClose={() => setIsRevisionModalOpen(false)}
+          onConfirm={async (reason: string) => {
+            if (onUpdateStatus) {
+              await onUpdateStatus(task.id, 'IN_PROGRESS', reason);
+            }
+          }}
+          task={task}
+        />
       )}
     </div>
   );
