@@ -359,19 +359,32 @@ test('3) Acceptance Criterion 3: Key without tasks:write scope returns 403', asy
   assert.match(response.body.message, /tasks:write/);
 });
 
-test('4) Acceptance Criterion 4: Task from another company with the same key returns 404', async () => {
+test('4) Acceptance Criterion 4: Task from another company returns 403, non-existent returns 404', async () => {
   resetTestState();
 
-  const response = await request(app)
+  // Cross-company task modification -> 403 Forbidden
+  const responseForeign = await request(app)
     .patch('/api/v1/external/tasks/task-comp2-foreign')
     .set('x-api-key', keyPairFull.rawKey)
     .send({
       title: 'Trying to update foreign task'
     });
 
-  assert.strictEqual(response.statusCode, 404);
-  assert.strictEqual(response.body.success, false);
-  assert.strictEqual(response.body.message, 'Task not found');
+  assert.strictEqual(responseForeign.statusCode, 403);
+  assert.strictEqual(responseForeign.body.success, false);
+  assert.match(responseForeign.body.message, /Access denied/);
+
+  // Non-existent task -> 404 Not Found
+  const responseNotFound = await request(app)
+    .patch('/api/v1/external/tasks/task-does-not-exist')
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      title: 'Non-existent task'
+    });
+
+  assert.strictEqual(responseNotFound.statusCode, 404);
+  assert.strictEqual(responseNotFound.body.success, false);
+  assert.strictEqual(responseNotFound.body.message, 'Task not found');
 });
 
 test('5) Acceptance Criterion 5: TaskActivity log is written and notification sent to assignee', async () => {

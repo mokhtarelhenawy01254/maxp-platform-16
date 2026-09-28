@@ -728,6 +728,18 @@ const taskExternalController = {
       });
 
       if (!currentTask) {
+        const otherCompanyTask = await prisma.task.findUnique({
+          where: { id },
+          select: { id: true, companyId: true }
+        });
+
+        if (otherCompanyTask) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied: Cannot modify task belonging to another company'
+          });
+        }
+
         return res.status(404).json({
           success: false,
           message: 'Task not found'
