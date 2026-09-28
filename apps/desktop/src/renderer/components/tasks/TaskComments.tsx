@@ -6,6 +6,8 @@ interface TaskCommentsProps {
   taskId: string;
   currentUserId?: string;
   isAdmin?: boolean;
+  hideInputBar?: boolean;
+  refreshKey?: number;
 }
 
 interface CommentUser {
@@ -28,6 +30,8 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({
   taskId,
   currentUserId = '',
   isAdmin = false,
+  hideInputBar = false,
+  refreshKey = 0,
 }) => {
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,7 +61,7 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({
 
   useEffect(() => {
     fetchComments();
-  }, [fetchComments]);
+  }, [fetchComments, refreshKey]);
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -303,29 +307,31 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({
       </div>
 
       {/* Input Box */}
-      <form onSubmit={handleSend} style={styles.inputBar}>
-        <input
-          type="text"
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="اكتب تعليقاً… (اضغط Enter للإرسال)"
-          style={styles.input}
-          disabled={submitting}
-        />
-        <button
-          type="submit"
-          disabled={submitting || !newComment.trim()}
-          style={{
-            ...styles.sendBtn,
-            opacity: submitting || !newComment.trim() ? 0.5 : 1,
-            cursor: submitting || !newComment.trim() ? 'default' : 'pointer',
-          }}
-          title="إرسال التعليق"
-        >
-          {submitting ? <Loader2 size={12} className="spin" /> : <Send size={12} />}
-        </button>
-      </form>
+      {!hideInputBar && (
+        <form onSubmit={handleSend} style={styles.inputBar}>
+          <input
+            type="text"
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="اكتب تعليقاً… (اضغط Enter للإرسال)"
+            style={styles.input}
+            disabled={submitting}
+          />
+          <button
+            type="submit"
+            disabled={submitting || !newComment.trim()}
+            style={{
+              ...styles.sendBtn,
+              opacity: submitting || !newComment.trim() ? 0.5 : 1,
+              cursor: submitting || !newComment.trim() ? 'default' : 'pointer',
+            }}
+            title="إرسال التعليق"
+          >
+            {submitting ? <Loader2 size={12} className="spin" /> : <Send size={12} />}
+          </button>
+        </form>
+      )}
     </div>
   );
 };

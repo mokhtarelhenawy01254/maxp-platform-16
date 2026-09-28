@@ -5,31 +5,22 @@ import {
   User,
   Paperclip,
   ExternalLink,
-  ChevronDown,
-  ChevronUp,
+  ChevronLeft,
   Play,
   Pause,
   RotateCcw,
   AlertTriangle,
   AlertCircle,
-  ImageIcon,
-  Check,
   Edit3,
   Lock,
   Eye,
   EyeOff,
   Send,
   ClipboardCheck,
-  Calendar,
   Copy,
   CheckCheck,
-  Shield,
 } from 'lucide-react';
 import { audioAlerts } from '../../utils/audioAlerts';
-import { TaskDependencyBadge } from './TaskDependencyBadge';
-import { TaskSubtasks } from './TaskSubtasks';
-import { TaskComments } from './TaskComments';
-import { TaskActivityLog } from './TaskActivityLog';
 import { ReturnForRevisionModal } from './ReturnForRevisionModal';
 
 interface TaskItemCardProps {
@@ -38,6 +29,8 @@ interface TaskItemCardProps {
   onUpdateStatus?: (taskId: string, newStatus: string, revisionReason?: string) => void;
   onOpenImage: (imgUrl: string) => void;
   onEdit?: (task: any) => void;
+  onSelect?: (task: any) => void;
+  isSelected?: boolean;
   serverUrl?: string;
   authToken?: string;
   currentUserId?: string;
@@ -56,6 +49,8 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   onUpdateStatus,
   onOpenImage,
   onEdit,
+  onSelect,
+  isSelected = false,
   serverUrl = 'https://maxp.online',
   authToken = '',
   currentUserId = '',
@@ -67,7 +62,6 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   onStopTask,
   viewType = 'my-tasks',
 }) => {
-  const [expanded, setExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
@@ -87,7 +81,6 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const isInReview = rawStatus === 'IN_REVIEW' || rawStatus === 'PENDING_REVIEW';
   const isInProgress = rawStatus === 'IN_PROGRESS';
   const isOnHold = rawStatus === 'ON_HOLD';
-  const isPending = !isCompleted && !isInReview && !isInProgress && !isOnHold;
 
   const parsedTags: string[] = Array.isArray(task.tags)
     ? task.tags
@@ -115,12 +108,14 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
   const dependencies = task.taskDependencies || task.dependencies || [];
   const blockingDeps = dependencies.filter((d: any) => d.type === 'blocked_by' && d.taskId === task.id);
-  const incompleteBlockingDeps = blockingDeps.filter((d: any) => String(d.dependsOn?.status || '').toUpperCase() !== 'COMPLETED');
+  const incompleteBlockingDeps = blockingDeps.filter(
+    (d: any) => String(d.dependsOn?.status || '').toUpperCase() !== 'COMPLETED'
+  );
   const hasBlocking = incompleteBlockingDeps.length > 0;
 
   const handleToggleWatch = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!currentUserId) return;
+    if (!currentUserId || !window.electronAPI) return;
     try {
       if (isWatching) {
         await window.electronAPI.removeWatcher(task.id, currentUserId);
@@ -179,43 +174,11 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const handleOpenInWeb = (e: React.MouseEvent) => {
     e.stopPropagation();
     const targetUrl = `${serverUrl.replace(/\/$/, '')}/tasks?taskId=${task.id}`;
-    window.open(targetUrl, '_blank');
-  };
-
-  const resolveAttachmentUrl = (rawPath: string) => {
-    if (!rawPath) return '';
-    if (rawPath.startsWith('data:') || rawPath.startsWith('blob:')) {
-      return rawPath;
+    if (window.electronAPI?.openExternal) {
+      window.electronAPI.openExternal(targetUrl);
+    } else {
+      window.open(targetUrl, '_blank');
     }
-    const cleanRaw = rawPath.trim();
-    if (cleanRaw.startsWith('http://') || cleanRaw.startsWith('https://')) {
-      return cleanRaw;
-    }
-    let base = (serverUrl || 'https://maxp.online').trim().replace(/\/$/, '');
-    if (!base.startsWith('http://') && !base.startsWith('https://')) {
-      base = `https://${base}`;
-    }
-    let normalized = cleanRaw.replace(/\\/g, '/');
-    if (!normalized.startsWith('/')) normalized = `/${normalized}`;
-    if (!normalized.startsWith('/uploads/')) {
-      if (normalized.startsWith('/tasks/')) {
-        normalized = `/uploads${normalized}`;
-      } else {
-        normalized = `/uploads/tasks${normalized}`;
-      }
-    }
-    try {
-      normalized = encodeURI(decodeURI(normalized));
-    } catch {
-      normalized = encodeURI(normalized);
-    }
-    return `${base}${normalized}`;
-  };
-
-  const isImgAttachment = (att: any) => {
-    if (att.fileType?.startsWith('image/')) return true;
-    const name = att.originalName || att.fileName || att.filePath || '';
-    return /\.(png|jpe?g|webp|gif|svg)$/i.test(name);
   };
 
   const targetPerson = viewType === 'my-tasks' ? (creatorName || 'مخصص') : assigneeName;
@@ -236,7 +199,9 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         display: 'flex',
         flexDirection: 'column',
         borderBottom: '1px solid var(--border-subtle)',
-        borderRight: isReturnedForRevision && !isCompleted
+        borderRight: isSelected
+          ? '3px solid #38bdf8'
+          : isReturnedForRevision && !isCompleted
           ? '3px solid #f59e0b'
           : isUrgent && !isCompleted
           ? '3px solid #ef4444'
@@ -245,7 +210,9 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           : isCompleted
           ? '3px solid var(--border-subtle)'
           : '3px solid transparent',
-        backgroundColor: isReturnedForRevision && !isCompleted
+        backgroundColor: isSelected
+          ? 'rgba(56, 189, 248, 0.10)'
+          : isReturnedForRevision && !isCompleted
           ? 'rgba(245, 158, 11, 0.05)'
           : isRunning
           ? 'rgba(56, 189, 248, 0.05)'
@@ -258,11 +225,11 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* High-Density Linear Row (Height: 44px) */}
+      {/* High-Density Linear Row (Strictly 44px Fixed Height) */}
       <div
         style={rowStyles.mainRow}
-        onClick={() => setExpanded(!expanded)}
-        title="انقر لتوسيع التفاصيل والملاحظات والمرفقات"
+        onClick={() => onSelect?.(task)}
+        title="انقر لعرض تفاصيل المهمة والملاحظات والمرفقات"
       >
         {/* Col 1: Status Icon + Title + Priority/Dep Pills + Attachments Badge */}
         <div style={rowStyles.titleCol}>
@@ -285,7 +252,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             )}
           </div>
 
-          {/* Task Title with BiDi protection (auto-detects LTR English vs RTL Arabic to prevent start clipping) */}
+          {/* Task Title with BiDi protection */}
           <span
             dir="auto"
             style={{
@@ -302,13 +269,13 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
           {/* Distinct Revision Badge for Returned Tasks */}
           {isReturnedForRevision && !isCompleted && (
-            <span style={rowStyles.revisionBadge} title="مهمة مُعادة للتعديل — انقر لتوسيع ملاحظات المشرف وسجل النشاط">
+            <span style={rowStyles.revisionBadge} title="مهمة مُعادة للتعديل — انقر لعرض ملاحظات المشرف">
               <RotateCcw size={9} color="#f59e0b" />
               <span>مُعادة للتعديل</span>
             </span>
           )}
 
-          {/* Sleek Ergonomic Priority Indicators */}
+          {/* Ergonomic Priority Indicators */}
           {isUrgent && !isCompleted && (
             <span style={rowStyles.urgentBadge} title="أولوية قصوى - عاجل">
               <AlertCircle size={11} />
@@ -336,9 +303,9 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               style={rowStyles.attChip}
               onClick={(e) => {
                 e.stopPropagation();
-                setExpanded(true);
+                onSelect?.(task);
               }}
-              title={`${attachments.length} مرفقات — انقر للمعاينة`}
+              title={`${attachments.length} مرفقات — انقر للمعاينة باللوحة`}
             >
               <Paperclip size={10} color="#94a3b8" />
               <span style={{ fontVariantNumeric: 'tabular-nums' }}>{attachments.length}</span>
@@ -347,7 +314,10 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         </div>
 
         {/* Col 2: Creator / Assignee */}
-        <div style={rowStyles.personCol} title={`${viewType === 'my-tasks' ? `أنشأها: ${creatorName}` : `المكلف: ${assigneeName}`} (صلاحية الظهور: ${visibilityReason.label})`}>
+        <div
+          style={rowStyles.personCol}
+          title={`${viewType === 'my-tasks' ? `أنشأها: ${creatorName}` : `المكلف: ${assigneeName}`} (صلاحية الظهور: ${visibilityReason.label})`}
+        >
           <User size={11} color="#71717a" />
           <span style={rowStyles.personName}>{targetPerson}</span>
           <span
@@ -402,9 +372,9 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           )}
         </div>
 
-        {/* Col 5: Actions Area (Hover Tools + Primary CTA) */}
+        {/* Col 5: Actions Area */}
         <div style={rowStyles.actionsCol} onClick={(e) => e.stopPropagation()}>
-          {/* Hover Action Tools (Rendered ONLY when hovered to prevent taking up space when idle) */}
+          {/* Hover Action Tools */}
           {isHovered && (
             <div style={rowStyles.hoverTools}>
               {/* One-Click Copy Description */}
@@ -549,132 +519,24 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             </span>
           )}
 
-          {/* Expand Toggle Chevron */}
+          {/* Open Details Drawer Chevron Button */}
           <button
             type="button"
-            onClick={() => setExpanded(!expanded)}
-            style={rowStyles.expandBtn}
-            title={expanded ? 'طي التفاصيل' : 'عرض التفاصيل'}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect?.(task);
+            }}
+            style={{
+              ...rowStyles.expandBtn,
+              backgroundColor: isSelected ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+              color: isSelected ? '#38bdf8' : 'var(--text-dim)',
+            }}
+            title="عرض التفاصيل في اللوحة الجانبية"
           >
-            {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            <ChevronLeft size={13} />
           </button>
         </div>
       </div>
-
-      {/* Expanded Accordion: Description & Dark-Mode Attachments Gallery */}
-      {expanded && (
-        <div style={rowStyles.expandedPanel}>
-          {/* Revision Alert Banner if task was returned */}
-          {isReturnedForRevision && !isCompleted && (
-            <div style={rowStyles.revisionAlertBanner}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <AlertTriangle size={13} color="#f59e0b" />
-                <span style={{ fontWeight: 600, color: '#f59e0b', fontSize: 11 }}>
-                  تمت إعادة هذه المهمة للتعديل والمراجعة
-                </span>
-              </div>
-              <span style={{ fontSize: 10.5, color: 'var(--text-secondary)' }}>
-                يرجى مراجعة سجل النشاط والتعليقات أدناه لتطبيق التعديلات المطلوبة ثم إعادة التسليم للمراجعة.
-              </span>
-            </div>
-          )}
-
-          {task.description && task.description !== task.title && (
-            <div style={rowStyles.descBox}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                <div style={{ flex: 1, whiteSpace: 'pre-wrap' }}>{task.description}</div>
-                <button
-                  type="button"
-                  onClick={handleCopyDescription}
-                  style={rowStyles.copyDescBtn}
-                  title="نسخ الوصف إلى الحافظة بنقرة واحدة"
-                >
-                  {isCopied ? <CheckCheck size={11} color="var(--accent-green)" /> : <Copy size={11} />}
-                  <span>{isCopied ? 'تم النسخ' : 'نسخ الوصف'}</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Subtasks Component */}
-          <TaskSubtasks taskId={task.id} canEdit={canEditTask} />
-
-          <TaskDependencyBadge taskId={task.id} />
-
-          {/* Task Comments & Discussions */}
-          <TaskComments taskId={task.id} currentUserId={currentUserId} isAdmin={isAdmin} />
-
-          {/* Task Activity & Revision History Log */}
-          <TaskActivityLog taskId={task.id} isTaskReturned={isReturnedForRevision} />
-
-          {/* Admin Direct Complete shortcut inside details if needed */}
-          {canApprove && !isCompleted && !isInReview && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-              <button
-                type="button"
-                onClick={() => {
-                  audioAlerts.playTaskComplete();
-                  onUpdateStatus ? onUpdateStatus(task.id, 'COMPLETED') : onToggleStatus(task.id, task.status);
-                }}
-                style={rowStyles.directDoneInExpanded}
-                title="اعتماد وإغلاق كـ مكتملة مباشرة (صلاحية إدارية)"
-              >
-                <Check size={11} />
-                <span>إنجاز مباشر للمهمة</span>
-              </button>
-            </div>
-          )}
-
-          {/* Attachments Gallery */}
-          {attachments.length > 0 && (
-            <div style={rowStyles.attachGallery}>
-              {attachments.map((att: any, idx: number) => {
-                const rawPath = att.filePath || '';
-                const fullUrl = resolveAttachmentUrl(rawPath);
-                const isImg = isImgAttachment(att);
-                const label = att.originalName || att.fileName || `مرفق ${idx + 1}`;
-
-                return (
-                  <div
-                    key={att.id || att.fileName || idx}
-                    onClick={() => onOpenImage(fullUrl)}
-                    style={rowStyles.attCard}
-                    title={`معاينة: ${label}`}
-                  >
-                    {isImg ? (
-                      <div style={rowStyles.imgWrap}>
-                        <img
-                          src={fullUrl}
-                          alt={label}
-                          style={rowStyles.thumbImg}
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.opacity = '0.3';
-                          }}
-                        />
-                        <div style={rowStyles.imgOverlay}>
-                          <ImageIcon size={9} color="#ffffff" />
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={rowStyles.docThumb}>
-                        <Paperclip size={12} color="#94a3b8" />
-                      </div>
-                    )}
-                    <div style={rowStyles.attInfo}>
-                      <span style={rowStyles.thumbName}>{label}</span>
-                      {att.fileSize && (
-                        <span style={rowStyles.thumbSize}>
-                          {Math.round(att.fileSize / 1024)} KB
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Return for Revision Modal */}
       {isRevisionModalOpen && (
@@ -697,6 +559,8 @@ const rowStyles: Record<string, React.CSSProperties> = {
   mainRow: {
     minHeight: 44,
     height: 44,
+    maxHeight: 44,
+    overflow: 'hidden',
     padding: '0 14px',
     display: 'flex',
     alignItems: 'center',
@@ -886,6 +750,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     marginRight: 2,
     outline: 'none',
     flexShrink: 0,
+    transition: 'background-color 100ms ease, color 100ms ease',
   },
   startBtn: {
     display: 'inline-flex',
@@ -1027,130 +892,6 @@ const rowStyles: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
     flexShrink: 0,
     height: 22,
-  },
-  expandedPanel: {
-    padding: '10px 14px 12px 14px',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    borderTop: '1px solid var(--border-subtle)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-  },
-  revisionAlertBanner: {
-    padding: '8px 12px',
-    backgroundColor: 'rgba(245, 158, 11, 0.08)',
-    border: '1px solid rgba(245, 158, 11, 0.25)',
-    borderRadius: 6,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 3,
-  },
-  descBox: {
-    padding: '8px 12px',
-    backgroundColor: 'var(--bg-elevated)',
-    borderRadius: 6,
-    fontSize: 11,
-    color: 'var(--text-secondary)',
-    lineHeight: 1.5,
-    border: '1px solid var(--border-subtle)',
-  },
-  copyDescBtn: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 4,
-    padding: '3px 8px',
-    borderRadius: 4,
-    border: '1px solid var(--border-default)',
-    backgroundColor: 'var(--bg-card)',
-    color: 'var(--text-dim)',
-    fontSize: 10,
-    fontWeight: 600,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    flexShrink: 0,
-  },
-  directDoneInExpanded: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(34, 197, 94, 0.08)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
-    borderRadius: 5,
-    padding: '3px 8px',
-    fontSize: 10,
-    fontWeight: 600,
-    color: 'var(--accent-green)',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-  },
-  attachGallery: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
-    overflowX: 'auto',
-  },
-  attCard: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    padding: '3px 8px',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    border: '1px solid var(--border-subtle)',
-    borderRadius: 5,
-    cursor: 'pointer',
-    maxWidth: 160,
-    flexShrink: 0,
-  },
-  imgWrap: {
-    position: 'relative',
-    width: 26,
-    height: 26,
-    borderRadius: 3,
-    overflow: 'hidden',
-    backgroundColor: '#000000',
-    flexShrink: 0,
-  },
-  thumbImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  imgOverlay: {
-    position: 'absolute',
-    bottom: 1,
-    right: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 2,
-    padding: 1,
-  },
-  docThumb: {
-    width: 26,
-    height: 26,
-    borderRadius: 3,
-    backgroundColor: 'var(--bg-elevated)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  attInfo: {
-    display: 'flex',
-    flexDirection: 'column',
-    minWidth: 0,
-  },
-  thumbName: {
-    fontSize: 10,
-    color: 'var(--text-primary)',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    maxWidth: 100,
-  },
-  thumbSize: {
-    fontSize: 9,
-    color: 'var(--text-dim)',
-    fontVariantNumeric: 'tabular-nums',
   },
 };
 

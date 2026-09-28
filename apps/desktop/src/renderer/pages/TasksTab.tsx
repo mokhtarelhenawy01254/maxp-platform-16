@@ -24,6 +24,7 @@ import {
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { TaskItemCard } from '../components/tasks/TaskItemCard';
+import { TaskDetailDrawer } from '../components/tasks/TaskDetailDrawer';
 import { TaskReportView } from '../components/tasks/reports/TaskReportView';
 
 interface ActiveTaskState {
@@ -62,6 +63,21 @@ export const TasksTab: React.FC = () => {
   const [teamActiveTimers, setTeamActiveTimers] = useState<TeamActiveTimer[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  // Deep-linking: sync selected task from URL hash #/tasks/<id>
+  useEffect(() => {
+    const syncFromHash = () => {
+      const hash = window.location.hash || '';
+      const match = hash.match(/^#\/tasks\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        setSelectedTaskId(match[1]);
+      }
+    };
+    syncFromHash();
+    window.addEventListener('hashchange', syncFromHash);
+    return () => window.removeEventListener('hashchange', syncFromHash);
+  }, []);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [lightboxBlobUrl, setLightboxBlobUrl] = useState<string | null>(null);
   const [lightboxImgError, setLightboxImgError] = useState(false);
@@ -727,6 +743,73 @@ export const TasksTab: React.FC = () => {
     return 0;
   });
 
+  const selectedTask = selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) || null : null;
+
+  const handleSelectTask = useCallback((task: any) => {
+    if (!task) {
+      setSelectedTaskId(null);
+      if (window.location.hash.startsWith('#/tasks')) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    } else {
+      setSelectedTaskId(task.id);
+      window.location.hash = `#/tasks/${task.id}`;
+    }
+  }, []);
+
+  const handleCloseDrawer = useCallback(() => {
+    setSelectedTaskId(null);
+    if (window.location.hash.startsWith('#/tasks')) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
+
+  // Keyboard navigation for task drawer: Esc to close, ↑/↓ or j/k to navigate between tasks without interrupting timers
+  useEffect(() => {
+    if (!selectedTaskId) return;
+
+    const handleDrawerKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleCloseDrawer();
+        return;
+      }
+
+      if (e.key === 'ArrowDown' || e.key === 'j') {
+        e.preventDefault();
+        const currentIndex = sortedDisplayTasks.findIndex((t) => t.id === selectedTaskId);
+        if (currentIndex >= 0 && currentIndex < sortedDisplayTasks.length - 1) {
+          const nextTask = sortedDisplayTasks[currentIndex + 1];
+          if (nextTask) handleSelectTask(nextTask);
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowUp' || e.key === 'k') {
+        e.preventDefault();
+        const currentIndex = sortedDisplayTasks.findIndex((t) => t.id === selectedTaskId);
+        if (currentIndex > 0) {
+          const prevTask = sortedDisplayTasks[currentIndex - 1];
+          if (prevTask) handleSelectTask(prevTask);
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleDrawerKeyDown);
+    return () => window.removeEventListener('keydown', handleDrawerKeyDown);
+  }, [selectedTaskId, sortedDisplayTasks, handleCloseDrawer, handleSelectTask]);
+
   return (
     <div style={styles.container}>
       {/* Top Scope & Action Bar (Zero Overflow 2026 Strip) */}
@@ -1222,6 +1305,8 @@ export const TasksTab: React.FC = () => {
               onUpdateStatus={handleUpdateStatus}
               onOpenImage={(img) => setPreviewImage(img)}
               onEdit={(taskToEdit) => setEditingTask(taskToEdit)}
+              onSelect={handleSelectTask}
+              isSelected={selectedTaskId === t.id}
               serverUrl={serverUrl}
               authToken={authToken}
               currentUserId={currentUser?.id || currentUser?.userId}
@@ -1286,6 +1371,26 @@ export const TasksTab: React.FC = () => {
         onUpdated={() => loadData(false)}
         users={users}
         serverUrl={serverUrl}
+      />
+
+      {/* Task Details Slide-Over Drawer */}
+      <TaskDetailDrawer
+        task={selectedTask}
+        isOpen={!!selectedTaskId && !!selectedTask}
+        onClose={handleCloseDrawer}
+        onUpdateStatus={handleUpdateStatus}
+        onToggleStatus={handleToggleStatus}
+        onEdit={(taskToEdit) => setEditingTask(taskToEdit)}
+        onOpenImage={(img) => setPreviewImage(img)}
+        serverUrl={serverUrl}
+        authToken={authToken}
+        currentUserId={currentUser?.id || currentUser?.userId}
+        isAdmin={isAdminOrManager}
+        activeTaskId={activeTask?.id}
+        activeTaskIds={elapsedMap}
+        activeRunnerSeconds={runnerSeconds}
+        onStartTask={handleStartTask}
+        onStopTask={handleStopTask}
       />
 
       {/* Image Lightbox Modal */}

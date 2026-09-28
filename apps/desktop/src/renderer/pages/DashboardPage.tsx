@@ -24,6 +24,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
 
   const [activeTab, setActiveTabState] = useState<TabId>(() => {
     try {
+      if (window.location.hash.startsWith('#/tasks')) {
+        return 'tasks';
+      }
       const saved = (localStorage.getItem('maxp_active_tab') as TabId) || 'tasks';
       if (!isAdmin && (saved === 'attendance' || saved === 'system')) {
         return 'tasks';
@@ -33,6 +36,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
       return 'tasks';
     }
   });
+
+  useEffect(() => {
+    const handleHash = () => {
+      if (window.location.hash.startsWith('#/tasks')) {
+        setActiveTabState('tasks');
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
 
   const setActiveTab = (tab: TabId) => {
     if (!isAdmin && (tab === 'attendance' || tab === 'system')) {

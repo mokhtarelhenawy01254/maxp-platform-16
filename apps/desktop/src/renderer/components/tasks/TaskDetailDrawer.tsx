@@ -1,0 +1,1173 @@
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Copy,
+  CheckCheck,
+  ExternalLink,
+  Edit3,
+  Clock,
+  Play,
+  Pause,
+  Send,
+  RotateCcw,
+  CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
+  Paperclip,
+  ImageIcon,
+  User,
+  Calendar,
+  Layers,
+  Shield,
+  Loader2,
+  Check,
+  Link as LinkIcon,
+} from 'lucide-react';
+import { TaskDescriptionRenderer } from './TaskDescriptionRenderer';
+import { TaskSubtasks } from './TaskSubtasks';
+import { TaskComments } from './TaskComments';
+import { TaskActivityLog } from './TaskActivityLog';
+import { TaskDependencyBadge } from './TaskDependencyBadge';
+import { ReturnForRevisionModal } from './ReturnForRevisionModal';
+import { audioAlerts } from '../../utils/audioAlerts';
+
+interface TaskDetailDrawerProps {
+  task: any | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onUpdateStatus?: (taskId: string, newStatus: string, revisionReason?: string) => void;
+  onToggleStatus?: (taskId: string, currentStatus: string) => void;
+  onEdit?: (task: any) => void;
+  onOpenImage?: (imgUrl: string) => void;
+  serverUrl?: string;
+  authToken?: string;
+  currentUserId?: string;
+  isAdmin?: boolean;
+  activeTaskId?: string | null;
+  activeTaskIds?: Record<string, number>;
+  activeRunnerSeconds?: number;
+  onStartTask?: (task: any) => void;
+  onStopTask?: (taskId?: string) => void;
+}
+
+export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
+  task,
+  isOpen,
+  onClose,
+  onUpdateStatus,
+  onToggleStatus,
+  onEdit,
+  onOpenImage,
+  serverUrl = 'https://maxp.online',
+  authToken = '',
+  currentUserId = '',
+  isAdmin = false,
+  activeTaskId = null,
+  activeTaskIds,
+  activeRunnerSeconds = 0,
+  onStartTask,
+  onStopTask,
+}) => {
+  const [commentText, setCommentText] = useState('');
+  const [sendingComment, setSendingComment] = useState(false);
+  const [commentRefreshKey, setCommentRefreshKey] = useState(0);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
+
+  // Close on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !isRevisionModalOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isRevisionModalOpen, onClose]);
+
+  if (!isOpen || !task) return null;
+
+  const rawStatus = String(task.status || '').toUpperCase();
+  const isCompleted = rawStatus === 'COMPLETED';
+  const isInReview = rawStatus === 'IN_REVIEW' || rawStatus === 'PENDING_REVIEW';
+  const isInProgress = rawStatus === 'IN_PROGRESS';
+  const isOnHold = rawStatus === 'ON_HOLD';
+
+  const parsedTags: string[] = Array.isArray(task.tags)
+    ? task.tags
+    : typeof task.tags === 'string'
+    ? (() => {
+        try {
+          const p = JSON.parse(task.tags);
+          return Array.isArray(p) ? p : [task.tags];
+        } catch {
+          return task.tags.split(',').map((s: string) => s.trim()).filter(Boolean);
+        }
+      })()
+    : [];
+  const isReturnedForRevision = parsedTags.includes('needs_revision') || rawStatus === 'REVISION';
+
+  const isMultiRunning = activeTaskIds ? activeTaskIds[task.id] !== undefined : false;
+  const isRunning = !isCompleted && !isInReview && (activeTaskId === task.id || isMultiRunning);
+  const currentElapsed = isMultiRunning && activeTaskIds ? activeTaskIds[task.id] : activeRunnerSeconds;
+
+  const attachments = task.taskAttachments || task.attachments || [];
+  const watchers = task.taskWatchers || task.watchers || [];
+  const isWatching = currentUserId
+    ? watchers.some((w: any) => (w.userId || w.id || w.user?.id) === currentUserId)
+    : false;
+
+  const isUrgent = String(task.priority || '').toUpperCase() === 'URGENT';
+  const isHigh = String(task.priority || '').toUpperCase() === 'HIGH';
+  const isAssignedToMe = !task.assignedTo || task.assignedTo === currentUserId;
+  const isCreatedByMe = task.createdBy === currentUserId;
+  const canRunTask = isAssignedToMe;
+  const canEditTask = isCreatedByMe || isAssignedToMe || isAdmin;
+  const canApprove = isCreatedByMe || isAdmin;
+
+  const creatorName =
+    task.createdByName ||
+    `${task.creator?.firstName || ''} ${task.creator?.lastName || ''}`.trim() ||
+    task.creator?.email ||
+    'غير محدد';
+
+  const assigneeName =
+    task.assignedToName ||
+    task.assignee?.name ||
+    `${task.assignee?.firstName || ''} ${task.assignee?.lastName || ''}`.trim() ||
+    task.assignee?.email ||
+    'غير محدد';
+
+  const now = Date.now();
+  const dueTime = task.dueDate ? new Date(task.dueDate).getTime() : null;
+  const diffMs = dueTime ? dueTime - now : null;
+  const isOverdue = !!dueTime && !isCompleted && diffMs! < 0;
+  const isDueSoon = !!dueTime && !isCompleted && !isOverdue && diffMs! <= 24 * 60 * 60 * 1000;
+
+  const getDueLabel = () => {
+    if (!dueTime) return 'بدون موعد استحقاق';
+    const d = new Date(task.dueDate);
+    const dateStr = d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' });
+    if (isOverdue) {
+      const hours = Math.floor(Math.abs(diffMs!) / 3600000);
+      const days = Math.floor(hours / 24);
+      return `${dateStr} (متأخرة بـ ${days > 0 ? `${days} يوم` : `${hours} ساعة`})`;
+    }
+    if (isDueSoon) return `${dateStr} (يستحق قريباً خلال 24 ساعة)`;
+    return dateStr;
+  };
+
+  const formatRunnerTimer = (sec: number): string => {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  };
+
+  const handleCopyDeepLink = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const deepLink = `${window.location.origin}${window.location.pathname}#/tasks/${task.id}`;
+    navigator.clipboard.writeText(deepLink);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleOpenInWeb = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const targetUrl = `${serverUrl.replace(/\/$/, '')}/tasks?taskId=${task.id}`;
+    if (window.electronAPI?.openExternal) {
+      window.electronAPI.openExternal(targetUrl);
+    } else {
+      window.open(targetUrl, '_blank');
+    }
+  };
+
+  const resolveAttachmentUrl = (rawPath: string) => {
+    if (!rawPath) return '';
+    if (rawPath.startsWith('data:') || rawPath.startsWith('blob:')) return rawPath;
+    const cleanRaw = rawPath.trim();
+    if (cleanRaw.startsWith('http://') || cleanRaw.startsWith('https://')) return cleanRaw;
+    let base = (serverUrl || 'https://maxp.online').trim().replace(/\/$/, '');
+    if (!base.startsWith('http://') && !base.startsWith('https://')) base = `https://${base}`;
+    let normalized = cleanRaw.replace(/\\/g, '/');
+    if (!normalized.startsWith('/')) normalized = `/${normalized}`;
+    if (!normalized.startsWith('/uploads/')) {
+      if (normalized.startsWith('/tasks/')) normalized = `/uploads${normalized}`;
+      else normalized = `/uploads/tasks${normalized}`;
+    }
+    try {
+      normalized = encodeURI(decodeURI(normalized));
+    } catch {
+      normalized = encodeURI(normalized);
+    }
+    return `${base}${normalized}`;
+  };
+
+  const isImgAttachment = (att: any) => {
+    if (att.fileType?.startsWith('image/')) return true;
+    const name = att.originalName || att.fileName || att.filePath || '';
+    return /\.(png|jpe?g|webp|gif|svg)$/i.test(name);
+  };
+
+  // Fixed Bottom Write Bar comment submit
+  const handleSendComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = commentText.trim();
+    if (!text || sendingComment || !window.electronAPI?.addTaskComment) return;
+
+    setSendingComment(true);
+    try {
+      const res = await window.electronAPI.addTaskComment(task.id, text);
+      if (res?.success) {
+        setCommentText('');
+        audioAlerts.playTaskComplete();
+        setCommentRefreshKey((prev) => prev + 1);
+      } else {
+        alert(res?.error || 'فشل في إرسال التعليق');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'حدث خطأ أثناء إرسال التعليق');
+    } finally {
+      setSendingComment(false);
+    }
+  };
+
+  const visibilityReason = isAssignedToMe
+    ? { label: 'مكلف بالتنفيذ', bg: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8' }
+    : isCreatedByMe
+    ? { label: 'أنشأتها', bg: 'rgba(168, 85, 247, 0.12)', color: '#c084fc' }
+    : isWatching
+    ? { label: 'متابع', bg: 'rgba(34, 197, 94, 0.12)', color: '#22c55e' }
+    : isAdmin
+    ? { label: 'إشراف إداري', bg: 'rgba(245, 158, 11, 0.12)', color: '#fbbf24' }
+    : { label: 'فريق', bg: 'rgba(255, 255, 255, 0.05)', color: '#a1a1aa' };
+
+  return (
+    <>
+      {/* Backdrop Overlay */}
+      <div style={drawerStyles.overlay} onClick={onClose}>
+        {/* Slide-over Drawer Panel */}
+        <div
+          style={drawerStyles.drawer}
+          onClick={(e) => e.stopPropagation()}
+          dir="rtl"
+        >
+          {/* SECTION 1: FIXED STICKY HEADER */}
+          <div style={drawerStyles.stickyHeader}>
+            {/* Top Action Nav Bar */}
+            <div style={drawerStyles.headerTopNav}>
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={onClose}
+                style={drawerStyles.closeBtn}
+                title="إغلاق اللوحة (Esc)"
+              >
+                <X size={15} />
+                <span style={{ fontSize: 11, fontWeight: 500 }}>إغلاق</span>
+              </button>
+
+              {/* Utility Tools: Deep-Link, Edit, Web */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  type="button"
+                  onClick={handleCopyDeepLink}
+                  style={{
+                    ...drawerStyles.iconToolBtn,
+                    color: copiedLink ? 'var(--accent-green, #10b981)' : 'var(--text-dim)',
+                  }}
+                  title={copiedLink ? 'تم نسخ رابط المهمة!' : 'نسخ رابط مباشر للمهمة'}
+                >
+                  {copiedLink ? <CheckCheck size={12} /> : <LinkIcon size={12} />}
+                  <span style={{ fontSize: 10.5 }}>{copiedLink ? 'تم النسخ' : 'رابط المهمة'}</span>
+                </button>
+
+                {canEditTask && onEdit && (
+                  <button
+                    type="button"
+                    onClick={() => onEdit(task)}
+                    style={drawerStyles.iconToolBtn}
+                    title="تعديل المهمة بالكامل"
+                  >
+                    <Edit3 size={12} />
+                    <span style={{ fontSize: 10.5 }}>تعديل</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleOpenInWeb}
+                  style={drawerStyles.iconToolBtn}
+                  title="فتح المهمة في المتصفح"
+                >
+                  <ExternalLink size={12} />
+                </button>
+              </div>
+            </div>
+
+            {/* Task Title & Status Badges */}
+            <div style={drawerStyles.headerMain}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <h2
+                  dir="auto"
+                  style={drawerStyles.taskTitle}
+                  title={task.title}
+                >
+                  {task.title}
+                </h2>
+              </div>
+
+              {/* Badges Strip */}
+              <div style={drawerStyles.badgeStrip}>
+                {/* Status Badge */}
+                <span
+                  style={{
+                    ...drawerStyles.statusPill,
+                    backgroundColor: isCompleted
+                      ? 'rgba(34, 197, 94, 0.12)'
+                      : isInReview
+                      ? 'rgba(168, 85, 247, 0.12)'
+                      : isReturnedForRevision
+                      ? 'rgba(245, 158, 11, 0.12)'
+                      : isRunning
+                      ? 'rgba(56, 189, 248, 0.15)'
+                      : 'rgba(255, 255, 255, 0.05)',
+                    color: isCompleted
+                      ? '#22c55e'
+                      : isInReview
+                      ? '#c084fc'
+                      : isReturnedForRevision
+                      ? '#f59e0b'
+                      : isRunning
+                      ? '#38bdf8'
+                      : '#a1a1aa',
+                  }}
+                >
+                  {isCompleted
+                    ? 'مكتملة'
+                    : isInReview
+                    ? 'بانتظار الاعتماد'
+                    : isReturnedForRevision
+                    ? 'مُعادة للتعديل'
+                    : isRunning
+                    ? 'قيد العمل الآن'
+                    : 'قيد التنفيذ'}
+                </span>
+
+                {/* Priority Badge */}
+                {isUrgent ? (
+                  <span style={drawerStyles.urgentPill}>
+                    <AlertCircle size={10} />
+                    <span>عاجل</span>
+                  </span>
+                ) : isHigh ? (
+                  <span style={drawerStyles.highPill}>
+                    <span>مرتفع</span>
+                  </span>
+                ) : (
+                  <span style={drawerStyles.normalPill}>عادي</span>
+                )}
+
+                {/* Visibility Reason */}
+                <span
+                  style={{
+                    ...drawerStyles.visibilityPill,
+                    backgroundColor: visibilityReason.bg,
+                    color: visibilityReason.color,
+                  }}
+                >
+                  {visibilityReason.label}
+                </span>
+
+                {/* Running Timer Live Counter */}
+                {isRunning && (
+                  <span style={drawerStyles.runningLiveTicker}>
+                    <span style={drawerStyles.liveDot} />
+                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {formatRunnerTimer(currentElapsed)}
+                    </span>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Revision Alert Banner */}
+            {isReturnedForRevision && !isCompleted && (
+              <div style={drawerStyles.revisionBanner}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <RotateCcw size={13} color="#f59e0b" />
+                  <span style={{ fontWeight: 600, color: '#f59e0b', fontSize: 11.5 }}>
+                    تمت إعادة المهمة من المشرف لإجراء تعديلات
+                  </span>
+                </div>
+                {task.revisionReason && (
+                  <div style={drawerStyles.revisionReasonText}>
+                    <strong>ملاحظات الإرجاع:</strong> {task.revisionReason}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Sticky Action Toolbar */}
+            <div style={drawerStyles.toolbar}>
+              {isCompleted ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    audioAlerts.playTaskReopen();
+                    onUpdateStatus ? onUpdateStatus(task.id, 'IN_PROGRESS') : onToggleStatus?.(task.id, task.status);
+                  }}
+                  style={drawerStyles.secondaryActionBtn}
+                >
+                  <RotateCcw size={12} />
+                  <span>إعادة فتح المهمة</span>
+                </button>
+              ) : isInReview ? (
+                canApprove ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        audioAlerts.playTaskComplete();
+                        onUpdateStatus ? onUpdateStatus(task.id, 'COMPLETED') : onToggleStatus?.(task.id, task.status);
+                      }}
+                      style={drawerStyles.approveActionBtn}
+                    >
+                      <CheckCircle2 size={13} />
+                      <span>اعتماد المهمة وإنجازها</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsRevisionModalOpen(true)}
+                      style={drawerStyles.returnActionBtn}
+                    >
+                      <RotateCcw size={12} />
+                      <span>طلب تعديلات وإرجاع</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div style={drawerStyles.pendingReviewNotice}>
+                    المهمة تم تسليمها وبانتظار اعتماد المشرف.
+                  </div>
+                )
+              ) : isRunning ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                  <button
+                    type="button"
+                    onClick={() => onStopTask?.(task.id)}
+                    style={drawerStyles.pauseActionBtn}
+                  >
+                    <Pause size={12} />
+                    <span>إيقاف المؤقت</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      audioAlerts.playTaskComplete();
+                      onUpdateStatus ? onUpdateStatus(task.id, 'IN_REVIEW') : onToggleStatus?.(task.id, 'IN_REVIEW');
+                    }}
+                    style={drawerStyles.submitActionBtn}
+                  >
+                    <Send size={12} />
+                    <span>تسليم للمراجعة والاعتماد</span>
+                  </button>
+                </div>
+              ) : canRunTask ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    audioAlerts.playTaskStart();
+                    onStartTask?.(task);
+                  }}
+                  style={drawerStyles.startActionBtn}
+                >
+                  <Play size={12} fill="#ffffff" />
+                  <span>بدء العمل على المهمة واحتساب الوقت</span>
+                </button>
+              ) : (
+                <div style={drawerStyles.disabledNotice}>
+                  المهمة مسندة للزميل {assigneeName} (لا تملك صلاحية تشغيلها).
+                </div>
+              )}
+
+              {/* Admin Direct Complete Shortcut */}
+              {canApprove && !isCompleted && !isInReview && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    audioAlerts.playTaskComplete();
+                    onUpdateStatus ? onUpdateStatus(task.id, 'COMPLETED') : onToggleStatus?.(task.id, task.status);
+                  }}
+                  style={drawerStyles.directDoneBtn}
+                  title="إنجاز مباشر كـ مكتملة دون إرسالها للمراجعة (صلاحية إدارية)"
+                >
+                  <Check size={11} />
+                  <span>إنجاز مباشر</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* SCROLLABLE DRAWER BODY (Sections 2 to 7) */}
+          <div style={drawerStyles.scrollBody}>
+            {/* SECTION 2: DESCRIPTION */}
+            <div style={drawerStyles.cardSection}>
+              <TaskDescriptionRenderer description={task.description || ''} />
+            </div>
+
+            {/* SECTION 3: SUBTASKS */}
+            <div style={drawerStyles.cardSection}>
+              <TaskSubtasks taskId={task.id} canEdit={canEditTask} />
+            </div>
+
+            {/* SECTION 4: COMMENTS */}
+            <div style={drawerStyles.cardSection}>
+              <TaskComments
+                taskId={task.id}
+                currentUserId={currentUserId}
+                isAdmin={isAdmin}
+                hideInputBar={true}
+                refreshKey={commentRefreshKey}
+              />
+            </div>
+
+            {/* SECTION 5: ATTACHMENTS GALLERY */}
+            {attachments.length > 0 && (
+              <div style={drawerStyles.cardSection}>
+                <div style={drawerStyles.sectionHeaderRow}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Paperclip size={13} color="var(--accent-blue)" />
+                    <span style={drawerStyles.sectionTitle}>المرفقات والملفات</span>
+                    <span style={drawerStyles.sectionCountBadge}>{attachments.length}</span>
+                  </div>
+                </div>
+
+                <div style={drawerStyles.attachGallery}>
+                  {attachments.map((att: any, idx: number) => {
+                    const rawPath = att.filePath || '';
+                    const fullUrl = resolveAttachmentUrl(rawPath);
+                    const isImg = isImgAttachment(att);
+                    const label = att.originalName || att.fileName || `مرفق ${idx + 1}`;
+
+                    return (
+                      <div
+                        key={att.id || att.fileName || idx}
+                        onClick={() => onOpenImage?.(fullUrl)}
+                        style={drawerStyles.attCard}
+                        title={`معاينة: ${label}`}
+                      >
+                        {isImg ? (
+                          <div style={drawerStyles.imgWrap}>
+                            <img
+                              src={fullUrl}
+                              alt={label}
+                              style={drawerStyles.thumbImg}
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.opacity = '0.3';
+                              }}
+                            />
+                            <div style={drawerStyles.imgOverlay}>
+                              <ImageIcon size={10} color="#ffffff" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={drawerStyles.docThumb}>
+                            <Paperclip size={14} color="#94a3b8" />
+                          </div>
+                        )}
+                        <div style={drawerStyles.attInfo}>
+                          <span style={drawerStyles.thumbName}>{label}</span>
+                          {att.fileSize && (
+                            <span style={drawerStyles.thumbSize}>
+                              {Math.round(att.fileSize / 1024)} KB
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* SECTION 6: META BLOCK */}
+            <div style={drawerStyles.cardSection}>
+              <div style={drawerStyles.sectionHeaderRow}>
+                <span style={drawerStyles.sectionTitle}>بيانات المهمة والمكلفين</span>
+              </div>
+
+              <div style={drawerStyles.metaGrid}>
+                {/* Assignee */}
+                <div style={drawerStyles.metaItem}>
+                  <span style={drawerStyles.metaLabel}>المكلف بالتنفيذ</span>
+                  <div style={drawerStyles.metaValue}>
+                    <div style={drawerStyles.miniAvatar}>
+                      {assigneeName.charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ fontWeight: 500 }}>{assigneeName}</span>
+                  </div>
+                </div>
+
+                {/* Creator */}
+                <div style={drawerStyles.metaItem}>
+                  <span style={drawerStyles.metaLabel}>أنشأها</span>
+                  <div style={drawerStyles.metaValue}>
+                    <div style={drawerStyles.miniAvatar}>
+                      {creatorName.charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ fontWeight: 500 }}>{creatorName}</span>
+                  </div>
+                </div>
+
+                {/* Due Date */}
+                <div style={drawerStyles.metaItem}>
+                  <span style={drawerStyles.metaLabel}>تاريخ الاستحقاق</span>
+                  <div style={drawerStyles.metaValue}>
+                    <Calendar size={13} color={isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#71717a'} />
+                    <span
+                      style={{
+                        color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : 'inherit',
+                        fontWeight: isOverdue ? 600 : 400,
+                      }}
+                    >
+                      {getDueLabel()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Estimated Time */}
+                <div style={drawerStyles.metaItem}>
+                  <span style={drawerStyles.metaLabel}>الوقت المقدر</span>
+                  <div style={drawerStyles.metaValue}>
+                    <Clock size={13} color="#71717a" />
+                    <span>
+                      {task.estimatedMinutes
+                        ? `${task.estimatedMinutes} دقيقة`
+                        : task.estimatedHours
+                        ? `${task.estimatedHours} ساعة`
+                        : 'غير محدد'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dependencies Section inside Meta */}
+              <div style={{ marginTop: 10 }}>
+                <TaskDependencyBadge taskId={task.id} />
+              </div>
+            </div>
+
+            {/* SECTION 7: ACTIVITY LOG */}
+            <div style={drawerStyles.cardSection}>
+              <TaskActivityLog taskId={task.id} isTaskReturned={isReturnedForRevision} />
+            </div>
+          </div>
+
+          {/* FIXED BOTTOM COMMENT WRITE-BAR */}
+          <div style={drawerStyles.fixedBottomBar}>
+            <form onSubmit={handleSendComment} style={drawerStyles.bottomForm}>
+              <input
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="اكتب ملاحظة أو تعليقاً على المهمة… (اضغط Enter للإرسال)"
+                style={drawerStyles.bottomInput}
+                disabled={sendingComment}
+              />
+              <button
+                type="submit"
+                disabled={sendingComment || !commentText.trim()}
+                style={{
+                  ...drawerStyles.bottomSendBtn,
+                  opacity: sendingComment || !commentText.trim() ? 0.5 : 1,
+                  cursor: sendingComment || !commentText.trim() ? 'default' : 'pointer',
+                }}
+                title="إرسال التعليق فوراً"
+              >
+                {sendingComment ? <Loader2 size={13} className="spin" /> : <Send size={13} />}
+                <span>إرسال</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/* Return for Revision Modal */}
+      {isRevisionModalOpen && (
+        <ReturnForRevisionModal
+          isOpen={isRevisionModalOpen}
+          onClose={() => setIsRevisionModalOpen(false)}
+          onConfirm={async (reason: string) => {
+            if (onUpdateStatus) {
+              await onUpdateStatus(task.id, 'IN_PROGRESS', reason);
+            }
+          }}
+          task={task}
+        />
+      )}
+    </>
+  );
+};
+
+const drawerStyles: Record<string, React.CSSProperties> = {
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backdropFilter: 'blur(3px)',
+    zIndex: 1000,
+    display: 'flex',
+    justifyContent: 'flex-start', // Docks on left side
+    animation: 'fadeIn 140ms ease-out',
+  },
+  drawer: {
+    width: '100%',
+    maxWidth: 540,
+    height: '100%',
+    backgroundColor: '#0c0d0e',
+    borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+    boxShadow: '10px 0 35px rgba(0, 0, 0, 0.75)',
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
+    overflow: 'hidden',
+    animation: 'slideInLeft 180ms cubic-bezier(0.16, 1, 0.3, 1)',
+  },
+  stickyHeader: {
+    padding: '12px 16px 10px',
+    backgroundColor: '#121214',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    flexShrink: 0,
+  },
+  headerTopNav: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  closeBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    color: 'var(--text-secondary, #a1a1aa)',
+    padding: '4px 8px',
+    borderRadius: 5,
+    cursor: 'pointer',
+    transition: 'background-color 100ms ease',
+  },
+  iconToolBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'none',
+    border: '1px solid transparent',
+    color: 'var(--text-dim, #71717a)',
+    padding: '3px 6px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    transition: 'color 100ms ease, background-color 100ms ease',
+  },
+  headerMain: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  taskTitle: {
+    fontSize: 15,
+    fontWeight: 700,
+    color: 'var(--text-primary, #ffffff)',
+    lineHeight: 1.35,
+    margin: 0,
+    wordBreak: 'break-word',
+  },
+  badgeStrip: {
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  statusPill: {
+    fontSize: 10.5,
+    fontWeight: 600,
+    padding: '2px 8px',
+    borderRadius: 4,
+  },
+  urgentPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 3,
+    fontSize: 10.5,
+    fontWeight: 700,
+    padding: '2px 7px',
+    borderRadius: 4,
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    color: '#ef4444',
+  },
+  highPill: {
+    fontSize: 10.5,
+    fontWeight: 600,
+    padding: '2px 7px',
+    borderRadius: 4,
+    backgroundColor: 'rgba(249, 115, 22, 0.15)',
+    color: '#f97316',
+  },
+  normalPill: {
+    fontSize: 10.5,
+    padding: '2px 6px',
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    color: '#a1a1aa',
+  },
+  visibilityPill: {
+    fontSize: 10,
+    fontWeight: 600,
+    padding: '2px 6px',
+    borderRadius: 4,
+  },
+  runningLiveTicker: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    border: '1px solid rgba(34, 197, 94, 0.3)',
+    color: '#22c55e',
+    fontSize: 11,
+    fontWeight: 700,
+    padding: '2px 8px',
+    borderRadius: 4,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    backgroundColor: '#22c55e',
+    boxShadow: '0 0 5px #22c55e',
+  },
+  revisionBanner: {
+    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+    border: '1px solid rgba(245, 158, 11, 0.3)',
+    borderRadius: 6,
+    padding: '8px 10px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+  },
+  revisionReasonText: {
+    fontSize: 11,
+    color: 'var(--text-secondary, #d4d4d8)',
+    lineHeight: 1.4,
+  },
+  toolbar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+  },
+  startActionBtn: {
+    flex: 1,
+    height: 32,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#0284c7',
+    border: 'none',
+    borderRadius: 5,
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'background-color 120ms ease',
+  },
+  pauseActionBtn: {
+    flex: 1,
+    height: 32,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#d97706',
+    border: 'none',
+    borderRadius: 5,
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  submitActionBtn: {
+    flex: 1,
+    height: 32,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#7c3aed',
+    border: 'none',
+    borderRadius: 5,
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  approveActionBtn: {
+    flex: 1,
+    height: 32,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#16a34a',
+    border: 'none',
+    borderRadius: 5,
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  returnActionBtn: {
+    height: 32,
+    padding: '0 12px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    border: '1px solid rgba(245, 158, 11, 0.35)',
+    borderRadius: 5,
+    color: '#f59e0b',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  secondaryActionBtn: {
+    flex: 1,
+    height: 32,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: 5,
+    color: 'var(--text-primary)',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  directDoneBtn: {
+    height: 32,
+    padding: '0 10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    border: '1px solid rgba(34, 197, 94, 0.25)',
+    borderRadius: 5,
+    color: '#22c55e',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  pendingReviewNotice: {
+    flex: 1,
+    padding: '6px 10px',
+    backgroundColor: 'rgba(168, 85, 247, 0.08)',
+    border: '1px solid rgba(168, 85, 247, 0.2)',
+    borderRadius: 5,
+    color: '#c084fc',
+    fontSize: 11.5,
+    textAlign: 'center',
+  },
+  disabledNotice: {
+    flex: 1,
+    padding: '6px 10px',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
+    borderRadius: 5,
+    color: '#71717a',
+    fontSize: 11.5,
+    textAlign: 'center',
+  },
+  scrollBody: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '14px 16px 74px', // Extra bottom padding for fixed write-bar
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 14,
+  },
+  cardSection: {
+    backgroundColor: '#121214',
+    border: '1px solid rgba(255, 255, 255, 0.07)',
+    borderRadius: 8,
+    padding: '12px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  sectionHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: 'var(--text-dim, #71717a)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.4px',
+  },
+  sectionCountBadge: {
+    fontSize: 10,
+    fontWeight: 700,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    color: 'var(--text-secondary, #d4d4d8)',
+    padding: '1px 5px',
+    borderRadius: 10,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  attachGallery: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+    gap: 8,
+  },
+  attCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(255, 255, 255, 0.07)',
+    borderRadius: 6,
+    overflow: 'hidden',
+    cursor: 'pointer',
+    transition: 'border-color 120ms ease',
+  },
+  imgWrap: {
+    position: 'relative',
+    height: 72,
+    backgroundColor: '#000000',
+  },
+  thumbImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  imgOverlay: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    padding: '2px 4px',
+    borderRadius: 3,
+  },
+  docThumb: {
+    height: 60,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+  },
+  attInfo: {
+    padding: '5px 7px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  },
+  thumbName: {
+    fontSize: 10.5,
+    fontWeight: 500,
+    color: 'var(--text-primary)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  thumbSize: {
+    fontSize: 9.5,
+    color: 'var(--text-muted, #71717a)',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  metaGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 10,
+  },
+  metaItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+  },
+  metaLabel: {
+    fontSize: 10.5,
+    color: 'var(--text-dim, #71717a)',
+  },
+  metaValue: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 11.5,
+    color: 'var(--text-primary, #ffffff)',
+  },
+  miniAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: '50%',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 10,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+  },
+  fixedBottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#121214',
+    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+    padding: '10px 14px',
+    zIndex: 10,
+    boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.45)',
+  },
+  bottomForm: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bottomInput: {
+    flex: 1,
+    height: 36,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: 6,
+    padding: '0 12px',
+    fontSize: 12,
+    color: '#ffffff',
+    outline: 'none',
+  },
+  bottomSendBtn: {
+    height: 36,
+    padding: '0 14px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#0284c7',
+    border: 'none',
+    borderRadius: 6,
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+};
