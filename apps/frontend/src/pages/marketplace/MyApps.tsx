@@ -1093,7 +1093,8 @@ export function MyApps() {
               const StatusIcon = statusConf.icon;
               const isTrial = installed.status === "TRIAL";
               const trialDays = getDaysRemaining(installed.trialEndsAt);
-              const destination = getAppDestination(installed.app);
+              const isExpired = installed.status === "EXPIRED" || installed.status === "CANCELLED" || (installed.status === "TRIAL" && trialDays !== null && trialDays < 0);
+              const destination = isExpired ? `/marketplace/${installed.app.slug}` : getAppDestination(installed.app);
               const isSelected = selectedIds.has(installed.id);
 
               const BrandIcon = installed.app.slug ? appIconsBySlug[installed.app.slug] : undefined;
@@ -1205,8 +1206,8 @@ export function MyApps() {
                             className="gap-2 cursor-pointer text-xs font-semibold"
                             onClick={() => navigate(destination)}
                           >
-                            <Zap size={14} className="text-primary" />
-                            <span>فتح التطبيق</span>
+                            {isExpired ? <Sparkles size={14} className="text-amber-500" /> : <Zap size={14} className="text-primary" />}
+                            <span>{isExpired ? "تجديد الاشتراك" : "فتح التطبيق"}</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="gap-2 cursor-pointer text-xs font-semibold"
@@ -1263,7 +1264,8 @@ export function MyApps() {
               const StatusIcon = statusConf.icon;
               const isTrial = installed.status === "TRIAL";
               const trialDays = getDaysRemaining(installed.trialEndsAt);
-              const destination = getAppDestination(installed.app);
+              const isExpired = installed.status === "EXPIRED" || installed.status === "CANCELLED" || (installed.status === "TRIAL" && trialDays !== null && trialDays < 0);
+              const destination = isExpired ? `/marketplace/${installed.app.slug}` : getAppDestination(installed.app);
               const isSelected = selectedIds.has(installed.id);
 
               const BrandIcon = installed.app.slug ? appIconsBySlug[installed.app.slug] : undefined;
@@ -1349,11 +1351,12 @@ export function MyApps() {
                     <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <Button
                         size="sm"
-                        className="h-8 rounded-xl text-xs font-bold gap-1 px-3"
+                        variant={isExpired ? "outline" : "default"}
+                        className={cn("h-8 rounded-xl text-xs font-bold gap-1 px-3", isExpired && "border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10")}
                         onClick={() => navigate(destination)}
                       >
-                        <ArrowUpRight size={13} />
-                        <span>فتح</span>
+                        {isExpired ? <Sparkles size={13} /> : <ArrowUpRight size={13} />}
+                        <span>{isExpired ? "تجديد" : "فتح"}</span>
                       </Button>
 
                       <DropdownMenu>
@@ -1367,8 +1370,8 @@ export function MyApps() {
                             className="gap-2 cursor-pointer text-xs font-semibold"
                             onClick={() => navigate(destination)}
                           >
-                            <Zap size={14} className="text-primary" />
-                            <span>فتح التطبيق</span>
+                            {isExpired ? <Sparkles size={14} className="text-amber-500" /> : <Zap size={14} className="text-primary" />}
+                            <span>{isExpired ? "تجديد الاشتراك" : "فتح التطبيق"}</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="gap-2 cursor-pointer text-xs font-semibold"

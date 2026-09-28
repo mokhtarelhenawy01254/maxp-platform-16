@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   X,
   ShieldCheck,
@@ -26,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
 import { AgentListing, getArabicInitials } from "./agentMarketplaceData";
+import { handleInsufficientWalletBalance } from "../../../utils/marketplaceWalletHelper";
 
 interface AgentHireModalProps {
   agent: AgentListing | null;
@@ -40,6 +42,7 @@ export const AgentHireModal: React.FC<AgentHireModalProps> = ({
   onClose,
   onHired,
 }) => {
+  const navigate = useNavigate();
   const [customName, setCustomName] = useState<string>(agent?.name || "");
   const [department, setDepartment] = useState<string>("general");
   const [safetyMode, setSafetyMode] = useState<"draft" | "autonomous">("draft");
@@ -95,7 +98,27 @@ export const AgentHireModal: React.FC<AgentHireModalProps> = ({
 
   const handleConfirmHire = async () => {
     if (isPro && !hasEnoughBalance) {
-      toast.error("رصيد المحفظة غير كافٍ. يرجى شحن المحفظة أولاً للمتابعة.");
+      handleInsufficientWalletBalance(
+        {
+          response: {
+            status: 402,
+            data: {
+              code: "INSUFFICIENT_WALLET_BALANCE",
+              requiredAmount,
+              currentBalance: walletBalance,
+              currency: agent.currency || "EGP",
+              message: `رصيد المحفظة غير كافٍ. المطلوب: ${requiredAmount} ${agent.currency || "ج.م"}، المتوفر: ${walletBalance ?? 0} ${agent.currency || "ج.م"}`,
+            },
+          },
+        },
+        navigate,
+        {
+          returnUrl: window.location.pathname + window.location.search,
+          appName: agent.name,
+          itemType: "agent",
+        }
+      );
+      onClose();
       return;
     }
 
@@ -216,15 +239,36 @@ export const AgentHireModal: React.FC<AgentHireModalProps> = ({
                       يلزم توفر {agent.priceMonthly} ج.م على الأقل لتفعيل هذا الإيجنت.
                     </p>
                   </div>
-                  <a
-                    href="/payments"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleInsufficientWalletBalance(
+                        {
+                          response: {
+                            status: 402,
+                            data: {
+                              code: "INSUFFICIENT_WALLET_BALANCE",
+                              requiredAmount,
+                              currentBalance: walletBalance,
+                              currency: agent.currency || "EGP",
+                              message: `رصيد المحفظة غير كافٍ. المطلوب: ${requiredAmount} ${agent.currency || "ج.م"}، المتوفر: ${walletBalance ?? 0} ${agent.currency || "ج.م"}`,
+                            },
+                          },
+                        },
+                        navigate,
+                        {
+                          returnUrl: window.location.pathname + window.location.search,
+                          appName: agent.name,
+                          itemType: "agent",
+                        }
+                      );
+                      onClose();
+                    }}
                     className="shrink-0 inline-flex items-center gap-1 rounded-md bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-red-700 transition-colors"
                   >
                     <span>شحن المحفظة</span>
                     <ExternalLink className="size-3" />
-                  </a>
+                  </button>
                 </div>
               )}
 

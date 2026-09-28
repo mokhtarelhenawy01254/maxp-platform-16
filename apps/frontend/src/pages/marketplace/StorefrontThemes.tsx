@@ -30,6 +30,7 @@ import {
 import { buildStorefrontPreviewPath } from "../../storefront/utils/paths";
 import { openUrlInNewTab } from "../../utils/openUrlInNewTab";
 import { formatCurrency } from "../../utils/currency";
+import { handleInsufficientWalletBalance } from "../../utils/marketplaceWalletHelper";
 
 type WalletBalance = {
   balance: number;
@@ -944,6 +945,15 @@ export default function StorefrontThemes() {
       toast.success(t("storefrontThemes.purchaseSuccess"));
     } catch (error) {
       console.error("Theme purchase error:", error);
+      if (
+        handleInsufficientWalletBalance(error, navigate, {
+          returnUrl: window.location.pathname + window.location.search,
+          appName: theme.name,
+          itemType: "theme",
+        })
+      ) {
+        return;
+      }
       toast.error(getErrorMessage(error, t("storefrontThemes.purchaseError")));
     } finally {
       setProcessingThemeId("");

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuthSimple";
 import { apiClient } from "../services/apiClient";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -12,13 +13,48 @@ import { toast } from "sonner";
 const CustomerPayments = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [recharging, setRecharging] = useState(false);
   const [error, setError] = useState("");
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [rechargeAmount, setRechargeAmount] = useState("");
 
   const [verifyingId, setVerifyingId] = useState(null);
+
+  // Extract marketplace return context from URL query, router state, or sessionStorage
+  const marketplaceContext = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const returnUrl = params.get("returnUrl") || location.state?.returnUrl || sessionStorage.getItem("marketplace_wallet_return_url");
+    const requiredAmount = params.get("requiredAmount") || location.state?.requiredAmount || sessionStorage.getItem("marketplace_wallet_required_amount");
+    const appName = params.get("appName") || location.state?.appName || sessionStorage.getItem("marketplace_wallet_app_name");
+    const action = params.get("action") || location.state?.action;
+
+    if (!returnUrl && !requiredAmount && !appName) {
+      return null;
+    }
+    return {
+      returnUrl,
+      requiredAmount: requiredAmount ? Number(requiredAmount) : null,
+      appName: appName || null,
+      action: action || null
+    };
+  }, [location.search, location.state]);
+
+  // Pre-fill recharge amount and auto-open modal if directed from marketplace
+  useEffect(() => {
+    if (marketplaceContext) {
+      if (marketplaceContext.requiredAmount && !rechargeAmount) {
+        setRechargeAmount(String(marketplaceContext.requiredAmount));
+      }
+      if (marketplaceContext.action === "recharge") {
+        setShowRechargeModal(true);
+      }
+    }
+  }, [marketplaceContext]);
 
   useEffect(() => {
     const handleReturnParams = async () => {
@@ -51,6 +87,20 @@ const CustomerPayments = () => {
           }
         } else if (paymentStatus === "SUCCESS" || paymentStatus === "CAPTURED") {
           toast.success(t("billing.payments.paymentSuccess") || "تم تأكيد عملية الدفع بنجاح وإيداع الرصيد في محفظتك");
+        }
+
+        const pendingReturnUrl = sessionStorage.getItem("marketplace_wallet_return_url");
+        const isSuccessPayment = (paymentStatus === "SUCCESS" || paymentStatus === "CAPTURED");
+        if (isSuccessPayment && pendingReturnUrl) {
+          const target = pendingReturnUrl.includes("?") ? `${pendingReturnUrl}&recharged=true` : `${pendingReturnUrl}?recharged=true`;
+          toast.success("تم إيداع الرصيد بنجاح! جاري إعادتك لتطبيق الماركت بليس لإكمال التفعيل...", {
+            duration: 4000,
+            action: {
+              label: "العودة للتفعيل",
+              onClick: () => navigate(target)
+            }
+          });
+          setTimeout(() => navigate(target), 1200);
         }
       }
 
@@ -97,9 +147,6 @@ const CustomerPayments = () => {
     } finally { setLoading(false); }
   };
 
-  const [showRechargeModal, setShowRechargeModal] = useState(false);
-  const [rechargeAmount, setRechargeAmount] = useState("");
-
   const handleRecharge = async () => {
     const amount = parseFloat(rechargeAmount);
     if (!amount || amount <= 0) { toast.error(t("billing.payments.enterValidAmount")); return; }
@@ -127,6 +174,39 @@ const CustomerPayments = () => {
   return (
     <div className="p-3 min-h-screen bg-background transition-colors duration-200">
       <h1 className="text-2xl font-bold mb-4">{t("billing.payments.title")}</h1>
+
+      {marketplaceContext && marketplaceContext.returnUrl && (
+        <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-card-foreground flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-lg shrink-0">
+              ⚡
+            </div>
+            <div>
+              <div className="text-sm font-bold text-foreground">
+                {marketplaceContext.appName ? `تفعيل تطبيق: ${marketplaceContext.appName}` : "تفعيل تطبيق الماركت بليس"}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {marketplaceContext.requiredAmount
+                  ? `المبلغ المطلوب للتفعيل: ${marketplaceContext.requiredAmount} EGP — اشحن المحفظة ثم اضغط زر العودة للتفعيل مباشرة`
+                  : "اشحن المحفظة ثم اضغط زر العودة لإكمال التفعيل بنقرة واحدة"}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const target = marketplaceContext.returnUrl.includes("?")
+                ? `${marketplaceContext.returnUrl}&recharged=true`
+                : `${marketplaceContext.returnUrl}?recharged=true`;
+              navigate(target);
+            }}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition shrink-0"
+          >
+            <span>العودة لإكمال التفعيل</span>
+            <span dir="ltr">←</span>
+          </button>
+        </div>
+      )}
 
       {error && <Alert variant="destructive" className="mb-6"><AlertDescription>{error}</AlertDescription></Alert>}
 

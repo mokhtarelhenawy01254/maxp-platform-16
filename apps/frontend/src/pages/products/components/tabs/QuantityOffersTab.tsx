@@ -1,5 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { handleInsufficientWalletBalance } from "../../../../utils/marketplaceWalletHelper";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -40,6 +41,8 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
   productName,
 }) => {
   const { refreshUser } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const referenceUnitPrice = getReferenceUnitPrice(baseUnitPrice, currentUnitPrice);
 
   const [appStatus, setAppStatus] = React.useState<
@@ -98,6 +101,15 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
       await refreshUser?.();
     } catch (error) {
       console.error("Failed to activate quantity offers app:", error);
+      if (
+        handleInsufficientWalletBalance(error, navigate, {
+          returnUrl: location.pathname + location.search,
+          appName: "عروض الكميات المتعددة",
+          itemType: "app",
+        })
+      ) {
+        return;
+      }
       toast.error("فشل تفعيل التطبيق، يرجى المحاولة من صفحة الماركت بليس");
     } finally {
       setIsActivating(false);

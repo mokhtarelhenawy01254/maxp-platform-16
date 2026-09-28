@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
+import { handleInsufficientWalletBalance } from "../../utils/marketplaceWalletHelper";
 import {
   AlertCircle,
   Check, CheckCircle2, ChevronRight, Loader2, MessageSquare,
@@ -72,6 +73,7 @@ type PlanOption = "PAY_PER_USE" | "MONTHLY" | "YEARLY";
 export default function AppDetails() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, refreshUser } = useAuth();
   const { t } = useTranslation();
   const [app, setApp] = useState<MPA | null>(null);
@@ -86,6 +88,15 @@ export default function AppDetails() {
   const [selectedPlan, setSelectedPlan] = useState<PlanOption>("PAY_PER_USE");
 
   useEffect(() => { if (slug) fetchAppDetails(); }, [slug]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("recharged") === "true") {
+      toast.info("تم شحن المحفظة بنجاح! يمكنك الآن الضغط على زر التفعيل لإتمام تثبيت التطبيق بنقرة واحدة.", {
+        duration: 5000,
+      });
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (app) {
@@ -152,6 +163,17 @@ export default function AppDetails() {
         refreshUser?.(),
       ]);
     } catch (err: unknown) {
+      if (
+        handleInsufficientWalletBalance(err, navigate, {
+          returnUrl: location.pathname + location.search,
+          appName: app?.name,
+          planToInstall: selectedPlan,
+          billingCycle: selectedPlan === "YEARLY" ? "YEARLY" : "MONTHLY",
+          itemType: "app",
+        })
+      ) {
+        return;
+      }
       const e = err as { response?: { data?: { message?: string } } };
       toast.error(e.response?.data?.message || "فشل تفعيل التطبيق");
     } finally {

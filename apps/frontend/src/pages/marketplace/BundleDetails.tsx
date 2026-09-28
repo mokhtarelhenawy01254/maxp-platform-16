@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
+import { handleInsufficientWalletBalance } from "../../utils/marketplaceWalletHelper";
 import {
   Package,
   TrendingUp,
@@ -48,6 +49,7 @@ const features = [
 export default function BundleDetails() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
@@ -56,6 +58,15 @@ export default function BundleDetails() {
       fetchBundleDetails();
     }
   }, [slug]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("recharged") === "true") {
+      toast.info("تم شحن المحفظة بنجاح! يمكنك الآن تفعيل الباقة مباشرة.", {
+        duration: 5000,
+      });
+    }
+  }, [location.search]);
 
   const fetchBundleDetails = async () => {
     try {
@@ -94,6 +105,16 @@ export default function BundleDetails() {
       }
     } catch (error: any) {
       console.error("Subscription error:", error);
+      if (
+        handleInsufficientWalletBalance(error, navigate, {
+          returnUrl: location.pathname + location.search,
+          appName: bundle?.name,
+          itemType: "bundle",
+        })
+      ) {
+        return;
+      }
+
       if (error.response?.status === 401) {
         navigate("/auth/login", {
           state: { from: `/marketplace/bundle/${slug}` },

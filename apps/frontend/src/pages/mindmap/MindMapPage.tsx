@@ -50,9 +50,10 @@ import {
   Activity
 } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
+import { handleInsufficientWalletBalance } from "../../utils/marketplaceWalletHelper";
 
 export interface MapNode {
   id: string;
@@ -346,6 +347,7 @@ export const createMasterBlueprint = (companyName?: string): MapNode[] => [
 
 export default function MindMapPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, refreshUser } = useAuth();
   const companyName = user?.company?.name || "";
   const companyId = user?.company?.id || user?.companyId || "default";
@@ -381,9 +383,18 @@ export default function MindMapPage() {
         pricingModel: "FREE"
       });
       setInstalledLocally(true);
-      toast.success(`🎉 تم تفعيل تطبيق الخرائط الذهنية بنجاح لشركة ${companyName || ""}`);
+      toast.success(`تم تفعيل تطبيق الخرائط الذهنية بنجاح لشركة ${companyName || ""}`);
       await refreshUser?.();
     } catch (err: any) {
+      if (
+        handleInsufficientWalletBalance(err, navigate, {
+          returnUrl: location.pathname + location.search,
+          appName: "الخرائط الذهنية التنفيذية",
+          itemType: "app",
+        })
+      ) {
+        return;
+      }
       toast.error(err?.response?.data?.message || "تعذر تفعيل التطبيق، يرجى تفعيله من متجر التطبيقات");
     } finally {
       setIsInstalling(false);

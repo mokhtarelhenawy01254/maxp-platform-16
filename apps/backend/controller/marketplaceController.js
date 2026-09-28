@@ -1110,14 +1110,19 @@ exports.getAppDetails = async (req, res) => {
                   status: { in: ACTIVE_STATUSES }
                 },
                 select: {
-                  activePricingModel: true
+                  activePricingModel: true,
+                  status: true,
+                  trialEndsAt: true
                 }
               });
             });
 
             if (installation) {
-              isInstalled = true;
-              activePricingModel = installation.activePricingModel || null;
+              const isTrialExpired = installation.status === 'TRIAL' && installation.trialEndsAt && new Date(installation.trialEndsAt) < new Date();
+              if (!isTrialExpired) {
+                isInstalled = true;
+                activePricingModel = installation.activePricingModel || null;
+              }
             }
           }
         }
@@ -1190,8 +1195,11 @@ exports.getAppDetails = async (req, res) => {
       });
 
       if (installation) {
-        isInstalled = true;
-        activePricingModel = installation.activePricingModel;
+        const isTrialExpired = installation.status === 'TRIAL' && installation.trialEndsAt && new Date(installation.trialEndsAt) < new Date();
+        if (!isTrialExpired) {
+          isInstalled = true;
+          activePricingModel = installation.activePricingModel;
+        }
       }
     }
 
