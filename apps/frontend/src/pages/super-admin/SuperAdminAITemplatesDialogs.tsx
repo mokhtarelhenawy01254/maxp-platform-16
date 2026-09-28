@@ -26,6 +26,7 @@ const CHANNEL_OPTIONS: MultiSelectOption[] = [
 ];
 
 export const ROLE_ICONS: Record<string, string> = {
+  EXECUTIVE_ASSISTANT: "⚡",
   CEO: "👔", SUPPORT: "🎧", SALES: "🤝", SMART_SELLER: "🛒",
   MARKETING: "📢", ORDER: "📦", INVENTORY: "📊", COMPETITOR: "🔍",
   FACEBOOK_SALES_SUPPORT: "💬", SAS_SALES: "🛍️", SALES_REP: "🛒",
@@ -35,6 +36,7 @@ export const ROLE_ICONS: Record<string, string> = {
 };
 
 export const ROLE_COLORS: Record<string, string> = {
+  EXECUTIVE_ASSISTANT: "bg-amber-100 text-amber-800",
   CEO: "bg-blue-100 text-blue-700", SUPPORT: "bg-emerald-100 text-emerald-700",
   SALES: "bg-amber-100 text-amber-700", SMART_SELLER: "bg-violet-100 text-violet-700",
   MARKETING: "bg-pink-100 text-pink-700", ORDER: "bg-cyan-100 text-cyan-700",
@@ -48,7 +50,7 @@ export const ROLE_COLORS: Record<string, string> = {
 };
 
 export const ROLES = [
-  "CEO", "SUPPORT", "SALES", "SMART_SELLER", "MARKETING", "ORDER",
+  "EXECUTIVE_ASSISTANT", "CEO", "SUPPORT", "SALES", "SMART_SELLER", "MARKETING", "ORDER",
   "ORDER_CONFIRMATION", "VOICE_ORDER_CONFIRMATION", "INVENTORY",
   "COMPETITOR", "FACEBOOK_SALES_SUPPORT", "SAS_SALES", "SALES_REP",
   "SHIPPING", "STOCK_TARGET_MONITOR", "BROWSER_COPILOT",

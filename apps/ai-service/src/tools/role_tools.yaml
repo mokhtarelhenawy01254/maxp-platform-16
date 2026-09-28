@@ -3,6 +3,37 @@
 # Keys are role names (uppercase), values are lists of tool names.
 
 roles:
+  EXECUTIVE_ASSISTANT:
+    - company_snapshot
+    - sales_revenue
+    - customer_top_buyers
+    - order_summary
+    - order_recent_list
+    - order_lookup
+    - order_lookup_by_phone
+    - customer_info
+    - product_search
+    - product_low_stock
+    - product_top_selling
+    - product_performance
+    - inventory_check
+    - inventory_adjust
+    - conversion_tools_read
+    - conversion_tool_toggle
+    - conversion_tool_set_threshold
+    - payment_settings_read
+    - shipping_rates
+    - offers_list_active
+    - knowledge_search
+    - knowledge_ask_merchant
+    - manage_todo
+    - delegate_task
+    - agent_handoff_to
+    - record_learned_rule
+    - manage_agent_skill
+    - update_agent_identity
+    - session_search
+
   BROWSER_COPILOT:
     - product_search
     - product_low_stock

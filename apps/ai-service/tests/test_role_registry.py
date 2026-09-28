@@ -29,16 +29,17 @@ def test_registry_validation_passes():
 
 
 def test_all_20_roles_exist_and_match():
-    """Verify exact 20 roles count and completeness."""
+    """Verify roles count and completeness."""
     roles = all_roles()
-    assert len(roles) == 20, f"Expected 20 roles, got {len(roles)}"
-
     expected_roles = {
-        "STORE_MANAGER", "MEDIA_BUYER", "SUPPORT", "ORDER", "ORDER_CONFIRMATION",
-        "SALES", "INVENTORY", "PRODUCT_CREATOR", "MARKETING", "FACEBOOK_SALES_SUPPORT",
-        "SAS_SALES", "COMPETITOR", "SMART_SELLER", "SALES_REP", "MEDICAL_CENTER",
-        "PHYSIOTHERAPY", "EDUCATION_CENTER", "HOTEL", "MEDICAL_CENTER_MANAGER", "CEO",
+        "EXECUTIVE_ASSISTANT", "STORE_MANAGER", "MEDIA_BUYER", "SUPPORT", "ORDER",
+        "ORDER_CONFIRMATION", "VOICE_ORDER_CONFIRMATION", "SALES", "INVENTORY",
+        "PRODUCT_CREATOR", "MARKETING", "FACEBOOK_SALES_SUPPORT", "SAS_SALES",
+        "COMPETITOR", "SMART_SELLER", "SALES_REP", "MEDICAL_CENTER",
+        "PHYSIOTHERAPY", "EDUCATION_CENTER", "HOTEL", "MEDICAL_CENTER_MANAGER",
+        "CEO", "BROWSER_COPILOT", "HR_ASSISTANT",
     }
+    assert len(roles) == len(expected_roles), f"Expected {len(expected_roles)} roles, got {len(roles)}"
     assert set(roles.keys()) == expected_roles
 
     # Verify every role has all required capabilities by default (Equal Power Law)
@@ -201,7 +202,7 @@ def test_arabic_category_alias_normalization():
         ("المخزون", "INVENTORY"),
         ("إعلانات المتجر", "MEDIA_BUYER"),
         ("إدارة المتجر", "STORE_OPS"),
-        ("المساعد التنفيذي", "STORE_OPS"),
+        ("المساعد التنفيذي", "EXECUTIVE"),
         ("العيادات", "CLINIC"),
         ("حجوزات الفنادق", "HOTEL"),
         ("القرارات التنفيذية", "EXECUTIVE"),

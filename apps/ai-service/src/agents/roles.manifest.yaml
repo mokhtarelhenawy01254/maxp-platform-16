@@ -4,6 +4,24 @@
 version: "1.0.0"
 
 roles:
+  EXECUTIVE_ASSISTANT:
+    label: "ماكس — المساعد التنفيذي للمنصة"
+    domain: "EXECUTIVE"
+    playbook_id: "executive_assistant_playbook"
+    playbook_title: "كتيب إدارة العمليات والقرارات التنفيذية"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["EXECUTIVE", "STORE_OPS", "ORDERS", "INVENTORY", "ANALYTICS", "DISCOUNTS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
   BROWSER_COPILOT:
     label: "مساعد المتصفح الذكي"
     domain: "BROWSER_COPILOT"

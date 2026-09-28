@@ -73,6 +73,54 @@ export const AGENT_CATEGORIES: Array<{ id: AgentCategory; label: string; count?:
 ];
 
 export const AGENT_LISTINGS: AgentListing[] = [
+  // ── 0. Executive Assistant (PRO) ───────────────────────────
+  {
+    id: "agent_executive_assistant",
+    slug: "executive-assistant-agent",
+    name: "ماكس",
+    position: "المساعد التنفيذي للمنصة وإدارة العمليات (Executive Copilot)",
+    category: "executive",
+    tier: "pro",
+    priceMonthly: 590,
+    currency: "ج.م",
+    featured: true,
+    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    summary: "المتابعة التنفيذية الشاملة، رصد المبيعات والإيرادات، فحص النواقص والمخزون، وتفويض المهام بين الوكلاء.",
+    tools: [
+      "company.snapshot",
+      "sales.revenue",
+      "order.summary",
+      "product.low_stock",
+      "manage.todo",
+      "agent.handoff.to",
+    ],
+    skills: ["read-company-state", "low-stock-watch", "order-support"],
+    telemetry: {
+      engine: "DeepSeek-V4 Flash",
+      fallbackEngine: "Llama 3.3 70B",
+      p95Latency: "0.68s",
+      taskPrecision: "99.6%",
+      governance: "human_in_loop",
+      contextWindow: "128k Tokens",
+    },
+    dossier: {
+      bio: "مساعد تنفيذي متقدم لإدارة وتنسيق العمليات عبر كافة قطاعات المنصة ومتابعة المؤشرات والقرارات الحاسمة بدقة.",
+      persona: "تنفيذي، حاسم، يقدم الأرقام والنتائج أولاً ويوجه القرارات التشغيلية بدقة متناهية.",
+      dialect: "العربية المصرية الراقية والمهذبة بنبرة شريك تنفيذي موثوق.",
+      boundaries: [
+        "لا ينفذ أي تعديل مباشر في بوابات الدفع أو أسعار المنتجات دون بطاقة اعتماد معلنة.",
+        "يفحص البيانات بالأدوات الرسمية قبل الإجابة ويلتزم ببوابة الصدق.",
+        "ينسق ويفوض المهام المتخصصة للوكيل الأنسب عند الحاجة.",
+      ],
+      executionStream: [
+        { step: "01: رصد المؤشرات", action: "company.snapshot() + sales.revenue()", type: "tool" },
+        { step: "02: تحليل النواقص", action: "product.low_stock(threshold=5)", type: "tool" },
+        { step: "03: تجهيز التقرير", action: "صياغة ملخص تنفيذي مركز مع إحصائيات الإيرادات", type: "thought" },
+        { step: "04: عرض التوصيات", action: "عرض التقرير مع كروت المهام التنفيذية المقترحة", type: "output" },
+      ],
+    },
+  },
+
   // ── 1. Facebook Media Buyer (PRO) ──────────────────────────
   {
     id: "agent_fb_media_buyer",

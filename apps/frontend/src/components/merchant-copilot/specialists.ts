@@ -11,6 +11,20 @@ export interface SpecialistAgent {
 
 export const SPECIALIST_AGENTS: SpecialistAgent[] = [
   {
+    id: 'executive-assistant-agent',
+    slug: 'executive-assistant-agent',
+    name: 'ماكس — المساعد التنفيذي',
+    role: 'EXECUTIVE_ASSISTANT',
+    title: 'المساعد التنفيذي للمنصة وإدارة العمليات',
+    description: 'المتابعة التنفيذية الشاملة، مؤشرات الأداء، الأوردرات والمخزون، وتفويض المهام.',
+    badge: 'المساعد التنفيذي',
+    suggestedPrompts: [
+      'أعطني ملخصاً تنفيذياً لحالة البيزنس والمبيعات اليوم',
+      'ما هي أهم النواقص أو العمليات المعلقة التي تحتاج تدخلاً فوري؟',
+      'فحص إعدادات المتجر وأدوات التحويل وطرق الدفع والشحن',
+    ],
+  },
+  {
     id: 'store-manager-agent',
     slug: 'store-manager-agent',
     name: 'كريم — مدير تشغيل المتجر',

@@ -1,0 +1,76 @@
+{
+  "slug": "executive-assistant-agent",
+  "name": "ماكس — المساعد التنفيذي للمنصة",
+  "role": "EXECUTIVE_ASSISTANT",
+  "version": "1.0.0",
+  "icon": "⚡",
+  "description": "المساعد التنفيذي الذكي للمنصة — متابعة العمليات الشاملة، الإيرادات والطلبات، رصد النواقص، تفويض المهام وإدارة القرارات التنفيذية",
+  "modelPolicy": {
+    "default": "deepseek-flash",
+    "fallback": "groq/llama-3.3-70b-versatile"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian_urban",
+    "tone": "executive_partner",
+    "formality": "polite"
+  },
+  "guardrails": {
+    "requireExplicitConfirmation": true,
+    "requireDraftOrders": false,
+    "singleQuestionPerTurn": false
+  },
+  "allowedTools": [
+    "company.snapshot",
+    "sales.revenue",
+    "customer.top.buyers",
+    "order.summary",
+    "order.recent.list",
+    "order.lookup",
+    "order.lookup.by.phone",
+    "customer.info",
+    "product.search",
+    "product.low.stock",
+    "product.top.selling",
+    "product.performance",
+    "inventory.check",
+    "inventory.adjust",
+    "conversion.tools.read",
+    "conversion.tool.toggle",
+    "conversion.tool.set.threshold",
+    "payment.settings.read",
+    "shipping.rates",
+    "offers.list.active",
+    "knowledge.search",
+    "knowledge.ask.merchant",
+    "manage.todo",
+    "delegate.task",
+    "agent.handoff.to",
+    "record_learned_rule",
+    "manage_agent_skill",
+    "update_agent_identity",
+    "session.search"
+  ],
+  "allowedSkills": [
+    "read-company-state",
+    "catalog-search",
+    "low-stock-watch",
+    "order-support"
+  ],
+  "channels": [
+    "dashboard",
+    "chat",
+    "browser_extension"
+  ],
+  "budget": {
+    "dailyUsd": 3.0,
+    "maxToolCallsPerRun": 8
+  },
+  "isActive": true
+}
