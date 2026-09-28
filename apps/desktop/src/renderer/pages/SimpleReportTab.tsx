@@ -18,6 +18,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { audioAlerts } from '../utils/audioAlerts';
+import { TaskReportView } from '../components/tasks/reports/TaskReportView';
 
 interface TeamMemberOverview {
   employeeId: string;
@@ -55,6 +56,7 @@ interface AggStats {
 }
 
 export const SimpleReportTab: React.FC = () => {
+  const [reportSection, setReportSection] = useState<'attendance' | 'tasks'>('attendance');
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
@@ -224,8 +226,46 @@ export const SimpleReportTab: React.FC = () => {
 
   return (
     <div style={styles.container}>
-      {/* Header Strip */}
-      <div style={styles.headerStrip}>
+      {/* 2026 Executive Intelligence Hub Switcher */}
+      <div style={styles.hubSwitcherRow}>
+        <div style={styles.hubSegmentedWrap}>
+          <button
+            onClick={() => setReportSection('attendance')}
+            style={{
+              ...styles.hubSegmentBtn,
+              background: reportSection === 'attendance' ? 'var(--bg-elevated)' : 'transparent',
+              color: reportSection === 'attendance' ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: reportSection === 'attendance' ? 700 : 500,
+              boxShadow: reportSection === 'attendance' ? 'var(--shadow-card)' : 'none',
+            }}
+          >
+            <Users size={13} />
+            <span>حضور ونشاط الفريق</span>
+          </button>
+          <button
+            onClick={() => setReportSection('tasks')}
+            style={{
+              ...styles.hubSegmentBtn,
+              background: reportSection === 'tasks' ? 'var(--bg-elevated)' : 'transparent',
+              color: reportSection === 'tasks' ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: reportSection === 'tasks' ? 700 : 500,
+              boxShadow: reportSection === 'tasks' ? 'var(--shadow-card)' : 'none',
+            }}
+          >
+            <CheckCircle2 size={13} color="#38bdf8" />
+            <span>ساعات وتحليلات المهام</span>
+          </button>
+        </div>
+      </div>
+
+      {reportSection === 'tasks' ? (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 4px' }}>
+          <TaskReportView isExecutiveMode={true} />
+        </div>
+      ) : (
+        <>
+          {/* Header Strip */}
+          <div style={styles.headerStrip}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={styles.headerIconBox}>
             <FileText size={16} color="var(--accent-blue)" />
@@ -437,7 +477,9 @@ export const SimpleReportTab: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+    </>
+  )}
+</div>
   );
 };
 
@@ -448,6 +490,33 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     overflow: 'hidden',
     backgroundColor: 'var(--bg-canvas)',
+  },
+  hubSwitcherRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '8px 12px 4px 12px',
+    flexShrink: 0,
+  },
+  hubSegmentedWrap: {
+    display: 'inline-flex',
+    background: '#121214',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRadius: 8,
+    padding: 3,
+    gap: 3,
+  },
+  hubSegmentBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    border: 'none',
+    borderRadius: 6,
+    padding: '5px 12px',
+    fontSize: 11.5,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 120ms ease',
   },
   headerStrip: {
     display: 'flex',

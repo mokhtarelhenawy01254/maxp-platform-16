@@ -23,6 +23,7 @@ import {
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { TaskItemCard } from '../components/tasks/TaskItemCard';
+import { TaskReportView } from '../components/tasks/reports/TaskReportView';
 
 interface ActiveTaskState {
   id: string;
@@ -53,7 +54,7 @@ export interface TeamActiveTimer {
 export const TasksTab: React.FC = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'my-tasks' | 'assigned-by-me' | 'all'>('my-tasks');
+  const [activeView, setActiveView] = useState<'my-tasks' | 'assigned-by-me' | 'all' | 'analytics'>('my-tasks');
   const [statusFilter, setStatusFilter] = useState<'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'>('IN_PROGRESS');
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<any[]>([]);
@@ -345,7 +346,8 @@ export const TasksTab: React.FC = () => {
       } catch {}
 
       // 1. Fetch tasks
-      const res = await window.electronAPI.getTasks(activeView);
+      const fetchScope = activeView === 'analytics' ? 'my-tasks' : activeView;
+      const res = await window.electronAPI.getTasks(fetchScope);
       if (res.success && Array.isArray(res.tasks)) {
         setTasks(res.tasks);
         setIsOfflineMode(Boolean(res.isOffline || res.fromCache));
@@ -723,6 +725,20 @@ export const TasksTab: React.FC = () => {
             <Layers size={12} />
             <span>مهام الفريق</span>
           </button>
+          <button
+            onClick={() => setActiveView('analytics')}
+            style={{
+              ...styles.segBtn,
+              backgroundColor: activeView === 'analytics' ? 'var(--bg-elevated)' : 'transparent',
+              color: activeView === 'analytics' ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: activeView === 'analytics' ? 600 : 400,
+              boxShadow: activeView === 'analytics' ? 'var(--shadow-card)' : 'none',
+            }}
+            title="رادار إنجاز المهام، الساعات الموثقة، وملخص اليومية بنقرة واحدة"
+          >
+            <ClipboardCheck size={12} color={activeView === 'analytics' ? '#38bdf8' : undefined} />
+            <span>نبض الإنجاز والتقرير</span>
+          </button>
         </div>
 
         {/* Left Side: Sync Status + Refresh + Primary New Task Button */}
@@ -755,8 +771,12 @@ export const TasksTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Offline Status Alert Banner */}
-      {isOfflineMode && (
+      {activeView === 'analytics' ? (
+        <TaskReportView isExecutiveMode={false} />
+      ) : (
+        <>
+          {/* Offline Status Alert Banner */}
+          {isOfflineMode && (
         <div style={styles.offlineBanner}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertCircle size={15} color="#f59e0b" />
@@ -1168,6 +1188,8 @@ export const TasksTab: React.FC = () => {
           </div>
         </div>
       </div>
+    </>
+  )}
 
       {/* Create Task Modal */}
       <CreateTaskModal
