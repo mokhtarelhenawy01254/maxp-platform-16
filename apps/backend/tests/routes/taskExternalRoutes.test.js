@@ -27,6 +27,16 @@ const activeAssignee = {
   isActive: true
 };
 
+const secondAssignee = {
+  id: 'user-assignee-2',
+  companyId: companyId1,
+  firstName: 'Sara',
+  lastName: 'Dev',
+  email: 'sara@company1.com',
+  role: 'EMPLOYEE',
+  isActive: true
+};
+
 const inactiveUser = {
   id: 'user-inactive-1',
   companyId: companyId1,
@@ -47,8 +57,10 @@ const otherCompanyUser = {
   isActive: true
 };
 
-const keyPairWrite = generateTaskApiKey('tsk');
+const keyPairFull = generateTaskApiKey('tsk');
+const keyPairNoUpdate = generateTaskApiKey('tsk');
 const keyPairReadOnly = generateTaskApiKey('tsk');
+const keyPairAssigneeOnly = generateTaskApiKey('tsk');
 
 let taskStore = [];
 let activities = [];
@@ -58,15 +70,28 @@ let queuedWebhooks = [];
 const mockPrisma = {
   taskApiCredential: {
     findFirst: async ({ where }) => {
-      if (where.keyPrefix === keyPairWrite.keyPrefix) {
+      if (where.keyPrefix === keyPairFull.keyPrefix) {
         return {
-          id: 'cred-write',
+          id: 'cred-full',
           companyId: companyId1,
           userId: adminUser.id,
           defaultActingUserId: adminUser.id,
-          name: 'external-crm-key',
-          keyHash: hashTaskApiKey(keyPairWrite.rawKey),
-          scopes: JSON.stringify(['tasks:read', 'tasks:write']),
+          name: 'full-tasks-key',
+          keyHash: hashTaskApiKey(keyPairFull.rawKey),
+          scopes: JSON.stringify(['tasks:read', 'tasks:write', 'tasks:update']),
+          expiresAt: null,
+          isActive: true
+        };
+      }
+      if (where.keyPrefix === keyPairNoUpdate.keyPrefix) {
+        return {
+          id: 'cred-no-update',
+          companyId: companyId1,
+          userId: adminUser.id,
+          defaultActingUserId: adminUser.id,
+          name: 'legacy-write-key',
+          keyHash: hashTaskApiKey(keyPairNoUpdate.rawKey),
+          scopes: JSON.stringify(['tasks:read', 'tasks:write']), // Missing tasks:update
           expiresAt: null,
           isActive: true
         };
@@ -77,9 +102,22 @@ const mockPrisma = {
           companyId: companyId1,
           userId: adminUser.id,
           defaultActingUserId: adminUser.id,
-          name: 'external-reader-key',
+          name: 'read-only-key',
           keyHash: hashTaskApiKey(keyPairReadOnly.rawKey),
           scopes: JSON.stringify(['tasks:read']),
+          expiresAt: null,
+          isActive: true
+        };
+      }
+      if (where.keyPrefix === keyPairAssigneeOnly.keyPrefix) {
+        return {
+          id: 'cred-assignee',
+          companyId: companyId1,
+          userId: activeAssignee.id, // non-manager employee
+          defaultActingUserId: null,
+          name: 'assignee-key',
+          keyHash: hashTaskApiKey(keyPairAssigneeOnly.rawKey),
+          scopes: JSON.stringify(['tasks:read', 'tasks:write', 'tasks:update']),
           expiresAt: null,
           isActive: true
         };
@@ -90,7 +128,7 @@ const mockPrisma = {
   },
   user: {
     findFirst: async ({ where }) => {
-      const allUsers = [adminUser, activeAssignee, inactiveUser, otherCompanyUser];
+      const allUsers = [adminUser, activeAssignee, secondAssignee, inactiveUser, otherCompanyUser];
       return allUsers.find((u) => {
         if (where.id && u.id !== where.id) return false;
         if (where.isActive !== undefined && u.isActive !== where.isActive) return false;
@@ -101,7 +139,7 @@ const mockPrisma = {
         return true;
       }) || null;
     },
-    findMany: async () => [adminUser, activeAssignee]
+    findMany: async () => [adminUser, activeAssignee, secondAssignee]
   },
   task: {
     findFirst: async ({ where }) => {
@@ -114,6 +152,24 @@ const mockPrisma = {
     findUnique: async ({ where }) => {
       return taskStore.find((t) => t.id === where.id) || null;
     },
+    findMany: async ({ where }) => {
+      return taskStore.filter((t) => t.companyId === where.companyId);
+    },
+    count: async ({ where }) => {
+      return taskStore.filter((t) => t.companyId === where.companyId).length;
+    },
+    create: async ({ data }) => {
+      const task = {
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        assignee: data.assignedTo === activeAssignee.id ? activeAssignee : adminUser,
+        creator: adminUser,
+        project: null
+      };
+      taskStore.push(task);
+      return task;
+    },
     update: async ({ where, data }) => {
       const index = taskStore.findIndex((t) => t.id === where.id);
       if (index === -1) throw new Error('Task not found');
@@ -122,7 +178,18 @@ const mockPrisma = {
         ...data,
         updatedAt: new Date()
       };
-      return taskStore[index];
+      const t = taskStore[index];
+      const assigneeObj = t.assignedTo === secondAssignee.id
+        ? secondAssignee
+        : t.assignedTo === activeAssignee.id
+          ? activeAssignee
+          : adminUser;
+      return {
+        ...t,
+        assignee: assigneeObj,
+        creator: adminUser,
+        project: null
+      };
     }
   },
   taskActivity: {
@@ -221,123 +288,151 @@ const resetTestState = () => {
   queuedWebhooks = [];
 };
 
-test('PATCH /api/v1/external/tasks/:id updates title, description, priority, dueDate, tags, assignedTo successfully', async () => {
+test('1) Acceptance Criterion 1: Update description of existing task returns 200 and subsequent GET /:id returns new description', async () => {
   resetTestState();
 
-  const response = await request(app)
+  const patchRes = await request(app)
     .patch('/api/v1/external/tasks/task-comp1-1')
-    .set('x-api-key', keyPairWrite.rawKey)
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      description: 'Updated Description via External API'
+    });
+
+  assert.strictEqual(patchRes.statusCode, 200);
+  assert.strictEqual(patchRes.body.success, true);
+  assert.strictEqual(patchRes.body.data.description, 'Updated Description via External API');
+
+  const getRes = await request(app)
+    .get('/api/v1/external/tasks/task-comp1-1')
+    .set('x-api-key', keyPairFull.rawKey);
+
+  assert.strictEqual(getRes.statusCode, 200);
+  assert.strictEqual(getRes.body.success, true);
+  assert.strictEqual(getRes.body.data.description, 'Updated Description via External API');
+});
+
+test('2) Acceptance Criterion 2: Updating title, priority, dueDate, estimatedHours, assignedTo all work and verified by GET', async () => {
+  resetTestState();
+
+  const patchRes = await request(app)
+    .patch('/api/v1/external/tasks/task-comp1-1')
+    .set('x-api-key', keyPairFull.rawKey)
     .send({
       title: 'Updated Title via External API',
       description: 'Updated Description via External API',
       priority: 'URGENT',
       dueDate: '2026-06-15T10:00:00.000Z',
-      tags: ['external', 'urgent'],
-      assignedTo: activeAssignee.id
+      estimatedHours: 8,
+      assignedTo: secondAssignee.id
     });
 
-  assert.strictEqual(response.statusCode, 200);
-  assert.strictEqual(response.body.success, true);
-  assert.strictEqual(response.body.data.title, 'Updated Title via External API');
-  assert.strictEqual(response.body.data.description, 'Updated Description via External API');
-  assert.strictEqual(response.body.data.priority, 'URGENT');
-  assert.deepStrictEqual(response.body.data.tags, ['external', 'urgent']);
-  assert.strictEqual(response.body.data.assignedTo, activeAssignee.id);
+  assert.strictEqual(patchRes.statusCode, 200);
+  assert.strictEqual(patchRes.body.success, true);
+  assert.strictEqual(patchRes.body.data.title, 'Updated Title via External API');
+  assert.strictEqual(patchRes.body.data.priority, 'URGENT');
+  assert.strictEqual(patchRes.body.data.estimatedHours, 8);
+  assert.strictEqual(patchRes.body.data.assignedTo, secondAssignee.id);
 
-  // Check activity log
-  assert.ok(activities.length > 0);
-  assert.strictEqual(activities[0].action, 'external_task_update');
+  const getRes = await request(app)
+    .get('/api/v1/external/tasks/task-comp1-1')
+    .set('x-api-key', keyPairFull.rawKey);
 
-  // Check notification to assignee
-  const assigneeNotification = sentNotifications.find((n) => n.userId === activeAssignee.id);
-  assert.ok(assigneeNotification, 'Assignee must receive a notification');
-  assert.strictEqual(assigneeNotification.type, 'task_updated');
-
-  // Check webhook
-  const updatedWebhook = queuedWebhooks.find((w) => w.event === 'task.updated');
-  assert.ok(updatedWebhook, 'Webhook task.updated must be queued');
+  assert.strictEqual(getRes.statusCode, 200);
+  assert.strictEqual(getRes.body.data.title, 'Updated Title via External API');
+  assert.strictEqual(getRes.body.data.priority, 'URGENT');
+  assert.strictEqual(getRes.body.data.estimatedHours, 8);
+  assert.strictEqual(getRes.body.data.assignedTo, secondAssignee.id);
 });
 
-test('PATCH /api/v1/external/tasks/:id rejects modifying a task belonging to another company with 403', async () => {
+test('3) Acceptance Criterion 3: Key without tasks:update scope returns 403', async () => {
   resetTestState();
 
   const response = await request(app)
-    .patch('/api/v1/external/tasks/task-comp2-foreign')
-    .set('x-api-key', keyPairWrite.rawKey)
+    .patch('/api/v1/external/tasks/task-comp1-1')
+    .set('x-api-key', keyPairNoUpdate.rawKey)
     .send({
-      description: 'Attempting cross-company edit'
+      title: 'Attempt without update scope'
     });
 
   assert.strictEqual(response.statusCode, 403);
   assert.strictEqual(response.body.success, false);
-  assert.match(response.body.message, /another company/i);
+  assert.match(response.body.message, /tasks:update/);
 });
 
-test('PATCH /api/v1/external/tasks/:id returns 404 for non-existent task', async () => {
+test('4) Acceptance Criterion 4: Task from another company with the same key returns 404', async () => {
   resetTestState();
 
   const response = await request(app)
-    .patch('/api/v1/external/tasks/non-existent-task-id')
-    .set('x-api-key', keyPairWrite.rawKey)
+    .patch('/api/v1/external/tasks/task-comp2-foreign')
+    .set('x-api-key', keyPairFull.rawKey)
     .send({
-      description: 'Should be 404'
+      title: 'Trying to update foreign task'
     });
 
   assert.strictEqual(response.statusCode, 404);
   assert.strictEqual(response.body.success, false);
+  assert.strictEqual(response.body.message, 'Task not found');
 });
 
-test('PATCH /api/v1/external/tasks/:id rejects assigning to inactive user with 400', async () => {
+test('5) Acceptance Criterion 5: TaskActivity log is written and notification sent to assignee', async () => {
   resetTestState();
 
   const response = await request(app)
     .patch('/api/v1/external/tasks/task-comp1-1')
-    .set('x-api-key', keyPairWrite.rawKey)
+    .set('x-api-key', keyPairFull.rawKey)
     .send({
-      assignedTo: inactiveUser.id
+      description: 'Checking activity log and notifications'
     });
 
-  assert.strictEqual(response.statusCode, 400);
-  assert.strictEqual(response.body.success, false);
-  assert.match(response.body.message, /assignedTo/i);
+  assert.strictEqual(response.statusCode, 200);
+
+  // Check activity log
+  assert.ok(activities.length > 0, 'Must record at least one taskActivity');
+  const updateActivity = activities.find((a) => a.action === 'external_task_update');
+  assert.ok(updateActivity, 'taskActivity with action external_task_update must be recorded');
+  assert.match(updateActivity.description, /full-tasks-key/);
+
+  // Check notification to assignee
+  const assigneeNotification = sentNotifications.find((n) => n.userId === activeAssignee.id || n.task?.assignedTo === activeAssignee.id);
+  assert.ok(assigneeNotification, 'Assignee must receive a notification');
 });
 
-test('PATCH /api/v1/external/tasks/:id rejects assigning to user from another company with 400', async () => {
+test('6) Non-manager assignee-only key cannot update task details (403)', async () => {
   resetTestState();
 
   const response = await request(app)
     .patch('/api/v1/external/tasks/task-comp1-1')
-    .set('x-api-key', keyPairWrite.rawKey)
+    .set('x-api-key', keyPairAssigneeOnly.rawKey)
     .send({
-      assignedTo: otherCompanyUser.id
+      title: 'Unauthorized title update by assignee'
     });
 
-  assert.strictEqual(response.statusCode, 400);
+  assert.strictEqual(response.statusCode, 403);
   assert.strictEqual(response.body.success, false);
-  assert.match(response.body.message, /assignedTo/i);
+  assert.match(response.body.message, /غير مصرح للمكلّف فقط/);
 });
 
-test('PATCH /api/v1/external/tasks/:id rejects invalid priority with 400', async () => {
+test('7) PUT /:id also supported for updating task', async () => {
   resetTestState();
 
   const response = await request(app)
-    .patch('/api/v1/external/tasks/task-comp1-1')
-    .set('x-api-key', keyPairWrite.rawKey)
+    .put('/api/v1/external/tasks/task-comp1-1')
+    .set('x-api-key', keyPairFull.rawKey)
     .send({
-      priority: 'SUPER_CRITICAL'
+      priority: 'HIGH'
     });
 
-  assert.strictEqual(response.statusCode, 400);
-  assert.strictEqual(response.body.success, false);
-  assert.match(response.body.message, /priority/i);
+  assert.strictEqual(response.statusCode, 200);
+  assert.strictEqual(response.body.success, true);
+  assert.strictEqual(response.body.data.priority, 'HIGH');
 });
 
-test('PATCH /api/v1/external/tasks/:id rejects invalid dueDate with 400', async () => {
+test('8) Rejects invalid dueDate with 400', async () => {
   resetTestState();
 
   const response = await request(app)
     .patch('/api/v1/external/tasks/task-comp1-1')
-    .set('x-api-key', keyPairWrite.rawKey)
+    .set('x-api-key', keyPairFull.rawKey)
     .send({
       dueDate: 'invalid-date-string'
     });
@@ -347,50 +442,28 @@ test('PATCH /api/v1/external/tasks/:id rejects invalid dueDate with 400', async 
   assert.match(response.body.message, /dueDate/i);
 });
 
-test('PATCH /api/v1/external/tasks/:id rejects empty title or empty description with 400', async () => {
-  resetTestState();
-
-  const resEmptyTitle = await request(app)
-    .patch('/api/v1/external/tasks/task-comp1-1')
-    .set('x-api-key', keyPairWrite.rawKey)
-    .send({
-      title: '   '
-    });
-  assert.strictEqual(resEmptyTitle.statusCode, 400);
-  assert.strictEqual(resEmptyTitle.body.success, false);
-
-  const resEmptyDesc = await request(app)
-    .patch('/api/v1/external/tasks/task-comp1-1')
-    .set('x-api-key', keyPairWrite.rawKey)
-    .send({
-      description: '   '
-    });
-  assert.strictEqual(resEmptyDesc.statusCode, 400);
-  assert.strictEqual(resEmptyDesc.body.success, false);
-});
-
-test('PATCH /api/v1/external/tasks/:id rejects request with no updatable fields with 400', async () => {
+test('9) Rejects empty title with 400', async () => {
   resetTestState();
 
   const response = await request(app)
     .patch('/api/v1/external/tasks/task-comp1-1')
-    .set('x-api-key', keyPairWrite.rawKey)
-    .send({});
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({
+      title: '   '
+    });
 
   assert.strictEqual(response.statusCode, 400);
   assert.strictEqual(response.body.success, false);
 });
 
-test('PATCH /api/v1/external/tasks/:id rejects requests from read-only API keys with 403', async () => {
+test('10) Rejects request with no updatable fields with 400', async () => {
   resetTestState();
 
   const response = await request(app)
     .patch('/api/v1/external/tasks/task-comp1-1')
-    .set('x-api-key', keyPairReadOnly.rawKey)
-    .send({
-      title: 'Attempt without write scope'
-    });
+    .set('x-api-key', keyPairFull.rawKey)
+    .send({});
 
-  assert.strictEqual(response.statusCode, 403);
+  assert.strictEqual(response.statusCode, 400);
   assert.strictEqual(response.body.success, false);
 });

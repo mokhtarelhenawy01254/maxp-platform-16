@@ -1,7 +1,9 @@
 const { v4: uuidv4 } = require('uuid');
-const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const sharedDatabase = require('../services/sharedDatabase');
+const getSharedPrismaClient = () => sharedDatabase.getSharedPrismaClient();
 const taskNotificationService = require('../services/taskNotificationService');
-const { queueTaskWebhook } = require('../services/taskWebhookService');
+const taskWebhookService = require('../services/taskWebhookService');
+const queueTaskWebhook = (...args) => taskWebhookService.queueTaskWebhook(...args);
 
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_PAGE_SIZE = 50;
@@ -726,18 +728,6 @@ const taskExternalController = {
       });
 
       if (!currentTask) {
-        const otherCompanyTask = await prisma.task.findUnique({
-          where: { id },
-          select: { id: true, companyId: true }
-        });
-
-        if (otherCompanyTask) {
-          return res.status(403).json({
-            success: false,
-            message: 'Access denied: Cannot modify task belonging to another company'
-          });
-        }
-
         return res.status(404).json({
           success: false,
           message: 'Task not found'

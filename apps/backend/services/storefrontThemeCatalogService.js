@@ -1350,6 +1350,9 @@ class StorefrontThemeCatalogService {
             `رصيد المحفظة غير كافٍ. المطلوب: ${purchaseAmount} ${wallet.currency}، المتوفر: ${wallet.balance} ${wallet.currency}`,
           );
           error.code = 'INSUFFICIENT_WALLET_BALANCE';
+          error.requiredAmount = purchaseAmount;
+          error.currentBalance = Number(wallet.balance);
+          error.currency = wallet.currency;
           throw error;
         }
 

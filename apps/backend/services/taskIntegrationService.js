@@ -216,16 +216,7 @@ const hashTaskApiKey = (rawKey) => crypto.createHash('sha256').update(String(raw
 
 const credentialHasScope = (credential, requiredScope) => {
   const scopes = normalizeScopes(credential?.scopes || []);
-  if (scopes.includes('*') || scopes.includes(requiredScope)) {
-    return true;
-  }
-  if (requiredScope === 'tasks:update' && scopes.includes('tasks:write')) {
-    return true;
-  }
-  if (requiredScope === 'tasks:write' && scopes.includes('tasks:update')) {
-    return true;
-  }
-  return false;
+  return scopes.includes('*') || scopes.includes(requiredScope);
 };
 
 module.exports = {

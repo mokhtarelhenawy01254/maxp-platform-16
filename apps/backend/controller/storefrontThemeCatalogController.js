@@ -307,6 +307,7 @@ const purchaseTheme = async (req, res) => {
 
     return res.status(statusCode).json({
       success: false,
+      code: error.code || (statusCode === 400 && error.message?.includes('رصيد المحفظة') ? 'INSUFFICIENT_WALLET_BALANCE' : undefined),
       message:
         statusCode === 404
           ? error.code === 'COMPANY_NOT_FOUND'
@@ -319,6 +320,9 @@ const purchaseTheme = async (req, res) => {
                 ? 'هذا القالب مجاني ولا يحتاج إلى شراء'
                 : 'تعذر إتمام شراء القالب حاليًا'
             : 'Failed to purchase storefront theme',
+      requiredAmount: error.requiredAmount !== undefined ? error.requiredAmount : null,
+      currentBalance: error.currentBalance !== undefined ? error.currentBalance : null,
+      currency: error.currency || 'EGP',
       error: error.message,
     });
   }
