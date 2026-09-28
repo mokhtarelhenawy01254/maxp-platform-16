@@ -188,7 +188,8 @@ const BulkSearchPage: React.FC = () => {
         return;
       }
 
-      if (values.length > 100) {
+      const MAX_BULK_SEARCH_VALUES = 10000;
+      if (values.length > MAX_BULK_SEARCH_VALUES) {
         toast.error(t("bulkSearch.errorMaxValues"));
         setLoading(false);
         return;

@@ -198,10 +198,11 @@ const bulkSearchOrders = async (req, res) => {
             });
         }
 
-        if (values.length > 100) {
+        const MAX_BULK_SEARCH_VALUES = 10000;
+        if (values.length > MAX_BULK_SEARCH_VALUES) {
             return res.status(400).json({
                 success: false,
-                error: 'Maximum 100 values allowed per search'
+                error: `Maximum ${MAX_BULK_SEARCH_VALUES} values allowed per search`
             });
         }
 
@@ -223,110 +224,141 @@ const bulkSearchOrders = async (req, res) => {
 
         // تحديد نوع البحث
         if (searchType === 'orderNumber') {
-            // بناء استعلام مرن للجدولين: كل قيمة تبحث بـ exact match أو endsWith أو contains
-            const orderNumberConditions = cleanedValues.map(v => ({
-                OR: [
-                    { orderNumber: v },                          // exact match
-                    { orderNumber: { endsWith: `-${v}` } },     // مثال: ORD-1793047
-                    { orderNumber: { endsWith: v } },            // يغطي أي suffix
-                    { orderNumber: { contains: v } },            // fallback عام
-                ]
-            }));
+            // تقسيم المدخلات لمجموعات (Chunks) من 100 قيمة لضمان سرعة الاستعلام وتفادي حدود المعاملات في قاعدة البيانات
+            const BATCH_SIZE = 100;
+            const chunks = [];
+            for (let i = 0; i < cleanedValues.length; i += BATCH_SIZE) {
+                chunks.push(cleanedValues.slice(i, i + BATCH_SIZE));
+            }
 
-            [regularOrders, guestOrders] = await Promise.all([
-                prisma.order.findMany({
-                    where: {
-                        companyId: companyId,
-                        OR: orderNumberConditions
-                    },
-                    include: {
-                        customer: {
-                            select: {
-                                id: true,
-                                firstName: true,
-                                lastName: true,
-                                email: true,
-                                phone: true
-                            }
-                        },
-                        orderItems: {
+            const chunkResults = await Promise.all(
+                chunks.map(async (chunk) => {
+                    const orderNumberConditions = chunk.map(v => ({
+                        OR: [
+                            { orderNumber: v },                          // exact match
+                            { orderNumber: { endsWith: `-${v}` } },     // مثال: ORD-1793047
+                            { orderNumber: { endsWith: v } },            // يغطي أي suffix
+                            { orderNumber: { contains: v } },            // fallback عام
+                        ]
+                    }));
+
+                    const [regOrders, gstOrders] = await Promise.all([
+                        prisma.order.findMany({
+                            where: {
+                                companyId: companyId,
+                                OR: orderNumberConditions
+                            },
                             include: {
-                                product: {
+                                customer: {
                                     select: {
                                         id: true,
-                                        name: true,
-                                        sku: true
+                                        firstName: true,
+                                        lastName: true,
+                                        email: true,
+                                        phone: true
+                                    }
+                                },
+                                orderItems: {
+                                    include: {
+                                        product: {
+                                            select: {
+                                                id: true,
+                                                name: true,
+                                                sku: true
+                                            }
+                                        }
                                     }
                                 }
+                            },
+                            orderBy: {
+                                createdAt: 'desc'
                             }
-                        }
-                    },
-                    orderBy: {
-                        createdAt: 'desc'
-                    }
-                }),
-                prisma.guestOrder.findMany({
-                    where: {
-                        companyId: companyId,
-                        OR: orderNumberConditions
-                    },
-                    orderBy: {
-                        createdAt: 'desc'
-                    }
+                        }),
+                        prisma.guestOrder.findMany({
+                            where: {
+                                companyId: companyId,
+                                OR: orderNumberConditions
+                            },
+                            orderBy: {
+                                createdAt: 'desc'
+                            }
+                        })
+                    ]);
+
+                    return { regOrders, gstOrders };
                 })
-            ]);
+            );
+
+            regularOrders = chunkResults.flatMap(r => r.regOrders);
+            guestOrders = chunkResults.flatMap(r => r.gstOrders);
 
         } else if (searchType === 'phone') {
             // توليد كل احتمالات وتنسيقات أرقام الهواتف (مع الصفر وبدونه وكود الدولة 20/966)
             const allPhoneSearchValues = [...new Set(cleanedValues.flatMap(getPhoneVariations))];
 
-            [regularOrders, guestOrders] = await Promise.all([
-                prisma.order.findMany({
-                    where: {
-                        companyId: companyId,
-                        OR: [
-                            { customer: { phone: { in: allPhoneSearchValues } } },
-                            { customerPhone: { in: allPhoneSearchValues } }
-                        ]
-                    },
-                    include: {
-                        customer: {
-                            select: {
-                                id: true,
-                                firstName: true,
-                                lastName: true,
-                                email: true,
-                                phone: true
-                            }
-                        },
-                        orderItems: {
+            // تقسيم أرقام الهواتف لمجموعات من 500 قيمة
+            const BATCH_SIZE = 500;
+            const chunks = [];
+            for (let i = 0; i < allPhoneSearchValues.length; i += BATCH_SIZE) {
+                chunks.push(allPhoneSearchValues.slice(i, i + BATCH_SIZE));
+            }
+
+            const chunkResults = await Promise.all(
+                chunks.map(async (chunk) => {
+                    const [regOrders, gstOrders] = await Promise.all([
+                        prisma.order.findMany({
+                            where: {
+                                companyId: companyId,
+                                OR: [
+                                    { customer: { phone: { in: chunk } } },
+                                    { customerPhone: { in: chunk } }
+                                ]
+                            },
                             include: {
-                                product: {
+                                customer: {
                                     select: {
                                         id: true,
-                                        name: true,
-                                        sku: true
+                                        firstName: true,
+                                        lastName: true,
+                                        email: true,
+                                        phone: true
+                                    }
+                                },
+                                orderItems: {
+                                    include: {
+                                        product: {
+                                            select: {
+                                                id: true,
+                                                name: true,
+                                                sku: true
+                                            }
+                                        }
                                     }
                                 }
+                            },
+                            orderBy: {
+                                createdAt: 'desc'
                             }
-                        }
-                    },
-                    orderBy: {
-                        createdAt: 'desc'
-                    }
-                }),
-                prisma.guestOrder.findMany({
-                    where: {
-                        companyId: companyId,
-                        guestPhone: {
-                            in: allPhoneSearchValues
-                        }
-                    },
-                    orderBy: {
-                        createdAt: 'desc'
-                    }
+                        }),
+                        prisma.guestOrder.findMany({
+                            where: {
+                                companyId: companyId,
+                                guestPhone: {
+                                    in: chunk
+                                }
+                            },
+                            orderBy: {
+                                createdAt: 'desc'
+                            }
+                        })
+                    ]);
+
+                    return { regOrders, gstOrders };
                 })
-            ]);
+            );
+
+            regularOrders = chunkResults.flatMap(r => r.regOrders);
+            guestOrders = chunkResults.flatMap(r => r.gstOrders);
         } else {
             return res.status(400).json({
                 success: false,
@@ -382,11 +414,12 @@ const bulkSearchOrders = async (req, res) => {
 
         if (searchType === 'orderNumber') {
             const dbOrderNumbers = mergedOrders.map(o => normalizeKey(o.orderNumber));
+            const exactDbNumbersSet = new Set(dbOrderNumbers);
 
             foundInputValues = cleanedValues.filter(searchVal => {
                 const normSearchVal = normalizeKey(searchVal);
+                if (exactDbNumbersSet.has(normSearchVal)) return true;
                 return dbOrderNumbers.some(dbNum =>
-                    dbNum === normSearchVal ||
                     dbNum.endsWith(`-${normSearchVal}`) ||
                     dbNum.endsWith(normSearchVal) ||
                     dbNum.includes(normSearchVal)
