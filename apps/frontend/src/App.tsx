@@ -375,6 +375,9 @@ const TelegramCampaigns = React.lazy(
 const TelegramGroups = React.lazy(
   () => import("./pages/telegram/TelegramGroups"),
 );
+const CustomDomainPage = React.lazy(
+  () => import("./pages/settings/CustomDomainPage"),
+);
 const StoreSettings = React.lazy(
   () => import("./pages/settings/StoreSettings"),
 );
@@ -1758,6 +1761,7 @@ if (typeof window !== "undefined") {
   p["/hr"] = () => import("./pages/hr/HRDashboard");
   p["/settings"] = () => import("./pages/settings/Settings");
   p["/settings/company"] = () => import("./pages/settings/CompanySettings");
+  p["/settings/custom-domain"] = () => import("./pages/settings/CustomDomainPage");
   p["/facebook-inbox"] = () => import("./pages/facebook-inbox/FacebookInbox");
   p["/instagram-inbox"] = () => import("./pages/instagram-inbox/InstagramInbox");
   p["/unified-inbox"] = () => import("./pages/unified-inbox/UnifiedInbox");
@@ -6500,6 +6504,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <StoreSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/custom-domain"
+                  element={
+                    <Layout>
+                      <CustomDomainPage />
                     </Layout>
                   }
                 />

@@ -22,8 +22,8 @@ const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
 const CustomDomainPage: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [company, setCompany] = useState<any>(null);
-  const [customDomain, setCustomDomain] = useState("");
+  const [company, setCompany] = useState<any>(user?.company || null);
+  const [customDomain, setCustomDomain] = useState(user?.company?.customDomain || "");
   const [editingDomain, setEditingDomain] = useState(false);
   const [savingDomain, setSavingDomain] = useState(false);
   const [verifyingDNS, setVerifyingDNS] = useState(false);
@@ -43,21 +43,35 @@ const CustomDomainPage: React.FC = () => {
       : "maxp.online";
 
   useEffect(() => {
-    fetchCompanyData();
-  }, []);
+    if (user?.company) {
+      setCompany(user.company);
+      if (!editingDomain) {
+        setCustomDomain(user.company.customDomain || "");
+      }
+    }
+  }, [user?.company, editingDomain]);
+
+  useEffect(() => {
+    if (user?.companyId) {
+      fetchCompanyData();
+    }
+  }, [user?.companyId]);
 
   const fetchCompanyData = async () => {
+    if (!user?.companyId) return;
     try {
       const response = await fetch(
-        `${getApiUrl()}/companies/${user?.companyId}`,
+        `${getApiUrl()}/companies/${user.companyId}`,
         {
           headers: getAuthHeaders(),
         },
       );
       const data = await response.json();
-      if (data.success) {
+      if (data.success && data.data) {
         setCompany(data.data);
-        setCustomDomain(data.data.customDomain || "");
+        if (!editingDomain) {
+          setCustomDomain(data.data.customDomain || "");
+        }
       }
     } catch (error) {
       console.error("Error fetching company:", error);

@@ -774,13 +774,13 @@ export const getSidebarConfig = (
                     label: t('sidebar.visitStore'),
                     external: true
                 },
+                { to: '/settings/store', icon: Store, label: t('sidebar.storeSettings') },
                 {
                     to: '/settings/storefront/editor',
                     icon: Palette,
                     label: t('sidebar.storefrontDesign')
                 },
                 { to: '/settings/custom-domain', icon: Link, label: t('sidebar.customDomain') },
-                { to: '/settings/store', icon: Store, label: t('sidebar.storeSettings') },
                 { to: '/settings/store/tools', icon: Sparkles, label: t('sidebar.conversionTools') },
                 { to: '/settings/upsell', icon: TrendingUp, label: t('sidebar.upsellManagement') },
                 { to: '/settings/post-purchase-offer', icon: Zap, label: isEn ? 'Post-Purchase Offer' : 'العرض بعد الطلب (Upsell)' },
