@@ -60,6 +60,8 @@ let remindedForThisIdleEpisode = false;
 // ── Shift & Day Lifecycle State ───────────────────────────────
 let shiftEnded = false;
 let shiftEndedAt: string | null = null;
+let isOvertime = false;
+let activeOvertimeSession: { id: string; startedAt: string; reason: string; taskSummary?: string | null } | null = null;
 let systemSuspendedAt: number | null = null;
 let lastDayRolloverDate = '';
 let midnightWatcherInterval: ReturnType<typeof setInterval> | null = null;
@@ -565,6 +567,9 @@ function registerIpcHandlers(): void {
       todayActiveSeconds: (stored?.total_active_seconds ?? 0) + (live?.activeSeconds || 0),
       todayIdleSeconds: (stored?.total_idle_seconds ?? 0) + (live?.idleSeconds || 0),
       sessionStartedAt: isTracking ? sessionStartedAt : null,
+      deviceType: currentDeviceType,
+      isOvertime,
+      activeOvertimeSession,
     };
   });
 
@@ -582,15 +587,17 @@ function registerIpcHandlers(): void {
     await resumeTracking();
   });
 
-  ipcMain.handle('tracker:end-shift', async () => {
+  ipcMain.handle('tracker:end-shift', async (_, handoverData?: { handoverNotes?: string; pendingTasks?: string }) => {
     try {
-      console.log('[Main] Ending shift for today...');
+      console.log('[Main] Ending shift for today with handover notes:', handoverData?.handoverNotes);
       // 1. Flush any active interval and sync
       syncEngine.flushAndCaptureNow();
 
       const today = getLocalDateString();
       shiftEnded = true;
       shiftEndedAt = new Date().toISOString();
+      isOvertime = false;
+      activeOvertimeSession = null;
       localDb.markShiftEnded(today, shiftEndedAt);
 
       // 2. Pause trackers to freeze live counters
@@ -599,12 +606,19 @@ function registerIpcHandlers(): void {
       windowTracker.stop();
       stopIdleReminder();
 
-      // 3. Inform server / HR attendance check-out
+      // 3. Inform server / HR attendance check-out or handover
       let checkoutRes: any = null;
       try {
-        checkoutRes = await apiClient.clockOut();
+        if (handoverData?.handoverNotes || handoverData?.pendingTasks) {
+          checkoutRes = await apiClient.closeShiftWithHandover({
+            handoverNotes: handoverData.handoverNotes,
+            pendingTasks: handoverData.pendingTasks,
+          });
+        } else {
+          checkoutRes = await apiClient.clockOut();
+        }
       } catch (err: any) {
-        console.warn('[Main] Clock-out API call error:', err?.message);
+        console.warn('[Main] Clock-out / handover API call error:', err?.message);
       }
 
       // 4. ⏱️ Auto-stop any running task timers upon shift ending
@@ -623,17 +637,80 @@ function registerIpcHandlers(): void {
 
       updateTrayMenu();
       sendStateToRenderer();
-      showNotification('MaxP Workspace', 'تم إنهاء وردية العمل وتسجيل الانصراف بنجاح.');
+      showNotification('MaxP Workspace', 'تم إنهاء وردية العمل وتوثيق الانصراف بنجاح.');
 
       return {
         success: true,
         attendance: checkoutRes?.attendance,
+        handover: checkoutRes?.handover,
         shiftEndedAt,
         message: 'تم إنهاء وردية العمل وتوثيق الانصراف بنجاح.',
       };
     } catch (err: any) {
       console.error('[Main] Failed to end shift:', err);
       return { success: false, error: err?.message || 'تعذر إنهاء الوردية' };
+    }
+  });
+
+  ipcMain.handle('tracker:start-overtime', async (_, { reason, taskSummary }: { reason: string; taskSummary?: string }) => {
+    try {
+      console.log('[Main] Starting overtime session:', reason);
+      const res = await apiClient.startOvertimeSession(reason, taskSummary);
+      if (res.success && res.session) {
+        isOvertime = true;
+        activeOvertimeSession = {
+          id: res.session.id,
+          startedAt: res.session.startedAt,
+          reason: res.session.reason,
+          taskSummary: res.session.taskSummary,
+        };
+        shiftEnded = false; // allow tracking
+        await startTracking();
+        updateTrayMenu();
+        sendStateToRenderer();
+        showNotification('MaxP Workspace', `تم تفعيل الوردية الإضافية: ${reason}`);
+        return { success: true, session: res.session };
+      }
+      return { success: false, error: res.error || 'فشل بدء الوردية الإضافية' };
+    } catch (err: any) {
+      console.error('[Main] Failed to start overtime:', err);
+      return { success: false, error: err?.message };
+    }
+  });
+
+  ipcMain.handle('tracker:end-overtime', async (_, { taskSummary } = {}) => {
+    try {
+      console.log('[Main] Ending overtime session...');
+      const res = await apiClient.endOvertimeSession(taskSummary);
+      isOvertime = false;
+      activeOvertimeSession = null;
+      shiftEnded = true;
+      shiftEndedAt = new Date().toISOString();
+      activityTracker.stop();
+      windowTracker.stop();
+      isTracking = false;
+      updateTrayMenu();
+      sendStateToRenderer();
+      showNotification('MaxP Workspace', `تم إنهاء الوردية الإضافية بنجاح (${res.durationMin || 0} دقيقة).`);
+      return { success: true, durationMin: res.durationMin };
+    } catch (err: any) {
+      console.error('[Main] Failed to end overtime:', err);
+      return { success: false, error: err?.message };
+    }
+  });
+
+  ipcMain.handle('tracker:get-shift-status', async () => {
+    try {
+      const res = await apiClient.getTodayShiftStatus();
+      if (res.success && res.status) {
+        if (res.status.isOvertimeActive && res.status.activeOvertime) {
+          isOvertime = true;
+          activeOvertimeSession = res.status.activeOvertime;
+        }
+      }
+      return res;
+    } catch (err: any) {
+      return { success: false, error: err?.message };
     }
   });
 
@@ -1460,6 +1537,9 @@ function sendStateToRenderer(): void {
     shiftEnded,
     shiftEndedAt,
     currentDate: getLocalDateString(),
+    deviceType: currentDeviceType,
+    isOvertime,
+    activeOvertimeSession,
   });
 }
 

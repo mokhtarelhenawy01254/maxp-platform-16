@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Coffee, Play, Clock, CheckCircle2, Sparkles, LogOut, Calendar } from 'lucide-react';
+import { Coffee, Play, Clock, CheckCircle2, Sparkles, LogOut, Calendar, Zap, Square } from 'lucide-react';
 import Sidebar, { TabId } from '../components/Sidebar';
 import CockpitTab from './CockpitTab';
 import TasksTab from './TasksTab';
@@ -10,6 +10,8 @@ import AttendanceAuditTab from './AttendanceAuditTab';
 import SystemStatusTab from './SystemStatusTab';
 import SettingsModal from '../components/SettingsModal';
 import { BreakReasonModal } from '../components/BreakReasonModal';
+import { ShiftHandoverModal } from '../components/ShiftHandoverModal';
+import { OvertimeModal } from '../components/OvertimeModal';
 
 interface DashboardPageProps {
   user: any;
@@ -47,6 +49,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
   const [dailySummary, setDailySummary] = useState<any>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showBreakModal, setShowBreakModal] = useState(false);
+  const [showHandoverModal, setShowHandoverModal] = useState(false);
+  const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const [breakLoading, setBreakLoading] = useState(false);
   const [shiftLoading, setShiftLoading] = useState(false);
   const [inactivityNotice, setInactivityNotice] = useState<{ elapsedHours: number; returnTime: string } | null>(null);
@@ -141,14 +145,44 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
     }
   };
 
-  const handleEndShift = async () => {
-    if (window.confirm('هل ترغب في إنهاء وردية عمل اليوم وتسجيل الانصراف؟ سيتوقف احتساب الساعات لحين بدء وردية جديدة.')) {
+  const handleEndShift = () => {
+    setShowHandoverModal(true);
+  };
+
+  const confirmEndShift = async (data: { handoverNotes: string; pendingTasks: string }) => {
+    setShiftLoading(true);
+    try {
+      await window.electronAPI.endShift(data);
+      await refreshState();
+    } catch (err) {
+      console.error('End shift error:', err);
+      throw err;
+    } finally {
+      setShiftLoading(false);
+    }
+  };
+
+  const confirmStartOvertime = async (data: { reason: string; taskSummary?: string }) => {
+    setShiftLoading(true);
+    try {
+      await window.electronAPI.startOvertime(data);
+      await refreshState();
+    } catch (err) {
+      console.error('Start overtime error:', err);
+      throw err;
+    } finally {
+      setShiftLoading(false);
+    }
+  };
+
+  const handleEndOvertime = async () => {
+    if (window.confirm('هل ترغب في إنهاء الوردية الإضافية (Overtime) وتوثيق الساعات؟')) {
       setShiftLoading(true);
       try {
-        await window.electronAPI.endShift();
+        await window.electronAPI.endOvertime();
         await refreshState();
       } catch (err) {
-        console.error('End shift error:', err);
+        console.error('End overtime error:', err);
       } finally {
         setShiftLoading(false);
       }
@@ -257,17 +291,46 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
               </div>
             )}
 
-            {trackerState?.shiftEnded ? (
+            {trackerState?.isOvertime ? (
+              <div style={styles.breakStatusGroup}>
+                <div style={styles.overtimeActiveChip} title={`السبب: ${trackerState?.activeOvertimeSession?.reason || 'وردية إضافية'}`}>
+                  <Zap size={13} color="#f97316" />
+                  <span>وردية إضافية: {trackerState?.activeOvertimeSession?.reason || 'نشطة'}</span>
+                </div>
+                <button
+                  onClick={handleEndOvertime}
+                  disabled={shiftLoading}
+                  style={styles.endOvertimeBtn}
+                  title="إنهاء الوردية الإضافية وتوثيق الساعات"
+                  onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                  onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                >
+                  <Square size={12} color="#f97316" />
+                  <span>إنهاء الإضافي</span>
+                </button>
+              </div>
+            ) : trackerState?.shiftEnded ? (
               <div style={styles.breakStatusGroup}>
                 <div style={styles.shiftEndedActiveChip} title="تم إنهاء وردية عمل اليوم وتسجيل الانصراف بنجاح">
                   <CheckCircle2 size={13} color="#22c55e" />
                   <span>انتهت وردية اليوم</span>
                 </div>
                 <button
+                  onClick={() => setShowOvertimeModal(true)}
+                  disabled={shiftLoading}
+                  style={styles.overtimeTriggerBtn}
+                  title="بدء وردية عمل إضافية مع توثيق الساعات بشكل مستقل"
+                  onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
+                  onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+                >
+                  <Zap size={13} color="#f97316" />
+                  <span>وردية إضافية</span>
+                </button>
+                <button
                   onClick={handleStartShift}
                   disabled={shiftLoading}
                   style={styles.resumeWorkBtn}
-                  title="بدء وردية جديدة أو عمل إضافي"
+                  title="بدء وردية أساسية جديدة"
                   onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                   onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                 >
@@ -314,12 +377,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
                   onClick={handleEndShift}
                   disabled={shiftLoading}
                   style={styles.endShiftBtn}
-                  title="إنهاء وردية العمل الحالية وتسجيل الانصراف"
+                  title="إنهاء وردية العمل الحالية وتسليم المهام"
                   onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                   onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                 >
                   <LogOut size={13} color="#ef4444" />
-                  <span>إنهاء الوردية</span>
+                  <span>قفل الشيفت</span>
                 </button>
               </div>
             )}
@@ -450,6 +513,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
         onClose={() => setShowBreakModal(false)}
         onConfirm={handleConfirmBreak}
       />
+
+      {/* Shift Handover Modal */}
+      <ShiftHandoverModal
+        isOpen={showHandoverModal}
+        onClose={() => setShowHandoverModal(false)}
+        onConfirm={confirmEndShift}
+        workingSeconds={trackerState?.todayActiveSeconds || 0}
+        clockInTime={clockInDisplay}
+      />
+
+      {/* Overtime Modal */}
+      <OvertimeModal
+        isOpen={showOvertimeModal}
+        onClose={() => setShowOvertimeModal(false)}
+        onConfirm={confirmStartOvertime}
+        deviceType={trackerState?.deviceType}
+      />
     </div>
   );
 };
@@ -570,6 +650,48 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     fontWeight: 600,
     color: '#ef4444',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  overtimeActiveChip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'rgba(249, 115, 22, 0.12)',
+    border: '1px solid rgba(249, 115, 22, 0.3)',
+    borderRadius: 20,
+    padding: '4px 10px',
+    fontSize: 11,
+    color: '#f97316',
+    fontWeight: 600,
+  },
+  endOvertimeBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    background: 'rgba(249, 115, 22, 0.1)',
+    border: '1px solid rgba(249, 115, 22, 0.35)',
+    borderRadius: 8,
+    padding: '5px 10px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#f97316',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 140ms ease-out',
+  },
+  overtimeTriggerBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    background: 'rgba(249, 115, 22, 0.1)',
+    border: '1px solid rgba(249, 115, 22, 0.3)',
+    borderRadius: 8,
+    padding: '5px 10px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#f97316',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',

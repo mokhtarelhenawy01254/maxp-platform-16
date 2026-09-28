@@ -31,8 +31,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toggleTracking: () => ipcRenderer.invoke(CHANNELS.TOGGLE_TRACKING),
   pauseTracking: (reason?: string) => ipcRenderer.invoke(CHANNELS.PAUSE_TRACKING, reason),
   resumeTracking: () => ipcRenderer.invoke(CHANNELS.RESUME_TRACKING),
-  endShift: () => ipcRenderer.invoke('tracker:end-shift'),
+  endShift: (handoverData?: { handoverNotes?: string; pendingTasks?: string }) =>
+    ipcRenderer.invoke('tracker:end-shift', handoverData),
   startShift: () => ipcRenderer.invoke('tracker:start-shift'),
+  startOvertime: (data: { reason: string; taskSummary?: string }) =>
+    ipcRenderer.invoke('tracker:start-overtime', data),
+  endOvertime: (data?: { taskSummary?: string }) =>
+    ipcRenderer.invoke('tracker:end-overtime', data),
+  getShiftStatus: () => ipcRenderer.invoke('tracker:get-shift-status'),
   getDailySummary: (date?: string) => ipcRenderer.invoke(CHANNELS.GET_DAILY_SUMMARY, date),
   getAppsSummary: (date?: string) => ipcRenderer.invoke(CHANNELS.GET_APPS_SUMMARY, date),
   getWebsitesSummary: (date?: string) => ipcRenderer.invoke(CHANNELS.GET_WEBSITES_SUMMARY, date),

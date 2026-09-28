@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Minus, Square, Copy, X, Laptop, Building2, ShieldCheck } from 'lucide-react';
+import { Minus, Square, Copy, X, Laptop, Building2, ShieldCheck, Zap } from 'lucide-react';
 
 export const TitleBar: React.FC = () => {
   const [isMaximized, setIsMaximized] = useState(false);
   const [deviceInfo, setDeviceInfo] = useState<{ hostname: string; deviceType?: 'OFFICE' | 'PERSONAL' } | null>(null);
+  const [isOvertime, setIsOvertime] = useState(false);
 
   useEffect(() => {
     if (window.electronAPI?.getDeviceInfo) {
@@ -20,6 +21,9 @@ export const TitleBar: React.FC = () => {
       const unsub = window.electronAPI.onTrackerStateUpdate((state: any) => {
         if (state?.deviceType) {
           setDeviceInfo((prev) => (prev ? { ...prev, deviceType: state.deviceType } : null));
+        }
+        if (typeof state?.isOvertime === 'boolean') {
+          setIsOvertime(state.isOvertime);
         }
       });
       return () => unsub?.();
@@ -65,6 +69,12 @@ export const TitleBar: React.FC = () => {
               <span>شخصي (مقيّد)</span>
             </span>
           ) : null}
+          {isOvertime && (
+            <span style={styles.overtimeBadge} title="وردية عمل إضافية جارية (ساعات منفصلة)">
+              <Zap size={11} color="#f97316" />
+              <span>وردية إضافية</span>
+            </span>
+          )}
         </div>
       </div>
 
@@ -204,6 +214,19 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#f59e0b',
     background: 'rgba(245, 158, 11, 0.1)',
     border: '1px solid rgba(245, 158, 11, 0.3)',
+    borderRadius: 4,
+    padding: '1px 6px',
+    marginLeft: 4,
+  },
+  overtimeBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 10,
+    fontWeight: 600,
+    color: '#f97316',
+    background: 'rgba(249, 115, 22, 0.12)',
+    border: '1px solid rgba(249, 115, 22, 0.35)',
     borderRadius: 4,
     padding: '1px 6px',
     marginLeft: 4,

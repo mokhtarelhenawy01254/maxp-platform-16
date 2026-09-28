@@ -12,6 +12,7 @@ import tokenManager from "../../utils/tokenManager";
 import CustomDomainPage from "./CustomDomainPage";
 import SidebarSettings from "./SidebarSettings";
 import AuthorizedDevicesTab from "./AuthorizedDevicesTab";
+import OvertimeManagementTab from "./OvertimeManagementTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,6 +71,7 @@ const Settings: React.FC = () => {
     { id: "store", name: t("settings.tabStore"), component: StoreSettingsRedirect },
     { id: "security", name: t("settings.tabSecurity"), component: SecuritySettings },
     { id: "devices", name: "الأجهزة المعتمدة", component: AuthorizedDevicesTab },
+    { id: "overtime", name: "الورديات الإضافية", component: OvertimeManagementTab },
     { id: "sidebar", name: t("settings.tabSidebar"), component: SidebarSettings },
 
   ];
