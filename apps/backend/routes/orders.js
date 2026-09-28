@@ -7207,7 +7207,8 @@ router.get('/export', verifyToken.authenticateToken, async (req, res) => {
           status: true,
           total: true,
           paymentStatus: true,
-          customer: { select: { firstName: true, lastName: true, phone: true } }
+          customer: { select: { firstName: true, lastName: true, phone: true } },
+          orderItems: { select: { quantity: true } }
         }
       }),
       getSharedPrismaClient().guestOrder.findMany({
@@ -7220,7 +7221,8 @@ router.get('/export', verifyToken.authenticateToken, async (req, res) => {
           status: true,
           total: true,
           guestName: true,
-          guestPhone: true
+          guestPhone: true,
+          items: true
         }
       })
     ]);
@@ -7232,28 +7234,68 @@ router.get('/export', verifyToken.authenticateToken, async (req, res) => {
       g => !regularOrderNumberSet.has(String(g.orderNumber || '').trim().toLowerCase())
     );
 
+    const parseExportGuestItemsPieces = (rawItems) => {
+      let items = [];
+      try {
+        items = typeof rawItems === 'string' ? JSON.parse(rawItems) : (rawItems || []);
+        if (items && !Array.isArray(items) && Array.isArray(items.items)) {
+          items = items.items;
+        }
+      } catch (e) {
+        items = [];
+      }
+      return Array.isArray(items)
+        ? items.reduce((s, it) => s + (Number(it?.quantity) || 1), 0)
+        : 1;
+    };
+
+    const isExcludedFromAnalytics = (status) => {
+      const s = String(status || '').toUpperCase();
+      return ['TRASH', 'TRASH_ORDER', 'DELETED', 'DRAFT', 'DUPLICATE_ORDER'].includes(s);
+    };
+
     // Format Data for Excel
     const allOrders = [
-      ...regularOrders.map(o => ({
-        'Order Number': o.orderNumber,
-        'Date': o.createdAt,
-        'Customer Name': o.customer ? `${o.customer.firstName} ${o.customer.lastName}` : '',
-        'Phone': o.customer?.phone || '',
-        'Total': o.total,
-        'Status': o.status,
-        'Payment Status': o.paymentStatus,
-        'Type': 'Regular'
-      })),
-      ...uniqueGuestOrders.map(o => ({
-        'Order Number': o.orderNumber,
-        'Date': o.createdAt,
-        'Customer Name': o.guestName || '',
-        'Phone': o.guestPhone || '',
-        'Total': o.total,
-        'Status': o.status,
-        'Payment Status': 'Unavailable',
-        'Type': 'Guest'
-      }))
+      ...regularOrders.map(o => {
+        const totalPieces = (o.orderItems || []).reduce((s, it) => s + (Number(it.quantity) || 1), 0);
+        const isMulti = totalPieces > 1;
+        const eligible = !isExcludedFromAnalytics(o.status);
+        return {
+          'Order Number': o.orderNumber,
+          'Date': o.createdAt,
+          'Customer Name': o.customer ? `${o.customer.firstName} ${o.customer.lastName}` : '',
+          'Phone': o.customer?.phone || '',
+          'Total': o.total,
+          'Status': o.status,
+          'Payment Status': o.paymentStatus,
+          'Total Pieces': totalPieces,
+          'عدد القطع': totalPieces,
+          'Is Multi-Piece': isMulti ? 'Yes' : 'No',
+          'أكتر من قطعة': isMulti ? 'نعم' : 'لا',
+          'مؤهل للتحليلات': eligible ? 'نعم' : 'لا',
+          'Type': 'Regular'
+        };
+      }),
+      ...uniqueGuestOrders.map(o => {
+        const totalPieces = parseExportGuestItemsPieces(o.items);
+        const isMulti = totalPieces > 1;
+        const eligible = !isExcludedFromAnalytics(o.status);
+        return {
+          'Order Number': o.orderNumber,
+          'Date': o.createdAt,
+          'Customer Name': o.guestName || '',
+          'Phone': o.guestPhone || '',
+          'Total': o.total,
+          'Status': o.status,
+          'Payment Status': 'Unavailable',
+          'Total Pieces': totalPieces,
+          'عدد القطع': totalPieces,
+          'Is Multi-Piece': isMulti ? 'Yes' : 'No',
+          'أكتر من قطعة': isMulti ? 'نعم' : 'لا',
+          'مؤهل للتحليلات': eligible ? 'نعم' : 'لا',
+          'Type': 'Guest'
+        };
+      })
     ].sort((a, b) => new Date(b.Date) - new Date(a.Date));
 
     // Lazy-load heavy export libraries only when needed

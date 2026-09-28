@@ -966,6 +966,120 @@ class AnalyticsService {
     return { ...current, prevPeriod: null };
   }
 
+  async getMultiPieceOrdersStats(companyId, startDate, endDate) {
+    if (!companyId) {
+      return {
+        multiPieceOrders: 0,
+        multiPiecePercentage: 0,
+        singlePieceOrders: 0,
+        totalEligibleOrders: 0,
+        totalPieces: 0,
+      };
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    // Definitions (Requirement 5 & 6):
+    // Multi-piece order = total pieces/quantity across all items in order > 1 (2 or more pieces)
+    // Excluded orders = DRAFT, TRASH, DUPLICATE_ORDER
+    // Included = all other orders (including CANCELLED and RETURNED, which have separate rates)
+    const [regularOrders, guestOrders] = await Promise.all([
+      prisma.order.findMany({
+        where: {
+          companyId,
+          createdAt: { gte: startDate, lte: endDate },
+          status: {
+            notIn: ['TRASH', 'DRAFT', 'DUPLICATE_ORDER']
+          }
+        },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          orderItems: {
+            select: {
+              quantity: true
+            }
+          }
+        }
+      }),
+      prisma.guestOrder.findMany({
+        where: {
+          companyId,
+          createdAt: { gte: startDate, lte: endDate },
+          status: {
+            notIn: [
+              'TRASH', 'trash', 'TRASH_ORDER', 'DELETED', 'deleted',
+              'DRAFT', 'draft', 'DUPLICATE_ORDER', 'duplicate_order'
+            ]
+          }
+        },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          items: true
+        }
+      })
+    ]);
+
+    const regularOrderNumbers = new Set(
+      regularOrders
+        .map((order) => normalizeOrderIdentity(order.orderNumber))
+        .filter(Boolean)
+    );
+
+    const supplementalGuestOrders = guestOrders.filter((order) => {
+      const orderNumber = normalizeOrderIdentity(order.orderNumber);
+      return !orderNumber || !regularOrderNumbers.has(orderNumber);
+    });
+
+    let multiPieceOrders = 0;
+    let singlePieceOrders = 0;
+    let totalPieces = 0;
+
+    for (const order of regularOrders) {
+      const pieces = (order.orderItems || []).reduce(
+        (sum, item) => sum + (Number(item.quantity) || 1),
+        0
+      );
+      totalPieces += pieces;
+      if (pieces > 1) {
+        multiPieceOrders++;
+      } else {
+        singlePieceOrders++;
+      }
+    }
+
+    for (const guestOrder of supplementalGuestOrders) {
+      const items = parseGuestOrderItems(guestOrder.items);
+      const pieces = items.reduce(
+        (sum, item) => sum + (Number(item?.quantity) || 1),
+        0
+      );
+      const finalPieces = pieces > 0 ? pieces : 1;
+      totalPieces += finalPieces;
+      if (finalPieces > 1) {
+        multiPieceOrders++;
+      } else {
+        singlePieceOrders++;
+      }
+    }
+
+    const totalEligibleOrders = regularOrders.length + supplementalGuestOrders.length;
+    const multiPiecePercentage = totalEligibleOrders > 0
+      ? parseFloat(((multiPieceOrders / totalEligibleOrders) * 100).toFixed(1))
+      : 0;
+
+    return {
+      multiPieceOrders,
+      multiPiecePercentage,
+      singlePieceOrders,
+      totalEligibleOrders,
+      totalPieces
+    };
+  }
+
   async getStoreAnalytics(companyId, startDate, endDate, comparisonType = 'previous') {
     if (!companyId) {
       throw new Error('companyId is required');
@@ -1018,7 +1132,8 @@ class AnalyticsService {
           companyId,
           createdAt: { gte: startDate, lte: endDate }
         }
-      }).catch(() => 0)
+      }).catch(() => 0),
+      this.getMultiPieceOrdersStats(companyId, startDate, endDate)
     ]);
 
     const addToCarts = conversionEvents.find(e => e.eventType === 'add_to_cart')?._count || 0;
@@ -1082,17 +1197,20 @@ class AnalyticsService {
           prevEnd.setFullYear(prevEnd.getFullYear() - 1);
           prevStart.setFullYear(prevStart.getFullYear() - 1);
         }
-        const [prevVisitsCount, prevOrdersSum] = await Promise.all([
+        const [prevVisitsCount, prevOrdersSum, prevMultiStats] = await Promise.all([
           getSharedPrismaClient().storeVisit.count({
             where: { companyId, visitedAt: { gte: prevStart, lte: prevEnd } }
           }).catch(() => 0),
-          this.getOrderSummary(companyId, prevStart, prevEnd).catch(() => ({ count: 0, revenue: 0 }))
+          this.getOrderSummary(companyId, prevStart, prevEnd).catch(() => ({ count: 0, revenue: 0 })),
+          this.getMultiPieceOrdersStats(companyId, prevStart, prevEnd).catch(() => null)
         ]);
         prevPeriodStats = {
           ...orderBreakdown.prevPeriod,
           visits: prevVisitsCount,
           revenue: prevOrdersSum.revenue,
           purchases: prevOrdersSum.count,
+          multiPieceOrders: prevMultiStats ? prevMultiStats.multiPieceOrders : 0,
+          multiPiecePercentage: prevMultiStats ? prevMultiStats.multiPiecePercentage : 0,
           conversionRate: prevVisitsCount > 0 ? parseFloat(((prevOrdersSum.count / prevVisitsCount) * 100).toFixed(2)) : 0
         };
       } catch (err) {
@@ -1123,10 +1241,25 @@ class AnalyticsService {
       recoveryRate,
       productConversionRate: parseFloat(productConversionRate),
       avgOrderValue: parseFloat(avgOrderValue),
+      averageOrderValue: parseFloat(avgOrderValue),
       addToCartRate: parseFloat(addToCartRate),
       checkoutRate: parseFloat(checkoutRate),
       purchaseRate: parseFloat(purchaseRate),
       ...orderBreakdown,
+      totalOrders: (multiPieceStats && multiPieceStats.totalEligibleOrders > 0)
+        ? multiPieceStats.totalEligibleOrders
+        : (orderBreakdown?.totalOrders || 0),
+      rawTotalOrders: orderBreakdown?.totalOrders || 0,
+      multiPieceOrders: multiPieceStats ? multiPieceStats.multiPieceOrders : 0,
+      multiPiecePercentage: multiPieceStats ? multiPieceStats.multiPiecePercentage : 0,
+      singlePieceOrders: multiPieceStats ? multiPieceStats.singlePieceOrders : 0,
+      totalPieces: multiPieceStats ? multiPieceStats.totalPieces : 0,
+      totalEligibleOrders: multiPieceStats ? multiPieceStats.totalEligibleOrders : 0,
+      multiPieceStats,
+      completedOrders: (orderBreakdown?.ordersByStatus?.delivered || 0) + (orderBreakdown?.ordersByStatus?.completed || 0),
+      cancelledOrders: orderBreakdown?.ordersByStatus?.cancelled || 0,
+      returnedOrders: orderBreakdown?.ordersByStatus?.returned || 0,
+      pendingOrders: orderBreakdown?.ordersByStatus?.pending || 0,
       prevPeriod: prevPeriodStats || orderBreakdown?.prevPeriod || null,
     };
   }
