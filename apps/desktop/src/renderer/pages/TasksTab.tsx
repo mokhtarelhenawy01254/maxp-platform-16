@@ -19,6 +19,7 @@ import {
   Flame,
   AlertCircle,
   ClipboardCheck,
+  RotateCcw,
 } from 'lucide-react';
 import { CreateTaskModal } from '../components/tasks/CreateTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
@@ -55,7 +56,7 @@ export const TasksTab: React.FC = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState<'my-tasks' | 'assigned-by-me' | 'all' | 'analytics'>('my-tasks');
-  const [statusFilter, setStatusFilter] = useState<'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'>('IN_PROGRESS');
+  const [statusFilter, setStatusFilter] = useState<'IN_PROGRESS' | 'IN_REVIEW' | 'REVISION' | 'COMPLETED'>('IN_PROGRESS');
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<any[]>([]);
   const [teamActiveTimers, setTeamActiveTimers] = useState<TeamActiveTimer[]>([]);
@@ -503,9 +504,10 @@ export const TasksTab: React.FC = () => {
   const userRole = String(currentUser?.role || '').toUpperCase();
   const isAdminOrManager = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER'].includes(userRole);
 
-  const handleUpdateStatus = async (taskId: string, targetStatus: string) => {
+  const handleUpdateStatus = async (taskId: string, targetStatus: string, revisionReason?: string) => {
     const currentTask = tasks.find((t) => t.id === taskId);
     const prevStatus = currentTask?.status || 'PENDING';
+    const prevTags = currentTask?.tags;
 
     // If completing the task or submitting for review, stop runner and clear state
     if (targetStatus === 'COMPLETED' || targetStatus === 'IN_REVIEW') {
@@ -553,7 +555,29 @@ export const TasksTab: React.FC = () => {
 
     // Optimistic local update
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: targetStatus } : t))
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        let nextTags = t.tags;
+        if (revisionReason) {
+          if (Array.isArray(nextTags)) {
+            nextTags = nextTags.includes('needs_revision') ? nextTags : [...nextTags, 'needs_revision'];
+          } else if (typeof nextTags === 'string') {
+            try {
+              const p = JSON.parse(nextTags);
+              nextTags = Array.isArray(p) && !p.includes('needs_revision') ? [...p, 'needs_revision'] : nextTags;
+            } catch {
+              nextTags = ['needs_revision'];
+            }
+          } else {
+            nextTags = ['needs_revision'];
+          }
+        } else if (targetStatus === 'IN_REVIEW' || targetStatus === 'COMPLETED') {
+          if (Array.isArray(nextTags)) {
+            nextTags = nextTags.filter((tag: string) => tag !== 'needs_revision');
+          }
+        }
+        return { ...t, status: targetStatus, tags: nextTags };
+      })
     );
 
     if (targetStatus === 'IN_REVIEW') {
@@ -561,7 +585,7 @@ export const TasksTab: React.FC = () => {
     }
 
     try {
-      const res = await window.electronAPI.updateTaskStatus(taskId, targetStatus);
+      const res = await window.electronAPI.updateTaskStatus(taskId, targetStatus, revisionReason);
       if (res && res.success === false) {
         throw new Error(res.error || 'فشل في تحديث حالة المهمة على السيرفر');
       }
@@ -575,7 +599,7 @@ export const TasksTab: React.FC = () => {
       console.warn('[TasksTab] Status update failed:', err);
       // Rollback on error
       setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, status: prevStatus } : t))
+        prev.map((t) => (t.id === taskId ? { ...t, status: prevStatus, tags: prevTags } : t))
       );
     }
   };
@@ -606,10 +630,30 @@ export const TasksTab: React.FC = () => {
     }
   };
 
+  const isTaskReturned = (t: any) => {
+    const rawStatus = String(t.status || '').toUpperCase();
+    if (rawStatus === 'REVISION') return true;
+    const tags = t.tags;
+    if (!tags) return false;
+    if (Array.isArray(tags)) return tags.includes('needs_revision');
+    if (typeof tags === 'string') {
+      try {
+        const p = JSON.parse(tags);
+        if (Array.isArray(p)) return p.includes('needs_revision');
+      } catch {
+        return tags.includes('needs_revision');
+      }
+    }
+    return false;
+  };
+
   const filteredTasks = tasks.filter((t) => {
     const raw = String(t.status || '').toUpperCase();
     const isDone = raw === 'COMPLETED';
     const isReview = raw === 'IN_REVIEW' || raw === 'PENDING_REVIEW';
+    const isRev = isTaskReturned(t);
+
+    if (statusFilter === 'REVISION') return !isDone && isRev;
     if (statusFilter === 'IN_REVIEW') return isReview;
     if (statusFilter === 'COMPLETED') return isDone;
     return !isDone && !isReview;
@@ -637,6 +681,11 @@ export const TasksTab: React.FC = () => {
   const inProgressCount = tasks.filter((t) => {
     const s = String(t.status || '').toUpperCase();
     return s !== 'COMPLETED' && s !== 'IN_REVIEW' && s !== 'PENDING_REVIEW';
+  }).length;
+
+  const revisionCount = tasks.filter((t) => {
+    const s = String(t.status || '').toUpperCase();
+    return s !== 'COMPLETED' && isTaskReturned(t);
   }).length;
 
   const urgentCount = tasks.filter(
@@ -1059,6 +1108,36 @@ export const TasksTab: React.FC = () => {
                 </button>
               );
             })}
+
+            {revisionCount > 0 && (
+              <button
+                onClick={() => setStatusFilter('REVISION')}
+                style={{
+                  ...styles.statusTabBtn,
+                  backgroundColor: statusFilter === 'REVISION' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.05)',
+                  borderColor: statusFilter === 'REVISION' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(245, 158, 11, 0.2)',
+                  color: statusFilter === 'REVISION' ? '#f59e0b' : '#d97706',
+                  fontWeight: statusFilter === 'REVISION' ? 700 : 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+                title="المهام التي تمت إعادتها للتعديل وتتطلب إجراءً"
+              >
+                <RotateCcw size={11} color="#f59e0b" />
+                <span>مُعادة للتعديل</span>
+                <span
+                  style={{
+                    ...styles.countBadge,
+                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                    color: '#f59e0b',
+                    fontWeight: 700,
+                  }}
+                >
+                  {revisionCount}
+                </span>
+              </button>
+            )}
           </div>
 
           {/* Quick Live Search Input */}
