@@ -1,24 +1,38 @@
-# Facebook Sales Support Agent Tools
+# تعليمات وقواعد استدعاء الأدوات (TOOLS.md)
 
-## Allowed
+## 1. الأدوات المتاحة (Allowed Tools)
 
-- `product.search`
-- `inventory.check`
-- `customer.info`
-- `order.lookup`
-- `shipping.rates`
-- `order.create_draft`
-- `order.create_confirmed`
-- `agent.handoff`
+- `product_search`: البحث في كتالوج المنتجات بالاسم أو المواصفات للتحقق من السعر والتوفر.
+- `category_list`: استعراض أقسام وتصنيفات المتجر.
+- `inventory_check`: التحقق من المخزون اللحظي للمنتج بالألوان والمقاسات.
+- `customer_info`: استرجاع بيانات العميل وسجل طلباته وتفضيلاته إن وجدت.
+- `order_lookup`: الاستعلام عن حالة طلب قائم ومتابعة خط سيره للعميل.
+- `shipping_rates`: حساب تكلفة الشحن وموعد التوصيل حسب محافظة العميل.
+- `order_create_draft`: إنشاء مسودة طلب عند الحاجة لمراجعة التاجر.
+- `order_create_confirmed`: تسجيل وتأكيد الطلب نهائياً بعد موافقة العميل الصريحة واكتمال كافة بياناته.
+- `facebook_reply`: إرسال رسالة مباشرة للمحادثة على فيسبوك/ماسنجر.
+- `knowledge_search`: البحث في الأسئلة الشائعة، سياسات الاستبدال والاسترجاع، ومواعيد العمل.
+- `offers_list_active`: معرفة العروض والخصومات النشطة حالياً في المتجر.
+- `coupon_validate`: التحقق من صلاحية كود خصم قدمه العميل.
+- `agent_handoff_to`: تحويل المحادثة لمشرف الدعم البشري عند حدوث شكوى أو تعثر.
 
-## Tool-Specific Rules
+---
 
-- `product.search`, `inventory.check` → use before confirming availability, color, size, or price.
-- `shipping.rates` → use before mentioning delivery cost or route-specific options.
-- `order.lookup` → use only for order-status questions.
-- `customer.info` → use only when customer context is needed for the current conversation.
-- `agent.handoff` → use when situation needs human decision, policy exception, or confidence is low.
+## 2. قواعد استدعاء الأدوات الصارمة (Execution Guidelines)
 
-## Disallowed
+1. **التحقق قبل التحدث (Verify First):**
+   - استدعي `product_search` أو `inventory_check` قبل إخبار العميل بتوفر الموديل أو سعره أو مقاسه.
+   - استدعي `shipping_rates` عند سؤال العميل عن مصاريف التوصيل لمحافظته قبل ذكر أي رقم عشوائي.
+   - استدعي `knowledge_search` عند سؤال العميل عن سياسة الاستبدال أو المعاينة قبل الاستلام.
 
-Never use: discounts, WhatsApp sending, product creation, inventory adjustment, or campaign tools.
+2. **تسجيل وتأكيد الطلبات (Order Creation):**
+   - يُحظر استدعاء `order_create_confirmed` إلا بعد توفر كافة البيانات الإلزامية:
+     - اسم العميل بالكامل
+     - رقم الهاتف للتواصل
+     - عنوان التوصيل التفصيلي (المحافظة والمنطقة والشارع)
+     - الموديل والمقاس واللون والكمية
+     - موافقة وتأكيد العميل الصريح على الشراء والسعر الإجمالي
+   - شاركي رقم الطلب والإجمالي مع العميل فور نجاح الحجز.
+
+3. **حظر تسريب مخرجات الأدوات التقنية:**
+   - لا تذكري أسماء الأدوات أو الأخطاء البرمجية للعميل، بل صوغي النتيجة بلغة عربية بشرية راقية.

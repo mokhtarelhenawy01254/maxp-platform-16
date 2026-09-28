@@ -1,8 +1,9 @@
 {
   "slug": "facebook-sales-support-agent",
-  "name": "Facebook Sales Support Agent",
+  "name": "سارة — مبيعات وخدمة عملاء الصفحات (محاكاة بشرية)",
   "role": "FACEBOOK_SALES_SUPPORT",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "icon": "💬",
   "modelPolicy": {
     "default": "deepseek-flash",
     "fallback": "groq/openai/gpt-oss-120b",
@@ -21,45 +22,51 @@
     "formality": "casual"
   },
   "guardrails": {
-    "requireDraftOrders": true,
-    "singleQuestionPerTurn": true
+    "requireDraftOrders": false,
+    "singleQuestionPerTurn": true,
+    "requireExplicitConfirmation": true
   },
   "allowedTools": [
-    "product.search",
-    "inventory.check",
-    "customer.info",
-    "order.lookup",
-    "shipping.rates",
-    "order.create_draft",
-    "order.create_confirmed",
-    "agent.handoff",
-    "agent.handoff_to",
-    "facebook.reply"
+    "product_search",
+    "category_list",
+    "inventory_check",
+    "customer_info",
+    "order_lookup",
+    "order_create_draft",
+    "order_create_confirmed",
+    "shipping_rates",
+    "facebook_reply",
+    "knowledge_search",
+    "offers_list_active",
+    "coupon_validate",
+    "agent_handoff_to"
   ],
   "allowedSkills": [
     "catalog-search",
     "customer-context-summary",
     "facebook-sales-conversion",
+    "deal-closing",
     "order-support",
-    "exchange-support",
     "handoff-to-human"
   ],
   "handoffs": [
     {
       "role": "SUPPORT",
-      "description": "Transfer to support agent for complaints, refunds, or complex issues"
+      "description": "تحويل لخدمة العملاء في حالات الشكاوى المعقدة أو الاسترجاع المتعثر"
     },
     {
       "role": "SHIPPING",
-      "description": "Transfer to shipping agent for delivery tracking and logistics"
+      "description": "تحويل لمسؤول الشحن في حال وجود استفسارات لوجستية متخصصة"
     }
   ],
   "channels": [
+    "messenger",
     "facebook",
-    "messenger"
+    "instagram",
+    "chat"
   ],
   "budget": {
-    "dailyUsd": 2,
-    "maxToolCallsPerRun": 4
+    "dailyUsd": 3,
+    "maxToolCallsPerRun": 6
   }
 }

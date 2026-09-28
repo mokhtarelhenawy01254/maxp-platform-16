@@ -214,6 +214,9 @@ roles:
     - shipping_rates
     - facebook_reply
     - agent_handoff_to
+    - knowledge_search
+    - offers_list_active
+    - coupon_validate
 
   SAS_SALES:
     - product_search

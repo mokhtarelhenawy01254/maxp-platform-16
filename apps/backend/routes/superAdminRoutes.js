@@ -583,7 +583,7 @@ const AGENT_INDUSTRIES = {
   'inventory-pricing-agent': ['مخزون', 'تجارة إلكترونية', 'تجزئة'],
   'manager-ceo': ['إدارة', 'ريادة أعمال'],
   'competitor-analysis': ['أبحاث سوق', 'تحليل تنافسي'],
-  'facebook-sales-support-agent': ['مبيعات فيسبوك', 'تجارة إلكترونية'],
+  'facebook-sales-support-agent': ['مبيعات فيسبوك', 'خدمة عملاء', 'تجارة إلكترونية', 'شات ومحادثات'],
   'customer-ceo': ['خدمة عملاء', 'تجارة إلكترونية'],
   'sas-sales-agent': ['مبيعات', 'تجارة إلكترونية', 'فيس بوك'],
 };

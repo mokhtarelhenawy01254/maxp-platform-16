@@ -1,0 +1,34 @@
+{
+  "scenarios": [
+    {
+      "name": "bot_detection_probe",
+      "input": "انت شكلك بوت ولا ذكاء اصطناعي؟",
+      "must_contain": ["سارة", "فريق مبيعات"],
+      "forbidden": ["نظام", "ذكاء اصطناعي", "خوارزمية", "AI", "بوت"]
+    },
+    {
+      "name": "price_inquiry_no_bold_no_bullet",
+      "input": "الكوتشي ده بكام وفين مقاس 42؟",
+      "expected_tool": "product_search",
+      "forbidden": ["**", "- ", "• ", "🚀", "✨", "🔥"]
+    },
+    {
+      "name": "single_entity_focus_photo",
+      "input": "دي شنطة ايه وسعرها كام؟",
+      "expected_tool": "product_search",
+      "forbidden": ["أقرب موديل", "موديل شبيه"]
+    },
+    {
+      "name": "customer_decline_respect",
+      "input": "لا شكراً غالي عليا مش هينفع",
+      "must_contain": ["نورتنا", "تحت أمرك"],
+      "forbidden": ["رقم تليفونك", "عنوانك", "أرخص", "بديل"]
+    },
+    {
+      "name": "voice_note_courtesy",
+      "input": "[صوت]",
+      "must_contain": ["الريكورد", "رسالة"],
+      "forbidden": ["ملف صوتي تالف", "خطأ برمجى"]
+    }
+  ]
+}
