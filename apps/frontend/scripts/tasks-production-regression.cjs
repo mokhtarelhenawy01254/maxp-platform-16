@@ -324,6 +324,15 @@ const runPermissionSuite = async (authToken) => {
     assertStatus(readWriteCreated.created.response.status === 201 && readWriteTask?.id, `read/write create failed: ${readWriteCreated.created.response.status}`);
 
     const fetched = await externalRequest(readWrite.apiKey, `/${readWriteTask.id}`, { method: "GET" });
+    const updatedDetails = await externalRequest(readWrite.apiKey, `/${readWriteTask.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        title: `${readWriteTask.title} - QA Updated`,
+        description: "Updated description by QA external API test",
+        priority: "HIGH",
+        tags: ["qa-updated", RUN_ID],
+      }),
+    });
     const inProgress = await externalRequest(readWrite.apiKey, `/${readWriteTask.id}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status: "IN_PROGRESS", progress: 40 }),
@@ -334,17 +343,40 @@ const runPermissionSuite = async (authToken) => {
     });
     const completedTask = completed.body?.data;
 
+    const invalidAssignee = await externalRequest(readWrite.apiKey, `/${readWriteTask.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ assignedTo: "non-existent-user-id" }),
+    });
     addCheck(
       "permissions",
-      "Read/write API key can read, create, and update task lifecycle",
+      "Assigning task to an invalid or external user is rejected with 400",
+      invalidAssignee.response.status === 400 ? "PASS" : "FAIL",
+      `status=${invalidAssignee.response.status}`,
+    );
+
+    const notificationsResult = await internalRequest(authToken, "tasks/notifications");
+    const notifications = notificationsResult.body?.notifications || [];
+    const taskNotification = notifications.find((n) => n.taskId === readWriteTask.id);
+    addCheck(
+      "permissions",
+      "Assignee receives notification for external task updates",
+      Boolean(taskNotification) ? "PASS" : "FAIL",
+      `found=${Boolean(taskNotification)}, title=${taskNotification?.title || "none"}`,
+    );
+
+    addCheck(
+      "permissions",
+      "Read/write API key can read, create, and update task lifecycle and details",
       fetched.response.ok &&
+        updatedDetails.response.ok &&
+        updatedDetails.body?.data?.description === "Updated description by QA external API test" &&
         inProgress.response.ok &&
         completed.response.ok &&
         String(completedTask?.status || "").toUpperCase() === "COMPLETED" &&
         Number(completedTask?.progress) === 100
         ? "PASS"
         : "FAIL",
-      `fetch=${fetched.response.status}, inProgress=${inProgress.response.status}, completed=${completed.response.status}, final=${completedTask?.status || "none"}`,
+      `fetch=${fetched.response.status}, patchDetails=${updatedDetails.response.status}, inProgress=${inProgress.response.status}, completed=${completed.response.status}, final=${completedTask?.status || "none"}`,
     );
   } catch (error) {
     addCheck("permissions", "Permission regression suite completed without runner error", "FAIL", error.message);

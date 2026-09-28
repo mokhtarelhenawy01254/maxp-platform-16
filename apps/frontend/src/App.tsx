@@ -387,6 +387,9 @@ const ConversionToolPage = React.lazy(
 const PaymentOffersSettings = React.lazy(
   () => import("./pages/settings/PaymentOffersSettings"),
 );
+const PostPurchaseOfferBuilderPage = React.lazy(
+  () => import("./pages/marketing/PostPurchaseOfferBuilderPage"),
+);
 const StorefrontVisualEditorPage = React.lazy(
   () => import("./pages/settings/StorefrontVisualEditorPage"),
 );
@@ -6542,6 +6545,20 @@ const AppContent = () => {
                     <Layout>
                       <PaymentOffersSettings />
                     </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/post-purchase-offer"
+                  element={
+                    <Layout>
+                      <PostPurchaseOfferBuilderPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/post-purchase-offer"
+                  element={
+                    <Navigate to="/settings/post-purchase-offer" replace />
                   }
                 />
                   <Route

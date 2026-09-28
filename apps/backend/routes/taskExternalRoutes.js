@@ -15,5 +15,7 @@ router.get('/', requireExternalTaskScope('tasks:read'), taskExternalController.l
 router.get('/:id', requireExternalTaskScope('tasks:read'), taskExternalController.getTaskById);
 router.post('/', requireExternalTaskScope('tasks:write'), taskExternalController.createTask);
 router.patch('/:id/status', requireExternalTaskScope('tasks:write'), taskExternalController.updateTaskStatus);
+router.patch('/:id', requireExternalTaskScope('tasks:update'), taskExternalController.updateTask);
+router.put('/:id', requireExternalTaskScope('tasks:update'), taskExternalController.updateTask);
 
 module.exports = router;

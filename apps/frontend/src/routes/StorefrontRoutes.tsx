@@ -1,6 +1,12 @@
 import React from 'react';
 import { Route, Navigate } from 'react-router-dom';
 
+/**
+ * ARCHITECTURAL NOTICE:
+ * All storefront and settings routes are registered directly and centrally in `App.tsx`.
+ * Do not declare routes here without importing them in `App.tsx`.
+ */
+
 const Layout = React.lazy(() => import('../components/layout/Layout'));
 
 const StoreSettings = React.lazy(() => import('../pages/settings/StoreSettings'));

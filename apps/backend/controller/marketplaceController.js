@@ -1585,9 +1585,14 @@ exports.installApp = async (req, res) => {
         const effectiveCost = isTrialActive ? 0 : cost;
 
         if (effectiveCost > 0 && Number(wallet.balance) < effectiveCost) {
-          throw new Error(
+          const err = new Error(
             `رصيد المحفظة غير كافٍ. المطلوب: ${effectiveCost} ${wallet.currency}، المتوفر: ${wallet.balance} ${wallet.currency}`
           );
+          err.code = 'INSUFFICIENT_WALLET_BALANCE';
+          err.requiredAmount = effectiveCost;
+          err.currentBalance = Number(wallet.balance);
+          err.currency = wallet.currency;
+          throw err;
         }
 
         if (effectiveCost > 0) {
@@ -1691,10 +1696,14 @@ exports.installApp = async (req, res) => {
       });
     }
 
-    if (error.message && error.message.includes('رصيد المحفظة')) {
-      return res.status(402).json({
+    if (error.code === 'INSUFFICIENT_WALLET_BALANCE' || (error.message && error.message.includes('رصيد المحفظة'))) {
+      return res.status(400).json({
         success: false,
-        message: error.message
+        code: 'INSUFFICIENT_WALLET_BALANCE',
+        message: error.message || 'رصيد المحفظة غير كافٍ لإتمام التفعيل',
+        requiredAmount: error.requiredAmount !== undefined ? error.requiredAmount : null,
+        currentBalance: error.currentBalance !== undefined ? error.currentBalance : null,
+        currency: error.currency || 'EGP'
       });
     }
 
@@ -2189,7 +2198,12 @@ exports.subscribeToBundle = async (req, res) => {
         }
 
         if (Number(wallet.balance) < Number(bundle.monthlyPrice)) {
-          throw new Error(`رصيد المحفظة غير كافٍ. المطلوب: ${bundle.monthlyPrice} ${wallet.currency}، المتوفر: ${wallet.balance} ${wallet.currency}`);
+          const err = new Error(`رصيد المحفظة غير كافٍ. المطلوب: ${bundle.monthlyPrice} ${wallet.currency}، المتوفر: ${wallet.balance} ${wallet.currency}`);
+          err.code = 'INSUFFICIENT_WALLET_BALANCE';
+          err.requiredAmount = Number(bundle.monthlyPrice);
+          err.currentBalance = Number(wallet.balance);
+          err.currency = wallet.currency;
+          throw err;
         }
 
         await tx.companyWallet.update({
@@ -2318,6 +2332,17 @@ exports.subscribeToBundle = async (req, res) => {
     res.json({ success: true, message: `تم الاشتراك في ${bundle.name} وتفعيل ${bundleAppIds.length} أداة بنجاح!` });
 
   } catch (error) {
+    if (error.code === 'INSUFFICIENT_WALLET_BALANCE' || (error.message && error.message.includes('رصيد المحفظة'))) {
+      return res.status(400).json({
+        success: false,
+        code: 'INSUFFICIENT_WALLET_BALANCE',
+        message: error.message || 'رصيد المحفظة غير كافٍ للاشتراك في هذه الباقة',
+        requiredAmount: error.requiredAmount !== undefined ? error.requiredAmount : null,
+        currentBalance: error.currentBalance !== undefined ? error.currentBalance : null,
+        currency: error.currency || 'EGP'
+      });
+    }
+
     console.error('Error subscribing to bundle:', error);
     res.status(400).json({
       success: false,

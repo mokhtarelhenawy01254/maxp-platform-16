@@ -235,7 +235,8 @@ interface TaskIntegrationsTabProps {
 
 const TASK_SCOPE_OPTIONS = [
   { value: "tasks:read", label: "قراءة المهام" },
-  { value: "tasks:write", label: "إنشاء وتحديث المهام" },
+  { value: "tasks:write", label: "إنشاء وتحديث حالة المهام" },
+  { value: "tasks:update", label: "تعديل بيانات المهام" },
 ];
 
 const TASK_WEBHOOK_EVENTS = [
@@ -692,6 +693,20 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
   }'`,
     [externalApiBaseUrl, sampleAssignedUserId],
   );
+  const updateTaskSnippet = useMemo(
+    () => `curl -X PATCH "${externalApiBaseUrl}/TASK_ID" \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -d '{
+    "title": "متابعة عميل خارجي معدلة",
+    "description": "تم تحديث وصف وتفاصيل المهمة من التكامل الخارجي",
+    "priority": "HIGH",
+    "dueDate": "2026-10-15T15:00:00.000Z",
+    "tags": ["external", "updated"],
+    "assignedTo": "${sampleAssignedUserId}"
+  }'`,
+    [externalApiBaseUrl, sampleAssignedUserId],
+  );
   const updateStatusSnippet = useMemo(
     () => `curl -X PATCH "${externalApiBaseUrl}/TASK_ID/status" \\
   -H "Content-Type: application/json" \\
@@ -1134,7 +1149,8 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
     }
 
     if (
-      credentialForm.scopes.includes("tasks:write") &&
+      (credentialForm.scopes.includes("tasks:write") ||
+        credentialForm.scopes.includes("tasks:update")) &&
       !credentialForm.actorUserId.trim()
     ) {
       tToast.error("taskIntegrations.msg_7395");
@@ -1866,7 +1882,7 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
 
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-border/60 bg-background/75 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                3 أمثلة جاهزة
+                4 أمثلة جاهزة
               </span>
               <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
             </div>
@@ -1880,20 +1896,24 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
                 </div>
                 <div className="space-y-2">
                   <h4 className="font-semibold text-foreground">
-                    ملاحظات الأمان
+                    ملاحظات الأمان وقواعد الصلاحيات
                   </h4>
                   <ul className="space-y-2 text-sm leading-6 text-muted-foreground">
                     <li>
+                      نقطة `PATCH /api/v1/external/tasks/:id` تدعم تحديث
+                      العنوان، الوصف، الأولوية، الموعد، الوسوم، والمسؤول،
+                      وترسل إشعارًا فوريًا للمكلف بالمهمة.
+                    </li>
+                    <li>
+                      لا يمكن الوصول أو تعديل مهام أي شركة أخرى عبر التكامل الخارجي (تُرفض بـ 404 Not Found).
+                    </li>
+                    <li>
+                      صلاحيات `tasks:write` و `tasks:update` تحتاج مستخدم تنفيذ افتراضي نشط داخل نفس
+                      الشركة، وأي مستخدم مسؤول يُسند إليه العمل يجب أن يكون نشطًا بالشركة.
+                    </li>
+                    <li>
                       احتفظ بالـ API key أو signing secret في النظام الخارجي فور
-                      إنشائها.
-                    </li>
-                    <li>
-                      صلاحية `tasks:write` تحتاج مستخدم تنفيذ افتراضي داخل نفس
-                      الشركة.
-                    </li>
-                    <li>
-                      يمكنك تدوير المفتاح أو الـ secret وقت الحاجة دون تعديل
-                      باقي الإعدادات.
+                      إنشائها، ويمكنك تدويرها عند الحاجة بأمان.
                     </li>
                   </ul>
                 </div>
@@ -1911,10 +1931,11 @@ export const TaskIntegrationsTab: React.FC<TaskIntegrationsTabProps> = ({
               ))}
             </div>
 
-            <div className="mt-4 grid gap-4 xl:grid-cols-3">
+            <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
               {[
                 { title: "قراءة المهام", value: listTasksSnippet },
                 { title: "إنشاء مهمة", value: createTaskSnippet },
+                { title: "تعديل بيانات المهمة", value: updateTaskSnippet },
                 { title: "تحديث الحالة", value: updateStatusSnippet },
               ].map((snippet) => (
                 <div

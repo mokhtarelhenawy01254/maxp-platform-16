@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 
-const TASK_API_SCOPES = ['tasks:read', 'tasks:write'];
+const TASK_API_SCOPES = ['tasks:read', 'tasks:write', 'tasks:update'];
+const TASK_API_DEFAULT_SCOPES = ['tasks:read', 'tasks:write'];
 const AGENT_INBOX_API_SCOPES = [
   'facebook-inbox:read',
   'facebook-inbox:evaluate',
@@ -84,7 +85,7 @@ const serializeJson = (value, fallback = null) => {
   return JSON.stringify(value);
 };
 
-const normalizeScopes = (value, fallback = TASK_API_SCOPES) => {
+const normalizeScopes = (value, fallback = TASK_API_DEFAULT_SCOPES) => {
   const requestedScopes = parseStoredArray(value);
   const normalized = requestedScopes
     .map((scope) => String(scope).trim().toLowerCase())
@@ -215,13 +216,23 @@ const hashTaskApiKey = (rawKey) => crypto.createHash('sha256').update(String(raw
 
 const credentialHasScope = (credential, requiredScope) => {
   const scopes = normalizeScopes(credential?.scopes || []);
-  return scopes.includes('*') || scopes.includes(requiredScope);
+  if (scopes.includes('*') || scopes.includes(requiredScope)) {
+    return true;
+  }
+  if (requiredScope === 'tasks:update' && scopes.includes('tasks:write')) {
+    return true;
+  }
+  if (requiredScope === 'tasks:write' && scopes.includes('tasks:update')) {
+    return true;
+  }
+  return false;
 };
 
 module.exports = {
   AGENT_INBOX_API_SCOPES,
   AGENT_INBOX_DEFAULT_SCOPES,
   EXTERNAL_API_SCOPES,
+  TASK_API_DEFAULT_SCOPES,
   TASK_API_SCOPES,
   TASK_WEBHOOK_EVENTS,
   TASK_WEBHOOK_PROVIDER_TYPES,

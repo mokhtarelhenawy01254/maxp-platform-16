@@ -346,6 +346,37 @@
           }
         },
         {
+          "name": "Update Task Details",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"مراجعة تصميم الصفحة الجديدة - محدث\",\n  \"description\": \"تم تحديث وصف وتفاصيل المهمة من التكامل الخارجي\",\n  \"priority\": \"URGENT\",\n  \"dueDate\": \"2026-04-15T15:00:00.000Z\",\n  \"tags\": [\"external\", \"updated\", \"crm\"],\n  \"assignedTo\": \"{{assignedTo}}\"\n}"
+            },
+            "url": {
+              "raw": "{{externalTasksBaseUrl}}/{{taskId}}",
+              "host": [
+                "{{externalTasksBaseUrl}}"
+              ],
+              "path": [
+                "{{taskId}}"
+              ]
+            }
+          }
+        },
+        {
           "name": "Update Task Status",
           "request": {
             "method": "PATCH",

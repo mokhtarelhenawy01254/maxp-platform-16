@@ -72,6 +72,14 @@ final class ExternalTasksApiService
             ->json();
     }
 
+    public function updateTask(string $taskId, array $payload): array
+    {
+        return $this->client()
+            ->patch("/{$taskId}", $payload)
+            ->throw()
+            ->json();
+    }
+
     public function updateTaskStatus(string $taskId, string $status, ?int $progress = null): array
     {
         return $this->client()
@@ -111,6 +119,12 @@ final class ExternalTasksApiService
 | ]);
 |
 | $taskId = $createdTask['data']['id'];
+| $service->updateTask($taskId, [
+|     'title' => 'Laravel Integration Task - Updated',
+|     'description' => 'Updated task description from Laravel service',
+|     'priority' => 'URGENT',
+|     'tags' => ['laravel', 'external-api', 'updated'],
+| ]);
 | $service->updateTaskStatus($taskId, 'IN_PROGRESS', 60);
 | $task = $service->getTask($taskId);
 |

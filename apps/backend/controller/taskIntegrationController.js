@@ -389,7 +389,7 @@ const taskIntegrationController = {
       }
 
       const normalizedScopes = normalizeScopes(scopes);
-      if (normalizedScopes.includes('tasks:write') && !userId && !defaultActingUserId) {
+      if ((normalizedScopes.includes('tasks:write') || normalizedScopes.includes('tasks:update')) && !userId && !defaultActingUserId) {
         return res.status(400).json({
           success: false,
           message: 'المفاتيح التي تملك صلاحية كتابة تحتاج userId أو defaultActingUserId'
@@ -487,7 +487,7 @@ const taskIntegrationController = {
         ? normalizeScopes(scopes)
         : normalizeScopes(parseStoredArray(existingCredential.scopes));
 
-      if (nextScopes.includes('tasks:write') && !nextUserId && !nextDefaultActingUserId) {
+      if ((nextScopes.includes('tasks:write') || nextScopes.includes('tasks:update')) && !nextUserId && !nextDefaultActingUserId) {
         return res.status(400).json({
           success: false,
           message: 'المفاتيح التي تملك صلاحية كتابة تحتاج userId أو defaultActingUserId'

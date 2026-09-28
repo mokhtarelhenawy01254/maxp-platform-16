@@ -53,6 +53,13 @@ class ExternalTasksApiClient {
     return this.request(`/${taskId}`, { method: "GET" });
   }
 
+  updateTask(taskId, payload) {
+    return this.request(`/${taskId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  }
+
   updateTaskStatus(taskId, status, progress) {
     return this.request(`/${taskId}/status`, {
       method: "PATCH",
@@ -112,7 +119,14 @@ const main = async () => {
 
     createdTaskId = createdTask.data?.id || null;
 
-    const updatedTask = await client.updateTaskStatus(
+    const updatedTaskDetails = await client.updateTask(createdTaskId, {
+      title: `${createdTask.data.title} (Updated)`,
+      description: "Updated description from Node.js external integration script",
+      priority: "URGENT",
+      tags: ["node-example", "external-api", "updated"],
+    });
+
+    const updatedTaskStatus = await client.updateTaskStatus(
       createdTaskId,
       "IN_PROGRESS",
       45,
@@ -125,7 +139,8 @@ const main = async () => {
         {
           success: true,
           createdTask: createdTask.data,
-          updatedTask: updatedTask.data,
+          updatedTaskDetails: updatedTaskDetails.data,
+          updatedTaskStatus: updatedTaskStatus.data,
           fetchedTask: fetchedTask.data,
           totalTasksVisible: tasksList.pagination?.total || 0,
         },

@@ -34,8 +34,9 @@ http://localhost:3007/api/v1/external/tasks
 
 - `tasks:read`
 - `tasks:write`
+- `tasks:update`
 
-المفاتيح التي تملك `tasks:write` يجب أن تكون مرتبطة بـ:
+المفاتيح التي تملك `tasks:write` أو `tasks:update` يجب أن تكون مرتبطة بـ:
 
 - `userId` لمفتاح مستخدم
 - أو `defaultActingUserId` لمفتاح شركة
@@ -47,11 +48,15 @@ http://localhost:3007/api/v1/external/tasks
 - `GET /api/v1/external/tasks/projects`
 - `GET /api/v1/external/tasks/users`
 - `POST /api/v1/external/tasks`
+- `PATCH /api/v1/external/tasks/:id`
+- `PUT /api/v1/external/tasks/:id`
 - `PATCH /api/v1/external/tasks/:id/status`
 
 ### Important Behavior
 
-- أي `create` أو `status update` يتم عبر `External Tasks API` سيطلق أيضًا `outbound webhook events` إذا كانت الشركة مفعّلة لها Webhooks للأحداث المناسبة.
+- أي `create` أو `update` أو `status update` يتم عبر `External Tasks API` سيطلق أيضًا `outbound webhook events` إذا كانت الشركة مفعّلة لها Webhooks للأحداث المناسبة (`task.created` أو `task.updated` أو `task.status_changed`).
+- أي تعديل على تفاصيل المهمة عبر `PATCH /api/v1/external/tasks/:id` يتطلب سكوب `tasks:update` ويرسل إشعارًا فوريًا للمكلف بالمهمة (المسؤول) والمنشئ والمتابعين، ويسجل في سجل النشاطات (`taskActivity`).
+- قواعد الصلاحيات: محاولة تعديل مهمة تابعة لشركة أخرى تُرفض بـ `404 Not Found` لعزل بيانات الشركات، والمستخدم المكلّف فقط (غير المدير وغير المنشئ) يُمنع من تعديل بيانات المهمة بـ `403 Forbidden`.
 
 ### Ready Files
 
@@ -86,7 +91,50 @@ http://localhost:3007/api/v1/external/tasks
 }
 ```
 
-### Update Status Example
+### Update Task Example (PATCH /api/v1/external/tasks/:id)
+
+تتيح نقطة التعديل تحديث حقول المهمة دون الحاجة لفتح الواجهة يدويًا:
+- `title` (العنوان): نص غير فارغ.
+- `description` (الوصف): نص غير فارغ يظهر مباشرة في تفاصيل المهمة بالواجهة.
+- `priority` (الأولوية): `LOW` | `MEDIUM` | `HIGH` | `URGENT`.
+- `dueDate` (الموعد): تاريخ بصيغة ISO-8601 (أو `null` لإلغاء الموعد).
+- `tags` (الوسوم): مصفوفة نصوص مثل `["crm", "priority-client"]`.
+- `assignedTo` (المسؤول): معرّف مستخدم نشط في نفس الشركة (إلزامي التحقق من نشاطه ووجوده في نفس الشركة).
+
+```bash
+curl -X PATCH "http://localhost:3007/api/v1/external/tasks/TASK_ID" \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{
+    "title": "مراجعة تصميم الصفحة الجديدة - محدث",
+    "description": "تم تحديث وصف المهمة تلقائيًا من التكامل الخارجي",
+    "priority": "URGENT",
+    "dueDate": "2026-04-15T15:00:00.000Z",
+    "tags": ["external", "updated", "crm"],
+    "assignedTo": "active-company-user-id"
+  }'
+```
+
+استجابة نموذجية:
+```json
+{
+  "success": true,
+  "data": {
+    "id": "task-id",
+    "title": "مراجعة تصميم الصفحة الجديدة - محدث",
+    "description": "تم تحديث وصف المهمة تلقائيًا من التكامل الخارجي",
+    "status": "PENDING",
+    "priority": "URGENT",
+    "assignedTo": "active-company-user-id",
+    "assignedToName": "Hossam Assignee",
+    "dueDate": "2026-04-15T15:00:00.000Z",
+    "tags": ["external", "updated", "crm"]
+  },
+  "message": "Task updated successfully"
+}
+```
+
+### Update Status Example (PATCH /api/v1/external/tasks/:id/status)
 
 ```json
 {

@@ -545,6 +545,18 @@ const taskExternalController = {
       });
 
       if (!currentTask) {
+        const otherCompanyTask = await prisma.task.findUnique({
+          where: { id },
+          select: { id: true, companyId: true }
+        });
+
+        if (otherCompanyTask) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied: Cannot modify task belonging to another company'
+          });
+        }
+
         return res.status(404).json({
           success: false,
           message: 'Task not found'
@@ -650,6 +662,411 @@ const taskExternalController = {
       return res.status(error.statusCode || 500).json({
         success: false,
         message: error.message || 'Failed to update task status'
+      });
+    }
+  },
+
+  updateTask: async (req, res) => {
+    try {
+      const prisma = getSharedPrismaClient();
+      const { companyId, integrationName, actingUserId } = getIntegrationContext(req);
+      const { id } = req.params;
+      const title = req.body.title;
+      const description = req.body.description;
+      const priority = req.body.priority;
+      const dueDate = req.body.dueDate !== undefined ? req.body.dueDate : req.body.due_date;
+      const tags = req.body.tags;
+      const assignedTo = req.body.assignedTo !== undefined ? req.body.assignedTo : req.body.assigned_to;
+      const projectId = req.body.projectId !== undefined ? req.body.projectId : req.body.project_id;
+      const startDate = req.body.startDate !== undefined ? req.body.startDate : req.body.start_date;
+      const estimatedHours = req.body.estimatedHours !== undefined ? req.body.estimatedHours : req.body.estimated_hours;
+      const status = req.body.status;
+      const progress = req.body.progress;
+
+      if (!actingUserId) {
+        return res.status(400).json({
+          success: false,
+          message: 'This API key does not have an acting user for write operations'
+        });
+      }
+
+      const updatableFields = [
+        title,
+        description,
+        priority,
+        dueDate,
+        tags,
+        assignedTo,
+        projectId,
+        startDate,
+        estimatedHours,
+        status,
+        progress
+      ];
+      if (updatableFields.every((val) => val === undefined)) {
+        return res.status(400).json({
+          success: false,
+          message: 'At least one field to update must be provided'
+        });
+      }
+
+      const currentTask = await prisma.task.findFirst({
+        where: { id, companyId },
+        include: {
+          project: {
+            select: { id: true, name: true }
+          },
+          assignee: {
+            select: { id: true, firstName: true, lastName: true, phone: true }
+          },
+          creator: {
+            select: { id: true, firstName: true, lastName: true }
+          }
+        }
+      });
+
+      if (!currentTask) {
+        const otherCompanyTask = await prisma.task.findUnique({
+          where: { id },
+          select: { id: true, companyId: true }
+        });
+
+        if (otherCompanyTask) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied: Cannot modify task belonging to another company'
+          });
+        }
+
+        return res.status(404).json({
+          success: false,
+          message: 'Task not found'
+        });
+      }
+
+      const actorUserId = actingUserId;
+
+      // Check whether acting user is a manager or admin
+      const actingUser = await prisma.user.findFirst({
+        where: buildCompanyUserWhere(companyId, {
+          id: actorUserId,
+          isActive: true
+        }),
+        select: { id: true, role: true }
+      });
+
+      const isManagerOrAdmin = actingUser && [
+        'SUPER_ADMIN',
+        'COMPANY_ADMIN',
+        'OWNER',
+        'MANAGER'
+      ].includes(String(actingUser.role || '').toUpperCase());
+
+      // Non-managers who are not the creator (e.g. assignee only) cannot edit task details (403)
+      if (!isManagerOrAdmin && currentTask.createdBy !== actorUserId) {
+        return res.status(403).json({
+          success: false,
+          message: 'غير مصرح للمكلّف فقط بتعديل بيانات المهمة'
+        });
+      }
+
+      const updateData = {};
+      const changeList = [];
+
+      if (title !== undefined) {
+        if (typeof title !== 'string' || !title.trim()) {
+          return res.status(400).json({
+            success: false,
+            message: 'title cannot be empty'
+          });
+        }
+        updateData.title = title.trim();
+        if (updateData.title !== currentTask.title) {
+          changeList.push('العنوان');
+        }
+      }
+
+      if (description !== undefined) {
+        if (typeof description !== 'string' || !description.trim()) {
+          return res.status(400).json({
+            success: false,
+            message: 'description cannot be empty'
+          });
+        }
+        updateData.description = description.trim();
+        if (updateData.description !== currentTask.description) {
+          changeList.push('الوصف');
+        }
+      }
+
+      if (priority !== undefined) {
+        const normalizedPriority = normalizePriority(priority);
+        updateData.priority = normalizedPriority;
+        if (updateData.priority !== currentTask.priority) {
+          changeList.push('الأولوية');
+        }
+      }
+
+      if (dueDate !== undefined) {
+        if (dueDate === null || dueDate === '') {
+          updateData.dueDate = null;
+        } else {
+          const parsedDue = new Date(dueDate);
+          if (Number.isNaN(parsedDue.getTime())) {
+            return res.status(400).json({
+              success: false,
+              message: 'dueDate is invalid'
+            });
+          }
+          updateData.dueDate = parsedDue;
+        }
+        const currentDueMs = currentTask.dueDate ? new Date(currentTask.dueDate).getTime() : null;
+        const newDueMs = updateData.dueDate ? updateData.dueDate.getTime() : null;
+        if (currentDueMs !== newDueMs) {
+          changeList.push('موعد التسليم');
+        }
+      }
+
+      if (tags !== undefined) {
+        const parsedTags = parseStoredArray(tags);
+        updateData.tags = serializeArray(parsedTags);
+        changeList.push('الوسوم');
+      }
+
+      if (assignedTo !== undefined) {
+        if (!assignedTo) {
+          return res.status(400).json({
+            success: false,
+            message: 'assignedTo cannot be empty'
+          });
+        }
+        const assignee = await findCompanyUser(prisma, companyId, assignedTo);
+        if (!assignee) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid assignedTo for this company'
+          });
+        }
+        updateData.assignedTo = assignee.id;
+        if (updateData.assignedTo !== currentTask.assignedTo) {
+          changeList.push('المكلّف');
+        }
+      }
+
+      if (projectId !== undefined) {
+        if (projectId === null || projectId === '') {
+          updateData.projectId = null;
+        } else {
+          const project = await prisma.project.findFirst({
+            where: { id: projectId, companyId },
+            select: { id: true, name: true }
+          });
+          if (!project) {
+            return res.status(400).json({
+              success: false,
+              message: 'Invalid projectId for this company'
+            });
+          }
+          updateData.projectId = project.id;
+        }
+        if (updateData.projectId !== currentTask.projectId) {
+          changeList.push('المشروع');
+        }
+      }
+
+      if (startDate !== undefined) {
+        if (startDate === null || startDate === '') {
+          updateData.startDate = null;
+        } else {
+          const parsedStart = new Date(startDate);
+          if (Number.isNaN(parsedStart.getTime())) {
+            return res.status(400).json({
+              success: false,
+              message: 'startDate is invalid'
+            });
+          }
+          updateData.startDate = parsedStart;
+        }
+      }
+
+      if (estimatedHours !== undefined) {
+        const parsedHours = Number(estimatedHours);
+        if (!Number.isFinite(parsedHours) || parsedHours < 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'estimatedHours must be a non-negative number'
+          });
+        }
+        updateData.estimatedHours = parsedHours;
+        if (parsedHours !== Number(currentTask.estimatedHours || 0)) {
+          changeList.push('الساعات التقديرية');
+        }
+      }
+
+      let effectiveStatus = currentTask.status;
+      let statusChanged = false;
+      if (status !== undefined) {
+        const normalizedStatus = normalizeStatus(status);
+        effectiveStatus = normalizedStatus;
+        updateData.status = effectiveStatus;
+        if (effectiveStatus !== currentTask.status) {
+          statusChanged = true;
+          changeList.push('الحالة');
+          if (effectiveStatus === 'COMPLETED') {
+            updateData.completedDate = new Date();
+          } else if (currentTask.status === 'COMPLETED') {
+            updateData.completedDate = null;
+          }
+        }
+      }
+
+      if (progress !== undefined) {
+        const numericProgress = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)));
+        updateData.progress = numericProgress;
+        if (numericProgress !== currentTask.progress) {
+          changeList.push('نسبة الإنجاز');
+        }
+      } else if (statusChanged && (effectiveStatus === 'COMPLETED' || effectiveStatus === 'IN_REVIEW')) {
+        updateData.progress = 100;
+      }
+
+      const updatedTask = await prisma.task.update({
+        where: { id },
+        data: updateData,
+        include: {
+          project: {
+            select: { id: true, name: true }
+          },
+          assignee: {
+            select: { id: true, firstName: true, lastName: true, phone: true }
+          },
+          creator: {
+            select: { id: true, firstName: true, lastName: true }
+          }
+        }
+      });
+
+      const changeDesc = changeList.length > 0 ? changeList.join('، ') : 'بيانات المهمة';
+
+      await createTaskActivity(prisma, {
+        taskId: updatedTask.id,
+        userId: actorUserId,
+        companyId,
+        action: 'external_task_update',
+        description: `Task updated by external integration: ${integrationName} (${changeDesc})`
+      });
+
+      const isReassigned = updateData.assignedTo !== undefined && updateData.assignedTo !== currentTask.assignedTo;
+
+      if (isReassigned) {
+        // Send notification to newly assigned user
+        if (updatedTask.assignedTo) {
+          await taskNotificationService.notify({
+            companyId,
+            taskId: updatedTask.id,
+            userId: updatedTask.assignedTo,
+            type: 'task_assigned',
+            title: 'مهمة مسندة إليك من تكامل خارجي',
+            message: `تم تكليفك بمهمة "${updatedTask.title}" من خلال ${integrationName}`,
+            link: `/tasks/${updatedTask.id}`,
+            whatsappData: {
+              templateName: 'TASK_CREATED',
+              taskTitle: updatedTask.title,
+              variables: taskNotificationService.helpers.buildTaskVariables(updatedTask)
+            },
+            actorUserId,
+            logActivity: true,
+            activityDescription: `تم إرسال إشعار تكليف للمسؤول الجديد من ${integrationName}`
+          });
+        }
+
+        // Notify old assignee of reassignment if existed
+        if (currentTask.assignedTo) {
+          await taskNotificationService.notify({
+            companyId,
+            taskId: updatedTask.id,
+            userId: currentTask.assignedTo,
+            type: 'task_updated',
+            title: 'إلغاء تكليفك بمهمة',
+            message: `تم نقل المسؤولية عن المهمة "${updatedTask.title}" إلى مستخدم آخر من خلال ${integrationName}`,
+            link: `/tasks/${updatedTask.id}`,
+            actorUserId,
+            logActivity: false
+          }).catch(() => {});
+        }
+      } else if (updatedTask.assignedTo) {
+        // Send notification to current assignee (المكلّف)
+        await taskNotificationService.notify({
+          companyId,
+          taskId: updatedTask.id,
+          userId: updatedTask.assignedTo,
+          type: statusChanged ? 'status_changed' : 'task_updated',
+          title: statusChanged ? 'تحديث خارجي لحالة المهمة' : 'تحديث خارجي للمهمة',
+          message: `تم تحديث ${changeDesc} للمهمة "${updatedTask.title}" من خلال ${integrationName}`,
+          link: `/tasks/${updatedTask.id}`,
+          whatsappData: {
+            templateName: statusChanged ? 'TASK_STATUS_CHANGED' : 'TASK_UPDATED',
+            taskTitle: updatedTask.title,
+            variables: taskNotificationService.helpers.buildTaskVariables(updatedTask, {
+              changes: changeDesc
+            })
+          },
+          actorUserId,
+          logActivity: true,
+          activityDescription: `تم إرسال إشعار تحديث خارجي للمهمة إلى المكلف من ${integrationName}`
+        });
+      }
+
+      // Notify other stakeholders (creator & watchers)
+      await taskNotificationService.notifyTaskStakeholders({
+        companyId,
+        task: updatedTask,
+        actorUserId,
+        type: statusChanged ? 'status_changed' : 'task_updated',
+        title: statusChanged ? 'تحديث خارجي لحالة المهمة' : 'تحديث خارجي للمهمة',
+        message: `تم تحديث ${changeDesc} للمهمة "${updatedTask.title}" من خلال ${integrationName}`,
+        includeAssignee: false,
+        includeCreator: true,
+        includeWatchers: true,
+        whatsappData: {
+          templateName: statusChanged ? 'TASK_STATUS_CHANGED' : 'TASK_UPDATED',
+          taskTitle: updatedTask.title,
+          variables: taskNotificationService.helpers.buildTaskVariables(updatedTask, {
+            changes: changeDesc
+          })
+        },
+        logActivity: true,
+        activityDescription: `تم إرسال إشعار تحديث خارجي للمهمة من ${integrationName}`
+      });
+
+      queueTaskWebhook('task.updated', {
+        companyId,
+        actorUserId,
+        requestId: req.id,
+        task: updatedTask,
+        previousTask: currentTask
+      });
+
+      if (statusChanged) {
+        queueTaskWebhook('task.status_changed', {
+          companyId,
+          actorUserId,
+          requestId: req.id,
+          task: updatedTask,
+          previousTask: currentTask
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: formatTask(updatedTask),
+        message: 'Task updated successfully'
+      });
+    } catch (error) {
+      console.error('❌ [EXTERNAL-TASKS] Failed to update task:', error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || 'Failed to update task'
       });
     }
   }
