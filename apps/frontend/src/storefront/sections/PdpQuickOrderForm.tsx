@@ -2205,8 +2205,12 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                   <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
                     <span>
                       {prefersArabicCopy
-                        ? `خصم الدفع الإلكتروني (${walletDiscountPercent}%)`
-                        : `Electronic payment discount (${walletDiscountPercent}%)`}
+                        ? paymentMethod === "card"
+                          ? `خصم الدفع بالبطاقة / فيزا (${walletDiscountPercent}%)`
+                          : `خصم الدفع بالمحفظة (${walletDiscountPercent}%)`
+                        : paymentMethod === "card"
+                          ? `Card payment discount (${walletDiscountPercent}%)`
+                          : `Wallet payment discount (${walletDiscountPercent}%)`}
                     </span>
                     <span className="font-semibold text-emerald-600">
                       -{formatStorefrontCurrency(walletDiscount, currency)}
@@ -2274,34 +2278,49 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                       <button
                         type="button"
                         onClick={() => setPaymentMethod("wallet")}
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                           paymentMethod === "wallet"
                             ? "border-emerald-600 bg-emerald-600 text-white"
                             : "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-700 dark:bg-gray-900 dark:text-emerald-200"
                         }`}
                       >
-                        {prefersArabicCopy ? "الدفع بالمحفظة" : "Wallet payment"}
+                        <span>{prefersArabicCopy ? "الدفع بالمحفظة" : "Wallet payment"}</span>
+                        {walletDiscountEnabled && walletDiscountPercent > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
+                          <span
+                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                              paymentMethod === "wallet"
+                                ? "bg-white text-emerald-800"
+                                : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200"
+                            }`}
+                          >
+                            خصم {walletDiscountPercent}%
+                          </span>
+                        ) : null}
                       </button>
                     ) : null}
                     {isCardActive ? (
                       <button
                         type="button"
                         onClick={() => setPaymentMethod("card")}
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                           paymentMethod === "card"
                             ? "border-emerald-600 bg-emerald-600 text-white"
                             : "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-700 dark:bg-gray-900 dark:text-emerald-200"
                         }`}
                       >
-                        💳 {prefersArabicCopy ? "بطاقة بنكية / فيزا" : "Card"}
+                        <span>💳 {prefersArabicCopy ? "بطاقة بنكية / فيزا" : "Card"}</span>
+                        {walletDiscountEnabled && walletDiscountPercent > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
+                          <span
+                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                              paymentMethod === "card"
+                                ? "bg-white text-emerald-800"
+                                : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200"
+                            }`}
+                          >
+                            خصم {walletDiscountPercent}%
+                          </span>
+                        ) : null}
                       </button>
-                    ) : null}
-                    {walletDiscountEnabled && walletDiscountPercent > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
-                      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
-                        🎁 {prefersArabicCopy
-                          ? `خصم ${walletDiscountPercent}%`
-                          : `${walletDiscountPercent}% off`}
-                      </span>
                     ) : null}
                   </div>
                 </div>
@@ -2309,13 +2328,32 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                 {walletDiscountEnabled && walletDiscountPercent > 0 && paymentMethod === "cod" ? (
                   <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
                     💡 {prefersArabicCopy
-                      ? `وفّر ${walletDiscountPercent}% فوراً عند اختيار الدفع الإلكتروني المسبق (المحفظة أو البطاقة)`
-                      : `Save ${walletDiscountPercent}% instantly by choosing electronic payment`}
+                      ? (isCardActive && !walletEnabled
+                          ? `وفّر ${walletDiscountPercent}% فوراً عند اختيار الدفع بالبطاقة البنكية / فيزا (الدفع عند الاستلام متاح بالسعر الأصلي بدون خصم)`
+                          : `وفّر ${walletDiscountPercent}% فوراً عند اختيار الدفع الإلكتروني المسبق (الدفع عند الاستلام متاح بالسعر الأصلي بدون خصم)`)
+                      : `Save ${walletDiscountPercent}% instantly by choosing card payment (Cash on delivery is regular price without discount)`}
                   </p>
                 ) : null}
 
                 {paymentMethod === "card" ? (
                   <div className="space-y-2 rounded-xl border border-emerald-300/80 bg-white/80 p-3.5 shadow-xs dark:border-emerald-800/60 dark:bg-emerald-950/40">
+                    {walletDiscount > 0 ? (
+                      <div className="flex items-center justify-between gap-2 rounded-lg bg-emerald-100/90 px-3 py-1.5 text-xs font-bold text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-100">
+                        <span className="flex items-center gap-1.5">
+                          <span>🎉</span>
+                          <span>
+                            {prefersArabicCopy
+                              ? `تم تطبيق خصم الفيزا (${walletDiscountPercent}%) بنجاح!`
+                              : `Card discount (${walletDiscountPercent}%) applied!`}
+                          </span>
+                        </span>
+                        <span className="text-emerald-700 dark:text-emerald-300">
+                          {prefersArabicCopy
+                            ? `وفّرت ${formatStorefrontCurrency(walletDiscount, currency)}`
+                            : `Saved ${formatStorefrontCurrency(walletDiscount, currency)}`}
+                        </span>
+                      </div>
+                    ) : null}
                     <p className="text-xs font-bold text-emerald-900 dark:text-emerald-100 flex items-center gap-1.5">
                       🔒 {prefersArabicCopy ? "دفع إلكتروني آمن بالبطاقة (فيزا / ماستركارد / ميزة)" : "Secure Card Payment (Visa / Mastercard / Meeza)"}
                     </p>
