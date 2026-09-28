@@ -1,0 +1,24 @@
+model UserDevice {
+  id           String   @id @default(cuid())
+  companyId    String
+  userId       String
+  fingerprint  String
+  deviceName   String
+  deviceType   String   @default("PERSONAL") // "OFFICE" | "PERSONAL"
+  clientType   String   @default("DESKTOP")  // "DESKTOP" | "WEB" | "MOBILE"
+  osVersion    String?
+  appVersion   String?
+  ipAddress    String?
+  isApproved   Boolean  @default(true)
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, fingerprint])
+  @@index([companyId, userId])
+  @@index([fingerprint])
+  @@map("user_devices")
+}

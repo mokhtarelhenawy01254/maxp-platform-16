@@ -380,6 +380,7 @@ model Company {
    overlayCampaigns                  OverlayCampaign[]
     orderStatusAutoChangeRules        OrderStatusAutoChangeRule[]
    articles                         Article[]
+    devices                          UserDevice[]
 
    @@index([businessSpecialtyId])
   @@map("companies")
@@ -495,6 +496,7 @@ model User {
   moderatorActivityLogs                             ModeratorActivityLog[]
   moderatorNotifications                            ModeratorNotification[]
   moderatorDashboardCaches                          ModeratorDashboardCache[]
+  devices                                           UserDevice[]
 
   @@index([companyId])
   @@index([departmentId])

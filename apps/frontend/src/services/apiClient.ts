@@ -13,6 +13,7 @@ import {
   shouldClearSessionOnRefreshFailure,
 } from "../utils/sessionRefresh";
 import { isCapacitorNative } from "../config/environment";
+import { getDeviceFingerprint } from "../utils/deviceFingerprint";
 
 /**
  * API Client
@@ -132,6 +133,12 @@ class ApiClient {
         // Send X-Platform: capacitor header on native mobile clients for extended sessions
         if (isCapacitorNative()) {
           config.headers["X-Platform"] = "capacitor";
+        }
+
+        // 🖥️ [DEVICE-ISOLATION] Send persistent client fingerprint
+        const deviceFingerprint = getDeviceFingerprint();
+        if (deviceFingerprint) {
+          config.headers["X-Device-Fingerprint"] = deviceFingerprint;
         }
 
         // When sending FormData, delete any manually passed Content-Type header

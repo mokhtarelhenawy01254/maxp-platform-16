@@ -62,7 +62,11 @@ export interface TrackerState {
   todayActiveSeconds: number;
   todayIdleSeconds: number;
   sessionStartedAt: string | null;
+  shiftEnded?: boolean;
+  shiftEndedAt?: string | null;
+  deviceType?: 'OFFICE' | 'PERSONAL';
 }
+
 
 /**
  * Personal preferences the employee controls locally.

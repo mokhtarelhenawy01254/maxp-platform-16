@@ -1,19 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Minus, Square, Copy, X, Laptop } from 'lucide-react';
+import { Minus, Square, Copy, X, Laptop, Building2, ShieldCheck } from 'lucide-react';
 
 export const TitleBar: React.FC = () => {
   const [isMaximized, setIsMaximized] = useState(false);
-  const [deviceInfo, setDeviceInfo] = useState<{ hostname: string } | null>(null);
+  const [deviceInfo, setDeviceInfo] = useState<{ hostname: string; deviceType?: 'OFFICE' | 'PERSONAL' } | null>(null);
 
   useEffect(() => {
     if (window.electronAPI?.getDeviceInfo) {
-      window.electronAPI.getDeviceInfo().then((info) => {
+      window.electronAPI.getDeviceInfo().then((info: any) => {
         if (info?.hostname) setDeviceInfo(info);
       }).catch(() => {});
     }
 
     if (window.electronAPI?.windowIsMaximized) {
       window.electronAPI.windowIsMaximized().then(setIsMaximized).catch(() => {});
+    }
+
+    if (window.electronAPI?.onTrackerStateUpdate) {
+      const unsub = window.electronAPI.onTrackerStateUpdate((state: any) => {
+        if (state?.deviceType) {
+          setDeviceInfo((prev) => (prev ? { ...prev, deviceType: state.deviceType } : null));
+        }
+      });
+      return () => unsub?.();
     }
   }, []);
 
@@ -45,8 +54,20 @@ export const TitleBar: React.FC = () => {
               <span>{deviceInfo.hostname}</span>
             </span>
           )}
+          {deviceInfo?.deviceType === 'OFFICE' ? (
+            <span style={styles.officeBadge} title="جهاز مكتب معتمد (كامل الصلاحيات والإشعارات)">
+              <Building2 size={11} color="#10b981" />
+              <span>جهاز مكتب</span>
+            </span>
+          ) : deviceInfo?.deviceType === 'PERSONAL' ? (
+            <span style={styles.personalBadge} title="جهاز شخصي (صلاحيات مقيدة وإشعارات العمل متوقفة)">
+              <ShieldCheck size={11} color="#f59e0b" />
+              <span>شخصي (مقيّد)</span>
+            </span>
+          ) : null}
         </div>
       </div>
+
 
       {/* Non-draggable control buttons */}
       <div style={styles.controlsRegion}>
@@ -161,7 +182,34 @@ const styles: Record<string, React.CSSProperties> = {
     marginLeft: 6,
     fontFamily: 'monospace',
   },
+  officeBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 10,
+    fontWeight: 600,
+    color: '#10b981',
+    background: 'rgba(16, 185, 129, 0.1)',
+    border: '1px solid rgba(16, 185, 129, 0.3)',
+    borderRadius: 4,
+    padding: '1px 6px',
+    marginLeft: 4,
+  },
+  personalBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 10,
+    fontWeight: 600,
+    color: '#f59e0b',
+    background: 'rgba(245, 158, 11, 0.1)',
+    border: '1px solid rgba(245, 158, 11, 0.3)',
+    borderRadius: 4,
+    padding: '1px 6px',
+    marginLeft: 4,
+  },
   controlsRegion: {
+
     display: 'flex',
     alignItems: 'center',
     height: '100%',

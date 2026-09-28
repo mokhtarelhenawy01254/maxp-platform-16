@@ -10,20 +10,28 @@ class MonitorApiClient {
   private serverUrl: string = '';
   private authToken: string = '';
   private companyId: string = '';
+  private deviceFingerprint: string = '';
   private onUnauthorized: (() => void) | null = null;
 
   constructor() {
     this.client = axios.create({ timeout: 15_000 });
   }
 
+  setDeviceFingerprint(fp: string): void {
+    this.deviceFingerprint = fp;
+  }
+
   setOnUnauthorized(cb: () => void): void {
     this.onUnauthorized = cb;
   }
 
-  configure(serverUrl: string, authToken: string, companyId?: string): void {
+  configure(serverUrl: string, authToken: string, companyId?: string, deviceFingerprint?: string): void {
     this.serverUrl = serverUrl.replace(/\/$/, '');
     this.authToken = authToken;
     this.companyId = companyId || '';
+    if (deviceFingerprint) {
+      this.deviceFingerprint = deviceFingerprint;
+    }
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.authToken}`,
       'Content-Type': 'application/json',
@@ -32,6 +40,10 @@ class MonitorApiClient {
     if (this.companyId) {
       headers['X-Company-Id'] = this.companyId;
     }
+    if (this.deviceFingerprint) {
+      headers['X-Device-Fingerprint'] = this.deviceFingerprint;
+    }
+
     this.client = axios.create({
       baseURL: `${this.serverUrl}/api/v1/employee-monitor`,
       timeout: 15_000,
@@ -246,13 +258,59 @@ class MonitorApiClient {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.authToken}`,
       'Content-Type': 'application/json',
+      'X-Client': 'maxp-desktop-monitor',
       ...extra,
     };
     if (this.companyId) {
       headers['X-Company-Id'] = this.companyId;
     }
+    if (this.deviceFingerprint) {
+      headers['X-Device-Fingerprint'] = this.deviceFingerprint;
+    }
     return headers;
   }
+
+  // ── Device Registration & Classification ───────────────────────
+  async registerCurrentDevice(data: {
+    fingerprint: string;
+    deviceName: string;
+    osVersion: string;
+    appVersion: string;
+  }): Promise<{ deviceType: 'OFFICE' | 'PERSONAL'; isApproved: boolean }> {
+    try {
+      const res = await axios.post(
+        `${this.serverUrl}/api/v1/devices/register`,
+        {
+          fingerprint: data.fingerprint,
+          deviceName: data.deviceName,
+          clientType: 'DESKTOP',
+          osVersion: data.osVersion,
+          appVersion: data.appVersion,
+        },
+        { headers: this.getAuthHeaders(), timeout: 10_000 }
+      );
+      return {
+        deviceType: res.data?.data?.deviceType || res.data?.data?.device?.deviceType || 'PERSONAL',
+        isApproved: res.data?.data?.isApproved !== false,
+      };
+    } catch (err: any) {
+      console.warn('[ApiClient] registerCurrentDevice error:', err.message);
+      return { deviceType: 'PERSONAL', isApproved: true };
+    }
+  }
+
+  async getDeviceClassification(fingerprint: string): Promise<'OFFICE' | 'PERSONAL'> {
+    try {
+      const res = await axios.get(`${this.serverUrl}/api/v1/devices/status`, {
+        headers: this.getAuthHeaders({ 'X-Device-Fingerprint': fingerprint }),
+        timeout: 8_000,
+      });
+      return res.data?.data?.deviceType || 'PERSONAL';
+    } catch {
+      return 'PERSONAL';
+    }
+  }
+
 
   async getTasks(type: 'my-tasks' | 'assigned-by-me' | 'all' = 'my-tasks'): Promise<any[]> {
     try {
@@ -738,7 +796,7 @@ class MonitorApiClient {
     }
   }
 
-  async autoClockIn(): Promise<{ success: boolean; attendance?: any }> {
+  async autoClockIn(workMode: 'office' | 'remote' = 'office'): Promise<{ success: boolean; attendance?: any }> {
     try {
       const base = this.serverUrl;
       let res;
@@ -747,7 +805,7 @@ class MonitorApiClient {
           `${base}/api/v1/hr/attendance/check-in`,
           {
             method: 'desktop_workspace',
-            workMode: 'office',
+            workMode,
           },
           {
             headers: this.getAuthHeaders(),
@@ -755,6 +813,7 @@ class MonitorApiClient {
           }
         );
       } catch (err: any) {
+
         if (err.response?.status === 404) {
           res = await axios.post(
             `${base}/api/hr/attendance/check-in`,

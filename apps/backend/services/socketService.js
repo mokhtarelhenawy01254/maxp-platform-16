@@ -162,7 +162,32 @@ class SocketService {
       socket.userRole = activeRole;
       socket.userName = `${user.firstName} ${user.lastName}`;
 
-      //console.log(`✅ [SOCKET-AUTH] Authenticated socket ${socket.id} for user ${user.email} (Active Company: ${activeCompanyId})`);
+      // 🖥️ [DEVICE-ISOLATION] Resolve device type for audio/notification isolation
+      const deviceFingerprint =
+        socket.handshake.auth?.deviceFingerprint ||
+        socket.handshake.query?.deviceFingerprint ||
+        socket.handshake.headers?.['x-device-fingerprint'];
+      let deviceType = 'PERSONAL';
+      if (deviceFingerprint && activeCompanyId) {
+        try {
+          const device = await getSharedPrismaClient().userDevice.findUnique({
+            where: {
+              companyId_fingerprint: {
+                companyId: activeCompanyId,
+                fingerprint: String(deviceFingerprint).trim(),
+              },
+            },
+            select: { deviceType: true, isApproved: true },
+          });
+          if (device) {
+            deviceType = device.deviceType || 'PERSONAL';
+          }
+        } catch {}
+      }
+      socket.deviceType = deviceType;
+      socket.deviceFingerprint = deviceFingerprint || null;
+
+      //console.log(`✅ [SOCKET-AUTH] Authenticated socket ${socket.id} for user ${user.email} (Active Company: ${activeCompanyId}, Device: ${deviceType})`);
       next();
 
     } catch (error) {
@@ -184,6 +209,15 @@ class SocketService {
         socket.join(`company_${socket.companyId}`);
         socket.join(`user_${socket.userId}`);
         socket.join(`user:${socket.userId}`);
+
+        // 🖥️ [DEVICE-ISOLATION] Join device-specific rooms
+        if (socket.deviceType === 'OFFICE') {
+          socket.join(`company_${socket.companyId}_office`);
+          socket.join(`user_${socket.userId}_office`);
+        } else {
+          socket.join(`company_${socket.companyId}_personal`);
+          socket.join(`user_${socket.userId}_personal`);
+        }
 
         this.connectedUsers.set(socket.userId, socket.id);
         this.userSockets.set(socket.id, {
@@ -919,6 +953,14 @@ class SocketService {
     console.log(`🔌 [SOCKET] Emitting '${eventName}' to company ${companyId}`);
     io.to(`company_${companyId}`).emit(eventName, data);
   }
+
+  // 🖥️ إرسال التنبيهات الصوتية الحية والإنذارات حصراً لأجهزة المكتب المعتمدة
+  emitToOfficeDevices(companyId, eventName, data) {
+    const io = this.getIO();
+    if (!io || !companyId) return;
+    io.to(`company_${companyId}_office`).emit(eventName, data);
+  }
+
 
   // Security logging
   logSecurityEvent(eventType, details) {

@@ -441,13 +441,31 @@ const canViewConversation = async (prisma, userId, companyId, conversationId) =>
   return true;
 };
 
+/**
+ * Middleware ensuring an action can only be executed from an authorized OFFICE device
+ */
+const requireOfficeDevice = (req, res, next) => {
+  if (req.user?.role === 'SUPER_ADMIN') return next();
+  if (req.user?.deviceType !== 'OFFICE') {
+    return res.status(403).json({
+      success: false,
+      error: 'Office device required',
+      code: 'OFFICE_DEVICE_REQUIRED',
+      message: 'هذا الإجراء متاح حصرياً من أجهزة المكتب المعتمدة',
+    });
+  }
+  next();
+};
+
 module.exports = {
   requirePermission,
   requireDbPermission,
   requireMinRole,
+  requireOfficeDevice,
   hasPermission,
   canViewConversation,
   normalizeRole,
   PERMISSIONS,
   ROLES_HIERARCHY
 };
+

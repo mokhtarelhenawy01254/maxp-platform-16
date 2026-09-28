@@ -3,6 +3,7 @@ import { OrderDetailsType, OrderItem } from "../pages/orders/types";
 import { groupOrderDocumentQuantityOffers } from "./orderDocumentQuantityOffers";
 import JsBarcode from "jsbarcode";
 import { extractOrderCustomFields, cleanNotesWithoutCustomFields } from "./orderCustomFields";
+import { isPersonalDevice } from "./deviceFingerprint";
 
 export interface SimpleOrderForLabel {
   id: string;
@@ -586,6 +587,23 @@ function buildShippingLabelStyle(): string {
       .page-break:last-child {
         page-break-after: auto;
       }
+      .personal-device-watermark {
+        position: absolute;
+        top: 45%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-25deg);
+        font-size: 22px;
+        font-weight: 800;
+        color: rgba(220, 38, 38, 0.4);
+        border: 3px dashed rgba(220, 38, 38, 0.5);
+        background: rgba(254, 242, 242, 0.65);
+        padding: 10px 18px;
+        border-radius: 8px;
+        pointer-events: none;
+        white-space: nowrap;
+        text-align: center;
+        z-index: 999;
+      }
       @media print {
         html, body { margin: 0 !important; padding: 0 !important; background: #ffffff; }
         .label-page { margin: 0; min-height: auto; border: none; box-shadow: none; }
@@ -624,9 +642,15 @@ function buildShippingLabelPageMarkup(
     ? `<div style="text-align:center;margin-bottom:4px">${generateBarcodeSvg(String(trackingNumberVal))}<div style="font-size:10px;font-weight:600;color:#000">كود الشحن (${escapeHtml(trackingNumberVal)})</div></div>`
     : "";
 
+  const personalWatermark = isPersonalDevice()
+    ? `<div class="personal-device-watermark">معاينة فقط — جهاز شخصي غير معتمد للشحن</div>`
+    : "";
+
   return `
-    <div class="label-page">
+    <div class="label-page" style="position:relative">
+      ${personalWatermark}
       <div class="label-inner">
+
         <!-- Row 1: Header -->
         <div class="label-header">
           <div class="sender">

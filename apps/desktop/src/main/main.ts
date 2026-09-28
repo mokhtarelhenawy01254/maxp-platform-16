@@ -2,6 +2,7 @@ import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain, des
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import crypto from 'crypto';
 import { activityTracker } from '../tracker/activityTracker';
 import { windowTracker } from '../tracker/windowTracker';
 import { syncEngine } from '../tracker/syncEngine';
@@ -10,6 +11,7 @@ import { apiClient } from '../shared/api';
 import { IPC_CHANNELS } from '../shared/types';
 import { autoUpdater } from 'electron-updater';
 import axios from 'axios';
+
 
 class SimpleStore {
   private file = '';
@@ -62,7 +64,44 @@ let systemSuspendedAt: number | null = null;
 let lastDayRolloverDate = '';
 let midnightWatcherInterval: ReturnType<typeof setInterval> | null = null;
 
+// ── Device Isolation & Classification State ──────────────────
+let currentDeviceType: 'OFFICE' | 'PERSONAL' = (store.get('deviceType', 'PERSONAL') as 'OFFICE' | 'PERSONAL');
+
+function getHardwareFingerprint(): string {
+  let fp = store.get('deviceFingerprint') as string | undefined;
+  if (!fp) {
+    const raw = `${os.hostname()}-${os.platform()}-${os.arch()}-${os.cpus()[0]?.model || ''}`;
+    fp = 'desk_' + crypto.createHash('sha256').update(raw).digest('hex').substring(0, 32);
+    store.set('deviceFingerprint', fp);
+  }
+  return fp;
+}
+
+async function syncDeviceRegistration(): Promise<void> {
+  const fp = getHardwareFingerprint();
+  apiClient.setDeviceFingerprint(fp);
+
+  try {
+    const res = await apiClient.registerCurrentDevice({
+      fingerprint: fp,
+      deviceName: os.hostname(),
+      osVersion: `${os.type()} ${os.release()} (${os.arch()})`,
+      appVersion: app.getVersion(),
+    });
+
+    if (res?.deviceType) {
+      currentDeviceType = res.deviceType;
+      store.set('deviceType', currentDeviceType);
+      sendStateToRenderer();
+      console.log(`[Main] Device registered successfully as ${currentDeviceType}`);
+    }
+  } catch (err: any) {
+    console.warn('[Main] Device sync deferred:', err.message);
+  }
+}
+
 // ── Auth token storage (DPAPI-encrypted via safeStorage) ──────
+
 
 function saveAuthToken(token: string): void {
   try {
@@ -171,7 +210,17 @@ app.whenReady().then(async () => {
   const savedServer = store.get('serverUrl') as string | undefined;
   if (savedToken && savedServer) {
     const savedUser = store.get('user', null) as any;
-    apiClient.configure(savedServer, savedToken, savedUser?.companyId);
+    const fp = getHardwareFingerprint();
+    apiClient.configure(savedServer, savedToken, savedUser?.companyId, fp);
+
+    // Sync device classification with backend
+    syncDeviceRegistration().then(() => {
+      if (currentDeviceType === 'OFFICE') {
+        setTimeout(() => { triggerAutoClockIn(); }, 3000);
+      } else {
+        console.log('[Main] Device is PERSONAL — auto clock-in skipped.');
+      }
+    });
 
     // Pre-flight session validation: update user profile if still valid, but NEVER auto-logout
     apiClient.validateToken().then(({ valid, user }) => {
@@ -182,11 +231,11 @@ app.whenReady().then(async () => {
       }
       // Always start tracking regardless of token validity
       startTracking();
-      setTimeout(() => { triggerAutoClockIn(); }, 3000);
     }).catch(() => {
       // Network error — still allow local tracking
       startTracking();
     });
+
   }
 });
 
@@ -800,13 +849,20 @@ function registerIpcHandlers(): void {
       saveAuthToken(token);
       store.set('serverUrl', serverUrl);
       store.set('user', user);
-      apiClient.configure(serverUrl, token, user?.companyId);
+      const fp = getHardwareFingerprint();
+      apiClient.configure(serverUrl, token, user?.companyId, fp);
+      await syncDeviceRegistration();
       resetTaskPollerState();
       await startTracking();
       updateTrayMenu();
-      setTimeout(() => { triggerAutoClockIn(); }, 2000);
+      if (currentDeviceType === 'OFFICE') {
+        setTimeout(() => { triggerAutoClockIn(); }, 2000);
+      } else {
+        console.log('[Main IPC] Logged in on PERSONAL device — auto clock-in skipped.');
+      }
       setTimeout(() => { pollTaskNotifications().catch(() => {}); }, 1500);
       return { success: true, user };
+
     } catch (err: any) {
       console.error('[Main IPC] Login failed:', err.message);
       return { success: false, error: err.message };
@@ -1265,8 +1321,11 @@ function registerIpcHandlers(): void {
       platform: os.platform(),
       release: os.release(),
       appVersion: app.getVersion(),
+      deviceType: currentDeviceType,
+      fingerprint: getHardwareFingerprint(),
     };
   });
+
 
   ipcMain.handle('tasks:capture-screen', async () => {
     const wasVisible = mainWindow && !mainWindow.isMinimized() && mainWindow.isVisible();
@@ -1545,11 +1604,19 @@ function stopIdleReminder(): void {
 
 async function triggerAutoClockIn(): Promise<void> {
   try {
+    // 🖥️ [DEVICE-ISOLATION] Only OFFICE machines can automatically clock in!
+    // Personal machines must never record office attendance automatically!
+    if (currentDeviceType !== 'OFFICE') {
+      console.log('[Main] Auto clock-in skipped: device is classified as PERSONAL.');
+      return;
+    }
+
     const currentHour = new Date().getHours();
     // Only auto clock in between 6 AM and 6 PM
     if (currentHour < 6 || currentHour > 18) {
       return;
     }
+
 
     const todayAtt = await apiClient.checkTodayAttendance();
     const hasCheckedIn = todayAtt && (todayAtt.checkIn || todayAtt.checkInTime);

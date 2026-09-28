@@ -444,6 +444,59 @@ const authenticateToken = async (req, res, next) => {
       userPermissions = await loadUserPermissions(user.id, effectiveCompanyId);
     }
 
+    // 🖥️ [DEVICE-ISOLATION] Resolve device type (OFFICE vs PERSONAL) via hardware fingerprint
+    const deviceFingerprint = req.headers['x-device-fingerprint'] || req.headers['X-Device-Fingerprint'];
+    let deviceType = 'PERSONAL';
+    let deviceId = null;
+    let isDeviceApproved = true;
+
+    if (deviceFingerprint && effectiveCompanyId) {
+      try {
+        const device = await executeWithRetry(async () =>
+          prisma.userDevice.findUnique({
+            where: {
+              companyId_fingerprint: {
+                companyId: effectiveCompanyId,
+                fingerprint: String(deviceFingerprint).trim(),
+              },
+            },
+            select: { id: true, deviceType: true, isApproved: true },
+          })
+        );
+        if (device) {
+          deviceType = device.deviceType || 'PERSONAL';
+          deviceId = device.id;
+          isDeviceApproved = device.isApproved !== false;
+        }
+      } catch (deviceLookupError) {
+        // Fallback default: PERSONAL
+      }
+    }
+
+    // Block deactivated devices
+    if (!isDeviceApproved && user.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'تم حظر أو إيقاف هذا الجهاز من قبل إدارة الشركة',
+        code: 'DEVICE_BLOCKED',
+      });
+    }
+
+    // Restrict high-risk operational permissions on personal devices
+    if (deviceType === 'PERSONAL' && user.role !== 'SUPER_ADMIN') {
+      const RESTRICTED_PERSONAL_PERMS = [
+        'bulkOrders.export',
+        'bulkOrders.delete',
+        'customers.delete',
+        'settings.manage',
+        'settings.roles.manage',
+        'settings.whatsapp.manage',
+        'users.manage',
+        'teams.manage',
+      ];
+      userPermissions = userPermissions.filter(p => !RESTRICTED_PERSONAL_PERMS.includes(p));
+    }
+
     req.user = {
       ...decoded,
       id: user.id,
@@ -453,7 +506,11 @@ const authenticateToken = async (req, res, next) => {
       email: user.email,
       role: effectiveRole,
       companyId: effectiveCompanyId,
-      userPermissions
+      userPermissions,
+      deviceType,
+      deviceId,
+      deviceFingerprint: deviceFingerprint ? String(deviceFingerprint).trim() : null,
+      isDeviceApproved,
     };
 
     // 🛡️ [SAAS] propagate companyId to tenantContext for RLS
@@ -667,6 +724,21 @@ const optionalAuth = async (req, res, next) => {
   }
 };
 
+// Require Office Device middleware
+const requireOfficeDevice = (req, res, next) => {
+  if (req.user?.role === 'SUPER_ADMIN') {
+    return next();
+  }
+  if (req.user?.deviceType !== 'OFFICE') {
+    return res.status(403).json({
+      success: false,
+      code: 'OFFICE_DEVICE_REQUIRED',
+      message: 'هذا الإجراء متاح حصرياً من أجهزة المكتب المعتمدة',
+    });
+  }
+  next();
+};
+
 // Support both callable middleware usage and named property destructuring
 authenticateToken.authenticateToken = authenticateToken;
 authenticateToken.verifyToken = authenticateToken;
@@ -674,5 +746,7 @@ authenticateToken.requireSuperAdmin = requireSuperAdmin;
 authenticateToken.requireRole = requireRole;
 authenticateToken.requireCompanyAccess = requireCompanyAccess;
 authenticateToken.optionalAuth = optionalAuth;
+authenticateToken.requireOfficeDevice = requireOfficeDevice;
 
 module.exports = authenticateToken;
+

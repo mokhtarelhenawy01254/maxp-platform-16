@@ -1,6 +1,7 @@
 import { io, Socket } from "socket.io-client";
 import { buildWsUrl } from "../utils/urlHelper";
 import { tokenManager } from "../utils/tokenManager";
+import { getDeviceFingerprint, isPersonalDevice } from "../utils/deviceFingerprint";
 import {
   buildPatternEvents,
   getOrderSoundAudioUrl,
@@ -146,12 +147,18 @@ class SocketService {
 
   // تشغيل صوت التنبيه باستخدام Web Audio API
   playNotificationSound() {
+    // 🖥️ [DEVICE-ISOLATION] Mute noisy notification chime on personal devices
+    if (isPersonalDevice()) {
+      return;
+    }
+
     this.ensureAudioSetup();
     try {
       if (!this.audioContext) {
         console.warn("⚠️ [SOUND] Audio context not available");
         return;
       }
+
 
       // تفعيل Audio Context إذا كان suspended (بسبب autoplay policy)
       if (this.audioContext.state === "suspended") {
@@ -269,11 +276,17 @@ class SocketService {
     loop?: boolean;
     boost?: boolean;
   }) {
+    // 🖥️ [DEVICE-ISOLATION] Mute noisy order alarms on personal devices
+    if (isPersonalDevice()) {
+      return;
+    }
+
     const audioContext = this.getAudioContext();
     if (!audioContext) {
       console.warn("⚠️ [SOUND] Audio context not available");
       return;
     }
+
 
     const runAlarm = () => {
       this.stopOrderAlarm();
@@ -624,17 +637,19 @@ class SocketService {
     };
 
     // 🔐 Use a function for auth so each reconnection gets a fresh token
-    socketConfig.auth = (cb: (data: { token: string | null }) => void) => {
+    socketConfig.auth = (cb: (data: { token: string | null; deviceFingerprint?: string }) => void) => {
       const freshToken = tokenManager.getAccessToken();
+      const deviceFingerprint = getDeviceFingerprint();
       if (freshToken) {
-        console.log("🔐 [SOCKET] Connecting with authentication token");
+        console.log("🔐 [SOCKET] Connecting with authentication token & device fingerprint");
       } else {
         console.warn(
           "⚠️ [SOCKET] No authentication token found, connecting without auth",
         );
       }
-      cb({ token: freshToken });
+      cb({ token: freshToken, deviceFingerprint });
     };
+
 
     this.isConnecting = true;
     this.socket = io(this.baseURL, socketConfig);

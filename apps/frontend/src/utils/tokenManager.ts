@@ -73,11 +73,19 @@ export const tokenManager = {
 
   createAuthHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
     const authorization = this.getAuthorizationHeaderValue();
+    let fingerprint: string | null = null;
+    try {
+      const { getDeviceFingerprint } = require('./deviceFingerprint');
+      fingerprint = getDeviceFingerprint();
+    } catch {}
+
     return {
       ...(authorization ? { Authorization: authorization } : {}),
+      ...(fingerprint ? { 'X-Device-Fingerprint': fingerprint } : {}),
       ...additionalHeaders,
     };
   },
+
 
   setAccessToken(token: string): void {
     writeToken(ACCESS_TOKEN_KEY, token);
