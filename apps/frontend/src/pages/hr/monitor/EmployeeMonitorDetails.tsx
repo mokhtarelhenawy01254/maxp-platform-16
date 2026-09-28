@@ -228,6 +228,22 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
                   )}
                 </span>
               )}
+              {data.summary?.operationalSignal && data.summary.operationalSignal.type !== 'NORMAL' && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                    data.summary.operationalSignal.type === 'TASK_OVERLOAD'
+                      ? 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-500/30'
+                      : data.summary.operationalSignal.type === 'DISTRACTION'
+                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-500/30'
+                      : data.summary.operationalSignal.type === 'NEGLECT'
+                      ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-1 ring-inset ring-rose-500/30'
+                      : 'bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-1 ring-inset ring-sky-500/30'
+                  }`}
+                  title={data.summary.operationalSignal.reason}
+                >
+                  {data.summary.operationalSignal.label}
+                </span>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
               {jobTitle} • {data.summary?.deviceName ? `الجهاز: ${data.summary.deviceName} • ` : ''}توثيق النشاط وسجلات البرامج وتطابق الحضور
@@ -340,8 +356,13 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
           <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
             {formatSeconds(totalActive)}
           </div>
-          <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-            تفاعل مستمر وموثق عبر الماوس والكيبورد
+          <div className="mt-1 flex items-center justify-between text-[11px] text-emerald-600 dark:text-emerald-400">
+            <span>تفاعل موثق عبر الماوس والكيبورد</span>
+            {data.summary?.activityRatio !== undefined && (
+              <span className="font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                نشاط {data.summary.activityRatio}%
+              </span>
+            )}
           </div>
         </div>
 
@@ -410,7 +431,30 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
               </span>
             </div>
 
-            {activityLagMinutes !== null && (
+            {/* Warmup Time + Weekly Average */}
+            {data.summary?.lateStartMinutes !== undefined ? (
+              <div className="pt-1 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">وقت التسخين:</span>
+                  <span
+                    className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                      data.summary.lateStartMinutes <= 15
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                        : data.summary.lateStartMinutes < 30
+                        ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
+                        : 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400'
+                    }`}
+                  >
+                    {data.summary.lateStartMinutes <= 0 ? 'بدأ فوراً (0 د)' : `${data.summary.lateStartMinutes} دقيقة`}
+                  </span>
+                </div>
+                {data.summary?.weeklyAvgLateStartMinutes !== undefined && data.summary.weeklyAvgLateStartMinutes > 0 && (
+                  <div className="text-[10px] text-muted-foreground tabular-nums">
+                    متوسط التسخين (7 أيام): {data.summary.weeklyAvgLateStartMinutes} دقيقة
+                  </div>
+                )}
+              </div>
+            ) : activityLagMinutes !== null ? (
               <div className="pt-1">
                 {activityLagMinutes <= 5 ? (
                   <span className="inline-flex items-center gap-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 dark:border-transparent dark:bg-emerald-500/10 dark:text-emerald-400 px-1.5 py-0.5 text-[10px] font-semibold">
@@ -422,7 +466,7 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
                   </span>
                 )}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
