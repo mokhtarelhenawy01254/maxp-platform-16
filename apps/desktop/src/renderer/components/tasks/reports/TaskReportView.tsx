@@ -15,10 +15,12 @@ import {
   TaskReportFilterState,
   TaskDateRange,
   TaskExceptionFilter,
+  TeamMemberTaskSummary,
 } from './TaskReportTypes';
 import { TaskReportKpis } from './TaskReportKpis';
 import { TaskReportExceptions } from './TaskReportExceptions';
 import { TaskReportLedger } from './TaskReportLedger';
+import { TaskReportTeamMatrix } from './TaskReportTeamMatrix';
 
 interface TaskReportViewProps {
   isExecutiveMode?: boolean; // When rendered in SimpleReportTab
@@ -175,6 +177,71 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
   const uniqueProjects = useMemo(() => {
     return Array.from(new Set(reportItems.map((t) => t.projectName))).filter(Boolean);
   }, [reportItems]);
+
+  // Per-member workload breakdown (in-progress, in-review, completed today)
+  const teamMembersSummary: TeamMemberTaskSummary[] = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const memberMap: Record<string, TeamMemberTaskSummary> = {};
+
+    users.forEach((u: any) => {
+      const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'عضو فريق';
+      memberMap[u.id] = {
+        userId: u.id,
+        userName: name,
+        jobTitle: u.jobTitle,
+        departmentName: u.department?.name || u.departmentName,
+        avatar: u.avatar,
+        inProgressCount: 0,
+        inReviewCount: 0,
+        completedTodayCount: 0,
+        pendingCount: 0,
+        totalActiveCount: 0,
+        totalTrackedMinutes: 0,
+        activeTaskTitle: null,
+      };
+    });
+
+    reportItems.forEach((t) => {
+      const uid = t.assignedToId || 'unassigned';
+      if (!memberMap[uid]) {
+        memberMap[uid] = {
+          userId: uid,
+          userName: t.assignedToName || 'غير مسندة',
+          inProgressCount: 0,
+          inReviewCount: 0,
+          completedTodayCount: 0,
+          pendingCount: 0,
+          totalActiveCount: 0,
+          totalTrackedMinutes: 0,
+          activeTaskTitle: null,
+        };
+      }
+
+      const m = memberMap[uid];
+      m.totalTrackedMinutes += t.actualTrackedMinutes || 0;
+
+      if (t.status === 'IN_PROGRESS') {
+        m.inProgressCount += 1;
+        m.totalActiveCount += 1;
+        if (!m.activeTaskTitle) m.activeTaskTitle = t.title;
+      } else if (t.status === 'IN_REVIEW') {
+        m.inReviewCount += 1;
+        m.totalActiveCount += 1;
+      } else if (t.status === 'COMPLETED') {
+        const compDate = (t.completedAt || t.createdAt || '').slice(0, 10);
+        if (compDate === todayStr || filters.dateRange === 'today') {
+          m.completedTodayCount += 1;
+        }
+      } else if (t.status === 'PENDING') {
+        m.pendingCount += 1;
+        m.totalActiveCount += 1;
+      }
+    });
+
+    return Object.values(memberMap)
+      .filter((m) => m.userId !== 'unassigned' || m.totalActiveCount > 0 || m.completedTodayCount > 0)
+      .sort((a, b) => (b.inProgressCount + b.inReviewCount) - (a.inProgressCount + a.inReviewCount));
+  }, [users, reportItems, filters.dateRange]);
 
   // 1-Click Daily Standup Generator
   const handleCopyDailyStandup = () => {
@@ -362,6 +429,37 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         onFilterChange={(f) => setFilters((p) => ({ ...p, exceptionFilter: f }))}
       />
 
+      {/* Team Members Workload Matrix (Per person in-progress, in-review, completed today) */}
+      <TaskReportTeamMatrix
+        members={teamMembersSummary}
+        selectedUserId={filters.selectedUserId}
+        onSelectMember={(userId) => {
+          setFilters((p) => ({
+            ...p,
+            selectedUserId: userId,
+          }));
+        }}
+      />
+
+      {/* Active User Filter Chip Indicator */}
+      {filters.selectedUserId !== 'all' && (
+        <div style={styles.activeFilterChipBar}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11, color: '#94a3b8' }}>تصفية المهام للموظف:</span>
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: '#38bdf8' }}>
+              {teamMembersSummary.find((m) => m.userId === filters.selectedUserId)?.userName || 'موظف محدد'}
+            </span>
+          </div>
+          <button
+            onClick={() => setFilters((p) => ({ ...p, selectedUserId: 'all' }))}
+            style={styles.clearFilterBtn}
+            title="إلغاء التصفية وعرض مهام الجميع"
+          >
+            إلغاء التصفية ✕
+          </button>
+        </div>
+      )}
+
       {/* Manager Exception Radar */}
       <TaskReportExceptions
         timeLeakTasks={filteredItems.filter((t) => t.isTimeLeak)}
@@ -491,5 +589,25 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#18181b',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     cursor: 'pointer',
+  },
+  activeFilterChipBar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '6px 12px',
+    background: 'rgba(56, 189, 248, 0.08)',
+    border: '1px solid rgba(56, 189, 248, 0.25)',
+    borderRadius: 6,
+    marginBottom: 10,
+  },
+  clearFilterBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: '#38bdf8',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    padding: '2px 6px',
+    fontFamily: 'inherit',
   },
 };

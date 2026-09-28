@@ -41,3 +41,19 @@ export interface TaskReportFilterState {
   exceptionFilter: TaskExceptionFilter;
   searchQuery: string;
 }
+
+export interface TeamMemberTaskSummary {
+  userId: string;
+  userName: string;
+  jobTitle?: string;
+  departmentName?: string;
+  avatar?: string;
+  inProgressCount: number;
+  inReviewCount: number;
+  completedTodayCount: number;
+  pendingCount: number;
+  totalActiveCount: number;
+  totalTrackedMinutes: number;
+  activeTaskTitle?: string | null;
+}
+
