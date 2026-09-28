@@ -65,8 +65,8 @@ export const DEFAULT_CONVERSION_SUITE_SETTINGS = {
     cartUpsellStyle: "stacked",
   },
   copy: {
-    freeShippingMessage: "Add {{remaining}} to unlock free shipping",
-    freeShippingReachedMessage: "You unlocked free shipping",
+    freeShippingMessage: "أضف {{remaining}} للحصول على شحن مجاني",
+    freeShippingReachedMessage: "مبروك! تم تفعيل الشحن المجاني",
     inactiveTabTitle: "Come back before this offer ends",
     backInStockTitle: "Notify me when it's back",
     backInStockDescription:

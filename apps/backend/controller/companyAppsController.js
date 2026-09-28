@@ -275,7 +275,8 @@ exports.updateSettings = async (req, res) => {
 
     const companyApp = await executeWithRetry(async () => {
       return await getSharedPrismaClient().companyApp.findFirst({
-        where: { id, companyId }
+        where: { id, companyId },
+        include: { app: true }
       });
     });
 
@@ -292,6 +293,34 @@ exports.updateSettings = async (req, res) => {
         data: { settings }
       });
     });
+
+    // مزامنة عكسية مع storePromotionSettings لو التعديل خاص بـ conversion-suite (شريط الشحن المجاني والحد)
+    if (companyApp?.app?.slug === 'conversion-suite') {
+      const promoUpdate = {};
+      if (settings?.modules?.freeShippingBar !== undefined) {
+        promoUpdate.freeShippingEnabled = Boolean(settings.modules.freeShippingBar);
+      }
+      if (settings?.thresholds?.freeShippingAmount !== undefined) {
+        promoUpdate.freeShippingThreshold = parseFloat(settings.thresholds.freeShippingAmount) || 0;
+      }
+      if (Object.keys(promoUpdate).length > 0) {
+        try {
+          await executeWithRetry(async () => {
+            return await getSharedPrismaClient().storePromotionSettings.upsert({
+              where: { companyId },
+              update: promoUpdate,
+              create: {
+                companyId,
+                ...promoUpdate
+              }
+            });
+          });
+          console.log(`✅ [COMPANY-APPS] Synced storePromotionSettings from conversion-suite for company ${companyId}`);
+        } catch (syncErr) {
+          console.error('⚠️ [COMPANY-APPS] Failed to sync storePromotionSettings:', syncErr);
+        }
+      }
+    }
 
     try {
       await redisCacheService.del(`storefront_settings:${companyId}`);

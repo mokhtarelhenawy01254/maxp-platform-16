@@ -1,4 +1,5 @@
 const { safeQuery, initializeSharedDatabase } = require('../services/sharedDatabase');
+const redisCacheService = require('../services/redisCacheService');
 
 function isPrismaConnectionError(error) {
   const msg = String(error?.message || '');
@@ -19,6 +20,82 @@ async function safePromotionQuery(operation, label = 'unknown') {
       return await safeQuery(operation);
     }
     throw error;
+  }
+}
+
+/**
+ * مزامنة إعدادات الشحن المجاني مع تطبيق conversion-suite وأداة freeShippingBar
+ */
+async function syncConversionSuiteWithPromotionSettings(p, companyId, { freeShippingEnabled, freeShippingThreshold }) {
+  try {
+    const conversionApp = await p.companyApp.findFirst({
+      where: {
+        companyId,
+        app: { slug: 'conversion-suite' }
+      },
+      include: { app: true }
+    });
+
+    if (conversionApp) {
+      let appSettings = conversionApp.settings || {};
+      if (typeof appSettings === 'string') {
+        try { appSettings = JSON.parse(appSettings); } catch { appSettings = {}; }
+      }
+      appSettings = { ...appSettings };
+      appSettings.modules = { ...(appSettings.modules || {}) };
+      appSettings.thresholds = { ...(appSettings.thresholds || {}) };
+      appSettings.copy = { ...(appSettings.copy || {}) };
+
+      if (freeShippingEnabled !== undefined) {
+        appSettings.modules.freeShippingBar = Boolean(freeShippingEnabled);
+      }
+      if (freeShippingThreshold !== undefined) {
+        appSettings.thresholds.freeShippingAmount = parseFloat(freeShippingThreshold) || 0;
+      }
+
+      // Ensure Arabic copy
+      if (!appSettings.copy.freeShippingMessage || appSettings.copy.freeShippingMessage === 'Add {{remaining}} to unlock free shipping') {
+        appSettings.copy.freeShippingMessage = 'أضف {{remaining}} للحصول على شحن مجاني';
+      }
+      if (!appSettings.copy.freeShippingReachedMessage || appSettings.copy.freeShippingReachedMessage === 'You unlocked free shipping') {
+        appSettings.copy.freeShippingReachedMessage = 'مبروك! تم تفعيل الشحن المجاني';
+      }
+
+      await p.companyApp.update({
+        where: { id: conversionApp.id },
+        data: { settings: appSettings }
+      });
+      console.log(`✅ [PROMOTION-SETTINGS] Synced conversion-suite for company ${companyId}: freeShippingBar=${appSettings.modules.freeShippingBar}, threshold=${appSettings.thresholds.freeShippingAmount}`);
+    } else {
+      const app = await p.app.findUnique({ where: { slug: 'conversion-suite' } });
+      if (app) {
+        await p.companyApp.create({
+          data: {
+            companyId,
+            appId: app.id,
+            status: 'ACTIVE',
+            settings: {
+              general: { enabled: true, renderInTemplates: true, attachToThemeShell: true, preset: 'balanced' },
+              modules: { freeShippingBar: Boolean(freeShippingEnabled) },
+              thresholds: { freeShippingAmount: parseFloat(freeShippingThreshold) || 0 },
+              copy: {
+                freeShippingMessage: 'أضف {{remaining}} للحصول على شحن مجاني',
+                freeShippingReachedMessage: 'مبروك! تم تفعيل الشحن المجاني'
+              }
+            }
+          }
+        });
+        console.log(`✅ [PROMOTION-SETTINGS] Created and activated conversion-suite for company ${companyId}`);
+      }
+    }
+
+    try {
+      await redisCacheService.del(`storefront_settings:${companyId}`);
+    } catch (cacheErr) {
+      console.warn('⚠️ [REDIS] Error deleting storefront settings cache:', cacheErr);
+    }
+  } catch (syncErr) {
+    console.error('⚠️ [PROMOTION-SETTINGS] Failed to sync conversion-suite:', syncErr);
   }
 }
 
@@ -73,6 +150,17 @@ exports.getPromotionSettings = async (req, res) => {
         throw err;
       });
       console.log('✅ [PROMOTION-SETTINGS] Created settings:', settings.id);
+    }
+
+    // Auto-heal drift: sync conversion-suite if free shipping is active
+    if (settings && (settings.freeShippingEnabled || settings.freeShippingThreshold > 0)) {
+      safePromotionQuery(
+        (p) => syncConversionSuiteWithPromotionSettings(p, companyId, {
+          freeShippingEnabled: settings.freeShippingEnabled,
+          freeShippingThreshold: settings.freeShippingThreshold
+        }),
+        'autoHealGetPromotionSettings'
+      ).catch(() => {});
     }
 
     return res.status(200).json({
@@ -148,6 +236,19 @@ exports.updatePromotionSettings = async (req, res) => {
     );
 
     console.log('✅ [PROMOTION-SETTINGS] Settings updated successfully:', settings.id);
+
+    // Sync with conversion-suite app settings
+    if (updateData.freeShippingEnabled !== undefined || updateData.freeShippingThreshold !== undefined) {
+      await safePromotionQuery(
+        (p) => syncConversionSuiteWithPromotionSettings(p, companyId, {
+          freeShippingEnabled: settings.freeShippingEnabled,
+          freeShippingThreshold: settings.freeShippingThreshold
+        }),
+        'syncConversionSuite'
+      ).catch(err => {
+        console.error('⚠️ [PROMOTION-SETTINGS] Non-blocking error syncing conversion-suite:', err);
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -261,6 +362,15 @@ exports.resetPromotionSettings = async (req, res) => {
     );
 
     console.log('✅ [PROMOTION-SETTINGS] Settings reset to defaults:', settings.id);
+
+    // Sync reset with conversion-suite
+    safePromotionQuery(
+      (p) => syncConversionSuiteWithPromotionSettings(p, companyId, {
+        freeShippingEnabled: false,
+        freeShippingThreshold: 0
+      }),
+      'syncResetConversionSuite'
+    ).catch(() => {});
 
     return res.status(200).json({
       success: true,

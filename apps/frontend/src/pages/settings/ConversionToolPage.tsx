@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowRight,
   Check,
@@ -256,6 +256,20 @@ export default function ConversionToolPage() {
                   app: STORE_CONVERSION_APP_LABELS[tool.appSlug],
                 })}
               </p>
+            ) : null}
+
+            {tool.key === "freeShippingBar" ? (
+              <div className="rounded-lg bg-emerald-50/70 p-3 text-[11px] leading-5 text-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-200">
+                <span className="font-bold">ملاحظة التزامن: </span>
+                الحد المالي وحالة التفعيل هنا متزامنة تلقائيًا مع صفحة{" "}
+                <Link
+                  to="/settings/store?tab=promotion"
+                  className="font-black underline underline-offset-2 hover:text-emerald-800"
+                >
+                  إعدادات الترويج والشحن
+                </Link>
+                . أي تعديل في أي من المكانين يُطبَّق فورًا على المتجر.
+              </div>
             ) : null}
           </div>
 

@@ -155,7 +155,6 @@ const CartDrawer: React.FC = () => {
     0,
   );
   const showKhemetFreeShippingProgress =
-    (isKhemetLuxe || isRedlineAuto) &&
     conversionEnabled &&
     conversionModules['freeShippingBar'] !== false &&
     freeShippingThreshold > 0;

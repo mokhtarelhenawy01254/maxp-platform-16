@@ -123,6 +123,7 @@ const GlobalConversionHost: React.FC = () => {
   const isCafeDemo = theme.id === "cafe-demo";
   const isPharmacy = isPharmacyThemeId(theme.id);
   const isRedlineAuto = theme.id === "redline-auto";
+  const isKhemetLuxe = theme.id === "khemet-luxe-eg";
   const subtotal = useCartStore((state) =>
     state.items.reduce((total, item) => total + item.price * item.quantity, 0),
   );
@@ -187,8 +188,7 @@ const GlobalConversionHost: React.FC = () => {
   const attachToThemeShell = general["attachToThemeShell"] !== false;
   const inactiveTabEnabled = Boolean(modules["inactiveTab"]);
   const exitIntentPopupEnabled = Boolean(modules["exitIntentPopup"]);
-  const freeShippingBarEnabled =
-    Boolean(modules["freeShippingBar"]) && !isQuietDiscoveryChrome;
+  const freeShippingBarEnabled = Boolean(modules["freeShippingBar"]);
   const fakeSalePopupEnabled =
     Boolean(modules["fakeSalePopup"]) && !isQuietDiscoveryChrome;
   const popupStyle = String(ui["popupStyle"] || "minimal");
@@ -219,7 +219,7 @@ const GlobalConversionHost: React.FC = () => {
         : resolveDirectionalCopy({
             value: copy["freeShippingReachedMessage"],
             englishFallback: "You unlocked free shipping",
-            arabicFallback: "رائع، تم تفعيل الشحن المجاني",
+            arabicFallback: "مبروك! تم تفعيل الشحن المجاني",
             prefersArabicCopy,
           }),
     [remainingToFreeShipping, freeShippingTemplate, currency, copy, prefersArabicCopy],
@@ -381,6 +381,10 @@ const GlobalConversionHost: React.FC = () => {
       ? prefersArabicCopy
         ? "كل منتج إضافي يقربك من توصيل مجاني وتجهيز أسرع لطلبك."
         : "Each extra essential moves the order closer to free shipping."
+    : isKhemetLuxe
+      ? prefersArabicCopy
+        ? "أضيفي لسلتك لتصلي إلى الشحن المجاني لكافة المحافظات."
+        : "Add more to your cart to unlock free shipping across Egypt."
       : prefersArabicCopy
         ? "كل جنيه زيادة يقربك من توصيل مجاني وطلب أعلى قيمة."
         : "Every extra item moves the order closer to free shipping.";
@@ -757,7 +761,9 @@ const GlobalConversionHost: React.FC = () => {
               ? "border-b border-[#e6d0bc] bg-[linear-gradient(135deg,#2b1b12_0%,#4b2e1f_52%,#6f4a33_100%)] text-white"
               : isPharmacy
                 ? "border-b border-[#99f6e4] bg-[linear-gradient(135deg,#f7fffe_0%,#d8fbf4_100%)] text-slate-900"
-                : "border-b border-primary/10 bg-primary text-primary-foreground"
+                : isKhemetLuxe
+                  ? "border-b border-[#183f31]/30 bg-[#183f31] text-[#fff8ee]"
+                  : "border-b border-primary/10 bg-primary text-primary-foreground"
         } ${
           barPosition === "bottom"
             ? "fixed inset-x-4 bottom-4 z-[70] rounded-2xl border px-4 py-3 shadow-2xl md:inset-x-auto md:right-6 md:w-[420px]"
@@ -779,7 +785,7 @@ const GlobalConversionHost: React.FC = () => {
                 <span className={`inline-flex items-center justify-center rounded-full ${
                   isCompactMarketplacePreviewChrome && barPosition === "top"
                     ? "h-7 w-7 text-[10px]"
-                    : "h-8 w-8 text-xs"
+                    : "h-8 w-8 text-xs font-bold"
                 } ${
                   isBiteRush
                     ? "bg-white/12 text-white"
@@ -787,9 +793,11 @@ const GlobalConversionHost: React.FC = () => {
                       ? "bg-white/12 text-[#f8eadf]"
                     : isPharmacy
                       ? "bg-[#0f766e]/10 text-[#0f766e]"
-                      : "bg-white/15"
+                      : isKhemetLuxe
+                        ? "bg-[#c5a470]/25 text-[#f5ecd9]"
+                        : "bg-white/15"
                 }`}>
-                  {isBiteRush || isPharmacy ? "توصيل" : isCafeDemo ? "قهوة" : "شحن"}
+                  {isBiteRush || isPharmacy ? "توصيل" : isCafeDemo ? "قهوة" : isKhemetLuxe ? "شحن مجاني" : "شحن"}
                 </span>
                 <span className="truncate">{freeShippingMessage}</span>
               </div>
@@ -801,7 +809,9 @@ const GlobalConversionHost: React.FC = () => {
                       ? "bg-white/10"
                     : isPharmacy
                       ? "bg-[#0f766e]/12"
-                      : "bg-white/20"
+                      : isKhemetLuxe
+                        ? "bg-white/15"
+                        : "bg-white/20"
                 }`}
               >
                 <div
@@ -812,7 +822,9 @@ const GlobalConversionHost: React.FC = () => {
                         ? "bg-[linear-gradient(90deg,#d6a77a_0%,#f4dfcc_100%)]"
                       : isPharmacy
                         ? "bg-[linear-gradient(90deg,#14b8a6_0%,#0f766e_100%)]"
-                        : "bg-white"
+                        : isKhemetLuxe
+                          ? "bg-[linear-gradient(90deg,#c5a470_0%,#f0dfc4_100%)]"
+                          : "bg-white"
                   }`}
                   style={{ width: `${freeShippingProgress}%` }}
                 />
@@ -829,7 +841,9 @@ const GlobalConversionHost: React.FC = () => {
                   ? "bg-white/12 text-[#f8eadf]"
                 : isPharmacy
                   ? "bg-white text-[#0f766e] shadow-[0_10px_24px_-16px_rgba(15,118,110,0.45)]"
-                  : "bg-white/15 uppercase"
+                  : isKhemetLuxe
+                    ? "bg-[#c5a470]/20 text-[#fff8ee]"
+                    : "bg-white/15 uppercase"
             }`}>
               {subtotal > 0
                 ? formatStorefrontCurrency(subtotal, currency)
@@ -851,7 +865,9 @@ const GlobalConversionHost: React.FC = () => {
                     ? "text-[#f5e2cf]"
                   : isPharmacy
                     ? "text-[#0f766e]/75"
-                    : "text-primary-foreground/80"
+                    : isKhemetLuxe
+                      ? "text-[#f5ecd9]/90"
+                      : "text-primary-foreground/80"
               }`}
             >
               {freeShippingSupportNote}
@@ -865,7 +881,9 @@ const GlobalConversionHost: React.FC = () => {
                     ? "bg-[linear-gradient(135deg,#d6a77a_0%,#f4dfcc_100%)] text-[#2c1d14] shadow-[0_16px_34px_-20px_rgba(214,167,122,0.42)] hover:bg-[#f7dec6]"
                   : isPharmacy
                     ? "bg-[#0f766e] text-white shadow-[0_16px_34px_-20px_rgba(15,118,110,0.45)] hover:bg-[#0b5f59]"
-                  : "bg-white/15 text-primary-foreground hover:bg-white/20"
+                    : isKhemetLuxe
+                      ? "bg-[#c5a470] text-[#183f31] shadow-[0_16px_34px_-20px_rgba(197,164,112,0.6)] hover:bg-[#d6b785]"
+                      : "bg-white/15 text-primary-foreground hover:bg-white/20"
               }`}
             >
               {freeShippingPrimaryCtaLabel}

@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Sparkles,
   Truck,
+  ExternalLink,
 } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -98,8 +99,8 @@ function PromoSection({
   return (
     <section
       className={cn(
-        "rounded-[24px] border bg-white/80 p-5 shadow-sm transition-colors",
-        isOn ? accentClassName.sectionBorder : "border-slate-200/70",
+        "rounded-[24px] border bg-white/80 p-5 shadow-sm transition-colors dark:bg-slate-900/70 dark:shadow-none",
+        isOn ? accentClassName.sectionBorder : "border-slate-200/70 dark:border-slate-800",
       )}
     >
       <div className="flex flex-wrap items-center gap-3">
@@ -108,13 +109,13 @@ function PromoSection({
             "flex size-11 shrink-0 items-center justify-center rounded-2xl ring-1 ring-inset transition-colors",
             isOn
               ? accentClassName.iconActive
-              : "bg-slate-50 text-slate-500 ring-slate-200",
+              : "bg-slate-50 text-slate-500 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700",
           )}
         >
           <Icon className="size-5" />
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-2.5">
-          <h2 className="text-base font-bold text-slate-950">{title}</h2>
+          <h2 className="text-base font-bold text-slate-950 dark:text-slate-100">{title}</h2>
           {pill}
         </div>
         <div className="ms-auto flex items-center gap-3">
@@ -126,8 +127,8 @@ function PromoSection({
           />
         </div>
       </div>
-      <p className="mt-2.5 text-sm leading-6 text-slate-500">{description}</p>
-      <div className="mt-5 space-y-4">{children}</div>
+      <p className="mt-2.5 text-sm leading-6 text-slate-500 dark:text-slate-400">{description}</p>
+      <div className="mt-5 space-y-4 text-slate-900 dark:text-slate-100">{children}</div>
     </section>
   );
 }
@@ -149,9 +150,9 @@ function StatusPill({
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold",
         active
           ? warn
-            ? "bg-amber-100 text-amber-800"
-            : "bg-emerald-100 text-emerald-800"
-          : "bg-slate-200/80 text-slate-600",
+            ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+            : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+          : "bg-slate-200/80 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
       )}
     >
       <span
@@ -484,16 +485,16 @@ const PromotionSettings: React.FC = () => {
               <Link
                 key={tool.to}
                 to={tool.to}
-                className="group flex min-w-[240px] shrink-0 items-start gap-2.5 rounded-2xl border border-slate-200/70 bg-white/85 px-3.5 py-3 transition hover:-translate-y-px hover:border-slate-300 hover:shadow-sm sm:min-w-0"
+                className="group flex min-w-[240px] shrink-0 items-start gap-2.5 rounded-2xl border border-slate-200/70 bg-white/85 px-3.5 py-3 transition hover:-translate-y-px hover:border-slate-300 hover:shadow-sm sm:min-w-0 dark:border-slate-800 dark:bg-slate-900/70 dark:hover:border-slate-700"
               >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600 ring-1 ring-inset ring-slate-200/70 transition group-hover:bg-white">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600 ring-1 ring-inset ring-slate-200/70 transition group-hover:bg-white dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:group-hover:bg-slate-700">
                   <Icon className="size-4" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-bold text-slate-950">
+                  <span className="block text-sm font-bold text-slate-950 dark:text-slate-100">
                     {tool.label}
                   </span>
-                  <span className="block text-xs text-slate-500">{tool.desc}</span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">{tool.desc}</span>
                 </span>
               </Link>
             );
@@ -643,6 +644,25 @@ const PromotionSettings: React.FC = () => {
                 {t("promotionSettings.storeBadge")}
               </span>
             </div>
+          </div>
+
+          {/* تنبيه وتأكيد التزامن مع أداة شريط الشحن المجاني */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/70 p-3.5 text-xs text-emerald-950">
+            <div className="flex items-center gap-2">
+              <span className={cn("flex size-2 rounded-full", freeShippingEnabled ? "bg-emerald-600 animate-pulse" : "bg-slate-400")} />
+              <span className="font-semibold leading-5">
+                {freeShippingEnabled
+                  ? "شريط الشحن المجاني مفعّل ومتزامن تلقائيًا على المتجر (الرئيسية، صفحة المنتج، السلة، وإتمام الطلب) بنفس الحد."
+                  : "تفعيل الشحن المجاني هنا يُشغّل شريط الشحن المجاني تلقائيًا على المتجر ويزامن الحد المالي في كل الصفحات."}
+              </span>
+            </div>
+            <Link
+              to="/settings/store/tools/freeShippingBar"
+              className="inline-flex items-center gap-1.5 font-bold text-emerald-800 underline underline-offset-4 hover:text-emerald-950"
+            >
+              <span>تخصيص أداة شريط الشحن المجاني</span>
+              <ExternalLink className="size-3.5" />
+            </Link>
           </div>
         </PromoSection>
 
