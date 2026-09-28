@@ -21,6 +21,8 @@
     "test:tasks-workspace-e2e": "node scripts/tasks-workspace-create.e2e.mjs",
     "test:tasks-production-smoke": "node scripts/tasks-production-regression.cjs",
     "test:storefront-routing": "vitest run --environment jsdom --passWithNoTests src/registry/__tests__",
+    "test:sidebar-routing": "vitest run src/config/__tests__/sidebarRoutingGuard.test.ts",
+    "audit:sidebar-routes": "node ../../scripts/validate-sidebar-routes.mjs",
     "test:catalog-diff-smoke": "jest --config jest.config.cjs src/pages/super-admin/__tests__/SubscriptionCenter.catalogDiff.test.tsx --runInBand",
     "i18n:lint": "node ../../scripts/i18n-lint.js",
     "i18n:merge": "node ../../scripts/merge-translations.js",
