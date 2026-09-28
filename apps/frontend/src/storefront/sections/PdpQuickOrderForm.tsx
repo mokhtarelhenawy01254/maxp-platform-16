@@ -21,6 +21,10 @@ import {
   calculateVolumeDiscountPricing,
   type VolumeDiscountTier,
 } from "../utils/volumeDiscounts";
+import {
+  getActiveStorePromotionFromCompany,
+  calculateStorePromotionDiscount,
+} from "../utils/storePromotion";
 import { getPdpQuickOrderSettingsFromDesignTokens } from "../utils/pdpQuickOrderSettings";
 import { EGYPT_GOVERNORATES, getGovernorateByName } from "../../constants/egyptGovernorates";
 import { useIpGovernorateDetection } from "../hooks/useIpGovernorateDetection";
@@ -654,8 +658,30 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     walletDiscountActive
       ? (Number(resolvedSubtotal) || 0) * (walletDiscountPercent / 100)
       : 0;
-  const total = Math.max(0, resolvedSubtotal + shippingCost - walletDiscount);
-  const minimumOrder = useMinimumOrderSettings(resolvedSubtotal, currency);
+  const storePromotion = useMemo(
+    () => getActiveStorePromotionFromCompany(storefrontSettings?.company),
+    [storefrontSettings?.company],
+  );
+  const storePromoDiscountResult = useMemo(() => {
+    if (activeQuantityOffer || !storePromotion || !storePromotion.isActive) {
+      return { discount: 0, tier: null };
+    }
+    const currentItems = [
+      {
+        productId: product.id,
+        quantity,
+        price: pricing.unitPrice,
+        comparePrice: pricing.comparePrice,
+      },
+    ];
+    return calculateStorePromotionDiscount(currentItems, storePromotion);
+  }, [activeQuantityOffer, storePromotion, product.id, quantity, pricing.unitPrice, pricing.comparePrice]);
+
+  const storePromoDiscount = storePromoDiscountResult.discount;
+  const storePromoTier = storePromoDiscountResult.tier;
+
+  const total = Math.max(0, resolvedSubtotal - storePromoDiscount + shippingCost - walletDiscount);
+  const minimumOrder = useMinimumOrderSettings(Math.max(0, resolvedSubtotal - storePromoDiscount), currency);
   const shippingQuoteItems = useMemo(
     () => [
       {
@@ -2198,6 +2224,16 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     <span>{configuredShippingSummaryText}</span>
                     <span className="font-semibold text-foreground">
                       {staticShippingValueText}
+                    </span>
+                  </div>
+                ) : null}
+                {storePromoDiscount > 0 ? (
+                  <div className="flex items-center justify-between gap-4 text-sm font-medium">
+                    <span className="text-emerald-700 dark:text-emerald-400">
+                      {storePromoTier?.label || (prefersArabicCopy ? "عرض الكمية" : "Quantity Offer")}
+                    </span>
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
+                      -{formatStorefrontCurrency(storePromoDiscount, currency)}
                     </span>
                   </div>
                 ) : null}

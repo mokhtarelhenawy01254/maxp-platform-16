@@ -6,6 +6,9 @@ import { copyCopilotSessionLink, openCopilotSessionInNewTab } from './copilotLin
 interface CopilotSessionsModalProps {
   sessions: CopilotSession[];
   activeSessionId: string | null;
+  loading?: boolean;
+  sessionsError?: string | null;
+  onRetry?: () => void;
   onSelectSession: (sessionId: string) => void;
   onNewSession: () => void;
   onDeleteSession: (sessionId: string) => void;
@@ -14,6 +17,9 @@ interface CopilotSessionsModalProps {
 export const CopilotSessionsModal: React.FC<CopilotSessionsModalProps> = ({
   sessions,
   activeSessionId,
+  loading = false,
+  sessionsError = null,
+  onRetry,
   onSelectSession,
   onNewSession,
   onDeleteSession,
@@ -54,7 +60,32 @@ export const CopilotSessionsModal: React.FC<CopilotSessionsModalProps> = ({
         </button>
       </div>
 
-      {sessions.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-16 text-xs text-slate-400 dark:text-slate-500 animate-pulse">
+          جاري مزامنة وسحب الجلسات السحابية...
+        </div>
+      ) : sessionsError ? (
+        <div className="text-center py-12 px-4 space-y-3">
+          <div className="h-9 w-9 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-500 mx-auto flex items-center justify-center border border-rose-200/60 dark:border-rose-900">
+            <MessageSquare className="h-4 w-4" />
+          </div>
+          <div className="text-xs font-semibold text-rose-600 dark:text-rose-400">
+            تعذر تحميل الجلسات السحابية
+          </div>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+            {sessionsError}
+          </p>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-xs font-medium cursor-pointer active:scale-95 transition-all"
+            >
+              <span>إعادة المحاولة</span>
+            </button>
+          )}
+        </div>
+      ) : sessions.length === 0 ? (
         <div className="text-center py-16 text-xs text-slate-400 dark:text-slate-500">
           لا توجد جلسات محفوظة. سيتم حفظ محادثاتك تلقائياً في السحابة.
         </div>

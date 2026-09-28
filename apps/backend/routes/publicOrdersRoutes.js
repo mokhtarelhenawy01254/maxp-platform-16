@@ -1736,23 +1736,22 @@ router.post('/', async (req, res) => {
     let duplicateMatch = null;
     let duplicateInfo = null;
     if (
-      duplicateSettings &&
-      (guestPhone || guestEmail) &&
-      finalTotal !== undefined &&
-      finalTotal !== null
+      duplicateSettings?.enabled !== false &&
+      (guestPhone || guestEmail)
     ) {
       duplicateMatch = await orderService.findDuplicateOrder({
         companyId: company.id,
         customerPhone: guestPhone,
         customerEmail: guestEmail,
         total: finalTotal,
-        windowMinutes: duplicateSettings.windowMinutes,
+        items: cartItems || [],
+        settings: duplicateSettings,
         includeGuest: true
       });
     }
 
     const isDuplicateOrder = !!duplicateMatch;
-    if (isDuplicateOrder && duplicateSettings?.action === 'ignore') {
+    if (isDuplicateOrder && (duplicateSettings?.action === 'block' || duplicateSettings?.action === 'ignore')) {
       // Optionally clear cart for duplicate attempts to avoid repeated submissions
       if (shouldDeleteCart && cartId) {
         try {
@@ -1806,9 +1805,13 @@ router.post('/', async (req, res) => {
         duplicateOfOrderNumber: duplicateMatch.order.orderNumber,
         duplicateOfType: duplicateMatch.type,
         detectedAt: new Date().toISOString(),
-        windowMinutes: duplicateSettings?.windowMinutes || 60,
+        windowMinutes: duplicateSettings?.windowEnabled ? duplicateSettings.windowMinutes : null,
+        criteria: duplicateSettings?.criteria,
         originalStatus: 'PENDING'
       };
+      if (duplicateSettings?.alertTeam) {
+        orderService.alertTeamAboutDuplicate(company.id, guestPhone, duplicateMatch.order, orderNumber);
+      }
     }
     let affiliateReferralId = null;
     let affiliateId = null;

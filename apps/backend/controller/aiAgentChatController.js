@@ -6,6 +6,7 @@
 
 const aiSdkClient = require('../services/aiSdkClient');
 const aiSessionService = require('../services/aiSessionService');
+const agentStudioSessionService = require('../services/agentStudioSessionService');
 const CorrectiveRAGEngine = require('../services/rag/CorrectiveRAGEngine');
 const RagKnowledgeProposalService = require('../services/rag/RagKnowledgeProposalService');
 const RagKnowledgeMaintenanceService = require('../services/rag/RagKnowledgeMaintenanceService');
@@ -37,8 +38,8 @@ async function sendMessage(req, res) {
 
     const activeSessionId = sessionId || `copilot_sess_${Date.now()}`;
 
-    // SOTA 2026: Arabic/English Natural Language Rewind Command Interceptor
-    const isRewindCommand = /^\s*(\/?(تراجع|undo|rewind)|ارجع\s+(للخلف|خطوة|ورا|للخطوة\s+اللي\s+فاتت))/i.test(message);
+    // SOTA 2026: Strict slash-command rewind interceptor (prevents accidental data wipe from conversational words)
+    const isRewindCommand = /^\s*\/(تراجع|undo|rewind)\s*$/i.test(message);
     if (isRewindCommand && sessionId) {
       const rewindRes = await aiSessionService.rewindSession(companyId, sessionId);
       return res.json({
@@ -72,7 +73,7 @@ async function sendMessage(req, res) {
           companyId,
           agentId: targetAgentId,
           message,
-          threadId: sessionId,
+          threadId: activeSessionId,
           memoryContext: combinedMemoryContext,
           channel: req.body?.channel || 'dashboard',
         });
@@ -81,14 +82,23 @@ async function sendMessage(req, res) {
           result = {
             reply: agentChatResult.reply || 'تم استلام الرد بنجاح.',
             toolCalls: agentChatResult.tool_calls || [],
-            threadId: agentChatResult.thread_id || sessionId,
+            threadId: activeSessionId,
             agentInfo: {
               id: targetAgentId,
               status: agentChatResult.status,
             },
             modelSelection: agentChatResult.model ? { model: agentChatResult.model } : null,
-            session: { id: agentChatResult.thread_id || sessionId },
+            session: { id: activeSessionId },
           };
+
+          // Store AI service thread_id in session context without drifting session.id
+          if (agentChatResult.thread_id && agentChatResult.thread_id !== activeSessionId) {
+            agentStudioSessionService.updateSessionContext(companyId, activeSessionId, {
+              aiThreadId: agentChatResult.thread_id,
+            }, 'copilot').catch(err => {
+              console.warn('[AI-CHAT-CTRL] updateSessionContext warning:', err.message);
+            });
+          }
         }
       } catch (agentErr) {
         console.warn('[AI-CHAT-CTRL] chatWithAgent fallback to default chat:', agentErr.message);
@@ -100,7 +110,7 @@ async function sendMessage(req, res) {
         companyId,
         customerId: userId,
         message,
-        threadId: sessionId,
+        threadId: activeSessionId,
         memoryContext: combinedMemoryContext,
       });
       result = {
@@ -108,8 +118,8 @@ async function sendMessage(req, res) {
         toolCalls: fallbackResult.toolCalls || fallbackResult.tool_calls || [],
         agentInfo: fallbackResult.agentInfo || null,
         modelSelection: fallbackResult.modelSelection || null,
-        conversationId: fallbackResult.conversationId || fallbackResult.threadId,
-        session: fallbackResult.session || { id: fallbackResult.threadId },
+        conversationId: activeSessionId,
+        session: { id: activeSessionId },
       };
     }
 
@@ -151,8 +161,9 @@ async function sendMessage(req, res) {
       toolCalls: result.toolCalls || [],
       agentInfo: result.agentInfo || null,
       modelSelection: result.modelSelection || null,
-      conversationId: result.conversationId || result.threadId,
-      session: result.session || { id: activeSessionId },
+      conversationId: activeSessionId,
+      threadId: activeSessionId,
+      session: { id: activeSessionId },
     });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] sendMessage error:', error.message);
@@ -727,15 +738,16 @@ async function listSessions(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    let sessions = await aiSessionService.listSessions(companyId, userId);
-    if (!sessions.length) {
-      const session = await aiSessionService.createSession(companyId, userId, req.user);
-      sessions = [session];
-    }
-    return res.json({ success: true, sessions });
+    // Opportunistically soft-delete stale empty sessions (0 messages older than 30 mins)
+    agentStudioSessionService.cleanupEmptySessions(companyId, 'copilot', 30).catch(err => {
+      console.warn('⚠️ [AI-CHAT-CTRL] cleanupEmptySessions warning:', err.message);
+    });
+
+    const sessions = await aiSessionService.listSessions(companyId, userId);
+    return res.json({ success: true, sessions: sessions || [] });
   } catch (error) {
-    console.error('[AI-CHAT-CTRL] listSessions error:', error.message);
-    return res.status(500).json({ success: false, error: 'Failed to list sessions' });
+    console.error('❌ [AI-CHAT-CTRL] listSessions error:', error);
+    return res.status(500).json({ success: false, error: 'تعذر تحميل الجلسات السحابية', details: error.message });
   }
 }
 
@@ -753,8 +765,8 @@ async function createSession(req, res) {
     });
     return res.status(201).json({ success: true, session, messages: [] });
   } catch (error) {
-    console.error('[AI-CHAT-CTRL] createSession error:', error.message);
-    return res.status(500).json({ success: false, error: 'Failed to create session' });
+    console.error('❌ [AI-CHAT-CTRL] createSession error:', error);
+    return res.status(500).json({ success: false, error: 'تعذر إنشاء جلسة سحابية جديدة', details: error.message });
   }
 }
 

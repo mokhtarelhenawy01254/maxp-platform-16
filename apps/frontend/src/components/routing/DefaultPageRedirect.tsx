@@ -46,5 +46,7 @@ export function DefaultPageRedirect() {
     );
   }
 
-  return <Navigate to={resolvePostAuthDestination(user)} replace />;
+  const destination = resolvePostAuthDestination(user);
+  const search = typeof window !== "undefined" ? window.location.search : "";
+  return <Navigate to={`${destination}${search}`} replace />;
 }

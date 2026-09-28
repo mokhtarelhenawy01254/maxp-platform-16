@@ -11,6 +11,7 @@ router.use(verifyToken.requireCompanyAccess);
 router.use(checkAppAccess('order-core'));
 
 router.get('/', orderController.getAllOrders);
+router.get('/export', require('./orders'));
 router.get('/:id', orderController.getOneOrder);
 router.put('/:id', orderController.updateOrder);
 router.delete('/all', verifyToken.requireRole(['OWNER', 'COMPANY_ADMIN', 'MANAGER']), orderController.deleteAllOrders);

@@ -1037,14 +1037,14 @@ const HIDDEN_GUEST_ORDER_STATUSES_WITH_DUPLICATES = [
 
 const getVisibleRegularOrderStatusesFilter = (duplicateSettings) => ({
   notIn:
-    duplicateSettings?.action === 'ignore'
+    duplicateSettings?.action === 'record_hidden' || duplicateSettings?.action === 'hidden' || duplicateSettings?.action === 'ignore'
       ? HIDDEN_REGULAR_ORDER_STATUSES_WITH_DUPLICATES
       : HIDDEN_REGULAR_ORDER_STATUSES
 });
 
 const getVisibleGuestOrderStatusesFilter = (duplicateSettings) => ({
   notIn:
-    duplicateSettings?.action === 'ignore'
+    duplicateSettings?.action === 'record_hidden' || duplicateSettings?.action === 'hidden' || duplicateSettings?.action === 'ignore'
       ? HIDDEN_GUEST_ORDER_STATUSES_WITH_DUPLICATES
       : HIDDEN_GUEST_ORDER_STATUSES
 });
@@ -2182,9 +2182,13 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       }
     }
 
+    const duplicateSettings = await orderService.getDuplicateSettings(companyId);
+    const treatDuplicateAsCancelled = duplicateSettings?.reportTreatment === 'cancelled';
     const DELIVERED_SET = new Set(['DELIVERED', 'PARTIALLY_DELIVERED', 'COMPLETED']);
     const RETURNED_SET = new Set(['RETURNED', 'PARTIALLY_RETURNED', 'REFUNDED', 'PARTIALLY_REFUNDED', 'REFUNDED_PARTIALLY']);
-    const CANCELLED_SET = new Set(['CANCELLED', 'FAILED', 'TRASH', 'TRASH_ORDER', 'DUPLICATE_ORDER', 'PENDING_CANCELLATION']);
+    const CANCELLED_SET = treatDuplicateAsCancelled
+      ? new Set(['CANCELLED', 'FAILED', 'TRASH', 'TRASH_ORDER', 'DUPLICATE_ORDER', 'PENDING_CANCELLATION'])
+      : new Set(['CANCELLED', 'FAILED', 'TRASH', 'TRASH_ORDER', 'PENDING_CANCELLATION']);
 
     const destinyStats = {
       totalConverted: converted,
@@ -4817,7 +4821,11 @@ router.get('/simple/new-count', verifyToken.authenticateToken, async (req, res) 
       return res.json({ success: true, data: { count: 0, orders: 0, guestOrders: 0 } });
     }
 
-    const excludedStatuses = ['DRAFT', 'TRASH', 'DUPLICATE_ORDER'];
+    const duplicateSettings = await orderService.getDuplicateSettings(companyId);
+    const hideDuplicatesInNewList = duplicateSettings?.action === 'record_hidden' || duplicateSettings?.action === 'hidden';
+    const excludedStatuses = hideDuplicatesInNewList
+      ? ['DRAFT', 'TRASH', 'DUPLICATE_ORDER']
+      : ['DRAFT', 'TRASH'];
 
     const [orderCount, guestOrderCount] = await Promise.all([
       getSharedPrismaClient().order.count({
@@ -4860,7 +4868,11 @@ router.get('/simple/new-list', verifyToken.authenticateToken, async (req, res) =
     }
 
     const limit = parseInt(req.query.limit) || 10;
-    const excludedStatuses = ['DRAFT', 'TRASH', 'DUPLICATE_ORDER'];
+    const duplicateSettings = await orderService.getDuplicateSettings(companyId);
+    const hideDuplicatesInNewList = duplicateSettings?.action === 'record_hidden' || duplicateSettings?.action === 'hidden';
+    const excludedStatuses = hideDuplicatesInNewList
+      ? ['DRAFT', 'TRASH', 'DUPLICATE_ORDER']
+      : ['DRAFT', 'TRASH'];
 
     const [orders, guestOrders] = await Promise.all([
       getSharedPrismaClient().order.findMany({
@@ -4941,7 +4953,11 @@ router.post('/simple/mark-all-viewed', verifyToken.authenticateToken, async (req
       return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
 
-    const excludedStatuses = ['DRAFT', 'TRASH', 'DUPLICATE_ORDER'];
+    const duplicateSettings = await orderService.getDuplicateSettings(companyId);
+    const hideDuplicatesInNewList = duplicateSettings?.action === 'record_hidden' || duplicateSettings?.action === 'hidden';
+    const excludedStatuses = hideDuplicatesInNewList
+      ? ['DRAFT', 'TRASH', 'DUPLICATE_ORDER']
+      : ['DRAFT', 'TRASH'];
 
     const [orderResult, guestOrderResult] = await Promise.all([
       getSharedPrismaClient().order.updateMany({

@@ -261,7 +261,7 @@ const DeliveryOptions: React.FC = () => {
               type="button"
               size="lg"
               onClick={openCreateDialog}
-              className="rounded-2xl bg-slate-950 text-white hover:bg-slate-800"
+              className="rounded-2xl bg-slate-950 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200"
             >
               <Plus className="size-4" />
               إضافة خيار جديد
@@ -279,21 +279,21 @@ const DeliveryOptions: React.FC = () => {
           <SettingsStatusAlert message={message} />
 
           {sortedOptions.length === 0 ? (
-            <div className="rounded-[28px] border border-dashed border-slate-200 bg-slate-50/70 px-6 py-14 text-center">
-              <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-white text-slate-700 ring-1 ring-slate-200/70">
+            <div className="rounded-[28px] border border-dashed border-slate-200 bg-slate-50/70 px-6 py-14 text-center dark:border-slate-800 dark:bg-slate-900/50">
+              <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-white text-slate-700 ring-1 ring-slate-200/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">
                 <Package className="size-8" />
               </div>
-              <h2 className="mt-5 text-xl font-bold text-slate-950">
+              <h2 className="mt-5 text-xl font-bold text-slate-950 dark:text-slate-100">
                 لا توجد خيارات توصيل حتى الآن
               </h2>
-              <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-slate-500">
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-slate-500 dark:text-slate-400">
                 أضف أول خيار ليظهر للعميل في صفحة الدفع، مثل التوصيل العادي أو
                 السريع أو الاستلام خلال نفس اليوم.
               </p>
               <Button
                 type="button"
                 onClick={openCreateDialog}
-                className="mt-6 rounded-2xl bg-slate-950 text-white hover:bg-slate-800"
+                className="mt-6 rounded-2xl bg-slate-950 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200"
               >
                 <Plus className="size-4" />
                 إضافة أول خيار
@@ -304,18 +304,18 @@ const DeliveryOptions: React.FC = () => {
               {sortedOptions.map((option) => (
                 <section
                   key={option.id}
-                  className="rounded-[24px] border border-slate-200/70 bg-white p-5 shadow-sm shadow-slate-200/20"
+                  className="rounded-[24px] border border-slate-200/70 bg-white p-5 shadow-sm shadow-slate-200/20 dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-none"
                 >
                   <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                     <div className="space-y-4">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-lg font-bold text-slate-950">
+                        <h2 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                           {option.name}
                         </h2>
                         {option.isDefault ? (
                           <Badge
                             variant="outline"
-                            className="border-amber-200 bg-amber-50 text-amber-700"
+                            className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-300"
                           >
                             <Star className="size-3.5 fill-current" />
                             الافتراضي
@@ -325,45 +325,45 @@ const DeliveryOptions: React.FC = () => {
                           variant="outline"
                           className={cn(
                             option.isActive
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                              : "border-slate-200 bg-slate-100 text-slate-600",
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300"
+                              : "border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400",
                           )}
                         >
                           {option.isActive ? "نشط" : "معطل"}
                         </Badge>
                       </div>
 
-                      <p className="max-w-3xl text-sm leading-7 text-slate-500">
+                      <p className="max-w-3xl text-sm leading-7 text-slate-500 dark:text-slate-400">
                         {option.description?.trim()
                           ? option.description
                           : "لا يوجد وصف مختصر لهذا الخيار حتى الآن."}
                       </p>
 
                       <div className="grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/60">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                             وقت التوصيل
                           </p>
-                          <div className="mt-2 flex items-center gap-2 text-sm font-bold text-slate-950">
-                            <Clock3 className="size-4 text-slate-500" />
+                          <div className="mt-2 flex items-center gap-2 text-sm font-bold text-slate-950 dark:text-slate-100">
+                            <Clock3 className="size-4 text-slate-500 dark:text-slate-400" />
                             {option.deliveryTime}
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/60">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                             السعر
                           </p>
-                          <div className="mt-2 text-sm font-bold text-slate-950">
+                          <div className="mt-2 text-sm font-bold text-slate-950 dark:text-slate-100">
                             {option.price} جنيه
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/60">
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                             ترتيب العرض
                           </p>
-                          <div className="mt-2 text-sm font-bold text-slate-950">
+                          <div className="mt-2 text-sm font-bold text-slate-950 dark:text-slate-100">
                             #{option.sortOrder}
                           </div>
                         </div>
@@ -371,13 +371,13 @@ const DeliveryOptions: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col gap-4 xl:min-w-[250px]">
-                      <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4">
+                      <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-950/60">
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-sm font-bold text-slate-950">
+                            <p className="text-sm font-bold text-slate-950 dark:text-slate-100">
                               تفعيل هذا الخيار
                             </p>
-                            <p className="mt-1 text-xs leading-6 text-slate-500">
+                            <p className="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">
                               أوقفه مؤقتًا بدون حذف البيانات أو إعادة الترتيب.
                             </p>
                           </div>
@@ -431,13 +431,13 @@ const DeliveryOptions: React.FC = () => {
         <DialogContent
           dir="rtl"
           showCloseButton={false}
-          className="max-w-2xl gap-0 overflow-hidden rounded-[28px] border border-slate-200/70 bg-white p-0"
+          className="max-w-2xl gap-0 overflow-hidden rounded-[28px] border border-slate-200/70 bg-white p-0 dark:border-slate-800 dark:bg-slate-950"
         >
-          <DialogHeader className="border-b border-slate-200/70 px-6 py-5 text-right">
-            <DialogTitle className="text-lg font-bold text-slate-950">
+          <DialogHeader className="border-b border-slate-200/70 px-6 py-5 text-right dark:border-slate-800">
+            <DialogTitle className="text-lg font-bold text-slate-950 dark:text-slate-100">
               {editingOption ? "تعديل خيار التوصيل" : "إضافة خيار توصيل جديد"}
             </DialogTitle>
-            <DialogDescription className="mt-1 text-sm leading-7 text-slate-500">
+            <DialogDescription className="mt-1 text-sm leading-7 text-slate-500 dark:text-slate-400">
               حدّد الاسم الذي يراه العميل، ووقت التوصيل، والسعر، ثم اضبط كونه
               افتراضيًا أو نشطًا.
             </DialogDescription>
@@ -446,7 +446,9 @@ const DeliveryOptions: React.FC = () => {
           <div className="space-y-5 px-6 py-6">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="delivery-option-name">اسم الخيار</Label>
+                <Label htmlFor="delivery-option-name" className="text-sm font-semibold text-slate-900 dark:text-slate-200">
+                  اسم الخيار
+                </Label>
                 <Input
                   id="delivery-option-name"
                   value={formData.name}
@@ -457,12 +459,14 @@ const DeliveryOptions: React.FC = () => {
                     }))
                   }
                   placeholder="مثال: توصيل عادي أو توصيل سريع"
-                  className="h-11 rounded-xl"
+                  className="h-11 rounded-xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="delivery-option-time">وقت التوصيل</Label>
+                <Label htmlFor="delivery-option-time" className="text-sm font-semibold text-slate-900 dark:text-slate-200">
+                  وقت التوصيل
+                </Label>
                 <Input
                   id="delivery-option-time"
                   value={formData.deliveryTime}
@@ -473,13 +477,15 @@ const DeliveryOptions: React.FC = () => {
                     }))
                   }
                   placeholder="مثال: 1-2 يوم أو نفس اليوم"
-                  className="h-11 rounded-xl"
+                  className="h-11 rounded-xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="delivery-option-description">الوصف</Label>
+              <Label htmlFor="delivery-option-description" className="text-sm font-semibold text-slate-900 dark:text-slate-200">
+                الوصف
+              </Label>
               <Textarea
                 id="delivery-option-description"
                 rows={3}
@@ -491,13 +497,15 @@ const DeliveryOptions: React.FC = () => {
                   }))
                 }
                 placeholder="وصف مختصر يساعد العميل على فهم هذا الخيار"
-                className="min-h-[110px] rounded-xl border-slate-200"
+                className="min-h-[110px] rounded-xl border-slate-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
               />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="delivery-option-price">السعر (جنيه)</Label>
+                <Label htmlFor="delivery-option-price" className="text-sm font-semibold text-slate-900 dark:text-slate-200">
+                  السعر (جنيه)
+                </Label>
                 <Input
                   id="delivery-option-price"
                   type="number"
@@ -510,12 +518,14 @@ const DeliveryOptions: React.FC = () => {
                       price: getNumericValue(event.target.value),
                     }))
                   }
-                  className="h-11 rounded-xl"
+                  className="h-11 rounded-xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="delivery-option-sort-order">ترتيب العرض</Label>
+                <Label htmlFor="delivery-option-sort-order" className="text-sm font-semibold text-slate-900 dark:text-slate-200">
+                  ترتيب العرض
+                </Label>
                 <Input
                   id="delivery-option-sort-order"
                   type="number"
@@ -530,9 +540,9 @@ const DeliveryOptions: React.FC = () => {
                       ),
                     }))
                   }
-                  className="h-11 rounded-xl"
+                  className="h-11 rounded-xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
                 />
-                <p className="text-xs leading-5 text-slate-500">
+                <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
                   الأصغر يظهر أولًا أمام العميل.
                 </p>
               </div>
@@ -541,13 +551,13 @@ const DeliveryOptions: React.FC = () => {
             <Separator />
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4">
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-bold text-slate-950">
+                    <p className="text-sm font-bold text-slate-950 dark:text-slate-100">
                       جعله الخيار الافتراضي
                     </p>
-                    <p className="mt-1 text-xs leading-6 text-slate-500">
+                    <p className="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">
                       سيظهر كمقترح أول للعميل عند اختيار وسيلة التوصيل.
                     </p>
                   </div>
@@ -564,13 +574,13 @@ const DeliveryOptions: React.FC = () => {
                 </div>
               </div>
 
-              <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4">
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-bold text-slate-950">
+                    <p className="text-sm font-bold text-slate-950 dark:text-slate-100">
                       تفعيل الخيار
                     </p>
-                    <p className="mt-1 text-xs leading-6 text-slate-500">
+                    <p className="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">
                       عند الإيقاف يظل محفوظًا لكنه يختفي من واجهة العميل.
                     </p>
                   </div>
@@ -589,7 +599,7 @@ const DeliveryOptions: React.FC = () => {
             </div>
           </div>
 
-          <DialogFooter className="border-t border-slate-200/70 bg-slate-50/70">
+          <DialogFooter className="border-t border-slate-200/70 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-950">
             <Button variant="outline" onClick={handleCloseDialog}>
               إلغاء
             </Button>
@@ -602,7 +612,7 @@ const DeliveryOptions: React.FC = () => {
                 !formData.name.trim() ||
                 !formData.deliveryTime.trim()
               }
-              className="bg-slate-950 text-white hover:bg-slate-800"
+              className="bg-slate-950 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200"
             >
               {saving ? <Loader2 className="size-4 animate-spin" /> : null}
               {editingOption ? "تحديث الخيار" : "إضافة الخيار"}

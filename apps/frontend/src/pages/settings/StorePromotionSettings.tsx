@@ -4,6 +4,7 @@ import {
   AlertCircle,
   Calendar,
   Gift,
+  Info,
   PanelTop,
   Plus,
   RefreshCcw,
@@ -202,7 +203,12 @@ export default function StorePromotionSettings() {
         description={t("storePromotionSettings.pageDescription")}
         summaryItems={summaryItems}
         action={
-          <Button variant="outline" size="sm" onClick={fillDefaults}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fillDefaults}
+            className="border-slate-300 bg-white text-slate-800 hover:bg-slate-100 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white font-medium"
+          >
             <Plus className="h-4 w-4 ml-1" /> {t("storePromotionSettings.readyExamples")}
           </Button>
         }
@@ -217,12 +223,12 @@ export default function StorePromotionSettings() {
           icon={Gift}
           title={t("storePromotionSettings.enablePromo")}
           description={t("storePromotionSettings.enablePromoDesc")}
-          accentClassName="bg-amber-50 text-amber-700 ring-amber-200/70"
+          accentClassName="bg-amber-50 text-amber-700 ring-amber-200/70 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-500/30"
         >
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <Label>{t("storePromotionSettings.enablePromo")}</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="text-sm font-semibold text-slate-900 dark:text-slate-200">{t("storePromotionSettings.enablePromo")}</Label>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {t("storePromotionSettings.enablePromoDesc")}
               </p>
             </div>
@@ -237,12 +243,12 @@ export default function StorePromotionSettings() {
           icon={ShoppingCart}
           title={t("storePromotionSettings.disableOtherDiscounts")}
           description={t("storePromotionSettings.disableOtherDiscountsDesc")}
-          accentClassName="bg-rose-50 text-rose-700 ring-rose-200/70"
+          accentClassName="bg-rose-50 text-rose-700 ring-rose-200/70 dark:bg-rose-950/40 dark:text-rose-300 dark:ring-rose-500/30"
         >
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <Label>{t("storePromotionSettings.disableOtherDiscounts")}</Label>
-              <p className="text-sm text-muted-foreground">
+              <Label className="text-sm font-semibold text-slate-900 dark:text-slate-200">{t("storePromotionSettings.disableOtherDiscounts")}</Label>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {t("storePromotionSettings.disableOtherDiscountsDesc")}
               </p>
             </div>
@@ -251,19 +257,26 @@ export default function StorePromotionSettings() {
               onCheckedChange={checked => setPromotion(p => ({ ...p, disableOtherDiscounts: checked }))}
             />
           </div>
+
+          {promotion.disableOtherDiscounts && (
+            <div className="mt-3 rounded-lg border border-amber-200/80 bg-amber-50/80 p-3 text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200 text-xs sm:text-sm flex items-start gap-2.5">
+              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <p>{t("storePromotionSettings.disableOtherDiscountsAlert")}</p>
+            </div>
+          )}
         </SettingsSection>
 
         <SettingsSection
           icon={Tag}
           title={t("storePromotionSettings.promoTitle")}
           description={t("storePromotionSettings.promoTitleDesc")}
-          accentClassName="bg-sky-50 text-sky-700 ring-sky-200/70"
+          accentClassName="bg-sky-50 text-sky-700 ring-sky-200/70 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-500/30"
         >
           <Input
             value={promotion.title}
             onChange={e => setPromotion(p => ({ ...p, title: e.target.value }))}
             placeholder={t("storePromotionSettings.promoTitlePlaceholder")}
-            className="max-w-md"
+            className="max-w-md bg-white text-slate-900 border-slate-200 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 dark:placeholder:text-slate-500 font-medium"
           />
         </SettingsSection>
 
@@ -271,18 +284,26 @@ export default function StorePromotionSettings() {
           icon={Calendar}
           title={t("storePromotionSettings.promoDate")}
           description={t("storePromotionSettings.promoDateDesc")}
-          accentClassName="bg-violet-50 text-violet-700 ring-violet-200/70"
+          accentClassName="bg-violet-50 text-violet-700 ring-violet-200/70 dark:bg-violet-950/40 dark:text-violet-300 dark:ring-violet-500/30"
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>{t("storePromotionSettings.from")}</Label>
-              <Input type="datetime-local" value={promotion.startDate}
-                onChange={e => setPromotion(p => ({ ...p, startDate: e.target.value }))} />
+              <Label className="text-sm font-semibold text-slate-900 dark:text-slate-200">{t("storePromotionSettings.from")}</Label>
+              <Input
+                type="datetime-local"
+                value={promotion.startDate}
+                onChange={e => setPromotion(p => ({ ...p, startDate: e.target.value }))}
+                className="bg-white text-slate-900 border-slate-200 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 font-medium dark:[color-scheme:dark]"
+              />
             </div>
             <div className="space-y-2">
-              <Label>{t("storePromotionSettings.to")}</Label>
-              <Input type="datetime-local" value={promotion.endDate}
-                onChange={e => setPromotion(p => ({ ...p, endDate: e.target.value }))} />
+              <Label className="text-sm font-semibold text-slate-900 dark:text-slate-200">{t("storePromotionSettings.to")}</Label>
+              <Input
+                type="datetime-local"
+                value={promotion.endDate}
+                onChange={e => setPromotion(p => ({ ...p, endDate: e.target.value }))}
+                className="bg-white text-slate-900 border-slate-200 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 font-medium dark:[color-scheme:dark]"
+              />
             </div>
           </div>
         </SettingsSection>
@@ -291,42 +312,52 @@ export default function StorePromotionSettings() {
           icon={PanelTop}
           title={t("storePromotionSettings.barSettings")}
           description={t("storePromotionSettings.barSettingsDesc")}
-          accentClassName="bg-amber-50 text-amber-700 ring-amber-200/70"
+          accentClassName="bg-amber-50 text-amber-700 ring-amber-200/70 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-500/30"
         >
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <Label>{t("storePromotionSettings.showBar")}</Label>
-                <p className="text-sm text-muted-foreground">{t("storePromotionSettings.showBarDesc")}</p>
+                <Label className="text-sm font-semibold text-slate-900 dark:text-slate-200">{t("storePromotionSettings.showBar")}</Label>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t("storePromotionSettings.showBarDesc")}</p>
               </div>
               <Switch
                 checked={promotion.barVisible}
                 onCheckedChange={checked => setPromotion(p => ({ ...p, barVisible: checked }))}
               />
             </div>
-            <Separator />
+            <Separator className="dark:bg-slate-800" />
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <Label>{t("storePromotionSettings.stickyBar")}</Label>
-                <p className="text-sm text-muted-foreground">{t("storePromotionSettings.stickyBarDesc")}</p>
+                <Label className="text-sm font-semibold text-slate-900 dark:text-slate-200">{t("storePromotionSettings.stickyBar")}</Label>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t("storePromotionSettings.stickyBarDesc")}</p>
               </div>
               <Switch
                 checked={promotion.barSticky}
                 onCheckedChange={checked => setPromotion(p => ({ ...p, barSticky: checked }))}
               />
             </div>
-            <Separator />
+            <Separator className="dark:bg-slate-800" />
             <div className="space-y-2">
-              <Label>{t("storePromotionSettings.barPages")}</Label>
-              <p className="text-sm text-muted-foreground">{t("storePromotionSettings.barPagesDesc")}</p>
+              <Label className="text-sm font-semibold text-slate-900 dark:text-slate-200">{t("storePromotionSettings.barPages")}</Label>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t("storePromotionSettings.barPagesDesc")}</p>
               <Select value={promotion.barPages}
                 onValueChange={val => setPromotion(p => ({ ...p, barPages: val }))}>
-                <SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("storePromotionSettings.allPages")}</SelectItem>
-                  <SelectItem value="shop">{t("storePromotionSettings.shopOnly")}</SelectItem>
-                  <SelectItem value="product">{t("storePromotionSettings.productOnly")}</SelectItem>
-                  <SelectItem value="checkout">{t("storePromotionSettings.checkoutOnly")}</SelectItem>
+                <SelectTrigger className="max-w-xs bg-white text-slate-900 border-slate-200 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 font-medium">
+                  <SelectValue>
+                    {promotion.barPages === "shop"
+                      ? t("storePromotionSettings.shopOnly")
+                      : promotion.barPages === "product"
+                        ? t("storePromotionSettings.productOnly")
+                        : promotion.barPages === "checkout"
+                          ? t("storePromotionSettings.checkoutOnly")
+                          : t("storePromotionSettings.allPages")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="dark:bg-slate-950 dark:border-slate-800">
+                  <SelectItem value="all" className="dark:text-slate-100 dark:focus:bg-slate-800">{t("storePromotionSettings.allPages")}</SelectItem>
+                  <SelectItem value="shop" className="dark:text-slate-100 dark:focus:bg-slate-800">{t("storePromotionSettings.shopOnly")}</SelectItem>
+                  <SelectItem value="product" className="dark:text-slate-100 dark:focus:bg-slate-800">{t("storePromotionSettings.productOnly")}</SelectItem>
+                  <SelectItem value="checkout" className="dark:text-slate-100 dark:focus:bg-slate-800">{t("storePromotionSettings.checkoutOnly")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -337,68 +368,151 @@ export default function StorePromotionSettings() {
           icon={ShoppingCart}
           title={t("storePromotionSettings.discountTiers")}
           description={t("storePromotionSettings.discountTiersDesc")}
-          accentClassName="bg-emerald-50 text-emerald-700 ring-emerald-200/70"
+          accentClassName="bg-emerald-50 text-emerald-700 ring-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-500/30"
         >
           <div className="space-y-4">
+            <div className="rounded-xl border border-sky-200/80 bg-sky-50/60 p-4 text-sky-950 dark:border-sky-800/60 dark:bg-sky-950/30 dark:text-sky-200 text-sm leading-relaxed flex items-start gap-3">
+              <Info className="h-5 w-5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-semibold">{t("storePromotionSettings.howItWorksTitle")}</p>
+                <p className="text-xs sm:text-sm text-sky-900/90 dark:text-sky-300/90 leading-normal">
+                  {t("storePromotionSettings.howItWorksDesc")}
+                </p>
+              </div>
+            </div>
+
             {promotion.tiers.map((tier, index) => (
-              <div key={tier.id} className="border rounded-lg p-4 space-y-4">
+              <div
+                key={tier.id}
+                className="rounded-xl border border-slate-200/90 bg-slate-50/70 p-4 space-y-4 dark:border-slate-800 dark:bg-slate-950/60 shadow-xs transition-colors"
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{t("storePromotionSettings.tierLevel", { index: index + 1 })}</span>
-                  <Button variant="ghost" size="icon" onClick={() => removeTier(tier.id)} className="h-8 w-8 text-destructive">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex size-6 items-center justify-center rounded-md bg-emerald-100 text-xs font-bold text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 ring-1 ring-inset ring-emerald-600/30">
+                      {index + 1}
+                    </span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      {t("storePromotionSettings.tierLevel", { index: index + 1 })}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeTier(tier.id)}
+                    className="h-8 w-8 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/50"
+                    aria-label="حذف المستوى"
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label>{t("storePromotionSettings.minQuantity")}</Label>
-                    <Input type="number" min={1} value={tier.minQuantity}
-                      onChange={e => updateTier(tier.id, { minQuantity: Math.max(1, parseInt(e.target.value) || 1) })} />
+                    <Label className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      {t("storePromotionSettings.minQuantity")}
+                    </Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={tier.minQuantity}
+                      onChange={e =>
+                        updateTier(tier.id, {
+                          minQuantity: Math.max(1, parseInt(e.target.value) || 1),
+                        })
+                      }
+                      className="bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 font-medium"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("storePromotionSettings.discountType")}</Label>
-                    <Select value={tier.type}
-                      onValueChange={(val: TierType) => updateTier(tier.id, { type: val })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                    <Label className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      {t("storePromotionSettings.discountType")}
+                    </Label>
+                    <Select
+                      value={tier.type}
+                      onValueChange={(val: TierType) => updateTier(tier.id, { type: val })}
+                    >
+                      <SelectTrigger className="w-full bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 font-medium">
+                        <SelectValue>
+                          {(val: unknown) => {
+                            const actualVal = (val as string) || tier.type;
+                            if (actualVal === "all_percentage") {
+                              return t("storePromotionSettings.allDiscounted", "خصم على كل القطع");
+                            }
+                            return t("storePromotionSettings.cheapestDiscounted", "خصم على أرخص قطعة");
+                          }}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="dark:bg-slate-950 dark:border-slate-800">
                         {typeOptions.map(o => (
-                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          <SelectItem key={o.value} value={o.value} className="dark:text-slate-100 dark:focus:bg-slate-800">
+                            {o.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("storePromotionSettings.discountValue")}</Label>
+                    <Label className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      {t("storePromotionSettings.discountValue")}
+                    </Label>
                     <div className="flex items-center gap-2">
-                      <Slider value={[tier.value]} onValueChange={([v]) => updateTier(tier.id, { value: v })} min={1} max={100} step={5} className="flex-1" />
-                      <span className="text-sm font-mono w-10 text-left">{tier.value}%</span>
+                      <Slider
+                        value={[tier.value]}
+                        onValueChange={([v]) => updateTier(tier.id, { value: v })}
+                        min={1}
+                        max={100}
+                        step={5}
+                        className="flex-1"
+                      />
+                      <span className="text-sm font-mono font-bold w-12 text-center text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 py-1 px-1.5 rounded-md border border-slate-200 dark:border-slate-700 tabular-nums shadow-xs">
+                        {tier.value}%
+                      </span>
                     </div>
                   </div>
                   {tier.type === "cheapest_percentage" && (
                     <div className="space-y-2">
-                      <Label>{t("storePromotionSettings.discountedItems")}</Label>
-                      <Input type="number" min={1} value={tier.items}
-                        onChange={e => updateTier(tier.id, { items: Math.max(1, parseInt(e.target.value) || 1) })} />
+                      <Label className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                        {t("storePromotionSettings.discountedItems")}
+                      </Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={tier.items}
+                        onChange={e =>
+                          updateTier(tier.id, {
+                            items: Math.max(1, parseInt(e.target.value) || 1),
+                          })
+                        }
+                        className="bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 font-medium"
+                      />
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label>{t("storePromotionSettings.customerLabel")}</Label>
-                  <Input value={tier.label}
+                  <Label className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    {t("storePromotionSettings.customerLabel")}
+                  </Label>
+                  <Input
+                    value={tier.label}
                     onChange={e => updateTier(tier.id, { label: e.target.value })}
                     placeholder={t("storePromotionSettings.customerLabelPlaceholder", { min: tier.minQuantity })}
-                    className="max-w-md" />
+                    className="max-w-md bg-white text-slate-900 border-slate-200 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 font-medium"
+                  />
                 </div>
               </div>
             ))}
 
-            <Button variant="outline" onClick={addTier} className="w-full">
+            <Button
+              variant="outline"
+              onClick={addTier}
+              className="w-full border-dashed border-2 border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-950/60 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white font-semibold py-2.5 transition-colors shadow-xs"
+            >
               <Plus className="h-4 w-4 ml-2" /> {t("storePromotionSettings.addTier")}
             </Button>
 
             {promotion.tiers.length === 0 && (
-              <div className="flex flex-col items-center gap-3 py-8 text-muted-foreground">
+              <div className="flex flex-col items-center gap-3 py-8 text-slate-500 dark:text-slate-400">
                 <AlertCircle className="h-8 w-8" />
                 <p className="text-sm">{t("storePromotionSettings.noTiers")}</p>
               </div>
@@ -406,14 +520,19 @@ export default function StorePromotionSettings() {
           </div>
         </SettingsSection>
 
-        <Separator />
+        <Separator className="dark:bg-slate-800" />
 
         <div className="flex items-center gap-3">
-          <Button onClick={handleSave} disabled={saving} className="gap-2">
+          <Button onClick={handleSave} disabled={saving} className="gap-2 font-semibold shadow-sm">
             <Save className="h-4 w-4" />
             {saving ? t("storePromotionSettings.savingPromo") : t("storePromotionSettings.savePromo")}
           </Button>
-          <Button variant="outline" onClick={handleReset} disabled={saving} className="gap-2">
+          <Button
+            variant="outline"
+            onClick={handleReset}
+            disabled={saving}
+            className="gap-2 border-slate-300 bg-white text-slate-800 hover:bg-slate-100 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white font-semibold"
+          >
             <RefreshCcw className="h-4 w-4" /> {t("storePromotionSettings.cancelPromo")}
           </Button>
         </div>

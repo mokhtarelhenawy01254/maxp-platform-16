@@ -28,10 +28,13 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
     sessions,
     activeSessionId,
     setActiveSessionId,
+    loadingSessions,
+    sessionsError,
     createNewCloudSession,
     deleteCloudSession,
     loadSessionHistory,
     rewindActiveSession,
+    fetchSessions,
   } = useCopilotCloudSessions(context.companyId, initialSessionId);
 
   const {
@@ -59,9 +62,9 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
         ...prev,
         {
           id: `switch_${Date.now()}`,
-          sender: 'agent',
+          sender: 'assistant',
           text: `🔄 **تم التبديل إلى ${agent.name}**\n*${agent.description}*`,
-          createdAt: new Date().toISOString(),
+          timestamp: new Date().toISOString(),
         },
       ]);
     }
@@ -195,7 +198,20 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
 
     let targetSessionId = activeSessionId;
     if (!targetSessionId) {
-      targetSessionId = await createNewCloudSession(text.slice(0, 30));
+      try {
+        targetSessionId = await createNewCloudSession(text.slice(0, 30));
+      } catch (sessErr: any) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `err-${Date.now()}`,
+            sender: 'assistant',
+            text: 'تنبيه: تعذر إنشاء الجلسة السحابية وحفظها في قاعدة البيانات. يرجى التحقق من الاتصال وإعادة المحاولة.',
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+        return;
+      }
     }
 
     const currentImages = [...attachedImages];
@@ -325,8 +341,16 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
   const startNewSession = async () => {
     setShowSessionsList(false);
     setSessionError(null);
-    await createNewCloudSession();
-    setMessages([]);
+    try {
+      await createNewCloudSession();
+      setMessages([]);
+    } catch (err: any) {
+      console.error('[Copilot] Failed starting new session:', err);
+      setSessionError({
+        code: 'LOAD_ERROR',
+        message: 'تعذر إنشاء جلسة سحابية جديدة. يرجى إعادة المحاولة.',
+      });
+    }
   };
 
   const handleRewind = useCallback(async () => {
@@ -370,13 +394,16 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
             onToggleSessionsList={() => setShowSessionsList((prev) => !prev)}
             onNewSession={startNewSession}
             onClose={onClose}
-            activeSessionId={activeSessionId}
+            activeSessionId={sessionError ? null : activeSessionId}
           />
 
           {showSessionsList ? (
             <CopilotSessionsModal
               sessions={sessions}
               activeSessionId={activeSessionId}
+              loading={loadingSessions}
+              sessionsError={sessionsError}
+              onRetry={fetchSessions}
               onSelectSession={(id) => {
                 setSessionError(null);
                 setActiveSessionId(id);

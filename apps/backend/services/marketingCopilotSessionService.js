@@ -68,6 +68,14 @@ class MarketingCopilotSessionService {
             ON public.facebook_ads_ai_chat_messages ("sessionId", "createdAt" ASC);
       `);
 
+      await this.prisma.$executeRawUnsafe(`
+        ALTER TABLE public.facebook_ads_ai_chat_messages ADD COLUMN IF NOT EXISTS "isDeleted" BOOLEAN NOT NULL DEFAULT FALSE;
+      `);
+
+      await this.prisma.$executeRawUnsafe(`
+        ALTER TABLE public.facebook_ads_ai_chat_messages ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3);
+      `);
+
       _tablesEnsured = true;
     } catch (err) {
       console.warn('⚠️ [MarketingCopilotSessionService] ensureTables warning:', err.message);
@@ -108,6 +116,7 @@ class MarketingCopilotSessionService {
         SELECT id, "sessionId", role, content, "toolCalls", "toolResults", "createdAt"
         FROM public.facebook_ads_ai_chat_messages
         WHERE "sessionId" = ANY($1::text[])
+          AND ("isDeleted" IS FALSE OR "isDeleted" IS NULL)
         ORDER BY "createdAt" ASC
       `, sessionIds);
 
@@ -167,7 +176,7 @@ class MarketingCopilotSessionService {
       const messages = await this.prisma.$queryRawUnsafe(`
         SELECT id, "sessionId", role, content, "toolCalls", "toolResults", "createdAt"
         FROM public.facebook_ads_ai_chat_messages
-        WHERE "sessionId" = $1
+        WHERE "sessionId" = $1 AND ("isDeleted" IS FALSE OR "isDeleted" IS NULL)
         ORDER BY "createdAt" ASC
       `, sessionId);
 
@@ -307,7 +316,7 @@ class MarketingCopilotSessionService {
   }
 
   /**
-   * Delete a session and its messages.
+   * Delete a session and its messages (Hermes-grade soft-delete).
    */
   async deleteSession(companyId, sessionId) {
     if (!companyId || !sessionId) return false;
@@ -315,17 +324,21 @@ class MarketingCopilotSessionService {
 
     try {
       await this.prisma.$executeRawUnsafe(`
-        DELETE FROM public.facebook_ads_ai_chat_messages WHERE "sessionId" = $1
-      `, sessionId);
-
-      const res = await this.prisma.$executeRawUnsafe(`
-        DELETE FROM public.facebook_ads_ai_chat_sessions WHERE id = $1 AND "companyId" = $2
+        UPDATE public.facebook_ads_ai_chat_sessions
+        SET status = 'DELETED', "updatedAt" = CURRENT_TIMESTAMP
+        WHERE id = $1 AND "companyId" = $2
       `, sessionId, companyId);
+
+      await this.prisma.$executeRawUnsafe(`
+        UPDATE public.facebook_ads_ai_chat_messages
+        SET "isDeleted" = TRUE, "deletedAt" = CURRENT_TIMESTAMP
+        WHERE "sessionId" = $1
+      `, sessionId);
 
       return true;
     } catch (err) {
       console.error('❌ [MarketingCopilotSessionService] deleteSession error:', err);
-      return false;
+      throw err;
     }
   }
 
@@ -349,7 +362,7 @@ class MarketingCopilotSessionService {
   }
 
   /**
-   * Hermes-Grade Session Rewind: Rolls back the last turn (user + assistant) from database.
+   * Hermes-Grade Session Rewind: Rolls back the last turn (user + assistant) from database using soft delete.
    */
   async rewindSession(companyId, sessionId) {
     if (!companyId || !sessionId) throw new Error('companyId and sessionId are required');
@@ -358,7 +371,7 @@ class MarketingCopilotSessionService {
     try {
       const lastMessages = await this.prisma.$queryRawUnsafe(`
         SELECT id, role, content FROM public.facebook_ads_ai_chat_messages
-        WHERE "sessionId" = $1
+        WHERE "sessionId" = $1 AND ("isDeleted" IS FALSE OR "isDeleted" IS NULL)
         ORDER BY "createdAt" DESC
         LIMIT 2
       `, sessionId);
@@ -367,12 +380,12 @@ class MarketingCopilotSessionService {
         return { success: false, message: 'لا توجد رسائل سابقة للتراجع عنها في هذه الجلسة' };
       }
 
-      for (const m of lastMessages) {
-        await this.prisma.$executeRawUnsafe(`
-          DELETE FROM public.facebook_ads_ai_chat_messages
-          WHERE id = $1
-        `, m.id);
-      }
+      const msgIds = lastMessages.map(m => m.id);
+      await this.prisma.$executeRawUnsafe(`
+        UPDATE public.facebook_ads_ai_chat_messages
+        SET "isDeleted" = TRUE, "deletedAt" = CURRENT_TIMESTAMP
+        WHERE id = ANY($1::text[])
+      `, msgIds);
 
       await this.prisma.$executeRawUnsafe(`
         UPDATE public.facebook_ads_ai_chat_sessions

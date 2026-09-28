@@ -413,18 +413,29 @@ class OrderService {
       // فحص التكرار قبل الإنشاء
       const duplicateSettings = await this.getDuplicateSettings(companyId);
       let duplicateMatch = null;
-      if (duplicateSettings && (customerPhone || data.customerEmail) && total > 0) {
+      if (duplicateSettings?.enabled !== false && (customerPhone || data.customerEmail)) {
         duplicateMatch = await this.findDuplicateOrder({
           companyId,
           customerPhone,
           customerEmail: data.customerEmail,
           total,
-          windowMinutes: duplicateSettings.windowMinutes,
-          includeGuest: false
+          items: [{ productId: productName, productName, quantity: Number(quantity) || 1, price: productPrice }],
+          settings: duplicateSettings,
+          includeGuest: duplicateSettings.includeStoreOrders
         });
       }
 
       const isDuplicate = !!duplicateMatch;
+
+      if (isDuplicate && duplicateSettings?.action === 'block') {
+        return {
+          success: true,
+          duplicate: true,
+          duplicateOf: duplicateMatch.order.id,
+          order: duplicateMatch.order,
+          message: 'تم تجاهل الطلب المكرر'
+        };
+      }
 
       // إنشاء الطلب بدون items (سنضيفها لاحقاً)
       const orderLimitCheck = await ensureWithinPlanLimit(companyId, 'orders', 1);
@@ -537,6 +548,17 @@ class OrderService {
               ...(conversationId && { conversationId }),
               ...(conversationAttribution && { attribution: conversationAttribution }),
               ...(conversationDiscountReason && { discountReason: conversationDiscountReason }),
+              ...(isDuplicate && duplicateMatch && {
+                duplicate: {
+                  duplicateOfId: duplicateMatch.order.id,
+                  duplicateOfOrderNumber: duplicateMatch.order.orderNumber,
+                  duplicateOfType: duplicateMatch.type,
+                  detectedAt: new Date().toISOString(),
+                  windowMinutes: duplicateSettings?.windowEnabled ? duplicateSettings.windowMinutes : null,
+                  criteria: duplicateSettings?.criteria,
+                  originalStatus: 'PENDING'
+                }
+              }),
             }),
             orderItems: {
               create: [orderItem],
@@ -544,6 +566,11 @@ class OrderService {
           }
         });
       }, 5);
+
+      // تنبيه الفريق عند وجود مكرر
+      if (isDuplicate && duplicateSettings?.alertTeam) {
+        this.alertTeamAboutDuplicate(companyId, customerPhone, duplicateMatch.order, orderNumber);
+      }
 
       // حفظ عنوان العميل تلقائياً من الطلب (يظهر في "بياناتي")
       await this._saveCustomerAddress(
@@ -811,14 +838,103 @@ class OrderService {
     });
   }
 
-  // إعدادات التكرار
-  async getDuplicateSettings(companyId = null) {
-    const settings = await this.getOrderSettings(companyId);
+  // إعدادات التكرار الافتراضية
+  getDefaultDuplicateSettings() {
     return {
-      // إزالة "ignore" نهائياً: أي طلب مكرر يُسجَّل دائماً بحالة "طلب مكرر" ويظهر
-      action: 'filter',
-      windowMinutes: settings?.duplicateOrderWindowMinutes || 60
+      enabled: true,
+      criteria: 'phone', // 'phone' | 'phone_amount' | 'phone_items'
+      activeStatuses: ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'SHIPPED', 'ON_HOLD'],
+      windowEnabled: false,
+      windowMinutes: 60,
+      action: 'record_visible', // 'record_visible' | 'record_hidden' | 'block'
+      alertTeam: true,
+      includeStoreOrders: true,
+      reportTreatment: 'separate', // 'separate' | 'cancelled'
+      exemptPhones: []
     };
+  }
+
+  // تطبيع وتوحيد إعدادات التكرار مع التوافق التراجعي
+  normalizeDuplicateSettings(rawSettings, invoiceSettings = null) {
+    const defaults = this.getDefaultDuplicateSettings();
+    const raw = rawSettings || {};
+
+    let resolvedAction = raw.action;
+    if (!resolvedAction && invoiceSettings?.duplicateOrderAction) {
+      if (invoiceSettings.duplicateOrderAction === 'ignore') resolvedAction = 'block';
+      else if (invoiceSettings.duplicateOrderAction === 'hidden') resolvedAction = 'record_hidden';
+      else resolvedAction = 'record_visible';
+    } else if (resolvedAction === 'filter') {
+      resolvedAction = 'record_visible';
+    } else if (resolvedAction === 'ignore') {
+      resolvedAction = 'block';
+    } else if (resolvedAction === 'hidden') {
+      resolvedAction = 'record_hidden';
+    } else if (!resolvedAction) {
+      resolvedAction = defaults.action;
+    }
+    if (!['record_visible', 'record_hidden', 'block'].includes(resolvedAction)) {
+      resolvedAction = 'record_visible';
+    }
+
+    let windowEnabled = raw.windowEnabled !== undefined ? Boolean(raw.windowEnabled) : defaults.windowEnabled;
+    let windowMinutes = Number(raw.windowMinutes || invoiceSettings?.duplicateOrderWindowMinutes || defaults.windowMinutes);
+    if (isNaN(windowMinutes) || windowMinutes < 5 || windowMinutes > 10080) windowMinutes = 60;
+
+    let criteria = raw.criteria;
+    if (!['phone', 'phone_amount', 'phone_items'].includes(criteria)) {
+      criteria = defaults.criteria;
+    }
+
+    let activeStatuses = Array.isArray(raw.activeStatuses) && raw.activeStatuses.length > 0
+      ? raw.activeStatuses
+      : defaults.activeStatuses;
+
+    let exemptPhones = [];
+    if (Array.isArray(raw.exemptPhones)) {
+      exemptPhones = raw.exemptPhones.map(p => this.normalizePhone(p)).filter(Boolean);
+    } else if (typeof raw.exemptPhones === 'string') {
+      exemptPhones = raw.exemptPhones.split(/[\n,;]+/).map(p => this.normalizePhone(p)).filter(Boolean);
+    }
+
+    return {
+      enabled: raw.enabled !== undefined ? Boolean(raw.enabled) : defaults.enabled,
+      criteria,
+      activeStatuses,
+      windowEnabled,
+      windowMinutes,
+      action: resolvedAction,
+      alertTeam: raw.alertTeam !== undefined ? Boolean(raw.alertTeam) : defaults.alertTeam,
+      includeStoreOrders: raw.includeStoreOrders !== undefined ? Boolean(raw.includeStoreOrders) : defaults.includeStoreOrders,
+      reportTreatment: raw.reportTreatment === 'cancelled' ? 'cancelled' : 'separate',
+      exemptPhones
+    };
+  }
+
+  // إعدادات التكرار لكل شركة
+  async getDuplicateSettings(companyId = null) {
+    const effectiveCompanyId = companyId || this.companyId;
+    if (!effectiveCompanyId) return this.getDefaultDuplicateSettings();
+
+    try {
+      const prisma = this.getPrisma();
+      const [company, invoiceSettings] = await Promise.all([
+        prisma.company.findUnique({
+          where: { id: effectiveCompanyId },
+          select: { settings: true }
+        }),
+        this.getOrderSettings(effectiveCompanyId)
+      ]);
+
+      const companySettings = typeof company?.settings === 'string'
+        ? JSON.parse(company.settings || '{}')
+        : (company?.settings || {});
+
+      return this.normalizeDuplicateSettings(companySettings.duplicateOrderSettings, invoiceSettings);
+    } catch (err) {
+      console.warn('⚠️ [DUPLICATE-SETTINGS] Error fetching duplicate settings:', err.message);
+      return this.getDefaultDuplicateSettings();
+    }
   }
 
   // سياسة الاستبدال والاسترجاع
@@ -990,85 +1106,297 @@ class OrderService {
     return Array.from(variations);
   }
 
+  // استخراج قائمة الحالات النشطة المؤهلة للفحص واستبعاد الحالات المنتهية تماماً
+  _resolveActiveStatuses(activeStatuses) {
+    if (!Array.isArray(activeStatuses) || activeStatuses.length === 0) {
+      return ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'SHIPPED', 'ON_HOLD'];
+    }
+
+    const resolved = new Set();
+    for (const st of activeStatuses) {
+      const u = String(st || '').toUpperCase();
+      resolved.add(u);
+      if (u === 'PREPARING') {
+        resolved.add('PENDING_PREPARATION');
+        resolved.add('READY_FOR_PROCESSING');
+        resolved.add('READY_TO_SHIP');
+        resolved.add('PACKAGED');
+        resolved.add('QUALITY_CHECK');
+        resolved.add('READY');
+        resolved.add('ON_HOLD_PREP');
+        resolved.add('WOO_TAGHEZ');
+      } else if (u === 'SHIPPED') {
+        resolved.add('OUT_FOR_DELIVERY');
+        resolved.add('turbo_sent');
+        resolved.add('out_for_delivery');
+        resolved.add('processing');
+      } else if (u === 'PROCESSING') {
+        resolved.add('READY_FOR_PROCESSING');
+        resolved.add('processing');
+      } else if (u === 'PENDING') {
+        resolved.add('turbo_saved');
+      } else if (u === 'ON_HOLD') {
+        resolved.add('delayed');
+        resolved.add('ON_HOLD_PREP');
+      }
+    }
+
+    // استبعاد الحالات المنتهية (تم التسليم، مرتجع، ملغي، إلخ) نهائياً من الفحص
+    const terminalStatuses = [
+      'DELIVERED', 'delivered', 'remitted',
+      'RETURNED', 'returned_to_company', 'returned_missing', 'returned_destroyed',
+      'PARTIALLY_RETURNED', 'REFUNDED', 'PARTIALLY_REFUNDED',
+      'CANCELLED', 'cancelled', 'LOST', 'FAILED', 'TRASH', 'DRAFT', 'DUPLICATE_ORDER'
+    ];
+    for (const term of terminalStatuses) {
+      resolved.delete(term);
+      resolved.delete(term.toUpperCase());
+      resolved.delete(term.toLowerCase());
+    }
+
+    return Array.from(resolved);
+  }
+
+  // مقارنة الأصناف مع الطلب السابق لمعيار (موبايل + نفس المنتجات)
+  _compareItemsMatch(existingItems, incomingItems) {
+    if (!Array.isArray(incomingItems) || incomingItems.length === 0) return false;
+    if (!Array.isArray(existingItems) || existingItems.length === 0) return false;
+
+    const normalizeList = (list) => {
+      return list.map(item => {
+        const id = item.productId || item.variantId || item.id || null;
+        const name = (item.productName || item.name || '').trim().toLowerCase();
+        const key = id ? String(id) : name;
+        const qty = Number(item.quantity || 1);
+        return { key, qty };
+      }).filter(i => i.key).sort((a, b) => a.key.localeCompare(b.key));
+    };
+
+    const norm1 = normalizeList(existingItems);
+    const norm2 = normalizeList(incomingItems);
+
+    if (norm1.length !== norm2.length) return false;
+
+    for (let i = 0; i < norm1.length; i++) {
+      if (norm1[i].key !== norm2[i].key || norm1[i].qty !== norm2[i].qty) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // مقارنة إجمالي الطلب لمعيار (موبايل + نفس المبلغ)
+  _compareAmountMatch(existingTotal, incomingTotal) {
+    if (incomingTotal === undefined || incomingTotal === null || isNaN(Number(incomingTotal))) return false;
+    const rounded1 = Math.round(Number(existingTotal) * 100);
+    const rounded2 = Math.round(Number(incomingTotal) * 100);
+    return rounded1 === rounded2;
+  }
+
+  // إرسال تنبيه للفريق عند اكتشاف طلب مكرر
+  async alertTeamAboutDuplicate(companyId, customerPhone, matchedOrder, newOrderNumber = null) {
+    if (!companyId) return;
+    try {
+      const prisma = this.getPrisma();
+      const managers = await prisma.user.findMany({
+        where: {
+          companyId,
+          role: { in: ['COMPANY_ADMIN', 'MANAGER', 'ADMIN'] },
+          isActive: true
+        },
+        select: { id: true }
+      });
+
+      const title = 'تنبيه: طلب مكرر';
+      const message = newOrderNumber
+        ? `تم رصد طلب مكرر (${newOrderNumber}) للعميل ${customerPhone || ''} مطابق للطلب (${matchedOrder?.orderNumber || ''})`
+        : `تم رصد طلب مكرر للعميل ${customerPhone || ''} مطابق للطلب (${matchedOrder?.orderNumber || ''})`;
+
+      for (const manager of managers) {
+        await prisma.notification.create({
+          data: {
+            userId: manager.id,
+            companyId,
+            title,
+            message,
+            type: 'duplicate_order',
+            data: JSON.stringify({
+              newOrderNumber,
+              matchedOrderId: matchedOrder?.id,
+              matchedOrderNumber: matchedOrder?.orderNumber,
+              customerPhone
+            })
+          }
+        }).catch(err => console.warn('⚠️ [DUPLICATE-ALERT] Notification create error:', err.message));
+      }
+
+      try {
+        const socketService = require('./socketService');
+        if (socketService?.emitToCompany) {
+          socketService.emitToCompany(companyId, 'order:duplicate_alert', {
+            newOrderNumber,
+            matchedOrderNumber: matchedOrder?.orderNumber,
+            customerPhone
+          });
+        }
+      } catch (_) {}
+    } catch (e) {
+      console.warn('⚠️ [DUPLICATE-ALERT] Error notifying team:', e.message);
+    }
+  }
+
   async findDuplicateOrder({
     prisma = null,
     companyId,
     customerPhone,
     customerEmail,
     total,
-    windowMinutes = 60,
-    includeGuest = false
+    items = [],
+    settings = null,
+    includeGuest = null
   }) {
     if (!companyId) return null;
-    if ((!customerPhone && !customerEmail) || total === undefined || total === null) return null;
 
-    const client = prisma || this.getPrisma();
-    const roundedTotal = parseFloat(Number(total).toFixed(2));
-    const since = new Date(Date.now() - Number(windowMinutes) * 60 * 1000);
+    const dupSettings = settings || await this.getDuplicateSettings(companyId);
+    if (dupSettings.enabled === false) return null;
 
     const phone = this.normalizePhone(customerPhone);
     const email = customerEmail ? String(customerEmail).trim().toLowerCase() : null;
 
-    const orderOr = [];
-    if (phone || customerPhone) {
-      const phoneCandidates = [
-        String(customerPhone || '').trim(),
-        ...this.getPhoneVariationsForDuplicate(phone || customerPhone)
-      ];
-      const uniquePhones = [...new Set(phoneCandidates.filter(Boolean))];
-      if (uniquePhones.length > 0) {
-        orderOr.push({ customerPhone: { in: uniquePhones, mode: 'insensitive' } });
+    if (!phone && !email) return null;
+
+    // فحص الاستثناءات (تجّار الجملة وVIP)
+    if (phone && Array.isArray(dupSettings.exemptPhones) && dupSettings.exemptPhones.length > 0) {
+      const isExempt = dupSettings.exemptPhones.some(exempt => {
+        const normExempt = this.normalizePhone(exempt);
+        return normExempt && (normExempt === phone || phone.endsWith(normExempt) || normExempt.endsWith(phone));
+      });
+      if (isExempt) {
+        return null;
       }
     }
-    if (email) orderOr.push({ customerEmail: email });
+
+    const client = prisma || this.getPrisma();
+    const activeStatuses = this._resolveActiveStatuses(dupSettings.activeStatuses);
+    if (!activeStatuses || activeStatuses.length === 0) return null;
+
+    const phoneCandidates = phone ? [
+      String(customerPhone || '').trim(),
+      ...this.getPhoneVariationsForDuplicate(phone || customerPhone)
+    ] : [];
+    const uniquePhones = [...new Set(phoneCandidates.filter(Boolean))];
+
+    // 1. فحص جدول الطلبات الأساسي (Order)
+    const orderOr = [];
+    if (uniquePhones.length > 0) {
+      orderOr.push({ customerPhone: { in: uniquePhones, mode: 'insensitive' } });
+    }
+    if (email) {
+      orderOr.push({ customerEmail: { equals: email, mode: 'insensitive' } });
+    }
 
     if (orderOr.length > 0) {
-      const order = await client.order.findFirst({
-        where: {
-          companyId,
-          total: roundedTotal,
-          createdAt: { gte: since },
-          status: { not: 'DUPLICATE_ORDER' },
-          OR: orderOr
+      const orderWhere = {
+        companyId,
+        status: { in: activeStatuses },
+        OR: orderOr
+      };
+
+      if (dupSettings.windowEnabled && Number(dupSettings.windowMinutes) > 0) {
+        orderWhere.createdAt = {
+          gte: new Date(Date.now() - Number(dupSettings.windowMinutes) * 60 * 1000)
+        };
+      }
+
+      const recentOrders = await client.order.findMany({
+        where: orderWhere,
+        include: {
+          orderItems: {
+            select: {
+              productId: true,
+              productName: true,
+              quantity: true,
+              price: true,
+              total: true
+            }
+          }
         },
-        include: { orderItems: { select: { productName: true, quantity: true } } },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: 10
       });
 
-      if (order) return { type: 'order', order };
-    }
-
-    if (!includeGuest) return null;
-
-    const guestOr = [];
-    if (phone || customerPhone) {
-      const phoneCandidates = [
-        String(customerPhone || '').trim(),
-        ...this.getPhoneVariationsForDuplicate(phone || customerPhone)
-      ];
-      const uniquePhones = [...new Set(phoneCandidates.filter(Boolean))];
-      if (uniquePhones.length > 0) {
-        guestOr.push({ guestPhone: { in: uniquePhones, mode: 'insensitive' } });
+      for (const order of recentOrders) {
+        if (dupSettings.criteria === 'phone') {
+          return { type: 'order', order, settings: dupSettings };
+        }
+        if (dupSettings.criteria === 'phone_amount') {
+          if (this._compareAmountMatch(order.total, total)) {
+            return { type: 'order', order, settings: dupSettings };
+          }
+        }
+        if (dupSettings.criteria === 'phone_items') {
+          if (this._compareItemsMatch(order.orderItems, items)) {
+            return { type: 'order', order, settings: dupSettings };
+          }
+        }
       }
     }
-    if (email) guestOr.push({ guestEmail: email });
 
-    if (guestOr.length === 0) return null;
+    // 2. فحص طلبات المتجر (GuestOrder) إذا كان الخيار مفعل
+    const shouldCheckGuest = includeGuest !== null ? includeGuest : Boolean(dupSettings.includeStoreOrders);
+    if (!shouldCheckGuest) return null;
 
-    const guestOrder = await client.guestOrder.findFirst({
-      where: {
+    const guestOr = [];
+    if (uniquePhones.length > 0) {
+      guestOr.push({ guestPhone: { in: uniquePhones, mode: 'insensitive' } });
+    }
+    if (email) {
+      guestOr.push({ guestEmail: { equals: email, mode: 'insensitive' } });
+    }
+
+    if (guestOr.length > 0) {
+      const guestWhere = {
         companyId,
-        createdAt: { gte: since },
-        status: { not: 'DUPLICATE_ORDER' },
-        AND: [
-          { OR: guestOr },
-          { OR: [{ finalTotal: roundedTotal }, { total: roundedTotal }] }
-        ]
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+        status: { in: activeStatuses },
+        OR: guestOr
+      };
 
-    if (guestOrder) return { type: 'guest', order: guestOrder };
+      if (dupSettings.windowEnabled && Number(dupSettings.windowMinutes) > 0) {
+        guestWhere.createdAt = {
+          gte: new Date(Date.now() - Number(dupSettings.windowMinutes) * 60 * 1000)
+        };
+      }
+
+      const recentGuestOrders = await client.guestOrder.findMany({
+        where: guestWhere,
+        orderBy: { createdAt: 'desc' },
+        take: 10
+      });
+
+      for (const guest of recentGuestOrders) {
+        if (dupSettings.criteria === 'phone') {
+          return { type: 'guest', order: guest, settings: dupSettings };
+        }
+        if (dupSettings.criteria === 'phone_amount') {
+          const guestTotal = guest.finalTotal !== null && guest.finalTotal !== undefined ? guest.finalTotal : guest.total;
+          if (this._compareAmountMatch(guestTotal, total)) {
+            return { type: 'guest', order: guest, settings: dupSettings };
+          }
+        }
+        if (dupSettings.criteria === 'phone_items') {
+          let guestParsedItems = [];
+          try {
+            guestParsedItems = typeof guest.items === 'string' ? JSON.parse(guest.items) : (guest.items || []);
+          } catch (_) {
+            guestParsedItems = [];
+          }
+          if (this._compareItemsMatch(guestParsedItems, items)) {
+            return { type: 'guest', order: guest, settings: dupSettings };
+          }
+        }
+      }
+    }
+
     return null;
   }
 

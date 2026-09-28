@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../../services/apiClient';
 import type { CopilotMessage, CopilotSession } from './types';
 
@@ -17,6 +17,13 @@ export function useCopilotCloudSessions(
   const [sessions, setSessions] = useState<CopilotSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string>(targetInitialSessionId || '');
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
+
+  const activeSessionIdRef = useRef(activeSessionId);
+  activeSessionIdRef.current = activeSessionId;
+
+  const targetInitialSessionIdRef = useRef(targetInitialSessionId);
+  targetInitialSessionIdRef.current = targetInitialSessionId;
 
   // Synchronize when targetInitialSessionId changes externally (e.g. from deep link)
   useEffect(() => {
@@ -29,37 +36,36 @@ export function useCopilotCloudSessions(
     if (!companyId) return;
     try {
       setLoadingSessions(true);
-      const res = await apiClient.get<{ success?: boolean; sessions?: any[] }>('/ai/chat/sessions');
-      const list = res.data?.sessions || [];
-      if (Array.isArray(list) && list.length > 0) {
+      setSessionsError(null);
+      const res = await apiClient.get<{ success?: boolean; sessions?: any[]; error?: string }>('/ai/chat/sessions');
+      const list = res.data?.sessions;
+      if (Array.isArray(list)) {
         const mappedList: CopilotSession[] = list.map((s) => ({
           id: String(s.id),
           title: s.title || 'محادثة سابقة',
           updatedAt: s.updatedAt || new Date().toISOString(),
         }));
 
-        setSessions((prev) => {
-          // Preserve any deep-linked session currently in state if not yet in fetched list
-          const combined = [...mappedList];
-          for (const p of prev) {
-            if (!combined.some((c) => c.id === p.id)) {
-              combined.push(p);
-            }
-          }
-          return combined;
-        });
+        setSessions(mappedList);
+        setSessionsError(null);
 
         // Only default to first session if no active session is selected and no target was specified
-        if (!activeSessionId && !targetInitialSessionId) {
-          setActiveSessionId(String(list[0].id));
+        if (!activeSessionIdRef.current && !targetInitialSessionIdRef.current && mappedList.length > 0) {
+          setActiveSessionId(String(mappedList[0].id));
+        } else if (mappedList.length === 0 && !targetInitialSessionIdRef.current) {
+          setActiveSessionId('');
         }
+      } else {
+        setSessions([]);
       }
-    } catch (e) {
-      console.warn('[CopilotCloudSessions] Failed fetching sessions:', e);
+    } catch (e: any) {
+      console.error('[CopilotCloudSessions] Failed fetching sessions:', e);
+      const errMessage = e.response?.data?.error || e.message || 'تعذر تحميل الجلسات السحابية';
+      setSessionsError(errMessage);
     } finally {
       setLoadingSessions(false);
     }
-  }, [companyId, activeSessionId, targetInitialSessionId]);
+  }, [companyId]);
 
   useEffect(() => {
     fetchSessions();
@@ -67,7 +73,7 @@ export function useCopilotCloudSessions(
 
   const createNewCloudSession = useCallback(async (title?: string) => {
     try {
-      const res = await apiClient.post<{ success?: boolean; session?: any }>('/ai/chat/sessions', {
+      const res = await apiClient.post<{ success?: boolean; session?: any; error?: string }>('/ai/chat/sessions', {
         title: title || 'جلسة جديدة',
       });
       const newSess = res.data?.session;
@@ -77,16 +83,16 @@ export function useCopilotCloudSessions(
           title: newSess.title || 'جلسة جديدة',
           updatedAt: newSess.updatedAt || new Date().toISOString(),
         };
-        setSessions((prev) => [item, ...prev]);
+        setSessions((prev) => [item, ...prev.filter((s) => s.id !== item.id)]);
         setActiveSessionId(item.id);
         return item.id;
       }
-    } catch (e) {
-      console.warn('[CopilotCloudSessions] Failed creating session:', e);
+      throw new Error(res.data?.error || 'فشل إنشاء الجلسة السحابية على السيرفر');
+    } catch (e: any) {
+      console.error('[CopilotCloudSessions] Failed creating session:', e);
+      // Remove fake fallback id completely - throw explicitly
+      throw e;
     }
-    const fallbackId = `exec_sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    setActiveSessionId(fallbackId);
-    return fallbackId;
   }, []);
 
   const deleteCloudSession = useCallback(async (id: string) => {
@@ -216,6 +222,7 @@ export function useCopilotCloudSessions(
     activeSessionId,
     setActiveSessionId,
     loadingSessions,
+    sessionsError,
     createNewCloudSession,
     deleteCloudSession,
     loadSessionHistory,

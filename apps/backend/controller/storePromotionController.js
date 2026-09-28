@@ -1,5 +1,6 @@
 const { safeQuery, initializeSharedDatabase } = require('../services/sharedDatabase');
 const { calculateDiscount, parseTiers } = require('../utils/storePromotionUtils');
+const redisCacheService = require('../services/redisCacheService');
 
 function isPrismaConnectionError(error) {
   const msg = String(error?.message || '');
@@ -103,6 +104,11 @@ exports.upsertPromotion = async (req, res) => {
       }),
       'upsert'
     );
+    try {
+      await redisCacheService.del(`storefront_settings:${companyId}`);
+    } catch (cacheErr) {
+      console.warn('⚠️ [STORE-PROMOTION] Could not invalidate storefront settings cache:', cacheErr);
+    }
     return res.status(200).json({
       success: true,
       message: 'تم حفظ العرض بنجاح',
@@ -128,6 +134,11 @@ exports.deletePromotion = async (req, res) => {
       (p) => p.storePromotion.deleteMany({ where: { companyId } }),
       'deleteMany'
     );
+    try {
+      await redisCacheService.del(`storefront_settings:${companyId}`);
+    } catch (cacheErr) {
+      console.warn('⚠️ [STORE-PROMOTION] Could not invalidate storefront settings cache:', cacheErr);
+    }
     return res.status(200).json({
       success: true,
       message: 'تم حذف العرض بنجاح',

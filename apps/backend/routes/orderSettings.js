@@ -65,6 +65,7 @@ router.get('/', async (req, res) => {
 
         const orderService = require('../services/orderService');
         const exchangeReturnPolicy = await orderService.getExchangeReturnPolicy(companyId);
+        const duplicateSettings = await orderService.getDuplicateSettings(companyId);
 
         const company = await prisma.company.findUnique({
             where: { id: companyId },
@@ -88,8 +89,9 @@ router.get('/', async (req, res) => {
                 orderPrefix: settings.orderPrefix,
                 nextOrderNumber: settings.nextOrderNumber,
                 orderNumberFormat: settings.orderNumberFormat,
-                duplicateOrderAction: 'filter',
-                duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes || 60,
+                duplicateOrderAction: duplicateSettings.action === 'block' ? 'ignore' : (duplicateSettings.action === 'record_hidden' ? 'hidden' : 'filter'),
+                duplicateOrderWindowMinutes: duplicateSettings.windowMinutes || settings.duplicateOrderWindowMinutes || 60,
+                duplicateSettings,
                 incompleteOrderLostAfterHours: normalizeIncompleteHours(settings.incompleteOrderLostAfterHours),
                 showIncompleteCartsInOrders: Boolean(settings.showIncompleteCartsInOrders),
                 minimumOrderEnabled: Boolean(settings.minimumOrderEnabled),
@@ -128,7 +130,8 @@ router.put('/', async (req, res) => {
             minimumOrderMessage,
             exchangeReturnPolicy,
             requireDiscountApproval,
-            disableAutoDiscountsWithoutApproval
+            disableAutoDiscountsWithoutApproval,
+            duplicateSettings
         } = req.body;
 
         if (!companyId) {
@@ -139,6 +142,17 @@ router.put('/', async (req, res) => {
         }
 
         const prisma = getSharedPrismaClient();
+        const orderService = require('../services/orderService');
+
+        let normalizedDuplicateSettings = null;
+        if (duplicateSettings !== undefined) {
+            normalizedDuplicateSettings = orderService.normalizeDuplicateSettings(duplicateSettings);
+        } else if (duplicateOrderAction !== undefined || duplicateOrderWindowMinutes !== undefined) {
+            normalizedDuplicateSettings = orderService.normalizeDuplicateSettings({
+                action: duplicateOrderAction === 'ignore' ? 'block' : (duplicateOrderAction === 'hidden' ? 'record_hidden' : 'record_visible'),
+                windowMinutes: duplicateOrderWindowMinutes
+            });
+        }
 
         // Validate inputs
         if (orderPrefix && orderPrefix.length > 10) {
@@ -160,24 +174,6 @@ router.put('/', async (req, res) => {
                 success: false,
                 message: 'Next order number must be at least 1'
             });
-        }
-
-        // Validate duplicate settings
-        if (duplicateOrderAction && duplicateOrderAction !== 'filter') {
-            return res.status(400).json({
-                success: false,
-                message: 'خيار تجاهل الطلبات المكررة أُلغي نهائياً. الإجراء الوحيد المتاح هو "فلترة"'
-            });
-        }
-
-        if (duplicateOrderWindowMinutes !== undefined) {
-            const windowValue = parseInt(duplicateOrderWindowMinutes, 10);
-            if (Number.isNaN(windowValue) || windowValue < 5 || windowValue > 10080) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'مدة كشف الطلبات المكررة يجب أن تكون بين 5 دقائق و 7 أيام'
-                    });
-            }
         }
 
         if (incompleteOrderLostAfterHours !== undefined) {
@@ -227,9 +223,9 @@ router.put('/', async (req, res) => {
         if (orderPrefix) updateData.orderPrefix = orderPrefix;
         if (nextOrderNumber) updateData.nextOrderNumber = nextOrderNumber;
         if (orderNumberFormat) updateData.orderNumberFormat = orderNumberFormat;
-        if (duplicateOrderAction !== undefined) updateData.duplicateOrderAction = 'filter';
-        if (duplicateOrderWindowMinutes !== undefined) {
-            updateData.duplicateOrderWindowMinutes = parseInt(duplicateOrderWindowMinutes, 10);
+        if (normalizedDuplicateSettings) {
+            updateData.duplicateOrderWindowMinutes = normalizedDuplicateSettings.windowMinutes || 60;
+            updateData.duplicateOrderAction = normalizedDuplicateSettings.action === 'block' ? 'ignore' : (normalizedDuplicateSettings.action === 'record_hidden' ? 'hidden' : 'filter');
         }
         if (incompleteOrderLostAfterHours !== undefined) {
             updateData.incompleteOrderLostAfterHours = parseInt(incompleteOrderLostAfterHours, 10);
@@ -320,7 +316,12 @@ router.put('/', async (req, res) => {
 
         let savedPolicy = null;
         let savedCompanySettings = null;
-        if (exchangeReturnPolicy !== undefined || requireDiscountApproval !== undefined || disableAutoDiscountsWithoutApproval !== undefined) {
+        if (
+            exchangeReturnPolicy !== undefined ||
+            requireDiscountApproval !== undefined ||
+            disableAutoDiscountsWithoutApproval !== undefined ||
+            normalizedDuplicateSettings !== null
+        ) {
             try {
                 const company = await prisma.company.findUnique({
                     where: { id: companyId },
@@ -349,6 +350,9 @@ router.put('/', async (req, res) => {
                 }
                 if (disableAutoDiscountsWithoutApproval !== undefined) {
                     companySettings.disableAutoDiscountsWithoutApproval = parseBooleanSetting(disableAutoDiscountsWithoutApproval);
+                }
+                if (normalizedDuplicateSettings !== null) {
+                    companySettings.duplicateOrderSettings = normalizedDuplicateSettings;
                 }
 
                 await prisma.company.update({
@@ -384,6 +388,7 @@ router.put('/', async (req, res) => {
         const effectiveDisableAutoDiscounts = savedCompanySettings?.disableAutoDiscountsWithoutApproval !== undefined
             ? Boolean(savedCompanySettings.disableAutoDiscountsWithoutApproval)
             : true;
+        const effectiveDuplicateSettings = normalizedDuplicateSettings || (await orderService.getDuplicateSettings(companyId));
 
         res.json({
             success: true,
@@ -395,8 +400,9 @@ router.put('/', async (req, res) => {
                 orderPrefix: settings.orderPrefix,
                 nextOrderNumber: settings.nextOrderNumber,
                 orderNumberFormat: settings.orderNumberFormat,
-                duplicateOrderAction: 'filter',
-                duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes || 60,
+                duplicateOrderAction: effectiveDuplicateSettings.action === 'block' ? 'ignore' : (effectiveDuplicateSettings.action === 'record_hidden' ? 'hidden' : 'filter'),
+                duplicateOrderWindowMinutes: effectiveDuplicateSettings.windowMinutes || settings.duplicateOrderWindowMinutes || 60,
+                duplicateSettings: effectiveDuplicateSettings,
                 incompleteOrderLostAfterHours: normalizeIncompleteHours(settings.incompleteOrderLostAfterHours),
                 showIncompleteCartsInOrders: Boolean(settings.showIncompleteCartsInOrders),
                 minimumOrderEnabled: Boolean(settings.minimumOrderEnabled),
@@ -458,6 +464,72 @@ router.post('/reset-counter', async (req, res) => {
             message: 'Failed to reset order counter',
             error: error.message
         });
+    }
+});
+
+// GET /api/v1/order-settings/duplicates - Get duplicate order settings
+router.get('/duplicates', async (req, res) => {
+    try {
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            return res.status(403).json({ success: false, message: 'Company ID is missing from token' });
+        }
+        const orderService = require('../services/orderService');
+        const data = await orderService.getDuplicateSettings(companyId);
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('Error fetching duplicate order settings:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch duplicate order settings', error: error.message });
+    }
+});
+
+// PUT /api/v1/order-settings/duplicates - Update duplicate order settings
+router.put('/duplicates', async (req, res) => {
+    try {
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            return res.status(403).json({ success: false, message: 'Company ID is missing from token' });
+        }
+        const orderService = require('../services/orderService');
+        const prisma = getSharedPrismaClient();
+        const normalized = orderService.normalizeDuplicateSettings(req.body);
+
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: { settings: true }
+        });
+        const companySettings = typeof company?.settings === 'string'
+            ? JSON.parse(company.settings || '{}')
+            : (company?.settings || {});
+
+        companySettings.duplicateOrderSettings = normalized;
+
+        await prisma.company.update({
+            where: { id: companyId },
+            data: { settings: JSON.stringify(companySettings) }
+        });
+
+        await prisma.orderInvoiceSettings.upsert({
+            where: { companyId },
+            update: {
+                duplicateOrderWindowMinutes: normalized.windowMinutes || 60,
+                duplicateOrderAction: normalized.action === 'block' ? 'ignore' : (normalized.action === 'record_hidden' ? 'hidden' : 'filter')
+            },
+            create: {
+                companyId,
+                duplicateOrderWindowMinutes: normalized.windowMinutes || 60,
+                duplicateOrderAction: normalized.action === 'block' ? 'ignore' : (normalized.action === 'record_hidden' ? 'hidden' : 'filter')
+            }
+        });
+
+        res.json({
+            success: true,
+            message: 'تم حفظ إعدادات الطلبات المكررة بنجاح',
+            data: normalized
+        });
+    } catch (error) {
+        console.error('Error updating duplicate order settings:', error);
+        res.status(500).json({ success: false, message: 'Failed to update duplicate order settings', error: error.message });
     }
 });
 

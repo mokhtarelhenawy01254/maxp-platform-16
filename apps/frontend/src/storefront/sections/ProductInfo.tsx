@@ -69,6 +69,7 @@ import {
 } from '../utils/pdpCheckout';
 import { getPdpQuickOrderSettingsFromDesignTokens } from '../utils/pdpQuickOrderSettings';
 import QuantityOffersSection from './QuantityOffersSection';
+import StorePromotionTiersCard from '../components/StorePromotionTiersCard';
 import MobileVariantSheet from '../components/MobileVariantSheet';
 import {
   ProductInfoShippingDialog,
@@ -3318,7 +3319,14 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       settings={embeddedQuantityOffersSettings}
       isOpen={shouldRenderInlineQuantityOffers}
     />
-  ) : null;
+  ) : (
+    <StorePromotionTiersCard
+      product={product}
+      currency={currency}
+      currentQuantity={quantity}
+      onSelectQuantity={setQuantity}
+    />
+  );
   const externalPurchaseLabel =
     externalProductConfig.label ||
     String(

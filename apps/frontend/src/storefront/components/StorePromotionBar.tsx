@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useLocation } from "react-router-dom";
+import { Sparkles, ShoppingBag } from "lucide-react";
 import { useStorefrontSettings } from "../hooks/useStorefrontSettings";
 import { useCartStore } from "../store/useCartStore";
 import { getActiveStorePromotionFromCompany } from "../utils/storePromotion";
@@ -11,21 +12,27 @@ const StorePromotionBar: React.FC = () => {
 
   const storePromotion = useMemo(
     () => getActiveStorePromotionFromCompany(settings?.company),
-    [settings],
+    [settings?.company],
   );
 
   const showBar = useMemo(() => {
     if (!storePromotion || storePromotion.barVisible === false) return false;
-    if (storePromotion.barPages === "all") return true;
-    const path = location.pathname;
-    if (storePromotion.barPages === "shop" && path.startsWith("/shop")) return true;
-    if (storePromotion.barPages === "product" && path.startsWith("/product")) return true;
-    if (storePromotion.barPages === "checkout" && path.startsWith("/checkout")) return true;
-    return false;
-  }, [storePromotion, location]);
+    const barPages = storePromotion.barPages || "all";
+    if (barPages === "all") return true;
+
+    const path = location.pathname.toLowerCase();
+    const isProduct = path.includes("/product");
+    const isCheckout = path.includes("/checkout") || path.includes("/cart");
+    const isShop = !isProduct && !isCheckout;
+
+    if (barPages === "shop") return isShop;
+    if (barPages === "product") return isProduct;
+    if (barPages === "checkout") return isCheckout;
+    return true;
+  }, [storePromotion, location.pathname]);
 
   const cartQuantity = cartItems.reduce(
-    (sum, item) => sum + Math.max(1, Math.floor(item.quantity || 1)),
+    (sum, item) => sum + Math.max(1, Math.floor(Number(item.quantity) || 1)),
     0,
   );
 
@@ -35,49 +42,73 @@ const StorePromotionBar: React.FC = () => {
       .filter((t) => t.isActive !== false)
       .sort((a, b) => a.minQuantity - b.minQuantity);
     if (tiers.length === 0) return null;
+
     const currentTier = [...tiers].reverse().find((t) => cartQuantity >= t.minQuantity) || null;
     const nextTier = tiers.find((t) => t.minQuantity > cartQuantity) || null;
+
     let progressPct = 100;
     let remaining = 0;
     let message = "";
+
     if (nextTier) {
       const prevMin = currentTier ? currentTier.minQuantity : 0;
-      const span = nextTier.minQuantity - prevMin;
+      const span = Math.max(1, nextTier.minQuantity - prevMin);
       const advanced = cartQuantity - prevMin;
       progressPct = Math.min(100, Math.max(0, (advanced / span) * 100));
       remaining = nextTier.minQuantity - cartQuantity;
-      const label = nextTier.label || `اقتربي من ${nextTier.minQuantity} قطعة`;
+      const label = nextTier.label || `خصم عند ${nextTier.minQuantity} قطع`;
       message = remaining === 1
-        ? `ضيفي قطعة كمان — ${label} 🎁`
-        : `ضيفي ${remaining} قطع كمان — ${label} 🎁`;
+        ? `أضف قطعة واحدة فقط — ${label}`
+        : `أضف ${remaining} قطع — ${label}`;
     } else if (currentTier) {
       progressPct = 100;
-      message = `🎉 مبروك! ${currentTier.label || "حصلتي على خصم"}`;
+      message = `🎉 مبروك! استحققت: ${currentTier.label || "خصم الكمية"}`;
     } else {
       const firstTier = tiers[0];
       progressPct = 0;
       remaining = firstTier.minQuantity - cartQuantity;
       message = cartQuantity === 0
-        ? `ابدئي التسوق — ${firstTier.label || "عروض بانتظارك"}`
-        : `ضيفي ${remaining} قطع كمان — ${firstTier.label || "عروض بانتظارك"}`;
+        ? `${storePromotion.title ? `${storePromotion.title}: ` : ""}${firstTier.label || "عروض كميات حصرية بانتظارك"}`
+        : `أضف ${remaining} قطع — ${firstTier.label || "عروض كميات حصرية بانتظارك"}`;
     }
+
     return { progressPct, remaining, message, currentTier, nextTier };
   }, [storePromotion, cartQuantity]);
 
   if (!promotionProgress || !showBar) return null;
 
   return (
-    <div className={`flex items-center justify-center bg-white border-b-2 border-rose-300 shadow-[0_4px_16px_-6px_rgba(190,18,60,0.2)] ${storePromotion?.barSticky ? 'sticky top-0 z-[60]' : ''}`}>
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2.5 md:px-6">
-        <span className="truncate text-sm font-bold text-[#9f1239]">{promotionProgress.message}</span>
-        <span className="shrink-0 rounded-full bg-[#fce7f3] px-3 py-1 text-xs font-bold text-[#be123c] shadow-sm">
-          {cartQuantity} قطعة
-        </span>
+    <div
+      role="region"
+      aria-label="عرض المتجر الشامل"
+      className={`relative w-full overflow-hidden bg-gradient-to-r from-slate-950 via-[#4c0519] to-slate-950 text-white border-b border-rose-500/30 shadow-[0_4px_16px_-4px_rgba(0,0,0,0.3)] select-none transition-all duration-300 ${
+        storePromotion?.barSticky ? "sticky top-0 z-[60]" : ""
+      }`}
+    >
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-3 py-2 sm:py-2.5 sm:px-6">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-500/20 text-rose-300 ring-1 ring-rose-400/40">
+            <Sparkles className="h-3 w-3" />
+          </span>
+          <p className="text-xs sm:text-sm font-bold text-white tracking-wide line-clamp-2 sm:line-clamp-1 leading-snug">
+            {promotionProgress.message}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/15 transition-colors border border-white/20 px-2.5 py-0.5 text-[11px] sm:text-xs font-black text-rose-100 tabular-nums shadow-sm">
+            <ShoppingBag className="h-3 w-3 text-rose-300" />
+            <span>{cartQuantity}</span>
+            <span className="hidden xs:inline">قطع بالسلة</span>
+          </span>
+        </div>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#fecdd3]">
+
+      {/* Progress track */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-[#e11d48] to-[#ec4899] transition-[width] duration-500"
-          style={{ width: `${promotionProgress.progressPct}%` }}
+          className="h-full bg-gradient-to-r from-amber-400 via-rose-400 to-emerald-400 transition-[width] duration-500 ease-out"
+          style={{ width: `${Math.max(5, promotionProgress.progressPct)}%` }}
         />
       </div>
     </div>

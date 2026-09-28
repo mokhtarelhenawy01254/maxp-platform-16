@@ -12,9 +12,48 @@ export const toggleMerchantCopilot = () => {
 };
 
 export const MerchantCopilotHost: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [initialSessionId, setInitialSessionId] = useState<string | null>(null);
-  const hasCheckedInitialUrl = React.useRef(false);
+  // Helper to extract deep link config synchronously on mount
+  const [initialDeepLink] = useState(() => {
+    if (typeof window === 'undefined') return { isOpen: false, sessionId: null as string | null };
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      let isCopilotRequested =
+        searchParams.get('copilot') === '1' ||
+        searchParams.get('copilot') === 'true';
+      let sessionParam = searchParams.get('session');
+
+      if (!isCopilotRequested && !sessionParam && window.location.hash.includes('?')) {
+        const hashQuery = window.location.hash.split('?')[1];
+        const hashParams = new URLSearchParams(hashQuery);
+        isCopilotRequested =
+          hashParams.get('copilot') === '1' ||
+          hashParams.get('copilot') === 'true';
+        sessionParam = hashParams.get('session');
+      }
+
+      if (!isCopilotRequested && !sessionParam) {
+        const storedOpen = sessionStorage.getItem('pending_copilot_open');
+        const storedSession = sessionStorage.getItem('pending_copilot_session');
+        if (storedOpen === '1' || storedSession) {
+          isCopilotRequested = true;
+          sessionParam = storedSession || null;
+          sessionStorage.removeItem('pending_copilot_open');
+          sessionStorage.removeItem('pending_copilot_session');
+        }
+      }
+
+      return {
+        isOpen: isCopilotRequested || Boolean(sessionParam),
+        sessionId: sessionParam || null,
+      };
+    } catch (err) {
+      console.warn('[MerchantCopilotHost] Deep link parsing error:', err);
+      return { isOpen: false, sessionId: null as string | null };
+    }
+  });
+
+  const [isOpen, setIsOpen] = useState(initialDeepLink.isOpen);
+  const [initialSessionId, setInitialSessionId] = useState<string | null>(initialDeepLink.sessionId);
   const location = useLocation();
   const { user } = useAuth();
 
@@ -23,25 +62,15 @@ export const MerchantCopilotHost: React.FC = () => {
     location.pathname.startsWith('/super-admin') ||
     shouldUseSuperAdminShell(user?.role, location.pathname);
 
-  // Deep-link handler: read ?copilot=1&session=<sessionId> once on initial load
+  // Clean deep-link params from address bar using history.replaceState once on initial mount
   useEffect(() => {
-    if (hasCheckedInitialUrl.current || typeof window === 'undefined') return;
-    hasCheckedInitialUrl.current = true;
-
+    if (typeof window === 'undefined') return;
     try {
       const searchParams = new URLSearchParams(window.location.search);
-      const isCopilotRequested =
-        searchParams.get('copilot') === '1' ||
-        searchParams.get('copilot') === 'true';
-      const sessionParam = searchParams.get('session');
+      const hasCopilotParam = searchParams.has('copilot');
+      const hasSessionParam = searchParams.has('session');
 
-      if (isCopilotRequested || sessionParam) {
-        if (sessionParam) {
-          setInitialSessionId(sessionParam);
-        }
-        setIsOpen(true);
-
-        // Remove deep link params from address bar using history.replaceState to preserve navigation hygiene
+      if (hasCopilotParam || hasSessionParam) {
         const url = new URL(window.location.href);
         url.searchParams.delete('copilot');
         url.searchParams.delete('session');
@@ -50,7 +79,7 @@ export const MerchantCopilotHost: React.FC = () => {
         window.history.replaceState(window.history.state, '', cleanUrl);
       }
     } catch (err) {
-      console.warn('[MerchantCopilotHost] Deep link parsing error:', err);
+      console.warn('[MerchantCopilotHost] URL cleanup error:', err);
     }
   }, []);
 

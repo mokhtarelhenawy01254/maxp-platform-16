@@ -1,5 +1,22 @@
 import { toast } from 'sonner';
 
+// Automatically capture and preserve copilot deep-link parameters across any early redirects
+if (typeof window !== 'undefined') {
+  try {
+    const sp = new URLSearchParams(window.location.search);
+    const hasCopilot = sp.get('copilot') === '1' || sp.get('copilot') === 'true';
+    const sess = sp.get('session');
+    if (hasCopilot || sess) {
+      sessionStorage.setItem('pending_copilot_open', '1');
+      if (sess) {
+        sessionStorage.setItem('pending_copilot_session', sess);
+      }
+    }
+  } catch {
+    // Ignore storage restrictions
+  }
+}
+
 /**
  * Builds the canonical deep link URL for a specific Copilot session.
  * Format: https://<domain>/?copilot=1&session=<sessionId>

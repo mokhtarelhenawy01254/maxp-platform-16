@@ -1445,7 +1445,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         </React.Suspense>
       ) : null}
       {isGracefulTheme ? <GracefulScrollTop /> : null}
-      {!isProductImageLandingPage && !isFastlyTheme && !isElessiPackTheme && !isGracefulTheme ? <StorePromotionBar /> : null}
+      {!isProductImageLandingPage ? <StorePromotionBar /> : null}
       {!isProductImageLandingPage && !isFastlyTheme && !isGracefulTheme && canRenderConversionHosts ? (
         <>
           <React.Suspense fallback={null}>

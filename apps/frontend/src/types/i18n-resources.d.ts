@@ -18116,6 +18116,9 @@ declare module 'react-i18next' {
         customerLabelPlaceholder: string;
         cheapestDiscounted: string;
         allDiscounted: string;
+        howItWorksTitle: string;
+        howItWorksDesc: string;
+        disableOtherDiscountsAlert: string;
         addTier: string;
         noTiers: string;
         readyExamples: string;

@@ -456,8 +456,8 @@ class FacebookAdsAiController {
 
       const turnStartTime = Date.now();
 
-      // 🛡️ Hermes-Grade Conversational Rewind / Undo Intent
-      const isRewindCommand = /^\s*(\/?(تراجع|undo|rewind)|ارجع\s+(للخلف|خطوة|ورا|للخطوة\s+اللي\s+فاتت))/i.test(message);
+      // 🛡️ Hermes-Grade Strict Slash-Command Rewind Interceptor
+      const isRewindCommand = /^\s*\/(تراجع|undo|rewind)\s*$/i.test(message);
       if (isRewindCommand) {
         const rewindResult = await marketingCopilotSessionService.rewindSession(companyId, threadId);
         return res.json({

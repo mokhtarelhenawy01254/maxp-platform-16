@@ -249,37 +249,36 @@ class EnhancedOrderService {
       // فحص التكرار قبل إنشاء الطلب
       const duplicateSettings = await orderService.getDuplicateSettings(data.companyId);
       let duplicateMatch = null;
+      const customerPhoneToCheck = customer?.phone || data.customerPhone;
+      const customerEmailToCheck = customer?.email || data.customerEmail;
       if (
-        duplicateSettings &&
-        (customer?.phone || customer?.email || data.customerPhone || data.customerEmail) &&
-        costs?.total !== undefined &&
-        costs?.total !== null
+        duplicateSettings?.enabled !== false &&
+        (customerPhoneToCheck || customerEmailToCheck)
       ) {
         duplicateMatch = await orderService.findDuplicateOrder({
           companyId: data.companyId,
-          customerPhone: customer?.phone || data.customerPhone,
-          customerEmail: customer?.email || data.customerEmail,
-          total: costs.total,
-          windowMinutes: duplicateSettings.windowMinutes,
-          includeGuest: false
+          customerPhone: customerPhoneToCheck,
+          customerEmail: customerEmailToCheck,
+          total: costs?.total,
+          items: data.orderItems || data.items || [],
+          settings: duplicateSettings,
+          includeGuest: duplicateSettings.includeStoreOrders
         });
       }
 
-      if (duplicateMatch && duplicateSettings?.action === 'ignore') {
+      if (duplicateMatch && (duplicateSettings?.action === 'block' || duplicateSettings?.action === 'ignore')) {
         const existingOrder = await this.getPrisma().order.findUnique({
           where: { id: duplicateMatch.order.id },
           include: { customer: true, conversation: true, orderItems: true }
         });
 
-        if (existingOrder) {
-          return {
-            success: true,
-            order: this.transformOrderForResponse(existingOrder),
-            duplicate: true,
-            duplicateOf: duplicateMatch.order.id,
-            message: 'تم تجاهل الطلب المكرر'
-          };
-        }
+        return {
+          success: true,
+          order: existingOrder ? this.transformOrderForResponse(existingOrder) : duplicateMatch.order,
+          duplicate: true,
+          duplicateOf: duplicateMatch.order.id,
+          message: 'تم تجاهل الطلب المكرر'
+        };
       }
 
       if (duplicateMatch) {
@@ -289,9 +288,13 @@ class EnhancedOrderService {
           duplicateOfId: duplicateMatch.order.id,
           duplicateOfOrderNumber: duplicateMatch.order.orderNumber,
           detectedAt: new Date().toISOString(),
-          windowMinutes: duplicateSettings?.windowMinutes || 60,
+          windowMinutes: duplicateSettings?.windowEnabled ? duplicateSettings.windowMinutes : null,
+          criteria: duplicateSettings?.criteria,
           originalStatus
         };
+        if (duplicateSettings?.alertTeam) {
+          orderService.alertTeamAboutDuplicate(data.companyId, customerPhoneToCheck, duplicateMatch.order, null);
+        }
       }
 
       // تحضير بيانات الطلب

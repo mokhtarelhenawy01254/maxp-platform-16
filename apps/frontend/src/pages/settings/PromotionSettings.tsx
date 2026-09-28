@@ -527,7 +527,7 @@ const PromotionSettings: React.FC = () => {
             className={cn("grid gap-4 lg:grid-cols-[minmax(0,264px)_minmax(0,1fr)]")}
           >
             <div className="space-y-2">
-              <Label htmlFor="freeShippingThreshold">
+              <Label htmlFor="freeShippingThreshold" className="text-sm font-semibold text-slate-900 dark:text-slate-200">
                 {t("promotionSettings.freeShippingThreshold")}
               </Label>
               <div className="relative">
@@ -552,25 +552,25 @@ const PromotionSettings: React.FC = () => {
                   aria-invalid={thresholdError}
                   aria-describedby="freeShippingThresholdHint freeShippingThresholdError"
                   className={cn(
-                    "h-11 rounded-xl bg-white/90 font-semibold tabular-nums ltr:pr-14 rtl:pl-14",
+                    "h-11 rounded-xl bg-white/90 font-semibold tabular-nums ltr:pr-14 rtl:pl-14 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-100",
                     !freeShippingEnabled && lockedFieldsClass,
                     thresholdError && "border-rose-300 focus-visible:ring-rose-200",
                   )}
                 />
-                <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600 ltr:right-3 rtl:left-3">
+                <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600 ltr:right-3 rtl:left-3 dark:bg-slate-800 dark:text-slate-300">
                   {t("promotionSettings.currency")}
                 </span>
               </div>
               <p
                 id="freeShippingThresholdHint"
-                className="text-xs leading-5 text-slate-500"
+                className="text-xs leading-5 text-slate-500 dark:text-slate-400"
               >
                 {t("promotionSettings.freeShippingThresholdDesc")}
               </p>
               {thresholdError ? (
                 <p
                   id="freeShippingThresholdError"
-                  className="text-xs font-bold text-rose-700"
+                  className="text-xs font-bold text-rose-700 dark:text-rose-400"
                 >
                   {t("promotionSettings.thresholdMaxError")}
                 </p>
@@ -578,7 +578,7 @@ const PromotionSettings: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="freeShippingMessage">
+              <Label htmlFor="freeShippingMessage" className="text-sm font-semibold text-slate-900 dark:text-slate-200">
                 {t("promotionSettings.freeShippingMessage")}
               </Label>
               <Textarea
@@ -589,7 +589,7 @@ const PromotionSettings: React.FC = () => {
                   updateFree({ freeShippingMessage: event.target.value })
                 }
                 className={cn(
-                  "min-h-[104px] rounded-xl border-slate-200 bg-white/90 text-sm font-semibold leading-7 text-slate-950",
+                  "min-h-[104px] rounded-xl border-slate-200 bg-white/90 text-sm font-semibold leading-7 text-slate-950 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-100",
                   !freeShippingEnabled && lockedFieldsClass,
                 )}
               />
@@ -599,14 +599,14 @@ const PromotionSettings: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={insertAmountToken}
-                  className="rounded-lg border-dashed text-xs font-bold text-slate-600"
+                  className="rounded-lg border-dashed text-xs font-bold text-slate-600 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
                   <Plus className="size-3.5" />
                   {t("promotionSettings.insertToken")}
                 </Button>
-                <p className="text-xs leading-5 text-slate-500">
+                <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
                   {msgHelpParts[0]}
-                  <code className="mx-1 rounded-md border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-bold text-slate-900" dir="ltr">
+                  <code className="mx-1 rounded-md border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200" dir="ltr">
                     {AMOUNT_TOKEN}
                   </code>
                   {msgHelpParts[1]}
@@ -618,17 +618,17 @@ const PromotionSettings: React.FC = () => {
           {/* المعاينة بشكل شريط المتجر */}
           <div className="space-y-2">
             <div className="flex flex-wrap items-baseline gap-2.5">
-              <p className="text-xs font-bold text-slate-700">
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 {t("promotionSettings.previewTitle")}
               </p>
-              <p className="text-xs text-slate-500">{t("promotionSettings.previewNote")}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t("promotionSettings.previewNote")}</p>
             </div>
             <div
               className={cn(
                 "flex items-center gap-2.5 rounded-xl border px-4 py-2.5 transition-colors",
                 preview.live
-                  ? "border-slate-950 bg-slate-950 text-white"
-                  : "border-dashed border-slate-300 bg-slate-50/80 text-slate-500",
+                  ? "border-slate-950 bg-slate-950 text-white dark:border-slate-800 dark:bg-slate-900"
+                  : "border-dashed border-slate-300 bg-slate-50/80 text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400",
               )}
             >
               <Truck className="size-4 shrink-0" />
@@ -638,7 +638,7 @@ const PromotionSettings: React.FC = () => {
               <span
                 className={cn(
                   "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold",
-                  preview.live ? "bg-white/15 text-slate-200" : "bg-slate-200/70 text-slate-500",
+                  preview.live ? "bg-white/15 text-slate-200" : "bg-slate-200/70 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
                 )}
               >
                 {t("promotionSettings.storeBadge")}
@@ -647,7 +647,7 @@ const PromotionSettings: React.FC = () => {
           </div>
 
           {/* تنبيه وتأكيد التزامن مع أداة شريط الشحن المجاني */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/70 p-3.5 text-xs text-emerald-950">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/70 p-3.5 text-xs text-emerald-950 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-200">
             <div className="flex items-center gap-2">
               <span className={cn("flex size-2 rounded-full", freeShippingEnabled ? "bg-emerald-600 animate-pulse" : "bg-slate-400")} />
               <span className="font-semibold leading-5">
@@ -658,7 +658,7 @@ const PromotionSettings: React.FC = () => {
             </div>
             <Link
               to="/settings/store/tools/freeShippingBar"
-              className="inline-flex items-center gap-1.5 font-bold text-emerald-800 underline underline-offset-4 hover:text-emerald-950"
+              className="inline-flex items-center gap-1.5 font-bold text-emerald-800 underline underline-offset-4 hover:text-emerald-950 dark:text-emerald-300 dark:hover:text-emerald-200"
             >
               <span>تخصيص أداة شريط الشحن المجاني</span>
               <ExternalLink className="size-3.5" />
@@ -715,7 +715,7 @@ const PromotionSettings: React.FC = () => {
             className={cn("grid gap-4 lg:grid-cols-[minmax(0,264px)_minmax(0,1fr)]")}
           >
             <div className="space-y-2">
-              <Label htmlFor="flatShippingFee">
+              <Label htmlFor="flatShippingFee" className="text-sm font-semibold text-slate-900 dark:text-slate-200">
                 {t("promotionSettings.flatShippingFee")}
               </Label>
               <div className="relative">
@@ -740,37 +740,37 @@ const PromotionSettings: React.FC = () => {
                   aria-invalid={feeError}
                   aria-describedby="flatShippingFeeHint flatShippingFeeError"
                   className={cn(
-                    "h-11 rounded-xl bg-white/90 font-semibold tabular-nums ltr:pr-14 rtl:pl-14",
+                    "h-11 rounded-xl bg-white/90 font-semibold tabular-nums ltr:pr-14 rtl:pl-14 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-100",
                     !flatShippingSettings.flatShippingEnabled && lockedFieldsClass,
                     feeError && "border-rose-300 focus-visible:ring-rose-200",
                   )}
                 />
-                <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600 ltr:right-3 rtl:left-3">
+                <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600 ltr:right-3 rtl:left-3 dark:bg-slate-800 dark:text-slate-300">
                   {t("promotionSettings.currency")}
                 </span>
               </div>
-              <p id="flatShippingFeeHint" className="text-xs leading-5 text-slate-500">
+              <p id="flatShippingFeeHint" className="text-xs leading-5 text-slate-500 dark:text-slate-400">
                 {t("promotionSettings.flatShippingFeeDesc")}
               </p>
               {feeError ? (
-                <p id="flatShippingFeeError" className="text-xs font-bold text-rose-700">
+                <p id="flatShippingFeeError" className="text-xs font-bold text-rose-700 dark:text-rose-400">
                   {t("promotionSettings.feeMaxError")}
                 </p>
               ) : null}
             </div>
 
-            <details className="group rounded-xl border border-slate-200/70 bg-slate-50/70 px-4 py-3">
-              <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-bold text-slate-950 [&::-webkit-details-marker]:hidden">
-                <ChevronDown className="size-4 text-slate-500 transition-transform group-open:rotate-180" />
+            <details className="group rounded-xl border border-slate-200/70 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/60">
+              <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-bold text-slate-950 dark:text-slate-100 [&::-webkit-details-marker]:hidden">
+                <ChevronDown className="size-4 text-slate-500 transition-transform group-open:rotate-180 dark:text-slate-400" />
                 {t("promotionSettings.flatShippingWhenToUse")}
               </summary>
               <ul className="mt-2 space-y-1.5">
-                <li className="flex gap-2 text-sm leading-6 text-slate-500">
-                  <Check className="mt-1 size-4 shrink-0 text-sky-700" />
+                <li className="flex gap-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                  <Check className="mt-1 size-4 shrink-0 text-sky-700 dark:text-sky-400" />
                   {t("promotionSettings.flatShippingUseCase1")}
                 </li>
-                <li className="flex gap-2 text-sm leading-6 text-slate-500">
-                  <Check className="mt-1 size-4 shrink-0 text-sky-700" />
+                <li className="flex gap-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                  <Check className="mt-1 size-4 shrink-0 text-sky-700 dark:text-sky-400" />
                   {t("promotionSettings.flatShippingUseCase2")}
                 </li>
               </ul>
@@ -779,15 +779,15 @@ const PromotionSettings: React.FC = () => {
         </PromoSection>
 
         {/* إعادة التعيين */}
-        <div className="flex flex-col gap-4 rounded-[24px] border border-slate-200/70 bg-white/80 p-5 shadow-sm sm:flex-row sm:items-center">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200/70">
+        <div className="flex flex-col gap-4 rounded-[24px] border border-slate-200/70 bg-white/80 p-5 shadow-sm sm:flex-row sm:items-center dark:border-slate-800 dark:bg-slate-900/70">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200/70 dark:bg-rose-950/40 dark:text-rose-300 dark:ring-rose-500/30">
             <RotateCcw className="size-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-slate-950">
+            <p className="text-sm font-bold text-slate-950 dark:text-slate-100">
               {t("promotionSettings.resetTitle")}
             </p>
-            <p className="text-xs leading-5 text-slate-500">
+            <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
               {t("promotionSettings.resetDesc")}
             </p>
           </div>
@@ -795,7 +795,7 @@ const PromotionSettings: React.FC = () => {
             <AlertDialogTrigger
               className={cn(
                 buttonVariants({ variant: "outline" }),
-                "rounded-xl border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800",
+                "rounded-xl border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900/60 dark:text-rose-300 dark:hover:bg-rose-950/50",
               )}
             >
               <RotateCcw className="size-4" />
