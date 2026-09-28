@@ -1094,7 +1094,8 @@ class AnalyticsService {
       orderBreakdown,
       activeVisitors,
       recoveredConversions,
-      incompleteCartsCount
+      incompleteCartsCount,
+      multiPieceStats
     ] = await Promise.all([
       getSharedPrismaClient().storeVisit.count({
         where: { companyId, visitedAt: { gte: startDate, lte: endDate } }

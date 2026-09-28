@@ -1749,7 +1749,7 @@ if (typeof window !== "undefined") {
   p["/orders"] = () => import("./pages/orders/Orders");
   p["/products"] = () => import("./pages/products/Products");
   p["/analytics"] = () => import("./pages/Analytics/StoreAnalyticsDashboard");
-  p["/analytics/orders"] = () => import("./pages/Analytics/StoreAnalyticsDashboard");
+  p["/analytics/orders"] = () => import("./pages/Analytics/orders/OverviewDashboard");
   p["/analytics/store"] = () => import("./pages/Analytics/StoreAnalyticsDashboard");
   p["/whatsapp"] = () => import("./pages/whatsapp-inbox/WhatsAppChat");
   p["/pos"] = () => import("./pages/pos/PosPage");
