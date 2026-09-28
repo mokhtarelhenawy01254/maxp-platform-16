@@ -312,14 +312,15 @@ class MonitorApiClient {
   }
 
 
-  async getTasks(type: 'my-tasks' | 'assigned-by-me' | 'all' = 'my-tasks'): Promise<any[]> {
+  async getTasks(type: 'my-tasks' | 'assigned-by-me' | 'all' = 'my-tasks', limit: number = 2000): Promise<any[]> {
     try {
       const base = this.serverUrl;
       const endpoint = type === 'all' ? '' : `/${type}`;
       const headers = this.getAuthHeaders();
       const res = await axios.get(`${base}/api/v1/tasks${endpoint}`, {
         headers,
-        timeout: 10_000,
+        params: { limit },
+        timeout: 15_000,
       });
       return res.data?.data ?? res.data?.tasks ?? [];
     } catch (err: any) {

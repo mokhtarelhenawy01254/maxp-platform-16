@@ -82,6 +82,12 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
   // Transform raw tasks to TaskReportItem with calculated variance
   const reportItems: TaskReportItem[] = useMemo(() => {
     const now = Date.now();
+    const userMap: Record<string, any> = {};
+    users.forEach((u: any) => {
+      const id = String(u.id || u.userId || '');
+      if (id) userMap[id] = u;
+    });
+
     return tasks.map((t: any) => {
       const estMin = Number(t.estimatedMinutes || t.estimated_minutes || (t.estimatedHours ? t.estimatedHours * 60 : 0));
       const actualMin = Math.round(Number(t.totalDuration || t.total_duration || (t.totalSeconds ? t.totalSeconds / 60 : 0)));
@@ -94,24 +100,28 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       const isTimeLeak = !isDone && estMin > 0 && actualMin > estMin * 1.3;
       const isReview = String(t.status || '').toUpperCase() === 'IN_REVIEW';
 
-      const assignee = t.assignedTo || t.assignee;
-      const assigneeName = assignee?.firstName
-        ? `${assignee.firstName} ${assignee.lastName || ''}`.trim()
-        : t.assignedToName || 'غير مسندة';
+      const rawAssignee = t.assignee || (typeof t.assignedTo === 'object' ? t.assignedTo : null);
+      const assignedId = t.assignedToId || (typeof t.assignedTo === 'string' ? t.assignedTo : rawAssignee?.id);
+      const userObj = rawAssignee || (assignedId ? userMap[assignedId] : null);
+
+      const assigneeName = userObj?.firstName
+        ? `${userObj.firstName} ${userObj.lastName || ''}`.trim()
+        : t.assignedToName || (userObj?.name ? userObj.name : 'غير مسندة');
 
       const projName = t.project?.name || t.projectName || 'عام';
+      const completedDate = t.completedDate || t.completedAt || t.completed_date || t.completed_at;
 
       return {
         id: t.id,
         title: t.title || 'مهمة بدون عنوان',
         projectName: projName,
         assignedToName: assigneeName,
-        assignedToId: t.assignedToId || assignee?.id,
+        assignedToId: assignedId || 'unassigned',
         status: (String(t.status || 'PENDING').toUpperCase() as any),
         priority: (String(t.priority || 'MEDIUM').toUpperCase() as any),
         dueDate: t.dueDate || t.due_date,
         createdAt: t.createdAt,
-        completedAt: t.completedAt,
+        completedAt: completedDate,
         estimatedMinutes: estMin,
         actualTrackedMinutes: actualMin,
         varianceMinutes: varianceMin,
@@ -121,10 +131,11 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         isReviewBlocked: isReview,
       };
     });
-  }, [tasks]);
+  }, [tasks, users]);
 
   // Filter tasks based on active controls
   const filteredItems = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
     return reportItems.filter((t) => {
       if (filters.selectedUserId !== 'all' && t.assignedToId !== filters.selectedUserId) {
         return false;
@@ -136,12 +147,28 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       if (filters.exceptionFilter === 'review_blocked' && !t.isReviewBlocked) return false;
       if (filters.exceptionFilter === 'overdue' && !t.isOverdue) return false;
 
+      const compDate = (t.completedAt || '').slice(0, 10);
+
       if (filters.dateRange === 'today') {
-        const todayStr = new Date().toISOString().slice(0, 10);
-        const taskDate = (t.createdAt || '').slice(0, 10);
-        const compDate = (t.completedAt || '').slice(0, 10);
-        return taskDate === todayStr || compDate === todayStr || t.status === 'IN_PROGRESS';
+        const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
+        const isCompletedToday = t.status === 'COMPLETED' && compDate === todayStr;
+        return isActive || isCompletedToday;
       }
+
+      if (filters.dateRange === 'week') {
+        const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+        const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
+        const isCompletedInWeek = t.status === 'COMPLETED' && compDate >= sevenDaysAgo;
+        return isActive || isCompletedInWeek;
+      }
+
+      if (filters.dateRange === 'month') {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+        const isActive = t.status === 'IN_PROGRESS' || t.status === 'IN_REVIEW' || t.status === 'PENDING';
+        const isCompletedInMonth = t.status === 'COMPLETED' && compDate >= thirtyDaysAgo;
+        return isActive || isCompletedInMonth;
+      }
+
       return true;
     });
   }, [reportItems, filters]);
@@ -208,7 +235,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       }
     });
 
-    reportItems.forEach((t) => {
+    filteredItems.forEach((t) => {
       const assignedName = (t.assignedToName || '').trim();
       const normName = assignedName.toLowerCase();
 
@@ -267,7 +294,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         if (bActive !== aActive) return bActive - aActive;
         return a.userName.localeCompare(b.userName, 'ar');
       });
-  }, [users, reportItems, filters.dateRange]);
+  }, [users, filteredItems, filters.dateRange]);
 
   // 1-Click Daily Standup Generator
   const handleCopyDailyStandup = () => {

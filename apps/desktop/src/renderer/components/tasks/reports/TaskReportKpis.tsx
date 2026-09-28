@@ -112,7 +112,7 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
         </span>
       </div>
 
-      {/* 4. Review Blocked (> 24h) */}
+      {/* 4. In Review / Awaiting Approval */}
       <div
         style={{
           ...styles.card,
@@ -125,19 +125,19 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
         title="انقر لتصفية المهام المعلقة في المراجعة لأكثر من 24 ساعة"
       >
         <div style={styles.cardHeader}>
-          <span style={styles.cardLabel}>عالقة في المراجعة</span>
-          <PauseCircle size={13} style={{ color: kpis.reviewBlockedCount > 0 ? '#eab308' : '#64748b' }} />
+          <span style={styles.cardLabel}>في انتظار الاعتماد</span>
+          <PauseCircle size={13} style={{ color: kpis.inReviewCount > 0 ? '#eab308' : '#64748b' }} />
         </div>
         <div style={styles.cardBody}>
-          <span style={{ ...styles.primaryNum, color: kpis.reviewBlockedCount > 0 ? '#eab308' : '#f1f5f9' }}>
-            {kpis.reviewBlockedCount}
+          <span style={{ ...styles.primaryNum, color: kpis.inReviewCount > 0 ? '#eab308' : '#f1f5f9' }}>
+            {kpis.inReviewCount}
           </span>
-          <span style={{ ...styles.secondaryBadge, color: '#eab308' }}>
-            بانتظار الاعتماد
+          <span style={{ ...styles.secondaryBadge, color: kpis.reviewBlockedCount > 0 ? '#f59e0b' : '#eab308' }}>
+            {kpis.reviewBlockedCount > 0 ? `${kpis.reviewBlockedCount} عالقة > 24h` : 'بانتظار المراجعة'}
           </span>
         </div>
         <span style={styles.hintSubtext}>
-          {kpis.reviewBlockedCount > 0 ? 'تتطلب تدخل المشرف' : 'لا توجد اختناقات'}
+          {kpis.reviewBlockedCount > 0 ? 'تتطلب اعتماد المشرف فوراً' : 'انسيابية جيدة بدون اختناقات'}
         </span>
       </div>
 
