@@ -9,4 +9,5 @@ export * from './CopilotHeader';
 export * from './MerchantCopilotDrawer';
 export * from './MerchantCopilotHost';
 export * from './useCopilotSpecialists';
+export * from './copilotLinkUtils';
 

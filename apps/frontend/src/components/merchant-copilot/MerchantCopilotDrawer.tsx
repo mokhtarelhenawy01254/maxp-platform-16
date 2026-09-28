@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowUpRight, Cpu } from 'lucide-react';
+import { ArrowUpRight, Cpu, AlertCircle, ShieldAlert } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { useExecutiveContext } from './useExecutiveContext';
 import { useCopilotCloudSessions } from './useCopilotCloudSessions';
@@ -14,11 +14,13 @@ import type { CopilotMessage, ActionCardData } from './types';
 
 interface MerchantCopilotDrawerProps {
   isOpen: boolean;
+  initialSessionId?: string | null;
   onClose: () => void;
 }
 
 export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
   isOpen,
+  initialSessionId,
   onClose,
 }) => {
   const { context, quickPrompts } = useExecutiveContext();
@@ -30,7 +32,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
     deleteCloudSession,
     loadSessionHistory,
     rewindActiveSession,
-  } = useCopilotCloudSessions(context.companyId);
+  } = useCopilotCloudSessions(context.companyId, initialSessionId);
 
   const {
     specialists,
@@ -44,6 +46,11 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
 
   const [showSessionsList, setShowSessionsList] = useState(false);
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [sessionError, setSessionError] = useState<{
+    code: 'SESSION_NOT_FOUND' | 'FORBIDDEN_SESSION' | 'LOAD_ERROR';
+    message: string;
+  } | null>(null);
 
   const handleSelectAgent = useCallback((agent: SpecialistAgent) => {
     setSelectedAgent(agent);
@@ -67,26 +74,69 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Handle Escape key to close drawer
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Focus input and scroll down when opened
   useEffect(() => {
-    if (isOpen && !showSessionsList) {
+    if (isOpen && !showSessionsList && !sessionError) {
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         inputRef.current?.focus();
       }, 150);
     }
-  }, [isOpen, showSessionsList, messages]);
+  }, [isOpen, showSessionsList, messages, sessionError]);
 
   // Load history when active session changes
   useEffect(() => {
-    if (!activeSessionId) return;
+    if (!activeSessionId) {
+      setMessages([]);
+      setSessionError(null);
+      return;
+    }
     let isMounted = true;
+    setLoadingHistory(true);
+    setSessionError(null);
+
     (async () => {
-      const history = await loadSessionHistory(activeSessionId);
-      if (isMounted) {
-        setMessages(history);
+      try {
+        const result = await loadSessionHistory(activeSessionId);
+        if (!isMounted) return;
+
+        if (result.success) {
+          setMessages(result.messages);
+          setSessionError(null);
+        } else {
+          setMessages([]);
+          setSessionError({
+            code: result.errorCode || 'LOAD_ERROR',
+            message: result.error || 'الجلسة غير متاحة',
+          });
+        }
+      } catch (err: any) {
+        if (!isMounted) return;
+        setMessages([]);
+        setSessionError({
+          code: 'LOAD_ERROR',
+          message: 'تعذر الاتصال بالمساعد التنفيذي.',
+        });
+      } finally {
+        if (isMounted) {
+          setLoadingHistory(false);
+        }
       }
     })();
+
     return () => {
       isMounted = false;
     };
@@ -274,6 +324,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
 
   const startNewSession = async () => {
     setShowSessionsList(false);
+    setSessionError(null);
     await createNewCloudSession();
     setMessages([]);
   };
@@ -319,6 +370,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
             onToggleSessionsList={() => setShowSessionsList((prev) => !prev)}
             onNewSession={startNewSession}
             onClose={onClose}
+            activeSessionId={activeSessionId}
           />
 
           {showSessionsList ? (
@@ -326,12 +378,74 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
               sessions={sessions}
               activeSessionId={activeSessionId}
               onSelectSession={(id) => {
+                setSessionError(null);
                 setActiveSessionId(id);
                 setShowSessionsList(false);
               }}
               onNewSession={startNewSession}
               onDeleteSession={deleteCloudSession}
             />
+          ) : sessionError ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-200">
+              <div
+                className={`p-4 rounded-2xl mb-4 border ${
+                  sessionError.code === 'FORBIDDEN_SESSION'
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400'
+                    : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400'
+                }`}
+              >
+                {sessionError.code === 'FORBIDDEN_SESSION' ? (
+                  <ShieldAlert className="h-8 w-8" />
+                ) : (
+                  <AlertCircle className="h-8 w-8" />
+                )}
+              </div>
+
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-2">
+                {sessionError.code === 'FORBIDDEN_SESSION'
+                  ? 'لا تملك صلاحية الوصول إلى هذه الجلسة'
+                  : 'الجلسة غير متاحة'}
+              </h3>
+
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed mb-6">
+                {sessionError.code === 'FORBIDDEN_SESSION'
+                  ? 'هذا الرابط يخص حساباً أو شركة أخرى ولا يمكن فتحه إلا لصاحب الحساب المسجل.'
+                  : 'الجلسة المطلوبة قد تكون حُذفت مسبقاً أو أن رابط الجلسة غير صحيح.'}
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSessionError(null);
+                    startNewSession();
+                  }}
+                  className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 transition-all shadow-xs cursor-pointer"
+                >
+                  بدء جلسة جديدة
+                </button>
+
+                {sessions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSessionError(null);
+                      setShowSessionsList(true);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
+                  >
+                    عرض سجل جلساتي
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : loadingHistory ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2.5 text-xs py-3">
+                <span className="h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+                <span>جاري استرجاع سجل الجلسة السحابية…</span>
+              </div>
+            </div>
           ) : (
             <>
               {/* Messages Timeline */}

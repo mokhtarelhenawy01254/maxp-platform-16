@@ -13,6 +13,8 @@ export const toggleMerchantCopilot = () => {
 
 export const MerchantCopilotHost: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [initialSessionId, setInitialSessionId] = useState<string | null>(null);
+  const hasCheckedInitialUrl = React.useRef(false);
   const location = useLocation();
   const { user } = useAuth();
 
@@ -20,6 +22,37 @@ export const MerchantCopilotHost: React.FC = () => {
     user?.role === 'SUPER_ADMIN' ||
     location.pathname.startsWith('/super-admin') ||
     shouldUseSuperAdminShell(user?.role, location.pathname);
+
+  // Deep-link handler: read ?copilot=1&session=<sessionId> once on initial load
+  useEffect(() => {
+    if (hasCheckedInitialUrl.current || typeof window === 'undefined') return;
+    hasCheckedInitialUrl.current = true;
+
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const isCopilotRequested =
+        searchParams.get('copilot') === '1' ||
+        searchParams.get('copilot') === 'true';
+      const sessionParam = searchParams.get('session');
+
+      if (isCopilotRequested || sessionParam) {
+        if (sessionParam) {
+          setInitialSessionId(sessionParam);
+        }
+        setIsOpen(true);
+
+        // Remove deep link params from address bar using history.replaceState to preserve navigation hygiene
+        const url = new URL(window.location.href);
+        url.searchParams.delete('copilot');
+        url.searchParams.delete('session');
+        const cleanQuery = url.searchParams.toString();
+        const cleanUrl = url.pathname + (cleanQuery ? `?${cleanQuery}` : '') + url.hash;
+        window.history.replaceState(window.history.state, '', cleanUrl);
+      }
+    } catch (err) {
+      console.warn('[MerchantCopilotHost] Deep link parsing error:', err);
+    }
+  }, []);
 
   // Suppress floating trigger on chat/inbox screens to prevent blocking the mobile composer and send button
   const isInboxOrChatRoute =
@@ -83,6 +116,7 @@ export const MerchantCopilotHost: React.FC = () => {
 
       <MerchantCopilotDrawer
         isOpen={isOpen}
+        initialSessionId={initialSessionId}
         onClose={() => setIsOpen(false)}
       />
     </>

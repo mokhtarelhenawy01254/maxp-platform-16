@@ -1,6 +1,7 @@
-import React from 'react';
-import { Trash2, Plus, MessageSquare } from 'lucide-react';
+import React, { useState } from 'react';
+import { Trash2, Plus, MessageSquare, Link2, Check, ExternalLink } from 'lucide-react';
 import type { CopilotSession } from './types';
+import { copyCopilotSessionLink, openCopilotSessionInNewTab } from './copilotLinkUtils';
 
 interface CopilotSessionsModalProps {
   sessions: CopilotSession[];
@@ -17,6 +18,22 @@ export const CopilotSessionsModal: React.FC<CopilotSessionsModalProps> = ({
   onNewSession,
   onDeleteSession,
 }) => {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const ok = await copyCopilotSessionLink(id);
+    if (ok) {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1800);
+    }
+  };
+
+  const handleOpen = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    openCopilotSessionInNewTab(id);
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-white dark:bg-slate-900">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -30,7 +47,7 @@ export const CopilotSessionsModal: React.FC<CopilotSessionsModalProps> = ({
         <button
           type="button"
           onClick={onNewSession}
-          className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 active:scale-95 transition-all shadow-xs"
+          className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 active:scale-95 transition-all shadow-xs cursor-pointer"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>جلسة جديدة</span>
@@ -62,23 +79,51 @@ export const CopilotSessionsModal: React.FC<CopilotSessionsModalProps> = ({
                     : 'border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850 text-slate-700 dark:text-slate-300 hover:bg-slate-100/70 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                <div className="truncate text-xs font-medium max-w-[240px]">
+                <div className="truncate text-xs font-medium max-w-[180px] sm:max-w-[240px]">
                   {s.title || 'محادثة بدون عنوان'}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 tabular-nums">
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 tabular-nums ml-1">
                     {new Date(s.updatedAt).toLocaleDateString('ar-EG', {
                       month: 'short',
                       day: 'numeric',
                     })}
                   </span>
+
+                  {/* Copy Link Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => handleCopy(s.id, e)}
+                    className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 opacity-60 group-hover:opacity-100 transition-all rounded-md hover:bg-slate-200/60 dark:hover:bg-slate-750 cursor-pointer"
+                    title="انسخ لينك الجلسة"
+                    aria-label="انسخ لينك الجلسة"
+                  >
+                    {copiedId === s.id ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    ) : (
+                      <Link2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+
+                  {/* Open in new tab Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => handleOpen(s.id, e)}
+                    className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 opacity-60 group-hover:opacity-100 transition-all rounded-md hover:bg-slate-200/60 dark:hover:bg-slate-750 cursor-pointer"
+                    title="افتح في تاب جديد"
+                    aria-label="افتح في تاب جديد"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </button>
+
+                  {/* Delete Button */}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDeleteSession(s.id);
                     }}
-                    className="p-1 text-slate-400 hover:text-rose-600 opacity-60 group-hover:opacity-100 transition-opacity"
+                    className="p-1 text-slate-400 hover:text-rose-600 opacity-60 group-hover:opacity-100 transition-all rounded-md hover:bg-slate-200/60 dark:hover:bg-slate-750 cursor-pointer"
                     title="حذف الجلسة"
                     aria-label="حذف الجلسة"
                   >
@@ -93,3 +138,4 @@ export const CopilotSessionsModal: React.FC<CopilotSessionsModalProps> = ({
     </div>
   );
 };
+

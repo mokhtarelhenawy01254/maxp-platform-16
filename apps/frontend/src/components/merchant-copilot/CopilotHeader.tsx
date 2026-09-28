@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, History, RotateCcw, X, Cpu, Check } from 'lucide-react';
+import { ChevronDown, History, RotateCcw, X, Cpu, Check, Link2, ExternalLink } from 'lucide-react';
 import { SPECIALIST_AGENTS, SpecialistAgent } from './specialists';
+import { copyCopilotSessionLink, openCopilotSessionInNewTab } from './copilotLinkUtils';
 
 interface CopilotHeaderProps {
   selectedAgent: SpecialistAgent;
@@ -12,6 +13,7 @@ interface CopilotHeaderProps {
   onToggleSessionsList: () => void;
   onNewSession: () => void;
   onClose: () => void;
+  activeSessionId?: string | null;
 }
 
 export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
@@ -24,9 +26,20 @@ export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
   onToggleSessionsList,
   onNewSession,
   onClose,
+  activeSessionId,
 }) => {
   const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false);
+  const [hasCopied, setHasCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleCopyCurrentSession = async () => {
+    if (!activeSessionId) return;
+    const ok = await copyCopilotSessionLink(activeSessionId);
+    if (ok) {
+      setHasCopied(true);
+      setTimeout(() => setHasCopied(false), 1800);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -144,17 +157,45 @@ export const CopilotHeader: React.FC<CopilotHeaderProps> = ({
         <button
           type="button"
           onClick={onNewSession}
-          className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95"
+          className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95 cursor-pointer"
           title="بدء محادثة جديدة"
           aria-label="بدء محادثة جديدة"
         >
           <RotateCcw className="h-4 w-4" />
         </button>
 
+        {activeSessionId && (
+          <>
+            <button
+              type="button"
+              onClick={handleCopyCurrentSession}
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95 cursor-pointer"
+              title="نسخ لينك الجلسة الحالية"
+              aria-label="نسخ لينك الجلسة الحالية"
+            >
+              {hasCopied ? (
+                <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              ) : (
+                <Link2 className="h-4 w-4" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => openCopilotSessionInNewTab(activeSessionId)}
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95 cursor-pointer"
+              title="افتح في تاب جديد"
+              aria-label="افتح في تاب جديد"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </button>
+          </>
+        )}
+
         <button
           type="button"
           onClick={onClose}
-          className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95 mr-1"
+          className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95 mr-1 cursor-pointer"
           title="إغلاق (Esc)"
           aria-label="إغلاق المساعد"
         >
