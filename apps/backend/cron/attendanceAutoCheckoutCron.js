@@ -291,6 +291,19 @@ class AttendanceAutoCheckoutCron {
       ? 'OVERNIGHT_SHIFT_SCHEDULED_END'
       : 'DAY_ROLLOVER_FORGOTTEN_CHECKOUT';
 
+    // ⏱️ الربط الحتمي: إيقاف أي مؤقتات مهام ظلت معلقة للموظف عند وقت نهاية الشفت التلقائي
+    try {
+      const taskTimerService = require('../services/taskTimerService');
+      await taskTimerService.stopUserActiveTimers({
+        companyId: attendance.companyId,
+        userId: attendance.userId,
+        endTime: checkoutTime,
+        reason: autoCloseReason,
+      });
+    } catch (timerErr) {
+      console.warn(`[ATTENDANCE-CRON] Error stopping active task timers for user ${attendance.userId}:`, timerErr?.message);
+    }
+
     const audit = await prisma.attendanceAutoCloseAudit.upsert({
       where: {
         attendanceId: attendance.id

@@ -235,9 +235,23 @@ export const LiveTeamTimersTab: React.FC = () => {
                       </div>
                     </div>
 
-                    <div style={styles.timerChip}>
-                      <Clock size={11} color="#10b981" />
-                      <span style={styles.timerDigits}>{formatTimer(timer.elapsedSeconds)}</span>
+                    <div
+                      style={{
+                        ...styles.timerChip,
+                        backgroundColor: timer.elapsedSeconds > 4 * 3600 ? 'rgba(245, 158, 11, 0.12)' : styles.timerChip.backgroundColor,
+                        borderColor: timer.elapsedSeconds > 4 * 3600 ? 'rgba(245, 158, 11, 0.35)' : styles.timerChip.borderColor,
+                      }}
+                      title={timer.elapsedSeconds > 4 * 3600 ? 'تنبيه: وقت العمل تجاوز 4 ساعات متواصلة (احتمال خمول أو نسيان)' : 'مؤقت مباشر'}
+                    >
+                      <Clock size={11} color={timer.elapsedSeconds > 4 * 3600 ? '#f59e0b' : '#10b981'} />
+                      <span
+                        style={{
+                          ...styles.timerDigits,
+                          color: timer.elapsedSeconds > 4 * 3600 ? '#f59e0b' : styles.timerDigits.color,
+                        }}
+                      >
+                        {formatTimer(timer.elapsedSeconds)} {timer.elapsedSeconds > 4 * 3600 ? '⚠️' : ''}
+                      </span>
                     </div>
                   </div>
 
@@ -274,6 +288,34 @@ export const LiveTeamTimersTab: React.FC = () => {
                       </span>
 
                       <span style={styles.runningStatusChip}>قيد التنفيذ المباشر</span>
+
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`هل تريد إيقاف المؤقت للموظف (${timer.userName})؟`)) {
+                            try {
+                              await window.electronAPI.stopTaskTimer(timer.id);
+                              loadActiveTimers(false);
+                            } catch (err: any) {
+                              alert('تعذر إيقاف المؤقت: ' + err.message);
+                            }
+                          }
+                        }}
+                        style={{
+                          marginRight: 'auto',
+                          background: 'rgba(239, 68, 68, 0.08)',
+                          border: '1px solid rgba(239, 68, 68, 0.25)',
+                          color: '#ef4444',
+                          borderRadius: 4,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          padding: '2px 8px',
+                          cursor: 'pointer',
+                        }}
+                        title="إيقاف المؤقت إدارياً"
+                      >
+                        إيقاف المؤقت
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -65,6 +65,14 @@ export interface TrackerState {
   shiftEnded?: boolean;
   shiftEndedAt?: string | null;
   deviceType?: 'OFFICE' | 'PERSONAL';
+  isOvertime?: boolean;
+  activeOvertimeSession?: {
+    id: string;
+    startedAt: string;
+    reason: string;
+    taskSummary?: string | null;
+  } | null;
+  lastHandoverNotes?: string | null;
 }
 
 

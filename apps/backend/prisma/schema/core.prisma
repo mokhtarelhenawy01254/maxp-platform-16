@@ -381,6 +381,8 @@ model Company {
     orderStatusAutoChangeRules        OrderStatusAutoChangeRule[]
    articles                         Article[]
     devices                          UserDevice[]
+    overtimeSessions                 OvertimeSession[]
+    shiftHandovers                   ShiftHandover[]
 
    @@index([businessSpecialtyId])
   @@map("companies")
@@ -497,6 +499,8 @@ model User {
   moderatorNotifications                            ModeratorNotification[]
   moderatorDashboardCaches                          ModeratorDashboardCache[]
   devices                                           UserDevice[]
+  overtimeSessions                                  OvertimeSession[]
+  shiftHandovers                                    ShiftHandover[]
 
   @@index([companyId])
   @@index([departmentId])

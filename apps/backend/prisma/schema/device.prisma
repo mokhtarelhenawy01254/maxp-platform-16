@@ -22,3 +22,49 @@ model UserDevice {
   @@index([fingerprint])
   @@map("user_devices")
 }
+
+model OvertimeSession {
+  id            String    @id @default(cuid())
+  companyId     String
+  userId        String
+  deviceId      String?
+  date          DateTime  @db.Date
+  startedAt     DateTime  @default(now())
+  endedAt       DateTime?
+  durationSec   Int       @default(0)
+  reason        String
+  taskSummary   String?   @db.Text
+  status        String    @default("PENDING") // ACTIVE, PENDING, APPROVED, REJECTED
+  deviceType    String?   @default("PERSONAL")
+  approvedBy    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, date])
+  @@index([userId, date])
+  @@index([status])
+  @@map("hr_overtime_sessions")
+}
+
+model ShiftHandover {
+  id              String    @id @default(cuid())
+  companyId       String
+  userId          String
+  deviceId        String?
+  shiftDate       DateTime  @db.Date
+  closedAt        DateTime  @default(now())
+  handoverNotes   String?   @db.Text
+  pendingTasks    String?   @db.Text
+  metricsSnapshot Json?
+  createdAt       DateTime  @default(now())
+
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, shiftDate])
+  @@index([userId, shiftDate])
+  @@map("hr_shift_handovers")
+}

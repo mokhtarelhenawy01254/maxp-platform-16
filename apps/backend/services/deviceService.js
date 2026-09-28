@@ -168,6 +168,42 @@ class DeviceService {
       },
     });
 
+    // Notify managers & admins about new device
+    try {
+      const userName = newDevice.user
+        ? `${newDevice.user.firstName || ''} ${newDevice.user.lastName || ''}`.trim()
+        : 'موظف';
+      await db.notification.create({
+        data: {
+          companyId,
+          title: 'جهاز جديد متصل بالنظام',
+          message: `الموظف (${userName}) اتصل من جهاز جديد: ${cleanDeviceName} (${newDevice.clientType}) - التصنيف الافتراضي: شخصي.`,
+          type: 'DEVICE_REGISTERED',
+          data: {
+            deviceId: newDevice.id,
+            fingerprint: newDevice.fingerprint,
+            deviceName: newDevice.deviceName,
+            userId: newDevice.userId,
+            actionUrl: '/settings?tab=devices',
+          },
+        },
+      });
+
+      const socketService = require('./socketService');
+      const io = socketService.getIO();
+      if (io) {
+        io.to(`company_${companyId}`).emit('new_device_registered', {
+          deviceId: newDevice.id,
+          deviceName: newDevice.deviceName,
+          userName,
+          deviceType: newDevice.deviceType,
+          createdAt: newDevice.createdAt,
+        });
+      }
+    } catch (notifErr) {
+      console.warn('[DeviceService] New device notification non-fatal error:', notifErr.message);
+    }
+
     return {
       device: newDevice,
       isNew: true,

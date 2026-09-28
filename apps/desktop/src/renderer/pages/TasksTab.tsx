@@ -936,12 +936,55 @@ export const TasksTab: React.FC = () => {
                 </div>
 
                 {/* Live Stopwatch Badge */}
-                <div style={styles.teamStopwatchBadge} title="عداد وقت العمل الفعلي على المهمة">
-                  <Clock size={11} color="#22c55e" />
-                  <span style={styles.teamStopwatchText}>
-                    {formatRunnerTimer(timer.elapsedSeconds)}
+                <div
+                  style={{
+                    ...styles.teamStopwatchBadge,
+                    borderColor: timer.elapsedSeconds > 4 * 3600 ? 'rgba(245, 158, 11, 0.45)' : (styles.teamStopwatchBadge.borderColor || 'rgba(34, 197, 94, 0.25)'),
+                    backgroundColor: timer.elapsedSeconds > 4 * 3600 ? 'rgba(245, 158, 11, 0.12)' : (styles.teamStopwatchBadge.backgroundColor || 'rgba(34, 197, 94, 0.08)'),
+                  }}
+                  title={timer.elapsedSeconds > 4 * 3600 ? 'تنبيه: وقت العمل تجاوز 4 ساعات متواصلة (احتمال خمول أو نسيان)' : 'عداد وقت العمل الفعلي على المهمة'}
+                >
+                  <Clock size={11} color={timer.elapsedSeconds > 4 * 3600 ? '#f59e0b' : '#22c55e'} />
+                  <span
+                    style={{
+                      ...styles.teamStopwatchText,
+                      color: timer.elapsedSeconds > 4 * 3600 ? '#f59e0b' : styles.teamStopwatchText.color,
+                    }}
+                  >
+                    {formatRunnerTimer(timer.elapsedSeconds)} {timer.elapsedSeconds > 4 * 3600 ? '⚠️' : ''}
                   </span>
                 </div>
+
+                {/* Manager Remote Stop Action */}
+                {isAdminOrManager && (
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (window.confirm(`هل تريد إيقاف المؤقت للموظف (${timer.userName})؟`)) {
+                        try {
+                          await window.electronAPI.stopTaskTimer(timer.id);
+                          loadTasks(activeView);
+                        } catch (err: any) {
+                          alert('تعذر إيقاف المؤقت: ' + err.message);
+                        }
+                      }
+                    }}
+                    style={{
+                      marginRight: 6,
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                      color: '#ef4444',
+                      borderRadius: 4,
+                      fontSize: 10,
+                      fontWeight: 600,
+                      padding: '2px 6px',
+                      cursor: 'pointer',
+                    }}
+                    title="إيقاف المؤقت إدارياً"
+                  >
+                    إيقاف
+                  </button>
+                )}
               </div>
             ))}
           </div>

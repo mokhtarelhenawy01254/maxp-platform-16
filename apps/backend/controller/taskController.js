@@ -2898,58 +2898,23 @@ const taskController = {
       const { entryId } = req.params;
       const companyId = req.user.companyId;
       const userId = req.user.userId || req.user.id;
+      const userRole = String(req.user?.role || "").toUpperCase();
+      const { customEndTime, reason } = req.body || {};
 
-      const timeEntry = await getSharedPrismaClient().timeEntry.findFirst({
-        where: { id: entryId, userId, companyId, isRunning: true },
+      const taskTimerService = require("../services/taskTimerService");
+      const updatedEntry = await taskTimerService.stopTimerById({
+        entryId,
+        companyId,
+        actingUserId: userId,
+        actingUserRole: userRole,
+        customEndTime,
+        reason: reason || "MANUAL_STOP",
       });
-      if (!timeEntry) {
-        return res
-          .status(404)
-          .json({
-            success: false,
-            error: "سجل الوقت غير موجود أو متوقف بالفعل",
-          });
-      }
-
-      const endTime = new Date();
-      const duration = Math.round((endTime - timeEntry.startTime) / 60000);
-
-      const updatedEntry = await getSharedPrismaClient().timeEntry.update({
-        where: { id: entryId },
-        data: { endTime, duration, isRunning: false },
-        include: { task: { select: { title: true } } },
-      });
-
-      await getSharedPrismaClient().task.update({
-        where: { id: timeEntry.taskId },
-        data: { actualHours: { increment: Math.round(duration / 60) } },
-      });
-
-      // 🎯 GOAL-METRIC-ENGINE: Auto-advance hours goal on timer stop
-      try {
-        const hoursLogged = Math.round((duration / 60) * 100) / 100;
-        if (hoursLogged > 0) {
-          const goalMetricEngine = require("../services/goalMetricEngine");
-          goalMetricEngine
-            .recordGoalMetricEvent({
-              companyId,
-              userId,
-              metricKey: "TASK_STOPWATCH_HOURS",
-              incrementValue: hoursLogged,
-              metadata: { taskId: timeEntry.taskId, durationMinutes: duration },
-            })
-            .catch((err) =>
-              console.warn("⚠️ [GOAL-HOOK] Timer hours error:", err.message)
-            );
-        }
-      } catch (timerGoalErr) {
-        console.warn("⚠️ [GOAL-HOOK] Timer goal error:", timerGoalErr.message);
-      }
 
       res.json({
         success: true,
         data: updatedEntry,
-        message: `تم إيقاف تتبع الوقت. المدة: ${duration} دقيقة`,
+        message: `تم إيقاف تتبع الوقت. المدة: ${updatedEntry.duration} دقيقة`,
       });
 
       await taskNotificationService.notifyTaskStakeholders({
@@ -3274,6 +3239,21 @@ const taskController = {
                   department: { select: { name: true } },
                 },
               },
+              attendances: {
+                where: {
+                  date: {
+                    gte: new Date(Date.now() - 36 * 3600 * 1000),
+                  },
+                },
+                orderBy: { date: "desc" },
+                take: 1,
+                select: {
+                  id: true,
+                  date: true,
+                  checkIn: true,
+                  checkOut: true,
+                },
+              },
             },
           },
         },
@@ -3281,16 +3261,27 @@ const taskController = {
       });
 
       const validActive = [];
-      const cleanupIds = [];
+      const cleanupList = [];
 
       for (const entry of activeEntries) {
         const taskStatus = String(entry.task?.status || "").toUpperCase();
+        const latestAttendance = entry.user?.attendances?.[0] || null;
+        const now = Date.now();
+        const startMs = new Date(entry.startTime).getTime();
+        const elapsedSeconds = !isNaN(startMs) && now > startMs ? Math.floor((now - startMs) / 1000) : 0;
+
         if (["COMPLETED", "CANCELLED"].includes(taskStatus)) {
-          cleanupIds.push(entry.id);
+          cleanupList.push({ id: entry.id, taskId: entry.taskId, stopTime: new Date(), reason: 'TASK_COMPLETED_OR_CANCELLED' });
+        } else if (latestAttendance?.checkOut) {
+          // الموظف سجل انصرافه بالفعل، يتم تنظيف المؤقت فوراً وتعيين وقت الانتهاء عند لحظة الانصراف
+          const checkoutDate = new Date(latestAttendance.checkOut);
+          const validStopTime = checkoutDate.getTime() > startMs ? checkoutDate : new Date(startMs + 60000);
+          cleanupList.push({ id: entry.id, taskId: entry.taskId, stopTime: validStopTime, reason: 'AUTO_CLEANUP_EMPLOYEE_CHECKED_OUT' });
+        } else if (elapsedSeconds > 6 * 3600) {
+          // سقف أمان حتمي: مؤقت تخطى 6 ساعات متواصلة دون إيقاف
+          const cappedStopTime = new Date(startMs + 6 * 3600 * 1000);
+          cleanupList.push({ id: entry.id, taskId: entry.taskId, stopTime: cappedStopTime, reason: 'AUTO_CLEANUP_EXCEEDED_6_HOURS' });
         } else {
-          const now = Date.now();
-          const startMs = new Date(entry.startTime).getTime();
-          const elapsedSeconds = !isNaN(startMs) && now > startMs ? Math.floor((now - startMs) / 1000) : 0;
           const fullName = [entry.user?.firstName, entry.user?.lastName].filter(Boolean).join(" ").trim() || entry.user?.email || "عضو الفريق";
 
           validActive.push({
@@ -3308,16 +3299,28 @@ const taskController = {
             userDepartment: entry.user?.employees?.department?.name || entry.user?.employeeRel?.department?.name || "فريق العمل",
             startTime: entry.startTime,
             elapsedSeconds,
+            isAnomaly: elapsedSeconds > 4 * 3600,
+            isCheckedOut: Boolean(latestAttendance?.checkOut),
           });
         }
       }
 
-      if (cleanupIds.length > 0) {
-        const stopNow = new Date();
-        getSharedPrismaClient().timeEntry.updateMany({
-          where: { id: { in: cleanupIds } },
-          data: { endTime: stopNow, isRunning: false },
-        }).catch((err) => console.warn("[taskController] Auto cleanup stopped timers error:", err.message));
+      if (cleanupList.length > 0) {
+        (async () => {
+          for (const item of cleanupList) {
+            try {
+              const durMin = Math.max(1, Math.round((new Date(item.stopTime).getTime() - new Date().getTime()) / 60000));
+              await getSharedPrismaClient().timeEntry.update({
+                where: { id: item.id },
+                data: {
+                  endTime: item.stopTime,
+                  isRunning: false,
+                  description: `[تنظيف تلقائي للنظام: ${item.reason}]`,
+                },
+              });
+            } catch {}
+          }
+        })().catch((err) => console.warn("[taskController] Auto cleanup error:", err.message));
       }
 
       res.json({

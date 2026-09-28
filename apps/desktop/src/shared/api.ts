@@ -875,6 +875,84 @@ class MonitorApiClient {
     }
   }
 
+  // ── Shift Close & Overtime Engine ─────────────────────────────
+  async closeShiftWithHandover(data: {
+    handoverNotes?: string;
+    pendingTasks?: string;
+    metricsSnapshot?: any;
+  }): Promise<{ success: boolean; handover?: any; attendance?: any; error?: string }> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.post(
+        `${base}/api/v1/shifts/close`,
+        data,
+        {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        }
+      );
+      return res.data;
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.error || err.message };
+    }
+  }
+
+  async startOvertimeSession(
+    reason: string,
+    taskSummary?: string
+  ): Promise<{ success: boolean; session?: any; alreadyActive?: boolean; error?: string }> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.post(
+        `${base}/api/v1/shifts/overtime/start`,
+        { reason, taskSummary },
+        {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        }
+      );
+      return res.data;
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.error || err.message };
+    }
+  }
+
+  async endOvertimeSession(
+    taskSummary?: string
+  ): Promise<{ success: boolean; session?: any; durationMin?: number; error?: string }> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.post(
+        `${base}/api/v1/shifts/overtime/end`,
+        { taskSummary },
+        {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        }
+      );
+      return res.data;
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.error || err.message };
+    }
+  }
+
+  async getTodayShiftStatus(): Promise<{ success: boolean; status?: any; error?: string }> {
+    try {
+      const base = this.serverUrl;
+      const res = await axios.get(
+        `${base}/api/v1/shifts/status`,
+        {
+          headers: this.getAuthHeaders(),
+          timeout: 10_000,
+        }
+      );
+      return res.data;
+    } catch (err: any) {
+      return { success: false, error: err.response?.data?.error || err.message };
+    }
+  }
+
+
   // ── Task Comments ─────────────────────────────────────────────
   async getTaskComments(taskId: string): Promise<any> {
     try {

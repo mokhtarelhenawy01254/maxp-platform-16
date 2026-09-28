@@ -846,6 +846,19 @@ class AttendanceService {
         },
       });
 
+      // ⏱️ الربط الحتمي: إيقاف جميع مؤقتات المهام النشطة للموظف فور تسجيل بصمة الانصراف
+      try {
+        const taskTimerService = require("../taskTimerService");
+        await taskTimerService.stopUserActiveTimers({
+          companyId,
+          userId: employeeId,
+          endTime: now,
+          reason: `ATTENDANCE_CHECKOUT_${String(data.method || 'manual').toUpperCase()}`,
+        });
+      } catch (timerStopErr) {
+        console.warn("[Attendance] Cascade stop task timers warning:", timerStopErr?.message);
+      }
+
       // معالجة الخصم التلقائي للانصراف المبكر
       if (earlyLeaveMinutes > 0) {
         try {

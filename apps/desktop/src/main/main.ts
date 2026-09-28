@@ -607,6 +607,20 @@ function registerIpcHandlers(): void {
         console.warn('[Main] Clock-out API call error:', err?.message);
       }
 
+      // 4. ⏱️ Auto-stop any running task timers upon shift ending
+      try {
+        const timerRes = await apiClient.getRunningTaskTimer();
+        const activeTimers = timerRes?.runningTimers || (timerRes?.runningTimer ? [timerRes.runningTimer] : []);
+        for (const t of activeTimers) {
+          if (t?.id) {
+            await apiClient.stopTaskTimer(t.id);
+            console.log(`[Main] Auto-stopped running task timer ${t.id} on shift end`);
+          }
+        }
+      } catch (err: any) {
+        console.warn('[Main] Error stopping running task timer on shift end:', err?.message);
+      }
+
       updateTrayMenu();
       sendStateToRenderer();
       showNotification('MaxP Workspace', 'تم إنهاء وردية العمل وتسجيل الانصراف بنجاح.');
@@ -1487,6 +1501,19 @@ function handleSystemSuspend(reason: string): void {
       console.warn('[Main] Error during suspend flush:', err);
     }
   }
+
+  // ⏱️ Auto-stop running task timers on sleep / screen lock so hours don't run overnight
+  try {
+    apiClient.getRunningTaskTimer().then((timerRes) => {
+      const activeTimers = timerRes?.runningTimers || (timerRes?.runningTimer ? [timerRes.runningTimer] : []);
+      for (const t of activeTimers) {
+        if (t?.id) {
+          apiClient.stopTaskTimer(t.id).catch(() => {});
+          console.log(`[PowerMonitor] Auto-stopped task timer ${t.id} on system ${reason}`);
+        }
+      }
+    }).catch(() => {});
+  } catch {}
 }
 
 function handleSystemResume(reason: string): void {
@@ -1581,13 +1608,26 @@ function startIdleReminder(): void {
 
       const idleSec = powerMonitor.getSystemIdleTime();
       if (idleSec >= IDLE_REMINDER_THRESHOLD_SEC) {
-        if (remindedForThisIdleEpisode) return;
-        remindedForThisIdleEpisode = true;
-        showNotification(
-          'MaxP Workspace',
-          'لاحظنا خمولاً ممتدًا. لو رجعت للعمل تفقد الجلسة تلقائياً، ولو خارجه فعّل «استراحة رسمية».',
-          true
-        );
+        if (!remindedForThisIdleEpisode) {
+          remindedForThisIdleEpisode = true;
+          showNotification(
+            'MaxP Workspace',
+            'لاحظنا خمولاً ممتدًا. لو رجعت للعمل تفقد الجلسة تلقائياً، ولو خارجه فعّل «استراحة رسمية».',
+            true
+          );
+        }
+
+        // ⏱️ إيقاف تلقائي لمؤقتات المهام وتعليق التتبع إذا تجاوز الخمول 15 دقيقة متصلة
+        if (idleSec >= 900 && !isPaused) {
+          console.log('[IdleMonitor] Idle exceeded 15 minutes continuously — pausing tracking & stopping running timers');
+          pauseTracking('خمول ممتد تلقائي');
+          apiClient.getRunningTaskTimer().then((timerRes) => {
+            const activeTimers = timerRes?.runningTimers || (timerRes?.runningTimer ? [timerRes.runningTimer] : []);
+            for (const t of activeTimers) {
+              if (t?.id) apiClient.stopTaskTimer(t.id).catch(() => {});
+            }
+          }).catch(() => {});
+        }
       } else if (idleSec < 30) {
         remindedForThisIdleEpisode = false; // activity resumed — re-arm
       }
