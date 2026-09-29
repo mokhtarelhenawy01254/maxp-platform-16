@@ -556,7 +556,7 @@ class PeriodicReportService {
     lines.push('');
 
     // 3. أدوات التحويل والشحن
-    lines.push('🎯 *حالة محفزات السلة (Conversion & Shipping):*');
+    lines.push('📦 *حالة محفزات السلة (Conversion & Shipping):*');
     const shipThresholdStr = metrics.freeShippingThreshold !== 'مش متاح' ? `${metrics.freeShippingThreshold.toLocaleString('en-US')} ${currency}` : 'مش متاح (غير محدد)';
     lines.push(`• حد الشحن المجاني الحالي: *${shipThresholdStr}*`);
     const offersStr = metrics.activeOffersCount !== 'مش متاح' ? `${metrics.activeOffersCount} عرض نشط` : 'مش متاح';
@@ -564,7 +564,7 @@ class PeriodicReportService {
     lines.push('');
 
     // 4. التوصية الاستراتيجية
-    lines.push('💡 *توصية خبير AOV لليوم:*');
+    lines.push('📌 *توصية خبير AOV لليوم:*');
     if (metrics.avgOrderValue !== 'مش متاح' && metrics.freeShippingThreshold !== 'مش متاح') {
       const gap = Number(metrics.freeShippingThreshold) - Number(metrics.avgOrderValue);
       if (gap > 0) {
