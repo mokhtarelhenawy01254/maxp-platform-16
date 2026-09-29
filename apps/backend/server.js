@@ -1530,6 +1530,15 @@ try {
   console.error("❌ [SCHEDULED-REPORT-CRON] Failed to start scheduled report cron:", error);
 }
 
+// Start AOV Daily Report cron (شادي — فريق متوسط قيمة الطلب)
+try {
+  const { startAovDailyReportCron } = require("./cron/aovDailyReportCron");
+  startAovDailyReportCron();
+  console.log("✅ [AOV-DAILY-REPORT-CRON] AOV daily report cron started (fires daily at configured time per company)");
+} catch (error) {
+  console.error("❌ [AOV-DAILY-REPORT-CRON] Failed to start AOV daily report cron:", error);
+}
+
 // Start QP Express automated background status sync cron
 try {
   const { startQpExpressSyncCron } = require("./cron/qpExpressSyncCron");

@@ -458,4 +458,45 @@ roles:
     - manage_agent_skill
     - update_agent_identity
 
+  AOV_ANALYST:
+    - order_summary
+    - order_recent_list
+    - order_lookup
+    - sales_revenue
+    - product_top_selling
+    - product_performance
+    - customer_top_buyers
+    - customer_info
+    - offers_list_active
+    - inventory_check
+    - shipping_rates
+    - coupon_validate
+    - conversion_tools_read
+    - knowledge_search
 
+  AOV_EXECUTOR:
+    - offers_list_active
+    - inventory_check
+    - product_performance
+    - product_top_selling
+    - conversion_tools_read
+    - conversion_tool_toggle
+    - conversion_tool_set_threshold
+    - discount_create_draft
+    - coupon_validate
+    - shipping_rates
+    - knowledge_search
+    - agent_handoff_to
+
+  AOV_AUDITOR:
+    - order_summary
+    - order_recent_list
+    - sales_revenue
+    - product_top_selling
+    - product_performance
+    - inventory_check
+    - shipping_rates
+    - conversion_tools_read
+    - offers_list_active
+    - coupon_validate
+    - knowledge_search

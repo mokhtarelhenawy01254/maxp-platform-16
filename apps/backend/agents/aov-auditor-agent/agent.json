@@ -1,0 +1,50 @@
+{
+  "slug": "aov-auditor-agent",
+  "name": "مدقق الأرقام — فريق AOV",
+  "role": "AOV_AUDITOR",
+  "version": "1.0.0",
+  "icon": "shield-check",
+  "modelPolicy": {
+    "default": "deepseek-flash",
+    "fallback": "groq/openai/gpt-oss-120b",
+    "allowModelFallback": true
+  },
+  "instructions": {
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian",
+    "tone": "critical_precise",
+    "formality": "formal"
+  },
+  "guardrails": {
+    "requireExplicitConfirmation": false,
+    "noUnverifiedNumbers": true,
+    "readOnly": true,
+    "selfAuditForbidden": true
+  },
+  "allowedTools": [
+    "order_summary",
+    "order_recent_list",
+    "sales_revenue",
+    "product_top_selling",
+    "product_performance",
+    "inventory_check",
+    "shipping_rates",
+    "conversion_tools_read",
+    "offers_list_active",
+    "coupon_validate",
+    "knowledge_search"
+  ],
+  "allowedSkills": [],
+  "channels": [
+    "scheduler"
+  ],
+  "budget": {
+    "dailyUsd": 1.5,
+    "maxToolCallsPerRun": 8
+  }
+}

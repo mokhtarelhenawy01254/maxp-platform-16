@@ -1,0 +1,52 @@
+{
+  "slug": "aov-executor-agent",
+  "name": "منفذ العروض والباكات — فريق AOV",
+  "role": "AOV_EXECUTOR",
+  "version": "1.0.0",
+  "icon": "tag",
+  "modelPolicy": {
+    "default": "deepseek-flash",
+    "fallback": "groq/openai/gpt-oss-120b",
+    "allowModelFallback": true
+  },
+  "instructions": {
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian",
+    "tone": "operational_precise",
+    "formality": "polite"
+  },
+  "guardrails": {
+    "requireExplicitConfirmation": true,
+    "noUnverifiedNumbers": true,
+    "requireDecisionMakerApprovalForMutations": true,
+    "singleQuestionPerTurn": true
+  },
+  "allowedTools": [
+    "offers_list_active",
+    "inventory_check",
+    "product_performance",
+    "product_top_selling",
+    "conversion_tools_read",
+    "conversion_tool_toggle",
+    "conversion_tool_set_threshold",
+    "discount_create_draft",
+    "coupon_validate",
+    "shipping_rates",
+    "knowledge_search",
+    "agent_handoff_to"
+  ],
+  "allowedSkills": [],
+  "channels": [
+    "chat",
+    "scheduler"
+  ],
+  "budget": {
+    "dailyUsd": 2,
+    "maxToolCallsPerRun": 6
+  }
+}

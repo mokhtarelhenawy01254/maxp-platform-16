@@ -1,0 +1,52 @@
+{
+  "slug": "aov-analyst-agent",
+  "name": "محلل AOV — استخراج مؤشرات متوسط قيمة الطلب",
+  "role": "AOV_ANALYST",
+  "version": "1.0.0",
+  "icon": "chart-line",
+  "modelPolicy": {
+    "default": "deepseek-flash",
+    "fallback": "groq/openai/gpt-oss-120b",
+    "allowModelFallback": true
+  },
+  "instructions": {
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian",
+    "tone": "analytical_precise",
+    "formality": "formal"
+  },
+  "guardrails": {
+    "requireExplicitConfirmation": false,
+    "noUnverifiedNumbers": true,
+    "readOnly": true
+  },
+  "allowedTools": [
+    "order_summary",
+    "order_recent_list",
+    "order_lookup",
+    "sales_revenue",
+    "product_top_selling",
+    "product_performance",
+    "customer_top_buyers",
+    "customer_info",
+    "offers_list_active",
+    "inventory_check",
+    "shipping_rates",
+    "coupon_validate",
+    "conversion_tools_read",
+    "knowledge_search"
+  ],
+  "allowedSkills": [],
+  "channels": [
+    "scheduler"
+  ],
+  "budget": {
+    "dailyUsd": 2,
+    "maxToolCallsPerRun": 10
+  }
+}
