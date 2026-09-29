@@ -1786,6 +1786,12 @@ async function pollTaskNotifications(): Promise<void> {
   try {
     let hasChanges = false;
 
+    // Overdue sweep collected first, then emitted as ONE digest toast —
+    // firing one toast per task made them overlap on the same corner slot.
+    const freshOverdueMine: string[] = [];
+    let freshOverdueMineUrgent = 0;
+    const freshOverdueTeam: string[] = [];
+
     // 1. Check tasks assigned to me
     const myTasks = await apiClient.getTasks('my-tasks');
     if (Array.isArray(myTasks)) {
@@ -1852,14 +1858,27 @@ async function pollTaskNotifications(): Promise<void> {
           // Overdue (diffMs < 0)
           else if (diffMs < 0 && !warnedOverdueTaskIds.has(t.id)) {
             warnedOverdueTaskIds.add(t.id);
-            showNotification(
-              '⚠️ مهمة متأخرة عن التسليم',
-              `تجاوزت المهمة "${t.title}" موعد التسليم المحدد!`,
-              true
-            );
+            freshOverdueMine.push(t.title);
+            if (isUrgent) freshOverdueMineUrgent++;
           }
         }
       }
+    }
+
+    if (freshOverdueMine.length === 1) {
+      showNotification(
+        '⚠️ مهمة متأخرة عن التسليم',
+        `تجاوزت المهمة "${freshOverdueMine[0]}" موعد التسليم المحدد!`,
+        true
+      );
+      hasChanges = true;
+    } else if (freshOverdueMine.length > 1) {
+      showNotification(
+        '⚠️ مهام متأخرة عن التسليم',
+        `${freshOverdueMine.length} مهام تجاوزت مواعدها${freshOverdueMineUrgent ? ` (${freshOverdueMineUrgent} منها عاجلة)` : ''} — أبرزها: «${freshOverdueMine[0]}» و«${freshOverdueMine[1]}». التفاصيل كاملة في شاشة المهام.`,
+        true
+      );
+      hasChanges = true;
     }
 
     // 2. Check tasks assigned BY me to peers (Manager Smart Notification Radar)
@@ -1910,16 +1929,34 @@ async function pollTaskNotifications(): Promise<void> {
           const diffMs = dueTime - now;
           if (diffMs < 0 && !warnedOverdueTaskIds.has(`mgr_${t.id}`)) {
             warnedOverdueTaskIds.add(`mgr_${t.id}`);
-            showNotification(
-              '⚠️ مهمة متأخرة في فريقك',
-              `تجاوزت المهمة "${t.title}" الموكلة لـ ${assigneeName} موعد التسليم المحدد!`,
-              true
-            );
+            freshOverdueTeam.push(`${t.title} (الموكلة لـ ${assigneeName})`);
           }
         }
 
         knownMyTasksStatuses.set(t.id, currentStatus);
       }
+    }
+
+    if (freshOverdueTeam.length === 1) {
+      setTimeout(
+        () => showNotification(
+          '⚠️ مهمة متأخرة في فريقك',
+          `تجاوزت المهمة «${freshOverdueTeam[0]}» موعد التسليم المحدد!`,
+          true
+        ),
+        1500
+      );
+      hasChanges = true;
+    } else if (freshOverdueTeam.length > 1) {
+      setTimeout(
+        () => showNotification(
+          '⚠️ مهام متأخرة في فريقك',
+          `${freshOverdueTeam.length} مهام في فريقك تجاوزت مواعدها — أبرزها: «${freshOverdueTeam[0]}». التفاصيل في شاشة المهام.`,
+          true
+        ),
+        1500
+      );
+      hasChanges = true;
     }
 
     // Broadcast refresh to renderer if new tasks or status updates arrived
