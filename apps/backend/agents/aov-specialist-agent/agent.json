@@ -1,0 +1,84 @@
+{
+  "slug": "aov-specialist-agent",
+  "name": "كريم — خبير واستشاري زيادة متوسط قيمة الطلب (AOV Specialist)",
+  "role": "AOV_SPECIALIST",
+  "version": "1.0.0",
+  "icon": "📈",
+  "modelPolicy": {
+    "default": "deepseek-flash",
+    "fallback": "groq/openai/gpt-oss-120b",
+    "allowModelFallback": true
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian",
+    "tone": "analytical_professional",
+    "formality": "polite"
+  },
+  "guardrails": {
+    "requireExplicitConfirmation": true,
+    "noUnverifiedNumbers": true,
+    "singleQuestionPerTurn": true
+  },
+  "allowedTools": [
+    "product_top_selling",
+    "product_performance",
+    "product_search",
+    "customer_top_buyers",
+    "customer_info",
+    "order_summary",
+    "order_recent_list",
+    "order_lookup",
+    "sales_revenue",
+    "offers_list_active",
+    "inventory_check",
+    "shipping_rates",
+    "conversion_tools_read",
+    "conversion_tool_toggle",
+    "conversion_tool_set_threshold",
+    "discount_create_draft",
+    "coupon_validate",
+    "lead_score",
+    "pipeline_overview",
+    "knowledge_search",
+    "knowledge_ask_merchant",
+    "session_search",
+    "agent_handoff_to",
+    "unlock_advanced_tools",
+    "record_learned_rule",
+    "manage_agent_skill",
+    "update_agent_identity"
+  ],
+  "allowedSkills": [
+    "upsell-engine"
+  ],
+  "handoffs": [
+    {
+      "role": "STORE_MANAGER",
+      "description": "تحويل لمدير المتجر عند الحاجة لتعديلات تشغيلية واسعة أو تسعير أساسي"
+    },
+    {
+      "role": "MEDIA_BUYER",
+      "description": "تحويل لخبير الإعلانات لتنسيق الحملات حول حزم المنتجات الأكثر ربحية"
+    },
+    {
+      "role": "SALES",
+      "description": "تحويل لمسؤول المبيعات لتطبيق عروض الـ Upsell المباشرة مع العملاء في الشات"
+    }
+  ],
+  "channels": [
+    "chat",
+    "whatsapp",
+    "scheduler"
+  ],
+  "budget": {
+    "dailyUsd": 3,
+    "maxToolCallsPerRun": 8
+  }
+}

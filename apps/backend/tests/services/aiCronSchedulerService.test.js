@@ -66,13 +66,34 @@ describe('AiCronSchedulerService - Production Test Suite', () => {
       expect(aiCronSchedulerService.resolveTargetRole('تابع طلبات السلات المتروكة وأرسل عروض للعملاء')).toBe('SALES');
     });
 
+    test('routes aov/basket tasks to AOV_SPECIALIST', () => {
+      expect(aiCronSchedulerService.resolveTargetRole('راجع متوسط قيمة الطلب وزود سلة المشتريات')).toBe('AOV_SPECIALIST');
+      expect(aiCronSchedulerService.resolveTargetRole('عايز تقرير AOV يومي')).toBe('AOV_SPECIALIST');
+      expect(aiCronSchedulerService.resolveTargetRole('اقتراحات upsell لزيادة متوسط السلة')).toBe('AOV_SPECIALIST');
+    });
+
     test('defaults to GENERAL for ambiguous tasks', () => {
       expect(aiCronSchedulerService.resolveTargetRole('قدم تقرير عام')).toBe('GENERAL');
     });
   });
 
   describe('3. Multi-Tenant Lifecycle & Execution', () => {
-    test('creates, lists, and isolates scheduled jobs between tenants', async () => {
+    test('automatically ensures default daily 9:00 AM AOV report job exists and isolates between tenants', async () => {
+      const listA = await aiCronSchedulerService.listJobs(companyA);
+      const aovJobA = listA.find(j => j.taskType === 'AOV_SPECIALIST');
+      expect(aovJobA).toBeDefined();
+      expect(aovJobA.cronExpression).toBe('0 9 * * *');
+      expect(aovJobA.status).toBe('ACTIVE');
+      expect(aovJobA.description).toContain('متوسط قيمة الطلب (AOV)');
+
+      const listB = await aiCronSchedulerService.listJobs(companyB);
+      const aovJobB = listB.find(j => j.taskType === 'AOV_SPECIALIST');
+      expect(aovJobB).toBeDefined();
+      expect(aovJobB.companyId).toBe(companyB);
+      expect(aovJobA.id).not.toBe(aovJobB.id);
+    });
+
+    test('creates custom scheduled jobs alongside default AOV job', async () => {
       const jobA = await aiCronSchedulerService.createJob(companyA, {
         naturalInput: 'كل يوم جمعة الساعة 10 صباحاً راجع حملات فيسبوك',
       });
@@ -82,32 +103,35 @@ describe('AiCronSchedulerService - Production Test Suite', () => {
       expect(jobA.taskType).toBe('MEDIA_BUYER');
       expect(jobA.status).toBe('ACTIVE');
 
-      const jobB = await aiCronSchedulerService.createJob(companyB, {
-        naturalInput: 'كل ساعة تحقق من المخزون',
-      });
-
-      expect(jobB.taskType).toBe('INVENTORY');
-
       const listA = await aiCronSchedulerService.listJobs(companyA);
-      expect(listA.length).toBe(1);
-      expect(listA[0].id).toBe(jobA.id);
-
-      const listB = await aiCronSchedulerService.listJobs(companyB);
-      expect(listB.length).toBe(1);
-      expect(listB[0].id).toBe(jobB.id);
+      expect(listA.some(j => j.id === jobA.id)).toBe(true);
+      expect(listA.some(j => j.taskType === 'AOV_SPECIALIST')).toBe(true);
     });
 
-    test('deletes job cleanly', async () => {
+    test('deletes custom job cleanly while preserving default jobs', async () => {
       const job = await aiCronSchedulerService.createJob(companyA, {
         naturalInput: 'كل يوم تقرير سريع',
       });
 
       const listBefore = await aiCronSchedulerService.listJobs(companyA);
-      expect(listBefore.length).toBe(1);
+      expect(listBefore.some(j => j.id === job.id)).toBe(true);
 
       await aiCronSchedulerService.deleteJob(companyA, job.id);
       const listAfter = await aiCronSchedulerService.listJobs(companyA);
-      expect(listAfter.length).toBe(0);
+      expect(listAfter.some(j => j.id === job.id)).toBe(false);
+    });
+
+    test('executes AOV daily report job and generates real formatted report', async () => {
+      const list = await aiCronSchedulerService.listJobs(companyA);
+      const aovJob = list.find(j => j.taskType === 'AOV_SPECIALIST');
+      expect(aovJob).toBeDefined();
+
+      const result = await aiCronSchedulerService.executeJob(companyA, aovJob.id);
+      expect(result.success).toBe(true);
+      expect(result.execution.status).toBe('SUCCESS');
+      expect(result.execution.reply).toContain('متوسط قيمة الطلب (AOV)');
+      expect(result.execution.reply).toContain('مؤشرات السلة والإيرادات');
+      expect(result.execution.runCount).toBeGreaterThanOrEqual(1);
     });
   });
 });

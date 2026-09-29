@@ -436,3 +436,21 @@ roles:
       retain_days: 90
       auto_embed: true
 
+  AOV_SPECIALIST:
+    label: "أخصائي زيادة متوسط قيمة الطلب (AOV Specialist)"
+    domain: "AOV"
+    playbook_id: "aov_specialist_playbook"
+    playbook_title: "كتيب استراتيجيات زيادة متوسط قيمة الطلب ونمو المبيعات"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["AOV", "STORE_OPS", "DISCOUNTS", "OFFERS", "SHIPPING", "CONVERSION"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+

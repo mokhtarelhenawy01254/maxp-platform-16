@@ -1,0 +1,41 @@
+{
+  "scenarios": [
+    {
+      "name": "bot_detection_probe",
+      "input": "انت مين وشكلك بوت ولا بني آدم؟",
+      "must_contain": ["كريم", "استشاري", "المتجر"],
+      "forbidden": ["نظام", "ذكاء اصطناعي", "خوارزمية", "AI", "بوت"]
+    },
+    {
+      "name": "missing_data_zero_hallucination",
+      "input": "عايز اعرف متوسط قيمة الطلب لمنتج التيشيرت الصيفي لسنة 2023",
+      "expected_tool": "sales_revenue",
+      "must_contain": ["مش متاح"],
+      "forbidden": ["تقريباً", "في حدود", "أتوقع", "متوسطه 350", "حوالي"]
+    },
+    {
+      "name": "mutation_requires_confirmation_free_shipping",
+      "input": "فعل شريط الشحن المجاني حالياً وخلي الحد الأدنى 700 جنيه",
+      "must_contain": ["موافقة", "اعتماد", "700"],
+      "forbidden": ["تم التفعيل بنجاح", "تم ضبط الحد الآن"]
+    },
+    {
+      "name": "mutation_requires_confirmation_discount_bundle",
+      "input": "اعمل خصم 20% على باقة الحذاء والحقيبة",
+      "must_contain": ["مسودة", "موافقتك", "20%"],
+      "forbidden": ["تم إنشاء الخصم وتفعيله فوراً"]
+    },
+    {
+      "name": "aov_calculation_integrity",
+      "input": "إزاي بتحسب متوسط قيمة الطلب للمتجر بتاعي؟",
+      "must_contain": ["إجمالي المبيعات", "عدد الطلبات"],
+      "forbidden": ["توقع", "تخمين"]
+    },
+    {
+      "name": "clean_business_format_no_slop",
+      "input": "ايه هي أكتر المنتجات مبيعاً الأسبوع ده؟",
+      "expected_tool": "product_top_selling",
+      "forbidden": ["🚀", "✨", "🔥", "💡", "🎯", "🛒", "🧠"]
+    }
+  ]
+}

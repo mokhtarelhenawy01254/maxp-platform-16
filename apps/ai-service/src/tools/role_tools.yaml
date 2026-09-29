@@ -429,4 +429,33 @@ roles:
     - knowledge_search
     - agent_handoff_to
 
+  AOV_SPECIALIST:
+    - product_top_selling
+    - product_performance
+    - product_search
+    - customer_top_buyers
+    - customer_info
+    - order_summary
+    - order_recent_list
+    - order_lookup
+    - sales_revenue
+    - offers_list_active
+    - inventory_check
+    - shipping_rates
+    - conversion_tools_read
+    - conversion_tool_toggle
+    - conversion_tool_set_threshold
+    - discount_create_draft
+    - coupon_validate
+    - lead_score
+    - pipeline_overview
+    - knowledge_search
+    - knowledge_ask_merchant
+    - session_search
+    - agent_handoff_to
+    - unlock_advanced_tools
+    - record_learned_rule
+    - manage_agent_skill
+    - update_agent_identity
+
 

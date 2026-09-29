@@ -242,19 +242,24 @@ class PeriodicReportService {
     const prisma = getSharedPrismaClient();
 
     if (preferredSessionId) {
-      const preferred = await safeQuery(() => prisma.whatsAppSession.findFirst({
-        where: { id: preferredSessionId, companyId, status: 'connected' }
-      }));
-      if (preferred) return preferred;
+      try {
+        const preferred = await safeQuery(() => prisma.whatsAppSession.findFirst({
+          where: { id: preferredSessionId, companyId, status: 'CONNECTED' }
+        }));
+        if (preferred) return preferred;
+      } catch (_) {}
     }
 
     // جلب أي جلسة متصلة تابعة للشركة
-    const session = await safeQuery(() => prisma.whatsAppSession.findFirst({
-      where: { companyId, status: 'connected' },
-      orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }]
-    }));
+    try {
+      const session = await safeQuery(() => prisma.whatsAppSession.findFirst({
+        where: { companyId, status: 'CONNECTED' },
+        orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }]
+      }));
+      if (session) return session;
+    } catch (_) {}
 
-    return session || null;
+    return null;
   }
 
   /**
@@ -372,6 +377,307 @@ class PeriodicReportService {
       metrics: reportData.metrics,
       messageText,
       timeZone: reportData.timeZone
+    };
+  }
+
+  /**
+   * 6. تجميع مؤشرات AOV المتخصصة للتقرير الصباحي
+   */
+  async generateAovDailyReportMetrics(companyId, targetDate = new Date()) {
+    const prisma = getSharedPrismaClient();
+
+    let company = await safeQuery(() => prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true, name: true, currency: true, timezone: true, phone: true }
+    }));
+
+    if (!company) {
+      company = { id: companyId, name: 'المتجر', currency: 'ج.م', timezone: 'Africa/Cairo', phone: null };
+    }
+
+    const timeZone = company.timezone || 'Africa/Cairo';
+    const currency = company.currency || 'ج.م';
+
+    const zonedDateStr = formatInTimeZone(targetDate, timeZone, 'yyyy-MM-dd');
+    const dayStart = startOfDay(fromZonedTime(zonedDateStr, timeZone));
+    const dayEnd = endOfDay(fromZonedTime(zonedDateStr, timeZone));
+
+    // استعلام طلبات اليوم
+    const orders = await safeQuery(() => prisma.order.findMany({
+      where: {
+        companyId,
+        createdAt: { gte: dayStart, lte: dayEnd }
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        total: true,
+        status: true,
+        orderItems: {
+          select: {
+            productName: true,
+            quantity: true,
+            price: true
+          }
+        }
+      }
+    })) || [];
+
+    const guestOrders = await safeQuery(() => prisma.guestOrder.findMany({
+      where: {
+        companyId,
+        createdAt: { gte: dayStart, lte: dayEnd }
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        total: true,
+        status: true
+      }
+    })) || [];
+
+    const totalOrders = orders.length + guestOrders.length;
+    const regularRevenue = orders.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
+    const guestRevenue = guestOrders.reduce((sum, g) => sum + (parseFloat(g.total) || 0), 0);
+    const totalRevenue = Math.round(regularRevenue + guestRevenue);
+
+    // حساب متوسط قيمة الطلب AOV بدقة رياضية صارمة
+    const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 'مش متاح';
+
+    // احتساب إجمالي القطع ومتوسط حجم السلة
+    let totalItemsCount = 0;
+    const productFrequencyMap = new Map();
+
+    orders.forEach(o => {
+      (o.orderItems || []).forEach(item => {
+        const qty = Number(item.quantity) || 1;
+        totalItemsCount += qty;
+        const name = (item.productName || 'صنف').trim();
+        const existing = productFrequencyMap.get(name) || { qty: 0, revenue: 0 };
+        existing.qty += qty;
+        existing.revenue += (parseFloat(item.price) || 0) * qty;
+        productFrequencyMap.set(name, existing);
+      });
+    });
+
+    const avgBasketSize = totalOrders > 0 ? (totalItemsCount / totalOrders).toFixed(1) : 'مش متاح';
+
+    // أفضل المنتجات المساهمة في السلة
+    const topBasketProducts = Array.from(productFrequencyMap.entries())
+      .sort((a, b) => b[1].revenue - a[1].revenue)
+      .slice(0, 3)
+      .map(([name, data]) => ({
+        name,
+        qty: data.qty,
+        revenue: Math.round(data.revenue)
+      }));
+
+    // حد الشحن المجاني المسجل في المتجر (إن وُجد)
+    let freeShippingThreshold = 'مش متاح';
+    try {
+      if (prisma.companyApp) {
+        const freeShipApp = await safeQuery(() => prisma.companyApp.findFirst({
+          where: {
+            companyId,
+            app: { slug: { in: ['free-shipping-bar', 'checkout-upsell', 'conversion-tools'] } }
+          }
+        }));
+        if (freeShipApp && freeShipApp.settings) {
+          const parsed = typeof freeShipApp.settings === 'string' ? JSON.parse(freeShipApp.settings) : freeShipApp.settings;
+          const val = parsed.threshold || parsed.freeShippingThreshold || parsed.minOrderValue || parsed.free_shipping_threshold;
+          if (val) freeShippingThreshold = Number(val);
+        }
+      }
+    } catch (_) {}
+
+    // العروض والخصومات النشطة حالياً
+    let activeOffersCount = 'مش متاح';
+    try {
+      if (prisma.discount) {
+        const count = await safeQuery(() => prisma.discount.count({
+          where: { companyId, isActive: true }
+        }));
+        if (typeof count === 'number') activeOffersCount = count;
+      }
+    } catch (_) {}
+
+    return {
+      company,
+      timeZone,
+      currency,
+      dateString: zonedDateStr,
+      metrics: {
+        dateString: zonedDateStr,
+        totalOrders,
+        totalRevenue: totalOrders > 0 ? totalRevenue : 'مش متاح',
+        avgOrderValue,
+        avgBasketSize,
+        topBasketProducts,
+        freeShippingThreshold,
+        activeOffersCount
+      }
+    };
+  }
+
+  /**
+   * 7. صياغة التقرير الصباحي لـ AOV بتنسيق WhatsApp Markdown الاحترافي
+   */
+  formatAovReportMessage({ company, metrics }) {
+    const currency = company.currency || 'ج.م';
+    const lines = [];
+
+    lines.push('📊 *التقرير الصباحي لمتوسط قيمة الطلب (AOV)*');
+    lines.push(`🏢 *${company.name || 'المتجر'}*`);
+    lines.push(`📅 التاريخ: ${metrics.dateString}`);
+    lines.push('━━━━━━━━━━━━━━━━━━━');
+
+    // 1. قسم مؤشرات السلة والـ AOV
+    lines.push('💰 *مؤشرات السلة والإيرادات:*');
+    lines.push(`• إجمالي الطلبات: *${metrics.totalOrders}* طلب`);
+    const revStr = metrics.totalRevenue !== 'مش متاح' ? `${metrics.totalRevenue.toLocaleString('en-US')} ${currency}` : 'مش متاح (لا توجد مبيعات مسجلة)';
+    lines.push(`• إجمالي المبيعات: *${revStr}*`);
+
+    const aovStr = metrics.avgOrderValue !== 'مش متاح' ? `${metrics.avgOrderValue.toLocaleString('en-US')} ${currency}` : 'مش متاح (لا توجد طلبات كافية لحساب المتوسط)';
+    lines.push(`• متوسط قيمة الطلب (AOV): *${aovStr}*`);
+
+    const basketStr = metrics.avgBasketSize !== 'مش متاح' ? `${metrics.avgBasketSize} قطعة/طلب` : 'مش متاح';
+    lines.push(`• متوسط عدد القطع في السلة: *${basketStr}*`);
+    lines.push('');
+
+    // 2. المنتجات الأعلى مساهمة في الإيراد
+    lines.push('🏆 *المنتجات الرافعة لقيمة السلة:*');
+    if (metrics.topBasketProducts && metrics.topBasketProducts.length > 0) {
+      metrics.topBasketProducts.forEach((item, idx) => {
+        lines.push(`${idx + 1}. *${item.name}* — ${item.qty} قطع (${item.revenue.toLocaleString('en-US')} ${currency})`);
+      });
+    } else {
+      lines.push('• بيانات المنتجات الأكثر طلباً: مش متاح لليوم المحدد.');
+    }
+    lines.push('');
+
+    // 3. أدوات التحويل والشحن
+    lines.push('🎯 *حالة محفزات السلة (Conversion & Shipping):*');
+    const shipThresholdStr = metrics.freeShippingThreshold !== 'مش متاح' ? `${metrics.freeShippingThreshold.toLocaleString('en-US')} ${currency}` : 'مش متاح (غير محدد)';
+    lines.push(`• حد الشحن المجاني الحالي: *${shipThresholdStr}*`);
+    const offersStr = metrics.activeOffersCount !== 'مش متاح' ? `${metrics.activeOffersCount} عرض نشط` : 'مش متاح';
+    lines.push(`• العروض الترويجية والخصومات النشطة: *${offersStr}*`);
+    lines.push('');
+
+    // 4. التوصية الاستراتيجية
+    lines.push('💡 *توصية خبير AOV لليوم:*');
+    if (metrics.avgOrderValue !== 'مش متاح' && metrics.freeShippingThreshold !== 'مش متاح') {
+      const gap = Number(metrics.freeShippingThreshold) - Number(metrics.avgOrderValue);
+      if (gap > 0) {
+        lines.push(`• متوسط السلة (${metrics.avgOrderValue} ${currency}) أقل من حد الشحن المجاني بفارق ${gap} ${currency}. يُوصى باقتراح منتج تكميلي خفيف بسعر يغطي هذا الفارق عند إتمام الطلب.`);
+      } else {
+        lines.push(`• متوسط السلة تخطى حد الشحن المجاني! يُوصى برفع حد الشحن المجاني بنسبة 15% إضافية لتعظيم الإيرادات.`);
+      }
+    } else if (metrics.topBasketProducts && metrics.topBasketProducts.length > 0) {
+      lines.push(`• بناء باقة تكميلية تشمل «${metrics.topBasketProducts[0].name}» مع منتج ملائم بسعر مجمع مميز.`);
+    } else {
+      lines.push('• تفعيل حزم المنتجات التكميلية (Bundles) وضبط شريط الشحن المجاني لتحفيز زيادة حجم الطلبات.');
+    }
+
+    lines.push('━━━━━━━━━━━━━━━━━━━');
+    lines.push('⏱️ تم التوليد آلياً عبر مستشار AOV — منصة MaxP');
+
+    return lines.join('\n');
+  }
+
+  /**
+   * 8. تنفيذ وإرسال تقرير AOV اليومي على الواتساب وحفظ نسخة
+   */
+  async dispatchAovDailyReport(companyId, { jobId = null, customPhone = null, saveCopy = true } = {}) {
+    if (!companyId) throw new Error('companyId is required');
+
+    const prisma = getSharedPrismaClient();
+
+    // 1. تجميع المؤشرات وصياغة التقرير
+    const reportData = await this.generateAovDailyReportMetrics(companyId);
+    const messageText = this.formatAovReportMessage({
+      company: reportData.company,
+      metrics: reportData.metrics
+    });
+
+    // 2. استخراج رقم المستلم (الهاتف المخصص أو هاتف المالك أو هاتف الشركة)
+    let recipientPhone = customPhone || null;
+
+    if (!recipientPhone) {
+      try {
+        const ownerMembership = await safeQuery(() => prisma.userCompany.findFirst({
+          where: { companyId, role: 'OWNER' },
+          include: { user: { select: { phone: true, firstName: true } } }
+        }));
+        if (ownerMembership?.user?.phone) {
+          recipientPhone = ownerMembership.user.phone;
+        }
+      } catch (_) {}
+    }
+
+    if (!recipientPhone && reportData.company.phone) {
+      recipientPhone = reportData.company.phone;
+    }
+
+    // 3. التحقق من جلسة الواتساب المتصلة
+    const session = await this.resolveActiveSession(companyId);
+    let sendResult = { delivered: false, error: null };
+
+    if (session && recipientPhone) {
+      const formatted = formatPhoneNumber(recipientPhone);
+      if (formatted) {
+        try {
+          if (session.provider === 'BAILEYS') {
+            await WhatsAppMessageHandler.sendTextMessage(session.id, formatted, messageText);
+            sendResult = { delivered: true, recipient: formatted };
+          } else {
+            const jid = `${formatted}@s.whatsapp.net`;
+            await WhatsAppManager.sendMessage(session.id, jid, { text: messageText });
+            sendResult = { delivered: true, recipient: formatted };
+          }
+        } catch (err) {
+          console.warn('[PeriodicReport] Failed to send WhatsApp message:', err.message);
+          sendResult = { delivered: false, error: err.message, recipient: formatted };
+        }
+      } else {
+        sendResult = { delivered: false, error: 'invalid_recipient_phone', recipient: recipientPhone };
+      }
+    } else {
+      const reason = !session ? 'no_connected_whatsapp_session' : 'no_recipient_phone_found';
+      sendResult = { delivered: false, reason, note: 'تقرير AOV جاهز ومحفوظ بنجاح' };
+    }
+
+    // 4. حفظ نسخة موثقة في قاعدة البيانات (ActivityLog + CompanySkill metadata)
+    if (saveCopy && prisma && prisma.activityLog) {
+      try {
+        await safeQuery(() => prisma.activityLog.create({
+          data: {
+            companyId,
+            category: 'AOV_REPORT',
+            action: 'DAILY_AOV_REPORT_DISPATCHED',
+            description: `تم توليد تقرير AOV اليومي (متوسط الطلب: ${reportData.metrics.avgOrderValue}) وتسليمه (${sendResult.delivered ? 'نجاح عبر الواتساب' : sendResult.reason || 'محفوظ محلياً'})`,
+            severity: 'INFO',
+            isSuccess: true,
+            metadata: JSON.stringify({
+              jobId,
+              metrics: reportData.metrics,
+              delivery: sendResult,
+              reportText: messageText,
+              dispatchedAt: new Date().toISOString()
+            })
+          }
+        }));
+      } catch (logErr) {
+        console.warn('[PeriodicReport] Failed to persist activity log for AOV report:', logErr.message);
+      }
+    }
+
+    return {
+      success: true,
+      deliveredWhatsApp: sendResult.delivered,
+      delivery: sendResult,
+      metrics: reportData.metrics,
+      messageText,
+      dispatchedAt: new Date().toISOString()
     };
   }
 }

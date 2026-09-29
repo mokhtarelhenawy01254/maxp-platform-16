@@ -37,7 +37,7 @@ def test_all_20_roles_exist_and_match():
         "PRODUCT_CREATOR", "MARKETING", "FACEBOOK_SALES_SUPPORT", "SAS_SALES",
         "COMPETITOR", "SMART_SELLER", "SALES_REP", "MEDICAL_CENTER",
         "PHYSIOTHERAPY", "EDUCATION_CENTER", "HOTEL", "MEDICAL_CENTER_MANAGER",
-        "CEO", "BROWSER_COPILOT", "HR_ASSISTANT",
+        "CEO", "BROWSER_COPILOT", "HR_ASSISTANT", "AOV_SPECIALIST",
     }
     assert len(roles) == len(expected_roles), f"Expected {len(expected_roles)} roles, got {len(roles)}"
     assert set(roles.keys()) == expected_roles
@@ -206,6 +206,7 @@ def test_arabic_category_alias_normalization():
         ("العيادات", "CLINIC"),
         ("حجوزات الفنادق", "HOTEL"),
         ("القرارات التنفيذية", "EXECUTIVE"),
+        ("متوسط قيمة الطلب", "AOV"),
         ("غير معروف على الإطلاق", "GENERAL"),
     ]
     for arabic_name, expected_domain in cases:
