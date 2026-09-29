@@ -11,12 +11,11 @@ const {
   requireExternalHrScope
 } = require('../middleware/externalHrApiAuth');
 
-const path = require('path');
+const openApiSpec = require('../config/openapi-hr.json');
 
 // 📖 Public OpenAPI Spec & Interactive Documentation (No Auth Required)
 router.get('/openapi.json', (req, res) => {
-  const specPath = path.join(__dirname, '../docs/openapi-hr.json');
-  res.sendFile(specPath);
+  res.json(openApiSpec);
 });
 
 router.get('/docs', (req, res) => {

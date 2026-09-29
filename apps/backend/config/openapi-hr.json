@@ -1,0 +1,219 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "MaxP Platform — External HR & AI Integration API",
+    "version": "1.0.0",
+    "description": "Enterprise-grade Human Resources API for seamless integration with external ERP systems (Odoo, SAP), Biometric Attendance devices (ZKTeco), and Autonomous AI Agents (OpenAI, Claude, LangChain, n8n)."
+  },
+  "servers": [
+    {
+      "url": "/api/v1/external/hr",
+      "description": "Production HR API Gateway"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    },
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/employees": {
+      "get": {
+        "summary": "List employees",
+        "description": "Returns paginated list of employees with search and department filtering.",
+        "operationId": "hr_list_employees",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "departmentId", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "PROBATION", "ON_LEAVE", "TERMINATED"] } }
+        ],
+        "responses": {
+          "200": { "description": "List of employees" }
+        }
+      }
+    },
+    "/employees/{id}": {
+      "get": {
+        "summary": "Get employee by ID or employeeNumber",
+        "description": "Fetch detailed profile of an employee.",
+        "operationId": "hr_get_employee_by_id",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Employee profile" },
+          "404": { "description": "Employee not found" }
+        }
+      }
+    },
+    "/employees/upsert": {
+      "post": {
+        "summary": "Create or update employee from ERP",
+        "description": "Upsert an employee record from external systems.",
+        "operationId": "hr_upsert_employee",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["employeeNumber", "firstName", "lastName"],
+                "properties": {
+                  "employeeNumber": { "type": "string" },
+                  "firstName": { "type": "string" },
+                  "lastName": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "phone": { "type": "string" },
+                  "departmentId": { "type": "string" },
+                  "positionId": { "type": "string" },
+                  "status": { "type": "string", "enum": ["ACTIVE", "PROBATION", "SUSPENDED", "TERMINATED"], "default": "ACTIVE" },
+                  "hireDate": { "type": "string", "format": "date" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Employee updated" },
+          "201": { "description": "Employee created" }
+        }
+      }
+    },
+    "/attendance/punches/batch": {
+      "post": {
+        "summary": "Ingest biometric punches",
+        "description": "Batch endpoint for biometric devices (e.g. ZKTeco) to upload punches with automatic check-in/out resolution and duplicate suppression.",
+        "operationId": "hr_ingest_biometric_punches",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["punches"],
+                "properties": {
+                  "deviceId": { "type": "string", "example": "DEV_MAIN_GATE" },
+                  "punches": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["employeeNumber", "punchTime"],
+                      "properties": {
+                        "employeeNumber": { "type": "string" },
+                        "punchTime": { "type": "string", "format": "date-time" },
+                        "type": { "type": "string", "enum": ["CHECK_IN", "CHECK_OUT"], "default": "CHECK_IN" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Punches processed summary" }
+        }
+      }
+    },
+    "/attendance/today": {
+      "get": {
+        "summary": "Get today's attendance roster",
+        "description": "Quickly inspect who is present, checked-in, or absent today.",
+        "operationId": "hr_get_today_attendance",
+        "parameters": [
+          { "name": "date", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "Attendance list" }
+        }
+      }
+    },
+    "/leaves": {
+      "post": {
+        "summary": "Submit leave request",
+        "description": "Submit a leave request on behalf of an employee via AI or external system.",
+        "operationId": "hr_submit_leave_request",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["type", "startDate", "endDate"],
+                "properties": {
+                  "employeeId": { "type": "string" },
+                  "employeeNumber": { "type": "string" },
+                  "type": { "type": "string", "enum": ["ANNUAL", "SICK", "UNPAID", "EMERGENCY", "MATERNITY", "PATERNITY", "HAJJ", "BEREAVEMENT"] },
+                  "startDate": { "type": "string", "format": "date" },
+                  "endDate": { "type": "string", "format": "date" },
+                  "reason": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Leave request submitted" }
+        }
+      }
+    },
+    "/webhooks": {
+      "get": {
+        "summary": "List subscribed webhooks",
+        "operationId": "hr_list_webhooks",
+        "responses": {
+          "200": { "description": "List of active webhooks" }
+        }
+      },
+      "post": {
+        "summary": "Register webhook endpoint",
+        "operationId": "hr_create_webhook",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "targetUrl"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "targetUrl": { "type": "string", "format": "uri" },
+                  "secret": { "type": "string" },
+                  "subscribedEvents": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "default": ["*"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Webhook endpoint registered" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "MaxP Scoped HR API Key format: hrk_{16_hex_prefix}_{48_hex_secret} (e.g. hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9)"
+      },
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "APIKey",
+        "description": "Alternative Bearer Token format: Bearer hrk_{16_hex_prefix}_{48_hex_secret} (e.g. Bearer hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9)"
+      }
+    }
+  }
+}
