@@ -172,21 +172,71 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
     [activeSessionId]
   );
 
+const compressImageFile = (file: File): Promise<string> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const src = e.target?.result as string;
+      if (!src) return resolve('');
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 1280;
+        let { width, height } = img;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        } else {
+          resolve(src);
+        }
+      };
+      img.onerror = () => resolve(src);
+      img.src = src;
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+};
+
   // File upload handler
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (uploadEvent) => {
-          const base64 = uploadEvent.target?.result as string;
-          if (base64) {
-            setAttachedImages((prev) => [...prev, base64]);
-          }
-        };
-        reader.readAsDataURL(file);
+    const fileList = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    for (const file of fileList) {
+      try {
+        const dataUrl = await compressImageFile(file);
+        if (dataUrl) {
+          setAttachedImages((prev) => [...prev, dataUrl]);
+        }
+      } catch (err) {
+        console.error('[Copilot] Image compress error:', err);
+      }
+    }
+    e.target.value = '';
+  };
+
+  const handlePasteImage = async (files: File[]) => {
+    for (const file of files) {
+      try {
+        const dataUrl = await compressImageFile(file);
+        if (dataUrl) {
+          setAttachedImages((prev) => [...prev, dataUrl]);
+        }
+      } catch (err) {
+        console.error('[Copilot] Paste image compress error:', err);
       }
     }
   };
@@ -199,7 +249,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
     let targetSessionId = activeSessionId;
     if (!targetSessionId) {
       try {
-        targetSessionId = await createNewCloudSession(text.slice(0, 30));
+        targetSessionId = await createNewCloudSession(text.slice(0, 30) || 'فحص صورة مرفقة');
       } catch (sessErr: any) {
         setMessages((prev) => [
           ...prev,
@@ -221,6 +271,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
       id: `usr-${Date.now()}`,
       sender: 'user',
       text,
+      images: currentImages.length > 0 ? currentImages : undefined,
       timestamp: new Date().toISOString(),
     };
 
@@ -229,12 +280,13 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
     setLoading(true);
 
     const startTime = Date.now();
+    const promptToSend = text || (currentImages.length > 0 ? 'يرجى مراجعة وفحص الصورة المرفقة والإفادة بالتحليل والإجراء المقترح.' : '');
 
     try {
       const res = await apiClient.post<any>(
         '/ai/chat/message',
         {
-          message: text,
+          message: promptToSend,
           sessionId: targetSessionId,
           agentId: selectedAgent.slug,
           images: currentImages.length > 0 ? currentImages : undefined,
@@ -525,9 +577,32 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
                       {msg.sender === 'user' ? (
                         /* User Message: Indigo Accent Capsule (Matches Platform Theme) */
                         <div className="flex flex-col items-end max-w-[85%]">
-                          <div className="rounded-2xl rounded-br-xs bg-indigo-600 text-white px-4 py-2.5 text-xs sm:text-sm shadow-xs leading-relaxed">
-                            <p className="whitespace-pre-line text-pretty">{msg.text}</p>
-                          </div>
+                          {/* Attached images preview in chat message */}
+                          {msg.images && msg.images.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-2 justify-end">
+                              {msg.images.map((img, i) => (
+                                <a
+                                  key={i}
+                                  href={img}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="relative block rounded-xl overflow-hidden border border-indigo-400/40 max-w-[240px] max-h-52 group shadow-xs cursor-pointer bg-slate-950/20"
+                                  title="عرض الصورة بحجمها الكامل"
+                                >
+                                  <img
+                                    src={img}
+                                    alt="مرفق"
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                  />
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                          {msg.text ? (
+                            <div className="rounded-2xl rounded-br-xs bg-indigo-600 text-white px-4 py-2.5 text-xs sm:text-sm shadow-xs leading-relaxed">
+                              <p className="whitespace-pre-line text-pretty">{msg.text}</p>
+                            </div>
+                          ) : null}
                           <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 px-1 tabular-nums font-mono">
                             {new Date(msg.timestamp).toLocaleTimeString('ar-EG', {
                               hour: '2-digit',
@@ -589,6 +664,7 @@ export const MerchantCopilotDrawer: React.FC<MerchantCopilotDrawerProps> = ({
                 attachedImages={attachedImages}
                 onRemoveImage={(idx) => setAttachedImages((prev) => prev.filter((_, i) => i !== idx))}
                 onFileUpload={handleFileUpload}
+                onPasteImage={handlePasteImage}
                 onSendMessage={() => handleSendMessage()}
                 onRewind={handleRewind}
                 canRewind={messages.length > 0 && !loading}

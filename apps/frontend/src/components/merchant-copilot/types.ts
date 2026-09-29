@@ -28,6 +28,7 @@ export interface CopilotMessage {
   sender: 'user' | 'assistant';
   text: string;
   timestamp: string;
+  images?: string[];
   toolCalls?: Array<{
     id?: string;
     name: string;

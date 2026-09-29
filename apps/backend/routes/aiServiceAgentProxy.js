@@ -37,11 +37,35 @@ router.post('/agents/chat', async (req, res) => {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
 
-    const { message, agentId, threadId } = req.body || {};
-    if (!message?.trim()) return res.status(400).json({ success: false, error: 'message is required' });
+    const { message, agentId, threadId, attachments, images } = req.body || {};
+    const rawImages = attachments || images || [];
+    const incomingImages = Array.isArray(rawImages) ? rawImages : (rawImages ? [rawImages] : []);
+    const trimmedMessage = typeof message === 'string' ? message.trim() : '';
+
+    if (!trimmedMessage && incomingImages.length === 0) {
+      return res.status(400).json({ success: false, error: 'message is required' });
+    }
     if (!agentId) return res.status(400).json({ success: false, error: 'agentId is required' });
 
-    const result = await aiServiceAdminClient.chatWithAgent({ companyId, agentId, message, threadId });
+    const effectiveMessage = trimmedMessage || 'يرجى مراجعة وفحص الصورة المرفقة والإفادة بالتحليل والإجراء المقترح.';
+    const normalizedAttachments = incomingImages.map((img) => {
+      if (typeof img === 'string') {
+        return {
+          type: 'image',
+          url: img,
+          data_url: img.startsWith('data:') ? img : undefined,
+        };
+      }
+      return img;
+    });
+
+    const result = await aiServiceAdminClient.chatWithAgent({
+      companyId,
+      agentId,
+      message: effectiveMessage,
+      threadId,
+      attachments: normalizedAttachments.length > 0 ? normalizedAttachments : undefined,
+    });
     if (!result) {
       return res.status(502).json({ success: false, error: 'ai-service unreachable or returned an error' });
     }

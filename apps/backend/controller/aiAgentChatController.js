@@ -32,14 +32,21 @@ async function sendMessage(req, res) {
     }
 
     const { message, sessionId, agentId, agentSlug, memoryContext, memory_context, executiveContext } = req.body;
-    if (!message?.trim()) {
+    const rawImages = req.body?.images || req.body?.attachments || [];
+    const incomingImages = Array.isArray(rawImages) ? rawImages : (rawImages ? [rawImages] : []);
+    const hasImages = incomingImages.length > 0;
+    const trimmedMessage = typeof message === 'string' ? message.trim() : '';
+
+    if (!trimmedMessage && !hasImages) {
       return res.status(400).json({ success: false, error: 'message is required' });
     }
+
+    const effectiveMessage = trimmedMessage || 'يرجى مراجعة وفحص الصورة المرفقة والإفادة بالتحليل والإجراء المقترح.';
 
     const activeSessionId = sessionId || `copilot_sess_${Date.now()}`;
 
     // SOTA 2026: Strict slash-command rewind interceptor (prevents accidental data wipe from conversational words)
-    const isRewindCommand = /^\s*\/(تراجع|undo|rewind)\s*$/i.test(message);
+    const isRewindCommand = /^\s*\/(تراجع|undo|rewind)\s*$/i.test(effectiveMessage);
     if (isRewindCommand && sessionId) {
       const rewindRes = await aiSessionService.rewindSession(companyId, sessionId);
       return res.json({
@@ -51,11 +58,30 @@ async function sendMessage(req, res) {
       });
     }
 
+    // Normalize image attachments for AI services
+    const normalizedAttachments = incomingImages.map((img) => {
+      if (typeof img === 'string') {
+        const isDataUrl = img.startsWith('data:');
+        return {
+          type: 'image',
+          url: img,
+          data_url: isDataUrl ? img : undefined,
+        };
+      }
+      return {
+        type: img?.type || 'image',
+        url: img?.url || (typeof img?.data_url === 'string' ? img.data_url : ''),
+        data_url: img?.data_url || (typeof img?.url === 'string' && img.url.startsWith('data:') ? img.url : undefined),
+        ...img,
+      };
+    });
+
     // Persist incoming user turn to PostgreSQL durable ledger
     await aiSessionService.appendMessage(companyId, activeSessionId, {
       sender: 'user',
-      text: message,
-      images: req.body?.images,
+      text: trimmedMessage,
+      images: incomingImages.map(img => (typeof img === 'string' ? img : (img?.url || img?.data_url || ''))).filter(Boolean),
+      attachments: normalizedAttachments,
     });
 
     let result = null;
@@ -72,10 +98,11 @@ async function sendMessage(req, res) {
         const agentChatResult = await aiServiceAdminClient.chatWithAgent({
           companyId,
           agentId: targetAgentId,
-          message,
+          message: effectiveMessage,
           threadId: activeSessionId,
           memoryContext: combinedMemoryContext,
           channel: req.body?.channel || 'dashboard',
+          attachments: normalizedAttachments.length > 0 ? normalizedAttachments : undefined,
         });
 
         if (agentChatResult && (agentChatResult.reply || agentChatResult.tool_calls || agentChatResult.status === 'ok')) {
@@ -109,9 +136,10 @@ async function sendMessage(req, res) {
       const fallbackResult = await aiSdkClient.sendChatMessage({
         companyId,
         customerId: userId,
-        message,
+        message: effectiveMessage,
         threadId: activeSessionId,
         memoryContext: combinedMemoryContext,
+        attachments: normalizedAttachments.length > 0 ? normalizedAttachments : undefined,
       });
       result = {
         reply: fallbackResult.reply,
@@ -139,7 +167,7 @@ async function sendMessage(req, res) {
               toolArguments: tc.arguments,
               agentId: targetAgentId,
               model: result.modelSelection?.model || 'DeepSeek-V3',
-              userMessage: message,
+              userMessage: effectiveMessage,
             }).catch(() => {});
           } catch (_) {}
         }
@@ -148,10 +176,14 @@ async function sendMessage(req, res) {
 
     // Persist assistant turn to PostgreSQL durable ledger
     if (result?.reply) {
+      const assistantAttachments = result.response_attachments || result.attachments;
       await aiSessionService.appendMessage(companyId, activeSessionId, {
         sender: 'assistant',
         text: result.reply,
         toolCalls: result.toolCalls || [],
+        images: Array.isArray(assistantAttachments) && assistantAttachments.length > 0
+          ? assistantAttachments.map(a => (typeof a === 'string' ? a : (a.url || a.data_url || ''))).filter(Boolean)
+          : undefined,
       });
     }
 

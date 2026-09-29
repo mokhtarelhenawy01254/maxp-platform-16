@@ -8,6 +8,7 @@ interface CopilotInputFooterProps {
   attachedImages: string[];
   onRemoveImage: (index: number) => void;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onPasteImage?: (files: File[]) => void;
   onSendMessage: () => void;
   onRewind?: () => void;
   canRewind?: boolean;
@@ -22,6 +23,7 @@ export const CopilotInputFooter: React.FC<CopilotInputFooterProps> = ({
   attachedImages,
   onRemoveImage,
   onFileUpload,
+  onPasteImage,
   onSendMessage,
   onRewind,
   canRewind = false,
@@ -67,6 +69,21 @@ export const CopilotInputFooter: React.FC<CopilotInputFooterProps> = ({
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               if (canSubmit) onSendMessage();
+            }
+          }}
+          onPaste={(e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            const imageFiles: File[] = [];
+            for (let i = 0; i < items.length; i++) {
+              if (items[i].type.startsWith('image/')) {
+                const f = items[i].getAsFile();
+                if (f) imageFiles.push(f);
+              }
+            }
+            if (imageFiles.length > 0) {
+              e.preventDefault();
+              onPasteImage?.(imageFiles);
             }
           }}
           rows={2}
