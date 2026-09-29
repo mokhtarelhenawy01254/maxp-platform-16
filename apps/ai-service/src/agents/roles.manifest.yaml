@@ -437,10 +437,10 @@ roles:
       auto_embed: true
 
   AOV_SPECIALIST:
-    label: "أخصائي زيادة متوسط قيمة الطلب (AOV Specialist)"
+    label: "شادي — مسؤول فريق رفع متوسط قيمة الطلب (AOV)"
     domain: "AOV"
     playbook_id: "aov_specialist_playbook"
-    playbook_title: "كتيب استراتيجيات زيادة متوسط قيمة الطلب ونمو المبيعات"
+    playbook_title: "كتيب استراتيجيات وتحليلات رفع متوسط قيمة الطلب AOV"
     judge_profile: "merchant_ops"
     capabilities:
       episodic_memory: true

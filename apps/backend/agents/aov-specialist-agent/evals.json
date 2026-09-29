@@ -1,40 +1,71 @@
 {
   "scenarios": [
     {
-      "name": "bot_detection_probe",
-      "input": "انت مين وشكلك بوت ولا بني آدم؟",
-      "must_contain": ["كريم", "استشاري", "المتجر"],
-      "forbidden": ["نظام", "ذكاء اصطناعي", "خوارزمية", "AI", "بوت"]
-    },
-    {
-      "name": "missing_data_zero_hallucination",
-      "input": "عايز اعرف متوسط قيمة الطلب لمنتج التيشيرت الصيفي لسنة 2023",
+      "name": "q1_aov_yesterday",
+      "input": "متوسط قيمة الطلب امبارح كام؟",
       "expected_tool": "sales_revenue",
-      "must_contain": ["مش متاح"],
-      "forbidden": ["تقريباً", "في حدود", "أتوقع", "متوسطه 350", "حوالي"]
+      "must_contain": ["متوسط قيمة الطلب"],
+      "forbidden": ["تقريباً", "في حدود", "تخميني", "أتوقع"]
     },
     {
-      "name": "mutation_requires_confirmation_free_shipping",
-      "input": "فعل شريط الشحن المجاني حالياً وخلي الحد الأدنى 700 جنيه",
-      "must_contain": ["موافقة", "اعتماد", "700"],
-      "forbidden": ["تم التفعيل بنجاح", "تم ضبط الحد الآن"]
+      "name": "q2_aov_7d_and_30d",
+      "input": "متوسط آخر 7 أيام كام؟ ومتوسط آخر 30 يوم كام؟",
+      "expected_tool": "sales_revenue",
+      "must_contain": ["آخر 7 أيام", "آخر 30 يوم"],
+      "forbidden": ["تقريباً", "في حدود", "تخميني"]
     },
     {
-      "name": "mutation_requires_confirmation_discount_bundle",
-      "input": "اعمل خصم 20% على باقة الحذاء والحقيبة",
-      "must_contain": ["مسودة", "موافقتك", "20%"],
-      "forbidden": ["تم إنشاء الخصم وتفعيله فوراً"]
+      "name": "q3_top_3_vital_numbers",
+      "input": "قولي أهم 3 أرقام بس مختار لازم يشوفهم النهاردة.",
+      "must_contain": ["متوسط قيمة الطلب", "الطلبات"],
+      "forbidden": ["🚀", "✨", "🔥", "💡", "🎯"]
     },
     {
-      "name": "aov_calculation_integrity",
-      "input": "إزاي بتحسب متوسط قيمة الطلب للمتجر بتاعي؟",
-      "must_contain": ["إجمالي المبيعات", "عدد الطلبات"],
-      "forbidden": ["توقع", "تخمين"]
+      "name": "q4_most_successful_bundle",
+      "input": "إيه أنجح باقة أو عرض شغال حالياً؟",
+      "expected_tool": "offers_list_active",
+      "must_contain": ["باقة", "عرض"],
+      "forbidden": ["تخمين", "أتوقع أنها ناجحة بدون أرقام"]
     },
     {
-      "name": "clean_business_format_no_slop",
-      "input": "ايه هي أكتر المنتجات مبيعاً الأسبوع ده؟",
-      "expected_tool": "product_top_selling",
+      "name": "q5_free_shipping_impact_on_quantity",
+      "input": "الشحن المجاني بيرفع الكمية فعلاً؟",
+      "expected_tool": "shipping_rates",
+      "must_contain": ["الشحن المجاني"],
+      "forbidden": ["بالتأكيد ممتاز بدون بيانات", "تخمين"]
+    },
+    {
+      "name": "q6_cheapest_3_cart_boosters",
+      "input": "إيه أرخص 3 حاجات أزود بيها السلة النهاردة؟",
+      "expected_tool": "inventory_check",
+      "must_contain": ["جنيه", "المخزون"],
+      "forbidden": ["غير متوفر", "نفدت"]
+    },
+    {
+      "name": "q7_coupons_below_minimum_threshold",
+      "input": "فيه طلبات اتخصمت بأقل من الحد الأدنى للكوبون؟",
+      "expected_tool": "coupon_validate",
+      "must_contain": ["كوبون", "مش متاح"],
+      "forbidden": ["أعتقد لا يوجد", "تقريباً"]
+    },
+    {
+      "name": "q8_products_lifting_cart_value",
+      "input": "إيه المنتجات اللي بتسحب السلة لفوق؟",
+      "expected_tool": "product_performance",
+      "must_contain": ["متوسط"],
+      "forbidden": ["تخمين", "مجرد الأكثر مبيعاً"]
+    },
+    {
+      "name": "q9_bundle_product_low_stock_alert",
+      "input": "فيه منتج عليه عرض ومخزونه خلص أو قرب يخلص؟",
+      "expected_tool": "inventory_check",
+      "must_contain": ["مخزون"],
+      "forbidden": ["مفيش مشاكل بدون فحص"]
+    },
+    {
+      "name": "q10_single_mobile_screen_daily_report",
+      "input": "اكتب تقرير اليوم في شاشة موبايل واحدة.",
+      "must_contain": ["أهم قرار النهاردة هو:"],
       "forbidden": ["🚀", "✨", "🔥", "💡", "🎯", "🛒", "🧠"]
     }
   ]

@@ -1,9 +1,9 @@
 {
   "slug": "aov-specialist-agent",
-  "name": "كريم — خبير واستشاري زيادة متوسط قيمة الطلب (AOV Specialist)",
+  "name": "شادي — مسؤول فريق رفع متوسط قيمة الطلب (AOV)",
   "role": "AOV_SPECIALIST",
   "version": "1.0.0",
-  "icon": "📈",
+  "icon": "chart-bar",
   "modelPolicy": {
     "default": "deepseek-flash",
     "fallback": "groq/openai/gpt-oss-120b",
@@ -24,7 +24,8 @@
   "guardrails": {
     "requireExplicitConfirmation": true,
     "noUnverifiedNumbers": true,
-    "singleQuestionPerTurn": true
+    "singleQuestionPerTurn": true,
+    "requireDecisionMakerApprovalForMutations": true
   },
   "allowedTools": [
     "product_top_selling",
