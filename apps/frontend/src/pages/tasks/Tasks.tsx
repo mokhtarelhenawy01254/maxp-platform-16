@@ -341,6 +341,46 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     fetchTemplates();
   }, [activeCompanyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const closeEditModal = () => {
+    setShowEditTaskModal(false);
+    setEditingTask(null);
+    const params = new URLSearchParams(location.search);
+    if (params.has("edit")) {
+      params.delete("edit");
+      const nextSearch = params.toString() ? `?${params.toString()}` : "";
+      navigate({ pathname: location.pathname, search: nextSearch }, { replace: true });
+    }
+  };
+
+  // Open edit modal if ?edit=taskId is present in the URL
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const editTaskId = searchParams.get("edit");
+    if (!editTaskId) return;
+
+    const existing = tasks.find((t) => t.id === editTaskId);
+    if (existing) {
+      setEditingTask(existing);
+      setShowEditTaskModal(true);
+      return;
+    }
+
+    const token = getAccessToken();
+    if (!token) return;
+
+    fetch(buildApiUrl(`tasks/${editTaskId}`), {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          setEditingTask(data.data);
+          setShowEditTaskModal(true);
+        }
+      })
+      .catch((err) => console.error("Error opening edit modal from URL param:", err));
+  }, [location.search, tasks]);
+
   useEffect(() => {
     if (!activeCompanyId) {
       return;
@@ -853,8 +893,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
       const data = await response.json();
       if (data.success) {
         fetchTasks();
-        setShowEditTaskModal(false);
-        setEditingTask(null);
+        closeEditModal();
         tToast.success("tasks.success_update_b5ad");
       } else {
         toast.error(data.error || i18n.t("tasks.msg_3840"));
@@ -1577,7 +1616,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
 
         <EditTaskModal
           show={showEditTaskModal}
-          onClose={() => setShowEditTaskModal(false)}
+          onClose={closeEditModal}
           task={editingTask}
           setEditingTask={setEditingTask}
           updateTask={updateTask}

@@ -25,6 +25,7 @@ import {
   getActiveStorePromotionFromCompany,
   calculateStorePromotionDiscount,
 } from "../utils/storePromotion";
+import { getStorefrontFreeShippingPromotion } from "../utils/marketplaceApps";
 import { getPdpQuickOrderSettingsFromDesignTokens } from "../utils/pdpQuickOrderSettings";
 import { EGYPT_GOVERNORATES, getGovernorateByName } from "../../constants/egyptGovernorates";
 import { useIpGovernorateDetection } from "../hooks/useIpGovernorateDetection";
@@ -680,7 +681,23 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const storePromoDiscount = storePromoDiscountResult.discount;
   const storePromoTier = storePromoDiscountResult.tier;
 
-  const total = Math.max(0, resolvedSubtotal - storePromoDiscount + shippingCost - walletDiscount);
+  const freeShippingPromotion = useMemo(
+    () =>
+      getStorefrontFreeShippingPromotion(
+        storefrontSettings,
+        resolvedSubtotal - storePromoDiscount,
+      ),
+    [storefrontSettings, resolvedSubtotal, storePromoDiscount],
+  );
+  const isFreeShippingEligible =
+    Boolean(activeQuantityOffer?.enableFreeShipping) ||
+    freeShippingPromotion.eligible;
+  const effectiveShippingCost = isFreeShippingEligible ? 0 : shippingCost;
+
+  const total = Math.max(
+    0,
+    resolvedSubtotal - storePromoDiscount + effectiveShippingCost - walletDiscount,
+  );
   const minimumOrder = useMinimumOrderSettings(Math.max(0, resolvedSubtotal - storePromoDiscount), currency);
   const shippingQuoteItems = useMemo(
     () => [
@@ -1259,7 +1276,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
             customAttributesSummary,
           }),
           paymentMethod,
-          shippingCost,
+          shippingCost: effectiveShippingCost,
           subtotal: resolvedSubtotal,
           total,
           ...(paymentMethod === "wallet" && walletProofImageUrl
@@ -1321,7 +1338,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     quantityOffer: item.quantityOffer || undefined,
                   })),
                   subtotal: resolvedSubtotal,
-                  shippingCost,
+                  shippingCost: effectiveShippingCost,
                   total,
                 },
                 marketplacePreviewThemeId,
@@ -1361,7 +1378,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
             quantityOffer: item.quantityOffer || undefined,
           })),
           subtotal: resolvedSubtotal,
-          shippingCost,
+          shippingCost: effectiveShippingCost,
           total,
           cartId,
           pixelEventId,
@@ -2212,11 +2229,20 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                       ) : null}
                     </span>
                     <span className="font-semibold text-foreground">
-                      {isShippingLoading
-                        ? prefersArabicCopy
-                          ? "جارٍ الحساب..."
-                          : "Calculating..."
-                        : formatStorefrontCurrency(shippingCost, currency)}
+                      {isShippingLoading ? (
+                        prefersArabicCopy ? "جارٍ الحساب..." : "Calculating..."
+                      ) : isFreeShippingEligible ? (
+                        <span className="inline-flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+                          {shippingCost > 0 ? (
+                            <span className="text-xs text-muted-foreground/60 line-through">
+                              {formatStorefrontCurrency(shippingCost, currency)}
+                            </span>
+                          ) : null}
+                          <span>{prefersArabicCopy ? "مجاني" : "Free"}</span>
+                        </span>
+                      ) : (
+                        formatStorefrontCurrency(shippingCost, currency)
+                      )}
                     </span>
                   </div>
                 ) : configuredShippingSummaryText ? (
