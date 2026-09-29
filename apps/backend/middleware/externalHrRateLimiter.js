@@ -1,14 +1,25 @@
 /**
  * ⏱️ External HR API Rate Limiter
- * Token-bucket rate limiter per API Key (120 req/min, burst 30) with 1-second burst guard
- * and per-IP ceiling on public documentation routes.
+ * Token-bucket rate limiter per API Key:
+ * - Nominal limit: 120 req/min (refillRate = 2 tokens/sec) per worker process
+ * - Burst capacity: 30 tokens per worker process
+ * - Burst ceiling: 10 requests / 1 second window per worker process
+ * - Public doc routes: 60 req/min per IP
+ *
+ * ⚠️ Cluster & Architectural Note:
+ * These buckets are stored strictly in-memory per Node.js process (`keyBuckets` Map).
+ * - State resets automatically upon worker restart or PM2 reload.
+ * - In a multi-worker cluster (e.g. 2 PM2 workers behind reverse-proxy load balancer),
+ *   each worker process independently manages its own token bucket. Therefore, effective
+ *   cluster-wide capacity scales proportionally with the number of active workers.
+ * - Distributed cross-worker rate limiting via shared Redis is deferred as a separate decision.
  */
 
 class TokenBucket {
   constructor({ capacity = 30, refillRate = 2, maxPerSecond = 10 } = {}) {
-    this.capacity = capacity;          // Max burst tokens (30)
-    this.refillRate = refillRate;      // Tokens added per second (120/min = 2/sec)
-    this.maxPerSecond = maxPerSecond;  // Max requests in 1 second window (10)
+    this.capacity = capacity;          // Max burst tokens (30 per worker)
+    this.refillRate = refillRate;      // Tokens added per second (2/sec = 120/min per worker)
+    this.maxPerSecond = maxPerSecond;  // Max requests in 1 second window (10/sec per worker)
     this.tokens = capacity;
     this.lastRefill = Date.now();
     this.secondWindow = [];            // Timestamps of requests in current 1-second window

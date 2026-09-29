@@ -628,11 +628,9 @@ const listDepartments = async (req, res) => {
           name: true,
           code: true,
           description: true,
+          managerId: true,
           isActive: true,
           createdAt: true,
-          manager: {
-            select: { id: true, firstName: true, lastName: true, employeeNumber: true }
-          },
           _count: {
             select: { employees: true }
           }
@@ -642,20 +640,41 @@ const listDepartments = async (req, res) => {
       prisma.department.count({ where })
     ]);
 
-    const formatted = departments.map((d) => ({
-      id: d.id,
-      name: d.name,
-      code: d.code || null,
-      description: d.description || null,
-      head: d.manager ? {
-        id: d.manager.id,
-        name: `${d.manager.firstName || ''} ${d.manager.lastName || ''}`.trim(),
-        employeeNumber: d.manager.employeeNumber
-      } : null,
-      employeeCount: d._count?.employees || 0,
-      isActive: d.isActive !== false,
-      createdAt: d.createdAt
-    }));
+    // Fetch managers for departments with managerId
+    const managerIds = Array.from(new Set(departments.map(d => d.managerId).filter(Boolean)));
+    const managers = managerIds.length > 0
+      ? await prisma.employee.findMany({
+          where: { id: { in: managerIds } },
+          select: { id: true, firstName: true, lastName: true, employeeNumber: true }
+        })
+      : [];
+
+    const managerMap = new Map(managers.map(m => [m.id, m]));
+
+    const formatted = departments.map((d) => {
+      const mgr = d.managerId ? managerMap.get(d.managerId) || null : null;
+      return {
+        id: d.id,
+        name: d.name,
+        code: d.code || null,
+        description: d.description || null,
+        managerId: d.managerId || null,
+        manager: mgr ? {
+          id: mgr.id,
+          firstName: mgr.firstName,
+          lastName: mgr.lastName,
+          employeeNumber: mgr.employeeNumber
+        } : null,
+        head: mgr ? {
+          id: mgr.id,
+          name: `${mgr.firstName || ''} ${mgr.lastName || ''}`.trim(),
+          employeeNumber: mgr.employeeNumber
+        } : null,
+        employeeCount: d._count?.employees || 0,
+        isActive: d.isActive !== false,
+        createdAt: d.createdAt
+      };
+    });
 
     return res.json({
       success: true,

@@ -93,6 +93,18 @@ describe('HR External API V2 Comprehensive Test Suite', () => {
       }
     });
 
+    test('All OpenAPI path operations define x-required-scope and describe it in description', () => {
+      for (const [pathKey, methods] of Object.entries(openApiSpec.paths)) {
+        for (const [method, op] of Object.entries(methods)) {
+          if (['get', 'post', 'put', 'delete', 'patch'].includes(method)) {
+            expect(op['x-required-scope']).toBeDefined();
+            expect(typeof op['x-required-scope']).toBe('string');
+            expect(op.description).toContain('Required Scope:');
+          }
+        }
+      }
+    });
+
     test('OpenAPI spec defines all required error codes in components', () => {
       const unauthorizedCodes = openApiSpec.components.responses.Unauthorized.content['application/json'].schema.properties.error.properties.code.enum;
       const expectedCodes = [

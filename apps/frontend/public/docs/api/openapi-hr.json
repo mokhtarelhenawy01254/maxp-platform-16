@@ -23,8 +23,9 @@
     "/employees": {
       "get": {
         "summary": "List employees",
-        "description": "Returns paginated list of employees with search and department filtering.",
+        "description": "Returns paginated list of employees with search and department filtering.\n\n**Required Scope:** `hr:employees:read` (or `hr:read`, `*`)",
         "operationId": "hr_list_employees",
+        "x-required-scope": "hr:employees:read",
         "parameters": [
           {
             "name": "page",
@@ -89,8 +90,9 @@
     "/employees/stats": {
       "get": {
         "summary": "Get employees overview stats",
-        "description": "Returns total count, active count, on-leave count, departments count, and department breakdown.",
+        "description": "Returns total count, active count, on-leave count, departments count, and department breakdown.\n\n**Required Scope:** `hr:employees:read` (or `hr:read`, `*`)",
         "operationId": "hr_get_employees_stats",
+        "x-required-scope": "hr:employees:read",
         "responses": {
           "200": {
             "description": "Employee telemetry stats"
@@ -110,8 +112,9 @@
     "/employees/organization-chart": {
       "get": {
         "summary": "Get organizational hierarchy tree",
-        "description": "Returns full tree of departments, positions, and reporting manager relationships.",
+        "description": "Returns full tree of departments, positions, and reporting manager relationships.\n\n**Required Scope:** `hr:employees:read` (or `hr:read`, `*`)",
         "operationId": "hr_get_organization_chart",
+        "x-required-scope": "hr:employees:read",
         "responses": {
           "200": {
             "description": "Organizational hierarchy structure"
@@ -131,8 +134,9 @@
     "/employees/{id}": {
       "get": {
         "summary": "Get employee by ID or employeeNumber",
-        "description": "Fetch detailed profile of an employee.",
+        "description": "Fetch detailed profile of an employee.\n\n**Required Scope:** `hr:employees:read` (or `hr:read`, `*`)",
         "operationId": "hr_get_employee_by_id",
+        "x-required-scope": "hr:employees:read",
         "parameters": [
           {
             "name": "id",
@@ -165,8 +169,9 @@
     "/employees/upsert": {
       "post": {
         "summary": "Create or update employee from ERP",
-        "description": "Upsert an employee record from external systems.",
+        "description": "Upsert an employee record from external systems.\n\n**Required Scope:** `hr:employees:write` (or `hr:write`, `*`)",
         "operationId": "hr_upsert_employee",
+        "x-required-scope": "hr:employees:write",
         "requestBody": {
           "required": true,
           "content": {
@@ -242,8 +247,9 @@
     "/departments": {
       "get": {
         "summary": "List departments",
-        "description": "Returns list of company departments with manager details and employee headcounts.",
+        "description": "Returns list of company departments with manager details and employee headcounts.\n\n**Required Scope:** `hr:departments:read` (or `hr:read`, `*`)",
         "operationId": "hr_list_departments",
+        "x-required-scope": "hr:departments:read",
         "parameters": [
           {
             "name": "page",
@@ -281,8 +287,9 @@
     "/positions": {
       "get": {
         "summary": "List job positions",
-        "description": "Returns active job titles and positions with department association and headcounts.",
+        "description": "Returns active job titles and positions with department association and headcounts.\n\n**Required Scope:** `hr:positions:read` (or `hr:read`, `*`)",
         "operationId": "hr_list_positions",
+        "x-required-scope": "hr:positions:read",
         "parameters": [
           {
             "name": "page",
@@ -327,8 +334,9 @@
     "/attendance/punches/batch": {
       "post": {
         "summary": "Ingest biometric punches",
-        "description": "Batch endpoint for biometric devices (e.g. ZKTeco) to upload punches with automatic check-in/out resolution.",
+        "description": "Batch endpoint for biometric devices (e.g. ZKTeco) to upload punches with automatic check-in/out resolution.\n\n**Required Scope:** `hr:attendance:ingest` (or `hr:write`, `*`)",
         "operationId": "hr_ingest_biometric_punches",
+        "x-required-scope": "hr:attendance:ingest",
         "requestBody": {
           "required": true,
           "content": {
@@ -394,8 +402,9 @@
     "/attendance/today": {
       "get": {
         "summary": "Get today attendance roster",
-        "description": "Quickly inspect who is present, checked-in, or absent today.",
+        "description": "Quickly inspect who is present, checked-in, or absent today.\n\n**Required Scope:** `hr:attendance:read` (or `hr:read`, `*`)",
         "operationId": "hr_get_today_attendance",
+        "x-required-scope": "hr:attendance:read",
         "parameters": [
           {
             "name": "date",
@@ -425,8 +434,9 @@
     "/attendance/summary": {
       "get": {
         "summary": "Get aggregated attendance summary",
-        "description": "Aggregates present days, absent days, late minutes, early departures, and overtime for a date range.",
+        "description": "Aggregates present days, absent days, late minutes, early departures, and overtime for a date range.\n\n**Required Scope:** `hr:attendance:read` (or `hr:read`, `*`)",
         "operationId": "hr_get_attendance_summary",
+        "x-required-scope": "hr:attendance:read",
         "parameters": [
           {
             "name": "from",
@@ -478,8 +488,9 @@
     "/leaves": {
       "get": {
         "summary": "List leave requests",
-        "description": "Fetch paginated leave requests with filters for status, employeeCode, and date range.",
+        "description": "Fetch paginated leave requests with filters for status, employeeCode, and date range.\n\n**Required Scope:** `hr:leaves:read` (or `hr:read`, `*`)",
         "operationId": "hr_list_leave_requests",
+        "x-required-scope": "hr:leaves:read",
         "parameters": [
           {
             "name": "page",
@@ -551,8 +562,9 @@
       },
       "post": {
         "summary": "Submit leave request",
-        "description": "Submit a leave request on behalf of an employee via AI or external system.",
+        "description": "Submit a leave request on behalf of an employee via AI or external system.\n\n**Required Scope:** `hr:leaves:write` (or `hr:write`, `*`)",
         "operationId": "hr_submit_leave_request",
+        "x-required-scope": "hr:leaves:write",
         "requestBody": {
           "required": true,
           "content": {
@@ -619,8 +631,9 @@
     "/leaves/balances": {
       "get": {
         "summary": "Get leave balances",
-        "description": "Returns leave balance allocations, used days, and remaining balances per employee.",
+        "description": "Returns leave balance allocations, used days, and remaining balances per employee.\n\n**Required Scope:** `hr:leaves:read` (or `hr:read`, `*`)",
         "operationId": "hr_get_leave_balances",
+        "x-required-scope": "hr:leaves:read",
         "parameters": [
           {
             "name": "employeeCode",
@@ -656,8 +669,9 @@
     "/leaves/{id}/decision": {
       "post": {
         "summary": "Decide on leave request (Approve or Reject)",
-        "description": "Approve or reject a pending leave request using the panel workflow.",
+        "description": "Approve or reject a pending leave request using the panel workflow.\n\n**Required Scope:** `hr:leaves:approve` (or `hr:write`, `*`)",
         "operationId": "hr_decide_leave_request",
+        "x-required-scope": "hr:leaves:approve",
         "parameters": [
           {
             "name": "id",
@@ -718,8 +732,9 @@
     "/payroll/runs": {
       "get": {
         "summary": "List payroll runs",
-        "description": "Returns historical payroll run batches with totals and calculation statuses.",
+        "description": "Returns historical payroll run batches with totals and calculation statuses.\n\n**Required Scope:** `hr:payroll:read` (or `hr:read`, `*`)",
         "operationId": "hr_list_payroll_runs",
+        "x-required-scope": "hr:payroll:read",
         "parameters": [
           {
             "name": "page",
@@ -778,8 +793,9 @@
     "/payroll/runs/{id}/items": {
       "get": {
         "summary": "Get payroll run line items (slips)",
-        "description": "Detailed salary breakdown (base salary, allowances, deductions, net salary) for each employee in a run.",
+        "description": "Detailed salary breakdown (base salary, allowances, deductions, net salary) for each employee in a run.\n\n**Required Scope:** `hr:payroll:read` (or `hr:read`, `*`)",
         "operationId": "hr_get_payroll_run_items",
+        "x-required-scope": "hr:payroll:read",
         "parameters": [
           {
             "name": "id",
@@ -835,7 +851,9 @@
     "/webhooks": {
       "get": {
         "summary": "List subscribed webhooks",
+        "description": "List active webhook subscription endpoints for the company.\n\n**Required Scope:** `hr:write` (or `*`)",
         "operationId": "hr_list_webhooks",
+        "x-required-scope": "hr:write",
         "responses": {
           "200": {
             "description": "List of active webhooks"
@@ -853,7 +871,9 @@
       },
       "post": {
         "summary": "Register webhook endpoint",
+        "description": "Register a new webhook subscription endpoint.\n\n**Required Scope:** `hr:write` (or `*`)",
         "operationId": "hr_create_webhook",
+        "x-required-scope": "hr:write",
         "requestBody": {
           "required": true,
           "content": {
@@ -995,7 +1015,7 @@
         }
       },
       "RateLimited": {
-        "description": "Rate limit exceeded (120 req/min, burst 30)",
+        "description": "Rate limit exceeded (120 req/min, burst 30 per worker)",
         "headers": {
           "Retry-After": {
             "schema": {
