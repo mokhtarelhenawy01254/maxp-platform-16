@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Car, FileText } from "lucide-react";
+import { Car, FileText, Tag } from "lucide-react";
 import QuantitySelector from "../components/QuantitySelector";
 import { useCheckoutStore } from "../store/useCheckoutStore";
 import { usePdpSelectionStore } from "../store/usePdpSelectionStore";
