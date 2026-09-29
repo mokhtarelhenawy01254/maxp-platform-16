@@ -11,7 +11,8 @@ import {
   Cpu,
   Download,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  ExternalLink
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -55,6 +56,30 @@ export default function HRApiIntegrations() {
   const [newHookName, setNewHookName] = useState("");
   const [newHookUrl, setNewHookUrl] = useState("");
   const [isSubmittingHook, setIsSubmittingHook] = useState(false);
+  const [isDownloadingSpec, setIsDownloadingSpec] = useState(false);
+
+  const handleDownloadOpenApi = async () => {
+    setIsDownloadingSpec(true);
+    try {
+      const response = await fetch("https://api.maxp.online/api/v1/external/hr/openapi.json");
+      if (!response.ok) throw new Error("Failed to fetch spec");
+      const json = await response.json();
+      const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "openapi-hr.json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("تم تحميل مواصفات OpenAPI بنجاح");
+    } catch {
+      window.open("/docs/api/openapi-hr.json", "_blank");
+    } finally {
+      setIsDownloadingSpec(false);
+    }
+  };
 
   const fetchKeys = async () => {
     try {
@@ -344,15 +369,27 @@ export default function HRApiIntegrations() {
                 يمكنك تحميل هذا الملف واستيراده مباشرة في Custom GPT أو Claude أو n8n ليتعرف النموذج تلقائياً على دوال الموارد البشرية.
               </p>
             </div>
-            <a
-              href="/docs/api/openapi-hr.json"
-              target="_blank"
-              download="openapi-hr.json"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg active:scale-95 transition-transform"
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span>تحميل openapi-hr.json</span>
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href="https://api.maxp.online/api/v1/external/hr/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border bg-background hover:bg-muted text-foreground rounded-lg active:scale-95 transition-transform"
+              >
+                <ExternalLink className="h-3.5 w-3.5 text-primary" />
+                <span>Swagger التفاعلي</span>
+              </a>
+
+              <Button
+                size="sm"
+                onClick={handleDownloadOpenApi}
+                disabled={isDownloadingSpec}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>{isDownloadingSpec ? "جاري التحميل…" : "تحميل openapi-hr.json"}</span>
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">
