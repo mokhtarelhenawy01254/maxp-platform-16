@@ -17,6 +17,7 @@ const applicationFormController = require('../controller/applicationFormControll
 const workReportController = require('../controller/workReportController');
 const advanceController = require('../controller/advanceController');
 const auditController = require('../controller/auditController');
+const hrExternalController = require('../controller/hr/hrExternalController');
 const assetRoutes = require('./hr/assetRoutes');
 const assetReportsRoutes = require('./hr/assetReportsRoutes');
 const verifyToken = require("../utils/verifyToken");
@@ -187,6 +188,14 @@ const documentUpload = multer({
 // 🔒 Protected: Only Admins and Managers can manage settings
 router.get('/settings', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getHRSettings);
 router.put('/settings', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.updateHRSettings);
+
+// 🔑 إدارة مفاتيح الـ API الخارجية والـ Webhooks (Admin Only)
+router.get('/external-api/keys', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrExternalController.listApiCredentials);
+router.post('/external-api/keys', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrExternalController.createApiCredential);
+router.delete('/external-api/keys/:id', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrExternalController.revokeApiCredential);
+
+router.get('/external-api/webhooks', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrExternalController.listWebhookEndpoints);
+router.post('/external-api/webhooks', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrExternalController.createWebhookEndpoint);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📊 لوحة التحكم - Dashboard

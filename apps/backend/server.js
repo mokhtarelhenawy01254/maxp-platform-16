@@ -381,6 +381,7 @@ const systemManagementRoutes = require("./routes/systemManagementRoutes");
 const monitorRoutes = require("./routes/monitorRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const taskExternalRoutes = require("./routes/taskExternalRoutes");
+const hrExternalRoutes = require("./routes/hrExternalRoutes");
 const devTaskExternalRoutes = require("./routes/devTaskExternalRoutes");
 const telegramRoutes = require("./routes/telegramRoutes");
 const telegramAdvancedRoutes = require("./routes/telegramAdvancedRoutes");
@@ -767,7 +768,8 @@ app.use("/api/v1/funnels", funnelRoutes);
 
   // Public integration surfaces secured by their own API keys/signatures
   app.use("/api/v1/external/tasks", taskExternalRoutes);
-app.use("/api/v1/external/dev-tasks", devTaskExternalRoutes);
+  app.use("/api/v1/external/hr", hrExternalRoutes);
+  app.use("/api/v1/external/dev-tasks", devTaskExternalRoutes);
 
 // Static User Content Surface
 // 2026-08 security: sensitive upload folders (HR, payments, affiliate, dental-lab,

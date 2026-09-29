@@ -1285,3 +1285,69 @@ model EmployeeInvitation {
   @@map("employee_invitations")
 }
 
+model HrApiCredential {
+  id              String    @id @default(cuid())
+  companyId       String
+  name            String
+  description     String?
+  keyPrefix       String    @unique
+  keyHash         String    @unique
+  scopes          String
+  isActive        Boolean   @default(true)
+  lastUsedAt      DateTime?
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+  revokedReason   String?
+  createdByUserId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, isActive])
+  @@index([expiresAt])
+  @@map("hr_api_credentials")
+}
+
+model HrWebhookEndpoint {
+  id               String               @id @default(cuid())
+  companyId        String
+  name             String
+  targetUrl        String
+  secret           String?
+  subscribedEvents String
+  isActive         Boolean              @default(true)
+  failureCount     Int                  @default(0)
+  lastTriggeredAt  DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  company          Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  deliveries       HrWebhookDelivery[]
+
+  @@index([companyId, isActive])
+  @@map("hr_webhook_endpoints")
+}
+
+model HrWebhookDelivery {
+  id          String            @id @default(cuid())
+  companyId   String
+  endpointId  String
+  event       String
+  payload     String
+  statusCode  Int?
+  response    String?
+  status      String            @default("PENDING")
+  error       String?
+  attempts    Int               @default(0)
+  deliveredAt DateTime?
+  createdAt   DateTime          @default(now())
+
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  endpoint    HrWebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, event])
+  @@index([endpointId, createdAt])
+  @@map("hr_webhook_deliveries")
+}
+
