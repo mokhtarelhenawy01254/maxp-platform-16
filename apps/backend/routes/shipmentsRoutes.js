@@ -132,12 +132,19 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
     if (status && status !== 'ALL') {
       const sKey = String(status).toLowerCase().trim();
       const targetAliases = STATUS_FILTER_ALIASES[sKey] || [status, sKey, sKey.toUpperCase()];
+      const { VALID_ORDER_STATUS_ENUM } = require('../utils/orderStatusEnum');
+      const validOrderStatuses = targetAliases
+        .map(a => String(a || '').toUpperCase().trim())
+        .filter(a => VALID_ORDER_STATUS_ENUM.has(a));
+      const statusOrBranches = [
+        { status: { in: targetAliases } },
+        { order: { turboShipmentStatus: { in: targetAliases } } },
+      ];
+      if (validOrderStatuses.length > 0) {
+        statusOrBranches.push({ order: { status: { in: validOrderStatuses } } });
+      }
       andConditions.push({
-        OR: [
-          { status: { in: targetAliases } },
-          { order: { turboShipmentStatus: { in: targetAliases } } },
-          { order: { status: { in: targetAliases } } },
-        ],
+        OR: statusOrBranches,
       });
     }
 

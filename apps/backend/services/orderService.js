@@ -1389,9 +1389,13 @@ class OrderService {
     }
 
     if (guestOr.length > 0) {
+      const guestStatuses = Array.from(new Set([
+        ...activeStatuses,
+        ...activeStatuses.map(s => s.toLowerCase())
+      ]));
       const guestWhere = {
         companyId,
-        status: { in: activeStatuses },
+        status: { in: guestStatuses },
         OR: guestOr
       };
 

@@ -1009,6 +1009,7 @@ router.post('/', async (req, res) => {
 
       // Auto-resolve variantId from attributes or color/size if not provided
       if (!item.variantId && activeVariants.length > 0) {
+        const normArabic = (s) => String(s || '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').trim().toLowerCase();
         const itemColor = (
           item.productColor ||
           getAttributeValue(item.attributes, ['اللون', 'color', 'Color', 'colour', 'لون']) ||
@@ -1021,17 +1022,29 @@ router.post('/', async (req, res) => {
         ).trim().toLowerCase();
 
         if (itemColor || itemSize) {
+          const normItemColor = normArabic(itemColor);
+          const normItemSize = normArabic(itemSize);
+
           const matchedVariant = activeVariants.find((v) => {
             const vAttrs = resolveVariantAttributes(v);
-            const vColor = (v.color || vAttrs.Color || vAttrs['اللون'] || '').trim().toLowerCase();
-            const vSize = (v.size || vAttrs.Size || vAttrs['المقاس'] || '').trim().toLowerCase();
-            const colorMatches = !itemColor || vColor === itemColor || v.name?.toLowerCase().includes(itemColor);
-            const sizeMatches = !itemSize || vSize === itemSize || v.name?.toLowerCase().includes(itemSize);
+            const vColor = normArabic(v.color || vAttrs.Color || vAttrs['اللون'] || '');
+            const vSize = normArabic(v.size || vAttrs.Size || vAttrs['المقاس'] || '');
+            const vName = normArabic(v.name || '');
+
+            const colorMatches = !normItemColor || vColor === normItemColor || vName.includes(normItemColor);
+            const sizeMatches = !normItemSize || vSize === normItemSize || vName.includes(normItemSize);
             return colorMatches && sizeMatches;
           });
           if (matchedVariant) {
             item.variantId = matchedVariant.id;
             console.log(`✨ [CREATE-ORDER] Auto-resolved variantId ${matchedVariant.id} from attributes (Color: ${itemColor}, Size: ${itemSize})`);
+          }
+        } else if (item.variantName) {
+          const normVarName = normArabic(item.variantName);
+          const matchedByName = activeVariants.find(v => normArabic(v.name) === normVarName || normArabic(v.name).includes(normVarName));
+          if (matchedByName) {
+            item.variantId = matchedByName.id;
+            console.log(`✨ [CREATE-ORDER] Auto-resolved variantId ${matchedByName.id} from variantName (${item.variantName})`);
           }
         } else if (activeVariants.length === 1 && (!activeVariants[0].name || activeVariants[0].name.toLowerCase() === 'default' || activeVariants[0].name === 'افتراضي')) {
           item.variantId = activeVariants[0].id;

@@ -207,7 +207,9 @@ class EnhancedOrderService {
       const orderNumber = await this.generateOrderNumber(data.companyId);
 
       // توحيد الحالات
-      data.status = (data.status || 'CONFIRMED').toUpperCase();
+      const { isValidOrderStatusEnum } = require('../utils/orderStatusEnum');
+      const normalizedStatus = (data.status || 'CONFIRMED').toUpperCase();
+      data.status = isValidOrderStatusEnum(normalizedStatus) ? normalizedStatus : 'CONFIRMED';
       data.paymentMethod = normalizeOrderPaymentMethod(data.paymentMethod, 'CASH');
       data.paymentStatus = (data.paymentStatus || 'PENDING').toUpperCase();
 
@@ -919,7 +921,7 @@ class EnhancedOrderService {
       companyId: data.companyId,
 
       // حالة الطلب
-      status: data.status || 'CONFIRMED',
+      status: (data.status && isValidOrderStatusEnum(data.status)) ? data.status : 'CONFIRMED',
       paymentStatus: data.paymentStatus || 'PENDING',
       paymentMethod: data.paymentMethod || 'CASH',
 

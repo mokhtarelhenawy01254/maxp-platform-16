@@ -43,4 +43,33 @@ describe('productNormalizationUtils variant attributes', () => {
       Color: 'أسود',
     });
   });
+
+  test('parses variant names with hyphen without surrounding spaces (e.g. بيج-41, Black-42)', () => {
+    expect(
+      resolveVariantAttributes({
+        name: 'بيج-41',
+      }),
+    ).toEqual({
+      Color: 'بيج',
+      Size: '41',
+    });
+
+    expect(
+      resolveVariantAttributes({
+        name: 'Black-42',
+      }),
+    ).toEqual({
+      Color: 'Black',
+      Size: '42',
+    });
+
+    expect(
+      resolveVariantAttributes({
+        name: 'Off-White - 42',
+      }),
+    ).toEqual({
+      Color: 'Off-White',
+      Size: '42',
+    });
+  });
 });

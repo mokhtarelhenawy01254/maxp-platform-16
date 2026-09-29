@@ -229,7 +229,7 @@ function parseVariantName(name, variantType) {
   }
 
   const parts = trimmedName
-    .split(/\s*\/\s*|\s*\|\s*|\s+[–-]\s+/)
+    .split(/\s*[\/|–—]\s*|\s+[–-]\s*|\s*[-–]\s+|\s*-(?=\d)|(?<=\d)-\s*|(?<=[\u0600-\u06FF])\s*-\s*|\s*-\s*(?=[\u0600-\u06FF])/)
     .map((part) => part.trim())
     .filter(Boolean);
 
