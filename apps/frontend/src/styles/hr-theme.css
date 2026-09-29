@@ -120,8 +120,14 @@
 }
 
 /* ── Scrollbar Styling ── */
+.hr-theme {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.4) transparent;
+}
+
 .hr-theme::-webkit-scrollbar {
-  width: 6px;
+  width: 7px;
+  height: 7px;
 }
 
 .hr-theme::-webkit-scrollbar-track {
@@ -130,11 +136,23 @@
 
 .hr-theme::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, oklch(0.811 0.101 293.6) 0%, oklch(0.709 0.159 293.5) 100%);
-  border-radius: 3px;
+  border-radius: 4px;
+}
+
+.hr-theme::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, oklch(0.75 0.14 293.6) 0%, oklch(0.65 0.18 293.5) 100%);
+}
+
+.dark .hr-theme {
+  scrollbar-color: rgba(167, 139, 250, 0.5) transparent;
 }
 
 .dark .hr-theme::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, oklch(0.541 0.247 293.0) 0%, oklch(0.627 0.233 303.9) 100%);
+}
+
+.dark .hr-theme::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, oklch(0.62 0.25 293.0) 0%, oklch(0.7 0.24 303.9) 100%);
 }
 
 /* ── Select/Dropdown Triggers ── */
