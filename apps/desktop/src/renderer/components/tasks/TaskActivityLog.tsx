@@ -93,9 +93,9 @@ export const TaskActivityLog: React.FC<TaskActivityLogProps> = ({
         };
       case 'submitted_for_review':
         return {
-          icon: <Send size={12} color="#c084fc" />,
+          icon: <Send size={12} color="var(--accent-purple-soft)" />,
           title: 'تسليم المهمة للاعتماد والمراجعة',
-          color: '#c084fc',
+          color: 'var(--accent-purple-soft)',
           bg: 'rgba(192, 132, 252, 0.12)',
           borderColor: 'rgba(192, 132, 252, 0.3)',
           isCritical: false,

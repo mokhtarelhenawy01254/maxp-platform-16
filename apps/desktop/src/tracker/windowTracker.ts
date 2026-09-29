@@ -20,6 +20,21 @@ function extractUrlFromTitle(title: string): string | null {
   return urlMatch ? urlMatch[0] : null;
 }
 
+/**
+ * Privacy: window/page titles are uploaded for work-context recognition only.
+ * Cap length and strip personal patterns (emails, long digit runs) before anything
+ * is stored in the local queue or synced to the server.
+ */
+function redactTitle(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let t = String(raw);
+  t = t.replace(/[\w.+-]+@[\w-]+\.[\w.]{2,}/g, '…'); // email addresses
+  t = t.replace(/\d{7,}/g, '…');                     // long digit runs (phones, order ids)
+  t = t.replace(/\s{2,}/g, ' ').trim();
+  if (t.length > 80) t = t.slice(0, 80).trimEnd() + '…';
+  return t || null;
+}
+
 /** Known browsers for URL extraction */
 const BROWSER_PROCESSES = new Set([
   'chrome', 'google chrome', 'chromium', 'msedge', 'microsoft edge',
@@ -396,11 +411,13 @@ export class WindowTracker {
   private processWindow(win: any): void {
     const rawName = win.owner?.name || win.title || 'Unknown';
     const appName = this.friendlyAppName(rawName, win.owner?.exePath);
-    const windowTitle = win.title || '';
+    // Privacy: detection runs on the raw title; only the redacted copy is stored/synced
+    const rawTitle = win.title || '';
+    const windowTitle = redactTitle(rawTitle) ?? '';
     const now = new Date().toISOString();
 
     // ── Meeting detection & collaboration guard ─────────────────
-    this.meetingActive = isMeeting(rawName, windowTitle);
+    this.meetingActive = isMeeting(rawName, rawTitle);
     activityTracker.setMeetingActive(this.meetingActive);
 
     // ── App tracking ────────────────────────────────────────────
@@ -424,8 +441,8 @@ export class WindowTracker {
 
     // ── Website tracking (if browser) ───────────────────────────
     if (isBrowser(rawName)) {
-      const url = extractUrlFromTitle(windowTitle);
-      const domain = url ? extractDomain(url) : this.extractDomainFromTitle(windowTitle);
+      const url = extractUrlFromTitle(rawTitle);
+      const domain = url ? extractDomain(url) : this.extractDomainFromTitle(rawTitle);
 
       if (!domain) {
         // Unknown/unrecognized site: close the current record instead of

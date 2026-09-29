@@ -458,7 +458,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 </button>
 
                 <label style={modalStyles.actionSmallBtn}>
-                  <Paperclip size={13} color="#a855f7" />
+                  <Paperclip size={13} color="var(--accent-purple)" />
                   <span>رفع صورة / ملف</span>
                   <input
                     type="file"

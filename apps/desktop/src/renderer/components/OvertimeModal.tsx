@@ -47,7 +47,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
         <div style={styles.header}>
           <div style={styles.headerLeft}>
             <div style={styles.iconWrap}>
-              <Zap size={18} color="#f97316" />
+              <Zap size={18} color="var(--accent-orange)" />
             </div>
             <div>
               <h2 style={styles.title}>بدء وردية إضافية (Overtime)</h2>
@@ -294,7 +294,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 6,
     padding: '8px 18px',
-    backgroundColor: '#f97316',
+    backgroundColor: 'var(--accent-orange)',
     border: 'none',
     borderRadius: 6,
     color: '#ffffff',

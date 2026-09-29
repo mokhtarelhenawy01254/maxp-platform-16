@@ -236,7 +236,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   const visibilityReason = isAssignedToMe
     ? { label: 'مكلف بالتنفيذ', bg: 'rgba(56, 189, 248, 0.12)', color: 'var(--accent-blue)' }
     : isCreatedByMe
-    ? { label: 'أنشأتها', bg: 'rgba(168, 85, 247, 0.12)', color: '#c084fc' }
+    ? { label: 'أنشأتها', bg: 'rgba(168, 85, 247, 0.12)', color: 'var(--accent-purple-soft)' }
     : isWatching
     ? { label: 'متابع', bg: 'var(--accent-green-bg)', color: 'var(--accent-green)' }
     : isAdmin
@@ -336,7 +336,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                     color: isCompleted
                       ? 'var(--accent-green)'
                       : isInReview
-                      ? '#c084fc'
+                      ? 'var(--accent-purple-soft)'
                       : isReturnedForRevision
                       ? 'var(--accent-yellow)'
                       : isRunning
@@ -817,7 +817,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     padding: '2px 7px',
     borderRadius: 4,
     backgroundColor: 'rgba(249, 115, 22, 0.15)',
-    color: '#f97316',
+    color: 'var(--accent-orange)',
   },
   normalPill: {
     fontSize: 10.5,
@@ -984,7 +984,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(168, 85, 247, 0.08)',
     border: '1px solid rgba(168, 85, 247, 0.2)',
     borderRadius: 5,
-    color: '#c084fc',
+    color: 'var(--accent-purple-soft)',
     fontSize: 11.5,
     textAlign: 'center',
   },

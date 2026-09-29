@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
   const isManager = isAdmin || ['MANAGER', 'HR_MANAGER'].includes(roleStr);
 
-  const navItems: { id: TabId; label: string; icon: React.ReactNode; badge?: number }[] = isManager
+  const navItems: { id: TabId; label: string; icon: React.ReactNode }[] = isManager
     ? [
         {
           id: 'tasks',
@@ -179,22 +179,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 fontWeight: isActive ? 600 : 500,
               }}>{item.label}</span>
 
-              {item.badge !== undefined && item.badge > 0 && (
-                <span
-                  style={{
-                    marginRight: 'auto',
-                    backgroundColor: 'var(--accent-green)',
-                    color: '#062015',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: '1px 6px',
-                    borderRadius: 10,
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {item.badge}
-                </span>
-              )}
+
             </button>
           );
         })}

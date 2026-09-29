@@ -122,7 +122,7 @@ export const SystemStatusTab: React.FC = () => {
       <div style={styles.card}>
         <div style={styles.cardHeader}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Cpu size={18} color="#a855f7" />
+            <Cpu size={18} color="var(--accent-purple)" />
             <span style={styles.cardTitle}>معلومات الجهاز ونظام التشغيل</span>
           </div>
         </div>

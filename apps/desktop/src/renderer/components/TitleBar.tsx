@@ -71,7 +71,7 @@ export const TitleBar: React.FC = () => {
           ) : null}
           {isOvertime && (
             <span style={styles.overtimeBadge} title="وردية عمل إضافية جارية (ساعات منفصلة)">
-              <Zap size={11} color="#f97316" />
+              <Zap size={11} color="var(--accent-orange)" />
               <span>وردية إضافية</span>
             </span>
           )}
@@ -224,7 +224,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
     fontSize: 10,
     fontWeight: 600,
-    color: '#f97316',
+    color: 'var(--accent-orange)',
     background: 'rgba(249, 115, 22, 0.12)',
     border: '1px solid rgba(249, 115, 22, 0.35)',
     borderRadius: 4,

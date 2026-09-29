@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { InlineErrorBanner } from '../components/InlineErrorBanner';
 import {
   Target,
   CheckCircle2,
@@ -42,6 +43,7 @@ interface GoalItem {
 export const GoalsTab: React.FC = () => {
   const [goals, setGoals] = useState<GoalItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'today' | 'all'>('today');
   const [updatingGoalId, setUpdatingGoalId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -69,8 +71,10 @@ export const GoalsTab: React.FC = () => {
           setGoals([]);
         }
       }
+      setError(null);
     } catch (err) {
       console.warn('[GoalsTab] Fetch error:', err);
+      setError('تعذر تحميل الأهداف — تحقق من الاتصال بالسيرفر.');
     } finally {
       if (showSpinner) setLoading(false);
     }
@@ -150,6 +154,7 @@ export const GoalsTab: React.FC = () => {
 
   return (
     <div style={styles.container}>
+      {error && <InlineErrorBanner message={error} onRetry={() => loadGoals(true)} />}
       {/* Top Header & Filter Bar */}
       <div style={styles.headerStrip}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

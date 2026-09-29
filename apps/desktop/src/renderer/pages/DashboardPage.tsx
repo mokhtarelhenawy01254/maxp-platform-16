@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Coffee, Play, Clock, CheckCircle2, Sparkles, LogOut, Calendar, Zap, Square } from 'lucide-react';
 import Sidebar, { TabId } from '../components/Sidebar';
+import { TabErrorBoundary } from '../components/TabErrorBoundary';
 import CockpitTab from './CockpitTab';
 import TasksTab from './TasksTab';
 import GoalsTab from './GoalsTab';
@@ -320,7 +321,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
             {trackerState?.isOvertime ? (
               <div style={styles.breakStatusGroup}>
                 <div style={styles.overtimeActiveChip} title={`السبب: ${trackerState?.activeOvertimeSession?.reason || 'وردية إضافية'}`}>
-                  <Zap size={13} color="#f97316" />
+                  <Zap size={13} color="var(--accent-orange)" />
                   <span>وردية إضافية: {trackerState?.activeOvertimeSession?.reason || 'نشطة'}</span>
                 </div>
                 <button
@@ -331,7 +332,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
                   onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                   onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                 >
-                  <Square size={12} color="#f97316" />
+                  <Square size={12} color="var(--accent-orange)" />
                   <span>إنهاء الإضافي</span>
                 </button>
               </div>
@@ -349,7 +350,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
                   onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                   onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                 >
-                  <Zap size={13} color="#f97316" />
+                  <Zap size={13} color="var(--accent-orange)" />
                   <span>وردية إضافية</span>
                 </button>
                 <button
@@ -499,6 +500,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
         {/* Content Container */}
         <div style={styles.contentArea}>
           {activeTab === 'cockpit' && (
+            <TabErrorBoundary key="cockpit" tabName="النشاط وساعات العمل">
             <CockpitTab
               trackerState={trackerState}
               dailySummary={dailySummary}
@@ -509,21 +511,26 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
               user={user}
               isAdmin={isAdmin}
             />
+            </TabErrorBoundary>
           )}
 
-          {activeTab === 'tasks' && <TasksTab />}
-          {activeTab === 'goals' && <GoalsTab />}
-          {activeTab === 'reports' && <SimpleReportTab />}
+          {activeTab === 'tasks' && <TabErrorBoundary key="tasks" tabName="المهام"><TasksTab /></TabErrorBoundary>}
+          {activeTab === 'goals' && <TabErrorBoundary key="goals" tabName="الأهداف"><GoalsTab /></TabErrorBoundary>}
+          {activeTab === 'reports' && <TabErrorBoundary key="reports" tabName="التقرير والملخص"><SimpleReportTab /></TabErrorBoundary>}
 
           {activeTab === 'apps' && (
-            <AppsTimelineTab formatTime={formatTime} />
+            <TabErrorBoundary key="apps" tabName="البرامج والمواقع">
+              <AppsTimelineTab formatTime={formatTime} />
+            </TabErrorBoundary>
           )}
 
           {activeTab === 'attendance' && (
-            <AttendanceAuditTab formatTime={formatTime} />
+            <TabErrorBoundary key="attendance" tabName="مطابقة الحضور">
+              <AttendanceAuditTab formatTime={formatTime} />
+            </TabErrorBoundary>
           )}
 
-          {activeTab === 'system' && <SystemStatusTab />}
+          {activeTab === 'system' && <TabErrorBoundary key="system" tabName="حالة السحابة والجهاز"><SystemStatusTab /></TabErrorBoundary>}
         </div>
       </main>
 
@@ -689,7 +696,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 20,
     padding: '4px 10px',
     fontSize: 11,
-    color: '#f97316',
+    color: 'var(--accent-orange)',
     fontWeight: 600,
   },
   endOvertimeBtn: {
@@ -702,7 +709,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '5px 10px',
     fontSize: 11,
     fontWeight: 600,
-    color: '#f97316',
+    color: 'var(--accent-orange)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
@@ -717,7 +724,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '5px 10px',
     fontSize: 11,
     fontWeight: 600,
-    color: '#f97316',
+    color: 'var(--accent-orange)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',

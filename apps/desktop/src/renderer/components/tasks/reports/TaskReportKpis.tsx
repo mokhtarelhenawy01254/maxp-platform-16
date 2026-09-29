@@ -97,13 +97,13 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
       >
         <div style={styles.cardHeader}>
           <span style={styles.cardLabel}>فجوة الوقت (Time Leaks)</span>
-          <AlertTriangle size={13} style={{ color: kpis.timeLeakCount > 0 ? '#f97316' : 'var(--text-muted)' }} />
+          <AlertTriangle size={13} style={{ color: kpis.timeLeakCount > 0 ? 'var(--accent-orange)' : 'var(--text-muted)' }} />
         </div>
         <div style={styles.cardBody}>
-          <span style={{ ...styles.primaryNum, color: kpis.timeLeakCount > 0 ? '#f97316' : 'var(--text-muted)' }}>
+          <span style={{ ...styles.primaryNum, color: kpis.timeLeakCount > 0 ? 'var(--accent-orange)' : 'var(--text-muted)' }}>
             {kpis.timeLeakCount}
           </span>
-          <span style={{ ...styles.secondaryBadge, color: kpis.timeLeakCount > 0 ? '#f97316' : 'var(--text-muted)' }}>
+          <span style={{ ...styles.secondaryBadge, color: kpis.timeLeakCount > 0 ? 'var(--accent-orange)' : 'var(--text-muted)' }}>
             {kpis.timeLeakCount > 0 ? 'تجاوزت التقدير' : 'ضمن التقديرات'}
           </span>
         </div>

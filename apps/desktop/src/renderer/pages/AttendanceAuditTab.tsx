@@ -119,7 +119,7 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = ({ formatTi
         {/* Last Activity */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <Monitor size={15} color="#a855f7" />
+            <Monitor size={15} color="var(--accent-purple)" />
             <span style={styles.cardTitle}>آخر تفاعل مسجل</span>
           </div>
           <div style={styles.cardValue}>{formatClock(auditData?.lastActivityTime)}</div>

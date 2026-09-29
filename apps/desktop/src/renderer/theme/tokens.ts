@@ -52,6 +52,9 @@ export interface ThemeTokens {
   '--accent-blue': string;
   '--accent-blue-bg': string;
   '--accent-blue-border': string;
+  '--accent-orange': string;
+  '--accent-purple': string;
+  '--accent-purple-soft': string;
 
   /* ── avatar / misc ──────────────────────────────────────── */
   '--avatar-gradient': string;
@@ -103,6 +106,9 @@ export const darkTokens: ThemeTokens = {
   '--accent-blue':         '#38bdf8',
   '--accent-blue-bg':      'rgba(56,189,248,0.1)',
   '--accent-blue-border':  'rgba(56,189,248,0.25)',
+  '--accent-orange':        '#f97316',
+  '--accent-purple':        '#a855f7',
+  '--accent-purple-soft':   '#c084fc',
 
   '--avatar-gradient': 'linear-gradient(135deg, #27272a, #3f3f46)',
   '--avatar-border':   'rgba(255,255,255,0.1)',
@@ -152,6 +158,9 @@ export const lightTokens: ThemeTokens = {
   '--accent-blue':         '#0284c7',
   '--accent-blue-bg':      'rgba(2, 132, 199, 0.08)',
   '--accent-blue-border':  'rgba(2, 132, 199, 0.22)',
+  '--accent-orange':        '#ea580c',
+  '--accent-purple':        '#7c3aed',
+  '--accent-purple-soft':   '#9333ea',
 
   '--avatar-gradient': 'linear-gradient(135deg, #e2e8f0, #cbd5e1)',
   '--avatar-border':   'rgba(0, 0, 0, 0.1)',

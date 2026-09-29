@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { InlineErrorBanner } from '../components/InlineErrorBanner';
 import {
   Activity,
   Clock,
@@ -35,6 +36,7 @@ interface TeamActiveTimer {
 export const LiveTeamTimersTab: React.FC = () => {
   const [activeTimers, setActiveTimers] = useState<TeamActiveTimer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('ALL');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -48,8 +50,10 @@ export const LiveTeamTimersTab: React.FC = () => {
       } else {
         setActiveTimers([]);
       }
+      setError(null);
     } catch (err) {
       console.warn('[LiveTeamTimersTab] Error loading active timers:', err);
+      setError('تعذر تحميل مؤقتات الفريق — تحقق من الاتصال بالسيرفر.');
     } finally {
       if (showSpinner) setLoading(false);
     }
@@ -111,6 +115,7 @@ export const LiveTeamTimersTab: React.FC = () => {
 
   return (
     <div style={styles.container}>
+      {error && <InlineErrorBanner message={error} onRetry={() => loadActiveTimers(true)} />}
       {/* Top Header & Telemetry Strip */}
       <div style={styles.headerStrip}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

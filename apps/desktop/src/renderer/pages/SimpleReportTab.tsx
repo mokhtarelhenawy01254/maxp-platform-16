@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { InlineErrorBanner } from '../components/InlineErrorBanner';
 import {
   FileText,
   CheckCircle2,
@@ -58,6 +59,7 @@ interface AggStats {
 export const SimpleReportTab: React.FC = () => {
   const [reportSection, setReportSection] = useState<'attendance' | 'tasks'>('attendance');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -157,8 +159,10 @@ export const SimpleReportTab: React.FC = () => {
         totalTasksCompleted: totalTasks,
         totalTasksCreated: totalCreated,
       });
+      setError(null);
     } catch (err) {
       console.warn('[SimpleReportTab] Fetch error:', err);
+      setError('تعذر تحميل تقرير الفريق — تحقق من الاتصال بالسيرفر.');
     } finally {
       if (showSpinner) setLoading(false);
     }
@@ -226,6 +230,7 @@ export const SimpleReportTab: React.FC = () => {
 
   return (
     <div style={styles.container}>
+      {error && <InlineErrorBanner message={error} onRetry={() => loadData(true)} />}
       {/* 2026 Executive Intelligence Hub Switcher */}
       <div style={styles.hubSwitcherRow}>
         <div style={styles.hubSegmentedWrap}>
@@ -344,7 +349,7 @@ export const SimpleReportTab: React.FC = () => {
         <div style={styles.kpiCard}>
           <div style={styles.kpiHeader}>
             <span style={styles.kpiLabel}>متوسط الإنتاجية</span>
-            <TrendingUp size={14} color="#c084fc" />
+            <TrendingUp size={14} color="var(--accent-purple-soft)" />
           </div>
           <div style={styles.kpiValue}>{stats.avgProductivity}%</div>
         </div>

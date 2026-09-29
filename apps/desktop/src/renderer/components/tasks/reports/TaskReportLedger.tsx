@@ -41,7 +41,7 @@ export const TaskReportLedger: React.FC<TaskReportLedgerProps> = ({
       case 'URGENT':
         return { color: 'var(--accent-red)', bg: 'rgba(239, 68, 68, 0.12)', label: 'حرجة' };
       case 'HIGH':
-        return { color: '#f97316', bg: 'rgba(249, 115, 22, 0.12)', label: 'مرتفعة' };
+        return { color: 'var(--accent-orange)', bg: 'rgba(249, 115, 22, 0.12)', label: 'مرتفعة' };
       case 'MEDIUM':
         return { color: 'var(--accent-blue)', bg: 'rgba(56, 189, 248, 0.12)', label: 'متوسطة' };
       default:
@@ -150,7 +150,7 @@ export const TaskReportLedger: React.FC<TaskReportLedgerProps> = ({
                         style={{
                           ...styles.tabularDuration,
                           fontWeight: 700,
-                          color: isOver ? '#f97316' : 'var(--text-primary)',
+                          color: isOver ? 'var(--accent-orange)' : 'var(--text-primary)',
                         }}
                       >
                         {formatMinToH(t.actualTrackedMinutes)}
@@ -272,7 +272,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '1px 4px',
     borderRadius: 3,
     background: 'rgba(249, 115, 22, 0.14)',
-    color: '#f97316',
+    color: 'var(--accent-orange)',
     fontWeight: 700,
     fontVariantNumeric: 'tabular-nums',
   },

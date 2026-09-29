@@ -515,7 +515,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 </button>
 
                 <label style={modalStyles.actionSmallBtn}>
-                  <Paperclip size={13} color="#a855f7" />
+                  <Paperclip size={13} color="var(--accent-purple)" />
                   <span>إرفاق صورة / ملف</span>
                   <input
                     type="file"

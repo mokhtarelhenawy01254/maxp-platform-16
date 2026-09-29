@@ -406,7 +406,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         {/* Card 4: Inputs / Keyboard */}
         <div style={styles.metricCard}>
           <div style={styles.metricHeader}>
-            <div style={{ ...styles.iconBadge, color: '#a855f7', background: 'rgba(168, 85, 247, 0.1)' }}>
+            <div style={{ ...styles.iconBadge, color: 'var(--accent-purple)', background: 'rgba(168, 85, 247, 0.1)' }}>
               <Keyboard size={15} />
             </div>
             <span style={styles.metricLabel}>ضربات لوحة المفاتيح</span>

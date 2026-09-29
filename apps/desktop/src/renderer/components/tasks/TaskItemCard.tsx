@@ -186,7 +186,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const visibilityReason = isAssignedToMe
     ? { label: 'مكلف بالتنفيذ', bg: 'rgba(56, 189, 248, 0.12)', color: 'var(--accent-blue)' }
     : isCreatedByMe
-    ? { label: 'أنشأتها', bg: 'rgba(168, 85, 247, 0.12)', color: '#c084fc' }
+    ? { label: 'أنشأتها', bg: 'rgba(168, 85, 247, 0.12)', color: 'var(--accent-purple-soft)' }
     : isWatching
     ? { label: 'متابع', bg: 'var(--accent-green-bg)', color: 'var(--accent-green)' }
     : isAdmin
@@ -238,7 +238,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             {isCompleted ? (
               <CheckCircle2 size={16} color="var(--accent-green)" />
             ) : isInReview ? (
-              <ClipboardCheck size={15} color="#c084fc" />
+              <ClipboardCheck size={15} color="var(--accent-purple-soft)" />
             ) : isReturnedForRevision ? (
               <RotateCcw size={13} color="var(--accent-yellow)" />
             ) : isRunning ? (
@@ -799,7 +799,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     padding: '3px 6px',
     fontSize: 10,
     fontWeight: 600,
-    color: '#c084fc',
+    color: 'var(--accent-purple-soft)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     outline: 'none',
@@ -860,7 +860,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
   },
   pendingBadge: {
     fontSize: 10,
-    color: '#c084fc',
+    color: 'var(--accent-purple-soft)',
     backgroundColor: 'rgba(168, 85, 247, 0.08)',
     border: '1px solid rgba(168, 85, 247, 0.25)',
     padding: '2px 7px',

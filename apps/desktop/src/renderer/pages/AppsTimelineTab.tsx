@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { InlineErrorBanner } from '../components/InlineErrorBanner';
 import {
   AppWindow,
   Globe,
@@ -57,6 +58,7 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
   const [apps, setApps] = useState<AppItem[]>([]);
   const [sites, setSites] = useState<WebItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -66,7 +68,9 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
       ]);
       setApps(appList || []);
       setSites(siteList || []);
+      setError(null);
     } catch {
+      setError('تعذر تحميل سجل البرامج والمواقع.');
     } finally {
       setLoading(false);
     }
@@ -104,6 +108,7 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
 
   return (
     <div style={styles.container}>
+      {error && <InlineErrorBanner message={error} onRetry={() => { setLoading(true); loadData(); }} />}
       {/* Date Navigation Bar */}
       <div style={styles.dateNavBar}>
         <div style={styles.dateNavControls}>

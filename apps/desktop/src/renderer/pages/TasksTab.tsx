@@ -355,17 +355,26 @@ export const TasksTab: React.FC = () => {
         setCurrentUser(authState.user);
       }
 
-      // Fetch auth token for secure authenticated image loading
-      try {
-        const tokenRes = await window.electronAPI.getAuthToken();
-        if (tokenRes?.token) {
-          setAuthToken(tokenRes.token);
-        }
-      } catch {}
-
-      // 1. Fetch tasks
+      // Role gate evaluated once — team fetch runs in the parallel batch below
+      const roleStr = String(authState?.user?.role || '').toUpperCase();
+      const isMgr = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER', 'HR_MANAGER'].includes(roleStr);
       const fetchScope = activeView === 'analytics' ? 'my-tasks' : activeView;
-      const res = await window.electronAPI.getTasks(fetchScope);
+
+      // Independent fetches run in parallel (auth state already resolved above)
+      const [tokenRes, res, usersRes, runningRes, activeRes] = await Promise.all([
+        window.electronAPI.getAuthToken().catch(() => null),
+        window.electronAPI.getTasks(fetchScope),
+        window.electronAPI.getCompanyUsers().catch(() => null),
+        window.electronAPI.getRunningTaskTimer().catch(() => null),
+        isMgr
+          ? window.electronAPI.getCompanyActiveTimers().catch(() => null)
+          : Promise.resolve(null),
+      ]);
+
+      if (tokenRes?.token) {
+        setAuthToken(tokenRes.token);
+      }
+
       if (res.success && Array.isArray(res.tasks)) {
         setTasks(res.tasks);
         setIsOfflineMode(Boolean(res.isOffline || res.fromCache));
@@ -373,15 +382,12 @@ export const TasksTab: React.FC = () => {
         setIsOfflineMode(true);
       }
 
-      // 2. Fetch company users for assign dropdown
-      const usersRes = await window.electronAPI.getCompanyUsers();
-      if (usersRes.success && Array.isArray(usersRes.users)) {
+      if (usersRes?.success && Array.isArray(usersRes.users)) {
         setUsers(usersRes.users);
       }
 
       // 3. Sync active multi-timers with backend
-      try {
-        const runningRes = await window.electronAPI.getRunningTaskTimer();
+      {
         if (runningRes?.success) {
           const rawTimers: any[] = Array.isArray(runningRes.runningTimers)
             ? runningRes.runningTimers
@@ -462,20 +468,11 @@ export const TasksTab: React.FC = () => {
             } catch {}
           }
         }
-      } catch {}
+      }
 
-      // 4. Fetch company active running timers for team managers
-      const roleStr = String(authState?.user?.role || '').toUpperCase();
-      const isMgr = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER', 'HR_MANAGER'].includes(roleStr);
-      if (isMgr) {
-        try {
-          const activeRes = await window.electronAPI.getCompanyActiveTimers();
-          if (activeRes?.success && Array.isArray(activeRes.activeTimers)) {
-            setTeamActiveTimers(activeRes.activeTimers);
-          }
-        } catch (err) {
-          console.warn('[TasksTab] getCompanyActiveTimers error:', err);
-        }
+      // 4. Team timers arrived with the parallel batch above
+      if (activeRes?.success && Array.isArray(activeRes.activeTimers)) {
+        setTeamActiveTimers(activeRes.activeTimers);
       }
     } catch (err) {
       console.warn('[TasksTab] Fetch error:', err);
@@ -505,6 +502,8 @@ export const TasksTab: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         setIsCreateOpen(true);
@@ -876,10 +875,12 @@ export const TasksTab: React.FC = () => {
 
         {/* Left Side: Sync Status + Refresh + Primary New Task Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={styles.cloudBadge} title="مزامنة فورية مشفرة مع السيرفر السحابي">
-            <span style={styles.syncPulseDot} />
-            <span style={{ fontSize: 10 }}>مزامنة فورية</span>
-          </div>
+          {!isOfflineMode && (
+            <div style={styles.cloudBadge} title="مزامنة فورية مشفرة مع السيرفر السحابي">
+              <span style={styles.syncPulseDot} />
+              <span style={{ fontSize: 10 }}>مزامنة فورية</span>
+            </div>
+          )}
 
           <button
             onClick={() => loadData(true)}
@@ -1064,8 +1065,9 @@ export const TasksTab: React.FC = () => {
                 style={styles.teamTimerCard}
                 onClick={() => {
                   setActiveView('all');
+                  setSearchQuery(timer.userName);
                 }}
-                title={`الضغط لعرض كل المهام — يعمل على: ${timer.taskTitle}`}
+                title={`عرض مهام ${timer.userName} — يعمل حالياً على: ${timer.taskTitle}`}
                 onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)'; }}
                 onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
               >
@@ -1186,7 +1188,7 @@ export const TasksTab: React.FC = () => {
                         : 'rgba(255, 255, 255, 0.04)',
                       color: isSelected
                         ? s === 'IN_REVIEW' && inReviewCount > 0
-                          ? '#c084fc'
+                          ? 'var(--accent-purple-soft)'
                           : 'var(--text-primary)'
                         : 'var(--text-dim)',
                     }}
@@ -2040,7 +2042,7 @@ const styles: Record<string, React.CSSProperties> = {
   footerReviewBadge: {
     fontSize: 10,
     fontWeight: 600,
-    color: '#c084fc',
+    color: 'var(--accent-purple-soft)',
     backgroundColor: 'rgba(168, 85, 247, 0.1)',
     border: '1px solid rgba(168, 85, 247, 0.25)',
     padding: '1px 6px',

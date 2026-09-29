@@ -39,7 +39,7 @@ export const TaskReportExceptions: React.FC<TaskReportExceptionsProps> = ({
     <div style={styles.banner}>
       <div style={styles.bannerHeader}>
         <div style={styles.headerTitleWrap}>
-          <ShieldAlert size={14} color="#f97316" />
+          <ShieldAlert size={14} color="var(--accent-orange)" />
           <span style={styles.headerTitle}>
             رادار الاستثناءات والتدخل الإداري ({totalExceptions})
           </span>
@@ -76,7 +76,7 @@ export const TaskReportExceptions: React.FC<TaskReportExceptionsProps> = ({
         {timeLeakTasks.slice(0, 2).map((t) => (
           <div key={`leak-${t.id}`} style={{ ...styles.itemCard, borderColor: 'rgba(249, 115, 22, 0.3)' }}>
             <div style={styles.badgeLeak}>
-              <Clock size={11} color="#f97316" />
+              <Clock size={11} color="var(--accent-orange)" />
               <span>فجوة وقت: +{formatMinToH(t.varianceMinutes)}</span>
             </div>
             <div style={styles.itemTitle} title={t.title}>
@@ -170,7 +170,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
     fontSize: 10,
     fontWeight: 600,
-    color: '#f97316',
+    color: 'var(--accent-orange)',
     fontVariantNumeric: 'tabular-nums',
   },
   badgeReview: {
