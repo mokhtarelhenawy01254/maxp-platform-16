@@ -6985,6 +6985,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/settings/volume-discounts"
+                  element={
+                    <Layout>
+                      <StorePromotionSettings />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/settings/recommendations"
                   element={
                     <Layout>
