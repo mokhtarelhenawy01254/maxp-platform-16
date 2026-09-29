@@ -1348,6 +1348,7 @@ export const getSidebarConfig = (
                 { to: '/hr/assets', icon: Monitor, label: t('sidebar.assets') },
                 { to: '/hr/recruitment', icon: Users, label: t('sidebar.recruitment') },
                 { to: '/hr/settings', icon: Settings, label: t('sidebar.hrSettings') },
+                { to: '/hr/integrations', icon: Key, label: 'الربط الخارجي والـ AI' },
                 { to: '/whatsapp/templates?category=HR', icon: Bell, label: t('sidebar.whatsappNotifications') },
                 { to: '/hr/rewards', icon: Star, label: t('sidebar.rewards.title') },
             ],

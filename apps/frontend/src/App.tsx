@@ -1550,6 +1550,7 @@ const Deductions = React.lazy(() =>
   import("./pages/hr").then((m) => ({ default: m.Deductions })),
 );
 const HRSettings = React.lazy(() => import("./pages/hr/HRSettings"));
+const HRApiIntegrations = React.lazy(() => import("./pages/hr/HRApiIntegrations"));
 const HRReports = React.lazy(() =>
   import("./pages/hr").then((m) => ({ default: m.HRReports })),
 );
@@ -7469,6 +7470,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <HRSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/integrations"
+                  element={
+                    <Layout>
+                      <HRApiIntegrations />
                     </Layout>
                   }
                 />
