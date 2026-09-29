@@ -189,13 +189,13 @@ const documentUpload = multer({
 router.get('/settings', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getHRSettings);
 router.put('/settings', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.updateHRSettings);
 
-// 🔑 إدارة مفاتيح الـ API الخارجية والـ Webhooks (Admin Only)
-router.get('/external-api/keys', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrExternalController.listApiCredentials);
-router.post('/external-api/keys', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrExternalController.createApiCredential);
-router.delete('/external-api/keys/:id', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrExternalController.revokeApiCredential);
+// 🔑 إدارة مفاتيح الـ API الخارجية والـ Webhooks
+router.get('/external-api/keys', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'AGENT']), hrExternalController.listApiCredentials);
+router.post('/external-api/keys', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'AGENT']), hrExternalController.createApiCredential);
+router.delete('/external-api/keys/:id', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'AGENT']), hrExternalController.revokeApiCredential);
 
-router.get('/external-api/webhooks', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrExternalController.listWebhookEndpoints);
-router.post('/external-api/webhooks', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']), hrExternalController.createWebhookEndpoint);
+router.get('/external-api/webhooks', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'AGENT']), hrExternalController.listWebhookEndpoints);
+router.post('/external-api/webhooks', verifyToken.authenticateToken, verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'AGENT']), hrExternalController.createWebhookEndpoint);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📊 لوحة التحكم - Dashboard
