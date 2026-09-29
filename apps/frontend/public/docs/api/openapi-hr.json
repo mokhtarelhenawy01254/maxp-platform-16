@@ -206,13 +206,13 @@
         "type": "apiKey",
         "in": "header",
         "name": "x-api-key",
-        "description": "MaxP Scoped HR API Key (e.g. hrk_xxxxxxxx_yyyyyyyy)"
+        "description": "MaxP Scoped HR API Key format: hrk_{16_hex_prefix}_{48_hex_secret} (e.g. hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9)"
       },
       "BearerAuth": {
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "APIKey",
-        "description": "Alternative Bearer Token format: Bearer hrk_xxxxxxxx_yyyyyyyy"
+        "description": "Alternative Bearer Token format: Bearer hrk_{16_hex_prefix}_{48_hex_secret} (e.g. Bearer hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9)"
       }
     }
   }

@@ -32,24 +32,33 @@
 كل شركة أو فرع يقوم بإنشاء مفاتيح الربط الخاصة به من لوحة التحكم:
 `https://maxp.online/hr/integrations`
 
-### صيغة المفتاح:
+### البنية الدقيقة للمفتاح (Key Anatomy):
+يتكون المفتاح من ثلاثة أجزاء مفصولة بـ `_` بطول إجمالي 69 حرفاً:
 ```text
-hrk_<KeyPrefix>_<SecretToken>
+hrk_{16_hex_public_prefix}_{48_hex_secret}
 ```
-مثال:
+- **البادئة (Fixed Prefix):** `hrk` (3 أحرف).
+- **المعرف العام (Public Identifier):** 8 بايت عشوائية مشفرة Hex &larr; **16 حرفاً** (يُحفظ في قاعدة البيانات كـ `keyPrefix` مع البادئة لتحديد المفتاح بسرعة دون فك التشفير).
+- **الرمز السري (Secret Token):** 24 بايت عشوائية مشفرة Hex (`crypto.randomBytes(24)`) &larr; **48 حرفاً** (يُحفظ مشفراً فقط بتجزئة SHA-256).
+
+مثال حي متطابق:
 ```text
 hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
+│   │                │
+│   │                └─ Secret (48 حرف Hex)
+│   └─ Public Prefix (16 حرف Hex)
+└─ Service Indicator (hrk)
 ```
 
 ### طريقة تمرير المفتاح:
-يجب تمرير المفتاح في ترويسة الطلب (Header) عبر أحد الخيارين:
+يجب تمرير المفتاح كاملاً في ترويسة الطلب (Header) عبر أحد الخيارين:
 - **الخيار الأول (الموصى به):**
   ```http
-  x-api-key: hrk_xxxxxxxx_yyyyyyyy
+  x-api-key: hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
   ```
 - **الخيار الثاني:**
   ```http
-  Authorization: Bearer hrk_xxxxxxxx_yyyyyyyy
+  Authorization: Bearer hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
   ```
 
 ### جدول الصلاحيات المتاحة (Scopes):
