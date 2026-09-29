@@ -1850,7 +1850,12 @@ class MonitorService {
         totalProductiveSeconds,
         totalUnproductiveSeconds,
         productivityScore,
-        activityRatio,
+        // 🚨 PRODUCTION-FIX (2026-09-29): كان مكتوب `activityRatio,` — متغيّر غير معرّف في
+        // الدالة كلها → ReferenceError → 500 على /api/v1/employee-monitor/team/overview،
+        // وصفحة /hr/monitor كلها بتقع (شاهد حقيقي: [FRONTEND-ERROR] url=https://maxp.online/hr/monitor).
+        // النسبة كانت محسوبة فعلًا فوق باسم `activeRatio` (سطر ~1721، مقصوصة على 100)،
+        // والواجهة/الكنترولر بيقرّوا الحقل باسم activityRatio كنسبة مئوية — فربطنا الاسم الصح بالحساب الموجود.
+        activityRatio: activeRatio,
         lateStartSeconds,
         lateStartMinutes,
         weeklyAvgLateStartMinutes,
