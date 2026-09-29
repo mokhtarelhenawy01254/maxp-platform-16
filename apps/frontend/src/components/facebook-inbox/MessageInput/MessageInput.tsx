@@ -636,22 +636,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
         {/* Desktop Tools Row (visible on sm+) */}
         <div className="hidden sm:flex flex-shrink-0 items-center gap-1 sm:gap-1.5 business-chat-composer-tools">
-          {/* Voice Record Button (Desktop) */}
-          {onSendFile && (
-            <div className="relative flex-shrink-0">
-              <button
-                type="button"
-                onClick={handleStartVoiceRecording}
-                disabled={uploadingFile || isBusy}
-                className="business-icon-button rounded-xl p-1.5 transition-colors sm:p-2 text-muted-foreground hover:text-primary"
-                title="تسجيل رسالة صوتية"
-                aria-label="تسجيل رسالة صوتية"
-              >
-                <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
-              </button>
-            </div>
-          )}
-
           {/* File Upload */}
           {onSendFile && (
             <div className="relative flex-shrink-0">
