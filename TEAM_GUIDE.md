@@ -13,8 +13,8 @@
 ## ≡ƒÜÇ ╪Ñ╪╣╪»╪º╪» ╪º┘ä┘à╪┤╪▒┘ê╪╣
 
 ```bash
-git clone https://github.com/mokhtarelhenawy091-crypto/maxp-platform-12.git
-cd maxp-platform-12
+git clone https://github.com/mokhtar-el7/maxp-platform-13.git
+cd maxp-platform-13
 
 # ╪º┘ä┘ü╪▒┘ê┘å╪¬
 cd apps/frontend

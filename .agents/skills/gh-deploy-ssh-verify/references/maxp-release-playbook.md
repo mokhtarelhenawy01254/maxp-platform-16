@@ -27,7 +27,7 @@ gh run view <run-id> --log-failed
 ## Pre-Push Quality Gates
 
 - The repo uses HTTPS Git remote by default.
-- Target Repository: When asked "ارفع الابديت" or pushing updates, ONLY push to remote `origin` (`https://github.com/mokhtarelhenawy091-crypto/maxp-platform-12`). Do not push to other remotes.
+- Target Repository: When asked "ارفع الابديت" or pushing updates, ONLY push to remote `origin` (`https://github.com/mokhtar-el7/maxp-platform-13`). Do not push to other remotes.
 - `gh auth status` should pass before relying on `gh run ...` or PR operations.
 - Production workflow runs `node scripts/verify-docs.js` before deployment.
 - If shipped changes touch runtime code, update docs in one of:

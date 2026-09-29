@@ -127,7 +127,7 @@ Any design resembling typical LLM-generated output is strictly rejected. Audit a
 
 ## 🚀 Post-Task Automatic Git Push Rule
 
-- **Mandatory Action:** After completing **ANY** task (feature, bug fix, configuration update, refactoring, or document edit), automatically commit all relevant changes and push directly to `https://github.com/mokhtarelhenawy091-crypto/maxp-platform-12` (`origin` remote).
+- **Mandatory Action:** After completing **ANY** task (feature, bug fix, configuration update, refactoring, or document edit), automatically commit all relevant changes and push directly to `https://github.com/mokhtar-el7/maxp-platform-13` (`origin` remote).
 - **Descriptive Commit Message:** Always write a clear, descriptive commit message explaining the exact task changes so the user can easily trace and identify what was updated.
 - **Workflow:**
   1. `git status`
