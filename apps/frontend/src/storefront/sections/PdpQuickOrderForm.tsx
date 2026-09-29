@@ -2265,14 +2265,17 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                 ) : null}
                 {walletDiscount > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
                   <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
-                    <span>
-                      {prefersArabicCopy
-                        ? paymentMethod === "card"
-                          ? `خصم الدفع بالبطاقة / فيزا (${walletDiscountPercent}%)`
-                          : `خصم الدفع بالمحفظة (${walletDiscountPercent}%)`
-                        : paymentMethod === "card"
-                          ? `Card payment discount (${walletDiscountPercent}%)`
-                          : `Wallet payment discount (${walletDiscountPercent}%)`}
+                    <span className="inline-flex items-center gap-1.5">
+                      <Tag className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                      <span>
+                        {prefersArabicCopy
+                          ? paymentMethod === "card"
+                            ? `خصم الدفع بالبطاقة / فيزا (${walletDiscountPercent}%)`
+                            : `خصم الدفع بالمحفظة (${walletDiscountPercent}%)`
+                          : paymentMethod === "card"
+                            ? `Card payment discount (${walletDiscountPercent}%)`
+                            : `Wallet payment discount (${walletDiscountPercent}%)`}
+                      </span>
                     </span>
                     <span className="font-semibold text-emerald-600">
                       -{formatStorefrontCurrency(walletDiscount, currency)}
@@ -2349,13 +2352,14 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                         <span>{prefersArabicCopy ? "الدفع بالمحفظة" : "Wallet payment"}</span>
                         {walletDiscountEnabled && walletDiscountPercent > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
                           <span
-                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-black ${
                               paymentMethod === "wallet"
                                 ? "bg-white text-emerald-800"
                                 : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200"
                             }`}
                           >
-                            خصم {walletDiscountPercent}%
+                            <Tag className="h-2.5 w-2.5 shrink-0" />
+                            <span>خصم {walletDiscountPercent}%</span>
                           </span>
                         ) : null}
                       </button>
@@ -2373,13 +2377,14 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                         <span>💳 {prefersArabicCopy ? "بطاقة بنكية / فيزا" : "Card"}</span>
                         {walletDiscountEnabled && walletDiscountPercent > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
                           <span
-                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-black ${
                               paymentMethod === "card"
                                 ? "bg-white text-emerald-800"
                                 : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200"
                             }`}
                           >
-                            خصم {walletDiscountPercent}%
+                            <Tag className="h-2.5 w-2.5 shrink-0" />
+                            <span>خصم {walletDiscountPercent}%</span>
                           </span>
                         ) : null}
                       </button>
