@@ -94,6 +94,7 @@ import { useProduct, setGlobalPresentationSlug } from "./hooks/useProduct";
 const GlobalConversionHost = React.lazy(
   () => import("./components/GlobalConversionHost"),
 );
+import FreeShippingBar from "./components/FreeShippingBar";
 import StorePromotionBar from "./components/StorePromotionBar";
 const StickyAddToCartHost = React.lazy(
   () => import("./components/StickyAddToCartHost"),
@@ -1445,6 +1446,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         </React.Suspense>
       ) : null}
       {isGracefulTheme ? <GracefulScrollTop /> : null}
+      {!isProductImageLandingPage ? <FreeShippingBar /> : null}
       {!isProductImageLandingPage ? <StorePromotionBar /> : null}
       {!isProductImageLandingPage && !isFastlyTheme && !isGracefulTheme && canRenderConversionHosts ? (
         <>
