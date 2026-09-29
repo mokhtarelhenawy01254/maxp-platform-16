@@ -73,8 +73,83 @@ function buildMetaBodyParams(variablesOrder, localContent, values = {}) {
   });
 }
 
+/**
+ * Counts the BODY parameters an approved Meta template expects: the highest
+ * {{n}} placeholder index in its BODY text (Meta numbers them 1..N, and the same
+ * index may legitimately appear twice).
+ */
+function countMetaPlaceholders(bodyText) {
+  if (!bodyText) return 0;
+  const matches = String(bodyText).match(/\{\{\s*\d+\s*\}\}/g) || [];
+  let max = 0;
+  for (const m of matches) {
+    const n = parseInt(m.replace(/[^0-9]/g, ''), 10);
+    if (Number.isFinite(n) && n > max) max = n;
+  }
+  return max;
+}
+
+/**
+ * 🚨 PRODUCTION-FIX (2026-09-29 — Meta #132000 template_param_count_mismatch):
+ * The stored `variables` array drifts from the APPROVED Meta template (a variable
+ * removed in the UI, or the template re-created with one placeholder more). Meta
+ * then rejects EVERY send with "number of localizable_params (4) does not match
+ * the expected number of params (5)" and the customer silently gets no
+ * notification at all.
+ *
+ * When the expected count is known, the parameter order must come from a source
+ * that is semantically aligned with Meta's placeholders — picking the FIRST
+ * source whose variable count matches exactly. Sources are tried in priority
+ * order (stored variables → local template content → seeded Meta blueprint).
+ *
+ * Appending a missing variable at the END is deliberately NOT done: with
+ * [customerName, orderItems, total, currency] + a padded `orderNumber` the
+ * message would send but every placeholder would shift one slot (order number
+ * shown as the items list) — a scrambled confirmation is worse than a loud
+ * failure.
+ *
+ * @returns {{order: Array<{position:number,name:string}>, source: string}|null}
+ */
+function pickOrderForExpectedCount(expectedCount, sources = []) {
+  const expected = Number(expectedCount) || 0;
+  if (expected <= 0) return null;
+
+  for (const src of sources) {
+    const raw = Array.isArray(src) ? src : src?.names;
+    const label = Array.isArray(src) ? 'unspecified' : (src?.label || 'unspecified');
+    const names = normalizeVariableNames(raw);
+    if (names.length === expected) {
+      return {
+        order: names.map((name, idx) => ({ position: idx + 1, name })),
+        source: label,
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * Normalizes a variables array to a de-duplicated list of names, accepting both
+ * shapes stored in the DB (`["orderNumber"]` and `[{position,name}]`).
+ */
+function normalizeVariableNames(variablesOrder) {
+  if (!Array.isArray(variablesOrder)) return [];
+  const seen = new Set();
+  const names = [];
+  for (const v of variablesOrder) {
+    const name = typeof v === 'string' ? v : v?.name;
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    names.push(name);
+  }
+  return names;
+}
+
 module.exports = {
   mapVariablesByOrder,
   extractLocalVariableOrder,
   buildMetaBodyParams,
+  countMetaPlaceholders,
+  pickOrderForExpectedCount,
+  normalizeVariableNames,
 };

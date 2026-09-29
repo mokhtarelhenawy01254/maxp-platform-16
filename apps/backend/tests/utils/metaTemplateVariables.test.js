@@ -8,6 +8,9 @@ const {
   mapVariablesByOrder,
   extractLocalVariableOrder,
   buildMetaBodyParams,
+  countMetaPlaceholders,
+  pickOrderForExpectedCount,
+  normalizeVariableNames,
 } = require('../../utils/metaTemplateVariables');
 
 describe('mapVariablesByOrder', () => {
@@ -84,11 +87,12 @@ describe('buildMetaBodyParams', () => {
     ]);
   });
 
-  test('يرجّع نص فاضي للمتغير الناقص', () => {
+  test('يرجّع نص بديل للمتغير الناقص (مش سلسلة فاضية)', () => {
+    // القيم الناقصة بتاخد fallback بدل '' — '' كانت بتترفض من Meta بـ 131008.
     const variablesOrder = [{ position: 1, name: 'customerName' }, { position: 2, name: 'missing' }];
     const values = { customerName: 'منى' };
     const result = buildMetaBodyParams(variablesOrder, null, values);
-    expect(result[1]).toEqual({ type: 'text', text: '' });
+    expect(result[1]).toEqual({ type: 'text', text: '—' });
   });
 
   test('🚨 131008: عدد params دايمًا يساوي متغيرات القالب حتى لو القيم فاضية (لا حذف للـ params)', () => {
@@ -111,7 +115,7 @@ describe('buildMetaBodyParams', () => {
     const variablesOrder = [{ position: 1, name: 'a' }, { position: 2, name: 'b' }];
     const result = buildMetaBodyParams(variablesOrder, null, {});
     expect(result).toHaveLength(2);
-    expect(result).toEqual([{ type: 'text', text: '' }, { type: 'text', text: '' }]);
+    expect(result).toEqual([{ type: 'text', text: '—' }, { type: 'text', text: '—' }]);
   });
 
   test('يرجّع مصفوفة فارغة لو مفيش ترتيب ولا نص', () => {
@@ -145,5 +149,90 @@ describe('buildMetaBodyParams', () => {
       { type: 'text', text: 'ORD-77' },
       { type: 'text', text: '540' },
     ]);
+  });
+});
+
+/**
+ * 🚨 PRODUCTION-FIX (2026-09-29 — Meta #132000 template_param_count_mismatch):
+ * Swan's approved ORDER_CREATED template expects 5 body params while the stored
+ * row declared 4 (orderNumber dropped), so EVERY order notification was rejected
+ * by Meta and the customer got nothing. These tests lock the reconciliation:
+ * the parameter order must come from a source whose variable count matches the
+ * approved template exactly, and a mismatch must never be "fixed" by appending
+ * the missing variable at the end (that would shift every placeholder).
+ */
+describe('countMetaPlaceholders', () => {
+  test('يرجع أعلى رقم placeholder في نص القالب المعتمد', () => {
+    expect(countMetaPlaceholders('أهلًا {{1}} طلبك {{2}} إجمالي {{3}}')).toBe(3);
+  });
+
+  test('يرجع 5 لو آخر placeholder هو {{5}} حتى لو {{4}} اتكرر', () => {
+    expect(countMetaPlaceholders('{{1}} {{2}} {{3}} {{4}} {{4}} {{5}}')).toBe(5);
+  });
+
+  test('يرجع 0 لو مفيش placeholders أو مفيش نص', () => {
+    expect(countMetaPlaceholders('نص ثابت بدون متغيرات')).toBe(0);
+    expect(countMetaPlaceholders(null)).toBe(0);
+    expect(countMetaPlaceholders('')).toBe(0);
+  });
+});
+
+describe('normalizeVariableNames', () => {
+  test('يقبل الصيغتين (نصوص + {position,name}) ويزيل التكرار', () => {
+    expect(normalizeVariableNames(['a', 'b', 'a'])).toEqual(['a', 'b']);
+    expect(normalizeVariableNames([{ position: 1, name: 'x' }, { position: 2, name: 'y' }]))
+      .toEqual(['x', 'y']);
+  });
+
+  test('يرجع مصفوفة فارغة لأي مدخل غير صالح', () => {
+    expect(normalizeVariableNames(null)).toEqual([]);
+    expect(normalizeVariableNames(undefined)).toEqual([]);
+    expect(normalizeVariableNames('customerName')).toEqual([]);
+  });
+});
+
+describe('pickOrderForExpectedCount', () => {
+  const swanStoredVariables = [
+    { position: 1, name: 'customerName' },
+    { position: 2, name: 'orderItems' },
+    { position: 3, name: 'total' },
+    { position: 4, name: 'currency' },
+  ];
+  const localContent = 'أهلًا {{customerName}} طلبك {{orderItems}} الإجمالي {{total}} {{currency}}';
+  const blueprint = ['customerName', 'orderNumber', 'orderItems', 'total', 'currency'];
+
+  test('🚨 132000: يتخطى ترتيب الـ DB الناقص وياخد البلوبرنت اللي عدده مطابق', () => {
+    const pick = pickOrderForExpectedCount(5, [
+      { label: 'db_variables', names: swanStoredVariables },
+      { label: 'local_content', names: extractLocalVariableOrder(localContent) },
+      { label: 'meta_blueprint', names: blueprint },
+    ]);
+    expect(pick).not.toBeNull();
+    expect(pick.source).toBe('meta_blueprint');
+    expect(pick.order.map((v) => v.name)).toEqual([
+      'customerName', 'orderNumber', 'orderItems', 'total', 'currency',
+    ]);
+  });
+
+  test('يفضّل ترتيب الـ DB لما يكون عدده مطابق للقالب المعتمد', () => {
+    const pick = pickOrderForExpectedCount(5, [
+      { label: 'db_variables', names: blueprint },
+      { label: 'meta_blueprint', names: ['x', 'y', 'z', 'w', 'q'] },
+    ]);
+    expect(pick.source).toBe('db_variables');
+    expect(pick.order[1]).toEqual({ position: 2, name: 'orderNumber' });
+  });
+
+  test('يرجّع null لو مفيش أي مصدر عدده مطابق (بدل ما نلزق المتغير في الآخر)', () => {
+    const pick = pickOrderForExpectedCount(5, [
+      { label: 'db_variables', names: swanStoredVariables },
+      { label: 'local_content', names: extractLocalVariableOrder(localContent) },
+    ]);
+    expect(pick).toBeNull();
+  });
+
+  test('يرجّع null لو العدد المتوقع مجهول (0) — نرجع للسلوك القديم', () => {
+    expect(pickOrderForExpectedCount(0, [{ label: 'db_variables', names: blueprint }])).toBeNull();
+    expect(pickOrderForExpectedCount(null, [{ label: 'db_variables', names: blueprint }])).toBeNull();
   });
 });

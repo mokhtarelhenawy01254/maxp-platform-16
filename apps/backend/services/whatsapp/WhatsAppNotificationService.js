@@ -930,7 +930,50 @@ function buildNewsletterAdminAlertContent() {
 // موازنة الجلسات مستخرجة (sessionBalancer.js — §5.1)
 const { getOrAssignSession, ensureRuntimeSessionConnected, findAlternativeBaileysSession, isMetaWindowError } = require('./sessionBalancer');
 const { isOrderCategory, getPersistedNotificationEventType, getPersistedNotificationCategory, getPersistedNotificationRecipientType } = require('./notificationTypes');
-const { buildMetaBodyParams } = require('../../utils/metaTemplateVariables');
+const {
+  buildMetaBodyParams,
+  extractLocalVariableOrder,
+  countMetaPlaceholders,
+  pickOrderForExpectedCount,
+} = require('../../utils/metaTemplateVariables');
+const { META_ORDER_BLUEPRINTS } = require('../orderTemplateSeeding');
+
+// ☁️ [META-CLOUD] عدد بارامترات BODY اللي القالب المعتمد في ميتا مستنيها.
+// 🚨 PRODUCTION-FIX (2026-09-29, #132000 template_param_count_mismatch): مسار الإرسال
+// لازم يعرف العدد ده قبل ما يبعت، عشان يمسك انحراف السطر المحلي (variables) بدل ما
+// يبعت ناقص ويرجع 132000 والعميل مايوصلهوش إشعار خالص. كاش 10 دقايق لكل جلسة+قالب
+// عشان ما نضربش Meta API مع كل إشعار.
+const META_PARAM_COUNT_CACHE = new Map();
+const META_PARAM_COUNT_TTL_MS = 10 * 60 * 1000;
+
+async function resolveMetaExpectedParamCount(sessionId, templateName) {
+  if (!sessionId || !templateName) return 0;
+  const key = `${sessionId}::${templateName}`;
+  const cached = META_PARAM_COUNT_CACHE.get(key);
+  if (cached && Date.now() - cached.at < META_PARAM_COUNT_TTL_MS) return cached.count;
+
+  try {
+    const MetaCloudProvider = require('./providers/MetaCloudProvider');
+    const templates = await MetaCloudProvider.listTemplates(sessionId);
+    const tmpl = Array.isArray(templates) ? templates.find((t) => t.name === templateName) : null;
+    const bodyComp = (tmpl?.components || []).find(
+      (c) => String(c.type || '').toUpperCase() === 'BODY'
+    );
+    const count = countMetaPlaceholders(bodyComp?.text);
+    META_PARAM_COUNT_CACHE.set(key, { count, at: Date.now() });
+    if (count > 0) {
+      console.log(`🔢 [META-CLOUD] Approved template "${templateName}" expects ${count} BODY param(s).`);
+    }
+    return count;
+  } catch (err) {
+    // مش حرج — لو ماقدرناش نقرا القالب نرجع للسلوك القديم بدل ما نمنع الإرسال.
+    console.warn(
+      `⚠️ [META-CLOUD] Could not resolve expected param count for "${templateName}":`,
+      err?.message || err
+    );
+    return 0;
+  }
+}
 const { buildBroadcastHeaderParams } = require('../../utils/broadcastTemplateParams');
 
 const settingsInitializationInFlight = new Map();
@@ -1551,7 +1594,56 @@ async function sendNotification(options) {
           const fallbackOrder = variablesOrder || !safeTemplate?.content
             ? (variables && typeof variables === 'object' ? Object.keys(variables).map((name, i) => ({ position: i + 1, name })) : null)
             : null;
-          const bodyParams = buildMetaBodyParams(variablesOrder || fallbackOrder, safeTemplate?.content, variables);
+          // 🚨 PRODUCTION-FIX (2026-09-29, #132000 template_param_count_mismatch):
+          // السطر المحلي (variables) بيتفرّق عن القالب المعتمد في ميتا (متغير اتشال من
+          // الـ UI، أو القالب اتعاد إنشاؤه ببلاسهولدر زيادة). النتيجة: بنبعت عدد غلط،
+          // ميتا ترفض بـ 132000، والعميل مايوصلهوش إشعار خالص من غير سبب واضح.
+          // بنقرا العدد المتوقع من القالب المعتمد نفسه، ونختار ترتيب متغيرات متوافق
+          // معاه 100% (DB → نص القالب المحلي → بلوبرنت ميتا المزروع) — وممنوع نكمّل
+          // بترتيب مش متأكدين منه لأن الإشعار يطلع ببيانات متبدّلة.
+          const expectedMetaParamCount = canSendViaMetaTemplate
+            ? await resolveMetaExpectedParamCount(sessionId, metaTemplateName)
+            : 0;
+
+          const blueprintNames = (META_ORDER_BLUEPRINTS[eventType]?.variables || [])
+            .map((v) => (typeof v === 'string' ? v : v?.name));
+
+          const orderPick = expectedMetaParamCount > 0
+            ? pickOrderForExpectedCount(expectedMetaParamCount, [
+                { label: 'db_variables', names: variablesOrder || fallbackOrder },
+                { label: 'local_content', names: extractLocalVariableOrder(safeTemplate?.content) },
+                { label: 'meta_blueprint', names: blueprintNames },
+              ])
+            : null;
+
+          if (orderPick && orderPick.source !== 'db_variables') {
+            console.warn(
+              `🚨 [META-CLOUD] Param drift for "${metaTemplateName}" (${eventType}): stored variables ` +
+              `${JSON.stringify(variablesOrder || fallbackOrder)} do not match the ${expectedMetaParamCount} ` +
+              `placeholder(s) of the approved Meta template. Using "${orderPick.source}" order instead: ` +
+              `${orderPick.order.map((v) => v.name).join(', ')}. ` +
+              `Fix the template row in /orders/status-templates to clear this warning.`
+            );
+          }
+
+          const bodyParams = buildMetaBodyParams(
+            orderPick ? orderPick.order : (variablesOrder || fallbackOrder),
+            safeTemplate?.content,
+            variables
+          );
+
+          // 🔒 حماية أخيرة: لو العدد لسه مش مطابق نوقف هنا بخطأ واضح بدل ما ميتا ترفض
+          // بـ 132000. ممنوع النزول لنص حر عبر META_CLOUD خارج نافذة 24 ساعة.
+          if (expectedMetaParamCount > 0 && bodyParams.length !== expectedMetaParamCount) {
+            throw Object.assign(
+              new Error(
+                `Meta template "${metaTemplateName}" expects ${expectedMetaParamCount} BODY param(s) but ` +
+                `${bodyParams.length} are configured (event ${eventType}). ` +
+                `Rebuild the template variables in /orders/status-templates.`
+              ),
+              { code: 'META_PARAM_COUNT_MISMATCH', reason: 'meta_param_count_mismatch' }
+            );
+          }
 
           // helper يبني الـ components مع خيار إسقاط الـ header
           // 🚨 PRODUCTION-FIX (meta-header-132018): القالب المعتمد في ميتا ممكن
