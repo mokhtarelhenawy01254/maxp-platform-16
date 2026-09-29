@@ -405,4 +405,96 @@ describe('Duplicate Order Detection System', () => {
       expect(match.order.id).toBe('guest-1');
     });
   });
+
+  /**
+   * 🚨 PRODUCTION-FIX (2026-09-29): قائمة الحالات اللي بتتبعت لـ Prisma لازم تحتوي على
+   * أعضاء OrderStatus الصالحة فقط. كانت بتحقن أسماء قديمة بحروف صغيرة
+   * (turbo_saved / processing / turbo_sent / out_for_delivery / delayed) → عمود enum مقفول
+   * → PrismaClientValidationError → 500 على POST /api/v1/public/orders (العميل مش بيقدر يطلب).
+   */
+  describe('🚨 2026-09-29: status list must only contain valid OrderStatus enum members', () => {
+    const { VALID_ORDER_STATUS_ENUM } = require('../../utils/orderStatusEnum');
+
+    test('_resolveActiveStatuses بيرجّع أعضاء enum صالحة فقط لكل الحالات المدعومة', () => {
+      const inputs = [
+        ['PENDING'],
+        ['SHIPPED'],
+        ['PROCESSING'],
+        ['ON_HOLD'],
+        ['PREPARING'],
+        ['PENDING', 'SHIPPED', 'PROCESSING', 'ON_HOLD', 'PREPARING'],
+        ['turbo_saved', 'delayed', 'processing'], // قيم قديمة/غير صالحة فقط
+      ];
+      for (const input of inputs) {
+        const out = orderService._resolveActiveStatuses(input);
+        expect(out.length).toBeGreaterThan(0);
+        for (const st of out) {
+          expect(VALID_ORDER_STATUS_ENUM.has(st)).toBe(true);
+        }
+      }
+    });
+
+    test('legacy aliases (turbo_saved / processing / delayed) never reach the Prisma query', async () => {
+      const settings = {
+        enabled: true,
+        criteria: 'phone',
+        activeStatuses: ['PENDING', 'SHIPPED', 'PROCESSING', 'ON_HOLD'],
+        windowEnabled: false,
+      };
+
+      let queriedStatuses = null;
+      mockPrisma.order.findMany.mockImplementation(async (query) => {
+        queriedStatuses = query.where.status.in;
+        return [];
+      });
+
+      await orderService.findDuplicateOrder({
+        companyId: 'comp-1',
+        customerPhone: '01011112222',
+        total: 100,
+        settings,
+        includeGuest: false,
+      });
+
+      expect(Array.isArray(queriedStatuses)).toBe(true);
+      // القيم القديمة بحروف صغيرة مستحيل تروح لـ Prisma (كانت سبب الـ 500)
+      for (const st of queriedStatuses) {
+        expect(st).toBe(st.toUpperCase());
+        expect(VALID_ORDER_STATUS_ENUM.has(st)).toBe(true);
+      }
+      expect(queriedStatuses).not.toContain('turbo_saved');
+      expect(queriedStatuses).not.toContain('processing');
+      expect(queriedStatuses).not.toContain('delayed');
+      expect(queriedStatuses).not.toContain('turbo_sent');
+      expect(queriedStatuses).not.toContain('out_for_delivery');
+      // والقيم الصالحة نفسها لسه بتوصل (مفيش تضييع للفحص)
+      expect(queriedStatuses).toContain('PENDING');
+      expect(queriedStatuses).toContain('PROCESSING');
+      expect(queriedStatuses).toContain('SHIPPED');
+      expect(queriedStatuses).toContain('ON_HOLD');
+    });
+
+    test('_toValidOrderStatuses: بيرفع الحروف، بيشيل غير الصالح، وبيشيل التكرار', () => {
+      const out = orderService._toValidOrderStatuses([
+        'pending', 'PENDING', 'processing', 'turbo_saved', 'delayed',
+        'out_for_delivery', '  shipped  ', '', null, undefined, 'NOPE',
+      ]);
+      expect(out).toContain('PENDING');
+      expect(out).toContain('PROCESSING');
+      expect(out).toContain('SHIPPED');
+      expect(out).toContain('OUT_FOR_DELIVERY');
+      expect(out).not.toContain('TURBO_SAVED');
+      expect(out).not.toContain('DELAYED');
+      expect(out).not.toContain('NOPE');
+      expect(out.filter((s) => s === 'PENDING')).toHaveLength(1);
+      for (const st of out) expect(VALID_ORDER_STATUS_ENUM.has(st)).toBe(true);
+    });
+
+    test('a settings list made ONLY of invalid values falls back to valid defaults', () => {
+      const out = orderService._resolveActiveStatuses(['turbo_saved', 'delayed']);
+      expect(out.length).toBeGreaterThan(0);
+      expect(out).toContain('PENDING');
+      for (const st of out) expect(VALID_ORDER_STATUS_ENUM.has(st)).toBe(true);
+    });
+  });
 });

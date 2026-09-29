@@ -9,6 +9,7 @@ const {
   createLimitExceededError,
 } = require('../utils/planLimitPayloads');
 const { serializeTurboMetadata } = require('../utils/turbo/turboMetadata');
+const { VALID_ORDER_STATUS_ENUM } = require('../utils/orderStatusEnum');
 
 const normalizeWhatsAppOrderStatus = (status) => {
   const normalizedStatus = String(status || '').trim().toUpperCase();
@@ -1002,7 +1003,11 @@ class OrderService {
 
       if (conditions.length === 0) return [];
 
-      const allowedStatuses = resolvedPolicy.allowedStatuses || ['DELIVERED'];
+      // 🚨 PRODUCTION-FIX (2026-09-29): نفس فخ الـenum المقفول — سياسة الاستبدال/المرتجع
+      // بتتظبط من إعدادات التاجر، وأي قيمة مش عضو في OrderStatus بتوقف الاستعلام كله
+      // بـ PrismaClientValidationError. ننقّيها ونرجع للافتراضي الصالح لو فضيت.
+      const allowedStatuses = this._toValidOrderStatuses(resolvedPolicy.allowedStatuses);
+      if (allowedStatuses.length === 0) allowedStatuses.push('DELIVERED');
 
       const where = {
         companyId: effectiveCompanyId,
@@ -1154,7 +1159,36 @@ class OrderService {
       resolved.delete(term.toLowerCase());
     }
 
-    return Array.from(resolved);
+    // 🚨 PRODUCTION-FIX (2026-09-29 — PrismaClientValidationError on checkout):
+    // الـSet فوق بيخلط قيم enum صالحة (UPPERCASE) مع أسماء قديمة بحروف صغيرة
+    // (turbo_saved / processing / turbo_sent / out_for_delivery / delayed)، و`order.status`
+    // عمود enum مقفول — أي قيمة مش عضو فيه بتخلي Prisma يرمي PrismaClientValidationError
+    // قبل ما ينفّذ الاستعلام أصلاً، فالنتيجة 500 على POST /api/v1/public/orders
+    // والعميل مش قادر يخلّص طلبه (حصل فعليًا مع ترافيك إعلانات مدفوع).
+    // التنقية: نرفع الحروف ونصفّي على أعضاء enum فقط. الأسماء القديمة اللي بتقابل عضو صالح
+    // بتترجع بصيغة العضو الصح (processing → PROCESSING)، واللي مش ليها مقابل بتتشال
+    // (turbo_saved / turbo_sent / delayed) — وهي أصلاً مستحيل تطابق عمود enum.
+    const validStatuses = this._toValidOrderStatuses(Array.from(resolved));
+    if (validStatuses.length === 0) {
+      return ['PENDING', 'CONFIRMED', 'PROCESSING', 'PREPARING', 'SHIPPED', 'ON_HOLD'];
+    }
+
+    return validStatuses;
+  }
+
+  /**
+   * 🚨 PRODUCTION-FIX (2026-09-29): بيرجّع بس أعضاء `OrderStatus` الصالحة، بحروف كبيرة،
+   * وبلا تكرار. أي قائمة حالات بتروح لـ Prisma (`order.status` / policy) لازم تعدّي من هنا،
+   * وإلا استعلام واحد بقيمة غلط يرمي PrismaClientValidationError ويوقف الـ POST كله.
+   */
+  _toValidOrderStatuses(list) {
+    const out = [];
+    for (const raw of (Array.isArray(list) ? list : [])) {
+      const up = String(raw || '').trim().toUpperCase();
+      if (!up || !VALID_ORDER_STATUS_ENUM.has(up)) continue;
+      if (!out.includes(up)) out.push(up);
+    }
+    return out;
   }
 
   // مقارنة الأصناف مع الطلب السابق لمعيار (موبايل + نفس المنتجات)
