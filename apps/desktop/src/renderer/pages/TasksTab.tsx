@@ -26,6 +26,7 @@ import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { TaskItemCard } from '../components/tasks/TaskItemCard';
 import { TaskDetailDrawer } from '../components/tasks/TaskDetailDrawer';
 import { TaskReportView } from '../components/tasks/reports/TaskReportView';
+import { audioAlerts } from '../utils/audioAlerts';
 
 interface ActiveTaskState {
   id: string;
@@ -1115,7 +1116,7 @@ export const TasksTab: React.FC = () => {
                       if (window.confirm(`هل تريد إيقاف المؤقت للموظف (${timer.userName})؟`)) {
                         try {
                           await window.electronAPI.stopTaskTimer(timer.id);
-                          loadTasks(activeView);
+                          loadData(false);
                         } catch (err: any) {
                           alert('تعذر إيقاف المؤقت: ' + err.message);
                         }

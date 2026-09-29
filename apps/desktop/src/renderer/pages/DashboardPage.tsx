@@ -22,6 +22,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
   const roleStr = String(user?.role || '').toUpperCase();
   const isAdmin = ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER'].includes(roleStr);
 
+  // Real connectivity state (wired to browser online/offline events) — drives the Sidebar live indicator
+  const [isOnline, setIsOnline] = useState<boolean>(() => navigator.onLine);
+  useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
+
   const [activeTab, setActiveTabState] = useState<TabId>(() => {
     try {
       if (window.location.hash.startsWith('#/tasks')) {
@@ -285,7 +298,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
         user={user}
         onOpenSettings={() => setShowSettings(true)}
         onLogout={onLogout}
-        isOnline={true}
+        isOnline={isOnline}
       />
 
       {/* Main Surface Chassis */}
