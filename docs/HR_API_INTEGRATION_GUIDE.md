@@ -62,16 +62,38 @@ hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
   ```
 
 ### جدول الصلاحيات المتاحة (Scopes):
-| الصلاحية | الوصف |
-| :--- | :--- |
-| `*` | وصول كامل لكافة دوال الموارد البشرية |
-| `hr:employees:read` | قراءة بيانات الموظفين والهيكل التنظيمي |
-| `hr:employees:write` | إنشاء أو تعديل بيانات موظف (Upsert) |
-| `hr:attendance:ingest` | رفع حركات البصمة والحضور من الأجهزة |
-| `hr:attendance:read` | استعلام كشف الحضور وسجلات الدوام |
-| `hr:leaves:read` | استعلام طلبات وأرصدة الإجازات |
-| `hr:leaves:write` | تقديم طلب إجازة جديد للموظف |
-| `hr:payroll:read` | استعلام مسيرات الرواتب والمستحقات |
+| الصلاحية | النوع | الوصف والمسارات المشمولة |
+| :--- | :--- | :--- |
+| `*` | Umbrella | وصول كامل لكافة دوال الموارد البشرية (قراءة + كتابة + اعتماد) |
+| `hr:read` | Umbrella | صلاحية قراءة لكافة المسارات الاستعلامية (الموظفين، الأقسام، الحضور، الإجازات، الرواتب) |
+| `hr:write` | Umbrella | صلاحية كتابة وتعديل لكافة المسارات (إضافة موظفين، رفع بصمات، تقديم إجازات، وب هوكس) |
+| `hr:departments:read` | Granular | استعلام قائمة الأقسام وتفاصيلها (`GET /departments`) |
+| `hr:positions:read` | Granular | استعلام المسميات والوظائف (`GET /positions`) |
+| `hr:employees:read` | Granular | قراءة بيانات الموظفين، الإحصائيات، والهيكل التنظيمي (`GET /employees`, `/stats`, `/organization-chart`, `/:id`) |
+| `hr:employees:write` | Granular | إنشاء أو تعديل بيانات موظف (`POST /employees/upsert`) |
+| `hr:attendance:ingest` | Granular | رفع حركات البصمة والحضور من الأجهزة البيومترية (`POST /attendance/punches/batch`) |
+| `hr:attendance:read` | Granular | استعلام كشف الحضور اليومي والملخص الإحصائي (`GET /attendance/today`, `GET /attendance/summary`) |
+| `hr:leaves:read` | Granular | استعلام طلبات وأرصدة الإجازات (`GET /leaves`, `GET /leaves/balances`) |
+| `hr:leaves:write` | Granular | تقديم طلب إجازة جديد نيابة عن موظف (`POST /leaves`) |
+| `hr:leaves:approve` | Granular | اتخاذ قرار قبول أو رفض طلب إجازة مع تدوين الملاحظة (`POST /leaves/:id/decision`) |
+| `hr:payroll:read` | Granular | استعلام مسيرات الرواتب والمفردات والبدلات والخصومات (`GET /payroll/runs`, `GET /payroll/runs/:id/items`) |
+
+### حدود الاستخدام ومعدل الطلبات (Rate Limiting):
+- **معدل الطلبات للمفاتيح (API Keys):** `120` طلب بالدقيقة بنظام Token Bucket، مع سعة تدفق قصوى (Burst) تبلغ `30` طلب، وحاجز أمان لا يتجاوز `10` طلبات في الثانية الواحدة.
+- **مسارات التوثيق العامة (Docs & OpenAPI):** `60` طلب بالدقيقة لكل عنوان IP.
+- **تجاوز المعدل:** يُرجع الخادم رمز الحالة `429 Too Many Requests` مع ترويسة `Retry-After` توضح عدد الثواني للانتظار.
+
+### جدول أكواد الأخطاء الموحدة (Error Codes):
+| الرمز البرمجي (Error Code) | رمز الحالة (HTTP) | الوصف والمعنى |
+| :--- | :--- | :--- |
+| `AUTH_KEY_REQUIRED` | 401 | لم يتم تزويد مفتاح API في ترويسة الطلب (`x-api-key` أو `Authorization`). |
+| `INVALID_KEY_FORMAT` | 401 | بنية المفتاح غير صحيحة (يجب أن تبدأ بـ `hrk_` متبوعة ببادئة وسر سداسي عشري). |
+| `INVALID_CREDENTIALS` | 401 | المفتاح غير موجود أو لا يتطابق السر السري المشفر مع السجل في قاعدة البيانات. |
+| `KEY_REVOKED` | 401 | تم إلغاء وتجميد هذا المفتاح من قبل الإدارة. |
+| `KEY_EXPIRED` | 401 | انتهت فترة صلاحية هذا المفتاح. |
+| `COMPANY_INACTIVE` | 401 | حساب الشركة في منصة MaxP غير نشط أو معلق. |
+| `FORBIDDEN_SCOPE` | 403 | المفتاح صالح لكنه لا يملك الصلاحية اللازمة للوصول لهذا المسار (محدد بالـ Scope). |
+| `RATE_LIMIT_EXCEEDED` | 429 | تجاوز الحد المسموح به من الطلبات (120 req/min). |
 
 ---
 
@@ -93,69 +115,37 @@ hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
 
 ---
 
-## 5. النقاط النهائية للخدمة
+## 5. النقاط النهائية للخدمة (Endpoints Reference)
 
-### 1) استعلام قائمة الموظفين
-`GET /employees`
-- **Query Params:**
-  - `page` (افتراضي: 1)
-  - `limit` (افتراضي: 50)
-  - `search` (بحث بالاسم أو الرقم الوظيفي أو البريد)
-  - `status` (`ACTIVE`, `PROBATION`, `ON_LEAVE`, `TERMINATED`)
-- **مثال cURL:**
-  ```bash
-  curl -X GET "https://api.maxp.online/api/v1/external/hr/employees?status=ACTIVE" \
-    -H "x-api-key: hrk_your_key_here"
-  ```
+### 👥 إدارة الموظفين والهيكل (Employees & Org)
+- `GET /employees` (`hr:employees:read`): استعلام الموظفين بصفحات وفلاتر (`page`, `limit`, `search`, `departmentId`, `status`).
+- `GET /employees/stats` (`hr:employees:read`): إحصائيات عامة (إجمالي الموظفين، النشطين، المجازين، وتوزيع الأقسام).
+- `GET /employees/organization-chart` (`hr:employees:read`): شجرة الهيكل التنظيمي وتسلسل الإدارة والمناصب.
+- `GET /employees/:id` (`hr:employees:read`): ملف الموظف الكامل بواسطة الـ ID أو الرقم الوظيفي.
+- `POST /employees/upsert` (`hr:employees:write`): مزامنة وتحديث بيانات موظف من أنظمة الـ ERP.
 
----
+### 🏢 الأقسام والوظائف (Departments & Positions)
+- `GET /departments` (`hr:departments:read`): استعلام الأقسام مع أسماء المديرين وعدد الموظفين.
+- `GET /positions` (`hr:positions:read`): استعلام المسميات الوظيفية والأقسام التابعة لها.
 
-### 2) رفع حركات البصمة مجمعة (Biometric Batch Ingestion)
-`POST /attendance/punches/batch`
-- **Body Schema:**
-  ```json
-  {
-    "punches": [
-      {
-        "employeeCode": "EMP-102",
-        "timestamp": "2026-09-29T08:30:15Z",
-        "punchType": "CHECK_IN",
-        "deviceId": "ZKT-MAIN-GATE",
-        "verifyMode": "FINGERPRINT"
-      },
-      {
-        "employeeCode": "EMP-105",
-        "timestamp": "2026-09-29T16:05:00Z",
-        "punchType": "CHECK_OUT",
-        "deviceId": "ZKT-MAIN-GATE",
-        "verifyMode": "FACE"
-      }
-    ]
-  }
-  ```
-- **Response:**
-  ```json
-  {
-    "success": true,
-    "processed": 2,
-    "failed": 0
-  }
-  ```
+### ⏰ الحضور والانصراف والبصمة (Attendance)
+- `POST /attendance/punches/batch` (`hr:attendance:ingest`): رفع حركات البصمة مجمعة من أجهزة ZKTeco.
+- `GET /attendance/today` (`hr:attendance:read`): كشف الحضور والغياب لليوم الحالي.
+- `GET /attendance/summary` (`hr:attendance:read`): ملخص مجمع لحركات الحضور والغياب والتأخيرات ومعدلات الدوام لفترة محددة (`from`, `to`, `employeeCode`, `departmentId`).
 
----
+### 🏖️ طلبات وأرصدة الإجازات (Leaves Management)
+- `GET /leaves` (`hr:leaves:read`): استعلام سجلات وطلبات الإجازات بفلترة (`status`, `employeeCode`, `from`, `to`, `page`, `limit`).
+- `GET /leaves/balances` (`hr:leaves:read`): استعلام أرصدة الإجازات والمتبقي والمستهلك لكل موظف (`employeeCode`, `year`).
+- `POST /leaves` (`hr:leaves:write`): تقديم طلب إجازة جديد للموظف.
+- `POST /leaves/:id/decision` (`hr:leaves:approve`): اعتماد أو رفض طلب إجازة مع ملاحظة (`action`: `APPROVE` أو `REJECT`, `note`).
 
-### 3) تقديم طلب إجازة
-`POST /leaves`
-- **Body Schema:**
-  ```json
-  {
-    "employeeId": "emp_uuid_or_code",
-    "leaveTypeId": "leave_type_id",
-    "startDate": "2026-10-01",
-    "endDate": "2026-10-03",
-    "reason": "إجازة عارضة"
-  }
-  ```
+### 💰 مسيرات ومفردات الرواتب (Payroll)
+- `GET /payroll/runs` (`hr:payroll:read`): استعلام دورات ومسيرات الرواتب المحسوبة (`year`, `month`, `status`, `page`, `limit`).
+- `GET /payroll/runs/:id/items` (`hr:payroll:read`): تفاصيل مفردات الراتب لكل موظف داخل المسيرة (أساسي، بدلات، خصومات، صافي).
+
+### 🔔 الأحداث والـ Webhooks
+- `GET /webhooks` (`hr:write`): استعلام روابط الـ Webhook النشطة للشركة.
+- `POST /webhooks` (`hr:write`): تسجيل رابط Webhook جديد لاستقبال الإشعارات اللحظية.
 
 ---
 

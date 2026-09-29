@@ -433,12 +433,21 @@ export default function HRApiIntegrations() {
                   <select
                     value={selectedScopes[0] || "*"}
                     onChange={(e) => setSelectedScopes([e.target.value])}
-                    className="w-full bg-background border border-input rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary outline-none"
+                    className="w-full bg-background border border-input rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-primary outline-none font-mono"
                   >
-                    <option value="*">كافة الصلاحيات (Full HR Access)</option>
-                    <option value="hr:attendance:ingest">تسجيل حضور فقط (Biometric Ingestion)</option>
-                    <option value="hr:employees:read">استعلام الموظفين فقط (Read-only)</option>
-                    <option value="hr:leaves:write">تقديم إجازات فقط</option>
+                    <option value="*">* — كافة الصلاحيات (Full HR Access)</option>
+                    <option value="hr:read">hr:read — قراءة شاملة (All HR Read Endpoints)</option>
+                    <option value="hr:write">hr:write — كتابة شاملة (All HR Write Endpoints)</option>
+                    <option value="hr:departments:read">hr:departments:read — استعلام الأقسام فقط</option>
+                    <option value="hr:positions:read">hr:positions:read — استعلام المسميات الوظيفية فقط</option>
+                    <option value="hr:employees:read">hr:employees:read — استعلام الموظفين والإحصائيات والهيكل</option>
+                    <option value="hr:employees:write">hr:employees:write — إضافة وتحديث الموظفين</option>
+                    <option value="hr:attendance:ingest">hr:attendance:ingest — تسجيل وبث حركات البصمة</option>
+                    <option value="hr:attendance:read">hr:attendance:read — استعلام الحضور والملخص اليومي</option>
+                    <option value="hr:leaves:read">hr:leaves:read — استعلام طلبات وأرصدة الإجازات</option>
+                    <option value="hr:leaves:write">hr:leaves:write — تقديم طلبات إجازة جديدة</option>
+                    <option value="hr:leaves:approve">hr:leaves:approve — اتخاذ قرار قبول/رفض الإجازات</option>
+                    <option value="hr:payroll:read">hr:payroll:read — استعلام مسيرات ورواتب الموظفين</option>
                   </select>
                 </div>
 

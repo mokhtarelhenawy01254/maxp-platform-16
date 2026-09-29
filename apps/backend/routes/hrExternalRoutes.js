@@ -10,15 +10,19 @@ const {
   authenticateExternalHrApi,
   requireExternalHrScope
 } = require('../middleware/externalHrApiAuth');
+const {
+  externalApiRateLimiter,
+  docRateLimiter
+} = require('../middleware/externalHrRateLimiter');
 
 const openApiSpec = require('../config/openapi-hr.json');
 
-// 📖 Public OpenAPI Spec & Interactive Documentation (No Auth Required)
-router.get('/openapi.json', (req, res) => {
+// 📖 Public OpenAPI Spec & Interactive Documentation (No Auth Required, IP Rate-limited)
+router.get('/openapi.json', docRateLimiter, (req, res) => {
   res.json(openApiSpec);
 });
 
-router.get('/docs', (req, res) => {
+router.get('/docs', docRateLimiter, (req, res) => {
   res.send(`<!doctype html>
 <html lang="en">
   <head>
@@ -63,20 +67,35 @@ router.get('/docs', (req, res) => {
 </html>`);
 });
 
-// 🔒 Apply External API Key authentication to all remaining routes in this router
+// 🔒 Apply External API Key authentication and per-key token bucket rate limiting to all remaining routes
 router.use(authenticateExternalHrApi);
+router.use(externalApiRateLimiter);
 
 // 👥 Employees Sync & Query (ERPs, AI Profile Checks)
 router.get('/employees', requireExternalHrScope('hr:employees:read'), hrExternalController.listEmployees);
+router.get('/employees/stats', requireExternalHrScope('hr:employees:read'), hrExternalController.getEmployeeStats);
+router.get('/employees/organization-chart', requireExternalHrScope('hr:employees:read'), hrExternalController.getOrganizationChart);
 router.get('/employees/:id', requireExternalHrScope('hr:employees:read'), hrExternalController.getEmployeeById);
 router.post('/employees/upsert', requireExternalHrScope('hr:employees:write'), hrExternalController.upsertEmployee);
+
+// 🏢 Departments & Positions Taxonomy
+router.get('/departments', requireExternalHrScope('hr:departments:read'), hrExternalController.listDepartments);
+router.get('/positions', requireExternalHrScope('hr:positions:read'), hrExternalController.listPositions);
 
 // ⏰ Biometric Punches & Attendance Ingestion
 router.post('/attendance/punches/batch', requireExternalHrScope('hr:attendance:ingest'), hrExternalController.recordPunchesBatch);
 router.get('/attendance/today', requireExternalHrScope('hr:attendance:read'), hrExternalController.getTodayAttendance);
+router.get('/attendance/summary', requireExternalHrScope('hr:attendance:read'), hrExternalController.getAttendanceSummary);
 
 // 🏖️ Leaves & Absence
+router.get('/leaves', requireExternalHrScope('hr:leaves:read'), hrExternalController.listLeaveRequests);
+router.get('/leaves/balances', requireExternalHrScope('hr:leaves:read'), hrExternalController.getLeaveBalances);
 router.post('/leaves', requireExternalHrScope('hr:leaves:write'), hrExternalController.createLeaveRequest);
+router.post('/leaves/:id/decision', requireExternalHrScope('hr:leaves:approve'), hrExternalController.decideLeaveRequest);
+
+// 💰 Payroll Runs & Slips
+router.get('/payroll/runs', requireExternalHrScope('hr:payroll:read'), hrExternalController.listPayrollRuns);
+router.get('/payroll/runs/:id/items', requireExternalHrScope('hr:payroll:read'), hrExternalController.getPayrollRunItems);
 
 // 🔔 Outbound Webhooks Management
 router.get('/webhooks', requireExternalHrScope('hr:write'), hrExternalController.listWebhookEndpoints);

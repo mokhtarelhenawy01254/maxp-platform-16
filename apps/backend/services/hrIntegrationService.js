@@ -8,17 +8,19 @@ const axios = require('axios');
 const { getSharedPrismaClient } = require('./sharedDatabase');
 
 const HR_API_SCOPES = [
+  '*',
   'hr:read',
   'hr:write',
   'hr:employees:read',
   'hr:employees:write',
   'hr:attendance:read',
-  'hr:attendance:write',
   'hr:attendance:ingest',
   'hr:leaves:read',
   'hr:leaves:write',
-  'hr:payroll:read',
-  'hr:policies:read'
+  'hr:leaves:approve',
+  'hr:departments:read',
+  'hr:positions:read',
+  'hr:payroll:read'
 ];
 
 const HR_API_DEFAULT_SCOPES = [
@@ -95,8 +97,16 @@ const hashHrApiKey = (rawKey) => {
 const credentialHasScope = (credential, requiredScope) => {
   const scopes = normalizeScopes(credential?.scopes || []);
   if (scopes.includes('*')) return true;
-  if (scopes.includes('hr:write') && requiredScope.endsWith(':write')) return true;
-  if (scopes.includes('hr:read') && (requiredScope.endsWith(':read') || requiredScope.endsWith(':ingest'))) return true;
+  if (scopes.includes('hr:write') && (
+    requiredScope.endsWith(':write') ||
+    requiredScope.endsWith(':ingest') ||
+    requiredScope.endsWith(':approve') ||
+    requiredScope === 'hr:write'
+  )) return true;
+  if (scopes.includes('hr:read') && (
+    requiredScope.endsWith(':read') ||
+    requiredScope === 'hr:read'
+  )) return true;
   return scopes.includes(requiredScope);
 };
 
@@ -198,6 +208,85 @@ const dispatchHrWebhook = async (companyId, event, payload) => {
   }
 };
 
+/**
+ * 📋 Log external API action for audit attribution
+ * Records companyId, credential name/id, route, target id, actor EXTERNAL_HR_AGENT
+ * Never logs raw API key
+ */
+const logExternalApiAction = async (firstArg, secondArg) => {
+  try {
+    let prismaParam = null;
+    let options = {};
+    if (firstArg && (firstArg.activityLog || firstArg.$queryRaw)) {
+      prismaParam = firstArg;
+      options = secondArg || {};
+    } else {
+      options = firstArg || {};
+      prismaParam = options.prisma;
+    }
+
+    const { req, action, resourceType, resourceId, details = {}, targetName = null } = options;
+    const prisma = prismaParam || getSharedPrismaClient();
+    const companyId = options.companyId || req?.companyId || req?.hrCredential?.companyId;
+    const credentialId = options.credentialId || req?.hrCredential?.id;
+    const credentialName = options.credentialName || req?.hrCredential?.name || 'External API Key';
+    const keyPrefix = options.keyPrefix || req?.hrCredential?.keyPrefix;
+    const route = options.route || req?.originalUrl || req?.url;
+    const userId = options.userId || req?.user?.id || req?.hrCredential?.createdByUserId || null;
+
+    const auditDetails = {
+      credentialId,
+      credentialName,
+      keyPrefix,
+      route,
+      actor: 'EXTERNAL_HR_AGENT',
+      ...details
+    };
+
+    // 1. Core ActivityLog
+    if (prisma && prisma.activityLog) {
+      await prisma.activityLog.create({
+        data: {
+          companyId,
+          userId: typeof userId === 'string' && userId.length < 50 ? userId : null,
+          userName: `External Agent: ${credentialName}`,
+          category: 'HR_EXTERNAL_API',
+          action: action || 'EXTERNAL_WRITE',
+          description: `External API [${credentialName}] performed ${action || 'POST'} on ${resourceType || 'resource'} ${resourceId || ''}`.trim(),
+          targetType: resourceType || 'HR_RESOURCE',
+          targetId: resourceId ? String(resourceId) : null,
+          targetName: targetName || credentialName,
+          metadata: JSON.stringify(auditDetails),
+          severity: 'LOW',
+          isSuccess: true,
+          isLocked: true
+        }
+      }).catch(err => console.warn('⚠️ [logExternalApiAction] ActivityLog insert skipped:', err.message));
+    }
+
+    // 2. auditTrailService (if available and no mock was provided)
+    if (!prismaParam) {
+      try {
+        const auditTrailService = require('./auditTrailService');
+        if (auditTrailService && typeof auditTrailService.createAuditEntry === 'function') {
+          await auditTrailService.createAuditEntry({
+            action: `EXTERNAL_${action}`,
+            companyId,
+            userId: typeof userId === 'string' && userId.length < 50 ? userId : 'external_agent',
+            resourceType: resourceType || 'hr_external_api',
+            resourceId: resourceId ? String(resourceId) : credentialId,
+            details: auditDetails
+          });
+        }
+      } catch (_e) {
+        // Non-fatal
+      }
+    }
+  } catch (error) {
+    console.error('❌ [logExternalApiAction] Error writing audit:', error);
+  }
+};
+
 module.exports = {
   HR_API_SCOPES,
   HR_API_DEFAULT_SCOPES,
@@ -209,5 +298,6 @@ module.exports = {
   hashHrApiKey,
   credentialHasScope,
   generateWebhookSignature,
-  dispatchHrWebhook
+  dispatchHrWebhook,
+  logExternalApiAction
 };

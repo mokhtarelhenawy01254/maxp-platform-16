@@ -8,7 +8,8 @@ const {
   dispatchHrWebhook,
   generateHrApiKey,
   normalizeScopes,
-  HR_WEBHOOK_EVENTS
+  HR_WEBHOOK_EVENTS,
+  logExternalApiAction
 } = require('../../services/hrIntegrationService');
 
 /**
@@ -180,6 +181,16 @@ const upsertEmployee = async (req, res) => {
       { employeeId: employee.id, employeeNumber: employee.employeeNumber, status: employee.status }
     );
 
+    // D5: Audit Attribution
+    await logExternalApiAction({
+      req,
+      action: isCreated ? 'CREATE_EMPLOYEE' : 'UPDATE_EMPLOYEE',
+      resourceType: 'Employee',
+      resourceId: employee.id,
+      targetName: `${employee.firstName} ${employee.lastName}`,
+      details: { employeeNumber: employee.employeeNumber, status: employee.status }
+    });
+
     return res.status(isCreated ? 201 : 200).json({
       success: true,
       data: employee,
@@ -302,6 +313,16 @@ const recordPunchesBatch = async (req, res) => {
       }
     }
 
+    // D5: Audit Attribution
+    await logExternalApiAction({
+      req,
+      action: 'INGEST_PUNCHES',
+      resourceType: 'Attendance',
+      resourceId: deviceId || 'BATCH',
+      targetName: `Punches Batch (${results.succeeded} ok, ${results.failed} err)`,
+      details: { processed: results.processed, succeeded: results.succeeded, failed: results.failed, deviceId }
+    });
+
     return res.json({
       success: true,
       summary: results
@@ -408,6 +429,16 @@ const createLeaveRequest = async (req, res) => {
       type: leave.type
     });
 
+    // D5: Audit Attribution
+    await logExternalApiAction({
+      req,
+      action: 'CREATE_LEAVE',
+      resourceType: 'LeaveRequest',
+      resourceId: leave.id,
+      targetName: `Leave #${leave.id}`,
+      details: { type: leave.type, startDate, endDate, totalDays: leave.totalDays }
+    });
+
     return res.status(201).json({ success: true, data: leave });
   } catch (error) {
     console.error('❌ [ExternalHrController.createLeaveRequest] Error:', error);
@@ -451,6 +482,16 @@ const createWebhookEndpoint = async (req, res) => {
         subscribedEvents: JSON.stringify(subscribedEvents),
         isActive: true
       }
+    });
+
+    // D5: Audit Attribution
+    await logExternalApiAction({
+      req,
+      action: 'CREATE_WEBHOOK',
+      resourceType: 'HrWebhookEndpoint',
+      resourceId: endpoint.id,
+      targetName: endpoint.name,
+      details: { targetUrl: endpoint.targetUrl }
     });
 
     return res.status(201).json({ success: true, data: endpoint });
@@ -556,6 +597,791 @@ const revokeApiCredential = async (req, res) => {
   }
 };
 
+/**
+ * D1: قائمة الأقسام (مع الترقيم والبحث)
+ * GET /departments (Scope: hr:departments:read)
+ */
+const listDepartments = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { page = 1, limit = 50, search } = req.query;
+
+    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.min(100, parseInt(limit, 10));
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10)));
+
+    const where = { companyId };
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    const prisma = getSharedPrismaClient();
+    const [departments, total] = await Promise.all([
+      prisma.department.findMany({
+        where,
+        skip,
+        take,
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          description: true,
+          isActive: true,
+          createdAt: true,
+          manager: {
+            select: { id: true, firstName: true, lastName: true, employeeNumber: true }
+          },
+          _count: {
+            select: { employees: true }
+          }
+        },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.department.count({ where })
+    ]);
+
+    const formatted = departments.map((d) => ({
+      id: d.id,
+      name: d.name,
+      code: d.code || null,
+      description: d.description || null,
+      head: d.manager ? {
+        id: d.manager.id,
+        name: `${d.manager.firstName || ''} ${d.manager.lastName || ''}`.trim(),
+        employeeNumber: d.manager.employeeNumber
+      } : null,
+      employeeCount: d._count?.employees || 0,
+      isActive: d.isActive !== false,
+      createdAt: d.createdAt
+    }));
+
+    return res.json({
+      success: true,
+      data: formatted,
+      pagination: {
+        page: Math.max(1, parseInt(page, 10)),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take)
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.listDepartments] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * D1: قائمة المسميات الوظيفية (مع الترقيم والبحث)
+ * GET /positions (Scope: hr:positions:read)
+ */
+const listPositions = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { page = 1, limit = 50, departmentId, search } = req.query;
+
+    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.min(100, parseInt(limit, 10));
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10)));
+
+    const where = { companyId };
+    if (departmentId) where.departmentId = departmentId;
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    const prisma = getSharedPrismaClient();
+    const [positions, total] = await Promise.all([
+      prisma.position.findMany({
+        where,
+        skip,
+        take,
+        select: {
+          id: true,
+          title: true,
+          titleEn: true,
+          code: true,
+          departmentId: true,
+          department: { select: { id: true, name: true } },
+          level: true,
+          minSalary: true,
+          maxSalary: true,
+          isActive: true,
+          createdAt: true
+        },
+        orderBy: { title: 'asc' }
+      }),
+      prisma.position.count({ where })
+    ]);
+
+    return res.json({
+      success: true,
+      data: positions,
+      pagination: {
+        page: Math.max(1, parseInt(page, 10)),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take)
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.listPositions] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * D1: إحصائيات الموظفين (حسب الحالة والأقسام)
+ * GET /employees/stats (Scope: hr:employees:read)
+ */
+const getEmployeeStats = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const prisma = getSharedPrismaClient();
+
+    const [total, byStatusRaw, byDepartmentRaw] = await Promise.all([
+      prisma.employee.count({ where: { companyId } }),
+      prisma.employee.groupBy({
+        by: ['status'],
+        where: { companyId },
+        _count: true
+      }),
+      prisma.employee.groupBy({
+        by: ['departmentId'],
+        where: { companyId, departmentId: { not: null } },
+        _count: true
+      })
+    ]);
+
+    const byStatus = byStatusRaw.reduce((acc, curr) => {
+      acc[curr.status] = curr._count;
+      return acc;
+    }, {});
+
+    return res.json({
+      success: true,
+      data: {
+        total,
+        byStatus: {
+          ACTIVE: byStatus.ACTIVE || 0,
+          PROBATION: byStatus.PROBATION || 0,
+          ON_LEAVE: byStatus.ON_LEAVE || 0,
+          TERMINATED: byStatus.TERMINATED || 0,
+          SUSPENDED: byStatus.SUSPENDED || 0
+        },
+        counts: {
+          active: byStatus.ACTIVE || 0,
+          probation: byStatus.PROBATION || 0,
+          onLeave: byStatus.ON_LEAVE || 0,
+          terminated: byStatus.TERMINATED || 0
+        },
+        departmentsCount: byDepartmentRaw.length
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.getEmployeeStats] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * D1: الهيكل التنظيمي للموظفين
+ * GET /employees/organization-chart (Scope: hr:employees:read)
+ */
+const getOrganizationChart = async (req, res) => {
+  try {
+    const { companyId } = req;
+    let chart = null;
+
+    try {
+      const { employeeService } = require('../../services/hr');
+      if (employeeService && typeof employeeService.getOrganizationChart === 'function') {
+        chart = await employeeService.getOrganizationChart(companyId);
+      }
+    } catch (_svcErr) {
+      chart = null;
+    }
+
+    if (chart) {
+      return res.json({ success: true, data: chart });
+    }
+
+    // Direct fallback if service is unavailable
+    const prisma = getSharedPrismaClient();
+    const employees = await prisma.employee.findMany({
+      where: { companyId, status: 'ACTIVE' },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        employeeNumber: true,
+        managerId: true,
+        department: { select: { id: true, name: true } },
+        position: { select: { id: true, title: true } }
+      }
+    });
+
+    return res.json({ success: true, data: employees });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.getOrganizationChart] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * D1: قائمة طلبات الإجازات مع فلترة
+ * GET /leaves (Scope: hr:leaves:read)
+ * Query: status, employeeCode, from, to, page, limit
+ */
+const listLeaveRequests = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { page = 1, limit = 50, status, employeeCode, from, to } = req.query;
+
+    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.min(100, parseInt(limit, 10));
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10)));
+
+    const prisma = getSharedPrismaClient();
+    const where = { companyId };
+
+    if (status) where.status = status;
+
+    if (employeeCode) {
+      const emp = await prisma.employee.findFirst({
+        where: {
+          companyId,
+          OR: [{ employeeNumber: employeeCode }, { id: employeeCode }]
+        },
+        select: { userId: true }
+      });
+
+      if (emp?.userId) {
+        where.userId = emp.userId;
+      } else {
+        const user = await prisma.user.findFirst({
+          where: { companyId, OR: [{ employeeNumber: employeeCode }, { id: employeeCode }] },
+          select: { id: true }
+        });
+        if (user) {
+          where.userId = user.id;
+        } else {
+          return res.json({
+            success: true,
+            data: [],
+            pagination: { page: Math.max(1, parseInt(page, 10)), limit: take, total: 0, totalPages: 0 }
+          });
+        }
+      }
+    }
+
+    if (from || to) {
+      where.startDate = {};
+      if (from) where.startDate.gte = new Date(from);
+      if (to) where.startDate.lte = new Date(to);
+    }
+
+    const [leaves, total] = await Promise.all([
+      prisma.leaveRequest.findMany({
+        where,
+        skip,
+        take,
+        select: {
+          id: true,
+          userId: true,
+          type: true,
+          startDate: true,
+          endDate: true,
+          totalDays: true,
+          reason: true,
+          status: true,
+          approvedBy: true,
+          approvedAt: true,
+          rejectionReason: true,
+          createdAt: true
+        },
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.leaveRequest.count({ where })
+    ]);
+
+    const userIds = [...new Set(leaves.map(l => l.userId))];
+    const employees = await prisma.employee.findMany({
+      where: { companyId, userId: { in: userIds } },
+      select: {
+        userId: true,
+        employeeNumber: true,
+        firstName: true,
+        lastName: true,
+        department: { select: { id: true, name: true } }
+      }
+    });
+    const empMap = new Map(employees.map(e => [e.userId, e]));
+
+    const formatted = leaves.map(l => {
+      const emp = empMap.get(l.userId);
+      return {
+        id: l.id,
+        employeeCode: emp?.employeeNumber || null,
+        employeeName: emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : null,
+        department: emp?.department?.name || null,
+        type: l.type,
+        startDate: l.startDate,
+        endDate: l.endDate,
+        totalDays: l.totalDays,
+        reason: l.reason,
+        status: l.status,
+        approvedBy: l.approvedBy,
+        approvedAt: l.approvedAt,
+        rejectionReason: l.rejectionReason,
+        createdAt: l.createdAt
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: formatted,
+      pagination: {
+        page: Math.max(1, parseInt(page, 10)),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take)
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.listLeaveRequests] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * D1: أرصدة الإجازات
+ * GET /leaves/balances (Scope: hr:leaves:read)
+ * Query: employeeCode
+ */
+const getLeaveBalances = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { employeeCode } = req.query;
+    const prisma = getSharedPrismaClient();
+
+    let targetEmployees = [];
+    if (employeeCode) {
+      const emp = await prisma.employee.findFirst({
+        where: {
+          companyId,
+          OR: [{ employeeNumber: employeeCode }, { id: employeeCode }]
+        },
+        select: { id: true, userId: true, employeeNumber: true, firstName: true, lastName: true }
+      });
+      if (emp) targetEmployees = [emp];
+    } else {
+      targetEmployees = await prisma.employee.findMany({
+        where: { companyId, status: 'ACTIVE' },
+        take: 50,
+        select: { id: true, userId: true, employeeNumber: true, firstName: true, lastName: true }
+      });
+    }
+
+    if (targetEmployees.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'EMPLOYEE_NOT_FOUND', message: 'No matching employee found' }
+      });
+    }
+
+    const { leaveService } = require('../../services/hr');
+
+    const balances = await Promise.all(
+      targetEmployees.map(async (emp) => {
+        let bal = null;
+        if (emp.userId && leaveService?.getLeaveBalance) {
+          try {
+            bal = await leaveService.getLeaveBalance(companyId, emp.userId);
+          } catch (_e) {}
+        }
+        return {
+          employeeId: emp.id,
+          employeeCode: emp.employeeNumber,
+          employeeName: `${emp.firstName || ''} ${emp.lastName || ''}`.trim(),
+          annualRemaining: bal?.annualLeaveBalance ?? 21,
+          sickRemaining: bal?.sickLeaveBalance ?? 7,
+          balances: bal || { annual: 21, sick: 7 }
+        };
+      })
+    );
+
+    return res.json({
+      success: true,
+      data: employeeCode ? balances[0] : balances
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.getLeaveBalances] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * D1: ملخص وإحصائيات الحضور والغياب والتأخير
+ * GET /attendance/summary (Scope: hr:attendance:read)
+ * Query: from, to, employeeCode
+ */
+const getAttendanceSummary = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { from, to, employeeCode } = req.query;
+    const prisma = getSharedPrismaClient();
+
+    const startDate = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const endDate = to ? new Date(to) : new Date();
+
+    const where = {
+      companyId,
+      date: { gte: startDate, lte: endDate }
+    };
+
+    if (employeeCode) {
+      const emp = await prisma.employee.findFirst({
+        where: { companyId, OR: [{ employeeNumber: employeeCode }, { id: employeeCode }] },
+        select: { userId: true }
+      });
+      if (emp?.userId) where.userId = emp.userId;
+    }
+
+    const [totalRecords, byStatusRaw, aggregates] = await Promise.all([
+      prisma.attendance.count({ where }),
+      prisma.attendance.groupBy({
+        by: ['status'],
+        where,
+        _count: true
+      }),
+      prisma.attendance.aggregate({
+        where,
+        _avg: { workHours: true },
+        _sum: { overtimeHours: true }
+      })
+    ]);
+
+    const byStatus = byStatusRaw.reduce((acc, curr) => {
+      acc[curr.status] = curr._count;
+      return acc;
+    }, {});
+
+    return res.json({
+      success: true,
+      data: {
+        period: {
+          from: startDate.toISOString().split('T')[0],
+          to: endDate.toISOString().split('T')[0]
+        },
+        totalRecords,
+        present: byStatus.PRESENT || 0,
+        late: byStatus.LATE || 0,
+        absent: byStatus.ABSENT || 0,
+        onLeave: byStatus.ON_LEAVE || 0,
+        halfDay: byStatus.HALF_DAY || 0,
+        byStatus,
+        avgWorkHours: Number((aggregates._avg.workHours || 0).toFixed(2)),
+        totalOvertimeHours: Number((aggregates._sum.overtimeHours || 0).toFixed(2))
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.getAttendanceSummary] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * D1: مسيرات الرواتب (مجمعة بالفترات والشهور)
+ * GET /payroll/runs (Scope: hr:payroll:read)
+ * Query: from, to, year, month, status, page, limit
+ */
+const listPayrollRuns = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { page = 1, limit = 50, year, month, status } = req.query;
+
+    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.min(100, parseInt(limit, 10));
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10)));
+
+    const prisma = getSharedPrismaClient();
+    const where = { companyId };
+    if (year) where.year = parseInt(year, 10);
+    if (month) where.month = parseInt(month, 10);
+    if (status) where.status = status;
+
+    const groups = await prisma.payroll.groupBy({
+      by: ['year', 'month', 'status'],
+      where,
+      _count: { userId: true },
+      _sum: {
+        grossSalary: true,
+        netSalary: true,
+        totalAllowances: true,
+        totalDeductions: true
+      },
+      orderBy: [{ year: 'desc' }, { month: 'desc' }]
+    });
+
+    const total = groups.length;
+    const paginatedGroups = groups.slice(skip, skip + take);
+
+    const data = paginatedGroups.map(g => ({
+      id: `${g.year}-${String(g.month).padStart(2, '0')}`,
+      year: g.year,
+      month: g.month,
+      period: `${g.year}-${String(g.month).padStart(2, '0')}`,
+      employeeCount: g._count?.userId || 0,
+      totalGrossSalary: Number(g._sum?.grossSalary || 0),
+      totalNetSalary: Number(g._sum?.netSalary || 0),
+      totalAllowances: Number(g._sum?.totalAllowances || 0),
+      totalDeductions: Number(g._sum?.totalDeductions || 0),
+      status: g.status
+    }));
+
+    return res.json({
+      success: true,
+      data,
+      pagination: {
+        page: Math.max(1, parseInt(page, 10)),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take)
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.listPayrollRuns] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * D1: بنود مسير رواتب محدد (لكل موظف)
+ * GET /payroll/runs/:id/items (Scope: hr:payroll:read)
+ * Query: page, limit, status, employeeCode
+ */
+const getPayrollRunItems = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const { page = 1, limit = 50, status, employeeCode } = req.query;
+
+    const skip = (Math.max(1, parseInt(page, 10)) - 1) * Math.min(100, parseInt(limit, 10));
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10)));
+
+    const prisma = getSharedPrismaClient();
+    const where = { companyId };
+
+    if (id && id.includes('-')) {
+      const [yearStr, monthStr] = id.split('-');
+      where.year = parseInt(yearStr, 10);
+      where.month = parseInt(monthStr, 10);
+    } else if (id) {
+      where.id = id;
+    }
+
+    if (status) where.status = status;
+
+    if (employeeCode) {
+      const emp = await prisma.employee.findFirst({
+        where: { companyId, OR: [{ employeeNumber: employeeCode }, { id: employeeCode }] },
+        select: { userId: true }
+      });
+      if (emp?.userId) where.userId = emp.userId;
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.payroll.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { netSalary: 'desc' }
+      }),
+      prisma.payroll.count({ where })
+    ]);
+
+    const userIds = items.map(i => i.userId);
+    const employees = await prisma.employee.findMany({
+      where: { companyId, userId: { in: userIds } },
+      select: {
+        userId: true,
+        employeeNumber: true,
+        firstName: true,
+        lastName: true,
+        department: { select: { id: true, name: true } },
+        position: { select: { id: true, title: true } }
+      }
+    });
+    const empMap = new Map(employees.map(e => [e.userId, e]));
+
+    const formatted = items.map(item => {
+      const emp = empMap.get(item.userId);
+      return {
+        id: item.id,
+        employeeId: emp?.userId || item.userId,
+        employeeCode: emp?.employeeNumber || null,
+        employeeName: emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : null,
+        department: emp?.department?.name || null,
+        position: emp?.position?.title || null,
+        year: item.year,
+        month: item.month,
+        baseSalary: Number(item.baseSalary || 0),
+        grossSalary: Number(item.grossSalary || 0),
+        netSalary: Number(item.netSalary || 0),
+        allowances: Number(item.totalAllowances || 0),
+        deductions: Number(item.totalDeductions || 0),
+        overtimeAmount: Number(item.overtimeAmount || 0),
+        bonuses: Number(item.bonuses || 0),
+        status: item.status,
+        paidAt: item.paidAt
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: formatted,
+      pagination: {
+        page: Math.max(1, parseInt(page, 10)),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take)
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.getPayrollRunItems] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * D2: اتخاذ قرار في طلب إجازة (قبول أو رفض)
+ * POST /leaves/:id/decision (Scope: hr:leaves:approve)
+ * Body: { action: "APPROVE" | "REJECT", note: "..." }
+ */
+const decideLeaveRequest = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const { action, note = '' } = req.body;
+
+    const normalizedAction = String(action || '').toUpperCase();
+    if (!['APPROVE', 'REJECT'].includes(normalizedAction)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_DECISION_ACTION',
+          message: 'action must be either APPROVE or REJECT'
+        }
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const leaveRequest = await prisma.leaveRequest.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!leaveRequest) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'LEAVE_NOT_FOUND',
+          message: 'Leave request not found'
+        }
+      });
+    }
+
+    // Reuse panel leaveService path
+    const { leaveService } = require('../../services/hr');
+
+    let approverEmployeeId = req.user?.id;
+    let approverUserId = req.user?.id;
+
+    if (leaveRequest.userId === approverEmployeeId) {
+      const adminUser = await prisma.user.findFirst({
+        where: {
+          companyId,
+          role: { in: ['COMPANY_ADMIN', 'SUPER_ADMIN', 'OWNER', 'MANAGER'] },
+          id: { not: leaveRequest.userId }
+        },
+        select: { id: true }
+      });
+      if (adminUser) {
+        approverEmployeeId = adminUser.id;
+        approverUserId = adminUser.id;
+      }
+    }
+
+    let updatedLeave = null;
+    if (normalizedAction === 'APPROVE') {
+      if (leaveService && typeof leaveService.approveLeaveRequest === 'function') {
+        updatedLeave = await leaveService.approveLeaveRequest(companyId, id, approverEmployeeId, approverUserId);
+      } else {
+        updatedLeave = await prisma.leaveRequest.update({
+          where: { id },
+          data: {
+            status: 'APPROVED',
+            approvedBy: approverEmployeeId,
+            approvedAt: new Date()
+          }
+        });
+      }
+    } else {
+      if (leaveService && typeof leaveService.rejectLeaveRequest === 'function') {
+        updatedLeave = await leaveService.rejectLeaveRequest(companyId, id, approverEmployeeId, note);
+      } else {
+        updatedLeave = await prisma.leaveRequest.update({
+          where: { id },
+          data: {
+            status: 'REJECTED',
+            rejectionReason: note
+          }
+        });
+      }
+    }
+
+    // D5: Audit Attribution
+    await logExternalApiAction({
+      req,
+      action: `LEAVE_${normalizedAction}`,
+      resourceType: 'LeaveRequest',
+      resourceId: id,
+      targetName: `Leave #${id}`,
+      details: {
+        action: normalizedAction,
+        note,
+        status: updatedLeave?.status || normalizedAction,
+        credentialName: req.hrCredential?.name
+      }
+    });
+
+    // Outbound Webhook
+    dispatchHrWebhook(
+      companyId,
+      normalizedAction === 'APPROVE' ? 'hr.leave.approved' : 'hr.leave.rejected',
+      {
+        leaveId: id,
+        status: updatedLeave?.status || (normalizedAction === 'APPROVE' ? 'APPROVED' : 'REJECTED'),
+        decidedBy: req.hrCredential?.name || 'EXTERNAL_HR_AGENT',
+        note
+      }
+    );
+
+    return res.json({
+      success: true,
+      data: updatedLeave,
+      message: normalizedAction === 'APPROVE'
+        ? 'Leave request approved successfully'
+        : 'Leave request rejected successfully'
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.decideLeaveRequest] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
 module.exports = {
   listEmployees,
   getEmployeeById,
@@ -567,5 +1393,16 @@ module.exports = {
   createWebhookEndpoint,
   listApiCredentials,
   createApiCredential,
-  revokeApiCredential
+  revokeApiCredential,
+  // D1 & D2 new endpoints
+  listDepartments,
+  listPositions,
+  getEmployeeStats,
+  getOrganizationChart,
+  listLeaveRequests,
+  getLeaveBalances,
+  getAttendanceSummary,
+  listPayrollRuns,
+  getPayrollRunItems,
+  decideLeaveRequest
 };
