@@ -54,7 +54,7 @@ export const TaskReportExceptions: React.FC<TaskReportExceptionsProps> = ({
         {overdueTasks.slice(0, 2).map((t) => (
           <div key={`overdue-${t.id}`} style={{ ...styles.itemCard, borderColor: 'rgba(239, 68, 68, 0.3)' }}>
             <div style={styles.badgeOverdue}>
-              <AlertTriangle size={11} color="#ef4444" />
+              <AlertTriangle size={11} color="var(--accent-red)" />
               <span>متأخرة عن الموعد</span>
             </div>
             <div style={styles.itemTitle} title={t.title}>
@@ -65,7 +65,7 @@ export const TaskReportExceptions: React.FC<TaskReportExceptionsProps> = ({
               <span style={styles.projectText}>• {t.projectName}</span>
               {t.dueDate && (
                 <span style={styles.timeTag}>
-                  الاستحقاق: {new Date(t.dueDate).toLocaleDateString('ar-EG')}
+                  الاستحقاق: {new Date(t.dueDate).toLocaleDateString('ar-EG-u-nu-latn')}
                 </span>
               )}
             </div>
@@ -95,7 +95,7 @@ export const TaskReportExceptions: React.FC<TaskReportExceptionsProps> = ({
         {reviewBlockedTasks.slice(0, 2).map((t) => (
           <div key={`review-${t.id}`} style={{ ...styles.itemCard, borderColor: 'rgba(234, 179, 8, 0.3)' }}>
             <div style={styles.badgeReview}>
-              <PauseCircle size={11} color="#eab308" />
+              <PauseCircle size={11} color="var(--accent-yellow)" />
               <span>معلقة في الاعتماد</span>
             </div>
             <div style={styles.itemTitle} title={t.title}>
@@ -136,11 +136,11 @@ const styles: Record<string, React.CSSProperties> = {
   headerTitle: {
     fontSize: 12,
     fontWeight: 700,
-    color: '#f8fafc',
+    color: 'var(--text-primary)',
   },
   headerSubtitle: {
     fontSize: 10.5,
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
   },
   itemsGrid: {
     display: 'grid',
@@ -148,7 +148,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
   },
   itemCard: {
-    background: '#121214',
+    background: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 6,
     padding: '7px 10px',
@@ -162,7 +162,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
     fontSize: 10,
     fontWeight: 600,
-    color: '#ef4444',
+    color: 'var(--accent-red)',
   },
   badgeLeak: {
     display: 'inline-flex',
@@ -179,12 +179,12 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
     fontSize: 10,
     fontWeight: 600,
-    color: '#eab308',
+    color: 'var(--accent-yellow)',
   },
   itemTitle: {
     fontSize: 11.5,
     fontWeight: 600,
-    color: '#f1f5f9',
+    color: 'var(--text-primary)',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -194,7 +194,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 6,
     fontSize: 10,
-    color: '#64748b',
+    color: 'var(--text-muted)',
     flexWrap: 'wrap',
   },
   assigneeText: {
@@ -202,10 +202,10 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
   },
   projectText: {
-    color: '#64748b',
+    color: 'var(--text-muted)',
   },
   timeTag: {
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
     fontVariantNumeric: 'tabular-nums',
   },
 };

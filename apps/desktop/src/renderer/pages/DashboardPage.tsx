@@ -116,7 +116,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
       try {
         const audit = await window.electronAPI.getAttendanceAudit();
         if (audit?.clockInTime) {
-          const timeStr = new Date(audit.clockInTime).toLocaleTimeString('ar-EG', {
+          const timeStr = new Date(audit.clockInTime).toLocaleTimeString('ar-EG-u-nu-latn', {
             hour: '2-digit',
             minute: '2-digit',
           });
@@ -244,7 +244,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
       const hours = Math.round((data.elapsedSec / 3600) * 10) / 10;
       setInactivityNotice({
         elapsedHours: hours,
-        returnTime: new Date(data.returnTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+        returnTime: new Date(data.returnTime).toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' }),
       });
       refreshState();
     });
@@ -312,7 +312,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {clockInDisplay && (
               <div style={styles.clockInBadge} title="تسجيل حضور اليوم موثق في السحابة">
-                <Clock size={12} color="#22c55e" />
+                <Clock size={12} color="var(--accent-green)" />
                 <span>حضور اليوم: {clockInDisplay}</span>
               </div>
             )}
@@ -338,7 +338,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
             ) : trackerState?.shiftEnded ? (
               <div style={styles.breakStatusGroup}>
                 <div style={styles.shiftEndedActiveChip} title="تم إنهاء وردية عمل اليوم وتسجيل الانصراف بنجاح">
-                  <CheckCircle2 size={13} color="#22c55e" />
+                  <CheckCircle2 size={13} color="var(--accent-green)" />
                   <span>انتهت وردية اليوم</span>
                 </div>
                 <button
@@ -360,14 +360,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
                   onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                   onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                 >
-                  <Play size={13} fill="#22c55e" color="#22c55e" />
+                  <Play size={13} fill="var(--accent-green)" color="var(--accent-green)" />
                   <span>بدء وردية جديدة</span>
                 </button>
               </div>
             ) : isPaused ? (
               <div style={styles.breakStatusGroup}>
                 <div style={styles.breakActiveChip} title={`السبب الموثق: ${trackerState?.breakReason || 'استراحة رسمية'}`}>
-                  <Coffee size={13} color="#eab308" />
+                  <Coffee size={13} color="var(--accent-yellow)" />
                   <span>استراحة: {trackerState?.breakReason || 'استراحة رسمية'}</span>
                 </div>
                 <button
@@ -378,7 +378,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
                   onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                   onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                 >
-                  <Play size={13} fill="#22c55e" color="#22c55e" />
+                  <Play size={13} fill="var(--accent-green)" color="var(--accent-green)" />
                   <span>استئناف العمل</span>
                 </button>
               </div>
@@ -396,7 +396,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
                   onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                   onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                 >
-                  <Coffee size={13} color="#a1a1aa" />
+                  <Coffee size={13} color="var(--text-muted)" />
                   <span>استراحة</span>
                 </button>
                 <button
@@ -407,7 +407,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
                   onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
                   onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                 >
-                  <LogOut size={13} color="#ef4444" />
+                  <LogOut size={13} color="var(--accent-red)" />
                   <span>قفل الشيفت</span>
                 </button>
               </div>
@@ -419,7 +419,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
         {inactivityNotice && (
           <div style={styles.inactivityBanner}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Clock size={15} color="#38bdf8" />
+              <Clock size={15} color="var(--accent-blue)" />
               <span>
                 مرحباً بعودتك! لاحظنا ابتعادك عن الجهاز لمدة {inactivityNotice.elapsedHours} ساعة. تم تدوير وحفظ إحصائيات الأمس بدقة وفصل عداد اليوم الجديد.
               </span>
@@ -456,13 +456,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {updateBanner.stage === 'downloaded' ? (
-                <CheckCircle2 size={15} color="#22c55e" />
+                <CheckCircle2 size={15} color="var(--accent-green)" />
               ) : (
-                <Sparkles size={15} color="#38bdf8" />
+                <Sparkles size={15} color="var(--accent-blue)" />
               )}
               <span
                 style={{
-                  color: updateBanner.stage === 'downloaded' ? '#22c55e' : '#38bdf8',
+                  color: updateBanner.stage === 'downloaded' ? 'var(--accent-green)' : 'var(--accent-blue)',
                   fontWeight: 600,
                 }}
               >
@@ -478,7 +478,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ user, onLogout }) 
                 onClick={() => window.electronAPI.quitAndInstallUpdate()}
                 style={{
                   background: 'var(--accent-green)',
-                  color: '#09090b',
+                  color: 'var(--text-inverse)',
                   border: 'none',
                   borderRadius: 6,
                   padding: '4px 12px',
@@ -642,12 +642,12 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    background: 'rgba(34, 197, 94, 0.12)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
+    background: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
     borderRadius: 20,
     padding: '4px 10px',
     fontSize: 11,
-    color: '#22c55e',
+    color: 'var(--accent-green)',
     fontWeight: 600,
   },
   startBreakBtn: {
@@ -675,7 +675,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '5px 10px',
     fontSize: 11,
     fontWeight: 600,
-    color: '#ef4444',
+    color: 'var(--accent-red)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     transition: 'all 140ms ease-out',
@@ -730,12 +730,12 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     fontSize: 12,
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     animation: 'fadeIn 200ms ease-out',
   },
   dismissNoticeBtn: {
-    background: '#38bdf8',
-    color: '#09090b',
+    background: 'var(--accent-blue)',
+    color: 'var(--text-inverse)',
     border: 'none',
     borderRadius: 6,
     padding: '3px 10px',

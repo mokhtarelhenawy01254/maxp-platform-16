@@ -147,7 +147,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   const getDueLabel = () => {
     if (!dueTime) return 'بدون موعد استحقاق';
     const d = new Date(task.dueDate);
-    const dateStr = d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' });
+    const dateStr = d.toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' });
     if (isOverdue) {
       const hours = Math.floor(Math.abs(diffMs!) / 3600000);
       const days = Math.floor(hours / 24);
@@ -234,14 +234,14 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   };
 
   const visibilityReason = isAssignedToMe
-    ? { label: 'مكلف بالتنفيذ', bg: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8' }
+    ? { label: 'مكلف بالتنفيذ', bg: 'rgba(56, 189, 248, 0.12)', color: 'var(--accent-blue)' }
     : isCreatedByMe
     ? { label: 'أنشأتها', bg: 'rgba(168, 85, 247, 0.12)', color: '#c084fc' }
     : isWatching
-    ? { label: 'متابع', bg: 'rgba(34, 197, 94, 0.12)', color: '#22c55e' }
+    ? { label: 'متابع', bg: 'var(--accent-green-bg)', color: 'var(--accent-green)' }
     : isAdmin
     ? { label: 'إشراف إداري', bg: 'rgba(245, 158, 11, 0.12)', color: '#fbbf24' }
-    : { label: 'فريق', bg: 'rgba(255, 255, 255, 0.05)', color: '#a1a1aa' };
+    : { label: 'فريق', bg: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-muted)' };
 
   return (
     <>
@@ -275,7 +275,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                   onClick={handleCopyDeepLink}
                   style={{
                     ...drawerStyles.iconToolBtn,
-                    color: copiedLink ? 'var(--accent-green, #10b981)' : 'var(--text-dim)',
+                    color: copiedLink ? 'var(--accent-green, var(--accent-green))' : 'var(--text-dim)',
                   }}
                   title={copiedLink ? 'تم نسخ رابط المهمة!' : 'نسخ رابط مباشر للمهمة'}
                 >
@@ -325,7 +325,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                   style={{
                     ...drawerStyles.statusPill,
                     backgroundColor: isCompleted
-                      ? 'rgba(34, 197, 94, 0.12)'
+                      ? 'var(--accent-green-bg)'
                       : isInReview
                       ? 'rgba(168, 85, 247, 0.12)'
                       : isReturnedForRevision
@@ -334,14 +334,14 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                       ? 'rgba(56, 189, 248, 0.15)'
                       : 'rgba(255, 255, 255, 0.05)',
                     color: isCompleted
-                      ? '#22c55e'
+                      ? 'var(--accent-green)'
                       : isInReview
                       ? '#c084fc'
                       : isReturnedForRevision
-                      ? '#f59e0b'
+                      ? 'var(--accent-yellow)'
                       : isRunning
-                      ? '#38bdf8'
-                      : '#a1a1aa',
+                      ? 'var(--accent-blue)'
+                      : 'var(--text-muted)',
                   }}
                 >
                   {isCompleted
@@ -396,8 +396,8 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
             {isReturnedForRevision && !isCompleted && (
               <div style={drawerStyles.revisionBanner}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <RotateCcw size={13} color="#f59e0b" />
-                  <span style={{ fontWeight: 600, color: '#f59e0b', fontSize: 11.5 }}>
+                  <RotateCcw size={13} color="var(--accent-yellow)" />
+                  <span style={{ fontWeight: 600, color: 'var(--accent-yellow)', fontSize: 11.5 }}>
                     تمت إعادة المهمة من المشرف لإجراء تعديلات
                   </span>
                 </div>
@@ -573,7 +573,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                           </div>
                         ) : (
                           <div style={drawerStyles.docThumb}>
-                            <Paperclip size={14} color="#94a3b8" />
+                            <Paperclip size={14} color="var(--text-muted)" />
                           </div>
                         )}
                         <div style={drawerStyles.attInfo}>
@@ -624,10 +624,10 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                 <div style={drawerStyles.metaItem}>
                   <span style={drawerStyles.metaLabel}>تاريخ الاستحقاق</span>
                   <div style={drawerStyles.metaValue}>
-                    <Calendar size={13} color={isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#71717a'} />
+                    <Calendar size={13} color={isOverdue ? 'var(--accent-red)' : isDueSoon ? 'var(--accent-yellow)' : 'var(--text-muted)'} />
                     <span
                       style={{
-                        color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : 'inherit',
+                        color: isOverdue ? 'var(--accent-red)' : isDueSoon ? 'var(--accent-yellow)' : 'inherit',
                         fontWeight: isOverdue ? 600 : 400,
                       }}
                     >
@@ -640,7 +640,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                 <div style={drawerStyles.metaItem}>
                   <span style={drawerStyles.metaLabel}>الوقت المقدر</span>
                   <div style={drawerStyles.metaValue}>
-                    <Clock size={13} color="#71717a" />
+                    <Clock size={13} color="var(--text-muted)" />
                     <span>
                       {task.estimatedMinutes
                         ? `${task.estimatedMinutes} دقيقة`
@@ -739,7 +739,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
   },
   stickyHeader: {
     padding: '12px 16px 10px',
-    backgroundColor: '#121214',
+    backgroundColor: 'var(--bg-surface)',
     borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
     display: 'flex',
     flexDirection: 'column',
@@ -757,7 +757,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     gap: 5,
     background: 'rgba(255, 255, 255, 0.05)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    color: 'var(--text-secondary, #a1a1aa)',
+    color: 'var(--text-secondary, var(--text-muted))',
     padding: '4px 8px',
     borderRadius: 5,
     cursor: 'pointer',
@@ -769,7 +769,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     gap: 4,
     background: 'none',
     border: '1px solid transparent',
-    color: 'var(--text-dim, #71717a)',
+    color: 'var(--text-dim, var(--text-muted))',
     padding: '3px 6px',
     borderRadius: 4,
     cursor: 'pointer',
@@ -809,7 +809,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     padding: '2px 7px',
     borderRadius: 4,
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    color: '#ef4444',
+    color: 'var(--accent-red)',
   },
   highPill: {
     fontSize: 10.5,
@@ -824,7 +824,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     padding: '2px 6px',
     borderRadius: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
   },
   visibilityPill: {
     fontSize: 10,
@@ -836,9 +836,9 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    backgroundColor: 'var(--accent-green-bg)',
     border: '1px solid rgba(34, 197, 94, 0.3)',
-    color: '#22c55e',
+    color: 'var(--accent-green)',
     fontSize: 11,
     fontWeight: 700,
     padding: '2px 8px',
@@ -848,8 +848,8 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    backgroundColor: '#22c55e',
-    boxShadow: '0 0 5px #22c55e',
+    backgroundColor: 'var(--accent-green)',
+    boxShadow: '0 0 5px var(--accent-green)',
   },
   revisionBanner: {
     backgroundColor: 'rgba(245, 158, 11, 0.08)',
@@ -878,7 +878,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#0284c7',
+    backgroundColor: 'var(--accent-blue)',
     border: 'none',
     borderRadius: 5,
     color: '#ffffff',
@@ -942,7 +942,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(245, 158, 11, 0.1)',
     border: '1px solid rgba(245, 158, 11, 0.35)',
     borderRadius: 5,
-    color: '#f59e0b',
+    color: 'var(--accent-yellow)',
     fontSize: 12,
     fontWeight: 600,
     cursor: 'pointer',
@@ -969,10 +969,10 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
+    backgroundColor: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
     borderRadius: 5,
-    color: '#22c55e',
+    color: 'var(--accent-green)',
     fontSize: 11,
     fontWeight: 600,
     cursor: 'pointer',
@@ -994,7 +994,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
     border: '1px solid rgba(255, 255, 255, 0.06)',
     borderRadius: 5,
-    color: '#71717a',
+    color: 'var(--text-muted)',
     fontSize: 11.5,
     textAlign: 'center',
   },
@@ -1007,7 +1007,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     gap: 14,
   },
   cardSection: {
-    backgroundColor: '#121214',
+    backgroundColor: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.07)',
     borderRadius: 8,
     padding: '12px 14px',
@@ -1024,7 +1024,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
   sectionTitle: {
     fontSize: 11,
     fontWeight: 600,
-    color: 'var(--text-dim, #71717a)',
+    color: 'var(--text-dim, var(--text-muted))',
     textTransform: 'uppercase',
     letterSpacing: '0.4px',
   },
@@ -1091,7 +1091,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
   },
   thumbSize: {
     fontSize: 9.5,
-    color: 'var(--text-muted, #71717a)',
+    color: 'var(--text-muted, var(--text-muted))',
     fontVariantNumeric: 'tabular-nums',
   },
   metaGrid: {
@@ -1106,7 +1106,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
   },
   metaLabel: {
     fontSize: 10.5,
-    color: 'var(--text-dim, #71717a)',
+    color: 'var(--text-dim, var(--text-muted))',
   },
   metaValue: {
     display: 'flex',
@@ -1132,7 +1132,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#121214',
+    backgroundColor: 'var(--bg-surface)',
     borderTop: '1px solid rgba(255, 255, 255, 0.1)',
     padding: '10px 14px',
     zIndex: 10,
@@ -1161,7 +1161,7 @@ const drawerStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#0284c7',
+    backgroundColor: 'var(--accent-blue)',
     border: 'none',
     borderRadius: 6,
     color: '#ffffff',

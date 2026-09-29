@@ -184,14 +184,14 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   const targetPerson = viewType === 'my-tasks' ? (creatorName || 'مخصص') : assigneeName;
 
   const visibilityReason = isAssignedToMe
-    ? { label: 'مكلف بالتنفيذ', bg: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8' }
+    ? { label: 'مكلف بالتنفيذ', bg: 'rgba(56, 189, 248, 0.12)', color: 'var(--accent-blue)' }
     : isCreatedByMe
     ? { label: 'أنشأتها', bg: 'rgba(168, 85, 247, 0.12)', color: '#c084fc' }
     : isWatching
-    ? { label: 'متابع', bg: 'rgba(34, 197, 94, 0.12)', color: '#22c55e' }
+    ? { label: 'متابع', bg: 'var(--accent-green-bg)', color: 'var(--accent-green)' }
     : isAdmin
     ? { label: 'إشراف إداري', bg: 'rgba(245, 158, 11, 0.12)', color: '#fbbf24' }
-    : { label: 'فريق', bg: 'rgba(255, 255, 255, 0.05)', color: '#a1a1aa' };
+    : { label: 'فريق', bg: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-muted)' };
 
   return (
     <div
@@ -200,13 +200,13 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         flexDirection: 'column',
         borderBottom: '1px solid var(--border-subtle)',
         borderRight: isSelected
-          ? '3px solid #38bdf8'
+          ? '3px solid var(--accent-blue)'
           : isReturnedForRevision && !isCompleted
-          ? '3px solid #f59e0b'
+          ? '3px solid var(--accent-yellow)'
           : isUrgent && !isCompleted
-          ? '3px solid #ef4444'
+          ? '3px solid var(--accent-red)'
           : isRunning
-          ? '3px solid #0284c7'
+          ? '3px solid var(--accent-blue)'
           : isCompleted
           ? '3px solid var(--border-subtle)'
           : '3px solid transparent',
@@ -240,15 +240,15 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             ) : isInReview ? (
               <ClipboardCheck size={15} color="#c084fc" />
             ) : isReturnedForRevision ? (
-              <RotateCcw size={13} color="#f59e0b" />
+              <RotateCcw size={13} color="var(--accent-yellow)" />
             ) : isRunning ? (
               <span style={rowStyles.pulseDotGreen} />
             ) : isInProgress ? (
-              <Play size={12} fill="#38bdf8" color="#38bdf8" />
+              <Play size={12} fill="var(--accent-blue)" color="var(--accent-blue)" />
             ) : isOnHold ? (
-              <Pause size={12} color="#f59e0b" />
+              <Pause size={12} color="var(--accent-yellow)" />
             ) : (
-              <Clock size={13} color="#71717a" />
+              <Clock size={13} color="var(--text-muted)" />
             )}
           </div>
 
@@ -270,7 +270,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           {/* Distinct Revision Badge for Returned Tasks */}
           {isReturnedForRevision && !isCompleted && (
             <span style={rowStyles.revisionBadge} title="مهمة مُعادة للتعديل — انقر لعرض ملاحظات المشرف">
-              <RotateCcw size={9} color="#f59e0b" />
+              <RotateCcw size={9} color="var(--accent-yellow)" />
               <span>مُعادة للتعديل</span>
             </span>
           )}
@@ -307,7 +307,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               }}
               title={`${attachments.length} مرفقات — انقر للمعاينة باللوحة`}
             >
-              <Paperclip size={10} color="#94a3b8" />
+              <Paperclip size={10} color="var(--text-muted)" />
               <span style={{ fontVariantNumeric: 'tabular-nums' }}>{attachments.length}</span>
             </span>
           )}
@@ -318,7 +318,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           style={rowStyles.personCol}
           title={`${viewType === 'my-tasks' ? `أنشأها: ${creatorName}` : `المكلف: ${assigneeName}`} (صلاحية الظهور: ${visibilityReason.label})`}
         >
-          <User size={11} color="#71717a" />
+          <User size={11} color="var(--text-muted)" />
           <span style={rowStyles.personName}>{targetPerson}</span>
           <span
             style={{
@@ -353,10 +353,10 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             <span
               style={{
                 ...rowStyles.monoText,
-                color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : 'var(--text-dim)',
+                color: isOverdue ? 'var(--accent-red)' : isDueSoon ? 'var(--accent-yellow)' : 'var(--text-dim)',
                 fontWeight: isOverdue ? 600 : 400,
               }}
-              title={new Date(task.dueDate).toLocaleString('ar-EG')}
+              title={new Date(task.dueDate).toLocaleString('ar-EG-u-nu-latn')}
             >
               <span dir="ltr">
                 {new Date(task.dueDate).getDate()}/{new Date(task.dueDate).getMonth() + 1}
@@ -383,7 +383,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 onClick={handleCopyDescription}
                 style={{
                   ...rowStyles.iconBtn,
-                  color: isCopied ? 'var(--accent-green)' : '#94a3b8',
+                  color: isCopied ? 'var(--accent-green)' : 'var(--text-muted)',
                 }}
                 title={isCopied ? 'تم نسخ الوصف بنجاح!' : 'نسخ وصف المهمة بنقرة واحدة'}
               >
@@ -397,7 +397,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                   style={rowStyles.iconBtn}
                   title="تعديل المهمة"
                 >
-                  <Edit3 size={11} color="#94a3b8" />
+                  <Edit3 size={11} color="var(--text-muted)" />
                 </button>
               )}
 
@@ -407,11 +407,11 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                   onClick={handleToggleWatch}
                   style={{
                     ...rowStyles.iconBtn,
-                    color: isWatching ? '#38bdf8' : '#71717a',
+                    color: isWatching ? 'var(--accent-blue)' : 'var(--text-muted)',
                   }}
                   title={isWatching ? 'إلغاء المتابعة' : 'متابعة المهمة'}
                 >
-                  {isWatching ? <Eye size={11} color="#38bdf8" /> : <EyeOff size={11} color="#71717a" />}
+                  {isWatching ? <Eye size={11} color="var(--accent-blue)" /> : <EyeOff size={11} color="var(--text-muted)" />}
                 </button>
               )}
 
@@ -421,7 +421,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                 style={rowStyles.iconBtn}
                 title="فتح على الويب"
               >
-                <ExternalLink size={11} color="#94a3b8" />
+                <ExternalLink size={11} color="var(--text-muted)" />
               </button>
             </div>
           )}
@@ -463,8 +463,8 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
                   style={rowStyles.returnBtn}
                   title="طلب تعديلات وإرجاع للموظف مع كتابة الملاحظات"
                 >
-                  <RotateCcw size={10} color="#f59e0b" />
-                  <span style={{ fontSize: 10, marginRight: 2, color: '#f59e0b', fontWeight: 600 }}>إرجاع</span>
+                  <RotateCcw size={10} color="var(--accent-yellow)" />
+                  <span style={{ fontSize: 10, marginRight: 2, color: 'var(--accent-yellow)', fontWeight: 600 }}>إرجاع</span>
                 </button>
               </div>
             ) : (
@@ -514,7 +514,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
               style={rowStyles.assignedChip}
               title={`المهمة مسندة للزميل: ${assigneeName} (لا تملك صلاحية تشغيلها)`}
             >
-              <Lock size={10} color="#71717a" />
+              <Lock size={10} color="var(--text-muted)" />
               <span>مكلفة لزميل</span>
             </span>
           )}
@@ -529,7 +529,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             style={{
               ...rowStyles.expandBtn,
               backgroundColor: isSelected ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
-              color: isSelected ? '#38bdf8' : 'var(--text-dim)',
+              color: isSelected ? 'var(--accent-blue)' : 'var(--text-dim)',
             }}
             title="عرض التفاصيل في اللوحة الجانبية"
           >
@@ -588,8 +588,8 @@ const rowStyles: Record<string, React.CSSProperties> = {
     width: 8,
     height: 8,
     borderRadius: '50%',
-    backgroundColor: '#22c55e',
-    boxShadow: '0 0 6px #22c55e',
+    backgroundColor: 'var(--accent-green)',
+    boxShadow: '0 0 6px var(--accent-green)',
     display: 'inline-block',
   },
   taskTitle: {
@@ -606,7 +606,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     gap: 3,
     backgroundColor: 'rgba(245, 158, 11, 0.12)',
     border: '1px solid rgba(245, 158, 11, 0.35)',
-    color: '#f59e0b',
+    color: 'var(--accent-yellow)',
     fontSize: 10,
     fontWeight: 700,
     padding: '1px 6px',
@@ -619,7 +619,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     gap: 3,
     backgroundColor: 'rgba(239, 68, 68, 0.12)',
     border: '1px solid rgba(239, 68, 68, 0.3)',
-    color: '#ef4444',
+    color: 'var(--accent-red)',
     fontSize: 10,
     fontWeight: 700,
     padding: '1px 6px',
@@ -632,7 +632,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     gap: 4,
     backgroundColor: 'rgba(245, 158, 11, 0.1)',
     border: '1px solid rgba(245, 158, 11, 0.25)',
-    color: '#f59e0b',
+    color: 'var(--accent-yellow)',
     fontSize: 10,
     fontWeight: 600,
     padding: '1px 5px',
@@ -643,7 +643,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     width: 5,
     height: 5,
     borderRadius: '50%',
-    backgroundColor: '#f59e0b',
+    backgroundColor: 'var(--accent-yellow)',
     display: 'inline-block',
   },
   blockBadge: {
@@ -652,7 +652,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     gap: 3,
     backgroundColor: 'rgba(245, 158, 11, 0.08)',
     border: '1px solid rgba(245, 158, 11, 0.25)',
-    color: '#f59e0b',
+    color: 'var(--accent-yellow)',
     fontSize: 10,
     padding: '1px 5px',
     borderRadius: 4,
@@ -762,7 +762,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     padding: '3px 8px',
     fontSize: 11,
     fontWeight: 600,
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     outline: 'none',
@@ -775,7 +775,7 @@ const rowStyles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    backgroundColor: 'var(--accent-green-bg)',
     border: '1px solid rgba(34, 197, 94, 0.3)',
     borderRadius: 5,
     padding: '3px 8px',
@@ -811,13 +811,13 @@ const rowStyles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    backgroundColor: 'var(--accent-green-bg)',
     border: '1px solid rgba(34, 197, 94, 0.3)',
     borderRadius: 5,
     padding: '3px 8px',
     fontSize: 11,
     fontWeight: 600,
-    color: '#22c55e',
+    color: 'var(--accent-green)',
     cursor: 'pointer',
     fontFamily: 'inherit',
     outline: 'none',

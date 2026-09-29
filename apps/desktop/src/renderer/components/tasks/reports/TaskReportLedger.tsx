@@ -39,13 +39,13 @@ export const TaskReportLedger: React.FC<TaskReportLedgerProps> = ({
   const getPriorityStyle = (priority: string) => {
     switch (priority) {
       case 'URGENT':
-        return { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)', label: 'حرجة' };
+        return { color: 'var(--accent-red)', bg: 'rgba(239, 68, 68, 0.12)', label: 'حرجة' };
       case 'HIGH':
         return { color: '#f97316', bg: 'rgba(249, 115, 22, 0.12)', label: 'مرتفعة' };
       case 'MEDIUM':
-        return { color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.12)', label: 'متوسطة' };
+        return { color: 'var(--accent-blue)', bg: 'rgba(56, 189, 248, 0.12)', label: 'متوسطة' };
       default:
-        return { color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.12)', label: 'عادية' };
+        return { color: 'var(--text-muted)', bg: 'rgba(148, 163, 184, 0.12)', label: 'عادية' };
     }
   };
 
@@ -53,27 +53,27 @@ export const TaskReportLedger: React.FC<TaskReportLedgerProps> = ({
     switch (status) {
       case 'COMPLETED':
         return (
-          <span style={{ ...styles.statusBadge, color: '#22c55e', background: 'rgba(34, 197, 94, 0.12)' }}>
+          <span style={{ ...styles.statusBadge, color: 'var(--accent-green)', background: 'var(--accent-green-bg)' }}>
             <CheckCircle2 size={11} style={{ marginRight: 3 }} />
             مكتملة
           </span>
         );
       case 'IN_PROGRESS':
         return (
-          <span style={{ ...styles.statusBadge, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)' }}>
+          <span style={{ ...styles.statusBadge, color: 'var(--accent-blue)', background: 'rgba(56, 189, 248, 0.12)' }}>
             <Play size={10} style={{ marginRight: 3 }} />
             جارية
           </span>
         );
       case 'IN_REVIEW':
         return (
-          <span style={{ ...styles.statusBadge, color: '#eab308', background: 'rgba(234, 179, 8, 0.12)' }}>
+          <span style={{ ...styles.statusBadge, color: 'var(--accent-yellow)', background: 'rgba(234, 179, 8, 0.12)' }}>
             مراجعة
           </span>
         );
       default:
         return (
-          <span style={{ ...styles.statusBadge, color: '#94a3b8', background: 'rgba(148, 163, 184, 0.12)' }}>
+          <span style={{ ...styles.statusBadge, color: 'var(--text-muted)', background: 'rgba(148, 163, 184, 0.12)' }}>
             معلقة
           </span>
         );
@@ -150,7 +150,7 @@ export const TaskReportLedger: React.FC<TaskReportLedgerProps> = ({
                         style={{
                           ...styles.tabularDuration,
                           fontWeight: 700,
-                          color: isOver ? '#f97316' : '#f8fafc',
+                          color: isOver ? '#f97316' : 'var(--text-primary)',
                         }}
                       >
                         {formatMinToH(t.actualTrackedMinutes)}
@@ -174,7 +174,7 @@ export const TaskReportLedger: React.FC<TaskReportLedgerProps> = ({
 
 const styles: Record<string, React.CSSProperties> = {
   tableWrapper: {
-    background: '#121214',
+    background: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 8,
     overflowX: 'auto',
@@ -191,7 +191,7 @@ const styles: Record<string, React.CSSProperties> = {
   th: {
     padding: '8px 12px',
     textAlign: 'right',
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
     fontWeight: 600,
     fontSize: 11,
     whiteSpace: 'nowrap',
@@ -207,7 +207,7 @@ const styles: Record<string, React.CSSProperties> = {
   emptyTd: {
     padding: 24,
     textAlign: 'center',
-    color: '#64748b',
+    color: 'var(--text-muted)',
     fontSize: 12,
   },
   taskTitleRow: {
@@ -216,7 +216,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 6,
   },
   taskTitle: {
-    color: '#f8fafc',
+    color: 'var(--text-primary)',
     fontWeight: 500,
     whiteSpace: 'nowrap',
     overflow: 'hidden',
@@ -224,7 +224,7 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 280,
   },
   projectName: {
-    color: '#64748b',
+    color: 'var(--text-muted)',
     fontSize: 10,
     display: 'block',
     marginTop: 1,
@@ -234,7 +234,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '1px 5px',
     borderRadius: 3,
     background: 'rgba(239, 68, 68, 0.15)',
-    color: '#ef4444',
+    color: 'var(--accent-red)',
     fontWeight: 600,
   },
   assigneeText: {
@@ -259,7 +259,7 @@ const styles: Record<string, React.CSSProperties> = {
   tabularDuration: {
     fontVariantNumeric: 'tabular-nums',
     fontFeatureSettings: '"tnum"',
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
     fontSize: 11.5,
   },
   actualTimeCell: {

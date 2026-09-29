@@ -244,7 +244,7 @@ export const GoalsTab: React.FC = () => {
 
         <div style={styles.kpiCard}>
           <div style={styles.kpiLabel}>متوسط نسبة الإنجاز العام</div>
-          <div style={{ ...styles.kpiValue, color: avgProgress >= 70 ? 'var(--accent-green)' : '#38bdf8' }}>
+          <div style={{ ...styles.kpiValue, color: avgProgress >= 70 ? 'var(--accent-green)' : 'var(--accent-blue)' }}>
             {avgProgress}%
           </div>
           <div style={styles.kpiMeta}>
@@ -430,7 +430,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     overflowY: 'auto',
-    backgroundColor: 'var(--bg-canvas)',
+    backgroundColor: 'var(--bg-page)',
     padding: '12px 16px',
     gap: 12,
   },

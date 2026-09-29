@@ -262,7 +262,7 @@ function renderInlineStyles(text: string): React.ReactNode {
             borderRadius: 3,
             fontSize: '0.9em',
             fontFamily: 'monospace',
-            color: '#38bdf8',
+            color: 'var(--accent-blue)',
           }}
         >
           {token.slice(1, -1)}
@@ -334,7 +334,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
     background: 'none',
     border: 'none',
-    color: 'var(--accent-blue, #38bdf8)',
+    color: 'var(--accent-blue, var(--accent-blue))',
     fontSize: 11,
     fontWeight: 600,
     cursor: 'pointer',

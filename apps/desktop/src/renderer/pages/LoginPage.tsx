@@ -46,7 +46,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             onDoubleClick={() => setShowAdvanced((prev) => !prev)}
             title="MaxP Workspace"
           >
-            <ShieldCheck size={28} color="#22c55e" />
+            <ShieldCheck size={28} color="var(--accent-green)" />
           </div>
           <h1 style={styles.title}>MaxP Workspace</h1>
           <p style={styles.subtitle}>منظومة إنجاز الأعمال والإنتاجية المؤسسية</p>

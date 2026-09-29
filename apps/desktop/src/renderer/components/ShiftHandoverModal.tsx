@@ -47,7 +47,7 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({
         <div style={styles.header}>
           <div style={styles.headerLeft}>
             <div style={styles.iconWrap}>
-              <Clock size={18} color="#10b981" />
+              <Clock size={18} color="var(--accent-green)" />
             </div>
             <div>
               <h2 style={styles.title}>قفل الشيفت وتسليم الوردية</h2>
@@ -77,7 +77,7 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({
             <div style={styles.statBox}>
               <span style={styles.statLabel}>وقت تسجيل الحضور</span>
               <span style={styles.statValue}>
-                {new Date(clockInTime).toLocaleTimeString('ar-EG', {
+                {new Date(clockInTime).toLocaleTimeString('ar-EG-u-nu-latn', {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}
@@ -88,7 +88,7 @@ export const ShiftHandoverModal: React.FC<ShiftHandoverModalProps> = ({
 
         {error && (
           <div style={styles.errorBox}>
-            <AlertTriangle size={14} color="#ef4444" />
+            <AlertTriangle size={14} color="var(--accent-red)" />
             <span>{error}</span>
           </div>
         )}
@@ -167,7 +167,7 @@ const styles: Record<string, React.CSSProperties> = {
   card: {
     width: '100%',
     maxWidth: 520,
-    backgroundColor: '#121214',
+    backgroundColor: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
@@ -205,13 +205,13 @@ const styles: Record<string, React.CSSProperties> = {
   subtitle: {
     margin: 0,
     fontSize: 12,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     marginTop: 2,
   },
   closeBtn: {
     background: 'none',
     border: 'none',
-    color: '#71717a',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
     padding: 6,
     borderRadius: 6,
@@ -231,7 +231,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   statLabel: {
     fontSize: 11,
-    color: '#71717a',
+    color: 'var(--text-muted)',
   },
   statValue: {
     fontSize: 13,
@@ -248,7 +248,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(239, 68, 68, 0.12)',
     border: '1px solid rgba(239, 68, 68, 0.25)',
     borderRadius: 6,
-    color: '#ef4444',
+    color: 'var(--accent-red)',
     fontSize: 12,
   },
   form: {
@@ -273,10 +273,10 @@ const styles: Record<string, React.CSSProperties> = {
   textarea: {
     width: '100%',
     padding: '10px 12px',
-    backgroundColor: '#09090b',
+    backgroundColor: 'var(--bg-page)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: 8,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     fontSize: 13,
     outline: 'none',
     boxSizing: 'border-box',
@@ -285,17 +285,17 @@ const styles: Record<string, React.CSSProperties> = {
   input: {
     width: '100%',
     padding: '9px 12px',
-    backgroundColor: '#09090b',
+    backgroundColor: 'var(--bg-page)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: 8,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     fontSize: 13,
     outline: 'none',
     boxSizing: 'border-box',
   },
   warningNote: {
     fontSize: 11,
-    color: '#f59e0b',
+    color: 'var(--accent-yellow)',
     lineHeight: 1.5,
     backgroundColor: 'rgba(245, 158, 11, 0.08)',
     padding: '8px 12px',
@@ -314,7 +314,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'transparent',
     border: '1px solid rgba(255, 255, 255, 0.12)',
     borderRadius: 6,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     fontSize: 13,
     cursor: 'pointer',
     fontWeight: 500,
@@ -324,7 +324,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 6,
     padding: '8px 18px',
-    backgroundColor: '#10b981',
+    backgroundColor: 'var(--accent-green)',
     border: 'none',
     borderRadius: 6,
     color: '#ffffff',

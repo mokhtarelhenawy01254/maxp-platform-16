@@ -159,7 +159,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         <div style={styles.header}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={styles.headerIcon}>
-              <ShieldCheck size={16} color="#22c55e" />
+              <ShieldCheck size={16} color="var(--accent-green)" />
             </div>
             <h2 style={styles.title}>إعدادات التطبيق</h2>
           </div>
@@ -172,7 +172,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           <div style={styles.sectionCard}>
             <div style={styles.sectionHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Bell size={13} color="#22c55e" />
+                <Bell size={13} color="var(--accent-green)" />
                 <span style={styles.sectionTitle}>التفضيلات الشخصية</span>
               </div>
               <span style={styles.savedBadge}>تُطبّق فوراً على هذا الجهاز</span>
@@ -182,7 +182,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               {/* Auto Launch — wired to app.setLoginItemSettings */}
               <label style={styles.toggleRow}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Monitor size={14} color="#a1a1aa" />
+                  <Monitor size={14} color="var(--text-muted)" />
                   <div>
                     <div style={styles.toggleTitle}>التشغيل التلقائي مع بدء ويندوز</div>
                     <div style={styles.toggleDesc}>
@@ -201,7 +201,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               {/* Sound Alerts — wired to notification sound */}
               <label style={styles.toggleRow}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Volume2 size={14} color="#a1a1aa" />
+                  <Volume2 size={14} color="var(--text-muted)" />
                   <div>
                     <div style={styles.toggleTitle}>تنبيه صوتي للاستراحة</div>
                     <div style={styles.toggleDesc}>
@@ -220,7 +220,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               {/* Idle Reminder — wired to extended-idle notification */}
               <label style={styles.toggleRow}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Bell size={14} color="#a1a1aa" />
+                  <Bell size={14} color="var(--text-muted)" />
                   <div>
                     <div style={styles.toggleTitle}>تذكير عند الخمول الممتد</div>
                     <div style={styles.toggleDesc}>
@@ -242,7 +242,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           <div style={styles.sectionCard}>
             <div style={styles.sectionHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {mode === 'dark' ? <Moon size={13} color="var(--accent-blue)" /> : <Sun size={13} color="#eab308" />}
+                {mode === 'dark' ? <Moon size={13} color="var(--accent-blue)" /> : <Sun size={13} color="var(--accent-yellow)" />}
                 <span style={styles.sectionTitle}>المظهر</span>
               </div>
             </div>
@@ -282,7 +282,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   gap: 6,
                   padding: '8px 12px',
                   borderRadius: 6,
-                  border: mode === 'light' ? '1px solid #eab308' : '1px solid var(--border-default)',
+                  border: mode === 'light' ? '1px solid var(--accent-yellow)' : '1px solid var(--border-default)',
                   background: mode === 'light' ? 'rgba(234,179,8,0.08)' : 'var(--bg-input)',
                   color: mode === 'light' ? '#ca8a04' : 'var(--text-dim)',
                   fontSize: 12,
@@ -391,7 +391,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
           <div style={styles.sectionCard}>
             <div style={styles.sectionHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Sparkles size={13} color="#38bdf8" />
+                <Sparkles size={13} color="var(--accent-blue)" />
                 <span style={styles.sectionTitle}>تحديثات البرنامج</span>
               </div>
               <span style={styles.versionBadge}>v{currentVersion}</span>
@@ -449,14 +449,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                   }}
                 >
                   {updateResult.status === 'checking' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#38bdf8' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-blue)' }}>
                       <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />
                       <span style={{ fontSize: 11, fontWeight: 500 }}>جاري الاتصال بخادم التحديثات…</span>
                     </div>
                   )}
 
                   {updateResult.status === 'update-available' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#38bdf8' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-blue)' }}>
                       <Download size={13} />
                       <span style={{ fontSize: 11, fontWeight: 500 }}>{updateResult.message}</span>
                     </div>
@@ -472,7 +472,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         onClick={() => window.electronAPI.quitAndInstallUpdate()}
                         style={{
                           background: 'var(--accent-green)',
-                          color: '#09090b',
+                          color: 'var(--text-inverse)',
                           border: 'none',
                           borderRadius: 6,
                           padding: '6px 12px',
@@ -525,8 +525,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             onClick={handleSave}
             style={{
               ...styles.saveBtn,
-              background: saved ? '#22c55e' : '#fafafa',
-              color: saved ? '#ffffff' : '#09090b',
+              background: saved ? 'var(--accent-green)' : 'var(--btn-primary-bg)',
+              color: saved ? '#ffffff' : 'var(--btn-primary-text)',
             }}
             onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
             onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
@@ -659,7 +659,7 @@ const styles: Record<string, React.CSSProperties> = {
   checkbox: {
     width: 16,
     height: 16,
-    accentColor: '#22c55e',
+    accentColor: 'var(--accent-green)',
     cursor: 'pointer',
     flexShrink: 0,
     marginRight: 8,
@@ -668,7 +668,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 10,
     fontWeight: 700,
     fontFamily: 'monospace',
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     background: 'rgba(56, 189, 248, 0.08)',
     border: '1px solid rgba(56, 189, 248, 0.25)',
     borderRadius: 6,

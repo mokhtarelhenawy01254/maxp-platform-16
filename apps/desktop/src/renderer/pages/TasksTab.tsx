@@ -869,7 +869,7 @@ export const TasksTab: React.FC = () => {
             }}
             title="رادار إنجاز المهام، الساعات الموثقة، وملخص اليومية بنقرة واحدة"
           >
-            <ClipboardCheck size={12} color={activeView === 'analytics' ? '#38bdf8' : undefined} />
+            <ClipboardCheck size={12} color={activeView === 'analytics' ? 'var(--accent-blue)' : undefined} />
             <span>نبض الإنجاز والتقرير</span>
           </button>
         </div>
@@ -912,7 +912,7 @@ export const TasksTab: React.FC = () => {
           {isOfflineMode && (
         <div style={styles.offlineBanner}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertCircle size={15} color="#f59e0b" />
+            <AlertCircle size={15} color="var(--accent-yellow)" />
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
               أنت تعمل في وضع عدم الاتصال (Offline Cache) — يتم عرض البيانات المحفوظة محلياً، وستتم المزامنة تلقائياً فور عودة الشبكة.
             </span>
@@ -974,10 +974,14 @@ export const TasksTab: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
                     <div style={styles.runnerIconBox}>
                       <span style={styles.runnerPulseDot} />
-                      <Play size={12} fill="#22c55e" color="#22c55e" />
+                      <Play size={12} fill="var(--accent-green)" color="var(--accent-green)" />
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={styles.runnerTaskTitle} title={taskTitle}>
+                      <div
+                        style={{ ...styles.runnerTaskTitle, cursor: taskObj ? 'pointer' : 'default' }}
+                        title={taskObj ? 'فتح تفاصيل المهمة: ' + taskTitle : taskTitle}
+                        onClick={() => taskObj && handleSelectTask(taskObj)}
+                      >
                         {taskTitle}
                       </div>
                     </div>
@@ -985,7 +989,7 @@ export const TasksTab: React.FC = () => {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                     <div style={styles.runnerTimerBadge} title="عداد وقت العمل الفعلي">
-                      <Clock size={12} color="#38bdf8" />
+                      <Clock size={12} color="var(--accent-blue)" />
                       <span style={styles.runnerTimerText}>{formatRunnerTimer(taskSeconds)}</span>
                     </div>
 
@@ -1092,16 +1096,16 @@ export const TasksTab: React.FC = () => {
                 <div
                   style={{
                     ...styles.teamStopwatchBadge,
-                    borderColor: timer.elapsedSeconds > 4 * 3600 ? 'rgba(245, 158, 11, 0.45)' : (styles.teamStopwatchBadge.borderColor || 'rgba(34, 197, 94, 0.25)'),
+                    borderColor: timer.elapsedSeconds > 4 * 3600 ? 'rgba(245, 158, 11, 0.45)' : (styles.teamStopwatchBadge.borderColor || 'var(--accent-green-border)'),
                     backgroundColor: timer.elapsedSeconds > 4 * 3600 ? 'rgba(245, 158, 11, 0.12)' : (styles.teamStopwatchBadge.backgroundColor || 'rgba(34, 197, 94, 0.08)'),
                   }}
                   title={timer.elapsedSeconds > 4 * 3600 ? 'تنبيه: وقت العمل تجاوز 4 ساعات متواصلة (احتمال خمول أو نسيان)' : 'عداد وقت العمل الفعلي على المهمة'}
                 >
-                  <Clock size={11} color={timer.elapsedSeconds > 4 * 3600 ? '#f59e0b' : '#22c55e'} />
+                  <Clock size={11} color={timer.elapsedSeconds > 4 * 3600 ? 'var(--accent-yellow)' : 'var(--accent-green)'} />
                   <span
                     style={{
                       ...styles.teamStopwatchText,
-                      color: timer.elapsedSeconds > 4 * 3600 ? '#f59e0b' : styles.teamStopwatchText.color,
+                      color: timer.elapsedSeconds > 4 * 3600 ? 'var(--accent-yellow)' : styles.teamStopwatchText.color,
                     }}
                   >
                     {formatRunnerTimer(timer.elapsedSeconds)} {timer.elapsedSeconds > 4 * 3600 ? '⚠️' : ''}
@@ -1126,7 +1130,7 @@ export const TasksTab: React.FC = () => {
                       marginRight: 6,
                       background: 'rgba(239, 68, 68, 0.08)',
                       border: '1px solid rgba(239, 68, 68, 0.25)',
-                      color: '#ef4444',
+                      color: 'var(--accent-red)',
                       borderRadius: 4,
                       fontSize: 10,
                       fontWeight: 600,
@@ -1200,7 +1204,7 @@ export const TasksTab: React.FC = () => {
                   ...styles.statusTabBtn,
                   backgroundColor: statusFilter === 'REVISION' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.05)',
                   borderColor: statusFilter === 'REVISION' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(245, 158, 11, 0.2)',
-                  color: statusFilter === 'REVISION' ? '#f59e0b' : '#d97706',
+                  color: statusFilter === 'REVISION' ? 'var(--accent-yellow)' : '#d97706',
                   fontWeight: statusFilter === 'REVISION' ? 700 : 600,
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -1208,13 +1212,13 @@ export const TasksTab: React.FC = () => {
                 }}
                 title="المهام التي تمت إعادتها للتعديل وتتطلب إجراءً"
               >
-                <RotateCcw size={11} color="#f59e0b" />
+                <RotateCcw size={11} color="var(--accent-yellow)" />
                 <span>مُعادة للتعديل</span>
                 <span
                   style={{
                     ...styles.countBadge,
                     backgroundColor: 'rgba(245, 158, 11, 0.2)',
-                    color: '#f59e0b',
+                    color: 'var(--accent-yellow)',
                     fontWeight: 700,
                   }}
                 >
@@ -1472,7 +1476,7 @@ export const TasksTab: React.FC = () => {
             <div style={{ padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)', minHeight: 240, position: 'relative' }}>
               {isLightboxLoading && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: 32 }}>
-                  <RefreshCw size={24} color="#38bdf8" style={{ animation: 'spin 1s linear infinite' }} />
+                  <RefreshCw size={24} color="var(--accent-blue)" style={{ animation: 'spin 1s linear infinite' }} />
                   <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>جاري تحميل ومعالجة المرفق...</span>
                 </div>
               )}
@@ -1601,7 +1605,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 6,
     backgroundColor: 'rgba(245, 158, 11, 0.2)',
     border: '1px solid rgba(245, 158, 11, 0.4)',
-    color: '#f59e0b',
+    color: 'var(--accent-yellow)',
     borderRadius: 6,
     padding: '4px 10px',
     fontSize: 11,
@@ -1650,7 +1654,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 5,
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     border: '1px solid rgba(239, 68, 68, 0.3)',
-    color: '#ef4444',
+    color: 'var(--accent-red)',
     borderRadius: 6,
     padding: '4px 10px',
     fontSize: 11,
@@ -1710,7 +1714,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   runnerSubtitle: {
     fontSize: 10,
-    color: '#0284c7',
+    color: 'var(--accent-blue)',
     fontWeight: 500,
     letterSpacing: '-0.01em',
   },
@@ -1821,8 +1825,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
+    backgroundColor: 'var(--accent-blue)',
+    color: 'var(--text-inverse)',
     border: 'none',
     borderRadius: 6,
     padding: '6px 12px',
@@ -1982,7 +1986,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 6,
     border: '1px solid var(--border-subtle)',
     background: 'var(--bg-elevated)',
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     cursor: 'pointer',
     fontSize: 11,
     fontWeight: 600,
@@ -1993,7 +1997,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 8,
     border: '1px solid var(--border-subtle)',
     background: 'var(--bg-elevated)',
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     cursor: 'pointer',
     fontSize: 12,
     fontWeight: 600,
@@ -2024,7 +2028,7 @@ const styles: Record<string, React.CSSProperties> = {
   footerUrgentBadge: {
     fontSize: 10,
     fontWeight: 700,
-    color: '#ef4444',
+    color: 'var(--accent-red)',
     backgroundColor: 'rgba(239, 68, 68, 0.12)',
     border: '1px solid rgba(239, 68, 68, 0.25)',
     padding: '1px 6px',
@@ -2134,8 +2138,8 @@ const styles: Record<string, React.CSSProperties> = {
     width: 7,
     height: 7,
     borderRadius: '50%',
-    backgroundColor: '#22c55e',
-    boxShadow: '0 0 6px #22c55e',
+    backgroundColor: 'var(--accent-green)',
+    boxShadow: '0 0 6px var(--accent-green)',
   },
   teamCockpitTitle: {
     fontSize: 12,
@@ -2145,9 +2149,9 @@ const styles: Record<string, React.CSSProperties> = {
   teamCockpitCountBadge: {
     fontSize: 10,
     fontWeight: 600,
-    color: '#22c55e',
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
+    color: 'var(--accent-green)',
+    backgroundColor: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
     padding: '1px 6px',
     borderRadius: 9999,
     fontVariantNumeric: 'tabular-nums',
@@ -2184,7 +2188,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: 24,
     borderRadius: '50%',
     backgroundColor: 'var(--accent-primary-subtle, rgba(56, 189, 248, 0.12))',
-    color: 'var(--accent-primary, #38bdf8)',
+    color: 'var(--accent-primary, var(--accent-blue))',
     fontSize: 11,
     fontWeight: 700,
     display: 'flex',
@@ -2244,7 +2248,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     fontFamily: 'monospace',
     fontWeight: 700,
-    color: '#22c55e',
+    color: 'var(--accent-green)',
     fontVariantNumeric: 'tabular-nums',
   },
 };

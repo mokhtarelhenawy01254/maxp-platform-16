@@ -80,7 +80,7 @@ export const ReturnForRevisionModal: React.FC<ReturnForRevisionModalProps> = ({
         <div style={styles.header}>
           <div style={styles.headerTitleGroup}>
             <div style={styles.iconWrap}>
-              <RotateCcw size={15} color="#f59e0b" />
+              <RotateCcw size={15} color="var(--accent-yellow)" />
             </div>
             <div>
               <div style={styles.title}>طلب تعديلات وإعادة المهمة</div>
@@ -90,7 +90,7 @@ export const ReturnForRevisionModal: React.FC<ReturnForRevisionModalProps> = ({
             </div>
           </div>
           <button type="button" onClick={onClose} style={styles.closeBtn} title="إلغاء">
-            <X size={14} color="#94a3b8" />
+            <X size={14} color="var(--text-muted)" />
           </button>
         </div>
 
@@ -101,7 +101,7 @@ export const ReturnForRevisionModal: React.FC<ReturnForRevisionModalProps> = ({
             <span style={styles.contextTitle} title={task.title}>{task.title}</span>
           </div>
           <div style={styles.assigneeRow}>
-            <User size={11} color="#38bdf8" />
+            <User size={11} color="var(--accent-blue)" />
             <span style={styles.assigneeLabel}>المكلف بالتنفيذ:</span>
             <span style={styles.assigneeName}>{assigneeName}</span>
           </div>
@@ -201,7 +201,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 16,
   },
   modal: {
-    backgroundColor: '#121214',
+    backgroundColor: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: 10,
     width: '100%',
@@ -240,11 +240,11 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     fontSize: 13.5,
     fontWeight: 700,
-    color: '#f8fafc',
+    color: 'var(--text-primary)',
   },
   subtitle: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
     marginTop: 2,
   },
   closeBtn: {
@@ -274,7 +274,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   contextLabel: {
     fontSize: 10.5,
-    color: '#64748b',
+    color: 'var(--text-muted)',
     fontWeight: 600,
   },
   contextTitle: {
@@ -293,11 +293,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   assigneeLabel: {
     fontSize: 10.5,
-    color: '#64748b',
+    color: 'var(--text-muted)',
   },
   assigneeName: {
     fontSize: 11,
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     fontWeight: 600,
   },
   errorAlert: {
@@ -329,7 +329,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
   },
   requiredStar: {
-    color: '#ef4444',
+    color: 'var(--accent-red)',
   },
   presetsRow: {
     display: 'flex',
@@ -340,7 +340,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   presetsHint: {
     fontSize: 10,
-    color: '#64748b',
+    color: 'var(--text-muted)',
     marginLeft: 2,
   },
   presetChip: {
@@ -355,12 +355,12 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'all 120ms ease-out',
   },
   textarea: {
-    backgroundColor: '#09090b',
+    backgroundColor: 'var(--bg-page)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: 6,
     padding: '10px 12px',
     fontSize: 12,
-    color: '#f8fafc',
+    color: 'var(--text-primary)',
     outline: 'none',
     fontFamily: 'inherit',
     resize: 'vertical',
@@ -381,7 +381,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
     fontSize: 12,
     fontWeight: 500,
     cursor: 'pointer',
@@ -390,7 +390,7 @@ const styles: Record<string, React.CSSProperties> = {
   submitBtn: {
     padding: '7px 16px',
     borderRadius: 6,
-    backgroundColor: '#f59e0b',
+    backgroundColor: 'var(--accent-yellow)',
     border: 'none',
     color: '#000000',
     fontSize: 12,

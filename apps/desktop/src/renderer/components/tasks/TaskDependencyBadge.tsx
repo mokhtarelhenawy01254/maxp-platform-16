@@ -100,8 +100,8 @@ export const TaskDependencyBadge: React.FC<TaskDependencyBadgeProps> = ({ taskId
 
   const getStatusIcon = (status: string) => {
     const s = String(status || '').toUpperCase();
-    if (s === 'COMPLETED') return <CheckCircle2 size={12} color="#22c55e" />;
-    return <Clock size={12} color="#f59e0b" />;
+    if (s === 'COMPLETED') return <CheckCircle2 size={12} color="var(--accent-green)" />;
+    return <Clock size={12} color="var(--accent-yellow)" />;
   };
 
   const getStatusText = (status: string) => {
@@ -201,7 +201,7 @@ export const TaskDependencyBadge: React.FC<TaskDependencyBadgeProps> = ({ taskId
       {blockedBy.length > 0 && (
         <div style={styles.listGroup}>
           <div style={styles.groupTitle}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }} />
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-red)' }} />
             محظورة بـ (يجب إكمالها أولاً)
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

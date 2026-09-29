@@ -461,7 +461,7 @@ const styles: Record<string, React.CSSProperties> = {
   errorBanner: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     border: '1px solid rgba(239, 68, 68, 0.3)',
-    color: '#ef4444',
+    color: 'var(--accent-red)',
     padding: '6px 10px',
     borderRadius: 6,
     fontSize: 11,

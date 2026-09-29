@@ -89,7 +89,7 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
       {/* Header Bar */}
       <div style={styles.headerBar}>
         <div style={styles.headerTitleGroup}>
-          <Users size={13} color="#38bdf8" />
+          <Users size={13} color="var(--accent-blue)" />
           <span style={styles.headerTitle}>توزيع أعباء الفريق والإنتاجية</span>
           <span style={styles.activePill}>
             {activeMembers.length} نشط من {members.length}
@@ -98,7 +98,7 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
 
         <div style={styles.headerRightGroup}>
           <div style={styles.searchBox}>
-            <Search size={11} color="#64748b" style={styles.searchIcon} />
+            <Search size={11} color="var(--text-muted)" style={styles.searchIcon} />
             <input
               type="text"
               placeholder="بحث بالاسم أو القسم…"
@@ -108,7 +108,7 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
             />
             {search && (
               <button onClick={() => setSearch('')} style={styles.clearSearchBtn}>
-                <X size={10} color="#94a3b8" />
+                <X size={10} color="var(--text-muted)" />
               </button>
             )}
           </div>
@@ -123,25 +123,25 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
               <th style={{ ...styles.th, width: '32%' }}>الموظف</th>
               <th style={{ ...styles.th, width: '14%', textAlign: 'center' }}>
                 <span style={styles.thBadge}>
-                  <Play size={9} color="#38bdf8" />
+                  <Play size={9} color="var(--accent-blue)" />
                   <span>قيد التنفيذ</span>
                 </span>
               </th>
               <th style={{ ...styles.th, width: '14%', textAlign: 'center' }}>
                 <span style={styles.thBadge}>
-                  <Clock size={9} color="#eab308" />
+                  <Clock size={9} color="var(--accent-yellow)" />
                   <span>انتظار الاعتماد</span>
                 </span>
               </th>
               <th style={{ ...styles.th, width: '14%', textAlign: 'center' }}>
                 <span style={styles.thBadge}>
-                  <CheckCircle2 size={9} color="#22c55e" />
+                  <CheckCircle2 size={9} color="var(--accent-green)" />
                   <span>أُنجزت اليوم</span>
                 </span>
               </th>
               <th style={{ ...styles.th, width: '12%', textAlign: 'center' }}>
                 <span style={styles.thBadge}>
-                  <Layers size={9} color="#94a3b8" />
+                  <Layers size={9} color="var(--text-muted)" />
                   <span>معلقة</span>
                 </span>
               </th>
@@ -167,7 +167,7 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
                     style={{
                       ...styles.tr,
                       background: isSelected ? 'rgba(56, 189, 248, 0.08)' : 'transparent',
-                      borderRight: isSelected ? '2px solid #38bdf8' : '2px solid transparent',
+                      borderRight: isSelected ? '2px solid var(--accent-blue)' : '2px solid transparent',
                     }}
                     title="انقر لتصفية جدول المهام بالأسفل لهذا الموظف"
                   >
@@ -235,7 +235,7 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
                       <span
                         style={{
                           ...styles.timeNum,
-                          color: m.totalTrackedMinutes > 0 ? '#f8fafc' : 'rgba(255,255,255,0.2)',
+                          color: m.totalTrackedMinutes > 0 ? 'var(--text-primary)' : 'var(--text-dimmer)',
                         }}
                       >
                         {formatMinToH(m.totalTrackedMinutes)}
@@ -254,19 +254,19 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
                 <span style={styles.tfLabel}>إجمالي الفريق الموثق</span>
               </td>
               <td style={{ ...styles.td, textAlign: 'center' }}>
-                <span style={{ ...styles.tfNum, color: '#38bdf8' }}>{totals.inProgress}</span>
+                <span style={{ ...styles.tfNum, color: 'var(--accent-blue)' }}>{totals.inProgress}</span>
               </td>
               <td style={{ ...styles.td, textAlign: 'center' }}>
-                <span style={{ ...styles.tfNum, color: '#eab308' }}>{totals.inReview}</span>
+                <span style={{ ...styles.tfNum, color: 'var(--accent-yellow)' }}>{totals.inReview}</span>
               </td>
               <td style={{ ...styles.td, textAlign: 'center' }}>
-                <span style={{ ...styles.tfNum, color: '#22c55e' }}>{totals.completedToday}</span>
+                <span style={{ ...styles.tfNum, color: 'var(--accent-green)' }}>{totals.completedToday}</span>
               </td>
               <td style={{ ...styles.td, textAlign: 'center' }}>
-                <span style={{ ...styles.tfNum, color: '#94a3b8' }}>{totals.pending}</span>
+                <span style={{ ...styles.tfNum, color: 'var(--text-muted)' }}>{totals.pending}</span>
               </td>
               <td style={{ ...styles.td, textAlign: 'left' }}>
-                <span style={{ ...styles.tfNum, color: '#f8fafc' }}>
+                <span style={{ ...styles.tfNum, color: 'var(--text-primary)' }}>
                   {formatMinToH(totals.minutes)}
                 </span>
               </td>
@@ -286,7 +286,7 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
             <span style={styles.standbyLabel}>
               أعضاء بدون مهام نشطة اليوم ({standbyMembers.length})
             </span>
-            {showStandby ? <ChevronUp size={12} color="#64748b" /> : <ChevronDown size={12} color="#64748b" />}
+            {showStandby ? <ChevronUp size={12} color="var(--text-muted)" /> : <ChevronDown size={12} color="var(--text-muted)" />}
           </div>
 
           {showStandby && (
@@ -297,9 +297,9 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
                   onClick={() => onSelectMember(selectedUserId === m.userId ? 'all' : m.userId)}
                   style={{
                     ...styles.standbyChip,
-                    borderColor: selectedUserId === m.userId ? '#38bdf8' : 'rgba(255,255,255,0.06)',
+                    borderColor: selectedUserId === m.userId ? 'var(--accent-blue)' : 'rgba(255,255,255,0.06)',
                     background: selectedUserId === m.userId ? 'rgba(56, 189, 248, 0.1)' : 'rgba(255,255,255,0.02)',
-                    color: selectedUserId === m.userId ? '#38bdf8' : '#94a3b8',
+                    color: selectedUserId === m.userId ? 'var(--accent-blue)' : 'var(--text-muted)',
                   }}
                   title="تصفية لعرض سجل هذا الموظف"
                 >
@@ -317,7 +317,7 @@ export const TaskReportTeamMatrix: React.FC<TaskReportTeamMatrixProps> = ({
 
 const styles: Record<string, React.CSSProperties> = {
   chassis: {
-    background: '#121214',
+    background: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 8,
     marginBottom: 10,
@@ -339,7 +339,7 @@ const styles: Record<string, React.CSSProperties> = {
   headerTitle: {
     fontSize: 11.5,
     fontWeight: 700,
-    color: '#f8fafc',
+    color: 'var(--text-primary)',
   },
   activePill: {
     fontSize: 10,
@@ -347,7 +347,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '1px 6px',
     borderRadius: 10,
     background: 'rgba(56, 189, 248, 0.12)',
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     fontVariantNumeric: 'tabular-nums',
   },
   headerRightGroup: {
@@ -365,10 +365,10 @@ const styles: Record<string, React.CSSProperties> = {
     pointerEvents: 'none',
   },
   searchInput: {
-    background: '#18181b',
+    background: 'var(--bg-elevated)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 5,
-    color: '#f8fafc',
+    color: 'var(--text-primary)',
     fontSize: 10.5,
     padding: '3px 22px 3px 6px',
     fontFamily: 'inherit',
@@ -399,7 +399,7 @@ const styles: Record<string, React.CSSProperties> = {
   th: {
     padding: '6px 10px',
     textAlign: 'right',
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
     fontWeight: 600,
     fontSize: 10.5,
     whiteSpace: 'nowrap',
@@ -421,7 +421,7 @@ const styles: Record<string, React.CSSProperties> = {
   emptyTd: {
     padding: 16,
     textAlign: 'center',
-    color: '#64748b',
+    color: 'var(--text-muted)',
     fontSize: 11,
   },
   memberBox: {
@@ -445,7 +445,7 @@ const styles: Record<string, React.CSSProperties> = {
   memberName: {
     fontSize: 11,
     fontWeight: 600,
-    color: '#f1f5f9',
+    color: 'var(--text-primary)',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -453,7 +453,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   memberDept: {
     fontSize: 9,
-    color: '#64748b',
+    color: 'var(--text-muted)',
   },
   chipInProgress: {
     display: 'inline-block',
@@ -461,7 +461,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     background: 'rgba(56, 189, 248, 0.12)',
     border: '1px solid rgba(56, 189, 248, 0.25)',
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     fontWeight: 700,
     fontSize: 10.5,
     fontVariantNumeric: 'tabular-nums',
@@ -472,7 +472,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     background: 'rgba(234, 179, 8, 0.12)',
     border: '1px solid rgba(234, 179, 8, 0.25)',
-    color: '#eab308',
+    color: 'var(--accent-yellow)',
     fontWeight: 700,
     fontSize: 10.5,
     fontVariantNumeric: 'tabular-nums',
@@ -481,9 +481,9 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-block',
     padding: '1px 7px',
     borderRadius: 4,
-    background: 'rgba(34, 197, 94, 0.12)',
-    border: '1px solid rgba(34, 197, 94, 0.25)',
-    color: '#22c55e',
+    background: 'var(--accent-green-bg)',
+    border: '1px solid var(--accent-green-border)',
+    color: 'var(--accent-green)',
     fontWeight: 700,
     fontSize: 10.5,
     fontVariantNumeric: 'tabular-nums',
@@ -492,7 +492,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-block',
     padding: '1px 6px',
     borderRadius: 4,
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
     fontSize: 10.5,
     fontVariantNumeric: 'tabular-nums',
   },
@@ -512,7 +512,7 @@ const styles: Record<string, React.CSSProperties> = {
   tfLabel: {
     fontSize: 10.5,
     fontWeight: 700,
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
   },
   tfNum: {
     fontSize: 11,
@@ -533,7 +533,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   standbyLabel: {
     fontSize: 10,
-    color: '#64748b',
+    color: 'var(--text-muted)',
     fontWeight: 500,
   },
   standbyChipsWrap: {
@@ -560,6 +560,6 @@ const styles: Record<string, React.CSSProperties> = {
     width: 4,
     height: 4,
     borderRadius: '50%',
-    background: '#64748b',
+    background: 'var(--text-muted)',
   },
 };

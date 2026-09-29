@@ -47,7 +47,7 @@ export class RootErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#09090b', color: '#fafafa', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)', overflow: 'hidden' }}>
           <TitleBar />
           <div style={{
             flex: 1,
@@ -70,13 +70,13 @@ export class RootErrorBoundary extends Component<Props, State> {
               justifyContent: 'center',
               marginBottom: 16,
             }}>
-              <AlertTriangle size={26} color="#ef4444" />
+              <AlertTriangle size={26} color="var(--accent-red)" />
             </div>
 
             <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, color: '#f4f4f5' }}>
               تعذر تحميل واجهة التطبيق مؤقتاً
             </h2>
-            <p style={{ fontSize: 12.5, color: '#a1a1aa', maxWidth: 440, lineHeight: 1.6, marginBottom: 16 }}>
+            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', maxWidth: 440, lineHeight: 1.6, marginBottom: 16 }}>
               حدث خطأ غير متوقع أثناء معالجة بيانات الشاشة. يمكنك إعادة التحميل أو إعادة ضبط الذاكرة المؤقتة لمواصلة العمل.
             </p>
 
@@ -110,7 +110,7 @@ export class RootErrorBoundary extends Component<Props, State> {
                   alignItems: 'center',
                   gap: 6,
                   padding: '7px 16px',
-                  backgroundColor: '#0284c7',
+                  backgroundColor: 'var(--accent-blue)',
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: 6,
@@ -144,7 +144,7 @@ export class RootErrorBoundary extends Component<Props, State> {
                   transition: 'all 120ms ease-out',
                 }}
               >
-                <Trash2 size={13} color="#f59e0b" />
+                <Trash2 size={13} color="var(--accent-yellow)" />
                 <span>إعادة ضبط الذاكرة المؤقتة</span>
               </button>
             </div>

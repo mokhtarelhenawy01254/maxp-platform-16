@@ -115,7 +115,7 @@ export const LiveTeamTimersTab: React.FC = () => {
       <div style={styles.headerStrip}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={styles.headerIconBox}>
-            <Activity size={16} color="#10b981" />
+            <Activity size={16} color="var(--accent-green)" />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -243,11 +243,11 @@ export const LiveTeamTimersTab: React.FC = () => {
                       }}
                       title={timer.elapsedSeconds > 4 * 3600 ? 'تنبيه: وقت العمل تجاوز 4 ساعات متواصلة (احتمال خمول أو نسيان)' : 'مؤقت مباشر'}
                     >
-                      <Clock size={11} color={timer.elapsedSeconds > 4 * 3600 ? '#f59e0b' : '#10b981'} />
+                      <Clock size={11} color={timer.elapsedSeconds > 4 * 3600 ? 'var(--accent-yellow)' : 'var(--accent-green)'} />
                       <span
                         style={{
                           ...styles.timerDigits,
-                          color: timer.elapsedSeconds > 4 * 3600 ? '#f59e0b' : styles.timerDigits.color,
+                          color: timer.elapsedSeconds > 4 * 3600 ? 'var(--accent-yellow)' : styles.timerDigits.color,
                         }}
                       >
                         {formatTimer(timer.elapsedSeconds)} {timer.elapsedSeconds > 4 * 3600 ? '⚠️' : ''}
@@ -264,7 +264,7 @@ export const LiveTeamTimersTab: React.FC = () => {
                         style={styles.copyBtn}
                         title="نسخ اسم المهمة"
                       >
-                        {copiedId === timer.taskId ? <Check size={11} color="#22c55e" /> : <Copy size={11} />}
+                        {copiedId === timer.taskId ? <Check size={11} color="var(--accent-green)" /> : <Copy size={11} />}
                       </button>
                     </div>
 
@@ -279,11 +279,11 @@ export const LiveTeamTimersTab: React.FC = () => {
                       <span
                         style={{
                           ...styles.priorityBadge,
-                          color: isUrgent ? '#ef4444' : isHigh ? '#f59e0b' : 'var(--text-muted)',
+                          color: isUrgent ? 'var(--accent-red)' : isHigh ? 'var(--accent-yellow)' : 'var(--text-muted)',
                           borderColor: isUrgent ? 'rgba(239,68,68,0.3)' : isHigh ? 'rgba(245,158,11,0.3)' : 'var(--border-subtle)',
                         }}
                       >
-                        {isUrgent && <Flame size={10} color="#ef4444" />}
+                        {isUrgent && <Flame size={10} color="var(--accent-red)" />}
                         <span>{timer.priority}</span>
                       </span>
 
@@ -305,7 +305,7 @@ export const LiveTeamTimersTab: React.FC = () => {
                           marginRight: 'auto',
                           background: 'rgba(239, 68, 68, 0.08)',
                           border: '1px solid rgba(239, 68, 68, 0.25)',
-                          color: '#ef4444',
+                          color: 'var(--accent-red)',
                           borderRadius: 4,
                           fontSize: 10,
                           fontWeight: 600,
@@ -375,15 +375,15 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid rgba(16,185,129,0.3)',
     fontSize: 10,
     fontWeight: 700,
-    color: '#10b981',
+    color: 'var(--accent-green)',
     fontVariantNumeric: 'tabular-nums',
   },
   pulseDot: {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    backgroundColor: '#10b981',
-    boxShadow: '0 0 8px #10b981',
+    backgroundColor: 'var(--accent-green)',
+    boxShadow: '0 0 8px var(--accent-green)',
   },
   refreshBtn: {
     display: 'flex',
@@ -508,7 +508,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     fontWeight: 700,
     fontVariantNumeric: 'tabular-nums',
-    color: '#10b981',
+    color: 'var(--accent-green)',
   },
   cardBody: {
     display: 'flex',
@@ -567,7 +567,7 @@ const styles: Record<string, React.CSSProperties> = {
   runningStatusChip: {
     fontSize: 9,
     fontWeight: 600,
-    color: '#10b981',
+    color: 'var(--accent-green)',
     backgroundColor: 'rgba(16,185,129,0.08)',
     padding: '2px 6px',
     borderRadius: 4,

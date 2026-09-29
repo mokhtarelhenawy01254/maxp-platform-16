@@ -39,12 +39,12 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
       >
         <div style={styles.cardHeader}>
           <span style={styles.cardLabel}>إجمالي المهام</span>
-          <Layers size={13} style={{ color: '#94a3b8' }} />
+          <Layers size={13} style={{ color: 'var(--text-muted)' }} />
         </div>
         <div style={styles.cardBody}>
           <span style={styles.primaryNum}>{kpis.totalTasks}</span>
           <span style={styles.secondaryBadge}>
-            <CheckCircle2 size={11} color="#22c55e" style={{ marginRight: 3 }} />
+            <CheckCircle2 size={11} color="var(--accent-green)" style={{ marginRight: 3 }} />
             {kpis.completionRate}% إنجاز
           </span>
         </div>
@@ -53,7 +53,7 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
             style={{
               ...styles.progressBarFill,
               width: `${Math.min(100, Math.max(0, kpis.completionRate))}%`,
-              background: '#22c55e',
+              background: 'var(--accent-green)',
             }}
           />
         </div>
@@ -63,11 +63,11 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
       <div style={styles.card} title="إجمالي الساعات المسجلة بالتايمر الفعلي">
         <div style={styles.cardHeader}>
           <span style={styles.cardLabel}>وقت التركيز المسجل</span>
-          <Clock size={13} style={{ color: '#38bdf8' }} />
+          <Clock size={13} style={{ color: 'var(--accent-blue)' }} />
         </div>
         <div style={styles.cardBody}>
           <span style={styles.primaryNum}>{formatHours(kpis.totalTrackedSeconds)}</span>
-          <span style={{ ...styles.secondaryBadge, color: '#38bdf8' }}>
+          <span style={{ ...styles.secondaryBadge, color: 'var(--accent-blue)' }}>
             <TrendingUp size={11} style={{ marginRight: 3 }} />
             {kpis.inProgressCount} جارية الآن
           </span>
@@ -77,7 +77,7 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
             style={{
               ...styles.progressBarFill,
               width: `${Math.min(100, kpis.focusAccuracyRate)}%`,
-              background: '#38bdf8',
+              background: 'var(--accent-blue)',
             }}
           />
         </div>
@@ -89,7 +89,7 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
           ...styles.card,
           cursor: 'pointer',
           borderColor: activeFilter === 'time_leaks' ? 'rgba(249, 115, 22, 0.5)' : 'rgba(255, 255, 255, 0.08)',
-          background: activeFilter === 'time_leaks' ? 'rgba(249, 115, 22, 0.06)' : '#121214',
+          background: activeFilter === 'time_leaks' ? 'rgba(249, 115, 22, 0.06)' : 'var(--bg-surface)',
         }}
         onClick={() => onFilterChange(activeFilter === 'time_leaks' ? 'all' : 'time_leaks')}
         role="button"
@@ -97,14 +97,14 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
       >
         <div style={styles.cardHeader}>
           <span style={styles.cardLabel}>فجوة الوقت (Time Leaks)</span>
-          <AlertTriangle size={13} style={{ color: kpis.timeLeakCount > 0 ? '#f97316' : '#64748b' }} />
+          <AlertTriangle size={13} style={{ color: kpis.timeLeakCount > 0 ? '#f97316' : 'var(--text-muted)' }} />
         </div>
         <div style={styles.cardBody}>
-          <span style={{ ...styles.primaryNum, color: kpis.timeLeakCount > 0 ? '#f97316' : '#f1f5f9' }}>
+          <span style={{ ...styles.primaryNum, color: kpis.timeLeakCount > 0 ? '#f97316' : 'var(--text-muted)' }}>
             {kpis.timeLeakCount}
           </span>
-          <span style={{ ...styles.secondaryBadge, color: '#f97316' }}>
-            تجاوزت التقدير
+          <span style={{ ...styles.secondaryBadge, color: kpis.timeLeakCount > 0 ? '#f97316' : 'var(--text-muted)' }}>
+            {kpis.timeLeakCount > 0 ? 'تجاوزت التقدير' : 'ضمن التقديرات'}
           </span>
         </div>
         <span style={styles.hintSubtext}>
@@ -118,7 +118,7 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
           ...styles.card,
           cursor: 'pointer',
           borderColor: activeFilter === 'review_blocked' ? 'rgba(234, 179, 8, 0.5)' : 'rgba(255, 255, 255, 0.08)',
-          background: activeFilter === 'review_blocked' ? 'rgba(234, 179, 8, 0.06)' : '#121214',
+          background: activeFilter === 'review_blocked' ? 'rgba(234, 179, 8, 0.06)' : 'var(--bg-surface)',
         }}
         onClick={() => onFilterChange(activeFilter === 'review_blocked' ? 'all' : 'review_blocked')}
         role="button"
@@ -126,13 +126,13 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
       >
         <div style={styles.cardHeader}>
           <span style={styles.cardLabel}>في انتظار الاعتماد</span>
-          <PauseCircle size={13} style={{ color: kpis.inReviewCount > 0 ? '#eab308' : '#64748b' }} />
+          <PauseCircle size={13} style={{ color: kpis.inReviewCount > 0 ? 'var(--accent-yellow)' : 'var(--text-muted)' }} />
         </div>
         <div style={styles.cardBody}>
-          <span style={{ ...styles.primaryNum, color: kpis.inReviewCount > 0 ? '#eab308' : '#f1f5f9' }}>
+          <span style={{ ...styles.primaryNum, color: kpis.inReviewCount > 0 ? 'var(--accent-yellow)' : 'var(--text-muted)' }}>
             {kpis.inReviewCount}
           </span>
-          <span style={{ ...styles.secondaryBadge, color: kpis.reviewBlockedCount > 0 ? '#f59e0b' : '#eab308' }}>
+          <span style={{ ...styles.secondaryBadge, color: kpis.reviewBlockedCount > 0 ? 'var(--accent-yellow)' : 'var(--text-muted)' }}>
             {kpis.reviewBlockedCount > 0 ? `${kpis.reviewBlockedCount} عالقة > 24h` : 'بانتظار المراجعة'}
           </span>
         </div>
@@ -147,7 +147,7 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
           ...styles.card,
           cursor: 'pointer',
           borderColor: activeFilter === 'overdue' ? 'rgba(239, 68, 68, 0.5)' : 'rgba(255, 255, 255, 0.08)',
-          background: activeFilter === 'overdue' ? 'rgba(239, 68, 68, 0.06)' : '#121214',
+          background: activeFilter === 'overdue' ? 'rgba(239, 68, 68, 0.06)' : 'var(--bg-surface)',
         }}
         onClick={() => onFilterChange(activeFilter === 'overdue' ? 'all' : 'overdue')}
         role="button"
@@ -155,14 +155,14 @@ export const TaskReportKpis: React.FC<TaskReportKpisProps> = ({
       >
         <div style={styles.cardHeader}>
           <span style={styles.cardLabel}>متأخرة عن الموعد</span>
-          <AlertTriangle size={13} style={{ color: kpis.overdueCount > 0 ? '#ef4444' : '#64748b' }} />
+          <AlertTriangle size={13} style={{ color: kpis.overdueCount > 0 ? 'var(--accent-red)' : 'var(--text-muted)' }} />
         </div>
         <div style={styles.cardBody}>
-          <span style={{ ...styles.primaryNum, color: kpis.overdueCount > 0 ? '#ef4444' : '#f1f5f9' }}>
+          <span style={{ ...styles.primaryNum, color: kpis.overdueCount > 0 ? 'var(--accent-red)' : 'var(--text-muted)' }}>
             {kpis.overdueCount}
           </span>
-          <span style={{ ...styles.secondaryBadge, color: '#ef4444' }}>
-            تجاوزت الـ SLA
+          <span style={{ ...styles.secondaryBadge, color: kpis.overdueCount > 0 ? 'var(--accent-red)' : 'var(--text-muted)' }}>
+            {kpis.overdueCount > 0 ? 'تجاوزت الـ SLA' : 'ضمن الـ SLA'}
           </span>
         </div>
         <span style={styles.hintSubtext}>
@@ -181,7 +181,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 12,
   },
   card: {
-    background: '#121214',
+    background: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 8,
     padding: '8px 12px',
@@ -199,7 +199,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   cardLabel: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
     fontWeight: 500,
   },
   cardBody: {
@@ -211,7 +211,7 @@ const styles: Record<string, React.CSSProperties> = {
   primaryNum: {
     fontSize: 19,
     fontWeight: 700,
-    color: '#f8fafc',
+    color: 'var(--text-primary)',
     fontVariantNumeric: 'tabular-nums',
     fontFeatureSettings: '"tnum"',
     letterSpacing: '-0.02em',
@@ -219,7 +219,7 @@ const styles: Record<string, React.CSSProperties> = {
   secondaryBadge: {
     fontSize: 10,
     fontWeight: 600,
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
     display: 'inline-flex',
     alignItems: 'center',
     fontVariantNumeric: 'tabular-nums',
@@ -238,7 +238,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   hintSubtext: {
     fontSize: 9.5,
-    color: '#64748b',
+    color: 'var(--text-muted)',
     marginTop: 2,
     overflow: 'hidden',
     textOverflow: 'ellipsis',

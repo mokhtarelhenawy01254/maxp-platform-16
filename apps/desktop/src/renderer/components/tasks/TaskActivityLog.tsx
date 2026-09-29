@@ -73,7 +73,7 @@ export const TaskActivityLog: React.FC<TaskActivityLogProps> = ({
       const diffDays = Math.floor(diffHours / 24);
       if (diffDays === 1) return 'أمس';
       if (diffDays < 7) return `منذ ${diffDays} أيام`;
-      return date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleDateString('ar-EG-u-nu-latn', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     } catch {
       return isoStr;
     }
@@ -84,9 +84,9 @@ export const TaskActivityLog: React.FC<TaskActivityLogProps> = ({
     switch (act) {
       case 'returned_for_revision':
         return {
-          icon: <RotateCcw size={12} color="#f59e0b" />,
+          icon: <RotateCcw size={12} color="var(--accent-yellow)" />,
           title: 'إعادة المهمة للتعديل والمراجعة',
-          color: '#f59e0b',
+          color: 'var(--accent-yellow)',
           bg: 'rgba(245, 158, 11, 0.12)',
           borderColor: 'rgba(245, 158, 11, 0.3)',
           isCritical: true,
@@ -102,27 +102,27 @@ export const TaskActivityLog: React.FC<TaskActivityLogProps> = ({
         };
       case 'approved':
         return {
-          icon: <CheckCircle2 size={12} color="#22c55e" />,
+          icon: <CheckCircle2 size={12} color="var(--accent-green)" />,
           title: 'اعتماد المهمة وإنجازها رسمياً',
-          color: '#22c55e',
-          bg: 'rgba(34, 197, 94, 0.12)',
+          color: 'var(--accent-green)',
+          bg: 'var(--accent-green-bg)',
           borderColor: 'rgba(34, 197, 94, 0.3)',
           isCritical: false,
         };
       case 'status_changed':
         return {
-          icon: <Clock size={12} color="#38bdf8" />,
+          icon: <Clock size={12} color="var(--accent-blue)" />,
           title: `تحديث الحالة إلى ${item.newValue || 'جديدة'}`,
-          color: '#38bdf8',
+          color: 'var(--accent-blue)',
           bg: 'rgba(56, 189, 248, 0.12)',
           borderColor: 'rgba(56, 189, 248, 0.3)',
           isCritical: false,
         };
       case 'commented':
         return {
-          icon: <MessageSquare size={12} color="#94a3b8" />,
+          icon: <MessageSquare size={12} color="var(--text-muted)" />,
           title: 'إضافة تعليق وملاحظات',
-          color: '#94a3b8',
+          color: 'var(--text-muted)',
           bg: 'rgba(148, 163, 184, 0.12)',
           borderColor: 'rgba(148, 163, 184, 0.25)',
           isCritical: false,
@@ -138,9 +138,9 @@ export const TaskActivityLog: React.FC<TaskActivityLogProps> = ({
         };
       default:
         return {
-          icon: <History size={12} color="#94a3b8" />,
+          icon: <History size={12} color="var(--text-muted)" />,
           title: item.description || 'تحديث في المهمة',
-          color: '#94a3b8',
+          color: 'var(--text-muted)',
           bg: 'rgba(255, 255, 255, 0.05)',
           borderColor: 'rgba(255, 255, 255, 0.1)',
           isCritical: false,
@@ -153,12 +153,12 @@ export const TaskActivityLog: React.FC<TaskActivityLogProps> = ({
       {/* Header Bar */}
       <div style={styles.header}>
         <div style={styles.headerLeft} onClick={() => setCollapsed(!collapsed)}>
-          <History size={13} color="#38bdf8" />
+          <History size={13} color="var(--accent-blue)" />
           <span style={styles.title}>سجل المهمة وتاريخ المراجعات</span>
           <span style={styles.badge}>{activities.length}</span>
           {isTaskReturned && (
             <span style={styles.returnedWarningBadge}>
-              <AlertTriangle size={10} color="#f59e0b" style={{ marginRight: 3 }} />
+              <AlertTriangle size={10} color="var(--accent-yellow)" style={{ marginRight: 3 }} />
               مُعادة للتعديل
             </span>
           )}
@@ -170,7 +170,7 @@ export const TaskActivityLog: React.FC<TaskActivityLogProps> = ({
           style={styles.refreshBtn}
           title="تحديث سجل النشاطات"
         >
-          <RefreshCw size={11} className={loading ? 'animate-spin' : ''} color="#94a3b8" />
+          <RefreshCw size={11} className={loading ? 'animate-spin' : ''} color="var(--text-muted)" />
         </button>
       </div>
 
@@ -213,7 +213,7 @@ export const TaskActivityLog: React.FC<TaskActivityLogProps> = ({
                       </div>
 
                       <div style={styles.actorRow}>
-                        <User size={10} color="#64748b" />
+                        <User size={10} color="var(--text-muted)" />
                         <span style={styles.actorName}>{item.userName || 'مستخدم النظام'}</span>
                       </div>
 
@@ -228,7 +228,7 @@ export const TaskActivityLog: React.FC<TaskActivityLogProps> = ({
                         >
                           {isRevision && (
                             <div style={styles.revisionNoticeTitle}>
-                              <AlertTriangle size={11} color="#f59e0b" />
+                              <AlertTriangle size={11} color="var(--accent-yellow)" />
                               <span>ملاحظات التعديل المطلوبة من المشرف:</span>
                             </div>
                           )}
@@ -260,7 +260,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '8px 12px',
-    backgroundColor: '#121214',
+    backgroundColor: 'var(--bg-surface)',
     borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
     cursor: 'pointer',
     userSelect: 'none',
@@ -273,7 +273,7 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     fontSize: 12,
     fontWeight: 600,
-    color: '#f1f5f9',
+    color: 'var(--text-primary)',
   },
   badge: {
     fontSize: 10,
@@ -281,7 +281,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '1px 6px',
     borderRadius: 10,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
     fontVariantNumeric: 'tabular-nums',
   },
   returnedWarningBadge: {
@@ -314,7 +314,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   emptyText: {
     fontSize: 11,
-    color: '#64748b',
+    color: 'var(--text-muted)',
   },
   timeline: {
     display: 'flex',
@@ -369,7 +369,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   timestamp: {
     fontSize: 10,
-    color: '#64748b',
+    color: 'var(--text-muted)',
     fontVariantNumeric: 'tabular-nums',
   },
   actorRow: {
@@ -379,7 +379,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   actorName: {
     fontSize: 10.5,
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
   },
   descriptionBox: {
     marginTop: 4,
@@ -396,7 +396,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 5,
     fontSize: 11,
     fontWeight: 600,
-    color: '#f59e0b',
+    color: 'var(--accent-yellow)',
   },
   descriptionText: {
     fontSize: 11,

@@ -71,7 +71,7 @@ export const OvertimeModal: React.FC<OvertimeModalProps> = ({
 
         {error && (
           <div style={styles.errorBox}>
-            <AlertCircle size={14} color="#ef4444" />
+            <AlertCircle size={14} color="var(--accent-red)" />
             <span>{error}</span>
           </div>
         )}
@@ -155,7 +155,7 @@ const styles: Record<string, React.CSSProperties> = {
   card: {
     width: '100%',
     maxWidth: 500,
-    backgroundColor: '#121214',
+    backgroundColor: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
@@ -193,13 +193,13 @@ const styles: Record<string, React.CSSProperties> = {
   subtitle: {
     margin: 0,
     fontSize: 12,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     marginTop: 2,
   },
   closeBtn: {
     background: 'none',
     border: 'none',
-    color: '#71717a',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
     padding: 6,
     borderRadius: 6,
@@ -213,7 +213,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(239, 68, 68, 0.12)',
     border: '1px solid rgba(239, 68, 68, 0.25)',
     borderRadius: 6,
-    color: '#ef4444',
+    color: 'var(--accent-red)',
     fontSize: 12,
   },
   form: {
@@ -235,10 +235,10 @@ const styles: Record<string, React.CSSProperties> = {
   input: {
     width: '100%',
     padding: '9px 12px',
-    backgroundColor: '#09090b',
+    backgroundColor: 'var(--bg-page)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: 8,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     fontSize: 13,
     outline: 'none',
     boxSizing: 'border-box',
@@ -246,10 +246,10 @@ const styles: Record<string, React.CSSProperties> = {
   textarea: {
     width: '100%',
     padding: '9px 12px',
-    backgroundColor: '#09090b',
+    backgroundColor: 'var(--bg-page)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: 8,
-    color: '#fafafa',
+    color: 'var(--text-primary)',
     fontSize: 13,
     outline: 'none',
     boxSizing: 'border-box',
@@ -284,7 +284,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'transparent',
     border: '1px solid rgba(255, 255, 255, 0.12)',
     borderRadius: 6,
-    color: '#a1a1aa',
+    color: 'var(--text-muted)',
     fontSize: 13,
     cursor: 'pointer',
     fontWeight: 500,

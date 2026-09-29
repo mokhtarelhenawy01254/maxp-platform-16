@@ -181,7 +181,7 @@ export const SimpleReportTab: React.FC = () => {
     try {
       const d = new Date(iso);
       if (isNaN(d.getTime())) return null;
-      return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      return d.toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' });
     } catch {
       return null;
     }
@@ -252,7 +252,7 @@ export const SimpleReportTab: React.FC = () => {
               boxShadow: reportSection === 'tasks' ? 'var(--shadow-card)' : 'none',
             }}
           >
-            <CheckCircle2 size={13} color="#38bdf8" />
+            <CheckCircle2 size={13} color="var(--accent-blue)" />
             <span>ساعات وتحليلات المهام</span>
           </button>
         </div>
@@ -279,7 +279,7 @@ export const SimpleReportTab: React.FC = () => {
               </span>
             </div>
             <div style={styles.headerSubtitle}>
-              نفس بيانات ومنطق شاشة المراقبة على الويب (hr/monitor)
+              مطابق تمامًا لشاشة المراقبة على الويب، بنفس البيانات والمنطق
             </div>
           </div>
         </div>
@@ -337,9 +337,9 @@ export const SimpleReportTab: React.FC = () => {
         <div style={styles.kpiCard}>
           <div style={styles.kpiHeader}>
             <span style={styles.kpiLabel}>نشط ومتصل</span>
-            <Activity size={14} color="#10b981" />
+            <Activity size={14} color="var(--accent-green)" />
           </div>
-          <div style={{ ...styles.kpiValue, color: '#10b981' }}>{stats.activeNow}</div>
+          <div style={{ ...styles.kpiValue, color: 'var(--accent-green)' }}>{stats.activeNow}</div>
         </div>
         <div style={styles.kpiCard}>
           <div style={styles.kpiHeader}>
@@ -351,7 +351,7 @@ export const SimpleReportTab: React.FC = () => {
         <div style={styles.kpiCard}>
           <div style={styles.kpiHeader}>
             <span style={styles.kpiLabel}>إجمالي ساعات العمل</span>
-            <Clock size={14} color="#f59e0b" />
+            <Clock size={14} color="var(--accent-yellow)" />
           </div>
           <div style={styles.kpiValue}>{stats.totalHoursTracked} ساعة</div>
         </div>
@@ -414,7 +414,7 @@ export const SimpleReportTab: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
                     <div style={{
                       ...styles.statusDot,
-                      backgroundColor: m.status === 'active' ? '#10b981' : m.status === 'idle' ? '#f59e0b' : '#71717a',
+                      backgroundColor: m.status === 'active' ? 'var(--accent-green)' : m.status === 'idle' ? 'var(--accent-yellow)' : 'var(--text-muted)',
                     }} />
                     <div style={{ minWidth: 0 }}>
                       <div style={styles.memberName}>{m.employeeName}</div>
@@ -435,7 +435,7 @@ export const SimpleReportTab: React.FC = () => {
                   {/* Attendance */}
                   <div style={styles.cellBlock}>
                     <span style={styles.cellLabel}>البصمة:</span>
-                    <span style={{ ...styles.cellValue, color: clockIn ? 'var(--text-primary)' : '#ef4444' }}>
+                    <span style={{ ...styles.cellValue, color: clockIn ? 'var(--text-primary)' : 'var(--accent-red)' }}>
                       {clockIn ? `${clockIn} (${methodLabel})` : 'لم يسجل'}
                     </span>
                   </div>
@@ -459,7 +459,7 @@ export const SimpleReportTab: React.FC = () => {
                         height: '100%',
                         borderRadius: 4,
                         width: `${Math.min(100, m.productivityScore)}%`,
-                        backgroundColor: m.productivityScore >= 75 ? '#10b981' : m.productivityScore >= 50 ? '#38bdf8' : '#f59e0b',
+                        backgroundColor: m.productivityScore >= 75 ? 'var(--accent-green)' : m.productivityScore >= 50 ? 'var(--accent-blue)' : 'var(--accent-yellow)',
                       }} />
                     </div>
                     <span style={styles.prodText}>{m.productivityScore}%</span>
@@ -467,7 +467,7 @@ export const SimpleReportTab: React.FC = () => {
 
                   {/* Tasks */}
                   <div style={styles.cellBlock}>
-                    <span style={{ ...styles.cellValue, color: '#10b981', fontWeight: 600 }}>
+                    <span style={{ ...styles.cellValue, color: 'var(--accent-green)', fontWeight: 600 }}>
                       {m.completedTasksCount} منجزة
                     </span>
                   </div>
@@ -489,7 +489,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    backgroundColor: 'var(--bg-canvas)',
+    backgroundColor: 'var(--bg-page)',
   },
   hubSwitcherRow: {
     display: 'flex',
@@ -502,7 +502,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   hubSegmentedWrap: {
     display: 'inline-flex',
-    background: '#121214',
+    background: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 6,
     padding: 2,
@@ -558,14 +558,14 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid rgba(16,185,129,0.25)',
     fontSize: 10,
     fontWeight: 700,
-    color: '#10b981',
+    color: 'var(--accent-green)',
     fontVariantNumeric: 'tabular-nums',
   },
   pulseDot: {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    backgroundColor: '#10b981',
+    backgroundColor: 'var(--accent-green)',
   },
   dateStepper: {
     display: 'flex',
@@ -752,7 +752,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid rgba(56, 189, 248, 0.2)',
     fontSize: 10,
     fontWeight: 600,
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     maxWidth: 160,
     flexShrink: 0,
   },
@@ -760,7 +760,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 5,
     height: 5,
     borderRadius: '50%',
-    backgroundColor: '#38bdf8',
+    backgroundColor: 'var(--accent-blue)',
     flexShrink: 0,
   },
   cellBlock: {

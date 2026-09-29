@@ -36,7 +36,7 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = ({ formatTi
   const formatClock = (iso?: string | null) => {
     if (!iso) return 'لم يسجل بعد';
     try {
-      return new Date(iso).toLocaleTimeString('ar-EG', {
+      return new Date(iso).toLocaleTimeString('ar-EG-u-nu-latn', {
         hour: '2-digit',
         minute: '2-digit',
       });
@@ -63,9 +63,9 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = ({ formatTi
       >
         <div style={styles.bannerIcon}>
           {hasDelay ? (
-            <AlertTriangle size={18} color="#eab308" />
+            <AlertTriangle size={18} color="var(--accent-yellow)" />
           ) : (
-            <CheckCircle2 size={18} color="#22c55e" />
+            <CheckCircle2 size={18} color="var(--accent-green)" />
           )}
         </div>
         <div style={{ flex: 1 }}>
@@ -82,7 +82,7 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = ({ formatTi
         {/* Mobile Clock In */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <Smartphone size={15} color="#38bdf8" />
+            <Smartphone size={15} color="var(--accent-blue)" />
             <span style={styles.cardTitle}>بصمة الهاتف الجغرافية</span>
           </div>
           <div style={styles.cardValue}>{formatClock(auditData?.clockInTime)}</div>
@@ -92,7 +92,7 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = ({ formatTi
         {/* First PC Activity */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <Monitor size={15} color="#22c55e" />
+            <Monitor size={15} color="var(--accent-green)" />
             <span style={styles.cardTitle}>أول نشاط على الجهاز</span>
           </div>
           <div style={styles.cardValue}>{formatClock(auditData?.firstActivityTime)}</div>
@@ -102,13 +102,13 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = ({ formatTi
         {/* Gap Discrepancy */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <Clock size={15} color={hasDelay ? '#eab308' : '#22c55e'} />
+            <Clock size={15} color={hasDelay ? 'var(--accent-yellow)' : 'var(--accent-green)'} />
             <span style={styles.cardTitle}>الفارق الزمني</span>
           </div>
           <div
             style={{
               ...styles.cardValue,
-              color: hasDelay ? '#eab308' : '#22c55e',
+              color: hasDelay ? 'var(--accent-yellow)' : 'var(--accent-green)',
             }}
           >
             {lateMinutes > 0 ? `${lateMinutes} دقيقة` : 'متطابق بالكامل'}
@@ -132,9 +132,11 @@ export const AttendanceAuditTab: React.FC<AttendanceAuditTabProps> = ({ formatTi
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
+    height: '100%',
     display: 'flex',
     flexDirection: 'column',
     gap: 12,
+    overflowY: 'auto',
   },
   banner: {
     display: 'flex',
@@ -160,9 +162,12 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 2,
   },
   grid: {
+    flex: 1,
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
+    gridTemplateRows: 'repeat(2, 1fr)',
     gap: 10,
+    minHeight: 220,
   },
   card: {
     background: 'var(--bg-surface)',

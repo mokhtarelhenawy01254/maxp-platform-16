@@ -56,7 +56,7 @@ export const SystemStatusTab: React.FC = () => {
       <div style={styles.card}>
         <div style={styles.cardHeader}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Server size={18} color="#22c55e" />
+            <Server size={18} color="var(--accent-green)" />
             <span style={styles.cardTitle}>اتصال السحابة المركزية</span>
           </div>
           <div style={styles.onlineChip}>
@@ -83,7 +83,7 @@ export const SystemStatusTab: React.FC = () => {
       <div style={styles.card}>
         <div style={styles.cardHeader}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Database size={18} color="#38bdf8" />
+            <Database size={18} color="var(--accent-blue)" />
             <span style={styles.cardTitle}>الذاكرة التخزينية المؤقتة المحلية</span>
           </div>
           <button
@@ -141,7 +141,7 @@ export const SystemStatusTab: React.FC = () => {
         </div>
         <div style={styles.infoRow}>
           <span style={styles.infoLabel}>التحديثات الصامتة التلقائية</span>
-          <span style={{ ...styles.infoValue, color: '#38bdf8' }}>مفعلة (تنزيل صامت في الخلفية)</span>
+          <span style={{ ...styles.infoValue, color: 'var(--accent-blue)' }}>مفعلة (تنزيل صامت في الخلفية)</span>
         </div>
       </div>
     </div>
@@ -246,7 +246,7 @@ const styles: Record<string, React.CSSProperties> = {
   subCardVal: {
     fontSize: 18,
     fontWeight: 700,
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     fontVariantNumeric: 'tabular-nums',
   },
   subCardLabel: {

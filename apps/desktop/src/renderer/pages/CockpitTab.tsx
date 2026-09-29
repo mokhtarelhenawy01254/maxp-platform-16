@@ -183,7 +183,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
   const formatClockTime = (iso?: string | null) => {
     if (!iso) return null;
     try {
-      return new Date(iso).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      return new Date(iso).toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' });
     } catch {
       return null;
     }
@@ -236,9 +236,9 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         </div>
 
         <div style={styles.dateDisplayBadge}>
-          <Clock size={13} color="#38bdf8" />
+          <Clock size={13} color="var(--accent-blue)" />
           <span style={styles.dateDisplayText}>
-            {parseLocalDate(selectedDate).toLocaleDateString('ar-EG', {
+            {parseLocalDate(selectedDate).toLocaleDateString('ar-EG-u-nu-latn', {
               weekday: 'long',
               day: 'numeric',
               month: 'long',
@@ -258,7 +258,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
       {!isToday ? (
         <div style={styles.archivedBanner}>
           <div style={styles.archivedIconBox}>
-            <History size={18} color="#38bdf8" />
+            <History size={18} color="var(--accent-blue)" />
           </div>
           <div style={{ flex: 1 }}>
             <div style={styles.bannerTitleRow}>
@@ -275,7 +275,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
       ) : shiftEnded ? (
         <div style={styles.shiftEndedBanner}>
           <div style={styles.shiftEndedIconBox}>
-            <CheckCircle2 size={18} color="#22c55e" />
+            <CheckCircle2 size={18} color="var(--accent-green)" />
           </div>
           <div style={{ flex: 1 }}>
             <div style={styles.bannerTitleRow}>
@@ -297,7 +297,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
               onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
               onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
             >
-              <Play size={13} fill="#09090b" color="#09090b" />
+              <Play size={13} fill="var(--text-inverse)" color="var(--text-inverse)" />
               <span>بدء وردية جديدة</span>
             </button>
           )}
@@ -305,7 +305,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
       ) : isPaused ? (
         <div style={styles.breakBanner}>
           <div style={styles.breakIconBox}>
-            <Coffee size={18} color="#eab308" />
+            <Coffee size={18} color="var(--accent-yellow)" />
           </div>
           <div style={{ flex: 1 }}>
             <div style={styles.bannerTitleRow}>
@@ -322,7 +322,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
       ) : (
         <div style={styles.enforcedBanner}>
           <div style={styles.bannerIconBox}>
-            <ShieldCheck size={18} color="#22c55e" />
+            <ShieldCheck size={18} color="var(--accent-green)" />
           </div>
           <div style={{ flex: 1 }}>
             <div style={styles.bannerTitleRow}>
@@ -370,12 +370,12 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         {isAdmin ? (
           <div style={styles.metricCard}>
             <div style={styles.metricHeader}>
-              <div style={{ ...styles.iconBadge, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)' }}>
+              <div style={{ ...styles.iconBadge, color: 'var(--accent-blue)', background: 'rgba(56, 189, 248, 0.1)' }}>
                 <MousePointer size={15} />
               </div>
               <span style={styles.metricLabel}>تفاعل ونقرات الماوس</span>
             </div>
-            <div style={styles.metricValue}>{mouseEvents.toLocaleString()}</div>
+            <div style={styles.metricValue}>{mouseEvents.toLocaleString('en-US')}</div>
             <div style={styles.metricSubtext}>
               <span>إجمالي الحركات والنقرات الموثقة</span>
             </div>
@@ -383,7 +383,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         ) : (
           <div style={styles.metricCard}>
             <div style={styles.metricHeader}>
-              <div style={{ ...styles.iconBadge, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)' }}>
+              <div style={{ ...styles.iconBadge, color: 'var(--accent-blue)', background: 'rgba(56, 189, 248, 0.1)' }}>
                 <CheckSquare size={15} />
               </div>
               <span style={styles.metricLabel}>المهام المنجزة اليوم</span>
@@ -411,7 +411,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
             </div>
             <span style={styles.metricLabel}>ضربات لوحة المفاتيح</span>
           </div>
-          <div style={styles.metricValue}>{keyboardEvents.toLocaleString()}</div>
+          <div style={styles.metricValue}>{keyboardEvents.toLocaleString('en-US')}</div>
           <div style={styles.metricSubtext}>
             <span>إجمالي المدخلات الموثقة لليوم</span>
           </div>
@@ -422,7 +422,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
       <div style={styles.sectionBox}>
         <div style={styles.sectionHeader}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Activity size={15} color="#38bdf8" />
+            <Activity size={15} color="var(--accent-blue)" />
             <span style={styles.sectionTitle}>
               {isToday ? 'مؤشر الإنتاجية التراكمي لليوم' : `مؤشر الإنتاجية ليوم ${selectedDate}`}
             </span>
@@ -444,7 +444,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
         <div style={styles.sectionBox}>
           <div style={styles.sectionHeader}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <AppWindow size={15} color="#22c55e" />
+              <AppWindow size={15} color="var(--accent-green)" />
               <span style={styles.sectionTitle}>التطبيق النشط حالياً</span>
             </div>
             <span style={styles.activePill}>
@@ -458,7 +458,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
               <div style={styles.currentAppName}>{currentApp}</div>
               {currentUrl && (
                 <div style={styles.currentUrlRow}>
-                  <ExternalLink size={12} color="#71717a" />
+                  <ExternalLink size={12} color="var(--text-muted)" />
                   <span style={styles.currentUrlText}>
                     {isAdmin
                       ? currentUrl
@@ -482,9 +482,11 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
+    height: '100%',
     display: 'flex',
     flexDirection: 'column',
     gap: 14,
+    overflowY: 'auto',
   },
   dateNavBar: {
     display: 'flex',
@@ -549,7 +551,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 4,
     fontSize: 10,
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     background: 'rgba(56, 189, 248, 0.12)',
     border: '1px solid rgba(56, 189, 248, 0.3)',
     borderRadius: 12,
@@ -577,7 +579,7 @@ const styles: Record<string, React.CSSProperties> = {
   archivedTitle: {
     fontSize: 13,
     fontWeight: 700,
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
   },
   archivedChip: {
     background: 'rgba(56, 189, 248, 0.15)',
@@ -585,7 +587,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 20,
     padding: '2px 8px',
     fontSize: 10,
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     fontWeight: 600,
   },
   archivedSubtext: {
@@ -637,7 +639,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 6,
     background: 'var(--accent-green)',
-    color: '#09090b',
+    color: 'var(--text-inverse)',
     border: 'none',
     borderRadius: 8,
     padding: '6px 14px',
@@ -735,9 +737,12 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 0 8px var(--accent-green-dim)',
   },
   grid: {
+    flex: 1,
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
+    gridTemplateRows: 'repeat(2, 1fr)',
     gap: 10,
+    minHeight: 200,
   },
   metricCard: {
     background: 'var(--bg-surface)',
@@ -800,7 +805,7 @@ const styles: Record<string, React.CSSProperties> = {
   ratioPercent: {
     fontSize: 12,
     fontWeight: 600,
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     fontVariantNumeric: 'tabular-nums',
   },
   progressTrack: {

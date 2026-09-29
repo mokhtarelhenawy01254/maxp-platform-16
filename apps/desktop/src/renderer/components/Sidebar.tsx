@@ -114,7 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Brand Header */}
       <div style={styles.brandBox}>
         <div style={styles.brandIconWrapper}>
-          <ShieldCheck size={19} color="#22c55e" />
+          <ShieldCheck size={19} color="var(--accent-green)" />
         </div>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={styles.brandTitle}>MaxP Workspace</div>
@@ -135,7 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div style={styles.userRole}>
             <span style={{
               ...styles.statusDot,
-              background: isOnline ? '#22c55e' : '#ef4444',
+              background: isOnline ? 'var(--accent-green)' : 'var(--accent-red)',
             }} />
             <span>{roleLabel}</span>
           </div>
@@ -183,7 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span
                   style={{
                     marginRight: 'auto',
-                    backgroundColor: '#10b981',
+                    backgroundColor: 'var(--accent-green)',
                     color: '#062015',
                     fontSize: 10,
                     fontWeight: 700,
@@ -209,7 +209,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
           onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
         >
-          <Settings size={15} color="#a1a1aa" />
+          <Settings size={15} color="var(--text-muted)" />
           <span>الإعدادات</span>
         </button>
 
@@ -221,7 +221,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
           aria-label="تبديل المظهر"
         >
-          {mode === 'dark' ? <Sun size={15} color="#eab308" /> : <Moon size={15} color="#6366f1" />}
+          {mode === 'dark' ? <Sun size={15} color="var(--accent-yellow)" /> : <Moon size={15} color="#6366f1" />}
         </button>
 
         <button

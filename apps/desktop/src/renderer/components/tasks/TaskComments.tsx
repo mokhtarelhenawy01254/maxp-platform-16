@@ -130,7 +130,7 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({
   const formatCommentDate = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
-      return d.toLocaleTimeString('ar-EG', {
+      return d.toLocaleTimeString('ar-EG-u-nu-latn', {
         hour: '2-digit',
         minute: '2-digit',
         month: 'short',
@@ -232,7 +232,7 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: 'var(--accent-green, #10b981)',
+                            color: 'var(--accent-green, var(--accent-green))',
                             cursor: 'pointer',
                             padding: 2,
                           }}
@@ -246,7 +246,7 @@ export const TaskComments: React.FC<TaskCommentsProps> = ({
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: 'var(--text-dim, #94a3b8)',
+                            color: 'var(--text-dim, var(--text-muted))',
                             cursor: 'pointer',
                             padding: 2,
                           }}
@@ -481,7 +481,7 @@ const styles: Record<string, React.CSSProperties> = {
   errorBanner: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     border: '1px solid rgba(239, 68, 68, 0.3)',
-    color: '#ef4444',
+    color: 'var(--accent-red)',
     padding: '4px 8px',
     borderRadius: 4,
     fontSize: 10,

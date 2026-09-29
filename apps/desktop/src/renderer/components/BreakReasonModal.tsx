@@ -96,7 +96,7 @@ export const BreakReasonModal: React.FC<BreakReasonModalProps> = ({
         <div style={styles.header}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={styles.headerIcon}>
-              <Coffee size={18} color="#38bdf8" />
+              <Coffee size={18} color="var(--accent-blue)" />
             </div>
             <div>
               <h3 style={styles.title}>تحديد نوع ومدة الاستراحة</h3>
@@ -106,7 +106,7 @@ export const BreakReasonModal: React.FC<BreakReasonModalProps> = ({
             </div>
           </div>
           <button type="button" onClick={onClose} style={styles.closeBtn}>
-            <X size={16} color="#71717a" />
+            <X size={16} color="var(--text-muted)" />
           </button>
         </div>
 
@@ -127,15 +127,15 @@ export const BreakReasonModal: React.FC<BreakReasonModalProps> = ({
                   }}
                   style={{
                     ...styles.reasonCard,
-                    borderColor: isSelected ? '#38bdf8' : 'var(--border-default)',
+                    borderColor: isSelected ? 'var(--accent-blue)' : 'var(--border-default)',
                     background: isSelected ? 'rgba(56, 189, 248, 0.08)' : '#16161b',
                   }}
                 >
-                  <Icon size={18} color={isSelected ? '#38bdf8' : '#a1a1aa'} />
+                  <Icon size={18} color={isSelected ? 'var(--accent-blue)' : 'var(--text-muted)'} />
                   <span
                     style={{
                       ...styles.reasonLabel,
-                      color: isSelected ? '#fafafa' : '#a1a1aa',
+                      color: isSelected ? '#ffffff' : 'var(--text-muted)',
                       fontWeight: isSelected ? 600 : 400,
                     }}
                   >
@@ -154,16 +154,16 @@ export const BreakReasonModal: React.FC<BreakReasonModalProps> = ({
                   onClick={() => setSelectedReason(custom)}
                   style={{
                     ...styles.reasonCard,
-                    borderColor: isSelected ? '#38bdf8' : 'var(--border-default)',
+                    borderColor: isSelected ? 'var(--accent-blue)' : 'var(--border-default)',
                     background: isSelected ? 'rgba(56, 189, 248, 0.08)' : '#16161b',
                     position: 'relative',
                   }}
                 >
-                  <Sparkles size={16} color={isSelected ? '#38bdf8' : '#a1a1aa'} />
+                  <Sparkles size={16} color={isSelected ? 'var(--accent-blue)' : 'var(--text-muted)'} />
                   <span
                     style={{
                       ...styles.reasonLabel,
-                      color: isSelected ? '#fafafa' : '#a1a1aa',
+                      color: isSelected ? '#ffffff' : 'var(--text-muted)',
                       fontWeight: isSelected ? 600 : 400,
                     }}
                   >
@@ -175,7 +175,7 @@ export const BreakReasonModal: React.FC<BreakReasonModalProps> = ({
                     style={styles.deleteCustomBtn}
                     title="حذف هذا السبب"
                   >
-                    <Trash2 size={12} color="#ef4444" />
+                    <Trash2 size={12} color="var(--accent-red)" />
                   </button>
                 </div>
               );
@@ -229,9 +229,9 @@ export const BreakReasonModal: React.FC<BreakReasonModalProps> = ({
                   onClick={() => setSelectedDuration(mins)}
                   style={{
                     ...styles.durationBtn,
-                    borderColor: isSelected ? '#22c55e' : 'var(--border-default)',
+                    borderColor: isSelected ? 'var(--accent-green)' : 'var(--border-default)',
                     background: isSelected ? 'var(--accent-green-bg)' : '#16161b',
-                    color: isSelected ? '#22c55e' : '#a1a1aa',
+                    color: isSelected ? 'var(--accent-green)' : 'var(--text-muted)',
                   }}
                 >
                   <Clock size={12} />
@@ -367,7 +367,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'transparent',
     border: '1px dashed var(--border-strong)',
     borderRadius: 6,
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     padding: '7px 10px',
     fontSize: 11,
     cursor: 'pointer',
@@ -392,7 +392,7 @@ const styles: Record<string, React.CSSProperties> = {
     outline: 'none',
   },
   saveCustomBtn: {
-    background: '#0284c7',
+    background: 'var(--accent-blue)',
     color: '#ffffff',
     border: 'none',
     borderRadius: 6,
@@ -454,7 +454,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 6,
     background: 'var(--accent-green)',
-    color: '#09090b',
+    color: 'var(--text-inverse)',
     border: 'none',
     borderRadius: 6,
     padding: '8px 16px',

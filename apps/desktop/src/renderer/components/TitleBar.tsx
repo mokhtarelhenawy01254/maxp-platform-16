@@ -60,12 +60,12 @@ export const TitleBar: React.FC = () => {
           )}
           {deviceInfo?.deviceType === 'OFFICE' ? (
             <span style={styles.officeBadge} title="جهاز مكتب معتمد (كامل الصلاحيات والإشعارات)">
-              <Building2 size={11} color="#10b981" />
+              <Building2 size={11} color="var(--accent-green)" />
               <span>جهاز مكتب</span>
             </span>
           ) : deviceInfo?.deviceType === 'PERSONAL' ? (
             <span style={styles.personalBadge} title="جهاز شخصي (صلاحيات مقيدة وإشعارات العمل متوقفة)">
-              <ShieldCheck size={11} color="#f59e0b" />
+              <ShieldCheck size={11} color="var(--accent-yellow)" />
               <span>شخصي (مقيّد)</span>
             </span>
           ) : null}
@@ -124,7 +124,7 @@ export const TitleBar: React.FC = () => {
           title="إغلاق إلى شريط المهام"
           aria-label="Close"
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background = '#ef4444';
+            (e.currentTarget as HTMLElement).style.background = 'var(--accent-red)';
             (e.currentTarget as HTMLElement).style.color = '#ffffff';
           }}
           onMouseLeave={(e) => {
@@ -198,7 +198,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
     fontSize: 10,
     fontWeight: 600,
-    color: '#10b981',
+    color: 'var(--accent-green)',
     background: 'rgba(16, 185, 129, 0.1)',
     border: '1px solid rgba(16, 185, 129, 0.3)',
     borderRadius: 4,
@@ -211,7 +211,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
     fontSize: 10,
     fontWeight: 600,
-    color: '#f59e0b',
+    color: 'var(--accent-yellow)',
     background: 'rgba(245, 158, 11, 0.1)',
     border: '1px solid rgba(245, 158, 11, 0.3)',
     borderRadius: 4,

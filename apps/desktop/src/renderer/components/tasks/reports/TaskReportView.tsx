@@ -298,7 +298,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
   // 1-Click Daily Standup Generator
   const handleCopyDailyStandup = () => {
-    const dateStr = new Date().toLocaleDateString('ar-EG', {
+    const dateStr = new Date().toLocaleDateString('ar-EG-u-nu-latn', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -389,7 +389,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
                 style={{
                   ...styles.segmentBtn,
                   background: filters.dateRange === range ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                  color: filters.dateRange === range ? '#f8fafc' : '#94a3b8',
+                  color: filters.dateRange === range ? '#ffffff' : 'var(--text-muted)',
                 }}
               >
                 {range === 'today' ? 'اليوم' : range === '7days' ? '7 أيام' : range === '30days' ? '30 يوم' : 'الكل'}
@@ -427,7 +427,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
           {/* Search Input */}
           <div style={styles.searchWrap}>
-            <Search size={12} color="#64748b" style={styles.searchIcon} />
+            <Search size={12} color="var(--text-muted)" style={styles.searchIcon} />
             <input
               type="text"
               placeholder="بحث في المهام والمشاريع…"
@@ -444,14 +444,14 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
             onClick={handleCopyDailyStandup}
             style={{
               ...styles.primaryActionBtn,
-              background: isCopied ? '#22c55e' : '#38bdf8',
+              background: isCopied ? 'var(--accent-green)' : 'var(--accent-blue)',
             }}
             title="نسخ ملخص مهام اليوم المنسق لمشاركته في ثوانٍ"
             onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)'; }}
             onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
           >
-            {isCopied ? <Check size={12} color="#09090b" /> : <Copy size={12} color="#09090b" />}
-            <span style={{ color: '#09090b' }}>
+            {isCopied ? <Check size={12} color="var(--text-inverse)" /> : <Copy size={12} color="var(--text-inverse)" />}
+            <span style={{ color: 'var(--text-inverse)' }}>
               {isCopied ? 'تم نسخ التقرير اليومي!' : 'نسخ تقرير اليومية'}
             </span>
           </button>
@@ -461,7 +461,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
             style={styles.secondaryActionBtn}
             title="تصدير جدول المهام بصيغة CSV للأكسيل"
           >
-            <Download size={12} color="#94a3b8" />
+            <Download size={12} color="var(--text-muted)" />
             <span>تصدير CSV</span>
           </button>
 
@@ -470,7 +470,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
             style={styles.iconBtn}
             title="تحديث البيانات"
           >
-            <RefreshCw size={12} color="#94a3b8" className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={12} color="var(--text-muted)" className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
@@ -498,8 +498,8 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       {filters.selectedUserId !== 'all' && (
         <div style={styles.activeFilterChipBar}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11, color: '#94a3b8' }}>تصفية المهام للموظف:</span>
-            <span style={{ fontSize: 11.5, fontWeight: 700, color: '#38bdf8' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>تصفية المهام للموظف:</span>
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--accent-blue)' }}>
               {teamMembersSummary.find((m) => m.userId === filters.selectedUserId)?.userName || 'موظف محدد'}
             </span>
           </div>
@@ -557,7 +557,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   segmentedWrap: {
     display: 'inline-flex',
-    background: '#121214',
+    background: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 6,
     padding: 2,
@@ -574,7 +574,7 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'all 120ms ease',
   },
   selectInput: {
-    background: '#121214',
+    background: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 6,
     color: '#e2e8f0',
@@ -595,10 +595,10 @@ const styles: Record<string, React.CSSProperties> = {
     pointerEvents: 'none',
   },
   searchInput: {
-    background: '#121214',
+    background: 'var(--bg-surface)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 6,
-    color: '#f8fafc',
+    color: 'var(--text-primary)',
     fontSize: 11,
     padding: '4px 26px 4px 8px',
     fontFamily: 'inherit',
@@ -622,7 +622,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 5,
-    background: '#18181b',
+    background: 'var(--bg-elevated)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     borderRadius: 6,
     padding: '5px 10px',
@@ -639,7 +639,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 26,
     height: 26,
     borderRadius: 6,
-    background: '#18181b',
+    background: 'var(--bg-elevated)',
     border: '1px solid rgba(255, 255, 255, 0.08)',
     cursor: 'pointer',
   },
@@ -656,7 +656,7 @@ const styles: Record<string, React.CSSProperties> = {
   clearFilterBtn: {
     background: 'transparent',
     border: 'none',
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     fontSize: 11,
     fontWeight: 600,
     cursor: 'pointer',

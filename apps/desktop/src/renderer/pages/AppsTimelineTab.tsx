@@ -96,7 +96,7 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
       case 'unproductive':
         return { label: 'تصفح عام / استخدام متنوع', color: 'var(--text-muted)', bg: 'var(--border-subtle)' };
       case 'neutral':
-        return { label: 'أدوات مساعدة', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.1)' };
+        return { label: 'أدوات مساعدة', color: 'var(--accent-blue)', bg: 'rgba(56, 189, 248, 0.1)' };
       default:
         return { label: 'غير مصنف', color: 'var(--text-dim)', bg: 'rgba(113, 113, 122, 0.1)' };
     }
@@ -159,9 +159,9 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
         </div>
 
         <div style={styles.dateDisplayBadge}>
-          <Clock size={13} color="#38bdf8" />
+          <Clock size={13} color="var(--accent-blue)" />
           <span>
-            {parseLocalDate(selectedDate).toLocaleDateString('ar-EG', {
+            {parseLocalDate(selectedDate).toLocaleDateString('ar-EG-u-nu-latn', {
               weekday: 'short',
               day: 'numeric',
               month: 'short',
@@ -184,7 +184,7 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
             style={{
               ...styles.subtabBtn,
               background: activeSubTab === 'apps' ? '#27272a' : 'transparent',
-              color: activeSubTab === 'apps' ? '#fafafa' : '#a1a1aa',
+              color: activeSubTab === 'apps' ? '#ffffff' : 'var(--text-muted)',
             }}
           >
             <AppWindow size={15} />
@@ -195,7 +195,7 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
             style={{
               ...styles.subtabBtn,
               background: activeSubTab === 'sites' ? '#27272a' : 'transparent',
-              color: activeSubTab === 'sites' ? '#fafafa' : '#a1a1aa',
+              color: activeSubTab === 'sites' ? '#ffffff' : 'var(--text-muted)',
             }}
           >
             <Globe size={15} />
@@ -204,7 +204,7 @@ export const AppsTimelineTab: React.FC<AppsTimelineTabProps> = ({ formatTime }) 
         </div>
 
         <div style={styles.searchBox}>
-          <Search size={14} color="#71717a" />
+          <Search size={14} color="var(--text-muted)" />
           <input
             type="text"
             value={searchTerm}
@@ -382,7 +382,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 4,
     fontSize: 10,
-    color: '#38bdf8',
+    color: 'var(--accent-blue)',
     background: 'rgba(56, 189, 248, 0.12)',
     border: '1px solid rgba(56, 189, 248, 0.3)',
     borderRadius: 12,

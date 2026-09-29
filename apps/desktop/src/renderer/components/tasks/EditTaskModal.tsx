@@ -247,7 +247,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         {/* Header */}
         <div style={modalStyles.header}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Edit3 size={18} color="#38bdf8" />
+            <Edit3 size={18} color="var(--accent-blue)" />
             <span style={modalStyles.title}>تعديل بيانات المهمة</span>
           </div>
           <button onClick={onClose} style={modalStyles.closeBtn}>
@@ -414,10 +414,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                         borderRadius: 6,
                         padding: '3px 8px',
                         fontSize: 11,
-                        color: '#38bdf8',
+                        color: 'var(--accent-blue)',
                       }}
                     >
-                      <Eye size={12} color="#38bdf8" />
+                      <Eye size={12} color="var(--accent-blue)" />
                       <span>{label}</span>
                       <button
                         type="button"
@@ -459,11 +459,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     cursor: 'pointer',
                     border:
                       estimatedMinutes === m
-                        ? '1px solid #38bdf8'
+                        ? '1px solid var(--accent-blue)'
                         : '1px solid var(--border-strong)',
                     background:
-                      estimatedMinutes === m ? 'rgba(56, 189, 248, 0.15)' : '#18181b',
-                    color: estimatedMinutes === m ? '#38bdf8' : '#a1a1aa',
+                      estimatedMinutes === m ? 'rgba(56, 189, 248, 0.15)' : 'var(--bg-elevated)',
+                    color: estimatedMinutes === m ? 'var(--accent-blue)' : 'var(--text-muted)',
                     transition: 'all 0.15s ease',
                   }}
                 >
@@ -510,7 +510,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   style={modalStyles.actionSmallBtn}
                   title="التقاط لقطة شاشة للحاسوب وإرفاقها فوراً"
                 >
-                  <Camera size={13} color="#38bdf8" />
+                  <Camera size={13} color="var(--accent-blue)" />
                   <span>{isCapturing ? 'جاري الالتقاط…' : 'لقطة شاشة فورية'}</span>
                 </button>
 
@@ -541,7 +541,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                         {isImg && fileUrl ? (
                           <img src={fileUrl} alt="" style={modalStyles.thumb} />
                         ) : (
-                          <Paperclip size={12} color="#94a3b8" />
+                          <Paperclip size={12} color="var(--text-muted)" />
                         )}
                         <span style={modalStyles.attName} title={att.originalName || att.fileName}>
                           {att.originalName || att.fileName || `مرفق #${i + 1}`}
@@ -557,14 +557,14 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             {/* New Draft Attachments */}
             {newAttachments.length > 0 && (
               <div>
-                <div style={{ fontSize: 11, color: '#38bdf8', marginBottom: 4 }}>مرفقات جديدة ستُرفع عند الحفظ:</div>
+                <div style={{ fontSize: 11, color: 'var(--accent-blue)', marginBottom: 4 }}>مرفقات جديدة ستُرفع عند الحفظ:</div>
                 <div style={modalStyles.attachmentList}>
                   {newAttachments.map((att, i) => (
                     <div key={i} style={{ ...modalStyles.attachmentChip, borderColor: 'rgba(56, 189, 248, 0.3)' }}>
                       {att.previewUrl ? (
                         <img src={att.previewUrl} alt="" style={modalStyles.thumb} />
                       ) : (
-                        <Paperclip size={12} color="#38bdf8" />
+                        <Paperclip size={12} color="var(--accent-blue)" />
                       )}
                       <span style={modalStyles.attName} title={att.fileName}>{att.fileName}</span>
                       <button
@@ -798,7 +798,7 @@ const modalStyles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   submitBtn: {
-    background: '#0284c7',
+    background: 'var(--accent-blue)',
     border: 'none',
     color: '#fff',
     padding: '7px 16px',
