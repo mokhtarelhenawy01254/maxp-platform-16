@@ -264,23 +264,24 @@ export default function AgentProfilesPage() {
   useEffect(() => {
     if (!selectedId) {
       setProfile(null);
-      setSearchParams((prev) => {
-        if (!prev.has("agent")) return prev;
-        const next = new URLSearchParams(prev);
+      if (searchParams.has("agent")) {
+        const next = new URLSearchParams(searchParams);
         next.delete("agent");
-        return next;
-      }, { replace: true });
+        setSearchParams(next, { replace: true });
+      }
       return;
     }
-    setSearchParams((prev) => {
-      if (prev.get("agent") === selectedId) return prev;
-      const next = new URLSearchParams(prev);
+    if (searchParams.get("agent") !== selectedId) {
+      const next = new URLSearchParams(searchParams);
       next.set("agent", selectedId);
-      return next;
-    }, { replace: true });
+      setSearchParams(next, { replace: true });
+    }
+  }, [selectedId, searchParams, setSearchParams]);
 
+  useEffect(() => {
+    if (!selectedId) return;
     loadProfileData(selectedId);
-  }, [selectedId, setSearchParams, loadProfileData]);
+  }, [selectedId, loadProfileData]);
 
   /* ── beforeunload warning ── */
   useEffect(() => {
