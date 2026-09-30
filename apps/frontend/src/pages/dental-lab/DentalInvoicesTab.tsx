@@ -2438,35 +2438,37 @@ export default function DentalInvoicesTab() {
           )}
         </div>
 
-        {/* Status Filters */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
-          {[
-            { id: "ALL", label: "الكل" },
-            { id: "OPEN", label: "غير مسددة" },
-            { id: "PARTIAL", label: "مسددة جزئياً" },
-            { id: "PAID", label: "مسددة" },
-          ].map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setStatusFilter(s.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                statusFilter === s.id
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
+        {/* Status Filters — العداد مثبت خارج شريط السكرول ليظهر دائمًا على الموبايل */}
+        <div className="flex items-center gap-2">
           {fetchedCount !== null && (
             <span
-              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+              className="shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
               style={{ fontVariantNumeric: "tabular-nums" }}
               title="إجمالي الفواتير المطابقة للفلترة الحالية"
             >
               عدد الفواتير: {fetchedCount}
             </span>
           )}
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 flex-1 min-w-0">
+            {[
+              { id: "ALL", label: "الكل" },
+              { id: "OPEN", label: "غير مسددة" },
+              { id: "PARTIAL", label: "مسددة جزئياً" },
+              { id: "PAID", label: "مسددة" },
+            ].map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setStatusFilter(s.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                  statusFilter === s.id
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Date presets */}

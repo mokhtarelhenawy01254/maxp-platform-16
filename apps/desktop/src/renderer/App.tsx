@@ -82,6 +82,8 @@ declare global {
       getTaskDashboardStats: () => Promise<{ success: boolean; stats: any; error?: string }>;
 
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
+      copyToClipboard: (text: string) => Promise<{ success: boolean; error?: string }>;
+      readClipboardText: () => Promise<{ success: boolean; text: string; error?: string }>;
       windowMinimize: () => Promise<boolean>;
       windowToggleMaximize: () => Promise<boolean>;
       windowClose: () => Promise<boolean>;

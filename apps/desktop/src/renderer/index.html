@@ -14,7 +14,16 @@
       color: #fafafa;
       overflow: hidden;
       -webkit-app-region: no-drag;
-      user-select: none;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    ::selection {
+      background: rgba(56, 189, 248, 0.35);
+      color: #ffffff;
+    }
+    input, textarea, [contenteditable="true"] {
+      user-select: text !important;
+      -webkit-user-select: text !important;
     }
     @keyframes fadeIn {
       from { opacity: 0; }

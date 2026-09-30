@@ -76,7 +76,35 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
   const [copiedDesc, setCopiedDesc] = useState(false);
+  const [copiedTitle, setCopiedTitle] = useState(false);
   const [localWatching, setLocalWatching] = useState<boolean | null>(null);
+
+  const safeCopy = async (text: string) => {
+    try {
+      if (window.electronAPI?.copyToClipboard) {
+        await window.electronAPI.copyToClipboard(text);
+        return true;
+      }
+    } catch {}
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  };
 
   // Close on Escape key press
   useEffect(() => {
@@ -170,10 +198,10 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
     return `${pad(h)}:${pad(m)}:${pad(s)}`;
   };
 
-  const handleCopyDeepLink = (e: React.MouseEvent) => {
+  const handleCopyDeepLink = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const deepLink = `${window.location.origin}${window.location.pathname}#/tasks/${task.id}`;
-    navigator.clipboard.writeText(deepLink);
+    await safeCopy(deepLink);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };
@@ -277,12 +305,10 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <button
                   type="button"
-                  onClick={() => {
-                    try {
-                      navigator.clipboard.writeText(task.description || '');
-                      setCopiedDesc(true);
-                      setTimeout(() => setCopiedDesc(false), 2000);
-                    } catch {}
+                  onClick={async () => {
+                    await safeCopy(task.description || '');
+                    setCopiedDesc(true);
+                    setTimeout(() => setCopiedDesc(false), 2000);
                   }}
                   style={{
                     ...drawerStyles.iconToolBtn,
@@ -355,7 +381,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
 
             {/* Task Title & Status Badges */}
             <div style={drawerStyles.headerMain}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <h2
                   dir="auto"
                   style={drawerStyles.taskTitle}
@@ -363,6 +389,25 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                 >
                   {task.title}
                 </h2>
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    await safeCopy(task.title || '');
+                    setCopiedTitle(true);
+                    setTimeout(() => setCopiedTitle(false), 2000);
+                  }}
+                  style={{
+                    ...drawerStyles.iconToolBtn,
+                    padding: '2px 7px',
+                    borderRadius: 4,
+                    color: copiedTitle ? 'var(--accent-green)' : 'var(--text-dim)',
+                  }}
+                  title={copiedTitle ? 'تم نسخ العنوان!' : 'نسخ عنوان المهمة'}
+                >
+                  {copiedTitle ? <CheckCheck size={12} /> : <Copy size={12} />}
+                  <span style={{ fontSize: 10 }}>{copiedTitle ? 'تم النسخ' : 'نسخ العنوان'}</span>
+                </button>
               </div>
 
               {/* Badges Strip */}
