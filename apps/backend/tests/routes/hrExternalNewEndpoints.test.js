@@ -89,5 +89,93 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
         })
       );
     });
+
+    test('createDeduction rejects invalid deduction type with 400 VALIDATION_ERROR and allowed values', async () => {
+      mockReq.body = {
+        employeeNumber: 'EMP999',
+        amount: 150,
+        reason: 'Late penalty',
+        type: 'INVALID_PENALTY'
+      };
+      await hrExternalController.createDeduction(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR',
+            allowedValues: expect.arrayContaining(['PENALTY', 'VIOLATION', 'OTHER'])
+          })
+        })
+      );
+    });
+
+    test('createReward rejects invalid reward category with 400 VALIDATION_ERROR and allowed values', async () => {
+      mockReq.body = {
+        employeeCode: 'EMP999',
+        rewardName: 'Best Employee',
+        amount: 500,
+        rewardCategory: 'SUPER_HERO'
+      };
+      await hrExternalController.createReward(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR',
+            allowedValues: expect.arrayContaining(['PERFORMANCE', 'ATTENDANCE', 'OTHER'])
+          })
+        })
+      );
+    });
+
+    test('createShift rejects invalid time format with 400 VALIDATION_ERROR', async () => {
+      mockReq.body = {
+        name: 'Morning Shift',
+        startTime: '9 AM',
+        endTime: '17:00'
+      };
+      await hrExternalController.createShift(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR' })
+        })
+      );
+    });
+
+    test('updateAttendanceRecord rejects invalid status with 400 VALIDATION_ERROR and allowed values', async () => {
+      mockReq.params = { id: 'att-123' };
+      mockReq.body = { status: 'NOT_HERE' };
+      await hrExternalController.updateAttendanceRecord(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR',
+            allowedValues: expect.arrayContaining(['PRESENT', 'ABSENT', 'LATE'])
+          })
+        })
+      );
+    });
+  });
+
+  describe('Item 4: New Management Endpoints Export Verification', () => {
+    test('All 11 management endpoints are exported as functions', () => {
+      expect(typeof hrExternalController.getHRSettings).toBe('function');
+      expect(typeof hrExternalController.updateHRSettings).toBe('function');
+      expect(typeof hrExternalController.createDeduction).toBe('function');
+      expect(typeof hrExternalController.updateDeduction).toBe('function');
+      expect(typeof hrExternalController.listRewards).toBe('function');
+      expect(typeof hrExternalController.createReward).toBe('function');
+      expect(typeof hrExternalController.listShifts).toBe('function');
+      expect(typeof hrExternalController.createShift).toBe('function');
+      expect(typeof hrExternalController.updateShift).toBe('function');
+      expect(typeof hrExternalController.assignEmployeeShift).toBe('function');
+      expect(typeof hrExternalController.updateAttendanceRecord).toBe('function');
+    });
   });
 });

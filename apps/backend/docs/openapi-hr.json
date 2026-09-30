@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "MaxP Platform — External HR & AI Integration API",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "Enterprise-grade Human Resources API for seamless integration with external ERP systems (Odoo, SAP), Biometric Attendance devices (ZKTeco), and Autonomous AI Agents (OpenAI, Claude, LangChain, n8n)."
   },
   "servers": [
@@ -23,8 +23,9 @@
     "/employees": {
       "get": {
         "summary": "List employees",
-        "description": "Returns paginated list of employees with search and department filtering.",
+        "description": "Returns paginated list of employees with search and department filtering.\n\n**Required Scope:** `hr:employees:read` (or `hr:read`, `*`)",
         "operationId": "hr_list_employees",
+        "x-required-scope": "hr:employees:read",
         "parameters": [
           {
             "name": "page",
@@ -77,7 +78,60 @@
         ],
         "responses": {
           "200": {
-            "description": "List of employees"
+            "description": "Paginated list of employees"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/employees/stats": {
+      "get": {
+        "summary": "Get employees overview stats",
+        "description": "Returns total count, active count, on-leave count, departments count, and department breakdown.\n\n**Required Scope:** `hr:employees:read` (or `hr:read`, `*`)",
+        "operationId": "hr_get_employees_stats",
+        "x-required-scope": "hr:employees:read",
+        "responses": {
+          "200": {
+            "description": "Employee telemetry stats"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/employees/organization-chart": {
+      "get": {
+        "summary": "Get organizational hierarchy tree",
+        "description": "Returns full tree of departments, positions, and reporting manager relationships.\n\n**Required Scope:** `hr:employees:read` (or `hr:read`, `*`)",
+        "operationId": "hr_get_organization_chart",
+        "x-required-scope": "hr:employees:read",
+        "responses": {
+          "200": {
+            "description": "Organizational hierarchy structure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -85,8 +139,9 @@
     "/employees/{id}": {
       "get": {
         "summary": "Get employee by ID or employeeNumber",
-        "description": "Fetch detailed profile of an employee.",
+        "description": "Fetch detailed profile of an employee.\n\n**Required Scope:** `hr:employees:read` (or `hr:read`, `*`)",
         "operationId": "hr_get_employee_by_id",
+        "x-required-scope": "hr:employees:read",
         "parameters": [
           {
             "name": "id",
@@ -101,8 +156,17 @@
           "200": {
             "description": "Employee profile"
           },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "description": "Employee not found"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -110,8 +174,9 @@
     "/employees/upsert": {
       "post": {
         "summary": "Create or update employee from ERP",
-        "description": "Upsert an employee record from external systems.",
+        "description": "Upsert an employee record from external systems.\n\n**Required Scope:** `hr:employees:write` (or `hr:write`, `*`)",
         "operationId": "hr_upsert_employee",
+        "x-required-scope": "hr:employees:write",
         "requestBody": {
           "required": true,
           "content": {
@@ -176,6 +241,102 @@
           },
           "201": {
             "description": "Employee created"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/departments": {
+      "get": {
+        "summary": "List departments",
+        "description": "Returns list of company departments with manager details and employee headcounts.\n\n**Required Scope:** `hr:departments:read` (or `hr:read`, `*`)",
+        "operationId": "hr_list_departments",
+        "x-required-scope": "hr:departments:read",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of departments"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/positions": {
+      "get": {
+        "summary": "List job positions",
+        "description": "Returns active job titles and positions with department association and headcounts.\n\n**Required Scope:** `hr:positions:read` (or `hr:read`, `*`)",
+        "operationId": "hr_list_positions",
+        "x-required-scope": "hr:positions:read",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          },
+          {
+            "name": "departmentId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of job positions"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -183,8 +344,9 @@
     "/attendance/punches/batch": {
       "post": {
         "summary": "Ingest biometric punches",
-        "description": "Batch endpoint for biometric devices (e.g. ZKTeco) to upload punches with automatic check-in/out resolution and duplicate suppression.",
+        "description": "Batch endpoint for biometric devices (e.g. ZKTeco) to upload punches with automatic check-in/out resolution.\n\n**Required Scope:** `hr:attendance:ingest` (or `hr:write`, `*`)",
         "operationId": "hr_ingest_biometric_punches",
+        "x-required-scope": "hr:attendance:ingest",
         "requestBody": {
           "required": true,
           "content": {
@@ -234,15 +396,25 @@
         "responses": {
           "200": {
             "description": "Punches processed summary"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
     },
     "/attendance/today": {
       "get": {
-        "summary": "Get today's attendance roster",
-        "description": "Quickly inspect who is present, checked-in, or absent today.",
+        "summary": "Get today attendance roster",
+        "description": "Quickly inspect who is present, checked-in, or absent today.\n\n**Required Scope:** `hr:attendance:read` (or `hr:read`, `*`)",
         "operationId": "hr_get_today_attendance",
+        "x-required-scope": "hr:attendance:read",
         "parameters": [
           {
             "name": "date",
@@ -256,15 +428,153 @@
         "responses": {
           "200": {
             "description": "Attendance list"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/attendance/summary": {
+      "get": {
+        "summary": "Get aggregated attendance summary",
+        "description": "Aggregates present days, absent days, late minutes, early departures, and overtime for a date range.\n\n**Required Scope:** `hr:attendance:read` (or `hr:read`, `*`)",
+        "operationId": "hr_get_attendance_summary",
+        "x-required-scope": "hr:attendance:read",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "departmentId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "employeeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated attendance metrics"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
     },
     "/leaves": {
+      "get": {
+        "summary": "List leave requests",
+        "description": "Fetch paginated leave requests with filters for status, employeeCode, and date range.\n\n**Required Scope:** `hr:leaves:read` (or `hr:read`, `*`)",
+        "operationId": "hr_list_leave_requests",
+        "x-required-scope": "hr:leaves:read",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "CANCELLED"
+              ]
+            }
+          },
+          {
+            "name": "employeeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of leave requests"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
       "post": {
         "summary": "Submit leave request",
-        "description": "Submit a leave request on behalf of an employee via AI or external system.",
+        "description": "Submit a leave request on behalf of an employee via AI or external system.\n\n**Required Scope:** `hr:leaves:write` (or `hr:write`, `*`)",
         "operationId": "hr_submit_leave_request",
+        "x-required-scope": "hr:leaves:write",
         "requestBody": {
           "required": true,
           "content": {
@@ -318,6 +628,235 @@
         "responses": {
           "201": {
             "description": "Leave request submitted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/leaves/balances": {
+      "get": {
+        "summary": "Get leave balances",
+        "description": "Returns leave balance allocations, used days, and remaining balances per employee.\n\n**Required Scope:** `hr:leaves:read` (or `hr:read`, `*`)",
+        "operationId": "hr_get_leave_balances",
+        "x-required-scope": "hr:leaves:read",
+        "parameters": [
+          {
+            "name": "employeeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leave balances list"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/leaves/{id}/decision": {
+      "post": {
+        "summary": "Decide on leave request (Approve or Reject)",
+        "description": "Approve or reject a pending leave request using the panel workflow.\n\n**Required Scope:** `hr:leaves:approve` (or `hr:write`, `*`)",
+        "operationId": "hr_decide_leave_request",
+        "x-required-scope": "hr:leaves:approve",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVE",
+                      "REJECT"
+                    ]
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Decision recorded successfully"
+          },
+          "400": {
+            "description": "Invalid action or request state"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Leave request not found"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/payroll/runs": {
+      "get": {
+        "summary": "List payroll runs",
+        "description": "Returns historical payroll run batches with totals and calculation statuses.\n\n**Required Scope:** `hr:payroll:read` (or `hr:read`, `*`)",
+        "operationId": "hr_list_payroll_runs",
+        "x-required-scope": "hr:payroll:read",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of payroll runs"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/payroll/runs/{id}/items": {
+      "get": {
+        "summary": "Get payroll run line items (slips)",
+        "description": "Detailed salary breakdown (base salary, allowances, deductions, net salary) for each employee in a run.\n\n**Required Scope:** `hr:payroll:read` (or `hr:read`, `*`)",
+        "operationId": "hr_get_payroll_run_items",
+        "x-required-scope": "hr:payroll:read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "employeeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payroll run line items"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Payroll run not found"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -325,16 +864,29 @@
     "/webhooks": {
       "get": {
         "summary": "List subscribed webhooks",
+        "description": "List active webhook subscription endpoints for the company.\n\n**Required Scope:** `hr:write` (or `*`)",
         "operationId": "hr_list_webhooks",
+        "x-required-scope": "hr:write",
         "responses": {
           "200": {
             "description": "List of active webhooks"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
       "post": {
         "summary": "Register webhook endpoint",
+        "description": "Register a new webhook subscription endpoint.\n\n**Required Scope:** `hr:write` (or `*`)",
         "operationId": "hr_create_webhook",
+        "x-required-scope": "hr:write",
         "requestBody": {
           "required": true,
           "content": {
@@ -373,6 +925,15 @@
         "responses": {
           "201": {
             "description": "Webhook endpoint registered"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -527,6 +1088,83 @@
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create manual deduction",
+        "description": "Creates a manual deduction or penalty for an employee.\n\n**Required Scope:** hr:deductions:write (or hr:write, *)",
+        "operationId": "hr_create_deduction",
+        "x-required-scope": "hr:deductions:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "employeeNumber",
+                  "amount",
+                  "reason"
+                ],
+                "properties": {
+                  "employeeNumber": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0.01
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PENALTY",
+                      "VIOLATION",
+                      "DAMAGE",
+                      "INSURANCE",
+                      "LOAN_REPAYMENT",
+                      "ADVANCE_REPAYMENT",
+                      "TAX",
+                      "SOCIAL_INSURANCE",
+                      "ABSENCE",
+                      "LATE",
+                      "EARLY_LEAVE",
+                      "OTHER",
+                      "LOAN"
+                    ],
+                    "default": "OTHER"
+                  },
+                  "category": {
+                    "type": "string",
+                    "default": "MANUAL"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string",
+                    "example": "2026-09-30"
+                  },
+                  "notes": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "PENDING",
+                      "APPROVED",
+                      "REJECTED"
+                    ],
+                    "default": "PENDING"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Deduction created"
           }
         }
       }
@@ -684,6 +1322,499 @@
           }
         }
       }
+    },
+    "/settings": {
+      "get": {
+        "summary": "Get partitioned HR settings",
+        "description": "Returns HR settings partitioned into panel-matching sections (workHours, leaves, attendance, geofence, payroll, notifications) with sensitive keys/phones masked.\n\n**Required Scope:** hr:settings:read (or hr:read, *)",
+        "operationId": "hr_get_settings",
+        "x-required-scope": "hr:settings:read",
+        "responses": {
+          "200": {
+            "description": "Masked HR settings grouped by sections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update HR settings (Section-level Merge)",
+        "description": "Updates HR settings via safe section-level merge. Unpassed sections/fields are preserved. Masked phone/secret placeholders are never overwritten.\n\n**Required Scope:** hr:settings:write (or hr:write, *)",
+        "operationId": "hr_update_settings",
+        "x-required-scope": "hr:settings:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "workHours": {
+                    "type": "object"
+                  },
+                  "leaves": {
+                    "type": "object"
+                  },
+                  "attendance": {
+                    "type": "object"
+                  },
+                  "geofence": {
+                    "type": "object"
+                  },
+                  "payroll": {
+                    "type": "object"
+                  },
+                  "notifications": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated HR settings after merge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employees/{id}/shift": {
+      "patch": {
+        "summary": "Assign shift to employee",
+        "description": "Assigns a shift to an employee for a specific date without modifying database schema.\n\n**Required Scope:** hr:shifts:write (or hr:write, *)",
+        "operationId": "hr_assign_employee_shift",
+        "x-required-scope": "hr:shifts:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Employee ID or employeeNumber"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "shiftId",
+                  "date"
+                ],
+                "properties": {
+                  "shiftId": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string",
+                    "example": "2026-10-01"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shift assignment created/updated"
+          }
+        }
+      }
+    },
+    "/attendance/{id}": {
+      "patch": {
+        "summary": "Correct attendance record",
+        "description": "Corrects check-in/out timestamps and status. Automatically recalculates workHours and lateMinutes via the central panel service and cancels associated auto-deductions.\n\n**Required Scope:** hr:attendance:write (or hr:write, *)",
+        "operationId": "hr_update_attendance",
+        "x-required-scope": "hr:attendance:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Attendance Record ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "checkIn": {
+                    "type": "string",
+                    "example": "09:00"
+                  },
+                  "checkOut": {
+                    "type": "string",
+                    "example": "17:00"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "PRESENT",
+                      "ABSENT",
+                      "LATE",
+                      "EARLY_LEAVE",
+                      "HALF_DAY",
+                      "ON_LEAVE",
+                      "HOLIDAY",
+                      "WEEKEND",
+                      "REMOTE"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string"
+                  },
+                  "lateMinutes": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Corrected attendance record"
+          }
+        }
+      }
+    },
+    "/deductions/{id}": {
+      "patch": {
+        "summary": "Update deduction",
+        "description": "Updates an existing deduction.\n\n**Required Scope:** hr:deductions:write (or hr:write, *)",
+        "operationId": "hr_update_deduction",
+        "x-required-scope": "hr:deductions:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Deduction ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deduction updated"
+          }
+        }
+      }
+    },
+    "/rewards": {
+      "get": {
+        "summary": "List reward records",
+        "description": "Lists bonuses and rewards with employeeCode, status, and date range filters.\n\n**Required Scope:** hr:rewards:read (or hr:read, *)",
+        "operationId": "hr_list_rewards",
+        "x-required-scope": "hr:rewards:read",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "employeeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated rewards list"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create reward record",
+        "description": "Creates a bonus or reward record for an employee.\n\n**Required Scope:** hr:rewards:write (or hr:write, *)",
+        "operationId": "hr_create_reward",
+        "x-required-scope": "hr:rewards:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "employeeCode",
+                  "rewardName",
+                  "amount"
+                ],
+                "properties": {
+                  "employeeCode": {
+                    "type": "string"
+                  },
+                  "rewardName": {
+                    "type": "string"
+                  },
+                  "rewardCategory": {
+                    "type": "string",
+                    "enum": [
+                      "PERFORMANCE",
+                      "ATTENDANCE",
+                      "SERVICE_ANNIVERSARY",
+                      "OTHER"
+                    ],
+                    "default": "OTHER"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0.01
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "periodStart": {
+                    "type": "string"
+                  },
+                  "periodEnd": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "PENDING",
+                      "APPROVED",
+                      "GIVEN",
+                      "CANCELLED"
+                    ],
+                    "default": "APPROVED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reward created"
+          }
+        }
+      }
+    },
+    "/shifts": {
+      "get": {
+        "summary": "List shifts",
+        "description": "Lists company shift definitions.\n\n**Required Scope:** hr:shifts:read (or hr:read, *)",
+        "operationId": "hr_list_shifts",
+        "x-required-scope": "hr:shifts:read",
+        "parameters": [
+          {
+            "name": "includeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of shifts"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create shift",
+        "description": "Creates a new shift definition with start/end time and break duration.\n\n**Required Scope:** hr:shifts:write (or hr:write, *)",
+        "operationId": "hr_create_shift",
+        "x-required-scope": "hr:shifts:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "startTime",
+                  "endTime"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "startTime": {
+                    "type": "string",
+                    "example": "09:00"
+                  },
+                  "endTime": {
+                    "type": "string",
+                    "example": "17:00"
+                  },
+                  "breakDuration": {
+                    "type": "integer",
+                    "default": 60
+                  },
+                  "color": {
+                    "type": "string",
+                    "default": "#3B82F6"
+                  },
+                  "isActive": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Shift created"
+          }
+        }
+      }
+    },
+    "/shifts/{id}": {
+      "patch": {
+        "summary": "Update shift",
+        "description": "Updates an existing shift definition.\n\n**Required Scope:** hr:shifts:write (or hr:write, *)",
+        "operationId": "hr_update_shift",
+        "x-required-scope": "hr:shifts:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "startTime": {
+                    "type": "string"
+                  },
+                  "endTime": {
+                    "type": "string"
+                  },
+                  "breakDuration": {
+                    "type": "integer"
+                  },
+                  "color": {
+                    "type": "string"
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shift updated"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -692,13 +1823,138 @@
         "type": "apiKey",
         "in": "header",
         "name": "x-api-key",
-        "description": "MaxP Scoped HR API Key format: hrk_{16_hex_prefix}_{48_hex_secret} (e.g. hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9)"
+        "description": "MaxP Scoped HR API Key format: hrk_{16_hex_prefix}_{48_hex_secret}"
       },
       "BearerAuth": {
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "APIKey",
-        "description": "Alternative Bearer Token format: Bearer hrk_{16_hex_prefix}_{48_hex_secret} (e.g. Bearer hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9)"
+        "description": "Bearer token format: Bearer hrk_{16_hex_prefix}_{48_hex_secret}"
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Authentication failed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "AUTH_KEY_REQUIRED",
+                        "INVALID_KEY_FORMAT",
+                        "INVALID_CREDENTIALS",
+                        "KEY_REVOKED",
+                        "KEY_EXPIRED",
+                        "COMPANY_INACTIVE"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Insufficient scope permission",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "example": "FORBIDDEN_SCOPE"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "requiredScope": {
+                      "type": "string"
+                    },
+                    "grantedScopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Rate limit exceeded (120 req/min, burst 30 per worker)",
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Wait time in seconds"
+          },
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "120"
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Remaining tokens"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "example": "RATE_LIMIT_EXCEEDED"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "retryAfter": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

@@ -71,21 +71,27 @@ router.get('/docs', docRateLimiter, (req, res) => {
 router.use(authenticateExternalHrApi);
 router.use(externalApiRateLimiter);
 
+// ⚙️ Company HR Settings (Section Partitioned & Masked)
+router.get('/settings', requireExternalHrScope('hr:settings:read'), hrExternalController.getHRSettings);
+router.put('/settings', requireExternalHrScope('hr:settings:write'), hrExternalController.updateHRSettings);
+
 // 👥 Employees Sync & Query (ERPs, AI Profile Checks)
 router.get('/employees', requireExternalHrScope('hr:employees:read'), hrExternalController.listEmployees);
 router.get('/employees/stats', requireExternalHrScope('hr:employees:read'), hrExternalController.getEmployeeStats);
 router.get('/employees/organization-chart', requireExternalHrScope('hr:employees:read'), hrExternalController.getOrganizationChart);
 router.get('/employees/:id', requireExternalHrScope('hr:employees:read'), hrExternalController.getEmployeeById);
 router.post('/employees/upsert', requireExternalHrScope('hr:employees:write'), hrExternalController.upsertEmployee);
+router.patch('/employees/:id/shift', requireExternalHrScope('hr:shifts:write'), hrExternalController.assignEmployeeShift);
 
 // 🏢 Departments & Positions Taxonomy
 router.get('/departments', requireExternalHrScope('hr:departments:read'), hrExternalController.listDepartments);
 router.get('/positions', requireExternalHrScope('hr:positions:read'), hrExternalController.listPositions);
 
-// ⏰ Biometric Punches & Attendance Ingestion
+// ⏰ Biometric Punches & Attendance Management
 router.post('/attendance/punches/batch', requireExternalHrScope('hr:attendance:ingest'), hrExternalController.recordPunchesBatch);
 router.get('/attendance/today', requireExternalHrScope('hr:attendance:read'), hrExternalController.getTodayAttendance);
 router.get('/attendance/summary', requireExternalHrScope('hr:attendance:read'), hrExternalController.getAttendanceSummary);
+router.patch('/attendance/:id', requireExternalHrScope('hr:attendance:write'), hrExternalController.updateAttendanceRecord);
 
 // 🏖️ Leaves & Absence
 router.get('/leaves', requireExternalHrScope('hr:leaves:read'), hrExternalController.listLeaveRequests);
@@ -102,6 +108,17 @@ router.get('/advances', requireExternalHrScope('hr:advances:read'), hrExternalCo
 
 // 🔻 Deductions & Penalties
 router.get('/deductions', requireExternalHrScope('hr:deductions:read'), hrExternalController.listDeductions);
+router.post('/deductions', requireExternalHrScope('hr:deductions:write'), hrExternalController.createDeduction);
+router.patch('/deductions/:id', requireExternalHrScope('hr:deductions:write'), hrExternalController.updateDeduction);
+
+// 🏆 Rewards & Bonuses
+router.get('/rewards', requireExternalHrScope('hr:rewards:read'), hrExternalController.listRewards);
+router.post('/rewards', requireExternalHrScope('hr:rewards:write'), hrExternalController.createReward);
+
+// 🕐 Shifts & Rosters
+router.get('/shifts', requireExternalHrScope('hr:shifts:read'), hrExternalController.listShifts);
+router.post('/shifts', requireExternalHrScope('hr:shifts:write'), hrExternalController.createShift);
+router.patch('/shifts/:id', requireExternalHrScope('hr:shifts:write'), hrExternalController.updateShift);
 
 // ⚠️ Warnings & Disciplinary Notices
 router.get('/warnings', requireExternalHrScope('hr:warnings:read'), hrExternalController.listWarnings);

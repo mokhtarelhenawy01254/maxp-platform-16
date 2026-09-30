@@ -1090,6 +1090,83 @@
             "$ref": "#/components/responses/RateLimited"
           }
         }
+      },
+      "post": {
+        "summary": "Create manual deduction",
+        "description": "Creates a manual deduction or penalty for an employee.\n\n**Required Scope:** hr:deductions:write (or hr:write, *)",
+        "operationId": "hr_create_deduction",
+        "x-required-scope": "hr:deductions:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "employeeNumber",
+                  "amount",
+                  "reason"
+                ],
+                "properties": {
+                  "employeeNumber": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0.01
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PENALTY",
+                      "VIOLATION",
+                      "DAMAGE",
+                      "INSURANCE",
+                      "LOAN_REPAYMENT",
+                      "ADVANCE_REPAYMENT",
+                      "TAX",
+                      "SOCIAL_INSURANCE",
+                      "ABSENCE",
+                      "LATE",
+                      "EARLY_LEAVE",
+                      "OTHER",
+                      "LOAN"
+                    ],
+                    "default": "OTHER"
+                  },
+                  "category": {
+                    "type": "string",
+                    "default": "MANUAL"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string",
+                    "example": "2026-09-30"
+                  },
+                  "notes": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "PENDING",
+                      "APPROVED",
+                      "REJECTED"
+                    ],
+                    "default": "PENDING"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Deduction created"
+          }
+        }
       }
     },
     "/warnings": {
@@ -1242,6 +1319,499 @@
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/settings": {
+      "get": {
+        "summary": "Get partitioned HR settings",
+        "description": "Returns HR settings partitioned into panel-matching sections (workHours, leaves, attendance, geofence, payroll, notifications) with sensitive keys/phones masked.\n\n**Required Scope:** hr:settings:read (or hr:read, *)",
+        "operationId": "hr_get_settings",
+        "x-required-scope": "hr:settings:read",
+        "responses": {
+          "200": {
+            "description": "Masked HR settings grouped by sections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update HR settings (Section-level Merge)",
+        "description": "Updates HR settings via safe section-level merge. Unpassed sections/fields are preserved. Masked phone/secret placeholders are never overwritten.\n\n**Required Scope:** hr:settings:write (or hr:write, *)",
+        "operationId": "hr_update_settings",
+        "x-required-scope": "hr:settings:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "workHours": {
+                    "type": "object"
+                  },
+                  "leaves": {
+                    "type": "object"
+                  },
+                  "attendance": {
+                    "type": "object"
+                  },
+                  "geofence": {
+                    "type": "object"
+                  },
+                  "payroll": {
+                    "type": "object"
+                  },
+                  "notifications": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated HR settings after merge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employees/{id}/shift": {
+      "patch": {
+        "summary": "Assign shift to employee",
+        "description": "Assigns a shift to an employee for a specific date without modifying database schema.\n\n**Required Scope:** hr:shifts:write (or hr:write, *)",
+        "operationId": "hr_assign_employee_shift",
+        "x-required-scope": "hr:shifts:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Employee ID or employeeNumber"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "shiftId",
+                  "date"
+                ],
+                "properties": {
+                  "shiftId": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string",
+                    "example": "2026-10-01"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shift assignment created/updated"
+          }
+        }
+      }
+    },
+    "/attendance/{id}": {
+      "patch": {
+        "summary": "Correct attendance record",
+        "description": "Corrects check-in/out timestamps and status. Automatically recalculates workHours and lateMinutes via the central panel service and cancels associated auto-deductions.\n\n**Required Scope:** hr:attendance:write (or hr:write, *)",
+        "operationId": "hr_update_attendance",
+        "x-required-scope": "hr:attendance:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Attendance Record ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "checkIn": {
+                    "type": "string",
+                    "example": "09:00"
+                  },
+                  "checkOut": {
+                    "type": "string",
+                    "example": "17:00"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "PRESENT",
+                      "ABSENT",
+                      "LATE",
+                      "EARLY_LEAVE",
+                      "HALF_DAY",
+                      "ON_LEAVE",
+                      "HOLIDAY",
+                      "WEEKEND",
+                      "REMOTE"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string"
+                  },
+                  "lateMinutes": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Corrected attendance record"
+          }
+        }
+      }
+    },
+    "/deductions/{id}": {
+      "patch": {
+        "summary": "Update deduction",
+        "description": "Updates an existing deduction.\n\n**Required Scope:** hr:deductions:write (or hr:write, *)",
+        "operationId": "hr_update_deduction",
+        "x-required-scope": "hr:deductions:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Deduction ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deduction updated"
+          }
+        }
+      }
+    },
+    "/rewards": {
+      "get": {
+        "summary": "List reward records",
+        "description": "Lists bonuses and rewards with employeeCode, status, and date range filters.\n\n**Required Scope:** hr:rewards:read (or hr:read, *)",
+        "operationId": "hr_list_rewards",
+        "x-required-scope": "hr:rewards:read",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "employeeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated rewards list"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create reward record",
+        "description": "Creates a bonus or reward record for an employee.\n\n**Required Scope:** hr:rewards:write (or hr:write, *)",
+        "operationId": "hr_create_reward",
+        "x-required-scope": "hr:rewards:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "employeeCode",
+                  "rewardName",
+                  "amount"
+                ],
+                "properties": {
+                  "employeeCode": {
+                    "type": "string"
+                  },
+                  "rewardName": {
+                    "type": "string"
+                  },
+                  "rewardCategory": {
+                    "type": "string",
+                    "enum": [
+                      "PERFORMANCE",
+                      "ATTENDANCE",
+                      "SERVICE_ANNIVERSARY",
+                      "OTHER"
+                    ],
+                    "default": "OTHER"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0.01
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "periodStart": {
+                    "type": "string"
+                  },
+                  "periodEnd": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "PENDING",
+                      "APPROVED",
+                      "GIVEN",
+                      "CANCELLED"
+                    ],
+                    "default": "APPROVED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Reward created"
+          }
+        }
+      }
+    },
+    "/shifts": {
+      "get": {
+        "summary": "List shifts",
+        "description": "Lists company shift definitions.\n\n**Required Scope:** hr:shifts:read (or hr:read, *)",
+        "operationId": "hr_list_shifts",
+        "x-required-scope": "hr:shifts:read",
+        "parameters": [
+          {
+            "name": "includeInactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of shifts"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create shift",
+        "description": "Creates a new shift definition with start/end time and break duration.\n\n**Required Scope:** hr:shifts:write (or hr:write, *)",
+        "operationId": "hr_create_shift",
+        "x-required-scope": "hr:shifts:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "startTime",
+                  "endTime"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "startTime": {
+                    "type": "string",
+                    "example": "09:00"
+                  },
+                  "endTime": {
+                    "type": "string",
+                    "example": "17:00"
+                  },
+                  "breakDuration": {
+                    "type": "integer",
+                    "default": 60
+                  },
+                  "color": {
+                    "type": "string",
+                    "default": "#3B82F6"
+                  },
+                  "isActive": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Shift created"
+          }
+        }
+      }
+    },
+    "/shifts/{id}": {
+      "patch": {
+        "summary": "Update shift",
+        "description": "Updates an existing shift definition.\n\n**Required Scope:** hr:shifts:write (or hr:write, *)",
+        "operationId": "hr_update_shift",
+        "x-required-scope": "hr:shifts:write",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "startTime": {
+                    "type": "string"
+                  },
+                  "endTime": {
+                    "type": "string"
+                  },
+                  "breakDuration": {
+                    "type": "integer"
+                  },
+                  "color": {
+                    "type": "string"
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shift updated"
           }
         }
       }

@@ -79,6 +79,14 @@ hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
 | `hr:payroll:read` | Granular | استعلام مسيرات الرواتب والمفردات والبدلات والخصومات (`GET /payroll/runs`, `GET /payroll/runs/:id/items`) |
 | `hr:advances:read` | Granular | استعلام طلبات السلف المالية وحالات السداد والأقساط (`GET /advances`) |
 | `hr:deductions:read` | Granular | استعلام سجلات الخصومات والجزاءات اليدوية والتلقائية (`GET /deductions`) |
+| `hr:deductions:write` | Granular | إنشاء وتعديل الخصومات والجزاءات اليدوية (`POST /deductions`, `PATCH /deductions/:id`) |
+| `hr:rewards:read` | Granular | استعلام سجلات المكافآت والحوافز (`GET /rewards`) |
+| `hr:rewards:write` | Granular | إنشاء ومنح المكافآت والحوافز المالية للموظفين (`POST /rewards`) |
+| `hr:shifts:read` | Granular | استعلام الورديات والمناوبات للشركة (`GET /shifts`) |
+| `hr:shifts:write` | Granular | إنشاء وتعديل وتعيين الورديات للموظفين (`POST /shifts`, `PATCH /shifts/:id`, `PATCH /employees/:id/shift`) |
+| `hr:settings:read` | Granular | استعلام إعدادات الموارد البشرية المقسمة مع تقنيع الحقول الحساسة (`GET /settings`) |
+| `hr:settings:write` | Granular | تعديل إعدادات الموارد البشرية مع دمج الأقسام ومزامنة التوقيت (`PUT /settings`) |
+| `hr:attendance:write` | Granular | تصحيح سجلات الحضور وإعادة احتساب ساعات العمل وإلغاء الخصم الآلي (`PATCH /attendance/:id`) |
 | `hr:warnings:read` | Granular | استعلام الإنذارات الإدارية ولفتات النظر ومستوى الخطورة (`GET /warnings`) |
 | `hr:resignations:read` | Granular | استعلام طلبات الاستقالة وحالات إخلاء الطرف والتسوية النهائية (`GET /resignations`) |
 
@@ -125,12 +133,17 @@ hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
 
 ## 5. النقاط النهائية للخدمة (Endpoints Reference)
 
+### ⚙️ إعدادات الموارد البشرية (HR Settings)
+- `GET /settings` (`hr:settings:read`): استعلام إعدادات الموارد البشرية مقسمة للأقسام القياسية للوحة التحكم (`workHours`, `leaves`, `attendance`, `geofence`, `payroll`, `notifications`) مع تقنيع كامل لأرقام الهواتف والقيم الحساسة (`••••••••`).
+- `PUT /settings` (`hr:settings:write`): تعديل مرجّع (Section-level Merge) للإعدادات؛ أي قسم يُرسل يندمج تلقائياً مع الحالي دون مسح باقي الحقول، مع إمكانية تحديث المنطقة الزمنية للشركة (`timezone`)، وتجاهل استبدال الأرقام المقنعة.
+
 ### 👥 إدارة الموظفين والهيكل (Employees & Org)
 - `GET /employees` (`hr:employees:read`): استعلام الموظفين بصفحات وفلاتر (`page`, `limit`, `search`, `departmentId`, `status`).
 - `GET /employees/stats` (`hr:employees:read`): إحصائيات عامة (إجمالي الموظفين، النشطين، المجازين، وتوزيع الأقسام).
 - `GET /employees/organization-chart` (`hr:employees:read`): شجرة الهيكل التنظيمي وتسلسل الإدارة والمناصب.
 - `GET /employees/:id` (`hr:employees:read`): ملف الموظف الكامل بواسطة الـ ID أو الرقم الوظيفي.
 - `POST /employees/upsert` (`hr:employees:write`): مزامنة وتحديث بيانات موظف من أنظمة الـ ERP. يتحقق من صحة حالة الموظف `status` (`ACTIVE`, `PROBATION`, `ON_LEAVE`, `TERMINATED`, `SUSPENDED`, `RESIGNED`, `ON_HOLD`, `COMPLETED`, `CANCELLED`) ويرد بـ `400 VALIDATION_ERROR` في حال إرسال قيمة غير صحيحة.
+- `PATCH /employees/:id/shift` (`hr:shifts:write`): تعيين وردية محددة لموظف لتاريخ معين (`shiftId`, `date`, `notes`) والتحقق من عدم وجود تعارض زمني.
 
 ### 🏢 الأقسام والوظائف (Departments & Positions)
 - `GET /departments` (`hr:departments:read`): استعلام الأقسام مع أسماء المديرين وعدد الموظفين.
@@ -140,6 +153,7 @@ hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
 - `POST /attendance/punches/batch` (`hr:attendance:ingest`): رفع حركات البصمة مجمعة من أجهزة ZKTeco أو الأنظمة الخارجية. يعتمد المسار على النطاق الزمني للشركة (`timezone` المسجل، والافتراضي `Africa/Cairo`) لربط البصمات باليوم الفعلي الصحيح ومطابقة استعلام `/attendance/today`.
 - `GET /attendance/today` (`hr:attendance:read`): كشف الحضور والغياب لليوم الحالي. يعتمد المسار على النطاق الزمني للشركة (`timezone` المسجل في إعدادات الشركة، والافتراضي `Africa/Cairo` القاهرة) لضمان عدم حدوث أي انزياح في منتصف الليل (بين 12:00 ص و3:00 ص)، كما يقبل المعامل `?date=YYYY-MM-DD` للاستعلام عن أي يوم محدد في نفس النطاق الزمني.
 - `GET /attendance/summary` (`hr:attendance:read`): ملخص مجمع لحركات الحضور والغياب والتأخيرات ومعدلات الدوام لفترة محددة (`from`, `to`, `employeeCode`, `departmentId`).
+- `PATCH /attendance/:id` (`hr:attendance:write`): تصحيح سجل حضور وانصراف يدوي (`checkIn`, `checkOut`, `status`, `notes`, `lateMinutes`). يعيد احتساب ساعات العمل ودقائق التأخير عبر المحرك المركزي ويلغي الخصم الآلي المرتبط في حال تصفير التأخير أو إثبات الحضور.
 
 ### 🏖️ طلبات وأرصدة الإجازات (Leaves Management)
 - `GET /leaves` (`hr:leaves:read`): استعلام سجلات وطلبات الإجازات بفلترة (`status`, `employeeCode`, `from`, `to`, `page`, `limit`).
@@ -156,6 +170,17 @@ hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
 
 ### 🔻 الخصومات والجزاءات (Deductions & Penalties)
 - `GET /deductions` (`hr:deductions:read`): استعلام سجلات الخصومات التلقائية (تأخيرات، غيابات) واليدوية وفلاترها (`page`, `limit`, `employeeCode`, `status`, `from`, `to`, `search`).
+- `POST /deductions` (`hr:deductions:write`): إنشاء خصم يدوي لموظف (`employeeNumber`, `amount`, `type`, `category`, `reason`, `date`, `status`). يتحقق من صحة `type` و`status` قبل الإنشاء.
+- `PATCH /deductions/:id` (`hr:deductions:write`): تعديل خصم مسجل (`amount`, `reason`, `type`, `notes`, `status`).
+
+### 🏆 المكافآت والحوافز (Rewards & Bonuses)
+- `GET /rewards` (`hr:rewards:read`): استعلام سجلات المكافآت والحوافز بصفحات وفلاتر (`page`, `limit`, `employeeCode`, `status`, `from`, `to`, `search`).
+- `POST /rewards` (`hr:rewards:write`): إنشاء ومنح مكافأة مالية لموظف (`employeeCode`, `rewardName`, `rewardCategory`, `amount`, `reason`, `periodStart`, `periodEnd`, `status`).
+
+### 🕐 الورديات والمناوبات (Shifts & Rosters)
+- `GET /shifts` (`hr:shifts:read`): استعلام قائمة ورديات العمل الخاصة بالشركة وحالات نشاطها.
+- `POST /shifts` (`hr:shifts:write`): إنشاء تعريف وردية عمل جديدة (`name`, `startTime`, `endTime`, `breakDuration`, `color`, `isActive`).
+- `PATCH /shifts/:id` (`hr:shifts:write`): تحديث بيانات وردية العمل ومواعيدها وفترات الاستراحة.
 
 ### ⚠️ الإنذارات ولفتات النظر (Warnings & Disciplinary)
 - `GET /warnings` (`hr:warnings:read`): استعلام الإنذارات الإدارية ومستويات الخطورة (`page`, `limit`, `employeeCode`, `status`, `from`, `to`, `search`).

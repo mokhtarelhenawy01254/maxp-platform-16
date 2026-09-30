@@ -450,6 +450,14 @@ export default function HRApiIntegrations() {
                     <option value="hr:payroll:read">hr:payroll:read — استعلام مسيرات ورواتب الموظفين</option>
                     <option value="hr:advances:read">hr:advances:read — استعلام طلبات السلف المالية</option>
                     <option value="hr:deductions:read">hr:deductions:read — استعلام سجلات الخصومات والجزاءات</option>
+                    <option value="hr:deductions:write">hr:deductions:write — إنشاء وتعديل الخصومات والجزاءات</option>
+                    <option value="hr:rewards:read">hr:rewards:read — استعلام سجلات المكافآت والحوافز</option>
+                    <option value="hr:rewards:write">hr:rewards:write — إنشاء ومنح المكافآت والحوافز</option>
+                    <option value="hr:shifts:read">hr:shifts:read — استعلام الورديات والمناوبات</option>
+                    <option value="hr:shifts:write">hr:shifts:write — إنشاء وتعديل وتعيين الورديات للموظفين</option>
+                    <option value="hr:settings:read">hr:settings:read — استعلام إعدادات الموارد البشرية المقسمة</option>
+                    <option value="hr:settings:write">hr:settings:write — تعديل إعدادات الموارد البشرية مع دمج الأقسام</option>
+                    <option value="hr:attendance:write">hr:attendance:write — تصحيح وإعادة حساب سجلات الحضور والانصراف</option>
                     <option value="hr:warnings:read">hr:warnings:read — استعلام الإنذارات واللفتات الإدارية</option>
                     <option value="hr:resignations:read">hr:resignations:read — استعلام طلبات وإنهاء الاستقالات</option>
                   </select>
