@@ -108,6 +108,7 @@ export default function AgentProfilesPage() {
     }
   }, []);
 
+  const initialAgentIdRef = React.useRef<string | null>(agentIdFromUrl);
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(agentIdFromUrl);
@@ -168,6 +169,9 @@ export default function AgentProfilesPage() {
   const loadAgents = useCallback(async () => {
     setAgentsLoading(true);
     setProfileError(null);
+    const initialTargetId = initialAgentIdRef.current;
+    initialAgentIdRef.current = null;
+
     try {
       if (agentsListTab === "archived") {
         const res = await tryApiFetch<{ success: boolean; agents: AgentItem[] }>("/agent/agents?status=ARCHIVED");
@@ -177,28 +181,32 @@ export default function AgentProfilesPage() {
           setSelectedId((prev) => (list.some((a) => a.id === prev) ? prev : list[0].id));
         } else {
           setSelectedId(null);
+          setProfile(null);
         }
       } else {
-        const res = await sandboxApi.getAgents(agentIdFromUrl || undefined);
+        const res = await sandboxApi.getAgents(initialTargetId || undefined);
         const list = (res.agents || []) as AgentItem[];
-        setAgents(list);
 
-        // Check if agent from URL is archived if not in active
-        if (agentIdFromUrl && !list.some((a) => a.id === agentIdFromUrl)) {
+        // Only on initial page load: if the URL agent is not in active list, check if it is archived
+        if (initialTargetId && !list.some((a) => a.id === initialTargetId)) {
           const archRes = await tryApiFetch<{ success: boolean; agents: AgentItem[] }>("/agent/agents?status=ARCHIVED");
           const archList = archRes?.agents || [];
-          if (archList.some((a) => a.id === agentIdFromUrl)) {
-            setAgentsListTab("archived");
+          if (archList.some((a) => a.id === initialTargetId)) {
             setAgents(archList);
-            setSelectedId(agentIdFromUrl);
+            setSelectedId(initialTargetId);
+            setAgentsListTab("archived");
             return;
           }
         }
 
-        if (agentIdFromUrl && list.some((a) => a.id === agentIdFromUrl)) {
-          setSelectedId(agentIdFromUrl);
+        setAgents(list);
+        if (initialTargetId && list.some((a) => a.id === initialTargetId)) {
+          setSelectedId(initialTargetId);
         } else if (list.length > 0) {
           setSelectedId((prev) => (list.some((a) => a.id === prev) ? prev : list[0].id));
+        } else {
+          setSelectedId(null);
+          setProfile(null);
         }
       }
     } catch {
@@ -206,7 +214,7 @@ export default function AgentProfilesPage() {
     } finally {
       setAgentsLoading(false);
     }
-  }, [agentsListTab, agentIdFromUrl, t]);
+  }, [agentsListTab, t]);
 
   useEffect(() => {
     loadAgents();
@@ -254,8 +262,18 @@ export default function AgentProfilesPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedId) return;
+    if (!selectedId) {
+      setProfile(null);
+      setSearchParams((prev) => {
+        if (!prev.has("agent")) return prev;
+        const next = new URLSearchParams(prev);
+        next.delete("agent");
+        return next;
+      }, { replace: true });
+      return;
+    }
     setSearchParams((prev) => {
+      if (prev.get("agent") === selectedId) return prev;
       const next = new URLSearchParams(prev);
       next.set("agent", selectedId);
       return next;
@@ -287,6 +305,9 @@ export default function AgentProfilesPage() {
       const nextStatus = data.agent.status;
       setProfile((prev) => (prev ? { ...prev, agent: { ...prev.agent, status: nextStatus } } : prev));
       setAgents((prev) => prev.map((a) => (a.id === selectedId ? { ...a, status: nextStatus } : a)));
+      if (agentsListTab === "archived" && nextActive) {
+        setAgentsListTab("active");
+      }
       toast.success(nextActive ? t("agentProfiles.header.status.active_toggle", "تم تفعيل الوكيل") : t("agentProfiles.header.status.paused_toggle", "تم إيقاف الوكيل"));
     }
     setStatusSaving(false);
@@ -692,14 +713,19 @@ export default function AgentProfilesPage() {
                   <div className="flex items-center justify-center gap-3 pt-2">
                     <Button
                       onClick={async () => {
-                        const data = await tryApiFetch<{ success: boolean }>(
+                        const data = await tryApiFetch<{ success: boolean; agent?: { status?: string } }>(
                           `/agent/agents/${selectedId}/status`,
                           { method: "PATCH", body: JSON.stringify({ status: "ACTIVE" }) }
                         );
                         if (data) {
+                          const nextStatus = data.agent?.status || "ACTIVE";
+                          setProfile((prev) => (prev ? { ...prev, agent: { ...prev.agent, status: nextStatus } } : prev));
                           toast.success(t("agentProfiles.archived.restoreSuccess", "تمت استعادة الوكيل بنجاح."));
-                          setAgentsListTab("active");
-                          loadAgents();
+                          if (agentsListTab === "active") {
+                            loadAgents();
+                          } else {
+                            setAgentsListTab("active");
+                          }
                         }
                       }}
                       className="gap-1.5 h-8 text-xs"
