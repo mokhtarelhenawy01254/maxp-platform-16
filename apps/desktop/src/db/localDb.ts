@@ -207,6 +207,8 @@ class LocalDatabase {
       last_activity: now,
       total_active_seconds: 0,
       total_idle_seconds: 0,
+      total_break_seconds: 0,
+      total_break_count: 0,
       total_mouse_events: 0,
       total_keyboard_events: 0,
       shift_ended_at: null,
@@ -218,6 +220,30 @@ class LocalDatabase {
     stat.total_mouse_events += mouseEvents;
     stat.total_keyboard_events += keyboardEvents;
     stat.last_activity = now;
+    stat.updated_at = now;
+
+    this.dailyStatsMap[date] = stat;
+    this.saveToDisk();
+  }
+
+  recordBreakEvent(date: string, breakSeconds: number): void {
+    const now = new Date().toISOString();
+    const stat = this.dailyStatsMap[date] || {
+      date,
+      first_activity: now,
+      last_activity: now,
+      total_active_seconds: 0,
+      total_idle_seconds: 0,
+      total_break_seconds: 0,
+      total_break_count: 0,
+      total_mouse_events: 0,
+      total_keyboard_events: 0,
+      shift_ended_at: null,
+      updated_at: now,
+    };
+
+    stat.total_break_seconds = (stat.total_break_seconds || 0) + breakSeconds;
+    stat.total_break_count = (stat.total_break_count || 0) + 1;
     stat.updated_at = now;
 
     this.dailyStatsMap[date] = stat;

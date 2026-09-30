@@ -366,10 +366,10 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
           </div>
         </div>
 
-        {/* Idle / Break Time */}
+        {/* Idle & Break Breakdown */}
         <div className="rounded-xl border border-border/40 bg-card/60 p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>وقت الاستراحة والتوقف</span>
+            <span>سكون الجهاز وفترات البريك</span>
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-inset ring-amber-500/20">
               <Coffee className="h-3.5 w-3.5" />
             </span>
@@ -377,8 +377,14 @@ export const EmployeeMonitorDetails: React.FC<EmployeeMonitorDetailsProps> = ({
           <div className="mt-2 text-xl font-bold text-foreground tabular-nums">
             {formatSeconds(totalIdle)}
           </div>
-          <div className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
-            فترات راحة مصرحة وخمول معتمد
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-muted-foreground font-medium">
+              سكون: {formatSeconds(Math.max(0, totalIdle - (data.breaksSummary?.totalBreakSeconds || 0)))}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-500/20">
+              بريك: {formatSeconds(data.breaksSummary?.totalBreakSeconds || 0)}
+              {data.breaksSummary?.totalBreaksCount ? ` (${data.breaksSummary.totalBreaksCount} مرات)` : ''}
+            </span>
           </div>
         </div>
 

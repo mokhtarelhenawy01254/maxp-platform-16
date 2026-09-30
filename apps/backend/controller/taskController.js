@@ -413,7 +413,7 @@ async function hydrateLegacyTasks(tasks) {
       ? prisma.timeEntry
           .findMany({
             where: { taskId: { in: taskIds } },
-            select: { taskId: true, duration: true, isRunning: true, startTime: true },
+            select: { id: true, taskId: true, duration: true, isRunning: true, startTime: true, endTime: true, createdAt: true },
           })
           .catch(() => [])
       : Promise.resolve([]),
@@ -425,27 +425,64 @@ async function hydrateLegacyTasks(tasks) {
   );
   const usersById = new Map(users.map((user) => [user.id, user]));
 
-  const timeMap = new Map();
+  const lifetimeTimeMap = new Map();
+  const todayTimeMap = new Map();
+  const entriesByTaskMap = new Map();
   const now = Date.now();
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfTodayMs = startOfToday.getTime();
+
   for (const entry of timeEntries) {
+    const entryStartMs = entry.startTime
+      ? new Date(entry.startTime).getTime()
+      : (entry.createdAt ? new Date(entry.createdAt).getTime() : 0);
     let mins = 0;
+
     if (entry.isRunning && entry.startTime) {
-      const startMs = new Date(entry.startTime).getTime();
-      if (!isNaN(startMs) && now > startMs) {
-        mins = Math.max(0, Math.round((now - startMs) / 60000));
+      if (!isNaN(entryStartMs) && now > entryStartMs) {
+        const rawElapsed = Math.round((now - entryStartMs) / 60000);
+        // Safety cap: single continuous unstopped timer cannot exceed 8 hours (480 min)
+        mins = Math.max(0, Math.min(480, rawElapsed));
       }
     } else {
-      mins = Number(entry.duration || 0);
+      // Completed entry: cap at 720 min (12h) to guard against corrupted legacy values
+      mins = Math.max(0, Math.min(720, Number(entry.duration || 0)));
     }
-    timeMap.set(entry.taskId, (timeMap.get(entry.taskId) || 0) + mins);
+
+    lifetimeTimeMap.set(entry.taskId, (lifetimeTimeMap.get(entry.taskId) || 0) + mins);
+
+    const isToday = !isNaN(entryStartMs) && entryStartMs >= startOfTodayMs;
+    if (isToday) {
+      todayTimeMap.set(entry.taskId, (todayTimeMap.get(entry.taskId) || 0) + mins);
+    }
+
+    const taskEntries = entriesByTaskMap.get(entry.taskId) || [];
+    taskEntries.push({
+      id: entry.id,
+      duration: mins,
+      isRunning: Boolean(entry.isRunning),
+      startTime: entry.startTime,
+      endTime: entry.endTime,
+      isToday,
+    });
+    entriesByTaskMap.set(entry.taskId, taskEntries);
   }
 
   return tasks.map((task) => {
-    let totalTrackedMinutes = timeMap.get(task.id) || 0;
-    if (totalTrackedMinutes === 0 && Number(task.actualHours || 0) > 0) {
-      totalTrackedMinutes = Math.round(Number(task.actualHours) * 60);
+    let lifetimeTrackedMinutes = lifetimeTimeMap.get(task.id) || 0;
+    let todayTrackedMinutes = todayTimeMap.get(task.id) || 0;
+
+    if (lifetimeTrackedMinutes === 0 && Number(task.actualHours || 0) > 0) {
+      lifetimeTrackedMinutes = Math.round(Number(task.actualHours) * 60);
+      const taskCreatedMs = task.createdAt ? new Date(task.createdAt).getTime() : 0;
+      if (taskCreatedMs >= startOfTodayMs) {
+        todayTrackedMinutes = Math.min(480, lifetimeTrackedMinutes);
+      }
     }
-    const computedHours = Math.round((totalTrackedMinutes / 60) * 10) / 10;
+
+    const computedHours = Math.round((lifetimeTrackedMinutes / 60) * 10) / 10;
+    const todayComputedHours = Math.round((todayTrackedMinutes / 60) * 10) / 10;
     const estHours = Number(task.estimatedHours || 0);
     const estMinutes = Number(task.estimatedMinutes || (estHours * 60) || 0);
 
@@ -472,11 +509,17 @@ async function hydrateLegacyTasks(tasks) {
       estimatedHours: estHours,
       estimatedMinutes: estMinutes,
       actualHours: computedHours,
-      actualMinutes: totalTrackedMinutes,
-      totalDuration: totalTrackedMinutes,
-      total_duration: totalTrackedMinutes,
-      totalSeconds: totalTrackedMinutes * 60,
-      totalTimeMinutes: totalTrackedMinutes,
+      actualMinutes: lifetimeTrackedMinutes,
+      totalDuration: lifetimeTrackedMinutes,
+      total_duration: lifetimeTrackedMinutes,
+      totalSeconds: lifetimeTrackedMinutes * 60,
+      totalTimeMinutes: lifetimeTrackedMinutes,
+      todayMinutes: todayTrackedMinutes,
+      todayDuration: todayTrackedMinutes,
+      todayTrackedMinutes: todayTrackedMinutes,
+      todaySeconds: todayTrackedMinutes * 60,
+      todayHours: todayComputedHours,
+      timeEntries: entriesByTaskMap.get(task.id) || [],
       progress: Number(task.progress || 0),
       measurementType: "TIME",
       metricUnit: null,
@@ -636,32 +679,70 @@ const buildTaskSummaryInclude = () => ({
       duration: true,
       isRunning: true,
       startTime: true,
+      endTime: true,
+      createdAt: true,
     },
   },
 });
 
 const formatTaskSummary = (task) => {
-  let totalTrackedMinutes = 0;
+  const now = Date.now();
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfTodayMs = startOfToday.getTime();
+
+  let lifetimeTrackedMinutes = 0;
+  let todayTrackedMinutes = 0;
+  const sanitizedEntries = [];
+
   if (Array.isArray(task.time_entries) && task.time_entries.length > 0) {
-    const now = Date.now();
     for (const entry of task.time_entries) {
+      const entryStartMs = entry.startTime
+        ? new Date(entry.startTime).getTime()
+        : (entry.createdAt ? new Date(entry.createdAt).getTime() : 0);
+      let entryMins = 0;
+
       if (entry.isRunning && entry.startTime) {
-        const startMs = new Date(entry.startTime).getTime();
-        if (!isNaN(startMs) && now > startMs) {
-          totalTrackedMinutes += Math.max(0, Math.round((now - startMs) / 60000));
+        if (!isNaN(entryStartMs) && now > entryStartMs) {
+          const rawElapsed = Math.round((now - entryStartMs) / 60000);
+          // Safety cap: single continuous unstopped timer cannot exceed 8 hours (480 min)
+          entryMins = Math.max(0, Math.min(480, rawElapsed));
         }
       } else {
-        totalTrackedMinutes += Number(entry.duration || 0);
+        // Completed entry: cap single entry at 720 min (12h) to guard against corrupted legacy values
+        entryMins = Math.max(0, Math.min(720, Number(entry.duration || 0)));
       }
+
+      lifetimeTrackedMinutes += entryMins;
+
+      // Check if entry belongs to today
+      const isToday = !isNaN(entryStartMs) && entryStartMs >= startOfTodayMs;
+      if (isToday) {
+        todayTrackedMinutes += entryMins;
+      }
+
+      sanitizedEntries.push({
+        id: entry.id,
+        duration: entryMins,
+        isRunning: Boolean(entry.isRunning),
+        startTime: entry.startTime,
+        endTime: entry.endTime,
+        isToday,
+      });
     }
   }
 
   // Fallback to actualHours * 60 if time_entries yielded 0 but actualHours was persisted
-  if (totalTrackedMinutes === 0 && Number(task.actualHours || 0) > 0) {
-    totalTrackedMinutes = Math.round(Number(task.actualHours) * 60);
+  if (lifetimeTrackedMinutes === 0 && Number(task.actualHours || 0) > 0) {
+    lifetimeTrackedMinutes = Math.round(Number(task.actualHours) * 60);
+    const taskCreatedMs = task.createdAt ? new Date(task.createdAt).getTime() : 0;
+    if (taskCreatedMs >= startOfTodayMs) {
+      todayTrackedMinutes = Math.min(480, lifetimeTrackedMinutes);
+    }
   }
 
-  const computedHours = Math.round((totalTrackedMinutes / 60) * 10) / 10;
+  const computedHours = Math.round((lifetimeTrackedMinutes / 60) * 10) / 10;
+  const todayComputedHours = Math.round((todayTrackedMinutes / 60) * 10) / 10;
   const estHours = Number(task.estimatedHours || 0);
   const estMinutes = Number(task.estimatedMinutes || (estHours * 60) || 0);
 
@@ -696,11 +777,17 @@ const formatTaskSummary = (task) => {
     estimatedHours: estHours,
     estimatedMinutes: estMinutes,
     actualHours: computedHours,
-    actualMinutes: totalTrackedMinutes,
-    totalDuration: totalTrackedMinutes,
-    total_duration: totalTrackedMinutes,
-    totalSeconds: totalTrackedMinutes * 60,
-    totalTimeMinutes: totalTrackedMinutes,
+    actualMinutes: lifetimeTrackedMinutes,
+    totalDuration: lifetimeTrackedMinutes,
+    total_duration: lifetimeTrackedMinutes,
+    totalSeconds: lifetimeTrackedMinutes * 60,
+    totalTimeMinutes: lifetimeTrackedMinutes,
+    todayMinutes: todayTrackedMinutes,
+    todayDuration: todayTrackedMinutes,
+    todayTrackedMinutes: todayTrackedMinutes,
+    todaySeconds: todayTrackedMinutes * 60,
+    todayHours: todayComputedHours,
+    timeEntries: sanitizedEntries,
     progress: Number(task.progress || 0),
     measurementType: task.measurementType || "TIME",
     metricUnit: task.metricUnit || null,

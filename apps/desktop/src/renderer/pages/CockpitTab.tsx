@@ -17,6 +17,7 @@ import {
   History,
   Play,
   LogOut,
+  Moon,
 } from 'lucide-react';
 
 interface CockpitTabProps {
@@ -123,15 +124,19 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
   const effectiveSummary = isToday ? dailySummary : (historicalSummary || {});
   const baseActive = effectiveSummary?.total_active_seconds ?? 0;
   const baseIdle = effectiveSummary?.total_idle_seconds ?? 0;
+  const baseBreak = effectiveSummary?.total_break_seconds ?? (isToday ? (trackerState?.breakSeconds ?? 0) : 0);
+  const breakCount = isToday ? (trackerState?.breakCount ?? effectiveSummary?.total_break_count ?? 0) : (effectiveSummary?.total_break_count ?? 0);
 
   // 1-second live ticker interval for immediate responsive feedback
   const [liveActiveOffset, setLiveActiveOffset] = useState(0);
   const [liveIdleOffset, setLiveIdleOffset] = useState(0);
+  const [liveBreakOffset, setLiveBreakOffset] = useState(0);
 
   useEffect(() => {
     setLiveActiveOffset(0);
     setLiveIdleOffset(0);
-  }, [baseActive, baseIdle, selectedDate]);
+    setLiveBreakOffset(0);
+  }, [baseActive, baseIdle, baseBreak, selectedDate]);
 
   const currentApp = trackerState?.currentApp || 'سطح المكتب / مستكشف ويندوز';
   const currentUrl = trackerState?.currentUrl;
@@ -146,6 +151,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
     const interval = setInterval(() => {
       if (isPaused) {
         setLiveIdleOffset((prev) => prev + 1);
+        setLiveBreakOffset((prev) => prev + 1);
       } else {
         setLiveActiveOffset((prev) => prev + 1);
       }
@@ -156,6 +162,8 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
 
   const activeSeconds = baseActive + (isToday ? liveActiveOffset : 0);
   const idleSeconds = baseIdle + (isToday ? liveIdleOffset : 0);
+  const breakSeconds = baseBreak + (isToday ? liveBreakOffset : 0);
+  const sleepSeconds = Math.max(0, idleSeconds - breakSeconds);
   const totalTracked = activeSeconds + idleSeconds;
   const activeRatio = totalTracked > 0 ? Math.round((activeSeconds / totalTracked) * 100) : (isToday ? 100 : 0);
 
@@ -352,38 +360,56 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
           </div>
         </div>
 
-        {/* Idle Time Card */}
+        {/* Device Sleep / Idle Card */}
+        <div style={styles.metricCard}>
+          <div style={styles.metricHeader}>
+            <div style={{ ...styles.iconBadge, color: 'var(--accent-blue)', background: 'rgba(56, 189, 248, 0.1)' }}>
+              <Moon size={15} />
+            </div>
+            <span style={styles.metricLabel}>وضع سكون الجهاز</span>
+          </div>
+          <div style={styles.metricValue}>{formatTime(sleepSeconds)}</div>
+          <div style={styles.metricSubtext}>
+            <span>خمول الجهاز وتوقف حركة الماوس</span>
+          </div>
+        </div>
+
+        {/* Break Time Card */}
         <div style={styles.metricCard}>
           <div style={styles.metricHeader}>
             <div style={{ ...styles.iconBadge, color: 'var(--accent-yellow)', background: 'var(--accent-yellow-bg)' }}>
               <Coffee size={15} />
             </div>
-            <span style={styles.metricLabel}>وقت التوقف والراحة</span>
+            <span style={styles.metricLabel}>الاستراحات (البريك)</span>
           </div>
-          <div style={styles.metricValue}>{formatTime(idleSeconds)}</div>
+          <div style={styles.metricValue}>{formatTime(breakSeconds)}</div>
           <div style={styles.metricSubtext}>
-            <span>فترات الاستراحة أو الانتظار</span>
+            <span style={{ color: breakCount > 0 ? '#fbbf24' : 'var(--text-dim)', fontWeight: 600 }}>
+              {breakCount > 0 ? `${breakCount} استراحة مسجلة اليوم` : 'لا توجد استراحات مسجلة'}
+            </span>
           </div>
         </div>
 
-        {/* Card 3: Task Completion (Employee) vs Mouse Telemetry (Admin) */}
+        {/* Card 4: Task Completion (Employee) vs Input Telemetry (Admin) */}
         {isAdmin ? (
           <div style={styles.metricCard}>
             <div style={styles.metricHeader}>
-              <div style={{ ...styles.iconBadge, color: 'var(--accent-blue)', background: 'rgba(56, 189, 248, 0.1)' }}>
-                <MousePointer size={15} />
+              <div style={{ ...styles.iconBadge, color: 'var(--accent-purple)', background: 'rgba(168, 85, 247, 0.1)' }}>
+                <Keyboard size={15} />
               </div>
-              <span style={styles.metricLabel}>تفاعل ونقرات الماوس</span>
+              <span style={styles.metricLabel}>تفاعل الماوس والكيبورد</span>
             </div>
-            <div style={styles.metricValue}>{mouseEvents.toLocaleString('en-US')}</div>
+            <div style={{ ...styles.metricValue, fontSize: 17 }}>
+              {mouseEvents.toLocaleString('en-US')} <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)' }}>ماوس</span> · {keyboardEvents.toLocaleString('en-US')} <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)' }}>كيبورد</span>
+            </div>
             <div style={styles.metricSubtext}>
-              <span>إجمالي الحركات والنقرات الموثقة</span>
+              <span>إجمالي الحركات والمدخلات لليوم</span>
             </div>
           </div>
         ) : (
           <div style={styles.metricCard}>
             <div style={styles.metricHeader}>
-              <div style={{ ...styles.iconBadge, color: 'var(--accent-blue)', background: 'rgba(56, 189, 248, 0.1)' }}>
+              <div style={{ ...styles.iconBadge, color: 'var(--accent-purple)', background: 'rgba(168, 85, 247, 0.1)' }}>
                 <CheckSquare size={15} />
               </div>
               <span style={styles.metricLabel}>المهام المنجزة اليوم</span>
@@ -402,20 +428,6 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({
             </div>
           </div>
         )}
-
-        {/* Card 4: Inputs / Keyboard */}
-        <div style={styles.metricCard}>
-          <div style={styles.metricHeader}>
-            <div style={{ ...styles.iconBadge, color: 'var(--accent-purple)', background: 'rgba(168, 85, 247, 0.1)' }}>
-              <Keyboard size={15} />
-            </div>
-            <span style={styles.metricLabel}>ضربات لوحة المفاتيح</span>
-          </div>
-          <div style={styles.metricValue}>{keyboardEvents.toLocaleString('en-US')}</div>
-          <div style={styles.metricSubtext}>
-            <span>إجمالي المدخلات الموثقة لليوم</span>
-          </div>
-        </div>
       </div>
 
       {/* Ratio Bar */}

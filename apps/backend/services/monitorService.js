@@ -1676,6 +1676,13 @@ class MonitorService {
       }
     }
 
+    // Build activity logs map by employee
+    const empLogsMap = new Map();
+    for (const log of (activeLogs || [])) {
+      if (!empLogsMap.has(log.employeeId)) empLogsMap.set(log.employeeId, []);
+      empLogsMap.get(log.employeeId).push(log);
+    }
+
     // Finalize aggregated items with Layer 1, 2, and 3 metrics
     const result = Array.from(grouped.values()).map(item => {
       const avgScore = item.productivityScores.length > 0
@@ -1706,6 +1713,19 @@ class MonitorService {
       const lateStartSeconds = calculateLateStartSeconds(item.clockInTime, item.firstActivityTime, isToday);
       const lateStartMinutes = Math.round(lateStartSeconds / 60);
       const totalClockSeconds = calculateTotalClockSeconds(item.clockInTime, item.clockOutTime, isToday);
+
+      // Breaks & Sleep Breakdown per employee
+      const empLogs = [
+        ...(empLogsMap.get(item.employeeId) || []),
+        ...(item.employee?.userId ? (empLogsMap.get(item.employee.userId) || []) : []),
+        ...(item.employee?.id ? (empLogsMap.get(item.employee.id) || []) : [])
+      ];
+      const uniqueLogs = Array.from(new Map(empLogs.map(l => [new Date(l.intervalStart).getTime(), l])).values());
+      const breaksSummary = this.computeBreaksFromActivities(uniqueLogs);
+      const totalBreaksCount = breaksSummary.totalBreaksCount || 0;
+      const totalBreakSeconds = breaksSummary.totalBreakSeconds || 0;
+      const totalBreakMinutes = breaksSummary.totalBreakMinutes || Math.round(totalBreakSeconds / 60);
+      const totalSleepSeconds = Math.max(0, (item.totalIdleSeconds || 0) - totalBreakSeconds);
 
       // Weekly average warmup
       const pastList = [
@@ -1849,12 +1869,11 @@ class MonitorService {
         totalIdleSeconds: item.totalIdleSeconds,
         totalProductiveSeconds,
         totalUnproductiveSeconds,
+        totalBreaksCount,
+        totalBreakSeconds,
+        totalBreakMinutes,
+        totalSleepSeconds,
         productivityScore,
-        // 🚨 PRODUCTION-FIX (2026-09-29): كان مكتوب `activityRatio,` — متغيّر غير معرّف في
-        // الدالة كلها → ReferenceError → 500 على /api/v1/employee-monitor/team/overview،
-        // وصفحة /hr/monitor كلها بتقع (شاهد حقيقي: [FRONTEND-ERROR] url=https://maxp.online/hr/monitor).
-        // النسبة كانت محسوبة فعلًا فوق باسم `activeRatio` (سطر ~1721، مقصوصة على 100)،
-        // والواجهة/الكنترولر بيقرّوا الحقل باسم activityRatio كنسبة مئوية — فربطنا الاسم الصح بالحساب الموجود.
         activityRatio: activeRatio,
         lateStartSeconds,
         lateStartMinutes,

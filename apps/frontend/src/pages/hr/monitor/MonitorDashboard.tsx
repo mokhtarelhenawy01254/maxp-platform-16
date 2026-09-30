@@ -37,6 +37,10 @@ export interface TeamMemberSummary {
   totalIdleSeconds: number;
   totalProductiveSeconds?: number;
   totalUnproductiveSeconds?: number;
+  totalBreaksCount?: number;
+  totalBreakSeconds?: number;
+  totalBreakMinutes?: number;
+  totalSleepSeconds?: number;
   productivityScore: number;
   activityRatio?: number;
   lateStartSeconds?: number;
@@ -76,7 +80,7 @@ export interface TeamMemberSummary {
   } | null;
 }
 
-type SortField = 'employeeName' | 'totalActiveSeconds' | 'totalIdleSeconds' | 'productivityScore' | 'completedTasksCount' | 'lateStartMinutes' | 'activityRatio' | 'tasksPerHour';
+type SortField = 'employeeName' | 'totalActiveSeconds' | 'totalIdleSeconds' | 'totalBreakSeconds' | 'totalBreaksCount' | 'productivityScore' | 'completedTasksCount' | 'lateStartMinutes' | 'activityRatio' | 'tasksPerHour';
 
 export const MonitorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -217,6 +221,10 @@ export const MonitorDashboard: React.FC = () => {
           totalIdleSeconds: item.totalIdleSeconds || 0,
           totalProductiveSeconds: item.totalProductiveSeconds || 0,
           totalUnproductiveSeconds: item.totalUnproductiveSeconds || 0,
+          totalBreaksCount: item.totalBreaksCount || 0,
+          totalBreakSeconds: item.totalBreakSeconds || 0,
+          totalBreakMinutes: item.totalBreakMinutes || Math.round((item.totalBreakSeconds || 0) / 60),
+          totalSleepSeconds: typeof item.totalSleepSeconds === 'number' ? item.totalSleepSeconds : Math.max(0, (item.totalIdleSeconds || 0) - (item.totalBreakSeconds || 0)),
           productivityScore: Math.round(item.productivityScore || 0),
           activityRatio: typeof item.activityRatio === 'number' ? item.activityRatio : undefined,
           lateStartSeconds: lateStartSec,
@@ -739,7 +747,7 @@ export const MonitorDashboard: React.FC = () => {
                       className="group cursor-pointer px-4 py-3 font-semibold transition hover:text-foreground"
                     >
                       <div className="flex items-center gap-1.5">
-                        <span>التوقف / الخمول</span>
+                        <span>سكون الجهاز وفترات البريك</span>
                         {renderSortIcon('totalIdleSeconds')}
                       </div>
                     </th>
@@ -929,9 +937,24 @@ export const MonitorDashboard: React.FC = () => {
                           </div>
                         </td>
 
-                        {/* Idle Time */}
-                        <td className="px-4 py-3 text-muted-foreground tabular-nums">
-                          {formatSeconds(m.totalIdleSeconds)}
+                        {/* Sleep & Break Breakdown */}
+                        <td className="px-4 py-3 tabular-nums">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5 font-medium text-foreground text-xs">
+                              <span className="text-muted-foreground text-[11px]">سكون:</span>
+                              <span className="font-semibold">{formatSeconds(m.totalSleepSeconds ?? m.totalIdleSeconds)}</span>
+                            </div>
+                            {(m.totalBreaksCount && m.totalBreaksCount > 0) || (m.totalBreakSeconds && m.totalBreakSeconds > 0) ? (
+                              <div className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-500/20">
+                                <span>بريك: {formatSeconds(m.totalBreakSeconds || 0)}</span>
+                                <span className="text-amber-600 dark:text-amber-400 font-bold">({m.totalBreaksCount} مرات)</span>
+                              </div>
+                            ) : (
+                              <div className="text-[10px] text-muted-foreground">
+                                لا توجد فترات بريك
+                              </div>
+                            )}
+                          </div>
                         </td>
 
                         {/* Productivity Score + Tasks Per Hour */}
@@ -1156,8 +1179,17 @@ export const MonitorDashboard: React.FC = () => {
                         </div>
                       </div>
                       <div className="rounded bg-muted/50 dark:bg-zinc-900/60 p-2">
-                        <span className="text-muted-foreground block text-[10px]">توقف وخمول:</span>
-                        <span className="font-semibold text-muted-foreground tabular-nums">{formatSeconds(m.totalIdleSeconds)}</span>
+                        <span className="text-muted-foreground block text-[10px]">سكون وبريك:</span>
+                        <div className="flex items-baseline justify-between">
+                          <span className="font-semibold text-muted-foreground tabular-nums">
+                            {formatSeconds(m.totalSleepSeconds ?? m.totalIdleSeconds)}
+                          </span>
+                          {(m.totalBreaksCount && m.totalBreaksCount > 0) ? (
+                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                              {m.totalBreaksCount} بريك ({formatSeconds(m.totalBreakSeconds || 0)})
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
 

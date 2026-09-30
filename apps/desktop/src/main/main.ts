@@ -53,6 +53,7 @@ let tray: Tray | null = null;
 let isTracking = false;
 let isPaused = false;
 let currentBreakReason = '';
+let currentBreakStartedAt: number | null = null;
 let sessionStartedAt: string | null = null;
 let idleReminderTimer: ReturnType<typeof setInterval> | null = null;
 let remindedForThisIdleEpisode = false;
@@ -572,6 +573,7 @@ function stopTracking(): void {
 function pauseTracking(reason: string = 'استراحة رسمية'): void {
   isPaused = true;
   currentBreakReason = reason || 'استراحة رسمية';
+  currentBreakStartedAt = Date.now();
   activityTracker.stop();
   windowTracker.stop();
   stopIdleReminder();
@@ -581,6 +583,12 @@ function pauseTracking(reason: string = 'استراحة رسمية'): void {
 }
 
 async function resumeTracking(): Promise<void> {
+  if (currentBreakStartedAt) {
+    const elapsed = Math.max(1, Math.floor((Date.now() - currentBreakStartedAt) / 1000));
+    currentBreakStartedAt = null;
+    const today = getLocalDateString();
+    localDb.recordBreakEvent(today, elapsed);
+  }
   isPaused = false;
   currentBreakReason = '';
   remindedForThisIdleEpisode = false;
@@ -632,6 +640,17 @@ function registerIpcHandlers(): void {
     const today = getLocalDateString();
     const stored = localDb.getDailyStats(today);
     const live = isTracking && !isPaused && !shiftEnded ? activityTracker.getCurrentIntervalStats() : null;
+
+    const liveBreakSec = isPaused && currentBreakStartedAt
+      ? Math.max(0, Math.floor((Date.now() - currentBreakStartedAt) / 1000))
+      : 0;
+    const baseBreakSec = stored?.total_break_seconds || 0;
+    const totalBreakSec = baseBreakSec + liveBreakSec;
+    const totalBreakCount = (stored?.total_break_count || 0) + (isPaused && currentBreakStartedAt ? 1 : 0);
+    const totalActive = (stored?.total_active_seconds ?? 0) + (live?.activeSeconds || 0);
+    const totalIdle = (stored?.total_idle_seconds ?? 0) + (live?.idleSeconds || 0);
+    const totalSleep = Math.max(0, totalIdle - totalBreakSec);
+
     return {
       isTracking,
       isPaused,
@@ -639,11 +658,14 @@ function registerIpcHandlers(): void {
       shiftEndedAt,
       currentDate: today,
       breakReason: currentBreakReason,
+      breakCount: totalBreakCount,
+      breakSeconds: totalBreakSec,
+      todaySleepSeconds: totalSleep,
       currentApp: windowTracker.currentAppName,
       currentUrl: windowTracker.currentUrl,
       activityScore: live?.activityScore ?? (activityTracker as any).lastActivityScore ?? 0,
-      todayActiveSeconds: (stored?.total_active_seconds ?? 0) + (live?.activeSeconds || 0),
-      todayIdleSeconds: (stored?.total_idle_seconds ?? 0) + (live?.idleSeconds || 0),
+      todayActiveSeconds: totalActive,
+      todayIdleSeconds: totalIdle,
       sessionStartedAt: isTracking ? sessionStartedAt : null,
       deviceType: currentDeviceType,
       isOvertime,
@@ -975,10 +997,23 @@ function registerIpcHandlers(): void {
     };
 
     const live = isToday && isTracking && !isPaused && !shiftEnded ? activityTracker.getCurrentIntervalStats() : null;
+
+    const liveBreakSec = isToday && isPaused && currentBreakStartedAt
+      ? Math.max(0, Math.floor((Date.now() - currentBreakStartedAt) / 1000))
+      : 0;
+    const baseBreakSec = stored.total_break_seconds || 0;
+    const totalBreakSec = baseBreakSec + liveBreakSec;
+    const totalBreakCount = (stored.total_break_count || 0) + (isToday && isPaused && currentBreakStartedAt ? 1 : 0);
+    const totalIdle = stored.total_idle_seconds + (live?.idleSeconds || 0);
+    const totalSleepSec = Math.max(0, totalIdle - totalBreakSec);
+
     return {
       ...stored,
       total_active_seconds: stored.total_active_seconds + (live?.activeSeconds || 0),
-      total_idle_seconds: stored.total_idle_seconds + (live?.idleSeconds || 0),
+      total_idle_seconds: totalIdle,
+      total_break_seconds: totalBreakSec,
+      total_break_count: totalBreakCount,
+      total_sleep_seconds: totalSleepSec,
       total_mouse_events: stored.total_mouse_events + (live?.mouseEvents || 0),
       total_keyboard_events: stored.total_keyboard_events + (live?.keyboardEvents || 0),
       isHistorical: !isToday,
@@ -1617,13 +1652,23 @@ function registerIpcHandlers(): void {
 
 function sendStateToRenderer(): void {
   if (!mainWindow || mainWindow.isDestroyed()) return;
+  const today = getLocalDateString();
+  const stored = localDb.getDailyStats(today);
+  const liveBreakSec = isPaused && currentBreakStartedAt
+    ? Math.max(0, Math.floor((Date.now() - currentBreakStartedAt) / 1000))
+    : 0;
+  const totalBreakSec = (stored?.total_break_seconds || 0) + liveBreakSec;
+  const totalBreakCount = (stored?.total_break_count || 0) + (isPaused && currentBreakStartedAt ? 1 : 0);
+
   mainWindow.webContents.send(IPC_CHANNELS.TRACKER_STATE_UPDATE, {
     isTracking,
     isPaused,
     breakReason: currentBreakReason,
+    breakCount: totalBreakCount,
+    breakSeconds: totalBreakSec,
     shiftEnded,
     shiftEndedAt,
-    currentDate: getLocalDateString(),
+    currentDate: today,
     deviceType: currentDeviceType,
     isOvertime,
     activeOvertimeSession,
