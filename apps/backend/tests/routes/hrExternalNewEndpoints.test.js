@@ -161,6 +161,38 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
         })
       );
     });
+
+    test('updateAttendanceRecord rejects invalid checkIn time format with 400 VALIDATION_ERROR', async () => {
+      mockReq.params = { id: 'att-123' };
+      mockReq.body = { checkIn: 'invalid-time' };
+      await hrExternalController.updateAttendanceRecord(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR',
+            message: expect.stringContaining('checkIn')
+          })
+        })
+      );
+    });
+
+    test('updateAttendanceRecord rejects invalid checkOut time format with 400 VALIDATION_ERROR', async () => {
+      mockReq.params = { id: 'att-123' };
+      mockReq.body = { checkOut: '25:00' };
+      await hrExternalController.updateAttendanceRecord(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({
+            code: 'VALIDATION_ERROR',
+            message: expect.stringContaining('checkOut')
+          })
+        })
+      );
+    });
   });
 
   describe('Item 4: New Management Endpoints Export Verification', () => {
@@ -176,6 +208,81 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
       expect(typeof hrExternalController.updateShift).toBe('function');
       expect(typeof hrExternalController.assignEmployeeShift).toBe('function');
       expect(typeof hrExternalController.updateAttendanceRecord).toBe('function');
+    });
+  });
+
+  describe('Item 5: Audit Logging Attribution & Dual-Signature Resilience', () => {
+    const { logExternalApiAction } = require('../../services/hrIntegrationService');
+
+    test('logExternalApiAction populates action, targetType, targetId, and targetName with single object', async () => {
+      const mockPrisma = {
+        activityLog: {
+          create: jest.fn().mockResolvedValue({})
+        }
+      };
+
+      const fakeReq = {
+        companyId: 'company-xyz',
+        hrCredential: { id: 'cred-123', name: 'H2M Client Key', keyPrefix: 'hrk_h2m' },
+        originalUrl: '/api/v1/external/hr/settings'
+      };
+
+      await logExternalApiAction(mockPrisma, {
+        req: fakeReq,
+        action: 'UPDATE_SETTINGS',
+        resourceType: 'HRSettings',
+        resourceId: 'setting-99',
+        targetName: 'HR Settings',
+        details: { sectionsUpdated: ['workHours'] }
+      });
+
+      expect(mockPrisma.activityLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          companyId: 'company-xyz',
+          category: 'HR_EXTERNAL_API',
+          action: 'UPDATE_SETTINGS',
+          targetType: 'HRSettings',
+          targetId: 'setting-99',
+          targetName: 'HR Settings',
+          isLocked: true
+        })
+      });
+    });
+
+    test('logExternalApiAction populates correctly when called as (req, options)', async () => {
+      const mockPrisma = {
+        activityLog: {
+          create: jest.fn().mockResolvedValue({})
+        }
+      };
+
+      const fakeReq = {
+        companyId: 'company-abc',
+        externalApiCredential: { id: 'cred-456', name: '000 Key', keyPrefix: 'hrk_000' },
+        method: 'POST',
+        headers: { host: 'api.maxp.online' },
+        originalUrl: '/api/v1/external/hr/deductions'
+      };
+
+      await logExternalApiAction(fakeReq, {
+        prisma: mockPrisma,
+        action: 'CREATE_DEDUCTION',
+        resourceType: 'ManualDeduction',
+        resourceId: 'ded-77',
+        targetName: 'Late deduction',
+        details: { amount: 150 }
+      });
+
+      expect(mockPrisma.activityLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          companyId: 'company-abc',
+          category: 'HR_EXTERNAL_API',
+          action: 'CREATE_DEDUCTION',
+          targetType: 'ManualDeduction',
+          targetId: 'ded-77',
+          targetName: 'Late deduction'
+        })
+      });
     });
   });
 });

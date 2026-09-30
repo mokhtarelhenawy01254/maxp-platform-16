@@ -114,6 +114,7 @@ const authenticateExternalHrApi = async (req, res, next) => {
 
     // Attach verified context
     req.hrCredential = credential;
+    req.externalApiCredential = credential;
     req.companyId = credential.companyId;
     req.company = credential.company;
     req.user = {

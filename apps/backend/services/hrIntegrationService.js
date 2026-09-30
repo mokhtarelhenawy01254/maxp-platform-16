@@ -232,19 +232,30 @@ const logExternalApiAction = async (firstArg, secondArg) => {
     if (firstArg && (firstArg.activityLog || firstArg.$queryRaw)) {
       prismaParam = firstArg;
       options = secondArg || {};
+    } else if (firstArg && (firstArg.method || firstArg.headers || firstArg.companyId || firstArg.hrCredential || firstArg.externalApiCredential) && secondArg && typeof secondArg === 'object') {
+      options = { ...secondArg, req: firstArg };
+      prismaParam = secondArg.prisma;
     } else {
       options = firstArg || {};
       prismaParam = options.prisma;
     }
 
-    const { req, action, resourceType, resourceId, details = {}, targetName = null } = options;
+    const req = options.req;
+    const action = options.action || 'EXTERNAL_WRITE';
+    const resourceType = options.resourceType || options.targetType || 'HR_RESOURCE';
+    const resourceId = options.resourceId !== undefined ? options.resourceId : (options.targetId !== undefined ? options.targetId : null);
+    const targetName = options.targetName || null;
+    const details = options.details || options.metadata || {};
+    const customDescription = options.description || null;
+
     const prisma = prismaParam || getSharedPrismaClient();
-    const companyId = options.companyId || req?.companyId || req?.hrCredential?.companyId;
-    const credentialId = options.credentialId || req?.hrCredential?.id;
-    const credentialName = options.credentialName || req?.hrCredential?.name || 'External API Key';
-    const keyPrefix = options.keyPrefix || req?.hrCredential?.keyPrefix;
+    const credential = req?.hrCredential || req?.externalApiCredential || null;
+    const companyId = options.companyId || req?.companyId || credential?.companyId;
+    const credentialId = options.credentialId || credential?.id || null;
+    const credentialName = options.credentialName || credential?.name || 'External API Key';
+    const keyPrefix = options.keyPrefix || credential?.keyPrefix || null;
     // Only pass userId if it's a real user ID and not the placeholder 'external-system'
-    const rawUserId = options.userId || req?.hrCredential?.createdByUserId || (req?.user?.id !== 'external-system' ? req?.user?.id : null) || null;
+    const rawUserId = options.userId || credential?.createdByUserId || (req?.user?.id !== 'external-system' ? req?.user?.id : null) || null;
     const userId = typeof rawUserId === 'string' && rawUserId.length > 5 && rawUserId !== 'external-system' ? rawUserId : null;
     const route = options.route || req?.originalUrl || req?.url || null;
 
@@ -257,6 +268,8 @@ const logExternalApiAction = async (firstArg, secondArg) => {
       ...details
     };
 
+    const description = customDescription || `External API [${credentialName}] performed ${action || req?.method || 'POST'} on ${resourceType} ${resourceId || ''}`.trim();
+
     // 1. Core ActivityLog
     if (prisma && prisma.activityLog) {
       try {
@@ -265,9 +278,9 @@ const logExternalApiAction = async (firstArg, secondArg) => {
             companyId,
             userId,
             category: 'HR_EXTERNAL_API',
-            action: action || 'EXTERNAL_WRITE',
-            description: `External API [${credentialName}] performed ${action || 'POST'} on ${resourceType || 'resource'} ${resourceId || ''}`.trim(),
-            targetType: resourceType || 'HR_RESOURCE',
+            action,
+            description,
+            targetType: resourceType,
             targetId: resourceId ? String(resourceId) : null,
             targetName: targetName || credentialName,
             metadata: JSON.stringify(auditDetails),
@@ -284,9 +297,9 @@ const logExternalApiAction = async (firstArg, secondArg) => {
               companyId,
               userId: null,
               category: 'HR_EXTERNAL_API',
-              action: action || 'EXTERNAL_WRITE',
-              description: `External API [${credentialName}] performed ${action || 'POST'} on ${resourceType || 'resource'} ${resourceId || ''}`.trim(),
-              targetType: resourceType || 'HR_RESOURCE',
+              action,
+              description,
+              targetType: resourceType,
               targetId: resourceId ? String(resourceId) : null,
               targetName: targetName || credentialName,
               metadata: JSON.stringify(auditDetails),

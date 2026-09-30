@@ -269,6 +269,51 @@ function formatMaskedSettings(settings, companyTimezone = 'Africa/Cairo') {
 }
 
 /**
+ * التحقق من صيغة الوقت وتطبيعها لـ HH:mm لضمان التوافق مع attendanceService والمنطقة الزمنية للشركة
+ */
+function validateAndNormalizeTime(value, fieldName = 'checkIn', timezone = 'Africa/Cairo') {
+  if (value === undefined) {
+    return { valid: true, value: undefined };
+  }
+  if (value === null || value === '') {
+    return { valid: true, value: null };
+  }
+  const str = String(value).trim();
+  // 1. HH:mm or HH:mm:ss format
+  const timeRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])(:[0-5][0-9])?$/;
+  const match = str.match(timeRegex);
+  if (match) {
+    const hh = match[1].padStart(2, '0');
+    const mm = match[2];
+    return { valid: true, value: `${hh}:${mm}` };
+  }
+  // 2. ISO 8601 or parseable datetime string (e.g. 2026-09-30T09:00:00Z)
+  if (str.includes('T') || str.includes('-')) {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const timeInTz = d.toLocaleTimeString('en-US', {
+        timeZone: timezone,
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      const parts = timeInTz.split(':');
+      if (parts.length >= 2) {
+        let hh = parts[0].trim();
+        if (hh === '24') hh = '00';
+        hh = hh.padStart(2, '0');
+        const mm = parts[1].padStart(2, '0');
+        return { valid: true, value: `${hh}:${mm}` };
+      }
+    }
+  }
+  return {
+    valid: false,
+    error: `Invalid time format for ${fieldName}. Expected 'HH:mm' (e.g. '09:00') or valid ISO date-time string.`
+  };
+}
+
+/**
  * 1. قائمة الموظفين (مع الترقيم والبحث)
  */
 const listEmployees = async (req, res) => {
@@ -2646,12 +2691,14 @@ const updateHRSettings = async (req, res) => {
       select: { timezone: true }
     });
 
-    await logExternalApiAction(req, {
+    await logExternalApiAction({
+      req,
       action: 'UPDATE_SETTINGS',
       description: `Updated HR Settings with section merge`,
-      targetType: 'HRSettings',
-      targetId: freshSettings?.id || companyId,
-      targetName: 'HR Settings'
+      resourceType: 'HRSettings',
+      resourceId: freshSettings?.id || companyId,
+      targetName: 'HR Settings',
+      details: { sectionsUpdated: Object.keys(body || {}) }
     });
 
     const maskedOutput = formatMaskedSettings(freshSettings, freshCompany?.timezone || 'Africa/Cairo');
@@ -2803,17 +2850,18 @@ const createDeduction = async (req, res) => {
         effectiveMonth,
         effectiveYear,
         status: normalizedStatus,
-        createdBy: req.externalApiCredential?.id || 'EXTERNAL_API'
+        createdBy: req.externalApiCredential?.id || req.hrCredential?.id || 'EXTERNAL_API'
       }
     });
 
-    await logExternalApiAction(req, {
+    await logExternalApiAction({
+      req,
       action: 'CREATE_DEDUCTION',
       description: `Created manual deduction of ${numericAmount} for employee ${code}`,
-      targetType: 'ManualDeduction',
-      targetId: deduction.id,
+      resourceType: 'ManualDeduction',
+      resourceId: deduction.id,
       targetName: deduction.reason,
-      metadata: { amount: numericAmount, type: normalizedType, employeeId: targetEmployeeId }
+      details: { amount: numericAmount, type: normalizedType, employeeId: targetEmployeeId }
     });
 
     return res.status(201).json({
@@ -2931,13 +2979,14 @@ const updateDeduction = async (req, res) => {
       data: updateData
     });
 
-    await logExternalApiAction(req, {
+    await logExternalApiAction({
+      req,
       action: 'UPDATE_DEDUCTION',
       description: `Updated deduction ${id}`,
-      targetType: 'ManualDeduction',
-      targetId: updated.id,
+      resourceType: 'ManualDeduction',
+      resourceId: updated.id,
       targetName: updated.reason,
-      metadata: updateData
+      details: updateData
     });
 
     return res.json({
@@ -3208,17 +3257,18 @@ const createReward = async (req, res) => {
         appliedYear,
         status: normalizedStatus,
         approvedAt: normalizedStatus === 'APPROVED' ? now : null,
-        approvedBy: normalizedStatus === 'APPROVED' ? (req.externalApiCredential?.id || 'EXTERNAL_API') : null
+        approvedBy: normalizedStatus === 'APPROVED' ? (req.externalApiCredential?.id || req.hrCredential?.id || 'EXTERNAL_API') : null
       }
     });
 
-    await logExternalApiAction(req, {
+    await logExternalApiAction({
+      req,
       action: 'CREATE_REWARD',
       description: `Created reward "${reward.rewardName}" with value ${rewardAmount} for employee ${targetUser.employeeNumber || targetUser.id}`,
-      targetType: 'RewardRecord',
-      targetId: reward.id,
+      resourceType: 'RewardRecord',
+      resourceId: reward.id,
       targetName: reward.rewardName,
-      metadata: { amount: rewardAmount, category: normalizedCategory, userId: targetUser.id }
+      details: { amount: rewardAmount, category: normalizedCategory, userId: targetUser.id }
     });
 
     return res.status(201).json({
@@ -3304,12 +3354,14 @@ const createShift = async (req, res) => {
       isActive: isActive !== undefined ? Boolean(isActive) : true
     });
 
-    await logExternalApiAction(req, {
+    await logExternalApiAction({
+      req,
       action: 'CREATE_SHIFT',
       description: `Created shift ${shift.name} (${shift.startTime}-${shift.endTime})`,
-      targetType: 'Shift',
-      targetId: shift.id,
-      targetName: shift.name
+      resourceType: 'Shift',
+      resourceId: shift.id,
+      targetName: shift.name,
+      details: { startTime: shift.startTime, endTime: shift.endTime }
     });
 
     return res.status(201).json({
@@ -3356,12 +3408,14 @@ const updateShift = async (req, res) => {
 
     const updated = await shiftService.updateShift(companyId, id, req.body);
 
-    await logExternalApiAction(req, {
+    await logExternalApiAction({
+      req,
       action: 'UPDATE_SHIFT',
       description: `Updated shift ${updated.name}`,
-      targetType: 'Shift',
-      targetId: updated.id,
-      targetName: updated.name
+      resourceType: 'Shift',
+      resourceId: updated.id,
+      targetName: updated.name,
+      details: { name, startTime, endTime, isActive }
     });
 
     return res.json({
@@ -3459,12 +3513,14 @@ const assignEmployeeShift = async (req, res) => {
       });
     }
 
-    await logExternalApiAction(req, {
+    await logExternalApiAction({
+      req,
       action: 'ASSIGN_SHIFT',
       description: `Assigned shift ${shiftId} to employee ${emp?.employeeNumber || user?.employeeNumber || id} on ${date}`,
-      targetType: 'ShiftAssignment',
-      targetId: assignment.id,
-      targetName: `Shift Assignment`
+      resourceType: 'ShiftAssignment',
+      resourceId: assignment.id,
+      targetName: `Shift Assignment`,
+      details: { shiftId, date, targetUserId }
     });
 
     return res.json({
@@ -3503,6 +3559,36 @@ const updateAttendanceRecord = async (req, res) => {
       }
     }
 
+    const companyTimezone = req.company?.timezone || 'Africa/Cairo';
+
+    if (checkIn !== undefined) {
+      const checkInResult = validateAndNormalizeTime(checkIn, 'checkIn', companyTimezone);
+      if (!checkInResult.valid) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: checkInResult.error
+          }
+        });
+      }
+      req.body.checkIn = checkInResult.value;
+    }
+
+    if (checkOut !== undefined) {
+      const checkOutResult = validateAndNormalizeTime(checkOut, 'checkOut', companyTimezone);
+      if (!checkOutResult.valid) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: checkOutResult.error
+          }
+        });
+      }
+      req.body.checkOut = checkOutResult.value;
+    }
+
     const prisma = getSharedPrismaClient();
 
     const existing = await prisma.attendance.findFirst({
@@ -3522,13 +3608,14 @@ const updateAttendanceRecord = async (req, res) => {
     // Call panel attendanceService.updateAttendance
     const updated = await attendanceService.updateAttendance(companyId, id, req.body);
 
-    await logExternalApiAction(req, {
+    await logExternalApiAction({
+      req,
       action: 'UPDATE_ATTENDANCE',
       description: `Corrected attendance record ${id}`,
-      targetType: 'Attendance',
-      targetId: updated.id,
+      resourceType: 'Attendance',
+      resourceId: updated.id,
       targetName: `Attendance Record ${id}`,
-      metadata: { checkIn, checkOut, status, lateMinutes }
+      details: { checkIn: req.body.checkIn, checkOut: req.body.checkOut, status, lateMinutes }
     });
 
     return res.json({
