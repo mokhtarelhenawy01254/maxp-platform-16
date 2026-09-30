@@ -31,6 +31,14 @@ async function runTests() {
   };
 
   try {
+    await prisma.company.create({
+      data: {
+        id: testCompanyId,
+        name: 'شركة اختبار الخزينة',
+        email: `${testCompanyId}@test.local`,
+      }
+    });
+
     // -----------------------------------------------------------
     // TEST 1: High-Concurrency Race Condition Protection
     // -----------------------------------------------------------
@@ -257,8 +265,61 @@ async function runTests() {
     console.log(`  ✓ Database verified: Account balance is stored as negative: ${accInDb.balance} EGP`);
     console.log('  ✅ TEST 8 PASSED: Negative balance & overdraft expense creation fully verified!\n');
 
+    // -----------------------------------------------------------
+    // TEST 9: Zero-Balance Account -> Negative Expense & Update
+    // -----------------------------------------------------------
+    console.log('▶ TEST 9: Testing Expense Creation & Update on a 0 EGP Balance Account...');
+    // Reset a vault to 0 EGP to match exact user scenario
+    const bankAccount = cleanAccounts[1];
+    await prisma.treasuryAccount.update({
+      where: { id: bankAccount.id },
+      data: { balance: 0 }
+    });
+
+    const zeroExpRes = mockRes();
+    await controller.createExpense({
+      user: mockUser,
+      body: {
+        title: 'نفقة على خزينة رصيدها صفر',
+        amount: 350,
+        categoryId: categories[0].id,
+        treasuryAccountId: bankAccount.id,
+        status: 'PAID',
+        beneficiary: 'مورد خدمات'
+      }
+    }, zeroExpRes);
+
+    const zeroExpData = zeroExpRes.getResponse().data?.data;
+    if (!zeroExpData || zeroExpData.updatedBalance !== -350) {
+      throw new Error(`Expected balance of -350 on 0-balance account, got ${zeroExpData?.updatedBalance}`);
+    }
+    console.log(`  ✓ Created 350 EGP expense on 0 EGP vault -> New balance: ${zeroExpData.updatedBalance} EGP`);
+
+    // Update that expense from 350 to 600 on the already-negative vault
+    const zeroExpUpdateRes = mockRes();
+    await controller.updateExpense({
+      user: mockUser,
+      params: { id: zeroExpData.expense.id },
+      body: {
+        amount: 600,
+        status: 'PAID'
+      }
+    }, zeroExpUpdateRes);
+
+    const updatedZeroExpBalance = zeroExpUpdateRes.getResponse().data?.data?.updatedBalance;
+    if (updatedZeroExpBalance !== -600) {
+      throw new Error(`Expected updated negative balance of -600, got ${updatedZeroExpBalance}`);
+    }
+    console.log(`  ✓ Updated expense to 600 EGP -> Reconciled negative balance: ${updatedZeroExpBalance} EGP`);
+
+    const capStatsRes = mockRes();
+    await controller.getCapitalStats({ user: mockUser }, capStatsRes);
+    const capStats = capStatsRes.getResponse().data?.data;
+    console.log(`  ✓ Total Liquid Cash across all vaults: ${capStats.totalLiquidCash} EGP`);
+    console.log('  ✅ TEST 9 PASSED: 0-balance vault expense creation & update into negative verified!\n');
+
     console.log('════════════════════════════════════════════════════════════════');
-    console.log('🎉 ALL 8 TREASURY & EXPENSES TESTS PASSED WITH 100% SUCCESS!');
+    console.log('🎉 ALL 9 TREASURY & EXPENSES TESTS PASSED WITH 100% SUCCESS!');
     console.log('════════════════════════════════════════════════════════════════\n');
 
   } finally {
@@ -269,6 +330,7 @@ async function runTests() {
     await prisma.capitalTransaction.deleteMany({ where: { companyId: testCompanyId } }).catch(() => {});
     await prisma.treasuryAccount.deleteMany({ where: { companyId: testCompanyId } }).catch(() => {});
     await prisma.expenseCategory.deleteMany({ where: { companyId: testCompanyId } }).catch(() => {});
+    await prisma.company.delete({ where: { id: testCompanyId } }).catch(() => {});
     console.log('✨ Cleanup complete.');
   }
 }
