@@ -3495,11 +3495,39 @@ router.get('/track', async (req, res) => {
   }
 });
 
+// 🔐 تطبيع رقم الهاتف للمطابقة (تحويل الأرقام العربية-الهندية وإزالة الرموز)
+const normalizeGuestPhone = (value) => {
+  if (!value) return '';
+  const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+  return String(value)
+    .replace(/[٠-٩]/g, (d) => String(arabicDigits.indexOf(d)))
+    .replace(/\D/g, '');
+};
+
+// مطابقة متسامحة: تطابق تام أو تطابق لواحقة (9 أرقام فأكثر) عشان صيغ +20/01/201
+const phoneMatchesGuest = (provided, stored) => {
+  const a = normalizeGuestPhone(provided);
+  const b = normalizeGuestPhone(stored);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const minLen = Math.min(a.length, b.length);
+  return minLen >= 9 && (a.endsWith(b) || b.endsWith(a));
+};
+
+const extractGuestPhone = (req) => req.query.phone || req.body?.phone || '';
+
 // Track order by order number (legacy route)
 router.get('/:orderNumber/track', async (req, res) => {
   try {
     const { company } = req;
     const { orderNumber } = req.params;
+    const phone = extractGuestPhone(req);
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'رقم الطلب ورقم الهاتف مطلوبان'
+      });
+    }
 
     const prisma = await getPrisma();
     const order = await prisma.guestOrder.findFirst({
@@ -3508,6 +3536,14 @@ router.get('/:orderNumber/track', async (req, res) => {
         companyId: company.id
       }
     });
+
+    // 🔐 بدون مطابقة هاتف الطلب بيرجع 404 (نفس سلوك /track الرسمي) — مفيش كشف وجود
+    if (order && !phoneMatchesGuest(phone, order.guestPhone)) {
+      return res.status(404).json({
+        success: false,
+        error: 'الطلب غير موجود'
+      });
+    }
 
     if (order) {
       try {
@@ -3557,12 +3593,12 @@ router.get('/:orderNumber/track', async (req, res) => {
 router.get('/search', async (req, res) => {
   try {
     const { company } = req;
-    const { email } = req.query;
+    const { email, phone } = req.query;
 
-    if (!email) {
+    if (!email || !phone) {
       return res.status(400).json({
         success: false,
-        error: 'البريد الإلكتروني مطلوب'
+        error: 'البريد الإلكتروني ورقم الهاتف مطلوبان'
       });
     }
 
@@ -3576,7 +3612,10 @@ router.get('/search', async (req, res) => {
       take: 10
     });
 
-    res.json({ success: true, data: orders });
+    // 🔐 مطابقة الهاتف قبل إرجاع أي بيانات
+    const matched = orders.filter((order) => phoneMatchesGuest(phone, order.guestPhone));
+
+    res.json({ success: true, data: matched });
   } catch (error) {
     console.error('Error searching orders:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -3589,6 +3628,15 @@ router.get('/:id', async (req, res) => {
   try {
     const { company } = req;
     const { id } = req.params;
+
+    // 🔐 الهاتف إلزامي — نفس حارس /track الرسمي (رقم الطلب لوحده مش إثبات ملكية)
+    const phone = extractGuestPhone(req);
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'رقم الطلب ورقم الهاتف مطلوبان'
+      });
+    }
 
     console.log('📦 [GET-ORDER] Fetching order:', { id, companyId: company?.id });
 
@@ -3614,6 +3662,14 @@ router.get('/:id', async (req, res) => {
         }
       });
       console.log('🔍 [GET-ORDER] Search by orderNumber result:', order ? 'Found' : 'Not found');
+    }
+
+    // 🔐 هاتف غلط = 404 (نفس رد عدم الوجود — مفيش كشف وجود)
+    if (order && !phoneMatchesGuest(phone, order.guestPhone)) {
+      return res.status(404).json({
+        success: false,
+        error: 'الطلب غير موجود'
+      });
     }
 
     if (!order) {

@@ -657,17 +657,116 @@ const sendCustomerAvatarFallback = (req, res) =>
     cacheControl: "public, max-age=300, stale-while-revalidate=86400",
   });
 
-const fetchRemoteAsset = async (targetUrl) => {
-  let finalUrl = targetUrl;
-  if (typeof finalUrl === "string" && finalUrl.startsWith("/")) {
-    const localPort = process.env.PORT || 3007;
-    finalUrl = `http://127.0.0.1:${localPort}${finalUrl}`;
+const isPrivateHostAddress = (address) => {
+  const value = String(address || "").toLowerCase().replace(/^\[|\]$/g, "").split("%")[0];
+  if (!value) return true;
+  if (value === "::" || value === "::1") return true;
+  if (value.startsWith("fc") || value.startsWith("fd")) return true; // IPv6 unique-local fc00::/7
+  if (value.startsWith("fe80")) return true; // IPv6 link-local
+  if (value.startsWith("::ffff:")) return isPrivateHostAddress(value.slice(7)); // IPv4-mapped
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(value)) {
+    const parts = value.split(".").map(Number);
+    if (parts.length !== 4 || parts.some((p) => Number.isNaN(p) || p < 0 || p > 255)) {
+      return true; // شكل IP بايظ = نمنع (fail-closed)
+    }
+    const [a, b] = parts;
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) || // CGNAT
+      (a === 169 && b === 254) || // link-local
+      (a === 172 && b >= 16 && b <= 31) || // private
+      (a === 192 && b === 168) || // private
+      a >= 224 // multicast/reserved
+    );
   }
-  return fetch(finalUrl, {
-    method: "GET",
-    headers: getFacebookFriendlyHeaders(finalUrl),
-    redirect: "follow",
-  });
+  return false; // أسماء DNS وعناوين IPv6 عامة — القرار النهائي بعد الـ lookup
+};
+
+const assertPublicRemoteHost = async (hostname) => {
+  const host = String(hostname || "").toLowerCase().trim();
+  if (!host) return false;
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) {
+    return false;
+  }
+  if (isPrivateHostAddress(host)) return false;
+  // اسم DNS: بنحل العنوان ونمنع لو أي رجع من الرينجات الخاصة (DNS rebinding شامل)
+  const looksLikeIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(":");
+  if (!looksLikeIp) {
+    try {
+      const dns = require("dns").promises;
+      const records = await dns.lookup(host, { all: true, verbatim: true });
+      if (!Array.isArray(records) || records.length === 0) return false;
+      for (const record of records) {
+        if (isPrivateHostAddress(record.address)) return false;
+      }
+    } catch {
+      return false; // فشل الـ resolve = نمنع (fail-closed)
+    }
+  }
+  return true;
+};
+
+const MAX_REMOTE_REDIRECTS = 4;
+
+const fetchRemoteAsset = async (targetUrl) => {
+  // 🛡️ حماية SSRF: الـ URLs المطلقة لازم تستهدف هوست عام فقط (فحص literal + DNS + كل redirect hop).
+  // المسارات النسبية (اللي بتتخدم من نفس الباكند) مسموح فقط لو /uploads/ — مش أي مسار داخلي.
+  let currentUrl = targetUrl;
+
+  for (let hop = 0; hop <= MAX_REMOTE_REDIRECTS; hop += 1) {
+    if (typeof currentUrl === "string" && currentUrl.startsWith("/")) {
+      if (!currentUrl.startsWith("/uploads/")) {
+        return null;
+      }
+      const localPort = process.env.PORT || 3007;
+      const localUrl = `http://127.0.0.1:${localPort}${currentUrl}`;
+      return fetch(localUrl, {
+        method: "GET",
+        headers: getFacebookFriendlyHeaders(localUrl),
+        redirect: "manual",
+      });
+    }
+
+    let parsed;
+    try {
+      parsed = new URL(currentUrl);
+    } catch {
+      return null;
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+
+    const hostAllowed = await assertPublicRemoteHost(parsed.hostname);
+    if (!hostAllowed) {
+      return null;
+    }
+
+    const response = await fetch(currentUrl, {
+      method: "GET",
+      headers: getFacebookFriendlyHeaders(currentUrl),
+      redirect: "manual",
+    });
+
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get("location");
+      if (!location) {
+        return response;
+      }
+      try {
+        currentUrl = new URL(location, currentUrl).toString();
+      } catch {
+        return response;
+      }
+      continue;
+    }
+
+    return response;
+  }
+
+  return null;
 };
 
 const extractRemoteFailureDetails = async (response) => {
@@ -1220,6 +1319,10 @@ const proxyImage = async (req, res) => {
       }
 
       const normalized = value.trim();
+      // مسارات نسبية غير /uploads/ ممنوعة — دي كانت بتوصل لأي إندبوينت داخلي على loopback
+      if (normalized.startsWith("/") && !normalized.startsWith("/uploads/")) {
+        return;
+      }
       if (!isAllowedDirectUrl(normalized) || seenUrls.has(normalized)) {
         return;
       }
@@ -1295,6 +1398,12 @@ const proxyImage = async (req, res) => {
       }
 
       const response = await fetchRemoteAsset(candidateUrl);
+      if (!response) {
+        console.warn("⚠️ [IMAGE-PROXY] Remote fetch blocked (disallowed target):", {
+          candidateUrl: String(candidateUrl).slice(0, 120),
+        });
+        continue;
+      }
       if (response.ok) {
         return sendRemoteResponse(req, res, response, transformOptions);
       }

@@ -173,6 +173,7 @@ async function postWebhook(req, res) {
     ).trim();
 
     let signatureOk = false;
+    let hasSessionSecrets = false;
 
     if (globalSecret) {
       // Try global secret first
@@ -196,6 +197,7 @@ async function postWebhook(req, res) {
         },
         select: { metaWebhookSecret: true }
       });
+      hasSessionSecrets = sessionsWithSecret.length > 0;
 
       for (const s of sessionsWithSecret) {
         const secret = String(s.metaWebhookSecret || '').trim();
@@ -208,19 +210,55 @@ async function postWebhook(req, res) {
       }
     }
 
+    if (!signatureOk && !globalSecret) {
+      // مفيش سر عام متظبط — بنجرب أسرار الجلسات (بيتخلق معرفتهم يأثر على قرار الفرض الصارم تحت)
+      try {
+        const sessionsWithSecret = await getSharedPrismaClient().whatsAppSession.findMany({
+          where: {
+            provider: 'META_CLOUD',
+            metaWebhookSecret: { not: null },
+            AND: [ACTIVE_METADATA_FILTER]
+          },
+          select: { metaWebhookSecret: true }
+        });
+        hasSessionSecrets = sessionsWithSecret.length > 0;
+
+        for (const s of sessionsWithSecret) {
+          const secret = String(s.metaWebhookSecret || '').trim();
+          if (!secret) continue;
+          const check = verifyMetaWebhookSignature(req, secret);
+          if (check.ok) {
+            signatureOk = true;
+            break;
+          }
+        }
+      } catch (sessionLookupError) {
+        console.error('⚠️ [Meta Webhook] Per-session secret lookup failed:', sessionLookupError.message);
+      }
+    }
+
     if (!signatureOk) {
+      const isProduction = String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
+      // في الإنتاج: الفرض صارم بمجرد إن فيه سر متاح (عام أو جلسة) — نفس معيار Facebook webhook.
+      // لسه مفيش سر متظبط خالص؟ بنكمل بمعالجة بدون تحقق (تحذير صاخب) عشان الواتساب مايوقفش.
+      const strictEnforced =
+        shouldStrictlyEnforceMetaWebhookSignature() ||
+        (isProduction && (Boolean(globalSecret) || hasSessionSecrets));
+
       if (globalSecret) {
         console.warn('⚠️ [Meta Webhook] Signature verification failed with all available secrets.');
+      } else if (hasSessionSecrets) {
+        console.warn('⚠️ [Meta Webhook] Signature verification failed with per-session secrets.');
       } else {
         console.warn('⚠️ [Meta Webhook] No webhook secret configured (env or session).');
       }
 
-      if (shouldStrictlyEnforceMetaWebhookSignature()) {
-        console.warn('🚫 [Meta Webhook] Strict signature enforcement enabled. Rejecting unverified webhook.');
+      if (strictEnforced) {
+        console.warn('🚫 [Meta Webhook] Strict signature enforcement — rejecting unverified webhook.');
         return res.status(403).json({ success: false, error: 'Invalid signature' });
       }
 
-      console.warn('⚠️ [Meta Webhook] Signature enforcement disabled. Processing without verification.');
+      console.warn('⚠️ [Meta Webhook] Processing without verification — ظبط META_WA_APP_SECRET (أو metaWebhookSecret للجلسة) في الإنتاج لتفعيل الرفض التلقائي.');
     }
 
     const body = req.body;
@@ -359,25 +397,42 @@ async function postWebhook(req, res) {
 }
 
 async function getDebugLogs(req, res) {
-  const secretKey = req.query.secret_key;
-  if (secretKey !== 'dc0514238d0fbbe09890f8429f1f246a') {
+  // 🔐 الحارس: مفتاح من البيئة فقط (مفيش قيمة افتراضية في الكود) + مقارنة timing-safe.
+  // لو META_WA_DEBUG_KEY مش متظبط (أو أقصر من 32 حرف) الإندبوينت مقفول تمامًا.
+  const expectedKey = String(process.env.META_WA_DEBUG_KEY || '').trim();
+  const providedKey = String(req.query.secret_key || '');
+  const crypto = require('crypto');
+  let keyOk = false;
+  if (expectedKey.length >= 32 && providedKey.length === expectedKey.length) {
+    try {
+      keyOk = crypto.timingSafeEqual(Buffer.from(providedKey), Buffer.from(expectedKey));
+    } catch (_) {
+      keyOk = false;
+    }
+  }
+  if (!keyOk) {
     return res.sendStatus(403);
   }
 
   const fs = require('fs');
   const path = require('path');
-  const logFile = req.query.file || 'err.log';
+  // اسم الملف فقط — بيمنع أي path traversal (../) خارج فولدر اللوجز
+  const logFile = path.basename(String(req.query.file || 'err.log'));
+  const logsDir = path.resolve(__dirname, '../logs');
+  const logPath = path.resolve(logsDir, logFile);
+  if (!logPath.startsWith(`${logsDir}${path.sep}`)) {
+    return res.sendStatus(403);
+  }
 
   try {
-    const logPath = path.join(__dirname, '../logs', logFile);
     if (!fs.existsSync(logPath)) {
-      return res.status(200).json({ status: 'ok', message: `No log file found at ${logPath}` });
+      return res.status(200).json({ status: 'ok', message: 'No log file found' });
     }
     const content = fs.readFileSync(logPath, 'utf8');
     const lines = content.split('\n').slice(-100).join('\n');
     return res.status(200).send(`<pre>${lines}</pre>`);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Failed to read log file' });
   }
 }
 

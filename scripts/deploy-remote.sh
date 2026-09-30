@@ -723,7 +723,6 @@ if [ -n "$PM2_BIN" ]; then
 
   echo "🧹 Purging in-memory HTML caches on the running backend..."
   PURGE_SECRET="$(grep '^DEPLOY_SECRET=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2-)"
-  [ -z "$PURGE_SECRET" ] && PURGE_SECRET="maxp-deploy-internal-2024"
   if [ -n "$PURGE_SECRET" ]; then
     PURGE_RESP="$(curl -sS --max-time 10 -X POST -H "x-deploy-secret: $PURGE_SECRET" "http://127.0.0.1:${ACTIVE_HEALTH_PORT}/api/v1/internal/purge-cache" 2>&1 || true)"
     if printf '%s' "$PURGE_RESP" | grep -q '"ok":true\|"ok": true'; then

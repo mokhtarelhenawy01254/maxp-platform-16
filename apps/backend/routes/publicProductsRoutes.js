@@ -1604,9 +1604,15 @@ router.get('/', async (req, res) => {
     }
 
     if (minPrice || maxPrice) {
-      where.price = {};
-      if (minPrice) where.price.gte = parseFloat(minPrice);
-      if (maxPrice) where.price.lte = parseFloat(maxPrice);
+      const parsedMin = parseFloat(minPrice);
+      const parsedMax = parseFloat(maxPrice);
+      const validMin = Number.isFinite(parsedMin);
+      const validMax = Number.isFinite(parsedMax);
+      if (validMin || validMax) {
+        where.price = {};
+        if (validMin) where.price.gte = parsedMin;
+        if (validMax) where.price.lte = parsedMax;
+      }
     }
 
     const prisma = await getPrisma();
@@ -1656,10 +1662,10 @@ router.get('/', async (req, res) => {
     res.json(responseData);
   } catch (error) {
     console.error('❌ [PUBLIC-PRODUCTS] GET / error:', error);
+    // التفاصيل التقنية (رسائل Prisma وشكل الـ query) للسيرفر فقط — مش للعميل العام
     res.status(500).json({
       success: false,
       message: 'خطأ في جلب المنتجات',
-      error: error.message,
     });
   }
 });
