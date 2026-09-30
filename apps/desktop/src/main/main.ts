@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain, desktopCapturer, screen, safeStorage, powerMonitor, shell, dialog } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, Notification, ipcMain, desktopCapturer, screen, safeStorage, powerMonitor, shell, dialog, clipboard } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -285,7 +285,66 @@ function createMainWindow(): void {
     },
   });
 
+  // Register standard application menu with Edit roles so OS-level shortcuts (CmdOrCtrl+C, CmdOrCtrl+V, etc.) work reliably
+  const appMenuTemplate: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo', label: 'تراجع (Undo)', accelerator: 'CmdOrCtrl+Z' },
+        { role: 'redo', label: 'إعادة (Redo)', accelerator: 'CmdOrCtrl+Y' },
+        { type: 'separator' },
+        { role: 'cut', label: 'قص (Cut)', accelerator: 'CmdOrCtrl+X' },
+        { role: 'copy', label: 'نسخ (Copy)', accelerator: 'CmdOrCtrl+C' },
+        { role: 'paste', label: 'لصق (Paste)', accelerator: 'CmdOrCtrl+V' },
+        { role: 'selectAll', label: 'تحديد الكل (Select All)', accelerator: 'CmdOrCtrl+A' },
+      ],
+    },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(appMenuTemplate));
+
   mainWindow.setMenuBarVisibility(false);
+
+  // Right-click context menu for Copy / Cut / Paste / Select All anywhere in the app
+  mainWindow.webContents.on('context-menu', (_e, params) => {
+    const menuTemplate: Electron.MenuItemConstructorOptions[] = [];
+    const hasSelection = Boolean(params.selectionText && params.selectionText.trim().length > 0);
+
+    if (params.isEditable) {
+      menuTemplate.push(
+        { role: 'cut', label: 'قص (Cut)', accelerator: 'CmdOrCtrl+X' },
+        { role: 'copy', label: 'نسخ (Copy)', accelerator: 'CmdOrCtrl+C' },
+        { role: 'paste', label: 'لصق (Paste)', accelerator: 'CmdOrCtrl+V' },
+        { type: 'separator' },
+        { role: 'selectAll', label: 'تحديد الكل (Select All)', accelerator: 'CmdOrCtrl+A' }
+      );
+    } else {
+      if (hasSelection) {
+        menuTemplate.push(
+          { role: 'copy', label: 'نسخ (Copy)', accelerator: 'CmdOrCtrl+C' },
+          { type: 'separator' }
+        );
+      }
+      if (params.linkURL) {
+        menuTemplate.push(
+          {
+            label: 'نسخ الرابط (Copy Link)',
+            click: () => {
+              clipboard.writeText(params.linkURL);
+            },
+          },
+          { type: 'separator' }
+        );
+      }
+      menuTemplate.push(
+        { role: 'selectAll', label: 'تحديد الكل (Select All)', accelerator: 'CmdOrCtrl+A' }
+      );
+    }
+
+    if (menuTemplate.length > 0 && mainWindow) {
+      const contextMenu = Menu.buildFromTemplate(menuTemplate);
+      contextMenu.popup({ window: mainWindow });
+    }
+  });
 
   // Diagnostic logging for renderer console and crashes
   mainWindow.webContents.on('console-message', (_e, level, msg, line, src) => {

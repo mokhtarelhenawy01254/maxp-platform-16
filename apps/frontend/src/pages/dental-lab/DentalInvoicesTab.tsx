@@ -2242,6 +2242,23 @@ export default function DentalInvoicesTab() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-blue-700 shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{t("dentalLab.invoices.newInvoice")}</span>
+          </button>
+
+          <button
+            onClick={handleExportInvoicesExcel}
+            className="flex items-center gap-1.5 px-3 py-2 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg text-xs sm:text-sm font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors shadow-sm"
+            title="تصدير الفواتير المعروضة إلى Excel"
+          >
+            <Download className="w-4 h-4" />
+            <span>تصدير Excel</span>
+          </button>
+
           {uninvoicedSummary && uninvoicedSummary.totalCases > 0 && (
             <button
               onClick={() => setBatchOpen(true)}
@@ -2269,23 +2286,6 @@ export default function DentalInvoicesTab() {
           >
             <RefreshCw className="w-4 h-4 text-gray-500" />
             <span>{t("dentalLab.common.refresh")}</span>
-          </button>
-
-          <button
-            onClick={handleExportInvoicesExcel}
-            className="flex items-center gap-1.5 px-3 py-2 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg text-xs sm:text-sm font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors shadow-sm"
-            title="تصدير الفواتير المعروضة إلى Excel"
-          >
-            <Download className="w-4 h-4" />
-            <span>تصدير Excel</span>
-          </button>
-
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-blue-700 shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{t("dentalLab.invoices.newInvoice")}</span>
           </button>
         </div>
       </div>
