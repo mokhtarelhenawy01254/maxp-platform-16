@@ -238,4 +238,36 @@ describe('PdpQuickOrderForm wallet payment method visibility', () => {
     // Reassurance badge should be visible
     expect(screen.getByText(/256-bit SSL|تشفير وحماية مصرفية/i)).toBeTruthy();
   });
+
+  it('renders discount badge with discount percent on payment buttons when discount is enabled', () => {
+    mockUseStorefrontSettings.mockReturnValue({
+      settings: {
+        company: { id: 'comp-1', currency: 'EGP', name: 'Test Shop' },
+        storefront: {
+          storefrontFeatures: {
+            enabledPaymentMethods: ['cod', 'card'],
+          },
+          settings: {
+            currency: 'EGP',
+            walletPaymentSettings: {
+              enabled: true,
+              discountEnabled: true,
+              discountPercent: 10,
+              showDiscountBadge: true,
+            },
+          },
+        },
+      },
+      isLoading: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <PdpQuickOrderForm product={mockProduct as any} />
+      </MemoryRouter>
+    );
+
+    // Verify discount badge text appears
+    expect(screen.getByText(/خصم 10%/i)).toBeTruthy();
+  });
 });

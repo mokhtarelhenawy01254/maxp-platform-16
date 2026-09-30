@@ -163,6 +163,67 @@ for (const skillDir of allSkillDirs) {
   }
 }
 
+// Check Role Registry & role_tools.yaml synchronization
+const ROLES_MANIFEST_FILE = path.join(ROOT, "apps/ai-service/src/agents/roles.manifest.yaml");
+const ROLE_TOOLS_FILE = path.join(ROOT, "apps/ai-service/src/tools/role_tools.yaml");
+
+let yamlParser = null;
+try {
+  yamlParser = require(path.join(ROOT, "apps/backend/node_modules/js-yaml"));
+} catch (_) {
+  try { yamlParser = require("js-yaml"); } catch (__) {}
+}
+
+if (yamlParser && fs.existsSync(ROLES_MANIFEST_FILE) && fs.existsSync(ROLE_TOOLS_FILE)) {
+  try {
+    const rawRoleToolsText = fs.readFileSync(ROLE_TOOLS_FILE, "utf-8");
+    const roleLines = rawRoleToolsText.split("\n");
+    const seenRoles = new Set();
+    for (const line of roleLines) {
+      const match = line.match(/^\s\s([A-Za-z0-9_]+):\s*$/);
+      if (match) {
+        const rk = match[1];
+        if (seenRoles.has(rk)) {
+          err(`Duplicate role key '${rk}' found in role_tools.yaml`);
+        }
+        seenRoles.add(rk);
+      }
+    }
+
+    const manifestData = yamlParser.load(fs.readFileSync(ROLES_MANIFEST_FILE, "utf-8")) || {};
+    const toolsData = yamlParser.load(rawRoleToolsText) || {};
+
+    const manifestRoles = manifestData.roles || {};
+    const toolsRoles = toolsData.roles || {};
+
+    for (const rk of Object.keys(toolsRoles)) {
+      if (!manifestRoles[rk]) {
+        err(`Role '${rk}' in role_tools.yaml is missing from roles.manifest.yaml`);
+      }
+    }
+
+    for (const rk of Object.keys(manifestRoles)) {
+      if (!toolsRoles[rk]) {
+        err(`Role '${rk}' in roles.manifest.yaml is missing from role_tools.yaml`);
+      }
+      const rmeta = manifestRoles[rk];
+      for (const field of ["domain", "judge_profile", "playbook_title", "capabilities"]) {
+        if (!rmeta || !rmeta[field]) {
+          err(`Role '${rk}' in roles.manifest.yaml is missing required field '${field}'`);
+        }
+      }
+      const caps = rmeta.capabilities || {};
+      for (const cap of ["episodic_memory", "knowledge_retrieval", "learning", "approvals"]) {
+        if (caps[cap] === undefined) {
+          err(`Role '${rk}' in roles.manifest.yaml is missing capability '${cap}'`);
+        }
+      }
+    }
+  } catch (parseErr) {
+    err(`Failed to parse roles manifest or role_tools: ${parseErr.message}`);
+  }
+}
+
 if (errors.length === 0 && warnings.length === 0) {
   console.log(`? Agent skill integrity: ${agentDirs.length} agents, ${allSkillDirs.length} skills — all valid`);
   process.exit(0);

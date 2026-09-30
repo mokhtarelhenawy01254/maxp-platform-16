@@ -60,6 +60,11 @@ CATEGORY_DOMAIN_ALIASES: dict[str, str] = {
     "شؤون الموظفين": "HR",
     "HR": "HR",
     "HR_ASSISTANT": "HR",
+    "AOV_SPECIALIST": "AOV",
+    "AOV": "AOV",
+    "متوسط قيمة الطلب": "AOV",
+    "زيادة متوسط الطلب": "AOV",
+    "سلة المشتريات": "AOV",
 }
 
 
@@ -215,10 +220,13 @@ def validate_all() -> list[str]:
 
     manifest_roles, tools_roles = _load_registry_data()
 
-    # 2. Check all roles in role_tools.yaml exist in manifest
+    # 2. Check all roles in role_tools.yaml exist in manifest, and vice versa
     for rk in tools_roles:
         if rk not in manifest_roles:
             errors.append(f"Role '{rk}' in {TOOLS_PATH.name} is missing from {MANIFEST_PATH.name}")
+    for rk in manifest_roles:
+        if rk not in tools_roles:
+            errors.append(f"Role '{rk}' in {MANIFEST_PATH.name} is missing from {TOOLS_PATH.name}")
 
     # 3. Check all manifest roles have required fields and capabilities
     required_fields = ["domain", "judge_profile", "playbook_title", "capabilities"]

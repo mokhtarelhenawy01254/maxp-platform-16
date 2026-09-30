@@ -1,0 +1,72 @@
+{
+  "scenarios": [
+    {
+      "name": "q1_aov_yesterday",
+      "input": "متوسط قيمة الطلب امبارح كام؟",
+      "expected_tool": "sales_revenue",
+      "must_contain": ["متوسط قيمة الطلب"],
+      "forbidden": ["تقريباً", "في حدود", "تخميني", "أتوقع"]
+    },
+    {
+      "name": "q2_aov_7d_and_30d",
+      "input": "متوسط آخر 7 أيام كام؟ ومتوسط آخر 30 يوم كام؟",
+      "expected_tool": "sales_revenue",
+      "must_contain": ["آخر 7 أيام", "آخر 30 يوم"],
+      "forbidden": ["تقريباً", "في حدود", "تخميني"]
+    },
+    {
+      "name": "q3_top_3_vital_numbers",
+      "input": "قولي أهم 3 أرقام بس مختار لازم يشوفهم النهاردة.",
+      "must_contain": ["متوسط قيمة الطلب", "الطلبات"],
+      "forbidden": ["🚀", "✨", "🔥", "💡", "🎯"]
+    },
+    {
+      "name": "q4_most_successful_bundle",
+      "input": "إيه أنجح باقة أو عرض شغال حالياً؟",
+      "expected_tool": "offers_list_active",
+      "must_contain": ["باقة", "عرض"],
+      "forbidden": ["تخمين", "أتوقع أنها ناجحة بدون أرقام"]
+    },
+    {
+      "name": "q5_free_shipping_impact_on_quantity",
+      "input": "الشحن المجاني بيرفع الكمية فعلاً؟",
+      "expected_tool": "shipping_rates",
+      "must_contain": ["الشحن المجاني"],
+      "forbidden": ["بالتأكيد ممتاز بدون بيانات", "تخمين"]
+    },
+    {
+      "name": "q6_cheapest_3_cart_boosters",
+      "input": "إيه أرخص 3 حاجات أزود بيها السلة النهاردة؟",
+      "expected_tool": "inventory_check",
+      "must_contain": ["جنيه", "المخزون"],
+      "forbidden": ["غير متوفر", "نفدت"]
+    },
+    {
+      "name": "q7_coupons_below_minimum_threshold",
+      "input": "فيه طلبات اتخصمت بأقل من الحد الأدنى للكوبون؟",
+      "expected_tool": "coupon_validate",
+      "must_contain": ["كوبون", "مش متاح"],
+      "forbidden": ["أعتقد لا يوجد", "تقريباً"]
+    },
+    {
+      "name": "q8_products_lifting_cart_value",
+      "input": "إيه المنتجات اللي بتسحب السلة لفوق؟",
+      "expected_tool": "product_performance",
+      "must_contain": ["متوسط"],
+      "forbidden": ["تخمين", "مجرد الأكثر مبيعاً"]
+    },
+    {
+      "name": "q9_bundle_product_low_stock_alert",
+      "input": "فيه منتج عليه عرض ومخزونه خلص أو قرب يخلص؟",
+      "expected_tool": "inventory_check",
+      "must_contain": ["مخزون"],
+      "forbidden": ["مفيش مشاكل بدون فحص"]
+    },
+    {
+      "name": "q10_single_mobile_screen_daily_report",
+      "input": "اكتب تقرير اليوم في شاشة موبايل واحدة.",
+      "must_contain": ["أهم قرار النهاردة هو:"],
+      "forbidden": ["🚀", "✨", "🔥", "💡", "🎯", "🛒", "🧠"]
+    }
+  ]
+}

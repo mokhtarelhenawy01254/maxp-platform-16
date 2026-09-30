@@ -25,7 +25,7 @@ import {
   getStorefrontMarketplaceAppSettings,
   isStorefrontMarketplaceAppEnabled,
 } from "../utils/marketplaceApps";
-import { ArrowLeft, ShoppingBag } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Tag } from "lucide-react";
 import {
   getActiveStorePromotionFromCompany,
   calculateStorePromotionDiscount,
@@ -1534,8 +1534,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
           ) : null}
           {walletDiscount > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
             <div className="flex justify-between text-foreground">
-              <span className="text-[#6f6455]">
-                خصم الدفع الإلكتروني ({walletDiscountPercent}%)
+              <span className="inline-flex items-center gap-1.5 text-[#6f6455]">
+                <Tag className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                <span>خصم الدفع الإلكتروني ({walletDiscountPercent}%)</span>
               </span>
               <span className="text-emerald-600">
                 -{formatStorefrontCurrency(walletDiscount, currency)}

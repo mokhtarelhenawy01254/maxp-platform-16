@@ -436,3 +436,74 @@ roles:
       retain_days: 90
       auto_embed: true
 
+  AOV_SPECIALIST:
+    label: "شادي — مسؤول فريق رفع متوسط قيمة الطلب (AOV)"
+    domain: "AOV"
+    playbook_id: "aov_specialist_playbook"
+    playbook_title: "كتيب استراتيجيات وتحليلات رفع متوسط قيمة الطلب AOV"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: true
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["AOV", "STORE_OPS", "DISCOUNTS", "OFFERS", "SHIPPING", "CONVERSION"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 90
+      auto_embed: true
+
+  AOV_ANALYST:
+    label: "محلل AOV — استخراج مؤشرات متوسط قيمة الطلب"
+    domain: "AOV"
+    playbook_id: "aov_analyst_playbook"
+    playbook_title: "كتيب تحليل واستخراج مؤشرات متوسط قيمة الطلب اليومي"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: false
+      knowledge_retrieval: true
+      learning: false
+      approvals: false
+    approval_policy:
+      allowed_scopes: ["AOV", "ANALYTICS", "STORE_OPS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 30
+      auto_embed: false
+
+  AOV_EXECUTOR:
+    label: "منفذ العروض والباكات — فريق AOV"
+    domain: "AOV"
+    playbook_id: "aov_executor_playbook"
+    playbook_title: "كتيب تنفيذ العروض والباكات بعد الموافقة"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: true
+      knowledge_retrieval: true
+      learning: false
+      approvals: true
+    approval_policy:
+      allowed_scopes: ["AOV", "DISCOUNTS", "OFFERS", "SHIPPING", "CONVERSION"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 60
+      auto_embed: true
+
+  AOV_AUDITOR:
+    label: "مدقق الأرقام — فريق AOV"
+    domain: "AOV"
+    playbook_id: "aov_auditor_playbook"
+    playbook_title: "كتيب مراجعة وتدقيق تقارير متوسط قيمة الطلب"
+    judge_profile: "merchant_ops"
+    capabilities:
+      episodic_memory: false
+      knowledge_retrieval: true
+      learning: false
+      approvals: false
+    approval_policy:
+      allowed_scopes: ["AOV", "ANALYTICS"]
+      forbidden_prefixes: ["hr_", "payroll_", "internal_"]
+    memory_policy:
+      retain_days: 30
+      auto_embed: false

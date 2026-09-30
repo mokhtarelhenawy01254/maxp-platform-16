@@ -388,7 +388,7 @@ const PromotionSettings: React.FC = () => {
   /* ---------- الأدوات المرتبطة ---------- */
   const relatedTools = [
     {
-      to: "/settings/volume-discounts",
+      to: "/settings/store-promotion",
       icon: Percent,
       label: t("promotionSettings.relatedVolume"),
       desc: t("promotionSettings.relatedVolumeDesc"),

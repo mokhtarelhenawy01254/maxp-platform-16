@@ -1036,9 +1036,9 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
 
              <main
                   className={`business-shell-main flex-1 flex flex-col ${
-                    shouldRemovePadding ? "p-0 overflow-hidden min-h-0 h-full max-h-full" : "p-4 md:p-6 overflow-y-auto min-h-0"
+                    shouldRemovePadding ? "p-0 overflow-hidden min-h-0 h-full max-h-full" : "p-4 md:p-6 overflow-y-auto min-h-0 h-full max-h-full"
                   } hr-theme`}
-                  style={shouldRemovePadding ? { height: '100%', minHeight: 0, flex: '1 1 0%' } : undefined}
+                  style={{ height: '100%', minHeight: 0, flex: '1 1 0%' }}
                 >
 
                  {location.pathname === '/apps' ? (
@@ -1157,9 +1157,9 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
 
                <main
                   className={`business-shell-main flex-1 flex flex-col ${
-                    shouldRemovePadding ? "p-0 overflow-hidden min-h-0 h-full max-h-full" : "p-4 md:p-6 overflow-y-auto min-h-0"
+                    shouldRemovePadding ? "p-0 overflow-hidden min-h-0 h-full max-h-full" : "p-4 md:p-6 overflow-y-auto min-h-0 h-full max-h-full"
                   } hr-theme`}
-                  style={shouldRemovePadding ? { height: '100%', minHeight: 0, flex: '1 1 0%' } : undefined}
+                  style={{ height: '100%', minHeight: 0, flex: '1 1 0%' }}
               >
                  {location.pathname === '/apps' ? (
                    <React.Suspense fallback={<ContentSkeleton />}>

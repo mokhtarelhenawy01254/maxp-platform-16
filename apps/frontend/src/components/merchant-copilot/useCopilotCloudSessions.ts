@@ -135,6 +135,11 @@ export function useCopilotCloudSessions(
               text: m.content || m.text || '',
               timestamp: m.createdAt || m.timestamp || new Date().toISOString(),
               toolCalls: m.toolCalls || m.tool_calls || [],
+              images: Array.isArray(m.images)
+                ? m.images
+                : (Array.isArray(m.attachments)
+                  ? m.attachments.map((a: any) => (typeof a === 'string' ? a : (a?.url || a?.data_url || ''))).filter(Boolean)
+                  : undefined),
             }))
           : [];
 

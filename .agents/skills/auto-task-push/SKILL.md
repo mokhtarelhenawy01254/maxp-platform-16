@@ -47,5 +47,20 @@ Automatically triggered upon completing **ANY** task, feature implementation, bu
    git push origin main
    ```
 
+   > [!CAUTION]
+   > ## 🚫 ABSOLUTE BAN: `git push --force` & `git push --force-with-lease`
+   > **NEVER use force push under ANY circumstances. This is a permanent, non-negotiable rule.**
+   > - `git push --force` → **BANNED**
+   > - `git push --force-with-lease` → **BANNED**
+   > - `git push -f` → **BANNED**
+   >
+   > Force pushing rewrites remote history, destroys teammates' work, and corrupts the repository.
+   > If a push is rejected due to a non-fast-forward conflict, the correct fix is:
+   > ```bash
+   > git pull --rebase origin main   # rebase local commits on top of remote
+   > git push origin main            # then push normally — NO force flag
+   > ```
+   > If you ever feel tempted to force push, **STOP and ask the user first.**
+
 5. **Report to User:**
    Provide the commit message, commit hash, and confirmation that updates were pushed to `https://github.com/mokhtar-el7/maxp-platform-13`.

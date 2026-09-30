@@ -115,6 +115,13 @@ class AiCronSchedulerService {
   resolveTargetRole(description) {
     const desc = (description || '').toLowerCase();
     if (
+      desc.includes('aov') || desc.includes('متوسط قيمة الطلب') || desc.includes('قيمة الطلب') ||
+      desc.includes('متوسط السلة') || desc.includes('سلة المشتريات') || desc.includes('upsell') ||
+      desc.includes('زيادة الطلب') || desc.includes('زيادة متوسط') || desc.includes('سلة')
+    ) {
+      return 'AOV_SPECIALIST';
+    }
+    if (
       desc.includes('إعلان') || desc.includes('اعلان') || desc.includes('إعلانات') || desc.includes('اعلانات') ||
       desc.includes('حملة') || desc.includes('حملات') || desc.includes('فيسبوك') || desc.includes('ميتا') ||
       desc.includes('meta') || desc.includes('roas') || desc.includes('cpa') || desc.includes('ميزانية') ||
@@ -125,10 +132,119 @@ class AiCronSchedulerService {
     if (desc.includes('مخزون') || desc.includes('قطع') || desc.includes('منتجات') || desc.includes('جرد') || desc.includes('نقص')) {
       return 'INVENTORY';
     }
-    if (desc.includes('مبيعات') || desc.includes('طلب') || desc.includes('سلات') || desc.includes('عملاء') || desc.includes('شحن')) {
+    if (desc.includes('مبيعات') || desc.includes('طلب') || desc.includes('عملاء') || desc.includes('شحن')) {
       return 'SALES';
     }
     return 'GENERAL';
+  }
+
+  /**
+   * Ensure default daily 9:00 AM AOV report job exists for tenant.
+   */
+  async ensureDefaultAovJob(companyId) {
+    if (!companyId) return null;
+    const desc = 'التقرير الصباحي اليومي لمتوسط قيمة الطلب (AOV) وتوصيات زيادة السلة';
+    const cronExpr = '0 9 * * *';
+    const taskType = 'AOV_SPECIALIST';
+    const id = `cron_aov_daily_${companyId}`;
+    const payload = {
+      reportType: 'AOV_DAILY_REPORT',
+      delivery: 'WHATSAPP',
+      targetTime: '09:00',
+      timezone: 'Africa/Cairo',
+    };
+
+    const prisma = this._getPrisma();
+    if (prisma && prisma.companySkill) {
+      try {
+        const existing = await prisma.companySkill.findFirst({
+          where: {
+            companyId,
+            OR: [
+              { id },
+              { name: `[CRON] ${desc.slice(0, 50)}` },
+              { description: { contains: 'AOV' } },
+              { description: { contains: 'متوسط قيمة الطلب' } },
+            ],
+          },
+        });
+
+        if (existing) {
+          return null; // Already exists in DB
+        }
+
+        const meta = {
+          cronExpression: cronExpr,
+          taskType,
+          payload,
+          runCount: 0,
+          lastRun: null,
+          lastStatus: null,
+          isCronJob: true,
+        };
+
+        await prisma.companySkill.create({
+          data: {
+            id,
+            companyId,
+            name: `[CRON] ${desc.slice(0, 50)}`,
+            description: desc,
+            triggerPhrases: cronExpr,
+            instructions: desc,
+            priority: 10,
+            enabled: true,
+            metadata: JSON.stringify(meta),
+          },
+        });
+
+        const jobData = {
+          id,
+          companyId,
+          description: desc,
+          cronExpression: cronExpr,
+          taskType,
+          status: 'ACTIVE',
+          enabled: true,
+          lastRun: null,
+          lastStatus: null,
+          nextRun: '09:00 (Africa/Cairo)',
+          runCount: 0,
+          payload,
+          createdAt: new Date().toISOString(),
+        };
+
+        this._registerCronTask(jobData);
+        return jobData;
+      } catch (err) {
+        console.warn('[AiCronScheduler] Failed to ensure DB default AOV job:', err.message);
+      }
+    }
+
+    // Memory store fallback
+    const companyJobs = this._memoryJobs.get(companyId) || [];
+    const hasAov = companyJobs.some(j => j.taskType === 'AOV_SPECIALIST' || (j.description && j.description.includes('AOV')));
+    if (!hasAov) {
+      const jobData = {
+        id,
+        companyId,
+        description: desc,
+        cronExpression: cronExpr,
+        taskType,
+        status: 'ACTIVE',
+        enabled: true,
+        lastRun: null,
+        lastStatus: null,
+        nextRun: '09:00 (Africa/Cairo)',
+        runCount: 0,
+        payload,
+        createdAt: new Date().toISOString(),
+      };
+      companyJobs.unshift(jobData);
+      this._memoryJobs.set(companyId, companyJobs);
+      this._registerCronTask(jobData);
+      return jobData;
+    }
+    return null;
   }
 
   /**
@@ -136,6 +252,9 @@ class AiCronSchedulerService {
    */
   async listJobs(companyId) {
     if (!companyId) throw new Error('companyId is required');
+
+    // Auto-ensure default AOV morning report job exists for tenant
+    await this.ensureDefaultAovJob(companyId);
 
     const prisma = this._getPrisma();
     if (prisma && prisma.companySkill) {
@@ -293,18 +412,41 @@ class AiCronSchedulerService {
     const startTime = new Date().toISOString();
     let status = 'FAILED';
     let reply = '';
+    let executionDetails = {};
 
     try {
-      const runTimestamp = Date.now();
-      const response = await aiServiceAdminClient.chatWithAgent({
-        companyId,
-        agentId: '',
-        message: job.description,
-        threadId: `cron_${companyId}_${job.id}_${runTimestamp}`,
-      });
+      const isAovReport = (
+        job.taskType === 'AOV_SPECIALIST' ||
+        job.payload?.reportType === 'AOV_DAILY_REPORT' ||
+        (job.description && (job.description.includes('AOV') || job.description.includes('متوسط قيمة الطلب')))
+      );
 
-      status = response && response.success !== false ? 'SUCCESS' : 'FAILED';
-      reply = response?.reply || '';
+      if (isAovReport) {
+        const periodicReportService = require('./whatsapp/periodicReportService');
+        const reportResult = await periodicReportService.dispatchAovDailyReport(companyId, {
+          jobId: job.id,
+          saveCopy: true,
+        });
+
+        status = reportResult.success ? 'SUCCESS' : 'FAILED';
+        reply = reportResult.messageText;
+        executionDetails = {
+          deliveredWhatsApp: reportResult.deliveredWhatsApp,
+          delivery: reportResult.delivery,
+          metrics: reportResult.metrics,
+        };
+      } else {
+        const runTimestamp = Date.now();
+        const response = await aiServiceAdminClient.chatWithAgent({
+          companyId,
+          agentId: '',
+          message: job.description,
+          threadId: `cron_${companyId}_${job.id}_${runTimestamp}`,
+        });
+
+        status = response && response.success !== false ? 'SUCCESS' : 'FAILED';
+        reply = response?.reply || '';
+      }
     } catch (err) {
       console.error(`[AiCronScheduler] Job ${jobId} failed to execute:`, err.message);
       status = 'FAILED';
@@ -323,6 +465,8 @@ class AiCronSchedulerService {
           meta.lastRun = startTime;
           meta.lastStatus = status;
           meta.runCount = runCount;
+          meta.lastReply = reply;
+          meta.lastExecutionDetails = executionDetails;
 
           await prisma.companySkill.update({
             where: { id: record.id },
@@ -347,6 +491,7 @@ class AiCronSchedulerService {
         lastRun: startTime,
         runCount,
         reply,
+        details: executionDetails,
       },
     };
   }
@@ -366,9 +511,12 @@ class AiCronSchedulerService {
     }
 
     try {
+      const timezone = job.payload?.timezone || 'Africa/Cairo';
       const task = cron.schedule(job.cronExpression, async () => {
         console.log(`[AiCronScheduler] Triggering scheduled job '${job.id}' for company '${job.companyId}'`);
         await this.executeJob(job.companyId, job.id);
+      }, {
+        timezone,
       });
       this._activeTasks.set(job.id, task);
     } catch (err) {

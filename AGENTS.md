@@ -135,6 +135,11 @@ Any design resembling typical LLM-generated output is strictly rejected. Audit a
   3. `git commit -m "<descriptive message of what was done>"`
   4. `git push origin main` (or active branch)
   5. Report commit details & hash to the user upon completion.
+- **🚫 ABSOLUTE BAN — Force Push is PERMANENTLY FORBIDDEN:**
+  - `git push --force` → **BANNED**
+  - `git push --force-with-lease` → **BANNED**
+  - `git push -f` → **BANNED**
+  - If a push is rejected (non-fast-forward), run `git pull --rebase origin main` then `git push origin main`. **NEVER force push. If in doubt, stop and ask the user.**
 
 ## 📦 Rule: Desktop App Auto-Update & Mandatory Version Bumping
 - **Mandatory SemVer Increment on ANY Desktop Change:** Whenever any bug fix, UI change, or feature is made in `apps/desktop`, you MUST ALWAYS bump the `version` in `apps/desktop/package.json` (e.g. `1.0.4` → `1.0.5`).

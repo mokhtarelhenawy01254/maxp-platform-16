@@ -29,7 +29,7 @@ const mockGetStorefrontSettings = vi.fn();
 const mockUpdateStorefrontSettings = vi.fn();
 
 vi.mock("react-router-dom", () => ({
-  Link: ({ children }: { children: React.ReactNode }) => <a href="#">{children}</a>,
+  Link: ({ children, to }: { children: React.ReactNode; to?: string }) => <a href={to}>{children}</a>,
   useNavigate: () => vi.fn(),
 }));
 
@@ -142,5 +142,13 @@ describe("PromotionSettings", () => {
         hideUtilityBar: true,
       });
     });
+  });
+
+  it("renders related tools navigation with link to /settings/store-promotion for volume discounts", async () => {
+    render(<PromotionSettings />);
+    await screen.findByRole("heading", { name: "إعدادات الترويج وزيادة المبيعات" });
+
+    const volumeLink = screen.getByRole("link", { name: /خصومات الكميات/ });
+    expect(volumeLink.getAttribute("href")).toBe("/settings/store-promotion");
   });
 });

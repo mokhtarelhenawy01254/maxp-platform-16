@@ -188,7 +188,6 @@ const GlobalConversionHost: React.FC = () => {
   const attachToThemeShell = general["attachToThemeShell"] !== false;
   const inactiveTabEnabled = Boolean(modules["inactiveTab"]);
   const exitIntentPopupEnabled = Boolean(modules["exitIntentPopup"]);
-  const freeShippingBarEnabled = Boolean(modules["freeShippingBar"]);
   const fakeSalePopupEnabled =
     Boolean(modules["fakeSalePopup"]) && !isQuietDiscoveryChrome;
   const popupStyle = String(ui["popupStyle"] || "minimal");
@@ -201,35 +200,8 @@ const GlobalConversionHost: React.FC = () => {
     setCountdownExpired(true);
   }, []);
   const barPosition = ui["barPosition"] === "bottom" ? "bottom" : "top";
-  const thresholdAmount = Number(thresholds["freeShippingAmount"] || 0);
-  const remainingToFreeShipping = Math.max(thresholdAmount - subtotal, 0);
-  const freeShippingTemplate = resolveDirectionalCopy({
-    value: copy["freeShippingMessage"],
-    englishFallback: "Add {{remaining}} to unlock free shipping",
-    arabicFallback: "أضف {{remaining}} للحصول على شحن مجاني",
-    prefersArabicCopy,
-  });
-  const freeShippingMessage = useMemo(
-    () =>
-      remainingToFreeShipping > 0
-        ? freeShippingTemplate.replace(
-            "{{remaining}}",
-            formatStorefrontCurrency(remainingToFreeShipping, currency),
-          )
-        : resolveDirectionalCopy({
-            value: copy["freeShippingReachedMessage"],
-            englishFallback: "You unlocked free shipping",
-            arabicFallback: "مبروك! تم تفعيل الشحن المجاني",
-            prefersArabicCopy,
-          }),
-    [remainingToFreeShipping, freeShippingTemplate, currency, copy, prefersArabicCopy],
-  );
   const shopPath = buildStorefrontPath(location.pathname, "/shop", location.search);
   const cartPath = buildStorefrontPath(location.pathname, "/cart", location.search);
-  const freeShippingProgress = useMemo(
-    () => (thresholdAmount > 0 ? Math.min(100, Math.max(0, (subtotal / thresholdAmount) * 100)) : 0),
-    [thresholdAmount, subtotal],
-  );
   const exitPopupStorageKey = `sf-exit-intent:${settings?.company?.id || "store"}`;
   const trackingScope = settings?.company?.id || "store";
   const isProductPage = location.pathname.includes("/product/");
@@ -360,40 +332,7 @@ const GlobalConversionHost: React.FC = () => {
   const suggestedHookDescription = prefersArabicCopy
     ? "كمّل الطلب الآن واستفد من العرض الحالي قبل انتهاء الوقت."
     : "Complete the order now and use the current deal before time runs out.";
-  const freeShippingCtaLabel =
-    subtotal > 0
-      ? prefersArabicCopy
-        ? "كمّل الطلب"
-        : "View cart"
-      : prefersArabicCopy
-        ? "ابدأ الطلب"
-        : "Start order";
-  const freeShippingCtaPath = subtotal > 0 ? cartPath : shopPath;
-  const freeShippingSupportNote = isBiteRush
-    ? prefersArabicCopy
-      ? "كل جنيه زيادة يقربك من توصيل مجاني وطلب أعلى قيمة."
-      : "Every extra item moves the order closer to free shipping."
-    : isCafeDemo
-      ? prefersArabicCopy
-        ? "كمّل الطلب بحلو أو أداة تحضير وخلي التوصيل علينا."
-        : "Add a pastry or brew tool to unlock free delivery."
-    : isPharmacy
-      ? prefersArabicCopy
-        ? "كل منتج إضافي يقربك من توصيل مجاني وتجهيز أسرع لطلبك."
-        : "Each extra essential moves the order closer to free shipping."
-    : isKhemetLuxe
-      ? prefersArabicCopy
-        ? "أضيفي لسلتك لتصلي إلى الشحن المجاني لكافة المحافظات."
-        : "Add more to your cart to unlock free shipping across Egypt."
-      : prefersArabicCopy
-        ? "كل جنيه زيادة يقربك من توصيل مجاني وطلب أعلى قيمة."
-        : "Every extra item moves the order closer to free shipping.";
-  const freeShippingPrimaryCtaLabel =
-    subtotal > 0 && (isBiteRush || isPharmacy || isCafeDemo)
-      ? prefersArabicCopy
-        ? "افتح السلة"
-        : "View cart"
-      : freeShippingCtaLabel;
+
   const salePopupBadgeLabel = isPharmacy
     ? prefersArabicCopy
       ? "طلب حديث"
@@ -507,32 +446,6 @@ const GlobalConversionHost: React.FC = () => {
     }
   }, [showExitPopup]);
 
-  useEffect(() => {
-    if (
-      !shouldRenderShellMount ||
-      !freeShippingBarEnabled ||
-      thresholdAmount <= 0
-    ) {
-      return;
-    }
-
-    void trackStorefrontAppUsage({
-      slug: "conversion-suite",
-      feature: "free_shipping_bar_view",
-      dedupeKey: `free-shipping-bar:${trackingScope}:${location.pathname}`,
-      metadata: {
-        barPosition,
-        thresholdAmount,
-      },
-    });
-  }, [
-    barPosition,
-    freeShippingBarEnabled,
-    location.pathname,
-    shouldRenderShellMount,
-    thresholdAmount,
-    trackingScope,
-  ]);
 
   useEffect(() => {
     if (!showExitPopup) {
@@ -667,252 +580,7 @@ const GlobalConversionHost: React.FC = () => {
     showExitPopup,
   ]);
 
-  const renderFreeShippingBar = useMemo(() => {
-    if (!freeShippingBarEnabled || thresholdAmount <= 0) {
-      return null;
-    }
-
-    if (isRedlineAuto) {
-      // 2026 UX Rule: Never pollute or push down the product page hero above the fold when cart is empty
-      if (isProductPage && subtotal === 0) {
-        return null;
-      }
-
-      return (
-        <div
-          className={`w-full border-b border-red-600/30 bg-[#0c0d10] text-white shadow-xs ${
-            barPosition === "bottom"
-              ? "fixed inset-x-4 bottom-4 z-[70] rounded-xl border border-red-500/30 px-4 py-2.5 shadow-2xl md:inset-x-auto md:right-6 md:w-[420px]"
-              : shouldOffsetTopUtilityBarForHeader
-                ? "pt-24"
-                : ""
-          }`}
-        >
-          <div className="mx-auto max-w-6xl px-3 py-2 md:px-6">
-            <div className="flex items-center justify-between gap-3 text-xs">
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-red-600/20 text-red-400 p-1">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
-                    <path d="M15 18H9" />
-                    <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
-                    <circle cx="17" cy="18.5" r="2.5" />
-                    <circle cx="7" cy="18.5" r="2.5" />
-                  </svg>
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate font-medium text-neutral-200">
-                      {subtotal > 0
-                        ? freeShippingMessage
-                        : prefersArabicCopy
-                          ? `شحن مجاني لكافة محافظات مصر للطلبات من ${formatStorefrontCurrency(thresholdAmount, currency)}`
-                          : `Free shipping on all orders over ${formatStorefrontCurrency(thresholdAmount, currency)}`}
-                    </span>
-                  </div>
-                  {subtotal > 0 && (
-                    <div className="mt-1 h-1 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-red-500 transition-[width] duration-500"
-                        style={{ width: `${freeShippingProgress}%` }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-bold tabular-nums text-neutral-300">
-                  {subtotal > 0
-                    ? formatStorefrontCurrency(subtotal, currency)
-                    : formatStorefrontCurrency(thresholdAmount, currency)}
-                </span>
-                {subtotal > 0 && (
-                  <Link
-                    to={cartPath}
-                    className="inline-flex items-center rounded-full bg-red-600 px-3 py-1 text-[11px] font-bold text-white transition hover:bg-red-700"
-                  >
-                    {prefersArabicCopy ? "السلة" : "Cart"}
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div
-        className={`w-full animate-conversion-card ${
-          isBiteRush
-            ? "border-b border-[#f8c08c] bg-[linear-gradient(135deg,#111111_0%,#2b160b_100%)] text-white"
-            : isCafeDemo
-              ? "border-b border-[#e6d0bc] bg-[linear-gradient(135deg,#2b1b12_0%,#4b2e1f_52%,#6f4a33_100%)] text-white"
-              : isPharmacy
-                ? "border-b border-[#99f6e4] bg-[linear-gradient(135deg,#f7fffe_0%,#d8fbf4_100%)] text-slate-900"
-                : isKhemetLuxe
-                  ? "border-b border-[#183f31]/30 bg-[#183f31] text-[#fff8ee]"
-                  : "border-b border-primary/10 bg-primary text-primary-foreground"
-        } ${
-          barPosition === "bottom"
-            ? "fixed inset-x-4 bottom-4 z-[70] rounded-2xl border px-4 py-3 shadow-2xl md:inset-x-auto md:right-6 md:w-[420px]"
-            : shouldOffsetTopUtilityBarForHeader
-              ? "pt-24"
-            : ""
-        }`}
-      >
-        <div
-          className={`mx-auto max-w-6xl ${
-            isCompactMarketplacePreviewChrome && barPosition === "top"
-              ? "px-3 py-2 md:px-6 md:py-2.5"
-              : "px-4 py-3 md:px-6"
-          }`}
-        >
-          <div className="flex items-center justify-between gap-3 text-sm font-semibold">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className={`inline-flex items-center justify-center rounded-full ${
-                  isCompactMarketplacePreviewChrome && barPosition === "top"
-                    ? "h-7 w-7 text-[10px]"
-                    : "h-8 w-8 text-xs font-bold"
-                } ${
-                  isBiteRush
-                    ? "bg-white/12 text-white"
-                    : isCafeDemo
-                      ? "bg-white/12 text-[#f8eadf]"
-                    : isPharmacy
-                      ? "bg-[#0f766e]/10 text-[#0f766e]"
-                      : isKhemetLuxe
-                        ? "bg-[#c5a470]/25 text-[#f5ecd9]"
-                        : "bg-white/15"
-                }`}>
-                  {isBiteRush || isPharmacy ? "توصيل" : isCafeDemo ? "قهوة" : isKhemetLuxe ? "شحن مجاني" : "شحن"}
-                </span>
-                <span className="truncate">{freeShippingMessage}</span>
-              </div>
-                <div
-                  className={`mt-2 h-1.5 overflow-hidden rounded-full ${
-                  isBiteRush
-                    ? "bg-white/10"
-                    : isCafeDemo
-                      ? "bg-white/10"
-                    : isPharmacy
-                      ? "bg-[#0f766e]/12"
-                      : isKhemetLuxe
-                        ? "bg-white/15"
-                        : "bg-white/20"
-                }`}
-              >
-                <div
-                  className={`h-full rounded-full transition-[width] duration-500 ${
-                    isBiteRush
-                      ? "bg-[linear-gradient(90deg,#f97316_0%,#facc15_100%)]"
-                      : isCafeDemo
-                        ? "bg-[linear-gradient(90deg,#d6a77a_0%,#f4dfcc_100%)]"
-                      : isPharmacy
-                        ? "bg-[linear-gradient(90deg,#14b8a6_0%,#0f766e_100%)]"
-                        : isKhemetLuxe
-                          ? "bg-[linear-gradient(90deg,#c5a470_0%,#f0dfc4_100%)]"
-                          : "bg-white"
-                  }`}
-                  style={{ width: `${freeShippingProgress}%` }}
-                />
-              </div>
-            </div>
-            <span className={`shrink-0 rounded-full ${
-              isCompactMarketplacePreviewChrome && barPosition === "top"
-                ? "px-2.5 py-1 text-[11px]"
-                : "px-3 py-1 text-xs"
-            } font-bold tracking-wide ${
-              isBiteRush
-                ? "bg-white/10 text-white"
-                : isCafeDemo
-                  ? "bg-white/12 text-[#f8eadf]"
-                : isPharmacy
-                  ? "bg-white text-[#0f766e] shadow-[0_10px_24px_-16px_rgba(15,118,110,0.45)]"
-                  : isKhemetLuxe
-                    ? "bg-[#c5a470]/20 text-[#fff8ee]"
-                    : "bg-white/15 uppercase"
-            }`}>
-              {subtotal > 0
-                ? formatStorefrontCurrency(subtotal, currency)
-                : formatStorefrontCurrency(thresholdAmount, currency)}
-            </span>
-          </div>
-          <div
-            className={`mt-3 items-center justify-between gap-3 ${
-              isCompactMarketplacePreviewChrome && barPosition === "top"
-                ? "hidden md:flex"
-                : "flex"
-            }`}
-          >
-            <p
-              className={`text-[11px] ${
-                isBiteRush
-                  ? "text-white/70"
-                  : isCafeDemo
-                    ? "text-[#f5e2cf]"
-                  : isPharmacy
-                    ? "text-[#0f766e]/75"
-                    : isKhemetLuxe
-                      ? "text-[#f5ecd9]/90"
-                      : "text-primary-foreground/80"
-              }`}
-            >
-              {freeShippingSupportNote}
-            </p>
-            <Link
-              to={freeShippingCtaPath}
-              className={`inline-flex shrink-0 items-center justify-center rounded-full px-4 py-2 text-xs font-black transition ${
-                isBiteRush
-                  ? "bg-[linear-gradient(135deg,#f97316_0%,#ef4444_100%)] text-white shadow-[0_16px_34px_-20px_rgba(239,68,68,0.9)]"
-                  : isCafeDemo
-                    ? "bg-[linear-gradient(135deg,#d6a77a_0%,#f4dfcc_100%)] text-[#2c1d14] shadow-[0_16px_34px_-20px_rgba(214,167,122,0.42)] hover:bg-[#f7dec6]"
-                  : isPharmacy
-                    ? "bg-[#0f766e] text-white shadow-[0_16px_34px_-20px_rgba(15,118,110,0.45)] hover:bg-[#0b5f59]"
-                    : isKhemetLuxe
-                      ? "bg-[#c5a470] text-[#183f31] shadow-[0_16px_34px_-20px_rgba(197,164,112,0.6)] hover:bg-[#d6b785]"
-                      : "bg-white/15 text-primary-foreground hover:bg-white/20"
-              }`}
-            >
-              {freeShippingPrimaryCtaLabel}
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }, [
-    freeShippingBarEnabled,
-    thresholdAmount,
-    isBiteRush,
-    isCafeDemo,
-    isPharmacy,
-    isRedlineAuto,
-    isProductPage,
-    barPosition,
-    shouldOffsetTopUtilityBarForHeader,
-    isCompactMarketplacePreviewChrome,
-    freeShippingMessage,
-    freeShippingProgress,
-    freeShippingSupportNote,
-    freeShippingPrimaryCtaLabel,
-    freeShippingCtaPath,
-    subtotal,
-    currency,
-    cartPath,
-    prefersArabicCopy,
-  ]);
+  // FreeShippingBar extracted to dedicated eager component StorefrontShell/components/FreeShippingBar.tsx (zero delay mount)
 
   if (!shouldRenderShellMount) {
     return null;
@@ -934,7 +602,6 @@ const GlobalConversionHost: React.FC = () => {
 
   return (
     <>
-      {barPosition === "top" ? renderFreeShippingBar : null}
 
       {shouldRenderGlobalCountdown ? (
         <section
@@ -983,7 +650,6 @@ const GlobalConversionHost: React.FC = () => {
         </section>
       ) : null}
 
-      {barPosition === "bottom" ? renderFreeShippingBar : null}
 
       {fakeSalePopupEnabled && (
         <AnimatePresence>

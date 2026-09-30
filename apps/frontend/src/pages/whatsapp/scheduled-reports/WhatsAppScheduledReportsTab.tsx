@@ -262,6 +262,27 @@ export const WhatsAppScheduledReportsTab: React.FC<WhatsAppScheduledReportsTabPr
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-[color:var(--color-muted-foreground)]">
+                  {isAr ? "نوع التقرير" : "Report Type"}
+                </Label>
+                <Select
+                  value={config.reportType}
+                  onValueChange={(val) => setConfig((prev) => ({ ...prev, reportType: val }))}
+                >
+                  <SelectTrigger className="h-10 border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DAILY_EOD">{isAr ? "نهاية اليوم — المبيعات والعمليات" : "Daily EOD — Sales & Ops"}</SelectItem>
+                    <SelectItem value="AOV_DAILY">{isAr ? "تقرير AOV اليومي — متوسط قيمة الطلب" : "AOV Daily — Avg Order Value"}</SelectItem>
+                    <SelectItem value="SALES_OPERATIONS">{isAr ? "تقرير المبيعات والعمليات" : "Sales & Operations"}</SelectItem>
+                    <SelectItem value="MORNING_BRIEF">{isAr ? "ملخص الصباح" : "Morning Brief"}</SelectItem>
+                    <SelectItem value="WEEKLY_DIGEST">{isAr ? "الملخص الأسبوعي" : "Weekly Digest"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-[color:var(--color-muted-foreground)]">
                   {isAr ? "أرقام هواتف المستلمين (مفصولة بفواصل)" : "Recipient Phone Numbers (comma-separated)"}
                 </Label>
                 <div className="relative">

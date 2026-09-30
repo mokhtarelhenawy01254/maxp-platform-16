@@ -26,6 +26,11 @@ const mockApiGet = vi.fn();
 const mockApiPost = vi.fn();
 const mockApiDelete = vi.fn();
 
+vi.mock("react-router-dom", () => ({
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
+  useNavigate: () => vi.fn(),
+}));
+
 vi.mock("../../../services/apiClient", () => ({
   apiClient: {
     get: (...args: unknown[]) => mockApiGet(...args),
@@ -129,5 +134,17 @@ describe("StorePromotionSettings", () => {
         }),
       );
     });
+  });
+
+  it("renders related tools navigation with links to free shipping and delivery options", async () => {
+    render(<StorePromotionSettings />);
+
+    await screen.findByRole("heading", { name: "عروض المتجر الشاملة" });
+
+    const freeShippingLink = screen.getByRole("link", { name: /الشحن المجاني/ });
+    expect(freeShippingLink.getAttribute("href")).toBe("/settings/store?tab=promotion");
+
+    const deliveryLink = screen.getByRole("link", { name: /خيارات التوصيل/ });
+    expect(deliveryLink.getAttribute("href")).toBe("/settings/delivery-options");
   });
 });

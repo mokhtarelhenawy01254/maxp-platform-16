@@ -269,6 +269,45 @@ class AutonomousSkillLearner:
             rule_title=f"{status_tag}: {customer_issue[:30]}",
             rule_instructions=instruction,
             supporting_evidence={"satisfied": was_customer_satisfied, "issue": customer_issue},
+    async def distill_aov_insight(
+        self,
+        company_id: str,
+        current_aov: float,
+        target_aov: float,
+        best_cross_sell_product: str,
+        free_shipping_threshold: float | None = None,
+        session: AsyncSession | None = None,
+    ) -> dict[str, Any]:
+        """Distill AOV optimization strategies, bundling rules, and checkout upsell rules."""
+        if not company_id:
+            return {"success": False, "error": "company_id is required"}
+
+        gap = target_aov - current_aov
+        if gap > 0:
+            rule_title = "فرصة زيادة AOV"
+            threshold_note = f" مع تعديل حد الشحن المجاني إلى {free_shipping_threshold} ج.م" if free_shipping_threshold else ""
+            rule_instruction = (
+                f"متوسط قيمة الطلب الحالي ({current_aov:.1f} ج.م) أقل من المستهدف ({target_aov:.1f} ج.م) بفارق {gap:.1f} ج.م. "
+                f"القاعدة: اقترح حزمة تكميلية تشمل '{best_cross_sell_product}' عند الدفع{threshold_note} لتحفيز العملاء على زيادة سلة الشراء."
+            )
+        else:
+            rule_title = "أداء AOV مستقر"
+            rule_instruction = (
+                f"متوسط قيمة الطلب ({current_aov:.1f} ج.م) يحقق الهدف المطلوب ({target_aov:.1f} ج.م). "
+                f"القاعدة: حافظ على عروض الحزم الترويجية الحالية وراقب معدل الارتداد عند الدفع."
+            )
+
+        return await self.record_universal_rule(
+            company_id=company_id,
+            rule_category="AOV_SPECIALIST",
+            rule_title=rule_title,
+            rule_instructions=rule_instruction,
+            supporting_evidence={
+                "current_aov": current_aov,
+                "target_aov": target_aov,
+                "cross_sell": best_cross_sell_product,
+                "free_shipping_threshold": free_shipping_threshold,
+            },
             session=session,
         )
 

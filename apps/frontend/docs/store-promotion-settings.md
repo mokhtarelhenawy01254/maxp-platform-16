@@ -31,7 +31,7 @@
 ## Tab routing
 
 - `الشحن المجاني` stays on `/settings/promotion`
-- `خصومات الكميات` navigates to `/settings/volume-discounts`
+- `خصومات الكميات` navigates to `/settings/store-promotion` (aliased from `/settings/volume-discounts`)
 - `خيارات التوصيل` navigates to `/settings/delivery-options`
 - `المنتجات المقترحة` navigates to `/settings/recommendations`
 

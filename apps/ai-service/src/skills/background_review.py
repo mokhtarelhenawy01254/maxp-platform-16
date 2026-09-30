@@ -33,6 +33,8 @@ ROLE_DOMAIN_MAP = {k: spec.domain for k, spec in all_roles().items()}
 ROLE_DOMAIN_MAP.update({
     "CUSTOMER_SUPPORT": "SUPPORT",
     "GENERAL": "GENERAL",
+    "AOV_SPECIALIST": "AOV",
+    "AOV": "AOV",
 })
 
 

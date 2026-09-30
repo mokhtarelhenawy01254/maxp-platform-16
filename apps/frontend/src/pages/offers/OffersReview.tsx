@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { useDateFormat } from "../../hooks/useDateFormat"
 import { useCurrency } from "../../hooks/useCurrency"
@@ -219,10 +220,24 @@ const OffersReview: React.FC = () => {
           <BanknotesIcon className="h-6 w-6 text-sky-500" />
           {t("offersReview.volumeDiscounts")}
         </h2>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {t("offersReview.volumeDiscountsDesc")}
           </p>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              to="/settings/store-promotion"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800 transition-colors"
+            >
+              عروض المتجر الشاملة
+            </Link>
+            <Link
+              to="/products"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 transition-colors"
+            >
+              عروض المنتجات
+            </Link>
+          </div>
         </div>
       </section>
     </div>

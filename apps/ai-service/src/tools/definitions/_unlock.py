@@ -79,7 +79,7 @@ async def unlock_advanced_tools(
                 "action": "unlock",
                 "company_id": company_id,
                 "scoped_tools": unlocked_names,
-                "scope_info": f"STORE_MANAGER_ADVANCED ({len(unlocked_names)} tools — HR/Payroll excluded)",
+                "scope_info": f"{scope_name} ({len(unlocked_names)} tools — HR/Payroll excluded)",
                 "approved": True,
             },
             "company_id": company_id,

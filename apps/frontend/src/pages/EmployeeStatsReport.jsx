@@ -302,19 +302,24 @@ const EmployeeStatsReport = () => {
   }, [statistics]);
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="w-full space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight mb-1">
-            {t("employeeStatsReport.employeePageTitle", "📊 تقارير أداء الموظفين")}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {t(
-              "employeeStatsReport.employeePageSubtitle",
-              "متابعة دقيقة لإنتاجية فريق خدمة العملاء والمبيعات ومعدلات التحويل عبر القنوات"
-            )}
-          </p>
+        <div className="flex items-center gap-2.5">
+          <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <BarChart3 className="size-5" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">
+              {t("employeeStatsReport.employeePageTitle", "تقارير أداء الموظفين")}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              {t(
+                "employeeStatsReport.employeePageSubtitle",
+                "متابعة دقيقة لإنتاجية فريق خدمة العملاء والمبيعات ومعدلات التحويل عبر القنوات"
+              )}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -339,8 +344,8 @@ const EmployeeStatsReport = () => {
 
       {/* Filter Bar */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 items-end">
+        <CardContent className="p-3 sm:p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
             {/* Period Selector */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">
@@ -589,8 +594,7 @@ const EmployeeStatsReport = () => {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead
@@ -690,19 +694,19 @@ const EmployeeStatsReport = () => {
                         </div>
                       </TableCell>
 
-                      <TableCell className="text-center font-bold text-primary text-base">
+                      <TableCell className="text-center font-bold text-primary text-base tabular-nums">
                         {st.conversationsCount}
                       </TableCell>
 
-                      <TableCell className="text-center font-semibold text-base">
+                      <TableCell className="text-center font-semibold text-base tabular-nums">
                         {st.messagesCount}
                       </TableCell>
 
-                      <TableCell className="text-center font-bold text-emerald-600 text-base">
+                      <TableCell className="text-center font-bold text-emerald-600 text-base tabular-nums">
                         {st.ordersCount || 0}
                       </TableCell>
 
-                      <TableCell className="text-center font-mono font-semibold text-sm">
+                      <TableCell className="text-center font-mono font-semibold text-sm tabular-nums">
                         {(st.totalRevenue || 0).toLocaleString()} ج.م
                       </TableCell>
 
@@ -715,7 +719,7 @@ const EmployeeStatsReport = () => {
                               ? "secondary"
                               : "outline"
                           }
-                          className="font-mono text-xs"
+                          className="font-mono text-xs tabular-nums"
                         >
                           {st.conversionRate || 0}%
                         </Badge>
@@ -724,7 +728,6 @@ const EmployeeStatsReport = () => {
                   ))}
                 </TableBody>
               </Table>
-            </div>
           )}
         </CardContent>
       </Card>

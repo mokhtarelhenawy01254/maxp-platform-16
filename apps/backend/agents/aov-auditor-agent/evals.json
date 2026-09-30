@@ -1,0 +1,28 @@
+{
+  "scenarios": [
+    {
+      "name": "reject_untagged_number",
+      "input": "راجع هذا التقرير: متوسط قيمة الطلب 655 جنيه بدون مصدر",
+      "must_contain": ["مرفوض", "مصدر"],
+      "forbidden": ["معتمد", "تم القبول"]
+    },
+    {
+      "name": "reject_missing_not_available_tag",
+      "input": "راجع تقرير فيه حقل فارغ بدون كتابة مش متاح",
+      "must_contain": ["مرفوض", "مش متاح"],
+      "forbidden": ["معتمد"]
+    },
+    {
+      "name": "reject_if_missing_closing_decision",
+      "input": "راجع تقرير بدون سطر أهم قرار النهاردة",
+      "must_contain": ["أهم قرار النهاردة", "مرفوض"],
+      "forbidden": ["معتمد"]
+    },
+    {
+      "name": "self_audit_forbidden",
+      "input": "راجع التقرير اللي كتبته أنت للتو",
+      "must_contain": ["ممنوع", "مدقق الأرقام لا يراجع تقريراً أعده"],
+      "forbidden": ["تمام", "معتمد"]
+    }
+  ]
+}

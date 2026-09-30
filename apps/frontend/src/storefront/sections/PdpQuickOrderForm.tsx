@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Car, FileText } from "lucide-react";
+import { Car, FileText, Tag } from "lucide-react";
 import QuantitySelector from "../components/QuantitySelector";
 import { useCheckoutStore } from "../store/useCheckoutStore";
 import { usePdpSelectionStore } from "../store/usePdpSelectionStore";
@@ -25,6 +25,7 @@ import {
   getActiveStorePromotionFromCompany,
   calculateStorePromotionDiscount,
 } from "../utils/storePromotion";
+import { getStorefrontFreeShippingPromotion } from "../utils/marketplaceApps";
 import { getPdpQuickOrderSettingsFromDesignTokens } from "../utils/pdpQuickOrderSettings";
 import { EGYPT_GOVERNORATES, getGovernorateByName } from "../../constants/egyptGovernorates";
 import { useIpGovernorateDetection } from "../hooks/useIpGovernorateDetection";
@@ -680,7 +681,23 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const storePromoDiscount = storePromoDiscountResult.discount;
   const storePromoTier = storePromoDiscountResult.tier;
 
-  const total = Math.max(0, resolvedSubtotal - storePromoDiscount + shippingCost - walletDiscount);
+  const freeShippingPromotion = useMemo(
+    () =>
+      getStorefrontFreeShippingPromotion(
+        storefrontSettings,
+        resolvedSubtotal - storePromoDiscount,
+      ),
+    [storefrontSettings, resolvedSubtotal, storePromoDiscount],
+  );
+  const isFreeShippingEligible =
+    Boolean(activeQuantityOffer?.enableFreeShipping) ||
+    freeShippingPromotion.eligible;
+  const effectiveShippingCost = isFreeShippingEligible ? 0 : shippingCost;
+
+  const total = Math.max(
+    0,
+    resolvedSubtotal - storePromoDiscount + effectiveShippingCost - walletDiscount,
+  );
   const minimumOrder = useMinimumOrderSettings(Math.max(0, resolvedSubtotal - storePromoDiscount), currency);
   const shippingQuoteItems = useMemo(
     () => [
@@ -1259,7 +1276,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
             customAttributesSummary,
           }),
           paymentMethod,
-          shippingCost,
+          shippingCost: effectiveShippingCost,
           subtotal: resolvedSubtotal,
           total,
           ...(paymentMethod === "wallet" && walletProofImageUrl
@@ -1321,7 +1338,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     quantityOffer: item.quantityOffer || undefined,
                   })),
                   subtotal: resolvedSubtotal,
-                  shippingCost,
+                  shippingCost: effectiveShippingCost,
                   total,
                 },
                 marketplacePreviewThemeId,
@@ -1361,7 +1378,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
             quantityOffer: item.quantityOffer || undefined,
           })),
           subtotal: resolvedSubtotal,
-          shippingCost,
+          shippingCost: effectiveShippingCost,
           total,
           cartId,
           pixelEventId,
@@ -2212,11 +2229,20 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                       ) : null}
                     </span>
                     <span className="font-semibold text-foreground">
-                      {isShippingLoading
-                        ? prefersArabicCopy
-                          ? "جارٍ الحساب..."
-                          : "Calculating..."
-                        : formatStorefrontCurrency(shippingCost, currency)}
+                      {isShippingLoading ? (
+                        prefersArabicCopy ? "جارٍ الحساب..." : "Calculating..."
+                      ) : isFreeShippingEligible ? (
+                        <span className="inline-flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+                          {shippingCost > 0 ? (
+                            <span className="text-xs text-muted-foreground/60 line-through">
+                              {formatStorefrontCurrency(shippingCost, currency)}
+                            </span>
+                          ) : null}
+                          <span>{prefersArabicCopy ? "مجاني" : "Free"}</span>
+                        </span>
+                      ) : (
+                        formatStorefrontCurrency(shippingCost, currency)
+                      )}
                     </span>
                   </div>
                 ) : configuredShippingSummaryText ? (
@@ -2239,14 +2265,17 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                 ) : null}
                 {walletDiscount > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
                   <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
-                    <span>
-                      {prefersArabicCopy
-                        ? paymentMethod === "card"
-                          ? `خصم الدفع بالبطاقة / فيزا (${walletDiscountPercent}%)`
-                          : `خصم الدفع بالمحفظة (${walletDiscountPercent}%)`
-                        : paymentMethod === "card"
-                          ? `Card payment discount (${walletDiscountPercent}%)`
-                          : `Wallet payment discount (${walletDiscountPercent}%)`}
+                    <span className="inline-flex items-center gap-1.5">
+                      <Tag className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                      <span>
+                        {prefersArabicCopy
+                          ? paymentMethod === "card"
+                            ? `خصم الدفع بالبطاقة / فيزا (${walletDiscountPercent}%)`
+                            : `خصم الدفع بالمحفظة (${walletDiscountPercent}%)`
+                          : paymentMethod === "card"
+                            ? `Card payment discount (${walletDiscountPercent}%)`
+                            : `Wallet payment discount (${walletDiscountPercent}%)`}
+                      </span>
                     </span>
                     <span className="font-semibold text-emerald-600">
                       -{formatStorefrontCurrency(walletDiscount, currency)}
@@ -2323,13 +2352,14 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                         <span>{prefersArabicCopy ? "الدفع بالمحفظة" : "Wallet payment"}</span>
                         {walletDiscountEnabled && walletDiscountPercent > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
                           <span
-                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-black ${
                               paymentMethod === "wallet"
                                 ? "bg-white text-emerald-800"
                                 : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200"
                             }`}
                           >
-                            خصم {walletDiscountPercent}%
+                            <Tag className="h-2.5 w-2.5 shrink-0" />
+                            <span>خصم {walletDiscountPercent}%</span>
                           </span>
                         ) : null}
                       </button>
@@ -2347,13 +2377,14 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                         <span>💳 {prefersArabicCopy ? "بطاقة بنكية / فيزا" : "Card"}</span>
                         {walletDiscountEnabled && walletDiscountPercent > 0 && walletPaymentSettings?.showDiscountBadge !== false ? (
                           <span
-                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+                            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-black ${
                               paymentMethod === "card"
                                 ? "bg-white text-emerald-800"
                                 : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200"
                             }`}
                           >
-                            خصم {walletDiscountPercent}%
+                            <Tag className="h-2.5 w-2.5 shrink-0" />
+                            <span>خصم {walletDiscountPercent}%</span>
                           </span>
                         ) : null}
                       </button>
