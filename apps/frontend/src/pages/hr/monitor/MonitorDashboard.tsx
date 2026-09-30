@@ -21,6 +21,7 @@ import {
   ChevronRight,
   ChevronLeft,
   ListTodo,
+  Coffee,
 } from 'lucide-react';
 import api from '../../../services/api';
 import { useAuth } from '../../../hooks/useAuthSimple';
@@ -32,7 +33,9 @@ export interface TeamMemberSummary {
   employeeName?: string;
   departmentName?: string;
   jobTitle?: string;
-  status: 'active' | 'idle' | 'offline';
+  status: 'active' | 'idle' | 'offline' | 'break';
+  breakReason?: string | null;
+  isCurrentlyOnBreak?: boolean;
   totalActiveSeconds: number;
   totalIdleSeconds: number;
   totalProductiveSeconds?: number;
@@ -217,6 +220,8 @@ export const MonitorDashboard: React.FC = () => {
           departmentName: item.employee?.department?.name || 'الإدارة العامة',
           jobTitle: item.employee?.position?.title || 'موظف',
           status: item.status || 'offline',
+          breakReason: item.breakReason || null,
+          isCurrentlyOnBreak: Boolean(item.isCurrentlyOnBreak),
           totalActiveSeconds: item.totalActiveSeconds || 0,
           totalIdleSeconds: item.totalIdleSeconds || 0,
           totalProductiveSeconds: item.totalProductiveSeconds || 0,
@@ -334,7 +339,10 @@ export const MonitorDashboard: React.FC = () => {
       (m.jobTitle && m.jobTitle.toLowerCase().includes(query)) ||
       (m.departmentName && m.departmentName.toLowerCase().includes(query));
 
-    const matchesStatus = statusFilter === 'all' || m.status === statusFilter;
+    const matchesStatus =
+      statusFilter === 'all' ||
+      m.status === statusFilter ||
+      (statusFilter === 'idle' && (m.status === 'idle' || m.status === 'break'));
 
     return matchesSearch && matchesStatus;
   });
@@ -810,6 +818,16 @@ export const MonitorDashboard: React.FC = () => {
                               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
                                 <CheckCircle2 className="h-3 w-3" /> نشط الآن
                               </span>
+                            )}
+                            {m.status === 'break' && (
+                              <div className="space-y-0.5">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 ring-1 ring-inset ring-amber-500/30">
+                                  <Coffee className="h-3 w-3 text-amber-500" /> استراحة: {m.breakReason || 'استراحة رسمية'}
+                                </span>
+                                {m.deviceName && (
+                                  <div className="text-[10px] text-muted-foreground">{m.deviceName}</div>
+                                )}
+                              </div>
                             )}
                             {m.status === 'idle' && (
                               <div className="space-y-0.5">

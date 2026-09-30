@@ -35,6 +35,7 @@ declare global {
       stopTaskTimer: (entryId: string) => Promise<{ success: boolean; result?: any; error?: string }>;
       getRunningTaskTimer: () => Promise<{ success: boolean; runningTimer?: any; runningTimers?: any[]; error?: string }>;
       getCompanyActiveTimers: () => Promise<{ success: boolean; activeTimers?: any[]; error?: string }>;
+      getTeamOverview: (date?: string) => Promise<{ success: boolean; data: any[]; error?: string }>;
       getAuthToken: () => Promise<{ token: string }>;
       uploadTaskAttachment: (data: {
         taskId: string;
