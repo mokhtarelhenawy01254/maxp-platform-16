@@ -48,6 +48,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
   const isManager = isAdmin || ['MANAGER', 'HR_MANAGER'].includes(roleStr) || isExecutiveMode;
   const [teamOverview, setTeamOverview] = useState<any[]>([]);
   const [myDayActiveSeconds, setMyDayActiveSeconds] = useState(0);
+  const [myDayIdleSeconds, setMyDayIdleSeconds] = useState(0);
 
   // Presence summary (absorbed from the merged daily report screen)
   const presenceStats = useMemo(() => {
@@ -105,6 +106,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       }
       setTeamOverview(teamRes?.data && Array.isArray(teamRes.data) ? teamRes.data : []);
       setMyDayActiveSeconds(Number(myDayRes?.total_active_seconds || 0));
+      setMyDayIdleSeconds(Number(myDayRes?.total_idle_seconds || 0));
     } catch (err) {
       console.warn('[TaskReportView] Error loading report data:', err);
     } finally {
@@ -222,6 +224,15 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
 
     const totalSeconds = filteredItems.reduce((acc, t) => acc + t.actualTrackedMinutes * 60, 0);
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    // Real estimation accuracy: tasks WITH estimate AND tracked time whose
+    // actual stayed within ±30% of the estimate (was hardcoded 85 — fake)
+    const withEvidence = filteredItems.filter(
+      (t) => t.estimatedMinutes > 0 && t.actualTrackedMinutes > 0
+    );
+    const accurate = withEvidence.filter(
+      (t) => Math.abs(t.actualTrackedMinutes - t.estimatedMinutes) <= t.estimatedMinutes * 0.3
+    ).length;
+    const realAccuracy = withEvidence.length > 0 ? Math.round((accurate / withEvidence.length) * 100) : 0;
     // Real human work time: team aggregate for managers, own attendance day for employees
     const actualSeconds = teamOverview.length > 0
       ? teamOverview.reduce((s: number, r: any) => s + Number(r.activeSeconds || 0), 0)
@@ -238,7 +249,7 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
       overdueCount: overdue,
       timeLeakCount: timeLeaks,
       reviewBlockedCount: reviewBlocked,
-      focusAccuracyRate: 85,
+      focusAccuracyRate: realAccuracy,
     };
   }, [filteredItems, teamOverview, myDayActiveSeconds]);
 
@@ -523,6 +534,31 @@ export const TaskReportView: React.FC<TaskReportViewProps> = ({
         activeFilter={filters.exceptionFilter}
         onFilterChange={(f) => setFilters((p) => ({ ...p, exceptionFilter: f }))}
       />
+
+      {/* ملخص يومي صادق — روح التقرير اليومي القديم بمصدر حقيقي */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        {(() => {
+          const active = Number(myDayActiveSeconds || 0);
+          const idle = Number(myDayIdleSeconds || 0);
+          const total = active + idle;
+          const pct = total > 0 ? Math.round((active / total) * 100) : 0;
+          const chip = (label: string, value: string, hint: string) => (
+            <span
+              title={hint}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-secondary)', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 6, padding: '4px 10px', whiteSpace: 'nowrap' }}
+            >
+              {label}: <b style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{value}</b>
+            </span>
+          );
+          return (
+            <>
+              {chip('نشط اليوم', `${Math.floor(active / 3600)}س ${Math.floor((active % 3600) / 60)}د`, 'وقت نشاطك الفعلي المسجل بجهازك (أول نشاط ← آخر نشاط)')}
+              {chip('خامل', `${Math.floor(idle / 60)}د`, 'وقت الجلسة بدون نشاط ماوس/كيبورد')}
+              {chip('نسبة النشاط', `${pct}%`, 'نشط ÷ (نشط + خامل) لليوم')}
+            </>
+          );
+        })()}
+      </div>
 
       {/* Presence strip — absorbed from the merged daily report screen */}
       {isManager && teamOverview.length > 0 && (

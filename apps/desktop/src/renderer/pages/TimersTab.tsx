@@ -101,10 +101,12 @@ export const TimersTab: React.FC = () => {
     }
   };
 
-  const runningIds = new Set(timers.map((t) => t.taskId));
+  // Normalize IDs to strings — server may return numeric ids while tasks use
+  // string ids (Set.has fails silently across types = duplicated rows)
+  const runningIds = new Set(timers.map((t) => String(t.taskId ?? t.task?.id ?? t.id ?? '')));
   const parallelCount = timers.length;
   const available = tasks
-    .filter((t) => String(t.status || '').toUpperCase() !== 'COMPLETED' && !runningIds.has(t.id))
+    .filter((t) => String(t.status || '').toUpperCase() !== 'COMPLETED' && !runningIds.has(String(t.id)))
     .filter((t) =>
       !searchQuery.trim() ||
       String(t.title || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -113,12 +115,9 @@ export const TimersTab: React.FC = () => {
   return (
     <div style={styles.container}>
       {/* Model explainer strip */}
-      <div style={styles.modelStrip}>
-        <TimerIcon size={13} color="var(--accent-blue)" />
-        <span>
-          نموذج الطبقتين: كل مهمة ليها مؤقت مستقل (يُحسب زمن المهمة حتى لو اشتغل متوازي) — والوقت الفعلي بيحسب من
-          نشاطك الحقيقي، مش من مجموع المؤقتات.
-        </span>
+      <div style={styles.modelStrip} title="نموذج الطبقتين: كل مهمة ليها مؤقت مستقل يُحسب زمن المهمة حتى مع التوازي — والوقت الفعلي بيحسب من نشاطك الحقيقي، مش من مجموع المؤقتات.">
+        <TimerIcon size={12} color="var(--text-muted)" />
+        <span>زمن كل مهمة مستقل — الوقت الفعلي يُحسب من نشاطك الحقيقي</span>
       </div>
 
       {error && (
@@ -163,8 +162,8 @@ export const TimersTab: React.FC = () => {
                     <span style={styles.liveDot} />
                     <span style={styles.timerTitle} title={title}>{title}</span>
                     {isResumed && (
-                      <span style={styles.resumeBadge} title={`كانت شغالة قبل كده — الزمن بيكمّل من ${(prior / 3600).toFixed(1)} ساعة`}>
-                        تكملة من {fmt(prior)}
+                      <span style={styles.resumeBadge} title={`الإجمالي يشمل ${fmt(prior)} من جلسات سابقة لهذه المهمة`}>
+                        استُأنفت
                       </span>
                     )}
                     {isUrgent && <span style={styles.urgentMini}>عاجل</span>}
