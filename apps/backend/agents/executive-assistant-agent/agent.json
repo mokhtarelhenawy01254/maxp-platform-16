@@ -34,6 +34,8 @@
     "order.recent.list",
     "order.lookup",
     "order.lookup.by.phone",
+    "returns.requests.list",
+    "returns.request.get",
     "customer.info",
     "product.search",
     "product.low.stock",
