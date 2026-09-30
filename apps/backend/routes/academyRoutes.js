@@ -48,6 +48,10 @@ router.get('/courses/:id/submissions', instructorAuth, controller.getCourseSubmi
 router.get('/lessons/:id/submissions', instructorAuth, controller.getLessonSubmissions);
 router.post('/submissions/:id/review', instructorAuth, controller.reviewSubmission);
 
+// Admin: Suspend / Reactivate student enrollment
+router.post('/enrollments/:enrollmentId/suspend', instructorAuth, controller.suspendEnrollment);
+router.post('/enrollments/:enrollmentId/reactivate', instructorAuth, controller.reactivateEnrollment);
+
 // Certificates
 router.get('/certificates/:enrollmentId/view', controller.renderCertificate);
 

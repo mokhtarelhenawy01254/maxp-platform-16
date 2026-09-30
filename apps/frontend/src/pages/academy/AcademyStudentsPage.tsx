@@ -12,6 +12,8 @@ import {
   Sparkles,
   Filter,
   Loader2,
+  Ban,
+  RotateCcw,
 } from "lucide-react";
 import {
   academyApi,
@@ -107,7 +109,6 @@ export default function AcademyStudentsPage() {
         instructorNote: reviewNote.trim() || undefined,
       });
 
-      // Update in submissions list
       setSubmissions((prev) =>
         prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s))
       );
@@ -117,6 +118,36 @@ export default function AcademyStudentsPage() {
       alert(err?.response?.data?.error || "فشل حفظ المراجعة");
     } finally {
       setReviewing(false);
+    }
+  };
+
+  // إيقاف / تفعيل اشتراك طالب
+  const [suspending, setSuspending] = useState<string | null>(null);
+  const handleToggleSuspend = async (student: StudentProgressRow) => {
+    const isSuspended = student.status === "SUSPENDED";
+    const confirmMsg = isSuspended
+      ? `إعادة تفعيل اشتراك "${student.studentName}"؟`
+      : `إيقاف اشتراك "${student.studentName}"؟ لن يتمكن من الوصول للكورس.`;
+    if (!window.confirm(confirmMsg)) return;
+    try {
+      setSuspending(student.id);
+      if (isSuspended) {
+        await academyApi.reactivateEnrollment(student.id);
+      } else {
+        await academyApi.suspendEnrollment(student.id);
+      }
+      // تحديث القائمة محلياً
+      setStudents((prev) =>
+        prev.map((s) =>
+          s.id === student.id
+            ? { ...s, status: isSuspended ? "ACTIVE" : "SUSPENDED" }
+            : s
+        )
+      );
+    } catch (err: any) {
+      alert(err?.response?.data?.error || "فشل تعديل الاشتراك");
+    } finally {
+      setSuspending(null);
     }
   };
 
@@ -277,13 +308,32 @@ export default function AcademyStudentsPage() {
                       <th className="p-3.5 sm:p-4">نسبة الإكمال</th>
                       <th className="p-3.5 sm:p-4">الدروس المنجزة</th>
                       <th className="p-3.5 sm:p-4">الشهادة</th>
+                      <th className="p-3.5 sm:p-4">انتهاء الاشتراك</th>
                       <th className="p-3.5 sm:p-4">تاريخ التسجيل</th>
+                      <th className="p-3.5 sm:p-4 text-center">إجراءات</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
                     {students.map((st) => (
-                      <tr key={st.id} className="hover:bg-muted/30 transition">
-                        <td className="p-3.5 sm:p-4 font-bold text-foreground">{st.studentName || "طالب"}</td>
+                      <tr
+                        key={st.id}
+                        className={`hover:bg-muted/30 transition ${st.status === "SUSPENDED" ? "opacity-60" : ""}`}
+                      >
+                        <td className="p-3.5 sm:p-4 font-bold text-foreground">
+                          <div className="flex items-center gap-1.5">
+                            {st.status === "SUSPENDED" && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                                موقوف
+                              </span>
+                            )}
+                            {st.isExpired && st.status !== "SUSPENDED" && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                                منتهي
+                              </span>
+                            )}
+                            {st.studentName || "طالب"}
+                          </div>
+                        </td>
                         <td className="p-3.5 sm:p-4 font-mono text-muted-foreground">{st.studentPhone || "—"}</td>
                         <td className="p-3.5 sm:p-4">
                           <div className="flex items-center gap-2">
@@ -314,8 +364,39 @@ export default function AcademyStudentsPage() {
                             <span className="text-[11px] text-muted-foreground">قيد التقدم</span>
                           )}
                         </td>
+                        <td className="p-3.5 sm:p-4 font-mono">
+                          {st.expiresAt ? (
+                            <span className={st.isExpired ? "text-rose-500 font-bold" : "text-muted-foreground"}>
+                              {new Date(st.expiresAt).toLocaleDateString("ar-EG")}
+                              {st.isExpired && " (منتهي)"}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[11px]">مؤبد</span>
+                          )}
+                        </td>
                         <td className="p-3.5 sm:p-4 text-muted-foreground font-mono">
                           {new Date(st.enrolledAt).toLocaleDateString("ar-EG")}
+                        </td>
+                        <td className="p-3.5 sm:p-4 text-center">
+                          <button
+                            onClick={() => handleToggleSuspend(st)}
+                            disabled={suspending === st.id}
+                            title={st.status === "SUSPENDED" ? "إعادة تفعيل الاشتراك" : "إيقاف الاشتراك"}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition disabled:opacity-50 ${
+                              st.status === "SUSPENDED"
+                                ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border border-emerald-500/20"
+                                : "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 border border-rose-500/20"
+                            }`}
+                          >
+                            {suspending === st.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : st.status === "SUSPENDED" ? (
+                              <RotateCcw className="w-3 h-3" />
+                            ) : (
+                              <Ban className="w-3 h-3" />
+                            )}
+                            <span>{st.status === "SUSPENDED" ? "تفعيل" : "إيقاف"}</span>
+                          </button>
                         </td>
                       </tr>
                     ))}

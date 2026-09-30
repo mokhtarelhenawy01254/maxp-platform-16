@@ -12,6 +12,7 @@ model AcademyCourse {
   isGlobal           Boolean  @default(false)
   freePreviewLessons Int      @default(2)
   storeProductId     String?
+  subscriptionDays   Int?     // null = مؤبد، رقم = عدد أيام الوصول بعد التسجيل
   visibility         String   @default("PUBLIC") // PUBLIC | UNLISTED | INVITE_ONLY | TAG_GATED
   allowedTags        String[] @default([])
   enableWatermark    Boolean  @default(true)
@@ -98,6 +99,8 @@ model AcademyEnrollment {
   status           String    @default("ACTIVE") // ACTIVE | COMPLETED | CANCELLED | SUSPENDED
   enrolledAt       DateTime  @default(now())
   completedAt      DateTime?
+  expiresAt        DateTime? // null = اشتراك مؤبد، تاريخ = ينتهي عنده الوصول
+  subscriptionDays Int?      // عدد أيام الاشتراك (null = مؤبد)
 
   course      AcademyCourse       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   progress    AcademyProgress[]
