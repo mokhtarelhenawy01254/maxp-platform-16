@@ -28,9 +28,12 @@ const BRIDGE_PERMISSION_KEYS = [
   'products.create',
   'products.edit',
   'customers.view',
+  'customers.edit',
   'dashboard.view',
   'reports.view',
   'settings.read',
+  'settings.manage',
+  'users.view',
 ];
 
 const sessionCache = new Map(); // companyId -> { token, expiresAt }

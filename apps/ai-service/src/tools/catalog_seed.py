@@ -236,6 +236,663 @@ CURATED_CAPABILITIES: list[dict] = [
         "roles": ["STORE_MANAGER"],
         "source": "curated",
     },
+    # ── Loyalty (crm-loyalty app) ─────────────────────────────────────
+    {
+        "name": "loyalty_programs_list",
+        "domain": "loyalty",
+        "description_en": (
+            "List customer loyalty programs with tiers and status. Use when the merchant asks "
+            "about loyalty programs or before loyalty operations."
+        ),
+        "usage_hint_ar": "استخدمها لما التاجر يسأل عن برامج الولاء أو قبل أي عملية نقاط",
+        "endpoint": "/api/v1/hr/customer-loyalty/programs",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "customers.view",
+        "app_slug": "crm-loyalty",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "loyalty_customers_list",
+        "domain": "loyalty",
+        "description_en": (
+            "List customers enrolled in the loyalty program with their points and tier. "
+            "Use for 'who has the most points' or customer loyalty lookups."
+        ),
+        "usage_hint_ar": "استخدمها لعرض عملاء الولاء ونقاطهم ومستوياتهم",
+        "endpoint": "/api/v1/hr/customer-loyalty/customers",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "limit": {"type": "integer", "description": "Max results (default 20)"},
+        }},
+        "permission_key": "customers.view",
+        "app_slug": "crm-loyalty",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "loyalty_add_points",
+        "domain": "loyalty",
+        "description_en": (
+            "Add loyalty points to a customer's balance. REQUIRES MERCHANT APPROVAL."
+        ),
+        "usage_hint_ar": "استخدمها لإضافة نقاط ولاء لعميل — بعد موافقة التاجر",
+        "endpoint": "/api/v1/hr/customer-loyalty/add-points",
+        "http_method": "POST",
+        "input_schema": {"type": "object", "properties": {
+            "customerId": {"type": "string", "description": "Customer ID"},
+            "points": {"type": "number", "description": "Points to add"},
+            "reason": {"type": "string", "description": "Reason for the adjustment"},
+        }, "required": ["customerId", "points"]},
+        "permission_key": "customers.edit",
+        "app_slug": "crm-loyalty",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "loyalty_redeem_points",
+        "domain": "loyalty",
+        "description_en": (
+            "Redeem (deduct) loyalty points from a customer's balance, e.g. against a reward. "
+            "REQUIRES MERCHANT APPROVAL."
+        ),
+        "usage_hint_ar": "استخدمها لصرف نقاط ولاء من رصيد عميل — بعد موافقة التاجر",
+        "endpoint": "/api/v1/hr/customer-loyalty/redeem-points",
+        "http_method": "POST",
+        "input_schema": {"type": "object", "properties": {
+            "customerId": {"type": "string", "description": "Customer ID"},
+            "points": {"type": "number", "description": "Points to redeem"},
+            "reason": {"type": "string", "description": "Redemption reason"},
+        }, "required": ["customerId", "points"]},
+        "permission_key": "customers.edit",
+        "app_slug": "crm-loyalty",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "loyalty_system_settings_read",
+        "domain": "loyalty",
+        "description_en": "Read loyalty system settings (points-per-pound, tier rules, cashback). Use before explaining loyalty rules to the merchant.",
+        "usage_hint_ar": "استخدمها لقراءة قواعد الولاء (نقاط لكل جنيه/مستويات/كاش باك)",
+        "endpoint": "/api/v1/hr/customer-loyalty/system-settings",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "customers.view",
+        "app_slug": "crm-loyalty",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+
+    # ── Landing pages ──────────────────────────────────────────────────
+    {
+        "name": "landing_pages_list",
+        "domain": "landing_pages",
+        "description_en": (
+            "List product landing pages with publish status. Use when the merchant asks "
+            "about landing pages or before creating one."
+        ),
+        "usage_hint_ar": "استخدمها لعرض لاندينج بيدج المنتجات وحالة النشر",
+        "endpoint": "/api/v1/product-landings",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "limit": {"type": "integer", "description": "Max results (default 20)"},
+        }},
+        "permission_key": "products.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "landing_page_get",
+        "domain": "landing_pages",
+        "description_en": "Get one landing page's full content by ID. Use after landing_pages_list to inspect a page.",
+        "usage_hint_ar": "استخدمها لتفاصيل لاندينج بيدج معينة",
+        "endpoint": "/api/v1/product-landings/:id",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "id": {"type": "string", "description": "Landing page ID"},
+        }, "required": ["id"]},
+        "path_params": ["id"],
+        "permission_key": "products.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "landing_page_publish_toggle",
+        "domain": "landing_pages",
+        "description_en": (
+            "Publish or unpublish a product landing page. REQUIRES MERCHANT APPROVAL."
+        ),
+        "usage_hint_ar": "استخدمها لنشر أو إيقاف لاندينج بيدج — بعد موافقة التاجر",
+        "endpoint": "/api/v1/product-landings/:id/status",
+        "http_method": "PATCH",
+        "input_schema": {"type": "object", "properties": {
+            "id": {"type": "string", "description": "Landing page ID"},
+            "status": {"type": "string", "description": "published or draft"},
+        }, "required": ["id", "status"]},
+        "path_params": ["id"],
+        "permission_key": "products.edit",
+        "app_slug": "order-core",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "landing_page_ai_content",
+        "domain": "landing_pages",
+        "description_en": (
+            "Generate AI marketing content for a product landing page (headlines, sections, CTA). "
+            "REQUIRES MERCHANT APPROVAL — generation overwrites the page's AI-generated sections."
+        ),
+        "usage_hint_ar": "استخدمها لتوليد محتوى تسويقي بالذكاء الاصطناعي للاندينج بيدج — بعد موافقة التاجر",
+        "endpoint": "/api/v1/product-landings/:id/ai-content",
+        "http_method": "POST",
+        "input_schema": {"type": "object", "properties": {
+            "id": {"type": "string", "description": "Landing page ID"},
+        }, "required": ["id"]},
+        "path_params": ["id"],
+        "permission_key": "products.edit",
+        "app_slug": "order-core",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+
+    # ── Outgoing webhooks (webhooks-pro app) ───────────────────────────
+    {
+        "name": "webhooks_list",
+        "domain": "webhooks",
+        "description_en": (
+            "List outgoing order webhooks with their target URLs and event types. Use when the "
+            "merchant asks about integrations/webhooks."
+        ),
+        "usage_hint_ar": "استخدمها لعرض الويب هوكس الصادرة وعناوينها",
+        "endpoint": "/api/v1/order-webhooks",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "settings.read",
+        "app_slug": "webhooks-pro",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "webhook_create",
+        "domain": "webhooks",
+        "description_en": (
+            "Create an outgoing webhook (target URL + events). REQUIRES MERCHANT APPROVAL."
+        ),
+        "usage_hint_ar": "استخدمها لإنشاء ويب هوك جديد — بعد موافقة التاجر",
+        "endpoint": "/api/v1/order-webhooks",
+        "http_method": "POST",
+        "input_schema": {"type": "object", "properties": {
+            "url": {"type": "string", "description": "Target HTTPS URL"},
+            "events": {"type": "array", "description": "Event names to subscribe, e.g. order.created"},
+        }, "required": ["url"]},
+        "permission_key": "settings.manage",
+        "app_slug": "webhooks-pro",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "webhook_test",
+        "domain": "webhooks",
+        "description_en": "Send a test payload to a webhook endpoint and report the delivery result.",
+        "usage_hint_ar": "استخدمها لاختبار ويب هوك بإرسال بيلد تجريبي",
+        "endpoint": "/api/v1/order-webhooks/:id/test",
+        "http_method": "POST",
+        "input_schema": {"type": "object", "properties": {
+            "id": {"type": "string", "description": "Webhook ID"},
+        }, "required": ["id"]},
+        "path_params": ["id"],
+        "permission_key": "settings.read",
+        "app_slug": "webhooks-pro",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "webhook_logs",
+        "domain": "webhooks",
+        "description_en": "Read a webhook's delivery logs (successes, failures, response codes). Use to debug failed integrations.",
+        "usage_hint_ar": "استخدمها لتشخيص فشل الويب هوك من سجل التسليم",
+        "endpoint": "/api/v1/order-webhooks/:id/logs",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "id": {"type": "string", "description": "Webhook ID"},
+        }, "required": ["id"]},
+        "path_params": ["id"],
+        "permission_key": "settings.read",
+        "app_slug": "webhooks-pro",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "webhook_delete",
+        "domain": "webhooks",
+        "description_en": "Delete an outgoing webhook. REQUIRES MERCHANT APPROVAL.",
+        "usage_hint_ar": "استخدمها لحذف ويب هوك — بعد موافقة التاجر",
+        "endpoint": "/api/v1/order-webhooks/:id",
+        "http_method": "DELETE",
+        "input_schema": {"type": "object", "properties": {
+            "id": {"type": "string", "description": "Webhook ID"},
+        }, "required": ["id"]},
+        "path_params": ["id"],
+        "permission_key": "settings.manage",
+        "app_slug": "webhooks-pro",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+
+    # ── Product reviews moderation ─────────────────────────────────────
+    {
+        "name": "reviews_list",
+        "domain": "reviews",
+        "description_en": (
+            "List product reviews with status filter (pending/approved/rejected). Use when the "
+            "merchant asks about customer reviews or before moderation."
+        ),
+        "usage_hint_ar": "استخدمها لعرض تقييمات العملاء على المنتجات وفلترتها بالحالة",
+        "endpoint": "/api/v1/reviews",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "status": {"type": "string", "description": "Filter: pending, approved, rejected (optional)"},
+            "limit": {"type": "integer", "description": "Max results (default 20)"},
+        }},
+        "permission_key": "products.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "review_approve",
+        "domain": "reviews",
+        "description_en": "Approve a product review so it shows on the storefront. REQUIRES MERCHANT APPROVAL.",
+        "usage_hint_ar": "استخدمها لقبول تقييم منتج — بعد موافقة التاجر",
+        "endpoint": "/api/v1/reviews/:id/approve",
+        "http_method": "PUT",
+        "input_schema": {"type": "object", "properties": {
+            "id": {"type": "string", "description": "Review ID"},
+        }, "required": ["id"]},
+        "path_params": ["id"],
+        "permission_key": "products.edit",
+        "app_slug": "order-core",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "review_reject",
+        "domain": "reviews",
+        "description_en": "Reject a product review so it stays hidden from the storefront. REQUIRES MERCHANT APPROVAL.",
+        "usage_hint_ar": "استخدمها لرفض تقييم منتج — بعد موافقة التاجر",
+        "endpoint": "/api/v1/reviews/:id/reject",
+        "http_method": "PUT",
+        "input_schema": {"type": "object", "properties": {
+            "id": {"type": "string", "description": "Review ID"},
+        }, "required": ["id"]},
+        "path_params": ["id"],
+        "permission_key": "products.edit",
+        "app_slug": "order-core",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "reviews_bulk_action",
+        "domain": "reviews",
+        "description_en": (
+            "Apply a bulk action (approve/reject/delete) to multiple reviews at once. "
+            "REQUIRES MERCHANT APPROVAL."
+        ),
+        "usage_hint_ar": "استخدمها لقبول أو رفض مجموعة تقييمات مرة واحدة — بعد موافقة التاجر",
+        "endpoint": "/api/v1/reviews/bulk-action",
+        "http_method": "POST",
+        "input_schema": {"type": "object", "properties": {
+            "reviewIds": {"type": "array", "description": "Review IDs to act on"},
+            "action": {"type": "string", "description": "approve, reject, or delete"},
+        }, "required": ["reviewIds", "action"]},
+        "permission_key": "products.edit",
+        "app_slug": "order-core",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+
+    # ── Import / export jobs ───────────────────────────────────────────
+    {
+        "name": "import_jobs_list",
+        "domain": "import_export",
+        "description_en": "List data import jobs (orders/products/customers) with their progress and status.",
+        "usage_hint_ar": "استخدمها لعرض عمليات الاستيراد الجارية أو السابقة وحالتها",
+        "endpoint": "/api/v1/import-jobs/list",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "products.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "import_job_status",
+        "domain": "import_export",
+        "description_en": "Get one import job's progress (processed/total rows, errors). Use after starting an import.",
+        "usage_hint_ar": "استخدمها لمتابعة تقدم عملية استيراد معينة",
+        "endpoint": "/api/v1/import-jobs/status/:jobId",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "jobId": {"type": "string", "description": "Import job ID"},
+        }, "required": ["jobId"]},
+        "path_params": ["jobId"],
+        "permission_key": "products.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "import_job_pause_resume",
+        "domain": "import_export",
+        "description_en": (
+            "Pause or resume a running import job. REQUIRES MERCHANT APPROVAL."
+        ),
+        "usage_hint_ar": "استخدمها لإيقاف أو استكمال عملية استيراد — بعد موافقة التاجر",
+        "endpoint": "/api/v1/import-jobs/:action/:jobId",
+        "http_method": "POST",
+        "input_schema": {"type": "object", "properties": {
+            "action": {"type": "string", "description": "pause or resume"},
+            "jobId": {"type": "string", "description": "Import job ID"},
+        }, "required": ["action", "jobId"]},
+        "path_params": ["action", "jobId"],
+        "permission_key": "products.edit",
+        "app_slug": "order-core",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+
+    # ── Order workflow / custom statuses ───────────────────────────────
+    {
+        "name": "order_statuses_list",
+        "domain": "order_workflow",
+        "description_en": (
+            "List the store's custom order statuses (with colors and ordering). Use when the "
+            "merchant asks about their status pipeline or before status operations."
+        ),
+        "usage_hint_ar": "استخدمها لعرض حالات الطلبات المخصصة وترتيبها",
+        "endpoint": "/api/v1/order-status",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "orders.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "order_workflow_config_read",
+        "domain": "order_workflow",
+        "description_en": "Read the order workflow configuration (enabled transitions, enforcement mode).",
+        "usage_hint_ar": "استخدمها لقراءة إعدادات مسار الطلبات والانتقالات المسموحة",
+        "endpoint": "/api/v1/order-workflow/config",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "orders.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "order_workflow_approvals_pending",
+        "domain": "order_workflow",
+        "description_en": (
+            "List orders waiting in the workflow approvals queue (e.g. discount approvals). "
+            "Use when the merchant asks what needs their decision."
+        ),
+        "usage_hint_ar": "استخدمها لعرض الطلبات المستنية قرار في طابور الموافقات",
+        "endpoint": "/api/v1/order-workflow/approvals/pending",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "orders.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "order_status_create",
+        "domain": "order_workflow",
+        "description_en": (
+            "Create a custom order status (name, color, pipeline position). "
+            "REQUIRES MERCHANT APPROVAL."
+        ),
+        "usage_hint_ar": "استخدمها لإنشاء حالة طلب مخصصة جديدة — بعد موافقة التاجر",
+        "endpoint": "/api/v1/order-status",
+        "http_method": "POST",
+        "input_schema": {"type": "object", "properties": {
+            "name": {"type": "string", "description": "Status display name"},
+            "color": {"type": "string", "description": "Hex color, e.g. #22c55e"},
+        }, "required": ["name"]},
+        "permission_key": "orders.edit",
+        "app_slug": "order-core",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "order_status_update_mapping",
+        "domain": "order_workflow",
+        "description_en": (
+            "Update a custom status's mapping to carrier/woocommerce statuses. "
+            "REQUIRES MERCHANT APPROVAL."
+        ),
+        "usage_hint_ar": "استخدمها لتحديث ربط حالة مخصصة بحالات شركات الشحن أو ووكومرس — بعد موافقة التاجر",
+        "endpoint": "/api/v1/order-status/:id/mapping",
+        "http_method": "PUT",
+        "input_schema": {"type": "object", "properties": {
+            "id": {"type": "string", "description": "Status ID"},
+            "mapping": {"type": "object", "description": "Mapping object per backend contract"},
+        }, "required": ["id", "mapping"]},
+        "path_params": ["id"],
+        "permission_key": "orders.edit",
+        "app_slug": "order-core",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+
+    # ── Affiliates (read + settings) ───────────────────────────────────
+    {
+        "name": "affiliates_list",
+        "domain": "affiliates",
+        "description_en": (
+            "List affiliate partners with status and performance. Use when the merchant asks "
+            "about their affiliate program."
+        ),
+        "usage_hint_ar": "استخدمها لعرض شركاء الأفلييت وأدائهم",
+        "endpoint": "/api/v1/affiliates",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "limit": {"type": "integer", "description": "Max results (default 20)"},
+        }},
+        "permission_key": "reports.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "affiliate_settings_read",
+        "domain": "affiliates",
+        "description_en": "Read affiliate program settings (commission percent, program status).",
+        "usage_hint_ar": "استخدمها لقراءة إعدادات برنامج الأفلييت ونسبة العمولة",
+        "endpoint": "/api/v1/affiliate-settings",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "reports.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "affiliate_settings_update",
+        "domain": "affiliates",
+        "description_en": (
+            "Update affiliate program settings (e.g. commission percent). "
+            "REQUIRES MERCHANT APPROVAL."
+        ),
+        "usage_hint_ar": "استخدمها لتعديل إعدادات برنامج الأفلييت — بعد موافقة التاجر",
+        "endpoint": "/api/v1/affiliate-settings",
+        "http_method": "PUT",
+        "input_schema": {"type": "object", "properties": {
+            "commissionPercent": {"type": "number", "description": "Affiliate commission percent"},
+        }},
+        "permission_key": "settings.manage",
+        "app_slug": "order-core",
+        "risk_level": "write",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+
+    # ── Pixels / tracking ──────────────────────────────────────────────
+    {
+        "name": "pixel_profiles_list",
+        "domain": "pixels",
+        "description_en": (
+            "List configured Facebook pixel profiles and their connection status. Use when the "
+            "merchant asks about tracking setup."
+        ),
+        "usage_hint_ar": "استخدمها لعرض بكسلات فيسبوك المربوطة وحالتها",
+        "endpoint": "/api/v1/storefront-settings/pixels",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "settings.read",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "pixel_diagnostics",
+        "domain": "pixels",
+        "description_en": (
+            "Run pixel diagnostics (connection, token permissions, event delivery). Use to "
+            "debug 'events not showing in events manager' complaints."
+        ),
+        "usage_hint_ar": "استخدمها لتشخيص مشاكل البكسل (الاتصال/الصلاحيات/توصيل الأحداث)",
+        "endpoint": "/api/v1/storefront-settings/pixel-diagnostics",
+        "http_method": "POST",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "settings.read",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "tiktok_events_configs_list",
+        "domain": "pixels",
+        "description_en": "List TikTok Events API configurations and their test status.",
+        "usage_hint_ar": "استخدمها لعرض إعدادات تتبع تيك توك وحالتها",
+        "endpoint": "/api/v1/tiktok/events/configs",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {}},
+        "permission_key": "settings.read",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+
+    # ── Staff (read-only for the bridge) ───────────────────────────────
+    {
+        "name": "team_users_list",
+        "domain": "staff",
+        "description_en": (
+            "List team members (name, role, active status). READ-ONLY — staffing changes "
+            "must be done by the merchant in settings."
+        ),
+        "usage_hint_ar": "استخدمها لعرض أعضاء الفريق وأدوارهم (قراءة فقط)",
+        "endpoint": "/api/v1/companies/:companyId/users",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "companyId": {"type": "string", "description": "Company ID (auto-filled with the store ID)"},
+        }, "required": ["companyId"]},
+        "path_params": ["companyId"],
+        "permission_key": "users.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+    {
+        "name": "team_users_statistics",
+        "domain": "staff",
+        "description_en": "Team size and role-distribution statistics. READ-ONLY.",
+        "usage_hint_ar": "استخدمها لإحصائيات الفريق وتوزيع الأدوار (قراءة فقط)",
+        "endpoint": "/api/v1/companies/:companyId/users/statistics",
+        "http_method": "GET",
+        "input_schema": {"type": "object", "properties": {
+            "companyId": {"type": "string", "description": "Company ID (auto-filled with the store ID)"},
+        }, "required": ["companyId"]},
+        "path_params": ["companyId"],
+        "permission_key": "users.view",
+        "app_slug": "order-core",
+        "risk_level": "read",
+        "exposure_state": "active",
+        "roles": ["STORE_MANAGER"],
+        "source": "curated",
+    },
+
 ]
 
 
