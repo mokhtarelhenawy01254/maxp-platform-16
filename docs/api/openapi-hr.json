@@ -2088,6 +2088,122 @@
           "200": { "description": "Reward settings updated successfully" }
         }
       }
+    },
+    "/reward-rules": {
+      "get": {
+        "summary": "List attendance commitment reward rules",
+        "description": "Lists configured attendance commitment bonus rules with parsed eligibility conditions and absence thresholds.\n\n**Required Scope:** `hr:rewards:read` (or `hr:read`, `*`)",
+        "operationId": "hr_list_reward_rules",
+        "x-required-scope": "hr:rewards:read",
+        "parameters": [
+          { "name": "isActive", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": { "description": "List of reward rules with unpacked absence conditions" }
+        }
+      },
+      "post": {
+        "summary": "Create attendance commitment reward rule",
+        "description": "Defines a new attendance commitment bonus rule specifying maximum allowed monthly absence days and bonus amount.\n\n**Required Scope:** `hr:rewards:write` (or `hr:write`, `*`)",
+        "operationId": "hr_create_reward_rule",
+        "x-required-scope": "hr:rewards:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "value"],
+                "properties": {
+                  "name": { "type": "string", "example": "مكافأة الالتزام بالدوام" },
+                  "nameAr": { "type": "string" },
+                  "description": { "type": "string" },
+                  "value": { "type": "number", "minimum": 1, "example": 1000 },
+                  "maxAllowedAbsenceDays": { "type": "integer", "minimum": 0, "default": 2, "example": 2 },
+                  "targetEmployeeId": { "type": "string", "description": "Optional: Restrict rule to a specific employee ID or employeeNumber" },
+                  "disburseAsPayrollBonus": { "type": "boolean", "default": true },
+                  "isActive": { "type": "boolean", "default": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Reward rule created successfully" },
+          "400": { "description": "Validation error" },
+          "404": { "description": "Target employee not found" }
+        }
+      }
+    },
+    "/reward-rules/{id}": {
+      "get": {
+        "summary": "Get attendance commitment reward rule by ID",
+        "description": "Fetches a single attendance commitment rule by ID with unpacked conditions.\n\n**Required Scope:** `hr:rewards:read` (or `hr:read`, `*`)",
+        "operationId": "hr_get_reward_rule_by_id",
+        "x-required-scope": "hr:rewards:read",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Reward rule details" },
+          "404": { "description": "Reward rule not found" }
+        }
+      },
+      "patch": {
+        "summary": "Update attendance commitment reward rule",
+        "description": "Updates rule properties such as bonus value, maximum allowed absence days, or active status.\n\n**Required Scope:** `hr:rewards:write` (or `hr:write`, `*`)",
+        "operationId": "hr_update_reward_rule",
+        "x-required-scope": "hr:rewards:write",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "nameAr": { "type": "string" },
+                  "description": { "type": "string" },
+                  "value": { "type": "number", "minimum": 1 },
+                  "maxAllowedAbsenceDays": { "type": "integer", "minimum": 0 },
+                  "targetEmployeeId": { "type": "string", "nullable": true },
+                  "disburseAsPayrollBonus": { "type": "boolean" },
+                  "isActive": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Reward rule updated successfully" },
+          "400": { "description": "Validation error" },
+          "404": { "description": "Reward rule not found" }
+        }
+      }
+    },
+    "/reward-rules/{id}/evaluate": {
+      "post": {
+        "summary": "Monthly evaluation of attendance commitment bonus rule",
+        "description": "Evaluates employee monthly absences against the rule's threshold using attendanceService. In dryRun mode, returns absence days and eligibility without persisting records. In live execution, generates approved reward records that seamlessly flow as bonuses into the payroll of that month.\n\n**Required Scope:** `hr:rewards:write` (or `hr:write`, `*`)",
+        "operationId": "hr_evaluate_reward_rule",
+        "x-required-scope": "hr:rewards:write",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "month", "in": "query", "description": "Month in YYYY-MM format (e.g. 2026-09) or 1-12", "schema": { "type": "string", "example": "2026-09" } },
+          { "name": "year", "in": "query", "description": "Optional year if month is passed as integer", "schema": { "type": "integer", "example": 2026 } },
+          { "name": "dryRun", "in": "query", "description": "If true, simulates evaluation without creating records", "schema": { "type": "boolean", "default": false } }
+        ],
+        "responses": {
+          "200": { "description": "Evaluation completed with summary, employee absence counts, and created reward records" },
+          "400": { "description": "Rule inactive or invalid date" },
+          "404": { "description": "Rule not found" }
+        }
+      }
     }
   },
   "components": {

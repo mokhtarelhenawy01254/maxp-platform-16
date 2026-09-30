@@ -124,6 +124,13 @@ router.post('/reward-types/:id/evaluate', requireExternalHrScope('hr:rewards:wri
 router.get('/reward-settings', requireExternalHrScope('hr:rewards:read'), hrExternalController.getRewardSettings);
 router.put('/reward-settings', requireExternalHrScope('hr:rewards:write'), hrExternalController.updateRewardSettings);
 
+// ⭐ Attendance Commitment Bonus & Reward Rules Engine
+router.get('/reward-rules', requireExternalHrScope('hr:rewards:read'), hrExternalController.listRewardRules);
+router.get('/reward-rules/:id', requireExternalHrScope('hr:rewards:read'), hrExternalController.getRewardRuleById);
+router.post('/reward-rules', requireExternalHrScope('hr:rewards:write'), hrExternalController.createRewardRule);
+router.patch('/reward-rules/:id', requireExternalHrScope('hr:rewards:write'), hrExternalController.updateRewardRule);
+router.post('/reward-rules/:id/evaluate', requireExternalHrScope('hr:rewards:write'), hrExternalController.evaluateRewardRule);
+
 // 🕐 Shifts & Rosters
 router.get('/shifts', requireExternalHrScope('hr:shifts:read'), hrExternalController.listShifts);
 router.post('/shifts', requireExternalHrScope('hr:shifts:write'), hrExternalController.createShift);

@@ -4917,6 +4917,717 @@ const evaluateRewardType = async (req, res) => {
   }
 };
 
+/**
+ * 28. استعلام قواعد مكافآت الالتزام بالدوام
+ * GET /reward-rules
+ */
+const listRewardRules = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { isActive, page = 1, limit = 20 } = req.query;
+    const prisma = getSharedPrismaClient();
+
+    const skip = Math.max(0, (parseInt(page, 10) - 1) * parseInt(limit, 10));
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10)));
+
+    const where = {
+      companyId,
+      category: 'FINANCIAL'
+    };
+
+    if (isActive !== undefined) {
+      where.isActive = isActive === 'true';
+    }
+
+    const [rules, total] = await Promise.all([
+      prisma.rewardType.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.rewardType.count({ where })
+    ]);
+
+    const formattedData = rules.map((r) => {
+      let conditions = {};
+      try {
+        conditions = r.eligibilityConditions ? JSON.parse(r.eligibilityConditions) : {};
+      } catch {}
+
+      return {
+        id: r.id,
+        name: r.name,
+        nameAr: r.nameAr,
+        description: r.description,
+        value: Number(r.value),
+        maxAllowedAbsenceDays: conditions.maxAllowedAbsenceDays !== undefined ? Number(conditions.maxAllowedAbsenceDays) : null,
+        targetEmployeeId: conditions.targetEmployeeId || null,
+        targetUserId: conditions.targetUserId || null,
+        disburseAsPayrollBonus: conditions.disburseAsPayrollBonus !== false,
+        category: r.category,
+        calculationMethod: r.calculationMethod,
+        triggerType: r.triggerType,
+        frequency: r.frequency,
+        isActive: r.isActive,
+        conditions,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: formattedData,
+      pagination: {
+        page: Math.max(1, parseInt(page, 10)),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take)
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.listRewardRules] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 29. جلب قاعدة مكافأة محددة بالمعرف
+ * GET /reward-rules/:id
+ */
+const getRewardRuleById = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+
+    const rule = await prisma.rewardType.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!rule) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'REWARD_RULE_NOT_FOUND', message: `Reward rule not found with ID: ${id}` }
+      });
+    }
+
+    let conditions = {};
+    try {
+      conditions = rule.eligibilityConditions ? JSON.parse(rule.eligibilityConditions) : {};
+    } catch {}
+
+    return res.json({
+      success: true,
+      data: {
+        id: rule.id,
+        name: rule.name,
+        nameAr: rule.nameAr,
+        description: rule.description,
+        value: Number(rule.value),
+        maxAllowedAbsenceDays: conditions.maxAllowedAbsenceDays !== undefined ? Number(conditions.maxAllowedAbsenceDays) : null,
+        targetEmployeeId: conditions.targetEmployeeId || null,
+        targetUserId: conditions.targetUserId || null,
+        disburseAsPayrollBonus: conditions.disburseAsPayrollBonus !== false,
+        category: rule.category,
+        calculationMethod: rule.calculationMethod,
+        triggerType: rule.triggerType,
+        frequency: rule.frequency,
+        isActive: rule.isActive,
+        conditions,
+        createdAt: rule.createdAt,
+        updatedAt: rule.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.getRewardRuleById] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 30. إنشاء قاعدة مكافأة التزام بالدوام
+ * POST /reward-rules
+ */
+const createRewardRule = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const {
+      name,
+      nameAr,
+      description,
+      value,
+      amount,
+      maxAllowedAbsenceDays = 2,
+      targetEmployeeId,
+      disburseAsPayrollBonus = true,
+      isActive = true
+    } = req.body;
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Rule name is required' }
+      });
+    }
+
+    const numericValue = Number(value !== undefined ? value : amount);
+    if (isNaN(numericValue) || numericValue <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Reward value must be a positive number' }
+      });
+    }
+
+    const numericMaxAbsences = parseInt(maxAllowedAbsenceDays, 10);
+    if (isNaN(numericMaxAbsences) || numericMaxAbsences < 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'maxAllowedAbsenceDays must be a non-negative integer' }
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    let resolvedUserId = null;
+    let resolvedEmployeeNumber = null;
+
+    if (targetEmployeeId) {
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [{ id: targetEmployeeId }, { employeeNumber: targetEmployeeId }],
+          companyId
+        },
+        select: { id: true, employeeNumber: true }
+      });
+
+      if (user) {
+        resolvedUserId = user.id;
+        resolvedEmployeeNumber = user.employeeNumber;
+      } else {
+        const emp = await prisma.employee.findFirst({
+          where: {
+            OR: [{ id: targetEmployeeId }, { employeeNumber: targetEmployeeId }],
+            companyId
+          },
+          select: { id: true, userId: true, employeeNumber: true }
+        });
+
+        if (emp && emp.userId) {
+          resolvedUserId = emp.userId;
+          resolvedEmployeeNumber = emp.employeeNumber;
+        } else {
+          return res.status(404).json({
+            success: false,
+            error: { code: 'EMPLOYEE_NOT_FOUND', message: `Target employee not found in this company with ID: ${targetEmployeeId}` }
+          });
+        }
+      }
+    }
+
+    const conditions = {
+      type: 'ATTENDANCE_COMMITMENT',
+      maxAllowedAbsenceDays: numericMaxAbsences,
+      targetEmployeeId: targetEmployeeId || null,
+      targetUserId: resolvedUserId,
+      targetEmployeeNumber: resolvedEmployeeNumber,
+      disburseAsPayrollBonus: disburseAsPayrollBonus !== false
+    };
+
+    const newRule = await prisma.rewardType.create({
+      data: {
+        companyId,
+        name: name.trim(),
+        nameAr: nameAr ? nameAr.trim() : null,
+        description: description ? description.trim() : null,
+        category: 'FINANCIAL',
+        calculationMethod: 'FIXED',
+        value: numericValue,
+        triggerType: 'AUTOMATIC',
+        frequency: 'MONTHLY',
+        isActive: isActive !== false,
+        eligibilityConditions: JSON.stringify(conditions),
+        createdBy: req.externalApiCredential?.id || req.hrCredential?.id || 'EXTERNAL_API'
+      }
+    });
+
+    await logExternalApiAction({
+      req,
+      action: 'CREATE_REWARD_RULE',
+      description: `إنشاء قاعدة مكافأة الالتزام بالدوام "${newRule.name}" بقيمة ${numericValue} ج شهرياً بشرط غياب <= ${numericMaxAbsences} يوم`,
+      resourceType: 'RewardRule',
+      resourceId: newRule.id,
+      targetName: newRule.name,
+      details: {
+        value: numericValue,
+        maxAllowedAbsenceDays: numericMaxAbsences,
+        targetEmployeeId: targetEmployeeId || null,
+        targetUserId: resolvedUserId,
+        disburseAsPayrollBonus: disburseAsPayrollBonus !== false
+      }
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Reward rule created successfully',
+      data: {
+        id: newRule.id,
+        name: newRule.name,
+        nameAr: newRule.nameAr,
+        description: newRule.description,
+        value: Number(newRule.value),
+        maxAllowedAbsenceDays: numericMaxAbsences,
+        targetEmployeeId: targetEmployeeId || null,
+        targetUserId: resolvedUserId,
+        disburseAsPayrollBonus: disburseAsPayrollBonus !== false,
+        category: newRule.category,
+        calculationMethod: newRule.calculationMethod,
+        triggerType: newRule.triggerType,
+        frequency: newRule.frequency,
+        isActive: newRule.isActive,
+        conditions,
+        createdAt: newRule.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.createRewardRule] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 31. تعديل قاعدة مكافأة الالتزام بالدوام
+ * PATCH /reward-rules/:id
+ */
+const updateRewardRule = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+
+    const existingRule = await prisma.rewardType.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!existingRule) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'REWARD_RULE_NOT_FOUND', message: `Reward rule not found with ID: ${id}` }
+      });
+    }
+
+    const {
+      name,
+      nameAr,
+      description,
+      value,
+      amount,
+      maxAllowedAbsenceDays,
+      targetEmployeeId,
+      disburseAsPayrollBonus,
+      isActive
+    } = req.body;
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = String(name).trim();
+    if (nameAr !== undefined) updateData.nameAr = nameAr ? String(nameAr).trim() : null;
+    if (description !== undefined) updateData.description = description ? String(description).trim() : null;
+    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
+
+    const numericValue = value !== undefined ? Number(value) : (amount !== undefined ? Number(amount) : undefined);
+    if (numericValue !== undefined) {
+      if (isNaN(numericValue) || numericValue <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Reward value must be a positive number' }
+        });
+      }
+      updateData.value = numericValue;
+    }
+
+    let existingConditions = {};
+    try {
+      existingConditions = existingRule.eligibilityConditions ? JSON.parse(existingRule.eligibilityConditions) : {};
+    } catch {}
+
+    const conditions = { ...existingConditions };
+
+    if (maxAllowedAbsenceDays !== undefined) {
+      const parsedAbsences = parseInt(maxAllowedAbsenceDays, 10);
+      if (isNaN(parsedAbsences) || parsedAbsences < 0) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'maxAllowedAbsenceDays must be a non-negative integer' }
+        });
+      }
+      conditions.maxAllowedAbsenceDays = parsedAbsences;
+    }
+
+    if (targetEmployeeId !== undefined) {
+      if (targetEmployeeId === null || targetEmployeeId === '') {
+        conditions.targetEmployeeId = null;
+        conditions.targetUserId = null;
+        conditions.targetEmployeeNumber = null;
+      } else {
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [{ id: targetEmployeeId }, { employeeNumber: targetEmployeeId }],
+            companyId
+          },
+          select: { id: true, employeeNumber: true }
+        });
+
+        if (user) {
+          conditions.targetUserId = user.id;
+          conditions.targetEmployeeNumber = user.employeeNumber;
+          conditions.targetEmployeeId = targetEmployeeId;
+        } else {
+          const emp = await prisma.employee.findFirst({
+            where: {
+              OR: [{ id: targetEmployeeId }, { employeeNumber: targetEmployeeId }],
+              companyId
+            },
+            select: { id: true, userId: true, employeeNumber: true }
+          });
+
+          if (emp && emp.userId) {
+            conditions.targetUserId = emp.userId;
+            conditions.targetEmployeeNumber = emp.employeeNumber;
+            conditions.targetEmployeeId = targetEmployeeId;
+          } else {
+            return res.status(404).json({
+              success: false,
+              error: { code: 'EMPLOYEE_NOT_FOUND', message: `Target employee not found in this company with ID: ${targetEmployeeId}` }
+            });
+          }
+        }
+      }
+    }
+
+    if (disburseAsPayrollBonus !== undefined) {
+      conditions.disburseAsPayrollBonus = Boolean(disburseAsPayrollBonus);
+    }
+
+    updateData.eligibilityConditions = JSON.stringify(conditions);
+
+    const updated = await prisma.rewardType.update({
+      where: { id: existingRule.id },
+      data: updateData
+    });
+
+    await logExternalApiAction({
+      req,
+      action: 'UPDATE_REWARD_RULE',
+      description: `تعديل قاعدة مكافأة الالتزام "${updated.name}"`,
+      resourceType: 'RewardRule',
+      resourceId: updated.id,
+      targetName: updated.name,
+      details: { updatedFields: Object.keys(req.body) }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Reward rule updated successfully',
+      data: {
+        id: updated.id,
+        name: updated.name,
+        nameAr: updated.nameAr,
+        description: updated.description,
+        value: Number(updated.value),
+        maxAllowedAbsenceDays: conditions.maxAllowedAbsenceDays !== undefined ? Number(conditions.maxAllowedAbsenceDays) : null,
+        targetEmployeeId: conditions.targetEmployeeId || null,
+        targetUserId: conditions.targetUserId || null,
+        disburseAsPayrollBonus: conditions.disburseAsPayrollBonus !== false,
+        category: updated.category,
+        calculationMethod: updated.calculationMethod,
+        triggerType: updated.triggerType,
+        frequency: updated.frequency,
+        isActive: updated.isActive,
+        conditions,
+        updatedAt: updated.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.updateRewardRule] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
+/**
+ * 32. تقييم شهري لقاعدة مكافأة الالتزام بالدوام (Attendance Commitment Bonus Evaluation)
+ * POST /reward-rules/:id/evaluate?month=YYYY-MM&dryRun=true|false
+ */
+const evaluateRewardRule = async (req, res) => {
+  try {
+    const { companyId } = req;
+    const { id } = req.params;
+
+    const isDryRun = req.query.dryRun === 'true' || req.query.dryRun === true || req.body?.dryRun === true || req.body?.dryRun === 'true';
+
+    // Parse Month & Year (supports ?month=YYYY-MM or ?month=9&year=2026)
+    const rawMonth = req.query.month || req.body?.month;
+    const rawYear = req.query.year || req.body?.year;
+
+    let targetMonth, targetYear;
+    if (typeof rawMonth === 'string' && rawMonth.includes('-')) {
+      const parts = rawMonth.trim().split('-');
+      targetYear = parseInt(parts[0], 10);
+      targetMonth = parseInt(parts[1], 10);
+    } else {
+      const now = new Date();
+      targetMonth = rawMonth ? parseInt(rawMonth, 10) : (now.getMonth() + 1);
+      targetYear = rawYear ? parseInt(rawYear, 10) : now.getFullYear();
+    }
+
+    if (isNaN(targetMonth) || targetMonth < 1 || targetMonth > 12) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'month parameter must be between 1 and 12 or in YYYY-MM format' }
+      });
+    }
+
+    if (isNaN(targetYear) || targetYear < 2020 || targetYear > 2035) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'year parameter must be a valid 4-digit year' }
+      });
+    }
+
+    const prisma = getSharedPrismaClient();
+
+    const rule = await prisma.rewardType.findFirst({
+      where: { id, companyId }
+    });
+
+    if (!rule) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'REWARD_RULE_NOT_FOUND', message: `Reward rule not found with ID: ${id}` }
+      });
+    }
+
+    if (!rule.isActive) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'REWARD_RULE_INACTIVE', message: `Reward rule "${rule.name}" is deactivated` }
+      });
+    }
+
+    // Parse eligibility conditions
+    let conditions = {};
+    try {
+      conditions = rule.eligibilityConditions ? JSON.parse(rule.eligibilityConditions) : {};
+    } catch {}
+
+    const maxAllowedAbsenceDays = Number(conditions.maxAllowedAbsenceDays ?? 2);
+    const targetUserId = conditions.targetUserId || null;
+
+    // Use official system attendance service to get real absence days respecting workDays, publicHolidays, leaves, and hireDate
+    const absentReport = await attendanceService.getAbsentDaysReport(
+      companyId,
+      targetYear,
+      targetMonth,
+      targetUserId || null
+    );
+
+    const periodStart = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
+    const periodEnd = new Date(Date.UTC(targetYear, targetMonth, 0, 23, 59, 59, 999));
+
+    const evaluatedEmployees = absentReport?.employees || [];
+    const results = [];
+    const createdRecords = [];
+    let eligibleCount = 0;
+    let alreadyExistedCount = 0;
+
+    // Read reward settings for approval workflow
+    const rewardSettings = await prisma.rewardSettings.findUnique({
+      where: { companyId }
+    });
+    const defaultStatus = (rewardSettings && rewardSettings.requireManagerApproval) ? 'PENDING' : 'APPROVED';
+
+    for (const emp of evaluatedEmployees) {
+      const absentDays = Number(emp.absentDays || 0);
+      const isEligible = absentDays <= maxAllowedAbsenceDays;
+
+      let reason = '';
+      if (isEligible) {
+        reason = `مستحق: غياب ${absentDays} يوم <= الحد المسموح (${maxAllowedAbsenceDays} يوم)`;
+      } else {
+        reason = `غير مستحق: غياب ${absentDays} يوم > الحد المسموح (${maxAllowedAbsenceDays} يوم)`;
+      }
+
+      if (isDryRun) {
+        if (isEligible) eligibleCount++;
+        results.push({
+          userId: emp.userId || emp.id,
+          employeeNumber: emp.employeeNumber,
+          employeeName: emp.name,
+          absentDays,
+          absentDates: emp.absentDates || [],
+          maxAllowedAbsenceDays,
+          isEligible,
+          reason,
+          rewardValue: Number(rule.value),
+          status: 'DRY_RUN'
+        });
+      } else {
+        if (isEligible) {
+          eligibleCount++;
+
+          // Check if employee already received this reward type for this month/year
+          const existingRecord = await prisma.rewardRecord.findFirst({
+            where: {
+              companyId,
+              userId: emp.userId || emp.id,
+              rewardTypeId: rule.id,
+              appliedMonth: targetMonth,
+              appliedYear: targetYear,
+              status: { not: 'CANCELLED' }
+            }
+          });
+
+          if (existingRecord) {
+            alreadyExistedCount++;
+            results.push({
+              userId: emp.userId || emp.id,
+              employeeNumber: emp.employeeNumber,
+              employeeName: emp.name,
+              absentDays,
+              absentDates: emp.absentDates || [],
+              maxAllowedAbsenceDays,
+              isEligible: true,
+              reason,
+              rewardValue: Number(rule.value),
+              status: 'ALREADY_EXISTS',
+              recordId: existingRecord.id,
+              calculatedValue: Number(existingRecord.calculatedValue)
+            });
+          } else {
+            try {
+              const record = await prisma.rewardRecord.create({
+                data: {
+                  companyId,
+                  userId: emp.userId || emp.id,
+                  rewardTypeId: rule.id,
+                  rewardName: rule.name,
+                  rewardCategory: 'ATTENDANCE',
+                  calculatedValue: rule.value,
+                  calculationDetails: JSON.stringify({
+                    absentDays,
+                    maxAllowedAbsenceDays,
+                    totalWorkingDays: absentReport?.totalWorkingDays || 0,
+                    absentDates: emp.absentDates || []
+                  }),
+                  periodStart,
+                  periodEnd,
+                  appliedMonth: targetMonth,
+                  appliedYear: targetYear,
+                  reason: `مكافأة التزام بالحضور (${targetMonth}/${targetYear}): غياب ${absentDays} يوم (الحد المسموح ${maxAllowedAbsenceDays} يوم)`,
+                  status: defaultStatus,
+                  isIncludedInPayroll: false
+                }
+              });
+
+              createdRecords.push(record);
+              results.push({
+                userId: emp.userId || emp.id,
+                employeeNumber: emp.employeeNumber,
+                employeeName: emp.name,
+                absentDays,
+                absentDates: emp.absentDates || [],
+                maxAllowedAbsenceDays,
+                isEligible: true,
+                reason,
+                rewardValue: Number(rule.value),
+                status: 'CREATED',
+                recordId: record.id,
+                calculatedValue: Number(record.calculatedValue)
+              });
+            } catch (createErr) {
+              results.push({
+                userId: emp.userId || emp.id,
+                employeeNumber: emp.employeeNumber,
+                employeeName: emp.name,
+                absentDays,
+                isEligible: true,
+                reason,
+                status: 'ERROR',
+                error: createErr.message
+              });
+            }
+          }
+        } else {
+          results.push({
+            userId: emp.userId || emp.id,
+            employeeNumber: emp.employeeNumber,
+            employeeName: emp.name,
+            absentDays,
+            absentDates: emp.absentDates || [],
+            maxAllowedAbsenceDays,
+            isEligible: false,
+            reason,
+            rewardValue: 0,
+            status: 'NOT_ELIGIBLE'
+          });
+        }
+      }
+    }
+
+    const periodStr = `${targetYear}-${String(targetMonth).padStart(2, '0')}`;
+
+    await logExternalApiAction({
+      req,
+      action: isDryRun ? 'EVALUATE_REWARD_RULE_DRY_RUN' : 'EVALUATE_REWARD_RULE',
+      description: `${isDryRun ? '[DryRun] ' : ''}تقييم قاعدة مكافأة الالتزام بالدوام "${rule.name}" لشهر ${periodStr}: تم تقييم ${evaluatedEmployees.length}، مستحق ${eligibleCount}، منشأ ${createdRecords.length}`,
+      resourceType: 'RewardRule',
+      resourceId: rule.id,
+      targetName: rule.name,
+      details: {
+        month: targetMonth,
+        year: targetYear,
+        dryRun: isDryRun,
+        totalEvaluated: evaluatedEmployees.length,
+        eligibleCount,
+        createdCount: createdRecords.length,
+        alreadyExistedCount
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: `${isDryRun ? '[DryRun] ' : ''}Attendance commitment bonus evaluation completed for "${rule.name}" for period ${periodStr}`,
+      data: {
+        rule: {
+          id: rule.id,
+          name: rule.name,
+          value: Number(rule.value),
+          maxAllowedAbsenceDays,
+          disburseAsPayrollBonus: conditions.disburseAsPayrollBonus !== false
+        },
+        period: {
+          month: targetMonth,
+          year: targetYear,
+          period: periodStr,
+          totalWorkingDays: absentReport?.totalWorkingDays || 0
+        },
+        dryRun: isDryRun,
+        summary: {
+          totalEvaluated: evaluatedEmployees.length,
+          eligibleCount,
+          createdCount: createdRecords.length,
+          alreadyExistedCount
+        },
+        createdRecords,
+        results
+      }
+    });
+  } catch (error) {
+    console.error('❌ [ExternalHrController.evaluateRewardRule] Error:', error);
+    return res.status(500).json({ success: false, error: { message: error.message } });
+  }
+};
+
 module.exports = {
   listEmployees,
   getEmployeeById,
@@ -4966,5 +5677,11 @@ module.exports = {
   updateRewardType,
   getRewardSettings,
   updateRewardSettings,
-  evaluateRewardType
+  evaluateRewardType,
+  // Item 7 Attendance Commitment Bonus Rule Engine
+  listRewardRules,
+  getRewardRuleById,
+  createRewardRule,
+  updateRewardRule,
+  evaluateRewardRule
 };

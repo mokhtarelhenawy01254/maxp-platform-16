@@ -173,9 +173,22 @@ hrk_58903fa80570b7e7_830cc84a3da252756f67be5a66e891619aab6684800feca9
 - `POST /deductions` (`hr:deductions:write`): إنشاء خصم يدوي لموظف (`employeeNumber`, `amount`, `type`, `category`, `reason`, `date`, `status`). يتحقق من صحة `type` و`status` قبل الإنشاء.
 - `PATCH /deductions/:id` (`hr:deductions:write`): تعديل خصم مسجل (`amount`, `reason`, `type`, `notes`, `status`).
 
-### 🏆 المكافآت والحوافز (Rewards & Bonuses)
+### 🏆 المكافآت والحوافز وقواعد الالتزام (Rewards & Commitment Rules)
 - `GET /rewards` (`hr:rewards:read`): استعلام سجلات المكافآت والحوافز بصفحات وفلاتر (`page`, `limit`, `employeeCode`, `status`, `from`, `to`, `search`).
 - `POST /rewards` (`hr:rewards:write`): إنشاء ومنح مكافأة مالية لموظف (`employeeCode`, `rewardName`, `rewardCategory`, `amount`, `reason`, `periodStart`, `periodEnd`, `status`).
+- `GET /reward-types` (`hr:rewards:read`): استعلام أنواع المكافآت وقواعد الاستحقاق المعرفة.
+- `POST /reward-types` (`hr:rewards:write`): إنشاء نوع مكافأة جديد (`name`, `category`, `calculationMethod`, `value`, `triggerType`, `frequency`).
+- `PATCH /reward-types/:id` (`hr:rewards:write`): تعديل نوع المكافأة أو صيغة احتسابها وحالتها.
+- `GET /reward-settings` (`hr:rewards:read`): استعلام إعدادات دورة التقييم والاعتمادات وسير العمل.
+- `PUT /reward-settings` (`hr:rewards:write`): تعديل إعدادات دورة التقييم والاعتمادات.
+- `POST /reward-types/:id/evaluate?month=&year=` (`hr:rewards:write`): تشغيل التقييم الدوري يدوياً للموظفين المستحقين.
+- `GET /reward-rules` (`hr:rewards:read`): استعلام قواعد مكافآت الالتزام بالدوام مع فك تشفير شروط الغياب.
+- `GET /reward-rules/:id` (`hr:rewards:read`): جلب تفاصيل قاعدة مكافأة الالتزام بالدوام ومحددات الغياب المسموح.
+- `POST /reward-rules` (`hr:rewards:write`): إنشاء قاعدة مكافأة التزام بالدوام (`name`, `value`, `maxAllowedAbsenceDays`, `targetEmployeeId`, `disburseAsPayrollBonus`).
+- `PATCH /reward-rules/:id` (`hr:rewards:write`): تعديل قاعدة الالتزام بالدوام والحد الأقصى لأيام الغياب.
+- `POST /reward-rules/:id/evaluate?month=YYYY-MM&dryRun=true|false` (`hr:rewards:write`): التقييم الشهري لحافز الالتزام بالدوام:
+  - عند `dryRun=true`: استرجاع أيام غياب كل موظف (المحسوبة من `attendanceService` احتراماً لأيام العمل والعطلات والإجازات وتاريخ التعيين) وبيان الاستحقاق دون المساس بقاعدة البيانات.
+  - عند `dryRun=false`: إنشاء سجل مكافأة معتمد (`APPROVED` أو `PENDING` حسب إعدادات الاعتماد) ليظهر تلقائياً كـ `bonus` في مسير رواتب نفس الشهر.
 
 ### 🕐 الورديات والمناوبات (Shifts & Rosters)
 - `GET /shifts` (`hr:shifts:read`): استعلام قائمة ورديات العمل الخاصة بالشركة وحالات نشاطها.

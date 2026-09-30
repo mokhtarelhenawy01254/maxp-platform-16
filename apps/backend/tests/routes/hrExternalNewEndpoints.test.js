@@ -362,4 +362,63 @@ describe('HR External API — New Endpoints & Timezone Fix Unit Tests', () => {
       );
     });
   });
+
+  describe('Item 7: Attendance Commitment Bonus & Reward Rules Engine', () => {
+    test('All 5 reward rules endpoints are exported as functions', () => {
+      expect(typeof hrExternalController.listRewardRules).toBe('function');
+      expect(typeof hrExternalController.getRewardRuleById).toBe('function');
+      expect(typeof hrExternalController.createRewardRule).toBe('function');
+      expect(typeof hrExternalController.updateRewardRule).toBe('function');
+      expect(typeof hrExternalController.evaluateRewardRule).toBe('function');
+    });
+
+    test('createRewardRule rejects missing name with 400 VALIDATION_ERROR', async () => {
+      mockReq.body = { value: 1000, maxAllowedAbsenceDays: 2 };
+      await hrExternalController.createRewardRule(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR', message: expect.stringContaining('name') })
+        })
+      );
+    });
+
+    test('createRewardRule rejects zero or negative value with 400 VALIDATION_ERROR', async () => {
+      mockReq.body = { name: 'مكافأة الالتزام بالدوام', value: -100, maxAllowedAbsenceDays: 2 };
+      await hrExternalController.createRewardRule(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR', message: expect.stringContaining('positive') })
+        })
+      );
+    });
+
+    test('createRewardRule rejects negative maxAllowedAbsenceDays with 400 VALIDATION_ERROR', async () => {
+      mockReq.body = { name: 'مكافأة الالتزام بالدوام', value: 1000, maxAllowedAbsenceDays: -1 };
+      await hrExternalController.createRewardRule(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR', message: expect.stringContaining('maxAllowedAbsenceDays') })
+        })
+      );
+    });
+
+    test('evaluateRewardRule rejects invalid month string with 400 VALIDATION_ERROR', async () => {
+      mockReq.params = { id: 'rule-123' };
+      mockReq.query = { month: '2026-15' };
+      await hrExternalController.evaluateRewardRule(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.objectContaining({ code: 'VALIDATION_ERROR' })
+        })
+      );
+    });
+  });
 });
